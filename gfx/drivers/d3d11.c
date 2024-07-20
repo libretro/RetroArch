@@ -3643,17 +3643,21 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
       return false;
 
    /*This implementation produces wrong result when using HDR*/
-   #ifdef HAVE_DXGI_HDR
+#ifdef HAVE_DXGI_HDR
    if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
    {
       RARCH_ERR("[D3D11]: HDR screenshot not supported.\n");
       return false;
    }
-   #endif
+#endif
 
    /* Get the back buffer. */
    m_SwapChain = d3d11->swapChain;
+#ifdef __cplusplus
+   m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, IID_ID3D11Texture2D, (void**)(&BackBuffer));
+#else
    m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, &IID_ID3D11Texture2D, (void*)(&BackBuffer));
+#endif
 
    if (!BackBuffer)
       return false;
@@ -3672,9 +3676,13 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    /* Create the back buffer staging texture. */
    d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &StagingDesc, NULL, &BackBufferStagingTexture);
 
+#ifdef __cplusplus
+   BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, IID_ID3D11Resource, (void**)&BackBufferStaging);
+   BackBuffer->lpVtbl->QueryInterface(BackBuffer, IID_ID3D11Resource, (void**)&BackBufferResource);
+#else
    BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, &IID_ID3D11Resource, (void**)&BackBufferStaging);
-
    BackBuffer->lpVtbl->QueryInterface(BackBuffer, &IID_ID3D11Resource, (void**)&BackBufferResource);
+#endif
 
    /* Copy back buffer to back buffer staging. */
    d3d11->context->lpVtbl->CopyResource(d3d11->context, BackBufferStaging, BackBufferResource);

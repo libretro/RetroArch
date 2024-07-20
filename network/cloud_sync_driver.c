@@ -22,7 +22,7 @@ static cloud_sync_driver_t cloud_sync_null = {
    NULL,  /* sync_end */
    NULL,  /* read */
    NULL,  /* update */
-   NULL,  /* delete */
+   NULL,  /* free */
    "null" /* ident */
 };
 
@@ -120,10 +120,10 @@ bool cloud_sync_update(const char *path, RFILE *file,
    return false;
 }
 
-bool cloud_sync_delete(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
-   if (driver && driver->delete)
-      return driver->delete(path, cb, user_data);
+   if (driver && driver->free)
+      return driver->free(path, cb, user_data);
    return false;
 }

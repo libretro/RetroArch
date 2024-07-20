@@ -5797,7 +5797,7 @@ void main_exit(void *args)
 #endif
 
    runloop_msg_queue_deinit();
-   driver_uninit(DRIVERS_CMD_ALL, 0);
+   driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
    retro_main_log_file_deinit();
 
@@ -5891,7 +5891,7 @@ int rarch_main(int argc, char *argv[], void *data)
    frontend_driver_init_first(data);
 
    if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
-      driver_uninit(DRIVERS_CMD_ALL, 0);
+      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
 #ifdef HAVE_THREAD_STORAGE
    sthread_tls_create(&p_rarch->rarch_tls);
@@ -7295,7 +7295,7 @@ static bool retroarch_parse_input_and_config(
                   int reinit_flags               = DRIVERS_CMD_ALL &
                         ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
 
-                  drivers_init(settings, reinit_flags, 0, false);
+                  drivers_init(settings, reinit_flags, (enum driver_lifetime_flags)0, false);
                   retroarch_init_task_queue();
 
 #ifdef HAVE_MENU
@@ -7313,7 +7313,7 @@ static bool retroarch_parse_input_and_config(
                   if (!explicit_menu)
                   {
                      task_queue_wait(NULL, NULL);
-                     driver_uninit(DRIVERS_CMD_ALL, 0);
+                     driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
                      exit(0);
                   }
                }
@@ -7740,7 +7740,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
          );
 #endif
-   drivers_init(settings, DRIVERS_CMD_ALL, 0, verbosity_enabled);
+   drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(input_st);
    input_driver_init_command(input_st, settings);

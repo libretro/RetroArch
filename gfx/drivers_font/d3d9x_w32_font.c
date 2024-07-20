@@ -96,7 +96,7 @@ static void *d3d9x_win32_font_init(void *video_data,
             &desc, (void**)&d3dfonts->font))
       goto error;
 
-   font                   = d3dfonts->font;
+   font                   = (ID3DXFont*)d3dfonts->font;
 
    font->lpVtbl->GetTextMetrics(font, &metrics);
 
@@ -117,7 +117,7 @@ static void d3d9x_win32_font_free(void *data, bool is_threaded)
    if (!d3dfonts)
       return;
 
-   font                 = d3dfonts->font;
+   font                 = (ID3DXFont*)d3dfonts->font;
 
    if (font)
       font->lpVtbl->Release(font);
@@ -135,7 +135,7 @@ static int d3d9x_win32_font_get_message_width(void* data, const char* msg,
    if (!d3dfonts || !msg)
       return 0;
 
-   font                 = d3dfonts->font;
+   font                 = (ID3DXFont*)d3dfonts->font;
 
    font->lpVtbl->DrawText(font, NULL,
          (void*)msg, msg_len ? (INT)msg_len : -1, &box, DT_CALCRECT, 0);
@@ -164,7 +164,7 @@ static void d3d9x_win32_font_render_msg(
    if (!d3dfonts || !msg)
       return;
 
-   font                             = d3dfonts->font;
+   font                             = (ID3DXFont*)d3dfonts->font;
 
    width                            = d3dfonts->d3d->video_info.width;
    height                           = d3dfonts->d3d->video_info.height;

@@ -30,6 +30,7 @@
 #include <dynamic/dylib.h>
 #endif
 #include <string/stdstring.h>
+#include <formats/image.h>
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -1112,7 +1113,7 @@ void d3d9_set_menu_texture_frame(void *data,
          uint32_t       *dst = (uint32_t*)d3dlr.pBits;
          const uint16_t *src = (const uint16_t*)frame;
 
-         for (h = 0; h < height; h++, 
+         for (h = 0; h < height; h++,
                dst += d3dlr.Pitch >> 2,
                src += width)
          {
@@ -1162,7 +1163,7 @@ static void d3d9_video_texture_load_d3d(
    if (!ti)
       return;
 
-   if (  (info->type == TEXTURE_FILTER_MIPMAP_LINEAR) 
+   if (  (info->type == TEXTURE_FILTER_MIPMAP_LINEAR)
       || (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
 
@@ -1219,7 +1220,7 @@ uintptr_t d3d9_load_texture(void *video_data, void *data,
    return id;
 }
 
-void d3d9_unload_texture(void *data, 
+void d3d9_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    LPDIRECT3DTEXTURE9 texid;

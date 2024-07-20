@@ -5669,18 +5669,22 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
       /* Entries with %u player index placeholder. */
       info_single_list_t info_list[] = {
-/*         {
+#if 0
+         {
             MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE,
             NULL
-         },*/
+         },
+#endif
          {
             MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
             action_bind_sublabel_input_adc_type
          },
-/*         {
+#if 0
+         {
             MENU_ENUM_LABEL_INPUT_DEVICE_INDEX,
             NULL
-         },*/
+         },
+#endif
          {
             MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE,
             action_bind_sublabel_input_device_reservation_type
@@ -5693,10 +5697,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
             action_bind_sublabel_input_mouse_index
          },
-/*         {
+#if 0
+         {
             MENU_ENUM_LABEL_INPUT_REMAP_PORT,
             NULL
-         },*/
+         },
+#endif
          {
             MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
             action_bind_sublabel_input_device_index
@@ -5718,16 +5724,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char* idx_placeholder = "%u";
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         int idxpos = -1;
-         idxpos = string_find_index_substring_string(msg_hash_to_str(info_list[i].label_idx), idx_placeholder);
-         if ( idxpos > 0 &&
-              string_starts_with_size(label, msg_hash_to_str(info_list[i].label_idx), idxpos) &&
-              (( (size_t) idxpos == strlen(msg_hash_to_str(info_list[i].label_idx)) - 2) ||
-               ( (size_t) idxpos <  strlen(msg_hash_to_str(info_list[i].label_idx)) - 2  &&
-                          string_ends_with_size(label,
-                                          msg_hash_to_str(info_list[i].label_idx)+idxpos+2,
-                                          lbl_len,
-                                          strlen(msg_hash_to_str(info_list[i].label_idx))-idxpos-2))))
+         int idxpos = string_find_index_substring_string(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idx_placeholder);
+         if (   (idxpos > 0)
+              && string_starts_with_size(label, msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idxpos)
+              && (((size_t)idxpos == strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2)
+              || ((size_t)idxpos   <  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2          && string_ends_with_size(label,
+                  msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx) + idxpos + 2,
+                  lbl_len,
+                  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx))-idxpos-2))))
          {
             BIND_ACTION_SUBLABEL(cbs, info_list[i].cb);
             return 0;

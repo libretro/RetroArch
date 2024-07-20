@@ -119,7 +119,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
 
       /* If the queue has room for the packets we just got... */
       if (FIFO_WRITE_AVAIL(microphone->buffer) >= bytes_read && bytes_read > 0)
-      { 
+      {
          fifo_write(microphone->buffer, mic_input, bytes_read);
          /* ...then enqueue the bytes directly from the mic's buffer */
       }
@@ -140,11 +140,11 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *microphone)
 
       /* If this is a shared-mode stream and we didn't run out of room in the sample queue... */
       if (!microphone->exclusive && frames_read > 0)
-      { 
+      {
          hr = _IAudioCaptureClient_GetNextPacketSize(microphone->capture, &next_packet_size);
          /* Get the number of frames that the mic has for us. */
          if (FAILED(hr))
-         { 
+         {
             RARCH_ERR("[WASAPI]: Failed to get capture device \"%s\"'s next packet size: %s\n",
                       microphone->device_name, hresult_name(hr));
             return -1;
@@ -171,7 +171,7 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
 {
    /*...then let's wait for the mic to tell us that samples are ready. */
    switch (WaitForSingleObject(microphone->read_event, timeout))
-   { 
+   {
       case WAIT_OBJECT_0:
          /* Okay, there's data available. */
          return true;
@@ -212,7 +212,7 @@ static int wasapi_microphone_read_buffered(
 
    /* If we don't have any queued samples to give to the core... */
    if (!bytes_available)
-   { 
+   {
       /* If we couldn't wait for the microphone to signal a capture event... */
       if (!wasapi_microphone_wait_for_capture_event(microphone, timeout))
          return -1;
@@ -294,7 +294,8 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    bool float_format             = settings->bools.microphone_wasapi_float_format;
    bool exclusive_mode           = settings->bools.microphone_wasapi_exclusive_mode;
    unsigned sh_buffer_length     = settings->uints.microphone_wasapi_sh_buffer_length;
-   wasapi_microphone_handle_t *microphone = calloc(1, sizeof(wasapi_microphone_handle_t));
+   wasapi_microphone_handle_t *microphone = (wasapi_microphone_handle_t*)calloc(
+         1, sizeof(wasapi_microphone_handle_t));
 
    if (!microphone)
       return NULL;
@@ -304,7 +305,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
 
    /* If we requested a particular capture device, but couldn't open it... */
    if (device && !microphone->device)
-   { 
+   {
       RARCH_WARN("[WASAPI]: Failed to open requested capture device \"%s\", attempting to open default device\n", device);
       microphone->device = wasapi_init_device(NULL, eCapture);
    }
@@ -343,7 +344,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
 
    /* If this mic should be used *exclusively* by RetroArch... */
    if (microphone->exclusive)
-   { 
+   {
       microphone->buffer = fifo_new(microphone->engine_buffer_size);
       if (!microphone->buffer)
       {
@@ -358,7 +359,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    {
       /* If the user selected the "default" shared buffer length... */
       if (sh_buffer_length <= 0)
-      { 
+      {
          hr = _IAudioClient_GetDevicePeriod(microphone->client, &dev_period, NULL);
          if (FAILED(hr))
             goto error;
