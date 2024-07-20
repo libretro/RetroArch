@@ -512,9 +512,9 @@ class Pass
          cache(cache),
          num_sync_indices(num_sync_indices),
          final_pass(final_pass)
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION         
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
          ,simulate_scanline(false)
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION         
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       {}
 
       ~Pass();
@@ -551,14 +551,14 @@ class Pass
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
       void set_shader_subframes(uint32_t ts) { total_subframes = ts; }
       void set_current_shader_subframe(uint32_t cs) { current_subframe = cs; }
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION      
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
       void set_simulate_scanline(bool simulate) { simulate_scanline = simulate; }
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION      
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
-      glslang_filter_chain_filter get_source_filter() const { 
+      glslang_filter_chain_filter get_source_filter() const {
          return pass_info.source_filter; }
 
       glslang_filter_chain_filter get_mip_filter() const
@@ -587,9 +587,9 @@ class Pass
       unsigned num_sync_indices;
       unsigned sync_index;
       bool final_pass;
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION      
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
       bool simulate_scanline;
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
       Size2D get_output_size(const Size2D &original_size,
             const Size2D &max_source) const;
@@ -708,9 +708,9 @@ struct vulkan_filter_chain
       void set_frame_count_period(unsigned pass, unsigned period);
       void set_shader_subframes(uint32_t total_subframes);
       void set_current_shader_subframe(uint32_t current_subframe);
- #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION     
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
       void set_simulate_scanline(bool simulate_scanline);
- #endif // VULKAN_ROLLING_SCANLINE_SIMULATION     
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t direction);
       void set_rotation(uint32_t rot);
       void set_pass_name(unsigned pass, const char *name);
@@ -878,7 +878,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_info.extent.width          = image.width;
    image_info.extent.height         = image.height;
    image_info.extent.depth          = 1;
-   image_info.mipLevels             = shader->mipmap 
+   image_info.mipLevels             = shader->mipmap
       ? glslang_num_miplevels(image.width, image.height) : 1;
    image_info.arrayLayers           = 1;
    image_info.samples               = VK_SAMPLE_COUNT_1_BIT;
@@ -926,7 +926,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    view_info.subresourceRange.layerCount     = 1;
    vkCreateImageView(info->device, &view_info, nullptr, &view);
 
-   buffer                                = 
+   buffer                                =
       std::unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
                image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
    ptr                                   = buffer->map();
@@ -937,8 +937,8 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
          tex,
          VK_REMAINING_MIP_LEVELS,
          VK_IMAGE_LAYOUT_UNDEFINED,
-           shader->mipmap 
-         ? VK_IMAGE_LAYOUT_GENERAL 
+           shader->mipmap
+         ? VK_IMAGE_LAYOUT_GENERAL
          : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0,
          VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -965,8 +965,8 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    vkCmdCopyBufferToImage(cmd,
          buffer->get_buffer(),
          tex,
-         shader->mipmap 
-         ? VK_IMAGE_LAYOUT_GENERAL 
+         shader->mipmap
+         ? VK_IMAGE_LAYOUT_GENERAL
          : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
@@ -1022,8 +1022,8 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
          cmd,
          tex,
          VK_REMAINING_MIP_LEVELS,
-         shader->mipmap 
-         ? VK_IMAGE_LAYOUT_GENERAL 
+         shader->mipmap
+         ? VK_IMAGE_LAYOUT_GENERAL
          : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -1080,7 +1080,7 @@ static bool vulkan_filter_chain_load_luts(
 
    for (i = 0; i < shader->luts; i++)
    {
-      std::unique_ptr<StaticTexture> image = 
+      std::unique_ptr<StaticTexture> image =
          vulkan_filter_chain_load_lut(cmd, info, chain, &shader->lut[i]);
       if (!image)
       {
@@ -1244,7 +1244,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    unsigned i;
    Texture source;
 
-   /* First frame, make sure our history and feedback textures 
+   /* First frame, make sure our history and feedback textures
     * are in a clean state. */
    if (require_clear)
    {
@@ -1312,7 +1312,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
 
    if   (    input_texture.width  != tmp->get_size().width
          ||  input_texture.height != tmp->get_size().height
-         || (input_texture.format != VK_FORMAT_UNDEFINED 
+         || (input_texture.format != VK_FORMAT_UNDEFINED
          &&  input_texture.format != tmp->get_format()))
       tmp->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
 
@@ -1358,7 +1358,7 @@ void vulkan_filter_chain::build_viewport_pass(
    unsigned i;
    Texture source;
 
-   /* First frame, make sure our history and 
+   /* First frame, make sure our history and
     * feedback textures are in a clean state. */
    if (require_clear)
    {
@@ -1496,7 +1496,7 @@ bool vulkan_filter_chain::init_feedback()
 bool vulkan_filter_chain::init_alias()
 {
    int i;
-   
+
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
@@ -1619,7 +1619,7 @@ bool vulkan_filter_chain::init_ubo()
    for (i = 0; i < passes.size(); i++)
       passes[i]->allocate_buffers();
 
-   common.ubo_offset            = 
+   common.ubo_offset            =
       (common.ubo_offset + common.ubo_alignment - 1) &
       ~(common.ubo_alignment - 1);
    common.ubo_sync_index_stride = common.ubo_offset;
@@ -1726,7 +1726,7 @@ void vulkan_filter_chain::set_simulate_scanline(bool simulate_scanline)
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_simulate_scanline(simulate_scanline);
 }
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
 void vulkan_filter_chain::set_frame_direction(int32_t direction)
 {
@@ -2230,7 +2230,7 @@ bool Pass::init_pipeline()
    pipe.pColorBlendState     = &blend;
    pipe.pDynamicState        = &dynamic;
    pipe.layout               = pipeline_layout;
-   pipe.renderPass           = final_pass 
+   pipe.renderPass           = final_pass
 	   ? swapchain_render_pass
 	   : framebuffer->get_render_pass();
    pipe.subpass              = 0;
@@ -2275,7 +2275,7 @@ CommonResources::CommonResources(VkDevice device,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
-   vbo                          = 
+   vbo                          =
       std::unique_ptr<Buffer>(new Buffer(device,
                memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 
@@ -2629,8 +2629,8 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                        unsigned(current_viewport.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
-                       frame_count_period 
-                       ? uint32_t(frame_count % frame_count_period) 
+                       frame_count_period
+                       ? uint32_t(frame_count % frame_count_period)
                        : uint32_t(frame_count));
 
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
@@ -2737,7 +2737,7 @@ void Pass::build_commands(
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             0,
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | 
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -2787,7 +2787,7 @@ void Pass::build_commands(
          const VkRect2D sci = {
             {
                int32_t(current_viewport.x),
-               int32_t((current_viewport.height / float(total_subframes)) 
+               int32_t((current_viewport.height / float(total_subframes))
                         * float(current_subframe - 1))
             },
             {
@@ -2798,7 +2798,7 @@ void Pass::build_commands(
          vkCmdSetScissor(cmd, 0, 1, &sci);
       }
       else
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION 
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       {
          const VkRect2D sci = {
             {
@@ -2811,7 +2811,7 @@ void Pass::build_commands(
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
-      }     
+      }
    }
    else
    {
@@ -2830,7 +2830,7 @@ void Pass::build_commands(
          const VkRect2D sci = {
             {
                0,
-               int32_t((float(current_framebuffer_size.height) / float(total_subframes)) 
+               int32_t((float(current_framebuffer_size.height) / float(total_subframes))
                         * float(current_subframe - 1))
             },
             {
@@ -2841,7 +2841,7 @@ void Pass::build_commands(
          vkCmdSetScissor(cmd, 0, 1, &sci);
       }
       else
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       {
          const VkRect2D sci = {
             { 0, 0 },
@@ -2851,7 +2851,7 @@ void Pass::build_commands(
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
-      }      
+      }
    }
 
    vkCmdDraw(cmd, 4, 1, 0, 0);
@@ -3220,8 +3220,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       else
       {
          pass_info.source_filter =
-            pass->filter == RARCH_FILTER_LINEAR 
-            ? GLSLANG_FILTER_CHAIN_LINEAR 
+            pass->filter == RARCH_FILTER_LINEAR
+            ? GLSLANG_FILTER_CHAIN_LINEAR
             : GLSLANG_FILTER_CHAIN_NEAREST;
       }
       pass_info.address    = rarch_wrap_to_address(pass->wrap);
@@ -3234,9 +3234,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
 
-      pass_info.mip_filter = 
+      pass_info.mip_filter =
          (pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1)
-         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
 
       bool explicit_format         = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
@@ -3473,7 +3473,7 @@ void vulkan_filter_chain_set_simulate_scanline(
 {
    chain->set_simulate_scanline(simulate_scanline);
 }
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
 void vulkan_filter_chain_set_frame_direction(
       vulkan_filter_chain_t *chain,

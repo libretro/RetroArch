@@ -4635,8 +4635,8 @@ static bool gl2_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //match the output res to the display res
-      temp_width = uwp_get_width();
+      /* Match the output res to the display resolution */
+      temp_width  = uwp_get_width();
       temp_height = uwp_get_height();
    }
 #endif
