@@ -25,7 +25,7 @@ static thread_local long co_active_buffer[64];
 static thread_local cothread_t co_active_handle = 0;
 static void (fastcall *co_swap)(cothread_t, cothread_t) = 0;
 
-//ABI: fastcall
+/* ABI: fastcall */
 static unsigned char co_swap_function[] = {
   0x89, 0x22,         /* mov [edx],esp      */
   0x8b, 0x21,         /* mov esp,[ecx]      */

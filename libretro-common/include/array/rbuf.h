@@ -50,11 +50,11 @@
  * -- Explicitly increase allocated memory and set capacity:
  * RBUF_FIT(buf, 100);
  * -- now RBUF_LEN(buf) == 0, RBUF_CAP(buf) == 100
- * 
+ *
  * -- Resize buffer (does not initialize or zero memory!)
  * RBUF_RESIZE(buf, 200);
  * -- now RBUF_LEN(buf) == 200, RBUF_CAP(buf) == 200
- * 
+ *
  * -- To handle running out of memory:
  * bool ran_out_of_memory = !RBUF_TRYFIT(buf, 1000);
  * -- before RESIZE or PUSH. When out of memory, buf will stay unmodified.
@@ -89,7 +89,7 @@ struct rbuf__hdr
 __attribute__((__unused__))
 #elif defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable:4505) //unreferenced local function has been removed
+#pragma warning(disable:4505) /* Unreferenced local function has been removed */
 #endif
 static void *rbuf__grow(void *buf,
       size_t new_len, size_t elem_size)
