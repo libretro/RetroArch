@@ -3443,8 +3443,7 @@ static void input_poll_overlay(
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
          input_overlay_poll_lightgun(settings, ol, old_ptr_count);
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
-         input_overlay_poll_mouse(settings, ol,
-               mouse_st,
+         input_overlay_poll_mouse(settings, mouse_st, ol,
                ptr_st->count, old_ptr_count);
 
       ptr_state->device_mask = 0;
