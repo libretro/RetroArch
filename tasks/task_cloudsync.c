@@ -320,7 +320,7 @@ static struct string_list *task_cloud_sync_directory_map(void)
       char  dir[PATH_MAX_LENGTH];
       list = string_list_new();
 
-      if (settings->bools.cloud_sync_sync_configs) 
+      if (settings->bools.cloud_sync_sync_configs)
       {
          string_list_append(list, "config", attr);
          fill_pathname_application_special(dir,
@@ -328,7 +328,7 @@ static struct string_list *task_cloud_sync_directory_map(void)
          list->elems[list->size - 1].userdata = strdup(dir);
       }
 
-      if (settings->bools.cloud_sync_sync_saves) 
+      if (settings->bools.cloud_sync_sync_saves)
       {
          string_list_append(list, "saves", attr);
          list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVEFILE));
@@ -778,7 +778,7 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
    RARCH_LOG(CSPFX "deleting %s\n", key);
 
    sync_state->waiting = true;
-   if (!cloud_sync_delete(key, task_cloud_sync_delete_cb, sync_state))
+   if (!cloud_sync_free(key, task_cloud_sync_delete_cb, sync_state))
    {
       /* if the delete fails, resurrect the hash from the last sync */
       size_t idx;

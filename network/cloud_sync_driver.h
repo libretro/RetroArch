@@ -73,7 +73,7 @@ bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data);
 
 bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data);
 bool cloud_sync_update(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data);
-bool cloud_sync_delete(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
+bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
 
 RETRO_END_DECLS
 
