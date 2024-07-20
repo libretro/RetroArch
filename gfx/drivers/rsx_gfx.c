@@ -983,14 +983,10 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
 {
 	int i;
    rsx_viewport_t vp;
-   int x                     = 0;
-   int y                     = 0;
-   float device_aspect       = (float)viewport_width / viewport_height;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    settings_t *settings      = config_get_ptr();
    rsx_t *rsx                = (rsx_t*)data;
    bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_scale_integer && !force_full)
    {

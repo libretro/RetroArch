@@ -15095,20 +15095,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                _len    += strlcpy(new_exts + _len, "bmp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RPNG
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "png", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RJPEG
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "jpg", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RTGA
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif

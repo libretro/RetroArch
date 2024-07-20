@@ -104,7 +104,6 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
    const char *core_path                      = path;
    core_info_t *core_info                     = NULL;
    const contentless_core_info_entry_t *entry = NULL;
-   const char *menu_ident                     = menu_driver_ident();
    bool display_runtime                       = true;
    settings_t *settings                       = config_get_ptr();
    bool playlist_show_sublabels               = settings->bools.playlist_show_sublabels;
@@ -121,6 +120,9 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
          menu_timedate_date_separator         =
                (enum playlist_sublabel_last_played_date_separator_type)
                      settings->uints.menu_timedate_date_separator;
+#if defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
+   const char *menu_ident                     = menu_driver_ident();
+#endif
 
    if (playlist_show_sublabels)
    {
@@ -5056,7 +5058,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_sync_configs);
-            break;                        
+            break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_driver);
             break;
