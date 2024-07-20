@@ -47,16 +47,17 @@
 #include "../accessibility.h"
 #include "../command.h"
 #include "../config.def.keybinds.h"
-#include "../driver.h"
-#include "../retroarch.h"
-#include "../verbosity.h"
 #include "../configuration.h"
+#include "../driver.h"
+#include "../frontend/frontend_driver.h"
 #include "../list_special.h"
 #include "../performance_counters.h"
+#include "../retroarch.h"
 #ifdef HAVE_BSV_MOVIE
 #include "../tasks/task_content.h"
 #endif
 #include "../tasks/tasks_internal.h"
+#include "../verbosity.h"
 
 #define HOLD_BTN_DELAY_SEC 2
 

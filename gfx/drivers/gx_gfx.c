@@ -990,7 +990,6 @@ static void gx_resize(gx_video_t *gx,
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
    const global_t           *global = global_get_ptr();
-   settings_t             *settings = config_get_ptr();
    unsigned width                   = gx->vp.full_width;
    unsigned height                  = gx->vp.full_height;
 
@@ -1024,9 +1023,9 @@ static void gx_resize(gx_video_t *gx,
             || (gx->orientation == ORIENTATION_FLIPPED_ROTATED))
          desired_aspect    = 1.0 / desired_aspect;
       video_viewport_get_scaled_aspect2(&gx->vp, width, height, true, device_aspect, desired_aspect);
-      x = gx->vp.x;
-      y = gx->vp.y;
-      width = gx->vp.width;
+      x      = gx->vp.x;
+      y      = gx->vp.y;
+      width  = gx->vp.width;
       height = gx->vp.height;
    }
 

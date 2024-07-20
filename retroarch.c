@@ -2168,7 +2168,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
    char ext_shaders[255];
 #endif
    char ext_name[16];
-   size_t _len         = 0;
    const char *exts    = NULL;
    bool recursive      = false;
 
@@ -2197,34 +2196,35 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_SHADERS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            ext_shaders[0]                   = '\0';
+            size_t _len         = 0;
+            ext_shaders[0]      = '\0';
 
             if (video_shader_is_supported(RARCH_SHADER_CG))
             {
                _len    += strlcpy(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
                if (ext_shaders[_len-1] != '\0')
                   _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "cg", sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_GLSL))
             {
                if (ext_shaders[_len-1] != '\0')
-                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+                  _len += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
                _len    += strlcpy(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
                if (ext_shaders[_len-1] != '\0')
-                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "glsl", sizeof(ext_shaders) - _len);
+                  _len += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
             }
 
             if (video_shader_is_supported(RARCH_SHADER_SLANG))
             {
                if (ext_shaders[_len-1] != '\0')
-                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+                  _len += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
                _len    += strlcpy(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
                if (ext_shaders[_len-1] != '\0')
-                  _len += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "slang", sizeof(ext_shaders) - _len);
+                  _len += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
+               _len    += strlcpy(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
             }
 
             exts = ext_shaders;
