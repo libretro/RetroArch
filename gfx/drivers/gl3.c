@@ -2160,8 +2160,11 @@ static bool gl3_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
-      temp_width = 1920;
+      /* We can set it to 1920x1080 as xbox uwp windowsize is guaranteed
+       * to be 1920x1080 and currently there is now way to set ANGLE to
+       * use a variable resolution swapchain so regardless of the size
+       * the window is always 1080p */
+      temp_width  = 1920;
       temp_height = 1080;
    }
 #endif
@@ -2582,16 +2585,12 @@ static bool gl3_frame(void *data, const void *frame,
          &&  !video_info->runloop_is_slowmotion
          &&  !video_info->runloop_is_paused
          &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
-   {
       gl3_filter_chain_set_simulate_scanline(
             gl->filter_chain, true);
-   }
    else
-   {
       gl3_filter_chain_set_simulate_scanline(
             gl->filter_chain, false);
-   }
-#endif // GL3_ROLLING_SCANLINE_SIMULATION
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,

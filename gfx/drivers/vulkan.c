@@ -3825,8 +3825,6 @@ static void vulkan_set_video_mode(void *data,
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
-   int x                     = 0;
-   int y                     = 0;
    float device_aspect       = (float)viewport_width / viewport_height;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    settings_t *settings      = config_get_ptr();
@@ -3849,7 +3847,8 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    }
    else if ((vk->flags & VK_FLAG_KEEP_ASPECT) && !force_full)
    {
-      video_viewport_get_scaled_aspect2(&vk->vp, viewport_width, viewport_height, true, device_aspect, video_driver_get_aspect_ratio());
+      video_viewport_get_scaled_aspect2(&vk->vp, viewport_width, viewport_height,
+            true, device_aspect, video_driver_get_aspect_ratio());
       viewport_width  = vk->vp.width;
       viewport_height = vk->vp.height;
    }
@@ -4522,7 +4521,7 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_filter_chain_set_frame_count(
          (vulkan_filter_chain_t*)vk->filter_chain, frame_count);
 
-   /* Sub-frame info for multiframe shaders (per real content frame). 
+   /* Sub-frame info for multiframe shaders (per real content frame).
       Should always be 1 for non-use of subframes*/
    if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
    {
@@ -4552,16 +4551,12 @@ static bool vulkan_frame(void *data, const void *frame,
          &&  !runloop_is_paused
          &&  (!(vk->flags & VK_FLAG_MENU_ENABLE))
          &&  !(vk->context->swap_interval > 1))
-   {
       vulkan_filter_chain_set_simulate_scanline(
             (vulkan_filter_chain_t*)vk->filter_chain, true);
-   }
    else
-   {
       vulkan_filter_chain_set_simulate_scanline(
             (vulkan_filter_chain_t*)vk->filter_chain, false);
-   }
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION 
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
 #ifdef HAVE_REWIND
    vulkan_filter_chain_set_frame_direction(

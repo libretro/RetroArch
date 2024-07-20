@@ -3204,7 +3204,7 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
 
    d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
    cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
-         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]); 
+         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(
          d3d12->chain.handle);
@@ -3595,7 +3595,7 @@ static bool d3d12_gfx_frame(
 
          d3d12->pass[i].rotation = retroarch_get_rotation();
 
-         /* Sub-frame info for multiframe shaders (per real content frame). 
+         /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */
          if (!(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
          {
@@ -3751,7 +3751,7 @@ static bool d3d12_gfx_frame(
             cmd->lpVtbl->RSSetViewports(cmd, 1,
                   &d3d12->pass[i].viewport);
 
-#ifdef D3D12_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D12_ROLLING_SCANLINE_SIMULATION
             if (      (video_info->shader_subframes > 1)
                   &&  (video_info->scan_subframes)
                   &&  !black_frame_insertion
@@ -3763,20 +3763,20 @@ static bool d3d12_gfx_frame(
                D3D12_RECT scissor_rect;
 
                scissor_rect.left   = 0;
-               scissor_rect.top    = (unsigned int)(((float)d3d12->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+               scissor_rect.top    = (unsigned int)(((float)d3d12->pass[i].viewport.Height / (float)video_info->shader_subframes)
                                        * (float)video_info->current_subframe);
                scissor_rect.right  = d3d12->pass[i].viewport.Width;
-               scissor_rect.bottom = (unsigned int)(((float)d3d12->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+               scissor_rect.bottom = (unsigned int)(((float)d3d12->pass[i].viewport.Height / (float)video_info->shader_subframes)
                                        * (float)(video_info->current_subframe + 1));
 
                cmd->lpVtbl->RSSetScissorRects(cmd, 1, &scissor_rect);
             }
             else
-#endif // D3D12_ROLLING_SCANLINE_SIMULATION 
+#endif /* D3D12_ROLLING_SCANLINE_SIMULATION  */
             {
-               cmd->lpVtbl->RSSetScissorRects(cmd, 1, 
+               cmd->lpVtbl->RSSetScissorRects(cmd, 1,
 					&d3d12->pass[i].scissorRect);
-            } 
+            }
 
             if (i == d3d12->shader_preset->passes - 1)
                start_vertex_location = 0;
@@ -3864,7 +3864,7 @@ static bool d3d12_gfx_frame(
 
    cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->frame.viewport);
 
-#ifdef D3D12_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D12_ROLLING_SCANLINE_SIMULATION
    if (      (video_info->shader_subframes > 1)
          &&  (video_info->scan_subframes)
          &&  !black_frame_insertion
@@ -3876,19 +3876,19 @@ static bool d3d12_gfx_frame(
       D3D12_RECT scissor_rect;
 
       scissor_rect.left   = 0;
-      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes)
                               * (float)video_info->current_subframe);
       scissor_rect.right  = video_width ;
-      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes)
                               * (float)(video_info->current_subframe + 1));
 
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &scissor_rect);
    }
    else
-#endif // D3D12_ROLLING_SCANLINE_SIMULATION 
+#endif /* D3D12_ROLLING_SCANLINE_SIMULATION  */
    {
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->frame.scissorRect);
-   } 
+   }
 
    cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
 
@@ -4098,9 +4098,9 @@ static bool d3d12_gfx_frame(
       d3d12->flags |= D3D12_ST_FLAG_FRAME_DUPE_LOCK;
       for (k = 1; k < video_info->shader_subframes; k++)
       {
-#ifdef D3D12_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D12_ROLLING_SCANLINE_SIMULATION
          video_info->current_subframe = k;
-#endif // D3D12_ROLLING_SCANLINE_SIMULATION  
+#endif /* D3D12_ROLLING_SCANLINE_SIMULATION */
 
          if (d3d12->shader_preset)
             for (m = 0; m < d3d12->shader_preset->passes; m++)
