@@ -3327,7 +3327,7 @@ bool rcheevos_load(const void *data)
 #endif
 
    rc_client_begin_identify_and_load_game(rcheevos_locals.client, RC_CONSOLE_UNKNOWN,
-      info->path, info->data, info->size, rcheevos_client_load_game_callback, NULL);
+      info->path, (const uint8_t*)info->data, info->size, rcheevos_client_load_game_callback, NULL);
 
 #else /* !HAVE_RC_CLIENT */
  #ifdef HAVE_THREADS

@@ -38,7 +38,7 @@ typedef struct cloud_sync_driver
 
    bool (*read)(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data);
    bool (*update)(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data);
-   bool (*delete)(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
+   bool (*free)(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
 
    const char *ident;
 } cloud_sync_driver_t;

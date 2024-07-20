@@ -1534,7 +1534,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
       if (!found)
          continue;
 
-      output->key = b;
+      output->key = (enum retro_key)b;
       return true;
    }
 
@@ -1650,7 +1650,7 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       if (!found)
          continue;
 
-      output->key = b;
+      output->key = (enum retro_key)b;
       return true;
    }
 
