@@ -368,7 +368,7 @@ typedef struct vulkan_context
    VkFormat swapchain_format;
 #ifdef VULKAN_HDR_SWAPCHAIN
    VkColorSpaceKHR swapchain_colour_space;
-#endif /* VULKAN_HDR_SWAPCHAIN */  
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_acquire_semaphore;
@@ -738,6 +738,24 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 #ifdef VULKAN_HDR_SWAPCHAIN
 bool vulkan_is_hdr10_format(VkFormat format);
 #endif /* VULKAN_HDR_SWAPCHAIN */
+
+void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
+      VkRenderPass *render_pass);
+
+void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
+
+void vulkan_framebuffer_generate_mips(
+      VkFramebuffer framebuffer,
+      VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      unsigned levels
+      );
+
+void vulkan_framebuffer_copy(VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout);
 
 RETRO_END_DECLS
 
