@@ -1,4 +1,24 @@
 # Future
+- APPLE: Hide threaded video setting
+- CHEEVOS: Add rarity and points to achievement unlock widget
+- CHEEVOS: Add rank to leaderboard submission notification
+- CLOUDSYNC: Allow saves and configs to be synced optionally
+- CLOUDSYNC: Add iCloud cloud sync driver
+- CRT/SWITCHRES: Update switchres to 2.2.1
+- GENERAL: Support for mbedtls v3
+- INPUT: Allow to select a preferred/reserved device for each player
+- INPUT: Enable Caps, Num, Scroll Lock modifiers on multiple platforms
+- INPUT/UDEV: Enable mouse buttons 4 and 5
+- INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
+- INPUT/X11: Enable mouse buttons 4 and 5
+- iOS: Enable vibration by default
+- REMOTE RETROPAD: Add gyro/acceleration/light sensor test screen
+- TVOS: Support bluetooth keyboards on tvOS
+- VIDEO: Show and use exact refresh rate (3 decimals) and interlace/doublestrike where available
+- VIDEO: Allow setting viewport bias to offset viewport horizontally/vertically
+- VIDEO/D3D: Fix GPU screenshots
+- VIDEO/KMS: Force fullscreen when KMS is used
+- VIDEO/X11: Support inhibit of Xss screensaver
 
 # 1.19.1
 - (WASAPI) Only write when running and fix deadlock
