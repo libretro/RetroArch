@@ -1110,10 +1110,11 @@ bool vulkan_filter_chain::init_history()
    common.original_history.clear();
 
    for (i = 0; i < passes.size(); i++)
-      required_images =
-         std::max(required_images,
-               passes[i]->get_reflection().semantic_textures[
-               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
+   {
+      size_t _y = passes[i]->get_reflection().semantic_textures[
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size();
+      required_images = MAX(required_images, _y);
+   }
 
    if (required_images < 2)
    {
@@ -2591,10 +2592,10 @@ Framebuffer::Framebuffer(
       unsigned max_levels) :
    size(max_size),
    format(format),
-   max_levels(std::max(max_levels, 1u)),
    memory_properties(mem_props),
    device(device)
 {
+   max_levels = MAX(max_levels, 1u);
    RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
    vulkan_initialize_render_pass(device, format, &render_pass);
@@ -2608,6 +2609,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    VkImageCreateInfo info;
    VkMemoryAllocateInfo alloc;
    VkImageViewCreateInfo view_info;
+   size_t _y                = glslang_num_miplevels(size.width, size.height);
 
    info.sType               = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    info.pNext               = NULL;
@@ -2617,8 +2619,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.extent.width        = size.width;
    info.extent.height       = size.height;
    info.extent.depth        = 1;
-   info.mipLevels           = std::min(max_levels,
-         glslang_num_miplevels(size.width, size.height));
+   info.mipLevels           = MIN(max_levels, _y);
    info.arrayLayers         = 1;
    info.samples             = VK_SAMPLE_COUNT_1_BIT;
    info.tiling              = VK_IMAGE_TILING_OPTIMAL;

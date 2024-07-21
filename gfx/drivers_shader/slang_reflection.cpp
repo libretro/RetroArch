@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <stdio.h>
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
@@ -523,40 +524,44 @@ bool slang_reflect(
 
    if (vertex_ubo)
    {
+      size_t _y;
       reflection->ubo_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->ubo_size        = std::max(reflection->ubo_size,
-            vertex_compiler.get_declared_struct_size(
+      _y = vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
-                  vertex.uniform_buffers[0].base_type_id)));
+                  vertex.uniform_buffers[0].base_type_id));
+      reflection->ubo_size        = MAX(reflection->ubo_size, _y);
    }
 
    if (fragment_ubo)
    {
+      size_t _y;
       reflection->ubo_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->ubo_size        = std::max(reflection->ubo_size,
-            fragment_compiler.get_declared_struct_size(
+      _y = fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(
-                  fragment.uniform_buffers[0].base_type_id)));
+                  fragment.uniform_buffers[0].base_type_id));
+      reflection->ubo_size        = MAX(reflection->ubo_size, _y);
    }
 
    if (vertex_push)
    {
+      size_t _y;
       reflection->push_constant_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->push_constant_size        = std::max(
-            reflection->push_constant_size,
-            vertex_compiler.get_declared_struct_size(
+      _y = vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
-                  vertex.push_constant_buffers[0].base_type_id)));
+                  vertex.push_constant_buffers[0].base_type_id));
+      reflection->push_constant_size        = MAX(
+            reflection->push_constant_size, _y);
    }
 
    if (fragment_push)
    {
+      size_t _y;
       reflection->push_constant_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->push_constant_size        = std::max(
-            reflection->push_constant_size,
-            fragment_compiler.get_declared_struct_size(
+      _y = fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(
-                  fragment.push_constant_buffers[0].base_type_id)));
+                  fragment.push_constant_buffers[0].base_type_id));
+      reflection->push_constant_size        = MAX(
+            reflection->push_constant_size, _y);
    }
 
    /* Validate push constant size against Vulkan's
