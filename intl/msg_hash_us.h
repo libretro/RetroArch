@@ -7945,7 +7945,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "When enabled, will find thumbnails by the entry's filename, rather than its label."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Allow All Supported Image Types for Thumbnails"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "When enabled, local thumbnails can be added in all image types supported by RetroArch (such as jpeg). May have a minor performance impact."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Manage"
    )
