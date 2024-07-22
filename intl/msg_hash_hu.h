@@ -1205,9 +1205,21 @@ MSG_HASH(
    "Destruktív szinkronizálás a felhőbe"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Szinkronizálás: mentések és játékállapotok"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
+   "Szinkronizálás: konfigurációs fájlok"
    )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Bekapcsolva a mentések és játékállapotok szinkronizálódnak a felhőbe."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Bekapcsolva a konfigurációs fájlok szinkronizálódnak a felhőbe."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Kikapcsolt állapotban a fájlok egy tartalék könyvtárba kerülnek felülírás vagy törlés előtt."
@@ -2535,7 +2547,55 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    "Az egyedi nézőablak Y irányú eltolása."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Nézőablak vízszintes eltolása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Nézőablak vízszintes eltolása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Nézőablak függőleges eltolása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Nézőablak függőleges eltolása"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Az egyedi nézőablak vízszintes középrehelyezése, ha a nézőablak szélesebb, mint a tartalom. 0.0 esetén teljesen balra, 1.0 esetén teljesen jobbra igazodik."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Az egyedi nézőablak függőleges középrehelyezése, ha a nézőablak magasabb, mint a tartalom. 0.0 esetén teljesen fentre, 1.0 esetén teljesen lentre igazodik."
+   )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Nézőablak vízszintes eltolása (álló nézetben)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Nézőablak vízszintes eltolása (álló nézetben)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Nézőablak függőleges eltolása (álló nézetben)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Nézőablak függőleges eltolása (álló nézetben)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Az egyedi nézőablak vízszintes középrehelyezése, ha a nézőablak szélesebb, mint a tartalom. 0.0 esetén teljesen balra, 1.0 esetén teljesen jobbra igazodik. (Álló nézet esetén.)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Az egyedi nézőablak függőleges középrehelyezése, ha a nézőablak magasabb, mint a tartalom. 0.0 esetén teljesen fentre, 1.0 esetén teljesen lentre igazodik. (Álló nézet esetén.)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -13976,6 +14036,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "%s beküldve ehhez: %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Rang: %d." /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Legjobb: %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
