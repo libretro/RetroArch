@@ -1274,7 +1274,7 @@ static void gl2_set_viewport(gl2_t *gl,
 {
    settings_t *settings     = config_get_ptr();
    float device_aspect = (float) viewport_width / (float)viewport_height;
-   
+
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
             gl->ctx_data, viewport_width, viewport_height);
@@ -3379,8 +3379,6 @@ static bool gl2_frame(void *data, const void *frame,
    bool use_rgba                       = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
-   int bfi_light_frames;
-   unsigned n;
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
@@ -3666,6 +3664,8 @@ static bool gl2_frame(void *data, const void *frame,
          && !video_info->runloop_is_paused
          && !(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
    {
+      unsigned n;
+      int bfi_light_frames;
 
       if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
       video_info->bfi_dark_frames = video_info->black_frame_insertion;
@@ -4634,8 +4634,8 @@ static bool gl2_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //match the output res to the display res
-      temp_width = uwp_get_width();
+      /* Match the output res to the display resolution */
+      temp_width  = uwp_get_width();
       temp_height = uwp_get_height();
    }
 #endif

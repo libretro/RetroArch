@@ -619,18 +619,26 @@ enum
    uico_driver_state_t *uico_st     = uico_state_get_ptr();
    rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
    struct string_list *icons;
-   if (appicon_setting && uico_st->drv && uico_st->drv->get_app_icons && (icons = uico_st->drv->get_app_icons()) && icons->size > 1)
+   if (               appicon_setting
+		   && uico_st->drv
+		   && uico_st->drv->get_app_icons
+		   && (icons = uico_st->drv->get_app_icons())
+		   && icons->size > 1)
    {
+      int i;
+      size_t len    = 0;
+      char *options = NULL;
+      const char *icon_name;
+
       appicon_setting->default_value.string = icons->elems[0].data;
-      int len = 0, i = 0;
-      const char *iconName = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; // need to ask uico_st for this
-      for (; i < (int)icons->size; i++)
+      icon_name = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; /* need to ask uico_st for this */
+      for (i = 0; i < (int)icons->size; i++)
       {
          len += strlen(icons->elems[i].data) + 1;
-         if (string_is_equal(iconName, icons->elems[i].data))
+         if (string_is_equal(icon_name, icons->elems[i].data))
             appicon_setting->value.target.string = icons->elems[i].data;
       }
-      char *options = (char*)calloc(len, sizeof(char));
+      options = (char*)calloc(len, sizeof(char));
       string_list_join_concat(options, len, icons, "|");
       if (appicon_setting->values)
          free((void*)appicon_setting->values);
@@ -789,10 +797,10 @@ enum
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
 
    if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
-      apple_frontend_settings.orientation_flags = 
+      apple_frontend_settings.orientation_flags =
            UIInterfaceOrientationMaskLandscape;
    else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags = 
+      apple_frontend_settings.orientation_flags =
            UIInterfaceOrientationMaskPortrait
          | UIInterfaceOrientationMaskPortraitUpsideDown;
 #endif

@@ -33,9 +33,6 @@
 
 #include "../../verbosity.h"
 
-using namespace glslang;
-using namespace std;
-
 struct SlangProcess
 {
    public:
@@ -58,12 +55,12 @@ struct SlangProcessHolder
    SlangProcessHolder()
    {
       glslang_global_lock.lock();
-      InitializeProcess();
+      glslang::InitializeProcess();
    }
 
    ~SlangProcessHolder()
    {
-      FinalizeProcess();
+      glslang::FinalizeProcess();
       glslang_global_lock.unlock();
    }
 };
@@ -390,10 +387,10 @@ SlangProcess::SlangProcess()
    }
 }
 
-bool glslang::compile_spirv(const string &source, Stage stage,
+bool glslang::compile_spirv(const std::string &source, Stage stage,
       std::vector<uint32_t> *spirv)
 {
-   string msg;
+	std::string msg;
    static SlangProcess process;
    SlangProcessHolder process_holder;
    TProgram program;

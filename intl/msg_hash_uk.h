@@ -1229,9 +1229,21 @@ MSG_HASH(
    "Деструктивна хмарна синхронізація"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Синхронізація: Зберегти/Стани"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
+   "Синхронізація: Файли конфігурації"
    )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Коли увімкнено, збереження чи стани будуть синхронізуватись до хмари."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Коли цей параметр увімкнено, файли конфігурації будуть синхронізовані до хмари."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "У вимкненому стані, файли переміщуються до резервного каталогу перед перезаписом чи видаленням."
@@ -1756,6 +1768,14 @@ MSG_HASH(
    "Віконна реалізація Sinc."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "Реалізація згорнутого косинуса."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "Найближча реалізація ресемплінгу. Цей ресемплер ігнорує налаштування якості."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
    "Камера"
    )
@@ -1782,6 +1802,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Використовувати драйвер меню. (Потрібен перезапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB - це графічний інтерфейс RetroArch, який виглядає як меню консолі 7-го покоління. Він може підтримувати ті самі функції, що й Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Ozone - це графічний інтерфейс RetroArch за замовчуванням на більшості платформ. Він оптимізований для навігації за допомогою ігрового контролера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "RGUI - це простий вбудований графічний інтерфейс для RetroArch. Він має найнижчі вимоги до продуктивності серед драйверів меню і може використовуватися на екранах з низькою роздільною здатністю."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "На мобільних пристроях RetroArch за замовчуванням використовує мобільний інтерфейс MaterialUI. Цей інтерфейс розроблений для сенсорних екранів та вказівних пристроїв, таких як миша/трекбол."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1859,6 +1899,10 @@ MSG_HASH(
    "Блокувати системну заставку збереження екрану."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Призупиняє роботу заставки. Підказка, яка не обов'язково має виконуватися відеодрайвером."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Виокремлене відео"
    )
@@ -1867,8 +1911,160 @@ MSG_HASH(
    "Покращити продуктивність шляхом збільшення затримки та пропуску кадрів. Використовуйте лише якщо не вдалося досягти повної швидкості в інший спосіб."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Використовуйте потоковий відеодрайвер. Це може покращити продуктивність, але може призвести до затримок та більшої кількості заїкань відео."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Вставка чорного кадра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Вставте чорні рамки між кадрами. Може значно зменшити розмиття руху, імітуючи розгортку ЕПТ, але ціною втрати яскравості. Не поєднуйте з інтервалом заміни > 1, під кадрами, затримкою кадру або синхронізацією до точної частоти кадрів контенту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Вставляє чорні рамки між кадрами для покращення чіткості руху. Використовуйте лише опцію, призначену для поточної частоти оновлення екрана. Не можна використовувати з частотою оновлення, не кратною 60 Гц, наприклад, 144 Гц, 165 Гц тощо. Не поєднуйте з інтервалом заміни > 1, під к[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - Для частоти оновлення дисплея 120 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - Для частоти оновлення дисплея 180 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - Для частоти оновлення дисплея 240 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - Для частоти оновлення дисплея 300 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - Для частоти оновлення дисплея 360 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - Для частоти оновлення дисплея 420 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - Для частоти оновлення дисплея 480 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - Для частоти оновлення дисплея 540 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - Для частоти оновлення дисплея 600 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - Для частоти оновлення дисплея 660 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - Для частоти оновлення дисплея 720 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - Для частоти оновлення дисплея 780 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - Для частоти оновлення дисплея 840 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - Для частоти оновлення дисплея 900 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - Для частоти оновлення дисплея 960 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Вставка чорного кадру - темні кадри"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Налаштуйте кількість чорних кадрів у загальній послідовності розгортки BFI. Чим більше, тим вища чіткість руху, чим менше, тим вища яскравість. Не застосовується на частоті 120 Гц, оскільки для роботи використовується лише 1 кадр BFI. Вищі значення обмежать вас до максимально м[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Дозволяє регулювати кількість чорних кадрів, що відображаються у послідовності bfi. Більша кількість чорних кадрів збільшує чіткість руху, але зменшує яскравість. Не застосовується на 120 Гц, оскільки є лише один додатковий кадр з частотою 60 Гц, тому він має бути чорним, інак[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Підкадри шейдерів"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Вставляти додаткові кадри шейдерів між кадрами. Дозволяє шейдерам виконувати ефекти з вищою частотою кадрів, ніж реальна частота вмісту. Має бути налаштований на поточну частоту екрана. Не поєднуйте з інтервалом заміни > 1, BFI, затримкою кадру або синхронізацією до точної ч[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Вставляє додатковий(і) кадр(и) шейдерів між кадрами для будь-яких можливих шейдерних ефектів, які мають працювати швидше за частоту оновлення вмісту. Використовуйте лише той параметр, який призначено для поточної частоти оновлення екрана. Не використовується при частоті [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - Для частоти оновлення дисплея 120 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - Для частоти оновлення дисплея 180 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - Для частоти оновлення дисплея 240 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - Для частоти оновлення дисплея 300 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - Для частоти оновлення дисплея 360 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - Для частоти оновлення дисплея 420 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - Для частоти оновлення дисплея 480 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - Для частоти оновлення дисплея 540 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - Для частоти оновлення дисплея 600 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - Для частоти оновлення дисплея 660 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - Для частоти оновлення дисплея 720 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - Для частоти оновлення дисплея 780 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - Для частоти оновлення дисплея 840 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - Для частоти оновлення дисплея 900 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -2352,16 +2548,8 @@ MSG_HASH(
    "Довільне співвідношення сторін (значення X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Задати значення зсуву області перегляду по осі Х.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Довільне співвідношення сторін (значення Y)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Задати значення зсуву області перегляду по осі Y.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
    )
 #if defined(RARCH_MOBILE)
 #endif

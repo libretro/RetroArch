@@ -156,14 +156,14 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
                 * if they are exactly the same. */
                if (parameter_found)
                {
-                  const glslang_parameter *parameter = 
+                  const glslang_parameter *parameter =
                      &meta->parameters[parameter_index];
 
-                  if (   parameter->desc    != desc    ||
-                        parameter->initial != initial ||
-                        parameter->minimum != minimum ||
-                        parameter->maximum != maximum ||
-                        parameter->step    != step
+                  if (     (parameter->desc    != desc)
+                        || (parameter->initial != initial)
+                        || (parameter->minimum != minimum)
+                        || (parameter->maximum != maximum)
+                        || (parameter->step    != step)
                      )
                   {
                      RARCH_ERR("[slang]: Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
@@ -214,7 +214,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
 #if defined(HAVE_GLSLANG)
    struct string_list lines;
-   
+
    if (!string_list_initialize(&lines))
       return false;
 

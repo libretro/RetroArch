@@ -529,14 +529,28 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
 #endif
 }
 
-static void rcheevos_lboard_submit(const rc_client_leaderboard_t* lboard)
+static void rcheevos_lboard_submitted(const rc_client_leaderboard_t* lboard, const rc_client_leaderboard_scoreboard_t* scoreboard)
 {
    const settings_t* settings = config_get_ptr();
    if (lboard && settings->bools.cheevos_visibility_lboard_submit)
    {
       char buffer[256];
-      snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
-         lboard->tracker_value, lboard->title);
+      if (scoreboard)
+      {
+         char addendum[64];
+         const size_t len = snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
+            scoreboard->submitted_score, lboard->title);
+         if (strcmp(scoreboard->best_score, scoreboard->submitted_score) == 0)
+            snprintf(addendum, sizeof(addendum), msg_hash_to_str(MSG_LEADERBOARD_RANK), scoreboard->new_rank);
+         else
+            snprintf(addendum, sizeof(addendum), msg_hash_to_str(MSG_LEADERBOARD_BEST), scoreboard->best_score);
+         snprintf(buffer + len, sizeof(buffer) - len, " (%s)", addendum);
+      }
+      else
+      {
+         snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
+            lboard->tracker_value, lboard->title);
+      }
       runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -696,9 +710,6 @@ static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_cli
    case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_HIDE:
       rcheevos_lboard_hide_tracker(event->leaderboard_tracker);
       break;
-   case RC_CLIENT_EVENT_LEADERBOARD_SCOREBOARD:
-      /* not supported */
-      break;
 #endif
    case RC_CLIENT_EVENT_ACHIEVEMENT_TRIGGERED:
       rcheevos_award_achievement(event->achievement);
@@ -710,7 +721,10 @@ static void rcheevos_client_event_handler(const rc_client_event_t* event, rc_cli
       rcheevos_lboard_canceled(event->leaderboard);
       break;
    case RC_CLIENT_EVENT_LEADERBOARD_SUBMITTED:
-      rcheevos_lboard_submit(event->leaderboard);
+      /* don't notify on submission - report new rank/best score after submission via SCOREBOARD event */
+      break;
+   case RC_CLIENT_EVENT_LEADERBOARD_SCOREBOARD:
+      rcheevos_lboard_submitted(event->leaderboard, event->leaderboard_scoreboard);
       break;
    case RC_CLIENT_EVENT_RESET:
       command_event(CMD_EVENT_RESET, NULL); /* reset the game */
@@ -3313,7 +3327,7 @@ bool rcheevos_load(const void *data)
 #endif
 
    rc_client_begin_identify_and_load_game(rcheevos_locals.client, RC_CONSOLE_UNKNOWN,
-      info->path, info->data, info->size, rcheevos_client_load_game_callback, NULL);
+      info->path, (const uint8_t*)info->data, info->size, rcheevos_client_load_game_callback, NULL);
 
 #else /* !HAVE_RC_CLIENT */
  #ifdef HAVE_THREADS

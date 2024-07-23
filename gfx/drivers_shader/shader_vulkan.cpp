@@ -46,308 +46,6 @@ static const uint32_t opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
 
-static void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
-      VkRenderPass *render_pass)
-{
-   VkAttachmentReference color_ref;
-   VkRenderPassCreateInfo rp_info;
-   VkAttachmentDescription attachment;
-   VkSubpassDescription subpass;
-
-   rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-   rp_info.pNext                = NULL;
-   rp_info.flags                = 0;
-   rp_info.attachmentCount      = 1;
-   rp_info.pAttachments         = &attachment;
-   rp_info.subpassCount         = 1;
-   rp_info.pSubpasses           = &subpass;
-   rp_info.dependencyCount      = 0;
-   rp_info.pDependencies        = NULL;
-
-   color_ref.attachment         = 0;
-   color_ref.layout             = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-   /* We will always write to the entire framebuffer,
-    * so we don't really need to clear. */
-   attachment.flags             = 0;
-   attachment.format            = format;
-   attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
-   attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-   attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
-   attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-   attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-   attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-   subpass.flags                     = 0;
-   subpass.pipelineBindPoint         = VK_PIPELINE_BIND_POINT_GRAPHICS;
-   subpass.inputAttachmentCount      = 0;
-   subpass.pInputAttachments         = NULL;
-   subpass.colorAttachmentCount      = 1;
-   subpass.pColorAttachments         = &color_ref;
-   subpass.pResolveAttachments       = NULL;
-   subpass.pDepthStencilAttachment   = NULL;
-   subpass.preserveAttachmentCount   = 0;
-   subpass.pPreserveAttachments      = NULL;
-
-   vkCreateRenderPass(device, &rp_info, NULL, render_pass);
-}
-
-static void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd)
-{
-   VkClearColorValue color;
-   VkImageSubresourceRange range;
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-
-   color.float32[0]     = 0.0f;
-   color.float32[1]     = 0.0f;
-   color.float32[2]     = 0.0f;
-   color.float32[3]     = 0.0f;
-   range.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   range.baseMipLevel   = 0;
-   range.levelCount     = 1;
-   range.baseArrayLayer = 0;
-   range.layerCount     = 1;
-
-   vkCmdClearColorImage(cmd,
-         image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         &color,
-         1,
-         &range);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-}
-
-static void vulkan_framebuffer_generate_mips(
-      VkFramebuffer framebuffer,
-      VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      unsigned levels
-      )
-{
-   unsigned i;
-   /* This is run every frame, so make sure
-    * we aren't opting into the "lazy" way of doing this. :) */
-   VkImageMemoryBarrier barriers[2];
-
-   /* First, transfer the input mip level to TRANSFER_SRC_OPTIMAL.
-    * This should allow the surface to stay compressed.
-    * All subsequent mip-layers are now transferred into DST_OPTIMAL from
-    * UNDEFINED at this point.
-    */
-
-   /* Input */
-   barriers[0].sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barriers[0].pNext                           = NULL;
-   barriers[0].srcAccessMask                   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-   barriers[0].dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
-   barriers[0].oldLayout                       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   barriers[0].newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   barriers[0].srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[0].image                           = image;
-   barriers[0].subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[0].subresourceRange.baseMipLevel   = 0;
-   barriers[0].subresourceRange.levelCount     = 1;
-   barriers[0].subresourceRange.baseArrayLayer = 0;
-   barriers[0].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
-
-   /* The rest of the mip chain */
-   barriers[1].sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-   barriers[1].pNext                           = NULL;
-   barriers[1].srcAccessMask                   = 0;
-   barriers[1].dstAccessMask                   = VK_ACCESS_TRANSFER_WRITE_BIT;
-   barriers[1].oldLayout                       = VK_IMAGE_LAYOUT_UNDEFINED;
-   barriers[1].newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-   barriers[1].srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-   barriers[1].image                           = image;
-   barriers[1].subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   barriers[1].subresourceRange.baseMipLevel   = 1;
-   barriers[1].subresourceRange.levelCount     = VK_REMAINING_MIP_LEVELS;
-   barriers[1].subresourceRange.baseArrayLayer = 0;
-   barriers[1].subresourceRange.layerCount     = VK_REMAINING_ARRAY_LAYERS;
-
-   vkCmdPipelineBarrier(cmd,
-         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         0,
-         0,
-         NULL,
-         0,
-         NULL,
-         2,
-         barriers);
-
-   for (i = 1; i < levels; i++)
-   {
-      unsigned src_width, src_height, target_width, target_height;
-      VkImageBlit blit_region = {{0}};
-
-      /* For subsequent passes, we have to transition
-       * from DST_OPTIMAL to SRC_OPTIMAL,
-       * but only do so one mip-level at a time. */
-      if (i > 1)
-      {
-         barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-         barriers[0].dstAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-         barriers[0].subresourceRange.baseMipLevel = i - 1;
-         barriers[0].subresourceRange.levelCount   = 1;
-         barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-         barriers[0].newLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-
-         vkCmdPipelineBarrier(cmd,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               0,
-               0,
-               NULL,
-               0,
-               NULL,
-               1,
-               barriers);
-      }
-
-      src_width                                 = MAX(size.width >> (i - 1), 1u);
-      src_height                                = MAX(size.height >> (i - 1), 1u);
-      target_width                              = MAX(size.width >> i, 1u);
-      target_height                             = MAX(size.height >> i, 1u);
-
-      blit_region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-      blit_region.srcSubresource.mipLevel       = i - 1;
-      blit_region.srcSubresource.baseArrayLayer = 0;
-      blit_region.srcSubresource.layerCount     = 1;
-      blit_region.dstSubresource                = blit_region.srcSubresource;
-      blit_region.dstSubresource.mipLevel       = i;
-      blit_region.srcOffsets[1].x               = src_width;
-      blit_region.srcOffsets[1].y               = src_height;
-      blit_region.srcOffsets[1].z               = 1;
-      blit_region.dstOffsets[1].x               = target_width;
-      blit_region.dstOffsets[1].y               = target_height;
-      blit_region.dstOffsets[1].z               = 1;
-
-      vkCmdBlitImage(cmd,
-            image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &blit_region, VK_FILTER_LINEAR);
-   }
-
-   /* We are now done, and we have all mip-levels except
-    * the last in TRANSFER_SRC_OPTIMAL,
-    * and the last one still on TRANSFER_DST_OPTIMAL,
-    * so do a final barrier which
-    * moves everything to SHADER_READ_ONLY_OPTIMAL in
-    * one go along with the execution barrier to next pass.
-    * Read-to-read memory barrier, so only need execution
-    * barrier for first transition.
-    */
-   barriers[0].srcAccessMask                 = VK_ACCESS_TRANSFER_READ_BIT;
-   barriers[0].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
-   barriers[0].subresourceRange.baseMipLevel = 0;
-   barriers[0].subresourceRange.levelCount   = levels - 1;
-   barriers[0].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   barriers[0].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-   /* This is read-after-write barrier. */
-   barriers[1].srcAccessMask                 = VK_ACCESS_TRANSFER_WRITE_BIT;
-   barriers[1].dstAccessMask                 = VK_ACCESS_SHADER_READ_BIT;
-   barriers[1].subresourceRange.baseMipLevel = levels - 1;
-   barriers[1].subresourceRange.levelCount   = 1;
-   barriers[1].oldLayout                     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-   barriers[1].newLayout                     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-   vkCmdPipelineBarrier(cmd,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         0,
-         0,
-         NULL,
-         0,
-         NULL,
-         2, barriers);
-
-   /* Next pass will wait for ALL_GRAPHICS_BIT, and since
-    * we have dstStage as FRAGMENT_SHADER,
-    * the dependency chain will ensure we don't start
-    * next pass until the mipchain is complete. */
-}
-
-static void vulkan_framebuffer_copy(VkImage image,
-      struct Size2D size,
-      VkCommandBuffer cmd,
-      VkImage src_image, VkImageLayout src_layout)
-{
-   VkImageCopy region;
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
-         cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_UNDEFINED,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-
-   region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.mipLevel       = 0;
-   region.srcSubresource.baseArrayLayer = 0;
-   region.srcSubresource.layerCount     = 1;
-   region.srcOffset.x                   = 0;
-   region.srcOffset.y                   = 0;
-   region.srcOffset.z                   = 0;
-   region.dstSubresource                = region.srcSubresource;
-   region.dstOffset.x                   = 0;
-   region.dstOffset.y                   = 0;
-   region.dstOffset.z                   = 0;
-   region.extent.width                  = size.width;
-   region.extent.height                 = size.height;
-   region.extent.depth                  = 1;
-
-   vkCmdCopyImage(cmd,
-         src_image, src_layout,
-         image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         1, &region);
-
-   VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-         image,
-         VK_REMAINING_MIP_LEVELS,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_QUEUE_FAMILY_IGNORED,
-         VK_QUEUE_FAMILY_IGNORED);
-}
-
 struct Texture
 {
    vulkan_filter_chain_texture texture;
@@ -512,9 +210,9 @@ class Pass
          cache(cache),
          num_sync_indices(num_sync_indices),
          final_pass(final_pass)
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION         
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
          ,simulate_scanline(false)
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION         
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       {}
 
       ~Pass();
@@ -551,14 +249,14 @@ class Pass
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
       void set_shader_subframes(uint32_t ts) { total_subframes = ts; }
       void set_current_shader_subframe(uint32_t cs) { current_subframe = cs; }
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION      
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
       void set_simulate_scanline(bool simulate) { simulate_scanline = simulate; }
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION      
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
-      glslang_filter_chain_filter get_source_filter() const { 
+      glslang_filter_chain_filter get_source_filter() const {
          return pass_info.source_filter; }
 
       glslang_filter_chain_filter get_mip_filter() const
@@ -587,9 +285,9 @@ class Pass
       unsigned num_sync_indices;
       unsigned sync_index;
       bool final_pass;
-#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION      
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
       bool simulate_scanline;
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
       Size2D get_output_size(const Size2D &original_size,
             const Size2D &max_source) const;
@@ -708,9 +406,9 @@ struct vulkan_filter_chain
       void set_frame_count_period(unsigned pass, unsigned period);
       void set_shader_subframes(uint32_t total_subframes);
       void set_current_shader_subframe(uint32_t current_subframe);
- #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION     
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
       void set_simulate_scanline(bool simulate_scanline);
- #endif // VULKAN_ROLLING_SCANLINE_SIMULATION     
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t direction);
       void set_rotation(uint32_t rot);
       void set_pass_name(unsigned pass, const char *name);
@@ -878,7 +576,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_info.extent.width          = image.width;
    image_info.extent.height         = image.height;
    image_info.extent.depth          = 1;
-   image_info.mipLevels             = shader->mipmap 
+   image_info.mipLevels             = shader->mipmap
       ? glslang_num_miplevels(image.width, image.height) : 1;
    image_info.arrayLayers           = 1;
    image_info.samples               = VK_SAMPLE_COUNT_1_BIT;
@@ -926,7 +624,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    view_info.subresourceRange.layerCount     = 1;
    vkCreateImageView(info->device, &view_info, nullptr, &view);
 
-   buffer                                = 
+   buffer                                =
       std::unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
                image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
    ptr                                   = buffer->map();
@@ -937,8 +635,8 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
          tex,
          VK_REMAINING_MIP_LEVELS,
          VK_IMAGE_LAYOUT_UNDEFINED,
-           shader->mipmap 
-         ? VK_IMAGE_LAYOUT_GENERAL 
+           shader->mipmap
+         ? VK_IMAGE_LAYOUT_GENERAL
          : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0,
          VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -965,8 +663,8 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    vkCmdCopyBufferToImage(cmd,
          buffer->get_buffer(),
          tex,
-         shader->mipmap 
-         ? VK_IMAGE_LAYOUT_GENERAL 
+         shader->mipmap
+         ? VK_IMAGE_LAYOUT_GENERAL
          : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
@@ -1022,8 +720,8 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
          cmd,
          tex,
          VK_REMAINING_MIP_LEVELS,
-         shader->mipmap 
-         ? VK_IMAGE_LAYOUT_GENERAL 
+         shader->mipmap
+         ? VK_IMAGE_LAYOUT_GENERAL
          : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -1080,7 +778,7 @@ static bool vulkan_filter_chain_load_luts(
 
    for (i = 0; i < shader->luts; i++)
    {
-      std::unique_ptr<StaticTexture> image = 
+      std::unique_ptr<StaticTexture> image =
          vulkan_filter_chain_load_lut(cmd, info, chain, &shader->lut[i]);
       if (!image)
       {
@@ -1244,7 +942,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    unsigned i;
    Texture source;
 
-   /* First frame, make sure our history and feedback textures 
+   /* First frame, make sure our history and feedback textures
     * are in a clean state. */
    if (require_clear)
    {
@@ -1312,7 +1010,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
 
    if   (    input_texture.width  != tmp->get_size().width
          ||  input_texture.height != tmp->get_size().height
-         || (input_texture.format != VK_FORMAT_UNDEFINED 
+         || (input_texture.format != VK_FORMAT_UNDEFINED
          &&  input_texture.format != tmp->get_format()))
       tmp->set_size(disposer, { input_texture.width, input_texture.height }, input_texture.format);
 
@@ -1358,7 +1056,7 @@ void vulkan_filter_chain::build_viewport_pass(
    unsigned i;
    Texture source;
 
-   /* First frame, make sure our history and 
+   /* First frame, make sure our history and
     * feedback textures are in a clean state. */
    if (require_clear)
    {
@@ -1412,10 +1110,11 @@ bool vulkan_filter_chain::init_history()
    common.original_history.clear();
 
    for (i = 0; i < passes.size(); i++)
-      required_images =
-         std::max(required_images,
-               passes[i]->get_reflection().semantic_textures[
-               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
+   {
+      size_t _y = passes[i]->get_reflection().semantic_textures[
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size();
+      required_images = MAX(required_images, _y);
+   }
 
    if (required_images < 2)
    {
@@ -1496,7 +1195,7 @@ bool vulkan_filter_chain::init_feedback()
 bool vulkan_filter_chain::init_alias()
 {
    int i;
-   
+
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
@@ -1619,7 +1318,7 @@ bool vulkan_filter_chain::init_ubo()
    for (i = 0; i < passes.size(); i++)
       passes[i]->allocate_buffers();
 
-   common.ubo_offset            = 
+   common.ubo_offset            =
       (common.ubo_offset + common.ubo_alignment - 1) &
       ~(common.ubo_alignment - 1);
    common.ubo_sync_index_stride = common.ubo_offset;
@@ -1726,7 +1425,7 @@ void vulkan_filter_chain::set_simulate_scanline(bool simulate_scanline)
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_simulate_scanline(simulate_scanline);
 }
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
 void vulkan_filter_chain::set_frame_direction(int32_t direction)
 {
@@ -2230,7 +1929,7 @@ bool Pass::init_pipeline()
    pipe.pColorBlendState     = &blend;
    pipe.pDynamicState        = &dynamic;
    pipe.layout               = pipeline_layout;
-   pipe.renderPass           = final_pass 
+   pipe.renderPass           = final_pass
 	   ? swapchain_render_pass
 	   : framebuffer->get_render_pass();
    pipe.subpass              = 0;
@@ -2275,7 +1974,7 @@ CommonResources::CommonResources(VkDevice device,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
-   vbo                          = 
+   vbo                          =
       std::unique_ptr<Buffer>(new Buffer(device,
                memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 
@@ -2629,8 +2328,8 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                        unsigned(current_viewport.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
-                       frame_count_period 
-                       ? uint32_t(frame_count % frame_count_period) 
+                       frame_count_period
+                       ? uint32_t(frame_count % frame_count_period)
                        : uint32_t(frame_count));
 
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
@@ -2737,7 +2436,7 @@ void Pass::build_commands(
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             0,
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | 
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -2787,7 +2486,7 @@ void Pass::build_commands(
          const VkRect2D sci = {
             {
                int32_t(current_viewport.x),
-               int32_t((current_viewport.height / float(total_subframes)) 
+               int32_t((current_viewport.height / float(total_subframes))
                         * float(current_subframe - 1))
             },
             {
@@ -2798,7 +2497,7 @@ void Pass::build_commands(
          vkCmdSetScissor(cmd, 0, 1, &sci);
       }
       else
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION 
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       {
          const VkRect2D sci = {
             {
@@ -2811,7 +2510,7 @@ void Pass::build_commands(
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
-      }     
+      }
    }
    else
    {
@@ -2830,7 +2529,7 @@ void Pass::build_commands(
          const VkRect2D sci = {
             {
                0,
-               int32_t((float(current_framebuffer_size.height) / float(total_subframes)) 
+               int32_t((float(current_framebuffer_size.height) / float(total_subframes))
                         * float(current_subframe - 1))
             },
             {
@@ -2841,7 +2540,7 @@ void Pass::build_commands(
          vkCmdSetScissor(cmd, 0, 1, &sci);
       }
       else
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       {
          const VkRect2D sci = {
             { 0, 0 },
@@ -2851,7 +2550,7 @@ void Pass::build_commands(
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
-      }      
+      }
    }
 
    vkCmdDraw(cmd, 4, 1, 0, 0);
@@ -2893,10 +2592,10 @@ Framebuffer::Framebuffer(
       unsigned max_levels) :
    size(max_size),
    format(format),
-   max_levels(std::max(max_levels, 1u)),
    memory_properties(mem_props),
    device(device)
 {
+   max_levels = MAX(max_levels, 1u);
    RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
    vulkan_initialize_render_pass(device, format, &render_pass);
@@ -2910,6 +2609,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    VkImageCreateInfo info;
    VkMemoryAllocateInfo alloc;
    VkImageViewCreateInfo view_info;
+   size_t _y                = glslang_num_miplevels(size.width, size.height);
 
    info.sType               = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    info.pNext               = NULL;
@@ -2919,8 +2619,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.extent.width        = size.width;
    info.extent.height       = size.height;
    info.extent.depth        = 1;
-   info.mipLevels           = std::min(max_levels,
-         glslang_num_miplevels(size.width, size.height));
+   info.mipLevels           = MIN(max_levels, _y);
    info.arrayLayers         = 1;
    info.samples             = VK_SAMPLE_COUNT_1_BIT;
    info.tiling              = VK_IMAGE_TILING_OPTIMAL;
@@ -3220,8 +2919,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       else
       {
          pass_info.source_filter =
-            pass->filter == RARCH_FILTER_LINEAR 
-            ? GLSLANG_FILTER_CHAIN_LINEAR 
+            pass->filter == RARCH_FILTER_LINEAR
+            ? GLSLANG_FILTER_CHAIN_LINEAR
             : GLSLANG_FILTER_CHAIN_NEAREST;
       }
       pass_info.address    = rarch_wrap_to_address(pass->wrap);
@@ -3234,9 +2933,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
 
-      pass_info.mip_filter = 
+      pass_info.mip_filter =
          (pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1)
-         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
 
       bool explicit_format         = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
@@ -3473,7 +3172,7 @@ void vulkan_filter_chain_set_simulate_scanline(
 {
    chain->set_simulate_scanline(simulate_scanline);
 }
-#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
 void vulkan_filter_chain_set_frame_direction(
       vulkan_filter_chain_t *chain,

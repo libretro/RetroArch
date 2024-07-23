@@ -583,6 +583,7 @@ typedef struct settings
 #endif
 #ifdef HAVE_TEST_DRIVERS
       char test_input_file_joypad[PATH_MAX_LENGTH];
+      char test_input_file_general[PATH_MAX_LENGTH];
 #endif
       char log_dir[PATH_MAX_LENGTH];
       char app_icon[PATH_MAX_LENGTH];

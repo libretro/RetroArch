@@ -1221,9 +1221,21 @@ MSG_HASH(
    "Sincronización da nube destrutiva"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Sincronización: Gardados/Estados"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
+   "Sincronización: Ficheiros de Configuración"
    )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Cando está activado, os gardados/estados sincronizaranse coa nube."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Cando está habilitado, os ficheiros de configuración sincronizaranse coa nube."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Cando está desactivado, os ficheiros móvense a un cartafol de copia de seguranza antes de sobrescribilos ou eliminalos."
@@ -1355,6 +1367,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
    "Directorio. Selecciónao para abrir este directorio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   "Aceleración de Fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -2512,16 +2528,24 @@ MSG_HASH(
    "Relación de aspecto personalizada (posición X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Desprazamento da ventana gráfica personalizada que se usa para definir a posición do eixe X da ventana gráfica.\nIgnoraranse se se activa a \"Escala enteira\"."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relación de aspecto personalizada (posición Y)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Desfase personalizado da ventana gráfica que se usa para definir a posición do eixe Y da ventana gráfica.\nIgnoraranse se está activada a \"Escala enteira\"."
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Axuste de Ancoraxe da Xanela gráfica en X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Axuste de Ancoraxe da Xanela gráfica en X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Axuste de Ancoraxe da Xanela gráfica en Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Axuste de Ancoraxe da Xanela gráfica en Y"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
@@ -2532,6 +2556,22 @@ MSG_HASH(
    "Desviación personalizada do porto de vista usada para compensar o porto de vista verticalmente (se for máis alto que a altura do contido). 0.0 significa arriba e 1.0 significa abaixo."
    )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Desprazamento da ancoraxe da Xanela Gráfica en X (orientación vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Desprazamento da ancoraxe da Xanela Gráfica en X (orientación vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Desprazamento da ancoraxe da Xanela Gráfica en Y (orientación vertical)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Desprazamento da ancoraxe da Xanela Gráfica en Y (orientación vertical)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
    "Desviación personalizada do porto de vista usada para desprazar o porto de vista horizontalmente (se for máis ancho que a altura do contido). 0.0 significa á esquerda e 1.0 significa á dereita. (Orientación en retrato)"
@@ -2685,7 +2725,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Sincronización coa taxa de fotogramas do contido exacto (G-Sync, FreeSync)"
+   "Sincronizar taxa de fotogramas ao contido exacto (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
@@ -3179,7 +3219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Inflúe na forma en que se realiza a votación de entrada dentro de RetroArch.\nA principios: a enquisa de entrada realízase antes de que se procese o fotograma.\nNormal: a enquisa de entrada realízase cando se solicita o sondeo.\nTarde: a votación de entrada realízase na primeira solicitude de estado de entrada por fotograma.\\ nSeleccionándoo como \"cedo\" ou \"Tardía\" pode producir menos latencia, dependendo da túa configuración. Ignorarase ao usar netplay."
+   "Inflúe na forma en que se realiza a votación de entrada dentro de RetroArch.\nA principios: a enquisa de entrada realízase antes de que se procese o fotograma.\nNormal: a enquisa de entrada realízase cando se solicita o sondeo.\nTarde: a votación de entrada realízase na primeira solicitude de estado de entrada por fotograma.\\ nSeleccionándoo como \"cedo\" ou \"Tardía\" pode producir menos latencia, dependendo da túa configuración. Ignorarase ao usar xogo en rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3973,7 +4013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Activa/desactiva o hospedaxe de Xogo en Rede."
+   "Activa/desactiva a hospedaxe de Xogo en Rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
@@ -3993,7 +4033,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Activar/desactivar Netplay Fade Chat"
+   "Activar/desactivar atenuado do chat no Xogo en rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -5593,11 +5633,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Mostrar ping de Netplay"
+   "Amosar ping de Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "Mostra o ping para a sala de netplay actual."
+   "Amosa o ping para a sala do Xogo en Rede actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -5729,7 +5769,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Mostra mensaxes en pantalla de netplay non esenciais."
+   "Amosa mensaxes en pantalla do Xogo en rede non esenciais."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
@@ -6198,8 +6238,12 @@ MSG_HASH(
    "Mostrar \"Vídeos\""
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
+   "Amosar 'Xogo en Rede'"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Mostra o menú \"Netplay\". (Requírese reiniciar en Ozone/XMB)"
+   "Amosa o menú \"Xogo en rede\". (Requírese reiniciar en Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
@@ -7313,15 +7357,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Netplay comproba Fotogramas"
+   "Xogo en Rede comproba Fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "A frecuencia (en fotogramas) que netplay verificará que o host e o cliente están sincronizados."
+   "A frecuencia (en fotogramas) co xogo en rede verificará que o anfitrión e o cliente están sincronizados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "A frecuencia en fotogramas coa que netplay verificará que o host e o cliente están sincronizados. Na maioría dos núcleos, este valor non terá ningún efecto visible e pódese ignorar. Con núcleos non determinstic, este valor determina a frecuencia con que se sincronizarán os pares de netplay. Con núcleos con erros, establecer este valor en calquera valor distinto de cero causará graves problemas de rendemento. Establécese a cero para non realizar comprobacións. Este valor só se usa n[...]"
+   "A frecuencia en fotogramas coa que o xogo en rede verificará co anfitrión e o cliente están sincronizados. Na maioría dos núcleos, este valor non terá ningún efecto visible e pódese ignorar. Con núcleos non deterministas, este valor determina a frecuencia con que se sincronizarán os pares de xogo en rede. Con núcleos con erros, establecer este valor en calquera valor distinto de cero causará graves problemas de rendemento. Establécese a cero para non realizar comprobacións. Este va[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -7345,7 +7389,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "O intervalo de fotogramas de latencia de entrada que pode usar netplay para ocultar a latencia da rede.\nSe se establece, netplay axustará o número de fotogramas de latencia de entrada de forma dinámica para equilibrar o tempo da CPU, a latencia de entrada e a latencia da rede. Isto reduce o nerviosismo e fai que o xogo en rede sexa menos intensivo en CPU, pero ao prezo dun retardo de entrada imprevisible."
+   "O intervalo de fotogramas de latencia de entrada que pode usar xogo en rede para ocultar a latencia da rede.\nSe se establece, xogo en rede axustará o número de fotogramas de latencia de entrada de forma dinámica para equilibrar o tempo da CPU, a latencia de entrada e a latencia da rede. Isto reduce o nerviosismo e fai que o xogo en rede sexa menos intensivo en CPU, pero ao prezo dun retardo de entrada imprevisible."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+   "Xogo en rede NAT Traversal"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
@@ -7773,7 +7821,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Introduza aquí o seu nome de usuario. Usarase para sesións de netplay, entre outras cousas."
+   "Insira aquí o seu nome de usuario. Usarase para sesións de xogos en rede, entre outras cousas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
@@ -8213,19 +8261,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Conéctate ao Netplay do Anfitrión"
+   "Conéctate ao Xogo en Rede do Anfitrión"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Introduza o enderezo do servidor de netplay e conéctese no modo cliente."
+   "Introduza o enderezo do servidor do Xogo en Rede e conéctese no modo cliente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Desconectar de Netplay Host"
+   "Desconectar do Xogo en Rede Anfitrión"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Desconecta unha conexión de netplay activa."
+   "Desconecta unha conexión de xogo en rede activa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8249,22 +8297,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Actualizar a lista de hosts de Netplay."
+   "Actualizar a lista de servidores de Xogo en Rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Actualizar a lista LAN de Netplay"
+   "Actualizar a lista LAN de Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Busca hosts de netplay na LAN."
+   "Busca servidores de xogo en rede na LAN."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Inicia Netplay do Anfitrión"
+   "Comezar Servidor de Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
@@ -8272,7 +8320,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   "Detén Netplay do Anfitrión"
+   "Detén o Xogo en rede do Anfitrión"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
@@ -12270,11 +12318,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   "Non se atoparon Anfitrións de netplay."
+   "Non se atoparon Anfitrións de xogo en rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   "Non se atoparon clientes de netplay."
+   "Non se atoparon clientes de xogo en rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
@@ -12517,7 +12565,7 @@ MSG_HASH( /* FIXME Still exists in a comment about being removed */
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
-   "Xogo en liña"
+   "Xogo en rede"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_START_CONTENT,
@@ -12577,7 +12625,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DELAY_FRAMES,
-   "Marcos de retardo de Netplay"
+   "Marcos de retardo de Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
@@ -12589,11 +12637,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
-   "Cliente Netplay"
+   "Cliente de Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_MODE_ENABLE,
-   "Espectador Netplay"
+   "Espectador de Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_DESCRIPTION,
@@ -12744,7 +12792,7 @@ MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
-   "Configuración de Netplay"
+   "Configuración de Xogo en Rede"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
@@ -12826,11 +12874,11 @@ MSG_HASH(
 
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   "Netplay comezará cando se cargue o contido."
+   "Xogo en Rede comezará cando se cargue o contido."
    )
 MSG_HASH(
    MSG_NETPLAY_NEED_CONTENT_LOADED,
-   "O contido debe cargarse antes de iniciar a netplay."
+   "O contido debe cargarse antes de iniciar o xogo en rede."
    )
 MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
@@ -12882,11 +12930,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   "Escaneo de Netplay completo."
+   "Escaneo de Xogo en rede completo."
    )
 MSG_HASH(
    MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "Sentímolo, sen implementar: os núcleos que non esixen contido non poden participar na rede."
+   "Sentímolo, sen implementar: os núcleos que non esixen contido non poden participar no xogo en rede."
    )
 MSG_HASH(
    MSG_NATIVE,
@@ -12894,7 +12942,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Recibiuse un comando netplay descoñecido"
+   "Recibiuse un comando de Xogo en Rede descoñecido"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
@@ -12910,7 +12958,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PUBLIC_ADDRESS,
-   "A asignación de portos de Netplay foi exitosa"
+   "A asignación de portos de Xogo en Rede foi exitosa"
    )
 MSG_HASH(
    MSG_PRIVATE_OR_SHARED_ADDRESS,
@@ -12918,7 +12966,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_UPNP_FAILED,
-   "Fallou a asignación de portos UPnP de Netplay"
+   "Fallou a asignación de portos UPnP de Xogo en Rede"
    )
 MSG_HASH(
    MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
@@ -12962,27 +13010,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_NOT_RETROARCH,
-   "Produciuse un erro nun intento de conexión na rede porque o compañeiro non está a executar RetroArch ou está a executar unha versión antiga de RetroArch."
+   "Produciuse un erro nun intento de conexión ao xogo en rede porque o compañeiro non está a executar RetroArch ou está a executar unha versión antiga de RetroArch."
    )
 MSG_HASH(
    MSG_NETPLAY_OUT_OF_DATE,
-   "Un peer de netplay está a executar unha versión antiga de RetroArch. Non se pode conectar."
+   "Un par de xogo en rede está a executar unha versión antiga de RetroArch. Non se pode conectar."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "AVISO: un peer de netplay está executando unha versión diferente de RetroArch. Se ocorren problemas, use a mesma versión."
+   "AVISO: un par de xogo en rede está executando unha versión diferente de RetroArch. Se ocorren problemas, use a mesma versión."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORES,
-   "Un peer de netplay está executando un núcleo diferente. Non se pode conectar."
+   "Un par de xogo en rede está executando un núcleo diferente. Non se pode conectar."
    )
 MSG_HASH(
    MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "AVISO: un peer de netplay está executando unha versión diferente do núcleo. Se ocorren problemas, use a mesma versión."
+   "AVISO: un par de xogo en rede está executando unha versión diferente do núcleo. Se ocorren problemas, use a mesma versión."
    )
 MSG_HASH(
    MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Este núcleo non admite a rede entre estas plataformas"
+   "Este núcleo non admite xogo en rede entre estas plataformas"
    )
 MSG_HASH(
    MSG_NETPLAY_PLATFORM_DEPENDENT,
@@ -12990,11 +13038,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_PASSWORD,
-   "Introduce o contrasinal do servidor de netplay:"
+   "Introduce o contrasinal do servidor do xogo en rede:"
    )
 MSG_HASH(
    MSG_NETPLAY_ENTER_CHAT,
-   "Introduce a mensaxe de chat de netplay:"
+   "Introduce a mensaxe de chat do xogo en rede:"
    )
 MSG_HASH(
    MSG_DISCORD_CONNECTION_REQUEST,
@@ -13010,11 +13058,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_SERVER_HANGUP,
-   "Un cliente de netplay desconectouse"
+   "Un cliente do xogo en rede desconectouse"
    )
 MSG_HASH(
    MSG_NETPLAY_CLIENT_HANGUP,
-   "Netplay desconectado"
+   "Xogo en Rede desconectado"
    )
 MSG_HASH(
    MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
@@ -13034,7 +13082,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_PEER_PAUSED,
-   "O par de Netplay \"%s\" detívose"
+   "O par de Xogo en Rede \"%s\" detívose"
    )
 MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
@@ -13095,7 +13143,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
-   "Conectando ao host de netplay"
+   "Conectando ao anfitrión do xogo en rede"
    )
 MSG_HASH(
    MSG_CONNECTING_TO_PORT,
@@ -13823,7 +13871,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_UNSUPPORTED,
-   "Núcleo non admite a reprodución en rede."
+   "Núcleo non admite o xogo en rede."
    )
 MSG_HASH(
    MSG_NO_CONTENT_STARTING_DUMMY_CORE,
@@ -14066,6 +14114,10 @@ MSG_HASH(
    "Logro desbloqueado"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Desbloqueouse un logro raro"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Comezou o intento de clasificación"
    )
@@ -14231,7 +14283,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_LAN_SCANNING,
-   "Buscando hosts de netplay..."
+   "Buscando anfitrións de xogo en rede..."
    )
 MSG_HASH(
    MSG_PREPARING_FOR_CONTENT_SCAN,
@@ -14439,7 +14491,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "Netplay host cheo."
+   "Xogo en rede anfitrión cheo."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,

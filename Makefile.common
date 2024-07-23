@@ -753,7 +753,8 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
    OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
 else ifeq ($(HAVE_SSL), 1)
    DEFINES += -DHAVE_SSL
-   LIBS += $(SYSTEMMBEDTLS_LIBS)
+   LIBS += $(SYSTEMMBEDTLS_LIBS) $(SYSTEMMBEDX509_LIBS) $(SYSTEMMBEDCRYPTO_LIBS)
+   DEF_FLAGS += $(SYSTEMMBEDTLS_CFLAGS) $(SYSTEMMBEDX509_CFLAGS) $(SYSTEMMBEDCRYPTO_CFLAGS)
 endif
 
 # Miscellaneous
@@ -2449,6 +2450,7 @@ endif
 ifeq ($(HAVE_TEST_DRIVERS), 1)
   DEFINES += -DHAVE_TEST_DRIVERS
   OBJ += input/drivers_joypad/test_joypad.o
+  OBJ += input/drivers/test_input.o
 endif
 
 

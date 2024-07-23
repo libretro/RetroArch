@@ -3110,7 +3110,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
       {
-         enum retro_av_enable_flags result = 0;
+         enum retro_av_enable_flags result = (enum retro_av_enable_flags)0;
          video_driver_state_t *video_st    = video_state_get_ptr();
          audio_driver_state_t *audio_st    = audio_state_get_ptr();
 

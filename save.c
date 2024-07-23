@@ -29,19 +29,19 @@
 #include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "config.h"
 #endif
 
-#include "../content.h"
-#include "../core.h"
-#include "../core_info.h"
-#include "../file_path_special.h"
-#include "../configuration.h"
-#include "../msg_hash.h"
-#include "../runloop.h"
-#include "../verbosity.h"
+#include "content.h"
+#include "core.h"
+#include "core_info.h"
+#include "file_path_special.h"
+#include "configuration.h"
+#include "msg_hash.h"
+#include "runloop.h"
+#include "verbosity.h"
 #ifdef HAVE_CHEATS
-#include "../cheat_manager.h"
+#include "cheat_manager.h"
 #endif
 
 struct ram_type

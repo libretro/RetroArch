@@ -737,6 +737,7 @@ INPUT
 
 #ifdef HAVE_TEST_DRIVERS
 #include "../input/drivers_joypad/test_joypad.c"
+#include "../input/drivers/test_input.c"
 #endif
 
 /*============================================================

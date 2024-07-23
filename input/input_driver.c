@@ -47,16 +47,17 @@
 #include "../accessibility.h"
 #include "../command.h"
 #include "../config.def.keybinds.h"
-#include "../driver.h"
-#include "../retroarch.h"
-#include "../verbosity.h"
 #include "../configuration.h"
+#include "../driver.h"
+#include "../frontend/frontend_driver.h"
 #include "../list_special.h"
 #include "../performance_counters.h"
+#include "../retroarch.h"
 #ifdef HAVE_BSV_MOVIE
 #include "../tasks/task_content.h"
 #endif
 #include "../tasks/tasks_internal.h"
+#include "../verbosity.h"
 
 #define HOLD_BTN_DELAY_SEC 2
 
@@ -367,6 +368,9 @@ input_driver_t *input_drivers[] = {
 #endif
 #ifdef DJGPP
    &input_dos,
+#endif
+#ifdef HAVE_TEST_DRIVERS
+   &input_test,
 #endif
    &input_null,
    NULL,
@@ -1103,7 +1107,7 @@ const char **input_keyboard_start_line(
 }
 
 #ifdef HAVE_OVERLAY
-static int16_t input_overlay_mouse_state(input_overlay_t *ol, unsigned id)
+static int16_t input_overlay_device_mouse_state(input_overlay_t *ol, unsigned id)
 {
    input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
    int16_t res;
@@ -1218,10 +1222,9 @@ static int16_t input_overlay_lightgun_state(settings_t *settings,
 }
 
 static int16_t input_overlay_pointer_state(input_overlay_t *ol,
+      input_overlay_pointer_state_t *ptr_st,
       unsigned idx, unsigned id)
 {
-   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
-
    ptr_st->device_mask                  |= (1 << RETRO_DEVICE_POINTER);
 
    switch (id)
@@ -1248,14 +1251,16 @@ static int16_t input_overlay_pointing_device_state(settings_t *settings,
    switch (device)
    {
       case RETRO_DEVICE_MOUSE:
-         return input_overlay_mouse_state(ol, id);
+         return input_overlay_device_mouse_state(ol, id);
       case RETRO_DEVICE_LIGHTGUN:
          if (     settings->ints.input_overlay_lightgun_port == -1
                || settings->ints.input_overlay_lightgun_port == (int)port)
             return input_overlay_lightgun_state(settings, ol, id);
          break;
       case RETRO_DEVICE_POINTER:
-         return input_overlay_pointer_state(ol, idx, id);
+         return input_overlay_pointer_state(ol,
+               (input_overlay_pointer_state_t*)&ol->pointer_state,
+               idx, id);
       default:
          break;
    }
@@ -3038,14 +3043,15 @@ static void input_overlay_get_mouse_scale(settings_t *settings,
  * Updates button state of the overlay mouse.
  */
 static void input_overlay_poll_mouse(settings_t *settings,
-      input_overlay_t *ol, const int old_ptr_count)
+      struct input_overlay_mouse_state *mouse_st,
+      input_overlay_t *ol,
+      const int ptr_count,
+      const int old_ptr_count)
 {
    input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
-   struct input_overlay_mouse_state *mouse_st = &ptr_st->mouse;
    const retro_time_t now_usec                = cpu_features_get_time_usec();
    const retro_time_t hold_usec               = settings->uints.input_overlay_mouse_hold_msec * 1000;
    const retro_time_t dtap_usec               = settings->uints.input_overlay_mouse_dtap_msec * 1000;
-   const int ptr_count                        = ptr_st->count;
    int swipe_thres_x                          = 0;
    int swipe_thres_y                          = 0;
    const bool hold_to_drag                    = settings->bools.input_overlay_mouse_hold_to_drag;
@@ -3437,28 +3443,32 @@ static void input_poll_overlay(
 
    if (ol_ptr_enable)
    {
+      input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
+      struct input_overlay_mouse_state *mouse_st = (struct input_overlay_mouse_state*)&ptr_st->mouse;
+
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
          input_overlay_poll_lightgun(settings, ol, old_ptr_count);
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
-         input_overlay_poll_mouse(settings, ol, old_ptr_count);
+         input_overlay_poll_mouse(settings, mouse_st, ol,
+               ptr_st->count, old_ptr_count);
 
       ptr_state->device_mask = 0;
    }
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
       key_mod |= RETROKMOD_SHIFT;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LCTRL) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LCTRL)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
       key_mod |= RETROKMOD_CTRL;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LALT) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RALT))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LALT)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RALT))
       key_mod |= RETROKMOD_ALT;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LMETA) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LMETA)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
       key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
@@ -4424,11 +4434,24 @@ bool video_driver_init_input(
    void              *new_data    = NULL;
    input_driver_t         **input = &input_driver_st.current_driver;
    if (*input)
+#if HAVE_TEST_DRIVERS
+      if (strcmp(settings->arrays.input_driver,"test") != 0)
+         /* Test driver not in use, keep selected driver */
+         return true;
+      else if (string_is_empty(settings->paths.test_input_file_general))
+          {
+            RARCH_LOG("[Input]: Test input driver selected, but no input file provided - falling back.\n");
+            return true;
+          }
+      else
+         RARCH_LOG("[Video]: Graphics driver initialized an input driver, but ignoring it as test input driver is in use.\n");
+#else
       return true;
-
-   /* Video driver didn't provide an input driver,
-    * so we use configured one. */
-   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
+#endif
+   else
+      /* Video driver didn't provide an input driver,
+       * so we use configured one. */
+      RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
          " Attempting to pick a suitable driver.\n");
 
    if (tmp)

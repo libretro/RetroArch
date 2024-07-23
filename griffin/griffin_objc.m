@@ -71,3 +71,7 @@
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
 #import "../network/netplay/netplay_nsnetservice.m"
 #endif
+
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD)
+#include "../network/cloud_sync/icloud.m"
+#endif

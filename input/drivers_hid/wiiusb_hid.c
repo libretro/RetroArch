@@ -310,7 +310,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
 
    /* Allocate mem for the send control buffer, 32bit aligned */
    adapter->send_control_type   = WIIUSB_SC_NONE;
-   adapter->send_control_buffer = memalign(32, 128);
+   adapter->send_control_buffer = (uint8_t*)memalign(32, 128);
 
    if (!adapter->send_control_buffer)
    {
@@ -333,7 +333,7 @@ static int wiiusb_hid_add_adapter(void *data, usb_device_entry *dev)
       goto error;
    }
 
-   adapter->data      = memalign(32, 128);
+   adapter->data      = (uint8_t*)memalign(32, 128);
    adapter->hid       = hid;
    adapter->next      = hid->adapters_head;
    hid->adapters_head = adapter;
@@ -551,11 +551,11 @@ static int16_t wiiusb_hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && wiiusb_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(wiiusb_hid_joypad_axis(data, port_idx, joyaxis)) 
+            ((float)abs(wiiusb_hid_joypad_axis(data, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
