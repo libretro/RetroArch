@@ -343,6 +343,9 @@ static bool winmm_midi_write_long_event(winmm_midi_buffer_t *buf,
 {
    DWORD i = buf->header.dwBytesRecorded / sizeof(DWORD);
 
+   /* data size has to be DWORD aligned */
+   data_size = (data_size + (sizeof(DWORD) - 1)) & ~(sizeof(DWORD) - 1);
+
    if (buf->header.dwBytesRecorded + sizeof(DWORD) * 3 + data_size >
          sizeof(DWORD) * WINMM_MIDI_BUF_LEN)
       return false;
