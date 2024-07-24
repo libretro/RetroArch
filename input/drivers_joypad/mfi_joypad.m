@@ -834,6 +834,8 @@ input_device_driver_t mfi_joypad = {
     apple_gamecontroller_joypad_poll,
     apple_gamecontroller_joypad_set_rumble,
     NULL,
+    NULL,
+    NULL,
     apple_gamecontroller_joypad_name,
     "mfi",
 };

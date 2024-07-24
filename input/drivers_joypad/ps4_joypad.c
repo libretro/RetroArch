@@ -355,7 +355,9 @@ input_device_driver_t ps4_joypad = {
    ps4_joypad_axis,
    ps4_joypad_poll,
    ps4_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    ps4_joypad_name,
    "ps4",
 };

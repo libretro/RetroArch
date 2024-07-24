@@ -252,7 +252,9 @@ input_device_driver_t android_joypad = {
    android_joypad_axis,
    android_joypad_poll,
    android_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    android_joypad_name,
    "android",
 };
