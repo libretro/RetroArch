@@ -210,8 +210,10 @@ input_device_driver_t rwebpad_joypad = {
    rwebpad_joypad_get_buttons,
    rwebpad_joypad_axis,
    rwebpad_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    rwebpad_joypad_name,
    "rwebpad",
 };

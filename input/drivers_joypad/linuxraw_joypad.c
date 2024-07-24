@@ -405,8 +405,10 @@ input_device_driver_t linuxraw_joypad = {
    linuxraw_joypad_get_buttons,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    linuxraw_joypad_name,
    "linuxraw",
 };

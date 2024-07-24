@@ -795,8 +795,10 @@ input_device_driver_t udev_joypad = {
 #ifndef HAVE_LAKKA_SWITCH
    udev_set_rumble_gain,
 #else
-   NULL,
+   NULL, /* set_rumble_gain */
 #endif
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    udev_joypad_name,
    "udev",
 };
