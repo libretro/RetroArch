@@ -2592,10 +2592,10 @@ Framebuffer::Framebuffer(
       unsigned max_levels) :
    size(max_size),
    format(format),
+   max_levels(MAX(max_levels, 1u)),
    memory_properties(mem_props),
    device(device)
 {
-   max_levels = MAX(max_levels, 1u);
    RARCH_LOG("[Vulkan filter chain]: Creating framebuffer %ux%u (max %u level(s)).\n",
          max_size.width, max_size.height, max_levels);
    vulkan_initialize_render_pass(device, format, &render_pass);
