@@ -396,19 +396,11 @@ static void ticker_smooth_scan_string_fw(
       unsigned *char_offset, unsigned *num_chars_to_copy,
       unsigned *x_offset)
 {
-   /* Initialise output variables to 'sane' values */
-   *num_chars_to_copy = 0;
-
    /* Determine index of first character to copy */
    if (scroll_offset > 0)
    {
       *char_offset = (scroll_offset / glyph_width) + 1;
       *x_offset    = glyph_width - (scroll_offset % glyph_width);
-   }
-   else
-   {
-      *char_offset = 0;
-      *x_offset    = 0;
    }
 
    /* Determine number of characters remaining in
@@ -509,6 +501,9 @@ static void gfx_animation_ticker_smooth_loop_fw(uint64_t idx,
    {
       unsigned scroll_offset = 0;
       unsigned x_offset2     = 0;
+
+      *char_offset2          = 0;
+      *num_chars_to_copy2    = 0;
 
       /* Check whether we've passed the end of string 1 */
       if (phase > str_width)
@@ -654,21 +649,21 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
       unsigned *x_offset, unsigned *dst_str_width)
 
 {
-   unsigned ticker_period   = str_width + spacer_width;
-   unsigned phase           = idx % ticker_period;
+   unsigned ticker_period    = str_width + spacer_width;
+   unsigned phase            = idx % ticker_period;
 
-   unsigned remaining_width = field_width;
+   unsigned remaining_width  = field_width;
 
    /* Initialise output variables to 'sane' values */
-   *char_offset1       = 0;
-   *num_chars_to_copy1 = 0;
-   *char_offset2       = 0;
-   *num_chars_to_copy2 = 0;
-   *char_offset3       = 0;
-   *num_chars_to_copy3 = 0;
-   *x_offset           = 0;
+   *char_offset1             = 0;
+   *num_chars_to_copy1       = 0;
+   *char_offset2             = 0;
+   *num_chars_to_copy2       = 0;
+   *char_offset3             = 0;
+   *num_chars_to_copy3       = 0;
+   *x_offset                 = 0;
    if (dst_str_width)
-      *dst_str_width   = 0;
+      *dst_str_width         = 0;
 
    /* Sanity check */
    if ((num_chars < 1) || (num_spacer_chars < 1))
@@ -694,11 +689,11 @@ static void gfx_animation_ticker_smooth_loop(uint64_t idx,
             char_offset1, num_chars_to_copy1, x_offset, &str1_width, &display_width);
 
       /* Update remaining width */
-      remaining_width -= display_width;
+      remaining_width       -= display_width;
 
       /* Update dst_str_width */
       if (dst_str_width)
-         *dst_str_width += str1_width;
+         *dst_str_width     += str1_width;
    }
 
    /* String 2 */
@@ -1027,19 +1022,19 @@ bool gfx_animation_update(
        *   for an idx update */
       if (ticker_pixel_accumulator_uint > 0)
       {
-         p_anim->ticker_pixel_idx += ticker_pixel_accumulator_uint;
-         ticker_pixel_accumulator -= (float)ticker_pixel_accumulator_uint;
+         p_anim->ticker_pixel_idx        += ticker_pixel_accumulator_uint;
+         ticker_pixel_accumulator        -= (float)ticker_pixel_accumulator_uint;
       }
 
       if (ticker_pixel_accumulator_uint > 0)
       {
-         p_anim->ticker_pixel_line_idx += ticker_pixel_line_accumulator_uint;
-         ticker_pixel_line_accumulator -= (float)ticker_pixel_line_accumulator_uint;
+         p_anim->ticker_pixel_line_idx   += ticker_pixel_line_accumulator_uint;
+         ticker_pixel_line_accumulator   -= (float)ticker_pixel_line_accumulator_uint;
       }
    }
 
-   p_anim->flags          |=  GFX_ANIM_FLAG_IN_UPDATE;
-   p_anim->flags          &= ~GFX_ANIM_FLAG_PENDING_DELETES;
+   p_anim->flags           |=  GFX_ANIM_FLAG_IN_UPDATE;
+   p_anim->flags           &= ~GFX_ANIM_FLAG_PENDING_DELETES;
 
    for (i = 0; i < RBUF_LEN(p_anim->list); i++)
    {
@@ -1232,8 +1227,8 @@ static bool gfx_animation_ticker_smooth_fw(
             ticker->src_str, src_str_len);
       if (ticker->dst_str_width)
          *ticker->dst_str_width = src_str_width;
-      *ticker->x_offset = 0;
-      success = true;
+      *ticker->x_offset         = 0;
+      success                   = true;
       goto end;
    }
 
@@ -1370,10 +1365,10 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
    gfx_animation_t *p_anim      = &anim_st;
 
    /* Sanity check */
-   if (string_is_empty(ticker->src_str) ||
-       (ticker->dst_str_len < 1) ||
-       (ticker->field_width < 1) ||
-       (!ticker->font && (ticker->glyph_width < 1)))
+   if (    string_is_empty(ticker->src_str)
+       || (ticker->dst_str_len < 1)
+       || (ticker->field_width < 1)
+       || (!ticker->font && (ticker->glyph_width < 1)))
       goto end;
 
    /* If we are using a fixed width font (ticker->font == NULL),
