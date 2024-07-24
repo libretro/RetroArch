@@ -170,6 +170,8 @@ static input_device_driver_t null_joypad = {
    NULL, /* poll */
    NULL, /* rumble */
    NULL, /* rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    NULL, /* name */
    "null",
 };
@@ -518,7 +520,11 @@ bool input_driver_set_sensor(
       return current_driver->set_sensor_state(current_data,
             port, action, rate);
    }
-
+   else if (input_driver_st.primary_joypad && input_driver_st.primary_joypad->set_sensor_state)
+   {
+      return input_driver_st.primary_joypad->set_sensor_state(NULL,
+            port, action, rate);
+   }
    return false;
 }
 
@@ -534,6 +540,12 @@ float input_driver_get_sensor(
       {
          void *current_data = input_driver_st.current_data;
          return current_driver->get_sensor_input(current_data, port, id);
+      }
+      else if (sensors_enable && input_driver_st.primary_joypad && 
+               input_driver_st.primary_joypad->get_sensor_input)
+      {
+         return input_driver_st.primary_joypad->get_sensor_input(NULL,
+               port, id);
       }
    }
 

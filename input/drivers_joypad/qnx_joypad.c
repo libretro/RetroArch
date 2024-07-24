@@ -169,8 +169,10 @@ input_device_driver_t qnx_joypad = {
    NULL,
    qnx_joypad_axis,
    qnx_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    qnx_joypad_name,
    "qnx",
 };

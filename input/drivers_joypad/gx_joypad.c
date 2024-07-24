@@ -672,8 +672,10 @@ input_device_driver_t gx_joypad = {
    gx_joypad_get_buttons,
    gx_joypad_axis,
    gx_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    gx_joypad_name,
    "gx",
 };
