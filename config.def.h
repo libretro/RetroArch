@@ -1511,6 +1511,8 @@
 
 #define DEFAULT_PLAYLIST_USE_FILENAME false
 
+#define DEFAULT_PLAYLIST_ALLOW_NON_PNG false
+
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 
