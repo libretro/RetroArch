@@ -14242,6 +14242,14 @@ MSG_HASH(
    "%s を %s に送信しました" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "ランク: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "ベスト: %s" /* Best: [value] */
+   )
+MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
    "サムネイルの種類を変更"
    )
