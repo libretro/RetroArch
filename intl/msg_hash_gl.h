@@ -7745,7 +7745,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Cando estea activado, atopará miniaturas polo nome do ficheiro da entrada, en lugar da súa etiqueta."
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Xestionar"
    )

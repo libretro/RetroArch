@@ -7817,7 +7817,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "如果启用，将通过条目文件名而不是其标签找到缩略图。"
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "管理"
    )

@@ -5653,7 +5653,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
    "Зрабіць справы па вядзенню плэй-лістоў."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Дазвол усіх мажлівых тыпаў відарысаў для мініяцюр"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Кіраваць"
    )

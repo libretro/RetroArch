@@ -345,7 +345,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "ඉතිහාසය"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

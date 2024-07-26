@@ -7777,7 +7777,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "활성화할 경우, 항목의 미리보기를 라벨이 아닌 파일명을 기준으로 검색합니다."
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "관리"
    )

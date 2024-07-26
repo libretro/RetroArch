@@ -2993,7 +2993,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Φορητές Λίστες Αναπαραγωγής"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

@@ -7013,7 +7013,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Gdy włączone, znajdziesz miniaturki według nazwy pliku wpisu, a nie jego etykiety."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Zezwól na wszystkie obsługiwane typy obrazów dla miniatur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Gdy włączone, lokalne miniatury mogą być dodawane do wszystkich typów obrazów obsługiwanych przez RetroArch (takich jak jpeg). Może mieć niewielki wpływ na wydajność."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Zarządzaj"
    )
