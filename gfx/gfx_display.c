@@ -1143,7 +1143,7 @@ bool gfx_display_reset_icon_texture(
    if (string_is_empty(texture_path))
       return false;
 
-   strcpy(texpath, texture_path);
+   strlcpy(texpath, texture_path, sizeof(texpath));
 
    if (!image_texture_load(&ti, texpath))
       return false;
