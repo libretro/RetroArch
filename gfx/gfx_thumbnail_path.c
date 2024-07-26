@@ -579,9 +579,7 @@ bool gfx_thumbnail_set_icon_playlist(
    settings_t *settings       = config_get_ptr();
 
    if (!path_data)
-   {
       return false;
-   }
 
 
    /* When content is updated, must regenerate icon
@@ -602,14 +600,10 @@ bool gfx_thumbnail_set_icon_playlist(
    path_data->playlist_index          = 0;
 
    if (!playlist)
-   {
       return false;
-   }
 
    if (idx >= playlist_get_size(playlist))
-   {
       return false;
-   }
 
    /* Read playlist values */
    playlist_get_index(playlist, idx, &entry);
@@ -706,7 +700,8 @@ bool gfx_thumbnail_set_icon_playlist(
              * databases mentioned separated by |, use only first one */
             strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
          }
-         else {
+         else 
+         {
             /* Remove .lpl extension
              * > path_remove_extension() requires a char * (not const)
              *   so have to use a temporary buffer... */
