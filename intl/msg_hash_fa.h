@@ -2925,7 +2925,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "واپسین بازی:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

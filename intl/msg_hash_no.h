@@ -3333,7 +3333,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Flyttbare spillelister"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

@@ -1833,7 +1833,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Core Danh mục:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

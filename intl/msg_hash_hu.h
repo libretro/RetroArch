@@ -7841,7 +7841,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Bekapcsolva a bélyegképek keresése a bejegyzés fájlneve alapján történik, a címke helyett."
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Kezelés"
    )

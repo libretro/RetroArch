@@ -7761,7 +7761,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Se abilitata, troverà le miniature dal nome del file della voce, piuttosto che dalla sua etichetta."
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Gestisci"
    )
