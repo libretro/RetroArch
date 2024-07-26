@@ -1399,10 +1399,7 @@ static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
    {
       xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
       if(node)
-      {
          gfx_thumbnail_reset(&node->thumbnail_icon.icon);
-      }
-
    }
 }
 
