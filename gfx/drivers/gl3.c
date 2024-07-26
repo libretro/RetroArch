@@ -94,6 +94,195 @@ static void gl3_set_viewport(gl3_t *gl,
  * GL3 COMMON
  */
 
+void gl3_framebuffer_copy(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLuint quad_vbo,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image)
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      static float mvp[16] = {
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+
+   /* Draw quad */
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void gl3_framebuffer_copy_partial(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image,
+      float rx, float ry)
+{
+   GLuint vbo;
+   const float quad_data[16] = {
+      0.0f, 0.0f, 0.0f, 0.0f,
+      1.0f, 0.0f, rx,   0.0f,
+      0.0f, 1.0f, 0.0f, ry,
+      1.0f, 1.0f, rx,   ry,
+   };
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      static float mvp[16] = {
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+
+   /* A bit crude, but heeeey. */
+   glGenBuffers(1, &vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDeleteBuffers(1, &vbo);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+GLuint gl3_compile_shader(GLenum stage, const char *source)
+{
+   GLint status;
+   GLuint shader   = glCreateShader(stage);
+   const char *ptr = source;
+
+   glShaderSource(shader, 1, &ptr, NULL);
+   glCompileShader(shader);
+
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
+   if (!status)
+   {
+      GLint length;
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+      if (length > 0)
+      {
+         char *info_log = (char*)malloc(length);
+
+         if (info_log)
+         {
+            glGetShaderInfoLog(shader, length, &length, info_log);
+            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
+            free(info_log);
+            glDeleteShader(shader);
+            return 0;
+         }
+      }
+   }
+
+   return shader;
+}
+
+uint32_t gl3_get_cross_compiler_target_version(void)
+{
+   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned major      = 0;
+   unsigned minor      = 0;
+
+#ifdef HAVE_OPENGLES3
+   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+      return 300;
+
+   if (major == 2 && minor == 0)
+      return 100;
+#else
+   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
+      return 150;
+
+   if (major == 3)
+   {
+      switch (minor)
+      {
+         case 2:
+            return 150;
+         case 1:
+            return 140;
+         case 0:
+            return 130;
+      }
+   }
+   else if (major == 2)
+   {
+      switch (minor)
+      {
+         case 1:
+            return 120;
+         case 0:
+            return 110;
+      }
+   }
+#endif
+
+   return 100 * major + 10 * minor;
+}
+
 static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
 {
    if (!gl->scratch_vbos[gl->scratch_vbo_index])
@@ -2160,8 +2349,11 @@ static bool gl3_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
-      temp_width = 1920;
+      /* We can set it to 1920x1080 as xbox uwp windowsize is guaranteed
+       * to be 1920x1080 and currently there is now way to set ANGLE to
+       * use a variable resolution swapchain so regardless of the size
+       * the window is always 1080p */
+      temp_width  = 1920;
       temp_height = 1080;
    }
 #endif
@@ -2582,16 +2774,12 @@ static bool gl3_frame(void *data, const void *frame,
          &&  !video_info->runloop_is_slowmotion
          &&  !video_info->runloop_is_paused
          &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
-   {
       gl3_filter_chain_set_simulate_scanline(
             gl->filter_chain, true);
-   }
    else
-   {
       gl3_filter_chain_set_simulate_scanline(
             gl->filter_chain, false);
-   }
-#endif // GL3_ROLLING_SCANLINE_SIMULATION
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,

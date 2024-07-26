@@ -2061,9 +2061,12 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewp
       {
          video_viewport_t *custom_vp = &settings->video_viewport_custom;
          x                           = custom_vp->x;
-         y                           = custom_vp->y - custom_vp->height;
+         y                           = custom_vp->y;
          if (!ydown)
+         {
+            y = y + custom_vp->height;
             y = vp->full_height - y;
+         }
          viewport_width              = custom_vp->width;
          viewport_height             = custom_vp->height;
       }
@@ -2329,8 +2332,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       float aspect_ratio, bool keep_aspect,
       bool ydown)
 {
-   int padding_x                   = 0;
-   int padding_y                   = 0;
+   int x                           = 0;
+   int y                           = 0;
    settings_t *settings            = config_get_ptr();
    video_driver_state_t *video_st  = &video_driver_st;
    unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
@@ -2338,17 +2341,23 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       struct video_viewport *custom_vp = &settings->video_viewport_custom;
-
       if (custom_vp)
       {
-         padding_x = width  - custom_vp->width;
-         padding_y = height - custom_vp->height;
+         x         = custom_vp->x;
+         y         = custom_vp->y;
+         if (!ydown)
+         {
+            y     += custom_vp->height;
+            y      = vp->height - y;
+         }
          width     = custom_vp->width;
          height    = custom_vp->height;
       }
    }
    else
    {
+      int padding_x         = 0;
+      int padding_y         = 0;
       float viewport_bias_x = settings->floats.video_viewport_bias_x;
       float viewport_bias_y = settings->floats.video_viewport_bias_y;
       unsigned base_width;
@@ -2369,10 +2378,10 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          viewport_bias_y = 1.0 - viewport_bias_y;
 
       if (rotation % 2)
-         base_height        = video_st->av_info.geometry.base_width;
+         base_height     = video_st->av_info.geometry.base_width;
 
       if (base_height == 0)
-         base_height        = 1;
+         base_height     = 1;
 
       /* Account for non-square pixels.
        * This is sort of contradictory with the goal of integer scale,
@@ -2410,14 +2419,14 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
       width  -= padding_x;
       height -= padding_y;
-      padding_x *= viewport_bias_x;
-      padding_y *= viewport_bias_y;
+      x = padding_x * viewport_bias_x;
+      y = padding_y * viewport_bias_y;
    }
 
    vp->width  = width;
    vp->height = height;
-   vp->x      = padding_x;
-   vp->y      = padding_y;
+   vp->x      = x;
+   vp->y      = y;
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)

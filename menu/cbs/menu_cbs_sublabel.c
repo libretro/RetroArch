@@ -104,7 +104,6 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
    const char *core_path                      = path;
    core_info_t *core_info                     = NULL;
    const contentless_core_info_entry_t *entry = NULL;
-   const char *menu_ident                     = menu_driver_ident();
    bool display_runtime                       = true;
    settings_t *settings                       = config_get_ptr();
    bool playlist_show_sublabels               = settings->bools.playlist_show_sublabels;
@@ -121,6 +120,9 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
          menu_timedate_date_separator         =
                (enum playlist_sublabel_last_played_date_separator_type)
                      settings->uints.menu_timedate_date_separator;
+#if defined(HAVE_OZONE) || defined(HAVE_MATERIALUI)
+   const char *menu_ident                     = menu_driver_ident();
+#endif
 
    if (playlist_show_sublabels)
    {
@@ -1361,6 +1363,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_use_old_format,            
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_compression,                          MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_portable_paths,                       MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_use_filename,                         MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_playlist_allow_non_png,                        MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_rgui_full_width_layout,                   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_rgui_extended_ascii,                      MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_rgui_switch_icons,                        MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS)
@@ -5060,7 +5063,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_sync_configs);
-            break;                        
+            break;
          case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cloud_sync_driver);
             break;
@@ -5567,6 +5570,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_use_filename);
             break;
+         case MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_allow_non_png);
+            break;
          case MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_playlist_use_old_format);
             break;
@@ -5671,18 +5677,22 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
       /* Entries with %u player index placeholder. */
       info_single_list_t info_list[] = {
-/*         {
+#if 0
+         {
             MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE,
             NULL
-         },*/
+         },
+#endif
          {
             MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE,
             action_bind_sublabel_input_adc_type
          },
-/*         {
+#if 0
+         {
             MENU_ENUM_LABEL_INPUT_DEVICE_INDEX,
             NULL
-         },*/
+         },
+#endif
          {
             MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE,
             action_bind_sublabel_input_device_reservation_type
@@ -5695,10 +5705,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
             action_bind_sublabel_input_mouse_index
          },
-/*         {
+#if 0
+         {
             MENU_ENUM_LABEL_INPUT_REMAP_PORT,
             NULL
-         },*/
+         },
+#endif
          {
             MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
             action_bind_sublabel_input_device_index
@@ -5720,16 +5732,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char* idx_placeholder = "%u";
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         int idxpos = -1;
-         idxpos = string_find_index_substring_string(msg_hash_to_str(info_list[i].label_idx), idx_placeholder);
-         if ( idxpos > 0 &&
-              string_starts_with_size(label, msg_hash_to_str(info_list[i].label_idx), idxpos) &&
-              (( (size_t) idxpos == strlen(msg_hash_to_str(info_list[i].label_idx)) - 2) ||
-               ( (size_t) idxpos <  strlen(msg_hash_to_str(info_list[i].label_idx)) - 2  &&
-                          string_ends_with_size(label,
-                                          msg_hash_to_str(info_list[i].label_idx)+idxpos+2,
-                                          lbl_len,
-                                          strlen(msg_hash_to_str(info_list[i].label_idx))-idxpos-2))))
+         int idxpos = string_find_index_substring_string(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idx_placeholder);
+         if (   (idxpos > 0)
+              && string_starts_with_size(label, msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idxpos)
+              && (((size_t)idxpos == strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2)
+              || ((size_t)idxpos   <  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2          && string_ends_with_size(label,
+                  msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx) + idxpos + 2,
+                  lbl_len,
+                  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx))-idxpos-2))))
          {
             BIND_ACTION_SUBLABEL(cbs, info_list[i].cb);
             return 0;

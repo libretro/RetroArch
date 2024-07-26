@@ -2072,16 +2072,8 @@ MSG_HASH(
    "Aangepaste Beeldverhouding (X-positie)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Aangepaste weergave-offset gebruikt voor het definiëren van de X-as positie van de weergave.\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Aangepaste Beeldverhouding (Y-positie)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Aangepaste weergave-offset gebruikt voor het definiëren van de Y-as positie van de weergave.\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
    )
 #if defined(RARCH_MOBILE)
 #endif
@@ -5169,7 +5161,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
    "secondes"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

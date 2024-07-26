@@ -3028,7 +3028,7 @@ static bool d3d11_gfx_frame(
                context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
    }
 
-#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION
    if (      (video_info->shader_subframes > 1)
          &&  (video_info->scan_subframes)
          &&  !black_frame_insertion
@@ -3036,14 +3036,12 @@ static bool d3d11_gfx_frame(
          &&  !runloop_is_slowmotion
          &&  !runloop_is_paused
          &&  (!(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)))
-   {
       context->lpVtbl->RSSetState(context, d3d11->scissor_enabled);
-   }
    else
-#endif // D3D11_ROLLING_SCANLINE_SIMULATION 
+#endif /* D3D11_ROLLING_SCANLINE_SIMULATION  */
    {
       context->lpVtbl->RSSetState(context, d3d11->scissor_disabled);
-   } 
+   }
 
    d3d11->context->lpVtbl->OMSetBlendState(
          d3d11->context, d3d11->blend_disable,
@@ -3096,7 +3094,7 @@ static bool d3d11_gfx_frame(
 
          d3d11->pass[i].rotation = retroarch_get_rotation();
 
-         /* Sub-frame info for multiframe shaders (per real content frame). 
+         /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */
          if (!(d3d11->flags & D3D11_ST_FLAG_FRAME_DUPE_LOCK))
          {
@@ -3177,7 +3175,7 @@ static bool d3d11_gfx_frame(
                &d3d11->pass[i].rt.rt_view, NULL);
          context->lpVtbl->RSSetViewports(context, 1, &d3d11->pass[i].viewport);
 
-#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION
          if (      (video_info->shader_subframes > 1)
                &&  (video_info->scan_subframes)
                &&  !black_frame_insertion
@@ -3189,10 +3187,10 @@ static bool d3d11_gfx_frame(
             D3D11_RECT scissor_rect;
 
             scissor_rect.left   = 0;
-            scissor_rect.top    = (unsigned int)(((float)d3d11->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+            scissor_rect.top    = (unsigned int)(((float)d3d11->pass[i].viewport.Height / (float)video_info->shader_subframes)
                                     * (float)video_info->current_subframe);
             scissor_rect.right  = d3d11->pass[i].viewport.Width ;
-            scissor_rect.bottom = (unsigned int)(((float)d3d11->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+            scissor_rect.bottom = (unsigned int)(((float)d3d11->pass[i].viewport.Height / (float)video_info->shader_subframes)
                                     * (float)(video_info->current_subframe + 1));
 
             d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1,
@@ -3210,7 +3208,7 @@ static bool d3d11_gfx_frame(
             d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1,
                   &scissor_rect);
          }
-#endif // D3D11_ROLLING_SCANLINE_SIMULATION  
+#endif /* D3D11_ROLLING_SCANLINE_SIMULATION */
 
          if (i == d3d11->shader_preset->passes - 1)
             context->lpVtbl->Draw(context, 4, 0);
@@ -3258,7 +3256,7 @@ static bool d3d11_gfx_frame(
       context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
    }
 
-#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION
    if (      (video_info->shader_subframes > 1)
          &&  (video_info->scan_subframes)
          &&  !black_frame_insertion
@@ -3270,20 +3268,18 @@ static bool d3d11_gfx_frame(
       D3D11_RECT scissor_rect;
 
       scissor_rect.left   = 0;
-      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes)
                               * (float)video_info->current_subframe);
       scissor_rect.right  = video_width ;
-      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes)
                               * (float)(video_info->current_subframe + 1));
 
       d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1,
             &scissor_rect);
    }
    else
-   {
       d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &d3d11->scissor);
-   }
-#endif // D3D11_ROLLING_SCANLINE_SIMULATION  
+#endif /* D3D11_ROLLING_SCANLINE_SIMULATION */
 
    context->lpVtbl->Draw(context, 4, 0);
    context->lpVtbl->RSSetState(context, d3d11->scissor_enabled);
@@ -3521,7 +3517,7 @@ static bool d3d11_gfx_frame(
             context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
             DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
          }
-      } 
+      }
    }
 
    /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
@@ -3539,9 +3535,9 @@ static bool d3d11_gfx_frame(
       d3d11->flags |= D3D11_ST_FLAG_FRAME_DUPE_LOCK;
       for (k = 1; k < video_info->shader_subframes; k++)
       {
-#ifdef D3D11_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D11_ROLLING_SCANLINE_SIMULATION
          video_info->current_subframe = k;
-#endif // D3D11_ROLLING_SCANLINE_SIMULATION  
+#endif /* D3D11_ROLLING_SCANLINE_SIMULATION */
 
          if (d3d11->shader_preset)
             for (m = 0; m < d3d11->shader_preset->passes; m++)
@@ -3647,17 +3643,21 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
       return false;
 
    /*This implementation produces wrong result when using HDR*/
-   #ifdef HAVE_DXGI_HDR
+#ifdef HAVE_DXGI_HDR
    if ((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
    {
       RARCH_ERR("[D3D11]: HDR screenshot not supported.\n");
       return false;
    }
-   #endif
+#endif
 
    /* Get the back buffer. */
    m_SwapChain = d3d11->swapChain;
+#ifdef __cplusplus
+   m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, IID_ID3D11Texture2D, (void**)(&BackBuffer));
+#else
    m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, &IID_ID3D11Texture2D, (void*)(&BackBuffer));
+#endif
 
    if (!BackBuffer)
       return false;
@@ -3676,9 +3676,13 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    /* Create the back buffer staging texture. */
    d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &StagingDesc, NULL, &BackBufferStagingTexture);
 
+#ifdef __cplusplus
+   BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, IID_ID3D11Resource, (void**)&BackBufferStaging);
+   BackBuffer->lpVtbl->QueryInterface(BackBuffer, IID_ID3D11Resource, (void**)&BackBufferResource);
+#else
    BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, &IID_ID3D11Resource, (void**)&BackBufferStaging);
-
    BackBuffer->lpVtbl->QueryInterface(BackBuffer, &IID_ID3D11Resource, (void**)&BackBufferResource);
+#endif
 
    /* Copy back buffer to back buffer staging. */
    d3d11->context->lpVtbl->CopyResource(d3d11->context, BackBufferStaging, BackBufferResource);
@@ -3717,7 +3721,7 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    BackBufferResource->lpVtbl->Release(BackBufferResource);
    BackBufferStagingTexture->lpVtbl->Release(BackBufferStagingTexture);
    BackBuffer->lpVtbl->Release(BackBuffer);
-   
+
    return ret;
 }
 

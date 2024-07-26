@@ -2529,7 +2529,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Desprazamento da ventana gráfica personalizada que se usa para definir a posición do eixe X da ventana gráfica.\nIgnoraranse se se activa a \"Escala enteira\"."
+   "Desfase personalizado da xanela de visualización usado para definir a posición no eixe X da xanela de visualización."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2537,7 +2537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Desfase personalizado da ventana gráfica que se usa para definir a posición do eixe Y da ventana gráfica.\nIgnoraranse se está activada a \"Escala enteira\"."
+   "Desfase personalizado da xanela de visualización usado para definir a posición no eixe Y da xanela de visualización."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
@@ -7745,7 +7745,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Cando estea activado, atopará miniaturas polo nome do ficheiro da entrada, en lugar da súa etiqueta."
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Xestionar"
    )
@@ -14136,6 +14136,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "Enviouse %s para %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Rango: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Mellor: %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

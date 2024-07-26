@@ -1836,16 +1836,8 @@ MSG_HASH(
    "Rasio Aspek Kustom (Posisi X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Offset area pandang khusus yang digunakan untuk menentukan posisi sumbu X dari area pandang.\n Ini diabaikan jika 'Skala Bilangan Bulat' diaktifkan."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Rasio Aspek Kustom (Posisi Y)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Offset area pandang khusus yang digunakan untuk menentukan posisi sumbu Y dari area pandang.\n Ini diabaikan jika 'Skala Bilangan Bulat' diaktifkan."
    )
 #if defined(RARCH_MOBILE)
 #endif
@@ -3193,7 +3185,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Daftar Main Portabel"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

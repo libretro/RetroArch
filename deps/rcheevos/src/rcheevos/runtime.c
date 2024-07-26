@@ -10,7 +10,7 @@
 #define RC_RICHPRESENCE_DISPLAY_BUFFER_SIZE 256
 
 rc_runtime_t* rc_runtime_alloc(void) {
-  rc_runtime_t* self = malloc(sizeof(rc_runtime_t));
+  rc_runtime_t* self = (rc_runtime_t*)malloc(sizeof(rc_runtime_t));
 
   if (self) {
     rc_runtime_init(self);
@@ -834,7 +834,7 @@ void rc_runtime_invalidate_address(rc_runtime_t* self, uint32_t address) {
   }
 }
 
-void rc_runtime_validate_addresses(rc_runtime_t* self, rc_runtime_event_handler_t event_handler, 
+void rc_runtime_validate_addresses(rc_runtime_t* self, rc_runtime_event_handler_t event_handler,
     rc_runtime_validate_address_t validate_handler) {
   rc_memref_t** last_memref = &self->memrefs;
   rc_memref_t* memref = self->memrefs;

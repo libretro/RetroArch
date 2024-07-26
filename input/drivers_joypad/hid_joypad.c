@@ -130,7 +130,9 @@ input_device_driver_t hid_joypad = {
    hid_joypad_axis,
    hid_joypad_poll,
    hid_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    hid_joypad_name,
    "hid"
 };

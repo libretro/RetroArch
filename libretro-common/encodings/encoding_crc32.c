@@ -37,7 +37,7 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
 {
    crc = ~crc;
 
-   // Align data if it is not aligned
+   /* Align data if it is not aligned */
    while (((uintptr_t)data & 7) && len > 0)
    {
       crc = __crc32b(crc, *(uint8_t *)data);

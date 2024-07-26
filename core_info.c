@@ -104,153 +104,158 @@ static bool CCJSONObjectMemberHandler(void *context,
 {
    CCJSONContext *pCtx = (CCJSONContext *)context;
 
-   if (   (pCtx->object_depth == 2)
-       && (pCtx->array_depth  == 1)
-       && length)
+   if (length)
    {
-      pCtx->current_string_val      = NULL;
-      pCtx->current_string_list_val = NULL;
-      pCtx->current_entry_uint_val  = NULL;
-      pCtx->current_entry_bool_val  = NULL;
-      pCtx->to_core_file_id         = false;
-      pCtx->to_firmware             = false;
-
-      switch (pValue[0])
+      switch (pCtx->array_depth)
       {
-         case 'a':
-            if (string_is_equal(pValue,      "authors"))
+         case 0:
+            if (pCtx->object_depth == 1)
             {
-               pCtx->current_string_val      = &pCtx->core_info->authors;
-               pCtx->current_string_list_val = &pCtx->core_info->authors_list;
+               pCtx->current_string_val     = NULL;
+
+               if (string_is_equal(pValue, "version"))
+                  pCtx->current_string_val  = &pCtx->core_info_cache_list->version;
             }
             break;
-         case 'c':
-            if (string_is_equal(pValue,      "categories"))
+         case 1:
+            if (pCtx->object_depth == 2)
             {
-               pCtx->current_string_val      = &pCtx->core_info->categories;
-               pCtx->current_string_list_val = &pCtx->core_info->categories_list;
+               pCtx->current_string_val      = NULL;
+               pCtx->current_string_list_val = NULL;
+               pCtx->current_entry_uint_val  = NULL;
+               pCtx->current_entry_bool_val  = NULL;
+               pCtx->to_core_file_id         = false;
+               pCtx->to_firmware             = false;
+
+               switch (pValue[0])
+               {
+                  case 'a':
+                     if (string_is_equal(pValue, "authors"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->authors;
+                        pCtx->current_string_list_val = &pCtx->core_info->authors_list;
+                     }
+                     break;
+                  case 'c':
+                     if (string_is_equal(pValue, "categories"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->categories;
+                        pCtx->current_string_list_val = &pCtx->core_info->categories_list;
+                     }
+                     else if (string_is_equal(pValue, "core_name"))
+                        pCtx->current_string_val      = &pCtx->core_info->core_name;
+                     else if (string_is_equal(pValue, "core_file_id"))
+                        pCtx->to_core_file_id         = true;
+                     break;
+                  case 'd':
+                     if (string_is_equal(pValue, "display_name"))
+                        pCtx->current_string_val      = &pCtx->core_info->display_name;
+                     else if (string_is_equal(pValue, "display_version"))
+                        pCtx->current_string_val      = &pCtx->core_info->display_version;
+                     else if (string_is_equal(pValue, "databases"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->databases;
+                        pCtx->current_string_list_val = &pCtx->core_info->databases_list;
+                     }
+                     else if (string_is_equal(pValue, "description"))
+                        pCtx->current_string_val      = &pCtx->core_info->description;
+                     else if (string_is_equal(pValue, "database_match_archive_member"))
+                        pCtx->current_entry_bool_val  = &pCtx->core_info->database_match_archive_member;
+                     break;
+                  case 'f':
+                     if (string_is_equal(pValue, "firmware"))
+                        pCtx->to_firmware             = true;
+                     break;
+                  case 'h':
+                     if (string_is_equal(pValue, "has_info"))
+                        pCtx->current_entry_bool_val  = &pCtx->core_info->has_info;
+                     break;
+                  case 'l':
+                     if (string_is_equal(pValue, "licenses"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->licenses;
+                        pCtx->current_string_list_val = &pCtx->core_info->licenses_list;
+                     }
+                     else if (string_is_equal(pValue, "is_experimental"))
+                        pCtx->current_entry_bool_val  = &pCtx->core_info->is_experimental;
+                     break;
+                  case 'n':
+                     if (string_is_equal(pValue, "notes"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->notes;
+                        pCtx->current_string_list_val = &pCtx->core_info->note_list;
+                     }
+                     break;
+                  case 'p':
+                     if (string_is_equal(pValue, "permissions"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->permissions;
+                        pCtx->current_string_list_val = &pCtx->core_info->permissions_list;
+                     }
+                     break;
+                  case 'r':
+                     if (string_is_equal(pValue, "required_hw_api"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->required_hw_api;
+                        pCtx->current_string_list_val = &pCtx->core_info->required_hw_api_list;
+                     }
+                     break;
+                  case 's':
+                     if (string_is_equal(pValue, "system_manufacturer"))
+                        pCtx->current_string_val      = &pCtx->core_info->system_manufacturer;
+                     else if (string_is_equal(pValue, "systemname"))
+                        pCtx->current_string_val      = &pCtx->core_info->systemname;
+                     else if (string_is_equal(pValue, "system_id"))
+                        pCtx->current_string_val      = &pCtx->core_info->system_id;
+                     else if (string_is_equal(pValue, "supported_extensions"))
+                     {
+                        pCtx->current_string_val      = &pCtx->core_info->supported_extensions;
+                        pCtx->current_string_list_val = &pCtx->core_info->supported_extensions_list;
+                     }
+                     else if (string_is_equal(pValue, "supports_no_game"))
+                        pCtx->current_entry_bool_val  = &pCtx->core_info->supports_no_game;
+                     else if (string_is_equal(pValue, "single_purpose"))
+                        pCtx->current_entry_bool_val  = &pCtx->core_info->single_purpose;
+                     else if (string_is_equal(pValue, "savestate_support_level"))
+                        pCtx->current_entry_uint_val  = &pCtx->core_info->savestate_support_level;
+                     break;
+               }
             }
-            else if (string_is_equal(pValue, "core_name"))
-               pCtx->current_string_val      = &pCtx->core_info->core_name;
-            else if (string_is_equal(pValue, "core_file_id"))
-               pCtx->to_core_file_id         = true;
-            break;
-         case 'd':
-            if (string_is_equal(pValue,      "display_name"))
-               pCtx->current_string_val      = &pCtx->core_info->display_name;
-            else if (string_is_equal(pValue, "display_version"))
-               pCtx->current_string_val      = &pCtx->core_info->display_version;
-            else if (string_is_equal(pValue, "databases"))
+            else if (pCtx->object_depth == 3)
             {
-               pCtx->current_string_val      = &pCtx->core_info->databases;
-               pCtx->current_string_list_val = &pCtx->core_info->databases_list;
+               pCtx->current_string_val      = NULL;
+               pCtx->current_entry_uint_val  = NULL;
+
+               if (pCtx->to_core_file_id)
+               {
+                  if (string_is_equal(pValue, "str"))
+                     pCtx->current_string_val      = &pCtx->core_info->core_file_id.str;
+                  else if (string_is_equal(pValue, "hash"))
+                     pCtx->current_entry_uint_val  = &pCtx->core_info->core_file_id.hash;
+               }
             }
-            else if (string_is_equal(pValue, "description"))
-               pCtx->current_string_val      = &pCtx->core_info->description;
-            else if (string_is_equal(pValue, "database_match_archive_member"))
-               pCtx->current_entry_bool_val  = &pCtx->core_info->database_match_archive_member;
             break;
-         case 'f':
-            if (string_is_equal(pValue,      "firmware"))
-               pCtx->to_firmware             = true;
-            break;
-         case 'h':
-            if (string_is_equal(pValue,      "has_info"))
-               pCtx->current_entry_bool_val  = &pCtx->core_info->has_info;
-            break;
-         case 'l':
-            if (string_is_equal(pValue,      "licenses"))
+         case 2:
+            if (pCtx->object_depth == 3)
             {
-               pCtx->current_string_val      = &pCtx->core_info->licenses;
-               pCtx->current_string_list_val = &pCtx->core_info->licenses_list;
+               pCtx->current_string_val            = NULL;
+               pCtx->current_entry_bool_val        = NULL;
+
+               if (pCtx->to_firmware && (pCtx->core_info->firmware_count > 0))
+               {
+                  size_t firmware_idx              = pCtx->core_info->firmware_count - 1;
+
+                  if (string_is_equal(pValue, "path"))
+                     pCtx->current_string_val      = &pCtx->core_info->firmware[firmware_idx].path;
+                  else if (string_is_equal(pValue, "desc"))
+                     pCtx->current_string_val      = &pCtx->core_info->firmware[firmware_idx].desc;
+                  else if (string_is_equal(pValue, "optional"))
+                     pCtx->current_entry_bool_val  = &pCtx->core_info->firmware[firmware_idx].optional;
+               }
             }
-            else if (string_is_equal(pValue, "is_experimental"))
-               pCtx->current_entry_bool_val  = &pCtx->core_info->is_experimental;
-            break;
-         case 'n':
-            if (string_is_equal(pValue,      "notes"))
-            {
-               pCtx->current_string_val      = &pCtx->core_info->notes;
-               pCtx->current_string_list_val = &pCtx->core_info->note_list;
-            }
-            break;
-         case 'p':
-            if (string_is_equal(pValue,      "permissions"))
-            {
-               pCtx->current_string_val      = &pCtx->core_info->permissions;
-               pCtx->current_string_list_val = &pCtx->core_info->permissions_list;
-            }
-            break;
-         case 'r':
-            if (string_is_equal(pValue,      "required_hw_api"))
-            {
-               pCtx->current_string_val      = &pCtx->core_info->required_hw_api;
-               pCtx->current_string_list_val = &pCtx->core_info->required_hw_api_list;
-            }
-            break;
-         case 's':
-            if (string_is_equal(pValue,      "system_manufacturer"))
-               pCtx->current_string_val      = &pCtx->core_info->system_manufacturer;
-            else if (string_is_equal(pValue, "systemname"))
-               pCtx->current_string_val      = &pCtx->core_info->systemname;
-            else if (string_is_equal(pValue, "system_id"))
-               pCtx->current_string_val      = &pCtx->core_info->system_id;
-            else if (string_is_equal(pValue, "supported_extensions"))
-            {
-               pCtx->current_string_val      = &pCtx->core_info->supported_extensions;
-               pCtx->current_string_list_val = &pCtx->core_info->supported_extensions_list;
-            }
-            else if (string_is_equal(pValue, "supports_no_game"))
-               pCtx->current_entry_bool_val  = &pCtx->core_info->supports_no_game;
-            else if (string_is_equal(pValue, "single_purpose"))
-               pCtx->current_entry_bool_val  = &pCtx->core_info->single_purpose;
-            else if (string_is_equal(pValue, "savestate_support_level"))
-               pCtx->current_entry_uint_val  = &pCtx->core_info->savestate_support_level;
             break;
       }
-   }
-   else if (   (pCtx->object_depth == 3)
-            && (pCtx->array_depth  == 1)
-            && length)
-   {
-      pCtx->current_string_val      = NULL;
-      pCtx->current_entry_uint_val  = NULL;
 
-      if (pCtx->to_core_file_id)
-      {
-         if (string_is_equal(pValue,      "str"))
-            pCtx->current_string_val         = &pCtx->core_info->core_file_id.str;
-         else if (string_is_equal(pValue, "hash"))
-            pCtx->current_entry_uint_val     = &pCtx->core_info->core_file_id.hash;
-      }
-   }
-   else if (   (pCtx->object_depth == 3)
-            && (pCtx->array_depth  == 2)
-            && length)
-   {
-      pCtx->current_string_val               = NULL;
-      pCtx->current_entry_bool_val           = NULL;
-
-      if (pCtx->to_firmware && (pCtx->core_info->firmware_count > 0))
-      {
-         size_t firmware_idx                 = pCtx->core_info->firmware_count - 1;
-
-         if (string_is_equal(pValue,      "path"))
-            pCtx->current_string_val         = &pCtx->core_info->firmware[firmware_idx].path;
-         else if (string_is_equal(pValue, "desc"))
-            pCtx->current_string_val         = &pCtx->core_info->firmware[firmware_idx].desc;
-         else if (string_is_equal(pValue, "optional"))
-            pCtx->current_entry_bool_val     = &pCtx->core_info->firmware[firmware_idx].optional;
-      }
-   }
-   else if (   (pCtx->object_depth == 1)
-            && (pCtx->array_depth  == 0)
-            && length)
-   {
-      pCtx->current_string_val               = NULL;
-
-      if (string_is_equal(pValue,         "version"))
-         pCtx->current_string_val            = &pCtx->core_info_cache_list->version;
    }
 
    return true;
@@ -315,55 +320,59 @@ static bool CCJSONStartObjectHandler(void *context)
 
    pCtx->object_depth++;
 
-   if (     (pCtx->object_depth == 1)
-         && (pCtx->array_depth  == 0))
+   switch (pCtx->array_depth)
    {
-      if (pCtx->core_info_cache_list)
-         return false;
-      if (!(pCtx->core_info_cache_list = core_info_cache_list_new()))
-         return false;
-   }
-   else if ((pCtx->object_depth == 2)
-         && (pCtx->array_depth  == 1))
-   {
-      if (pCtx->core_info)
-      {
-         core_info_free(pCtx->core_info);
-         free(pCtx->core_info);
-         pCtx->core_info = NULL;
-      }
+      case 0:
+         if (pCtx->object_depth == 1)
+         {
+            if (pCtx->core_info_cache_list)
+               return false;
+            if (!(pCtx->core_info_cache_list = core_info_cache_list_new()))
+               return false;
+         }
+         break;
+      case 1:
+         if (pCtx->object_depth == 2)
+         {
+            if (pCtx->core_info)
+            {
+               core_info_free(pCtx->core_info);
+               free(pCtx->core_info);
+               pCtx->core_info = NULL;
+            }
 
-      if (!(pCtx->core_info = (core_info_t*)calloc(1, sizeof(core_info_t))))
-         return false;
+            if (!(pCtx->core_info = (core_info_t*)calloc(1, sizeof(core_info_t))))
+               return false;
 
-      /* Assume all cores have 'full' savestate support
-       * by default */
-      pCtx->core_info->savestate_support_level =
-            CORE_INFO_SAVESTATE_DETERMINISTIC;
-   }
-   else if ((pCtx->object_depth == 3)
-         && (pCtx->array_depth  == 2))
-   {
-      if (pCtx->to_firmware)
-      {
-         size_t new_idx            = pCtx->core_info->firmware_count;
-         core_info_firmware_t *tmp = (core_info_firmware_t*)
+            /* Assume all cores have 'full' savestate support
+             * by default */
+            pCtx->core_info->savestate_support_level =
+               CORE_INFO_SAVESTATE_DETERMINISTIC;
+         }
+         break;
+      case 2:
+         if (pCtx->object_depth == 3 && pCtx->to_firmware)
+         {
+            size_t new_idx            = pCtx->core_info->firmware_count;
+            core_info_firmware_t *tmp = (core_info_firmware_t*)
                realloc(pCtx->core_info->firmware,
-                      (pCtx->core_info->firmware_count + 1)
+                     (pCtx->core_info->firmware_count + 1)
                      * sizeof(core_info_firmware_t));
 
-         if (!tmp)
-            return false;
+            if (!tmp)
+               return false;
 
-         tmp[new_idx].path              = NULL;
-         tmp[new_idx].desc              = NULL;
-         tmp[new_idx].missing           = false;
-         tmp[new_idx].optional          = false;
+            tmp[new_idx].path              = NULL;
+            tmp[new_idx].desc              = NULL;
+            tmp[new_idx].missing           = false;
+            tmp[new_idx].optional          = false;
 
-         pCtx->core_info->firmware      = tmp;
-         pCtx->core_info->firmware_count++;
-      }
+            pCtx->core_info->firmware      = tmp;
+            pCtx->core_info->firmware_count++;
+         }
+         break;
    }
+
 
    return true;
 }
@@ -372,18 +381,26 @@ static bool CCJSONEndObjectHandler(void *context)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
-   if (     (pCtx->object_depth == 2)
-         && (pCtx->array_depth  == 1)
-         && (pCtx->core_info))
+   if (pCtx->array_depth == 1)
    {
-      core_info_cache_add(
-            pCtx->core_info_cache_list, pCtx->core_info, true);
-      free(pCtx->core_info);
-      pCtx->core_info = NULL;
+      switch (pCtx->object_depth)
+      {
+         case 2:
+            if (pCtx->core_info)
+            {
+               core_info_cache_add(
+                     pCtx->core_info_cache_list, pCtx->core_info, true);
+               free(pCtx->core_info);
+               pCtx->core_info = NULL;
+            }
+            break;
+         case 3:
+            pCtx->to_core_file_id = false;
+            break;
+         default:
+            break;
+      }
    }
-   else if ((pCtx->object_depth == 3)
-         && (pCtx->array_depth == 1))
-      pCtx->to_core_file_id = false;
 
    pCtx->object_depth--;
 

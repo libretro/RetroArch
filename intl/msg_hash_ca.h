@@ -1904,16 +1904,8 @@ MSG_HASH(
    "Relació d'aspecte personalitzat (posició X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Òfset de subàrea de visualització personalitzat per definir la posició de l'eix X de la subàrea de visualització.\nS'ignora si s'activa 'Escalat d'enter'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relació d'aspecte personalitzat (posició Y)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Òfset de subàrea de visualització personalitzat per definir la posició de l'eix Y de la subàrea de visualització.\nS'ignora si s'activa 'Escalat d'enter'."
    )
 #if defined(RARCH_MOBILE)
 #endif
@@ -4725,7 +4717,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Quan s’activa i també se selecciona el directori del «navegador de fitxers», el valor actual del paràmetre «navegador de fitxers» es desa a la llista de reproducció. Quan es carrega la llista en un altre sistema on s’hagi activat la mateixa opció, el valor del paràmetre «navegador de fitxers» es compara amb el valor de la llista de reproducció; si són diferents els camins de les entrades de la llista s’arreglen automàticament."
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

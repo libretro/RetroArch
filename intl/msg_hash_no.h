@@ -1920,16 +1920,8 @@ MSG_HASH(
    "Egendefinert størrelsesforhold (X posisjon)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Tilpasset visningsregion forskyvning bruk for å definere X-aksen av visningsregionen.\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Egendefinert størrelsesforhold (Y posisjon)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Tilpasset visningsregion forskyvning bruk for å definere Y-aksen av visningsregionen.\nDisse er ignorert hvis \"heltall skalering\" er aktivert."
    )
 #if defined(RARCH_MOBILE)
 #endif
@@ -3341,7 +3333,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Flyttbare spillelister"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

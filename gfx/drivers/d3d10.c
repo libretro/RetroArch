@@ -2331,7 +2331,7 @@ static bool d3d10_gfx_frame(
 
          d3d10->pass[i].rotation = retroarch_get_rotation();
 
-         /* Sub-frame info for multiframe shaders (per real content frame). 
+         /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */
          if (!(d3d10->flags & D3D10_ST_FLAG_FRAME_DUPE_LOCK))
          {
@@ -2431,10 +2431,10 @@ static bool d3d10_gfx_frame(
                D3D10_RECT scissor_rect;
 
                scissor_rect.left   = 0;
-               scissor_rect.top    = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+               scissor_rect.top    = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes)
                                        * (float)video_info->current_subframe);
                scissor_rect.right  = d3d10->pass[i].viewport.Width ;
-               scissor_rect.bottom = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes) 
+               scissor_rect.bottom = (unsigned int)(((float)d3d10->pass[i].viewport.Height / (float)video_info->shader_subframes)
                                        * (float)(video_info->current_subframe + 1));
 
                d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
@@ -2452,7 +2452,7 @@ static bool d3d10_gfx_frame(
                d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
                      &scissor_rect);
             }
-#endif // D3D10_ROLLING_SCANLINE_SIMULATION            
+#endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
 
             context->lpVtbl->Draw(context, 4, 0);
             texture = &d3d10->pass[i].rt;
@@ -2485,7 +2485,7 @@ static bool d3d10_gfx_frame(
          d3d10->clearcolor);
    context->lpVtbl->RSSetViewports(context, 1, &d3d10->frame.viewport);
 
-#ifdef D3D10_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION
    if (      (video_info->shader_subframes > 1)
          &&  (video_info->scan_subframes)
          &&  !black_frame_insertion
@@ -2497,17 +2497,17 @@ static bool d3d10_gfx_frame(
       D3D10_RECT scissor_rect;
 
       scissor_rect.left   = 0;
-      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+      scissor_rect.top    = (unsigned int)(((float)video_height / (float)video_info->shader_subframes)
                               * (float)video_info->current_subframe);
       scissor_rect.right  = video_width ;
-      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes) 
+      scissor_rect.bottom = (unsigned int)(((float)video_height / (float)video_info->shader_subframes)
                               * (float)(video_info->current_subframe + 1));
 
       d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
             &scissor_rect);
    }
    else
-#endif // D3D10_ROLLING_SCANLINE_SIMULATION  
+#endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
    {
       D3D10_RECT scissor_rect;
 
@@ -2524,7 +2524,7 @@ static bool d3d10_gfx_frame(
    context->lpVtbl->OMSetBlendState(context, d3d10->blend_enable, NULL,
          D3D10_DEFAULT_SAMPLE_MASK);
 
-#ifdef D3D10_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION
    {
       D3D10_RECT scissor_rect;
 
@@ -2536,7 +2536,7 @@ static bool d3d10_gfx_frame(
       d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1,
             &scissor_rect);
    }
-#endif // D3D10_ROLLING_SCANLINE_SIMULATION  
+#endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
 
    if (    (d3d10->flags & D3D10_ST_FLAG_MENU_ENABLE)
          && d3d10->menu.texture.handle)
@@ -2680,7 +2680,7 @@ static bool d3d10_gfx_frame(
             context->lpVtbl->ClearRenderTargetView(context, d3d10->renderTargetView, d3d10->clearcolor);
             DXGIPresent(d3d10->swapChain, d3d10->swap_interval, 0);
          }
-      } 
+      }
    }
 
    /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
@@ -2696,12 +2696,12 @@ static bool d3d10_gfx_frame(
          &&  (!(d3d10->flags & D3D10_ST_FLAG_FRAME_DUPE_LOCK)))
    {
       d3d10->flags |= D3D10_ST_FLAG_FRAME_DUPE_LOCK;
-      
+
       for (k = 1; k < video_info->shader_subframes; k++)
       {
-#ifdef D3D10_ROLLING_SCANLINE_SIMULATION  
+#ifdef D3D10_ROLLING_SCANLINE_SIMULATION
          video_info->current_subframe = k;
-#endif // D3D10_ROLLING_SCANLINE_SIMULATION  
+#endif /* D3D10_ROLLING_SCANLINE_SIMULATION */
 
          if (d3d10->shader_preset)
             for (m = 0; m < d3d10->shader_preset->passes; m++)

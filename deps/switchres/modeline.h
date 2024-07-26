@@ -117,6 +117,7 @@ typedef struct generator_settings
 	int      v_shift_correct;
 	int      pixel_precision;
 	int      interlace_force_even;
+	int      scale_proportional;
 } generator_settings;
 
 //============================================================

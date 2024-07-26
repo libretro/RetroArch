@@ -9080,6 +9080,16 @@ static void general_write_handler(rarch_setting_t *setting)
                      video_driver_is_threaded());
          }
          break;
+#if HAVE_CLOUDSYNC
+      case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
+                                       |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            task_push_cloud_sync_update_driver();
+         }
+         break;
+#endif
       default:
          /* Special cases */
 
@@ -21866,6 +21876,22 @@ static bool setting_append_list(
                MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,
                MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
                DEFAULT_PLAYLIST_USE_FILENAME,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE
+            );
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.playlist_allow_non_png,
+               MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,
+               MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+               DEFAULT_PLAYLIST_ALLOW_NON_PNG,
                MENU_ENUM_LABEL_VALUE_OFF,
                MENU_ENUM_LABEL_VALUE_ON,
                &group_info,

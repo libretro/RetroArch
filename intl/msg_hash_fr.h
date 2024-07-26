@@ -2529,7 +2529,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Décalage de la fenêtre d'affichage sur l'axe X.\nCette option sera ignorée si l'option 'Échelle à l'entier' est activée."
+   "Décalage de la fenêtre d'affichage personnalisé utilisé pour définir la position sur l'axe X de la fenêtre d'affichage."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2537,7 +2537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Décalage de la fenêtre d'affichage sur l'axe Y.\nCette option sera ignorée si l'option 'Échelle à l'entier' est activée."
+   "Décalage de la fenêtre d'affichage personnalisé utilisé pour définir la position sur l'axe Y de la fenêtre d'affichage."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
@@ -7797,7 +7797,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Lorsque cette option est activée, les miniatures sont recherchées à partir du nom de fichier de l'entrée, plutôt que de sa description."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Autoriser tous les types d'image supportés pour les miniatures"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Lorsque cette option est activée, les miniatures locales peuvent être ajoutées dans tous les types d'image supportés par RetroArch (comme jpeg). Peut avoir un impact mineur sur les performances."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Gérer"
    )
@@ -14232,6 +14240,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "Soumis %s pour %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Classement : %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Meilleur : %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

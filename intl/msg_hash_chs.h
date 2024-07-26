@@ -2552,16 +2552,8 @@ MSG_HASH(
    "自定义宽高比 X 位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "自定义 X 轴视图偏移量。\n如果启用「整数缩放」则忽略此选项。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "自定义宽高比 Y 位置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自定义 Y 轴视图偏移量。\n如果启用「整数缩放」则忽略此选项。"
    )
 #if defined(RARCH_MOBILE)
 #endif
@@ -7825,7 +7817,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "如果启用，将通过条目文件名而不是其标签找到缩略图。"
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "管理"
    )

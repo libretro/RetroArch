@@ -7032,6 +7032,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,       PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,               PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,              PARSE_ONLY_BOOL, true},
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,        PARSE_ONLY_BOOL, true},
 #endif
@@ -9832,17 +9833,14 @@ unsigned menu_displaylist_build_list(
                         count++;
                      break;
                   case ASPECT_RATIO_CUSTOM:
-                     if (!settings->bools.video_scale_integer)
-                     {
-                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                                 MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
-                                 PARSE_ONLY_INT, false) == 0)
-                           count++;
-                        if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                                 MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-                                 PARSE_ONLY_INT, false) == 0)
-                           count++;
-                     }
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X,
+                              PARSE_ONLY_INT, false) == 0)
+                        count++;
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+                              PARSE_ONLY_INT, false) == 0)
+                        count++;
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                               MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
                               PARSE_ONLY_UINT, false) == 0)
@@ -10707,20 +10705,25 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST:
          {
-            menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,       PARSE_ONLY_BOOL           },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,  PARSE_ONLY_BOOL           },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,   PARSE_ONLY_BOOL           },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS, PARSE_ONLY_BOOL           },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,       PARSE_ONLY_STRING_OPTIONS },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_URL,          PARSE_ONLY_STRING         },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,     PARSE_ONLY_STRING         },
-               {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,     PARSE_ONLY_STRING         },
+            menu_displaylist_build_info_selective_t build_list[] = {
+               {MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE,       PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,  PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,   PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS, PARSE_ONLY_BOOL,           true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,       PARSE_ONLY_STRING_OPTIONS, true},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_URL,          PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_USERNAME,     PARSE_ONLY_STRING,         false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD,     PARSE_ONLY_STRING,         false},
             };
+
+            if (string_is_equal(settings->arrays.cloud_sync_driver, "webdav"))
+               for (i = 0; i < ARRAY_SIZE(build_list); i++)
+                  build_list[i].checked = true;
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+               if (build_list[i].checked &&
+                      MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
                   count++;
@@ -15094,20 +15097,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                _len    += strlcpy(new_exts + _len, "bmp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RPNG
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "png", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RJPEG
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "jpg", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RTGA
-               if (new_exts[_len-1] != '\0')
+               if (_len > 0 && (new_exts[_len-1] != '\0'))
                   _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                _len    += strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif

@@ -1350,6 +1350,18 @@ const char *config_get_default_led(void)
 }
 
 /**
+ * config_get_default_cloudsync:
+ *
+ * Gets default cloud sync driver.
+ *
+ * Returns: Default cloud sync driver.
+ **/
+const char *config_get_default_cloudsync(void)
+{
+   return "null";
+}
+
+/**
  * config_get_default_location:
  *
  * Gets default location driver.
@@ -2143,6 +2155,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("playlist_fuzzy_archive_match",  &settings->bools.playlist_fuzzy_archive_match, true, DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, false);
    SETTING_BOOL("playlist_portable_paths",       &settings->bools.playlist_portable_paths, true, DEFAULT_PLAYLIST_PORTABLE_PATHS, false);
    SETTING_BOOL("playlist_use_filename",         &settings->bools.playlist_use_filename, true, DEFAULT_PLAYLIST_USE_FILENAME, false);
+   SETTING_BOOL("playlist_allow_non_png",        &settings->bools.playlist_allow_non_png, true, DEFAULT_PLAYLIST_ALLOW_NON_PNG, false);
 
    SETTING_BOOL("frame_time_counter_reset_after_fastforwarding", &settings->bools.frame_time_counter_reset_after_fastforwarding, true, false, false);
    SETTING_BOOL("frame_time_counter_reset_after_load_state",     &settings->bools.frame_time_counter_reset_after_load_state, true, false, false);
@@ -2707,6 +2720,7 @@ void config_set_defaults(void *data)
    const char *def_bluetooth        = config_get_default_bluetooth();
    const char *def_wifi             = config_get_default_wifi();
    const char *def_led              = config_get_default_led();
+   const char *def_cloudsync        = config_get_default_cloudsync();
    const char *def_location         = config_get_default_location();
    const char *def_record           = config_get_default_record();
    const char *def_midi             = config_get_default_midi();
@@ -2789,6 +2803,10 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.led_driver,
             def_led);
+   if (def_cloudsync)
+      configuration_set_string(settings,
+            settings->arrays.cloud_sync_driver,
+            def_cloudsync);
    if (def_location)
       configuration_set_string(settings,
             settings->arrays.location_driver,

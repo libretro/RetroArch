@@ -2344,16 +2344,8 @@ MSG_HASH(
    "自訂水平位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "自訂影像顯示水平位置, 正數向右移動, 負數向左移動。\n開啟「整數縮放」時此選項被忽略。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "自訂垂直位置"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自訂影像顯示垂直位置, 正數向下移動, 負數向上移動。\n開啟「整數縮放」時此選項被忽略。"
    )
 #if defined(RARCH_MOBILE)
 #endif
@@ -7193,7 +7185,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "開啟時加入「開始資料夾」參數, 依開始資料夾路徑設定, 自動變更列表項目路徑, 可用於移動到開啟此選項的裝置。"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
