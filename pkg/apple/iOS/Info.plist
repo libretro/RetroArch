@@ -69,6 +69,8 @@
 	</array>
 	<key>GCSupportsControllerUserInteraction</key>
 	<true/>
+	<key>GCSupportsGameMode</key>
+	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -1699,7 +1701,6 @@
 				</array>
 			</dict>
 		</dict>
-
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
