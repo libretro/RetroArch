@@ -615,7 +615,7 @@ void CORE_PREFIX(retro_run)(void)
    static bool last_l;
    static bool last_r;
    double min_pts;
-   int16_t audio_buffer[2048];
+   int16_t audio_buffer[media.sample_rate / 20];
    bool left, right, up, down, l, r;
    int16_t ret                  = 0;
    size_t to_read_frames        = 0;
