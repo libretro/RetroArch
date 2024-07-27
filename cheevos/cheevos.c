@@ -1731,7 +1731,7 @@ void rcheevos_validate_config_settings(void)
    const settings_t* settings = config_get_ptr();
    unsigned console_id;
 
-   if (!sysinfo->library_name || !rcheevos_hardcore_active())
+   if (!rcheevos_hardcore_active())
       return;
 
    /* this adds a sleep to every frame. if the value is high enough that a
@@ -1793,30 +1793,28 @@ void rcheevos_validate_config_settings(void)
       return;
    }
 
-
-   if (!(disallowed_settings
-            = rc_libretro_get_disallowed_settings(sysinfo->library_name)))
+   if (!sysinfo->library_name)
       return;
 
-   if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
-      return;
-
-   for (i = 0; i < (int)coreopts->size; i++)
+   disallowed_settings = rc_libretro_get_disallowed_settings(sysinfo->library_name);
+   if (disallowed_settings && retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
-      const char* key = coreopts->opts[i].key;
-      const char* val = core_option_manager_get_val(coreopts, i);
-      if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
+      for (i = 0; i < (int)coreopts->size; i++)
       {
-         char buffer[128];
-         /* TODO/FIXME - localize */
-         snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
-         CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
-         rcheevos_pause_hardcore();
+         const char* key = coreopts->opts[i].key;
+         const char* val = core_option_manager_get_val(coreopts, i);
+         if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
+         {
+            char buffer[128];
+            /* TODO/FIXME - localize */
+            snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
+            CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
+            rcheevos_pause_hardcore();
 
-         runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-
-         break;
+            runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            return;
+         }
       }
    }
 
@@ -2570,6 +2568,7 @@ static void rcheevos_client_load_game_callback(int result,
    {
       /* hardcore is active. we're going to start processing
        * achievements. make sure restrictions are enforced */
+      rcheevos_validate_config_settings();
       rcheevos_enforce_hardcore_settings();
    }
    else
