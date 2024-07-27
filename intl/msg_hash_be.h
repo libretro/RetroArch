@@ -5655,7 +5655,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
-   "Дазвол усіх мажлівых тыпаў відарысаў для мініяцюр"
+   "Дазвол усіх, што маюць падтрымку, тыпаў відарысаў для мініяцюр"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
