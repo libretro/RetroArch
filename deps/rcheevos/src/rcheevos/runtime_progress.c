@@ -210,6 +210,7 @@ static int rc_runtime_progress_is_indirect_memref(rc_operand_t* oper)
   {
     case RC_OPERAND_CONST:
     case RC_OPERAND_FP:
+    case RC_OPERAND_RECALL:
     case RC_OPERAND_LUA:
       return 0;
 
