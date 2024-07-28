@@ -5,8 +5,9 @@
 
 # RetroArch (with Machine Learning support)
 This is a fork of RetroArch that supports overriding player input with ML models.
-Currently it supports only one game, NHL94 Genesis (1 on 1 version)
-In the Quick Menu you can turn on the override feature and the model will play as player 1
+In the Quick Menu you can turn on the override feature for p1 or p2. If you want to do AI vs AI fights just override both players.
+More details on how to use the features here:
+[https://www.videogames.ai/2024/07/24/RetroArch-Machine-Learning-models](https://www.videogames.ai/2024/07/24/RetroArch-Machine-Learning-models)
 
 ## Build on Linux
 git clone https://github.com/MatPoliquin/stable-retro-scripts
@@ -24,6 +25,8 @@ RetroArch docs have build instructions for Windows:
 [https://docs.libretro.com/development/retroarch/compilation/windows/](https://docs.libretro.com/development/retroarch/compilation/windows/)
 
 If you just want to support new games or modify existing ones you can simply download the pre-built package in the releases sections of this repo and update the game_ai dll and data.
+
+![image](https://github.com/user-attachments/assets/72a314aa-c0ad-46f1-a8ea-f173b42fe90c)
 
 # RetroArch
 
