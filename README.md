@@ -8,7 +8,7 @@ This is a fork of RetroArch that supports overriding player input with ML models
 Currently it supports only one game, NHL94 Genesis (1 on 1 version)
 In the Quick Menu you can turn on the override feature and the model will play as player 1
 
-## Build
+## Build on Linux
 git clone https://github.com/MatPoliquin/stable-retro-scripts
 and follow the instructions to build the ef_lib (Emulator frontend library that uses Pytorch C++)
 
@@ -19,6 +19,11 @@ cd RetroArchML
 export LD_LIBRARY_PATH=/paht/to/ef_lib
 ./retroarch
 ```
+## Build on Windows
+RetroArch docs have build instructions for Windows:
+[https://docs.libretro.com/development/retroarch/compilation/windows/](https://docs.libretro.com/development/retroarch/compilation/windows/)
+
+If you just want to support new games or modify existing ones you can simply download the pre-built package in the releases sections of this repo and update the game_ai dll and data.
 
 # RetroArch
 
