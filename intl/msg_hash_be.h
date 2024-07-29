@@ -3918,6 +3918,10 @@ MSG_HASH(
    "Аўтаматычнае захаванне стану"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Аўтаматычная загрузка стану"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Аўтаматычна загружаць стан аўтаматычнага захавання пры запуску."
    )
