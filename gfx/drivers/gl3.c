@@ -1574,6 +1574,7 @@ static void gl3_set_viewport(gl3_t *gl,
    settings_t *settings            = config_get_ptr();
    float device_aspect             = (float)viewport_width / viewport_height;
    bool video_scale_integer        = settings->bools.video_scale_integer;
+   bool video_top_portrait_viewport = settings->bools.video_top_portrait_viewport;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(

@@ -1274,6 +1274,7 @@ static void gl2_set_viewport(gl2_t *gl,
 {
    settings_t *settings     = config_get_ptr();
    float device_aspect = (float) viewport_width / (float)viewport_height;
+   bool video_top_portrait_viewport = settings->bools.video_top_portrait_viewport;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
