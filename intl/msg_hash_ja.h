@@ -7857,7 +7857,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "有効にすると、ラベルではなくエントリーのファイル名でサムネイルを検索します。"
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "サムネイル用の画像にすべての拡張子を含めることを許可する"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "有効にすると、RetroArch が対応するすべての画像 (jpeg など) をローカルサムネイルとして追加できます。パフォーマンスに影響を与える可能性があります。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "管理"
    )
@@ -14240,6 +14248,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "%s を %s に送信しました" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "ランク: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "ベスト: %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

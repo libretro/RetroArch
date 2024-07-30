@@ -577,7 +577,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "ଇତିଵୃତ୍ତି"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

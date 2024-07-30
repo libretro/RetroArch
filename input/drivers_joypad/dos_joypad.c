@@ -254,8 +254,10 @@ input_device_driver_t dos_joypad = {
    NULL,
    dos_joypad_axis,
    dos_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    dos_joypad_name,
    "dos",
 };

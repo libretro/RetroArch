@@ -2504,8 +2504,16 @@ MSG_HASH(
    "Personalizza Rapporto d'aspetto (in una posizione X.)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Scostamento visuale personalizzato utilizzato per definire la posizione dell'asse X della porta di visualizzazione."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Rapporto d'aspetto personalizzato (posizione Y)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Scostamento visuale personalizzato utilizzato per definire la posizione dell'asse Y della porta di visualizzazione."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
@@ -7753,7 +7761,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Se abilitata, troverà le miniature dal nome del file della voce, piuttosto che dalla sua etichetta."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Consenti tutti i tipi di immagini supportate per le miniature"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Se abilitata, le miniature locali possono essere aggiunte in tutti i tipi di immagine supportati da RetroArch (come jpeg). Potrebbe avere un impatto sulle prestazioni minore."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Gestisci"
    )

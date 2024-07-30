@@ -77,10 +77,6 @@
 #define XMB_EASING_ALPHA EASING_OUT_CIRC
 #define XMB_EASING_XY    EASING_OUT_QUAD
 
-/* forward declarations */
-static bool xmb_load_image(void *userdata, void *data,
-      enum menu_image_type type);
-
 /* Specifies minimum period (in usec) between
  * tab switch events when input repeat is
  * active (i.e. when navigating between top level
@@ -103,6 +99,22 @@ static bool xmb_load_image(void *userdata, void *data,
  * the menu screensaver tint will be set to
  * a fixed colour: HTML WhiteSmoke */
 #define XMB_SCREENSAVER_TINT 0xF5F5F5
+
+/* Mean human reading speed for all western languages,
+ * characters per minute */
+#define TICKER_CPM                                1000.0f
+
+/* Base time for which a line should be shown, in us */
+#define TICKER_LINE_DURATION_US(line_len)         ((line_len * 60.0f * 1000.0f * 1000.0f) / TICKER_CPM)
+/* Base time for which a line should be shown, in ms */
+#define TICKER_LINE_DURATION_MS(line_len)         ((line_len * 60.0f * 1000.0f) / TICKER_CPM)
+/* Ticker updates (nominally) once every TICKER_SPEED us
+ * > Base number of ticks for which line should be shown */
+#define TICKER_LINE_DISPLAY_TICKS(line_len)       ((size_t)(TICKER_LINE_DURATION_US(line_len) / (float)TICKER_SPEED))
+/* Smooth ticker updates (nominally) once every TICKER_PIXEL_PERIOD ms
+ * > Base number of ticks for which text should scroll
+ *   from one line to the next */
+#define TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len) ((size_t)(TICKER_LINE_DURATION_MS(line_len) / TICKER_PIXEL_PERIOD))
 
 enum
 {
@@ -481,6 +493,10 @@ static float xmb_item_color[]   = {
    1.0f, 1.0f, 1.0f, 1.0f,
    1.0f, 1.0f, 1.0f, 1.0f,
 };
+
+/* Forward declarations */
+static bool xmb_load_image(void *userdata, void *data,
+      enum menu_image_type type);
 
 static INLINE float xmb_item_y(const xmb_handle_t *xmb,
       int i, size_t current)
@@ -3639,6 +3655,568 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
+static size_t xmb_animation_line_ticker_loop(uint64_t idx,
+      size_t line_len, size_t num_lines)
+{
+   size_t line_ticks    =  TICKER_LINE_DISPLAY_TICKS(line_len);
+   size_t ticker_period = num_lines + 1;
+   size_t phase         = (idx / line_ticks) % ticker_period;
+   /* In this case, line_offset is simply equal to the phase */
+   return phase;
+}
+
+static size_t xmb_animation_line_ticker_generic(uint64_t idx,
+      size_t line_len, size_t max_lines, size_t num_lines)
+{
+   size_t line_ticks    =  TICKER_LINE_DISPLAY_TICKS(line_len);
+   /* Note: This function is only called if num_lines > max_lines */
+   size_t excess_lines  = num_lines - max_lines;
+   /* Ticker will pause for one line duration when the first
+    * or last line is reached (this is mostly required for the
+    * case where num_lines == (max_lines + 1), since otherwise
+    * the text flicks rapidly up and down in disconcerting
+    * fashion...) */
+   size_t ticker_period = (excess_lines * 2) + 2;
+   size_t phase         = (idx / line_ticks) % ticker_period;
+
+   /* Pause on first line */
+   if (phase > 0)
+      phase--;
+   /* Pause on last line */
+   if (phase > excess_lines)
+      phase--;
+
+   /* Lines scrolling upwards */
+   if (phase <= excess_lines)
+      return phase;
+   /* Lines scrolling downwards */
+   return (excess_lines * 2) - phase;
+}
+
+static size_t xmb_animation_build_line_ticker_string(
+      size_t num_display_lines, size_t line_offset,
+      struct string_list *lines, size_t lines_size,
+      char *s, size_t len)
+{
+   size_t i;
+   size_t _len = 0;
+   for (i = 0; i < (num_display_lines-1); i++)
+   {
+      size_t offset     = i + line_offset;
+      size_t line_index = offset % (lines_size + 1);
+      /* Is line valid? */
+      if (line_index < lines_size)
+         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
+      _len    += strlcpy(s + _len, "\n", len - _len);
+   }
+   {
+      size_t offset     = (num_display_lines-1) + line_offset;
+      size_t line_index = offset % (lines_size + 1);
+      /* Is line valid? */
+      if (line_index < lines_size)
+         _len += strlcpy(s + _len, lines->elems[line_index].data, len - _len);
+   }
+   return _len;
+}
+
+
+static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
+{
+   char *wrapped_str            = NULL;
+   size_t wrapped_str_len       = 0;
+   size_t line_ticker_str_len   = 0;
+   struct string_list lines     = {0};
+   size_t line_offset           = 0;
+   bool success                 = false;
+   bool is_active               = false;
+
+   /* Sanity check */
+   if (!line_ticker)
+      return false;
+
+   if (    string_is_empty(line_ticker->str)
+       || (line_ticker->line_len  < 1)
+       || (line_ticker->max_lines < 1))
+      goto end;
+
+   /* Line wrap input string */
+   line_ticker_str_len = strlen(line_ticker->str);
+   wrapped_str_len     = line_ticker_str_len + 1 + 10; /* 10 bytes use for inserting '\n' */
+   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
+      goto end;
+   wrapped_str[0] = '\0';
+
+   word_wrap(
+         wrapped_str,
+         wrapped_str_len,
+         line_ticker->str,
+         line_ticker_str_len,
+         (int)line_ticker->line_len,
+         100, 0);
+
+   if (string_is_empty(wrapped_str))
+      goto end;
+
+   /* Split into component lines */
+   string_list_initialize(&lines);
+   if (!string_split_noalloc(&lines, wrapped_str, "\n"))
+      goto end;
+
+   /* Check whether total number of lines fits within
+    * the set limit */
+   if (lines.size <= line_ticker->max_lines)
+   {
+      strlcpy(line_ticker->s, wrapped_str, line_ticker->len);
+      success = true;
+      goto end;
+   }
+
+   /* Determine offset of first line in wrapped string */
+   switch (line_ticker->type_enum)
+   {
+      case TICKER_TYPE_LOOP:
+         line_offset = xmb_animation_line_ticker_loop(
+               line_ticker->idx,
+               line_ticker->line_len,
+               lines.size);
+         break;
+      case TICKER_TYPE_BOUNCE:
+      default:
+         line_offset = xmb_animation_line_ticker_generic(
+               line_ticker->idx,
+               line_ticker->line_len,
+               line_ticker->max_lines,
+               lines.size);
+
+         break;
+   }
+
+   /* Build output string from required lines */
+   xmb_animation_build_line_ticker_string(
+      line_ticker->max_lines, line_offset, &lines, lines.size,
+      line_ticker->s, line_ticker->len);
+
+   success                  = true;
+   is_active                = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
+
+end:
+
+   if (wrapped_str)
+   {
+      free(wrapped_str);
+      wrapped_str = NULL;
+   }
+
+   string_list_deinitialize(&lines);
+   if (!success)
+      if (line_ticker->len > 0)
+         line_ticker->s[0] = '\0';
+
+   return is_active;
+}
+
+static void xmb_animation_set_line_smooth_fade_parameters(
+      bool scroll_up,
+      size_t scroll_ticks, size_t line_phase, size_t line_height,
+      size_t num_lines, size_t num_display_lines, size_t line_offset,
+      float y_offset,
+      size_t *top_fade_line_offset,
+      float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset,
+      float *bottom_fade_y_offset, float *bottom_fade_alpha)
+{
+   /* When a line fades out, alpha transitions from
+    * 1 to 0 over the course of one half of the
+    * scrolling line height. When a line fades in,
+    * it's the other way around */
+   float fade_out_alpha     = ((float)scroll_ticks - ((float)line_phase * 2.0f)) / (float)scroll_ticks;
+   float fade_in_alpha      = -1.0f * fade_out_alpha;
+   if (fade_out_alpha < 0.0f)
+      fade_out_alpha        = 0.0f;
+   if (fade_in_alpha  < 0.0f)
+      fade_in_alpha         = 0.0f;
+
+   *top_fade_line_offset    = (line_offset > 0) ? line_offset - 1 : num_lines;
+   *top_fade_y_offset       = y_offset - (float)line_height;
+   if (scroll_up)
+   {
+      *top_fade_alpha       = fade_out_alpha;
+      *bottom_fade_alpha    = fade_in_alpha;
+   }
+   else
+   {
+      *top_fade_alpha       = fade_in_alpha;
+      *bottom_fade_alpha    = fade_out_alpha;
+   }
+   *bottom_fade_line_offset = line_offset + num_display_lines;
+   *bottom_fade_y_offset    = y_offset + (float)(line_height * num_display_lines);
+}
+
+static void xmb_animation_set_line_smooth_fade_parameters_default(
+      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
+{
+   *top_fade_line_offset    = 0;
+   *top_fade_y_offset       = 0.0f;
+   *top_fade_alpha          = 0.0f;
+
+   *bottom_fade_line_offset = 0;
+   *bottom_fade_y_offset    = 0.0f;
+   *bottom_fade_alpha       = 0.0f;
+}
+
+
+static void xmb_animation_line_ticker_smooth_generic(uint64_t idx,
+      bool fade_enabled, size_t line_len, size_t line_height,
+      size_t max_display_lines, size_t num_lines,
+      size_t *num_display_lines, size_t *line_offset,
+      float *y_offset,
+      bool *fade_active,
+      size_t *top_fade_line_offset, float *top_fade_y_offset,
+      float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset,
+      float *bottom_fade_alpha)
+{
+   size_t scroll_ticks  = TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len);
+   /* Note: This function is only called if num_lines > max_display_lines */
+   size_t excess_lines  = num_lines - max_display_lines;
+   /* Ticker will pause for one line duration when the first
+    * or last line is reached */
+   size_t ticker_period = ((excess_lines * 2) + 2) * scroll_ticks;
+   size_t phase         = idx % ticker_period;
+   size_t line_phase    = 0;
+   bool pause           = false;
+   bool scroll_up       = true;
+
+   if (phase >= scroll_ticks)
+      phase            -= scroll_ticks;
+   else
+   {
+      /* Pause on first line */
+      pause             = true;
+      phase             = 0;
+   }
+
+   /* Pause on last line and change direction */
+   if (phase >= excess_lines * scroll_ticks)
+   {
+      scroll_up = false;
+
+      if (phase < (excess_lines + 1) * scroll_ticks)
+      {
+         pause = true;
+         phase = 0;
+      }
+      else
+         phase -= (excess_lines + 1) * scroll_ticks;
+   }
+
+   line_phase = phase % scroll_ticks;
+
+   if (pause)
+   {
+      /* Static display of max_display_lines
+       * (no animation) */
+      *num_display_lines = max_display_lines;
+      *y_offset          = 0.0f;
+      *fade_active       = false;
+      *line_offset       = scroll_up ? 0 : excess_lines;
+   }
+   else if (line_phase == 0)
+   {
+      /* Static display of max_display_lines
+       * (no animation) */
+      *num_display_lines = max_display_lines;
+      *y_offset          = 0.0f;
+      *fade_active       = false;
+      *line_offset       = scroll_up ? (phase / scroll_ticks) : (excess_lines - (phase / scroll_ticks));
+   }
+   else
+   {
+      /* Scroll animation is active */
+      *num_display_lines = max_display_lines - 1;
+      *fade_active       = fade_enabled;
+
+      if (scroll_up)
+      {
+         *line_offset    = (phase / scroll_ticks) + 1;
+         *y_offset       = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
+      }
+      else
+      {
+         *line_offset    = excess_lines - (phase / scroll_ticks);
+         *y_offset       = (float)line_height * (1.0f - (float)(scroll_ticks - line_phase) / (float)scroll_ticks);
+      }
+
+      /* Set fade parameters if fade animation is active */
+      if (*fade_active)
+         xmb_animation_set_line_smooth_fade_parameters(
+               scroll_up, scroll_ticks, line_phase, line_height,
+               num_lines, *num_display_lines, *line_offset, *y_offset,
+               top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+               bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
+   }
+
+   /* Set 'default' fade parameters if fade animation
+    * is inactive */
+   if (!*fade_active)
+      xmb_animation_set_line_smooth_fade_parameters_default(
+            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
+}
+
+
+static void xmb_animation_line_ticker_smooth_loop(uint64_t idx,
+      bool fade_enabled, size_t line_len, size_t line_height,
+      size_t max_display_lines, size_t num_lines,
+      size_t *num_display_lines, size_t *line_offset, float *y_offset,
+      bool *fade_active,
+      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
+      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
+{
+   size_t scroll_ticks  = TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len);
+   size_t ticker_period = (num_lines + 1) * scroll_ticks;
+   size_t phase         = idx % ticker_period;
+   size_t line_phase    = phase % scroll_ticks;
+
+   *line_offset         = phase / scroll_ticks;
+
+   if (line_phase == (scroll_ticks - 1))
+   {
+      /* Static display of max_display_lines
+       * (no animation) */
+      *num_display_lines = max_display_lines;
+      *fade_active       = false;
+   }
+   else
+   {
+      *num_display_lines = max_display_lines - 1;
+      *fade_active       = fade_enabled;
+   }
+
+   *y_offset             = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
+
+   /* Set fade parameters */
+   if (*fade_active)
+      xmb_animation_set_line_smooth_fade_parameters(
+            true, scroll_ticks, line_phase, line_height,
+            num_lines, *num_display_lines, *line_offset, *y_offset,
+            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
+   else
+      xmb_animation_set_line_smooth_fade_parameters_default(
+            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
+            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
+}
+
+
+static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
+{
+   char *wrapped_str              = NULL;
+   const char *wideglyph_str      = NULL;
+   size_t line_ticker_src_len     = 0;
+   size_t wrapped_str_len         = 0;
+   struct string_list lines       = {0};
+   int glyph_width                = 0;
+   int glyph_height               = 0;
+   size_t line_len                = 0;
+   size_t max_display_lines       = 0;
+   size_t num_display_lines       = 0;
+   size_t line_offset             = 0;
+   size_t top_fade_line_offset    = 0;
+   size_t bottom_fade_line_offset = 0;
+   bool fade_active               = false;
+   bool success                   = false;
+   bool is_active                 = false;
+   int wideglyph_width            = 100;
+   size_t (*word_wrap_func)(char *dst, size_t dst_size,
+         const char *src, size_t src_len,
+         int line_width, int wideglyph_width, unsigned max_lines);
+
+   /* Sanity check */
+   if (!line_ticker)
+      return false;
+
+   if (  !line_ticker->font
+       || string_is_empty(line_ticker->src_str)
+       || (line_ticker->field_width < 1)
+       || (line_ticker->field_height < 1))
+      goto end;
+
+   /* Get font dimensions */
+
+   /* > Width
+    *   This is a bit of a fudge. Performing a 'font aware'
+    *   (i.e. character display width) word wrap is too CPU
+    *   intensive, so we just sample the width of a common
+    *   character and hope for the best. (We choose 'a' because
+    *   this is what Ozone uses for spacing calculations, and
+    *   it is proven to work quite well) */
+   if ((glyph_width = font_driver_get_message_width(
+         line_ticker->font, "a", 1, line_ticker->font_scale)) <= 0)
+      goto end;
+
+   if ((wideglyph_str = msg_hash_get_wideglyph_str()))
+   {
+      int new_glyph_width = font_driver_get_message_width(
+         line_ticker->font, wideglyph_str, strlen(wideglyph_str),
+         line_ticker->font_scale);
+
+      if (new_glyph_width > 0)
+         wideglyph_width  = new_glyph_width * 100 / glyph_width;
+      word_wrap_func      = word_wrap_wideglyph;
+   }
+   else
+      word_wrap_func      = word_wrap;
+
+   /* > Height */
+   if ((glyph_height = font_driver_get_line_height(
+         line_ticker->font, line_ticker->font_scale)) <= 0)
+      goto end;
+
+   /* Determine line wrap parameters */
+   line_len          = (size_t)(line_ticker->field_width  / glyph_width);
+   max_display_lines = (size_t)(line_ticker->field_height / glyph_height);
+
+   if ((line_len < 1) || (max_display_lines < 1))
+      goto end;
+
+   /* Line wrap input string */
+   line_ticker_src_len = strlen(line_ticker->src_str);
+   /* 10 bytes use for inserting '\n' */
+   wrapped_str_len     = line_ticker_src_len + 1 + 10;
+   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
+      goto end;
+   wrapped_str[0] = '\0';
+
+   (word_wrap_func)(
+         wrapped_str,
+         wrapped_str_len,
+         line_ticker->src_str,
+         line_ticker_src_len,
+         (int)line_len,
+         wideglyph_width, 0);
+
+   if (string_is_empty(wrapped_str))
+      goto end;
+
+   string_list_initialize(&lines);
+   /* Split into component lines */
+   if (!string_split_noalloc(&lines, wrapped_str, "\n"))
+      goto end;
+
+   /* Check whether total number of lines fits within
+    * the set field limit */
+   if (lines.size <= max_display_lines)
+   {
+      strlcpy(line_ticker->dst_str, wrapped_str, line_ticker->dst_str_len);
+      *line_ticker->y_offset = 0.0f;
+
+      /* No fade animation is required */
+      if (line_ticker->fade_enabled)
+      {
+         if (line_ticker->top_fade_str_len > 0)
+            line_ticker->top_fade_str[0]    = '\0';
+
+         if (line_ticker->bottom_fade_str_len > 0)
+            line_ticker->bottom_fade_str[0] = '\0';
+
+         *line_ticker->top_fade_y_offset    = 0.0f;
+         *line_ticker->bottom_fade_y_offset = 0.0f;
+
+         *line_ticker->top_fade_alpha       = 0.0f;
+         *line_ticker->bottom_fade_alpha    = 0.0f;
+      }
+
+      success = true;
+      goto end;
+   }
+
+   /* Determine which lines should be shown, along with
+    * y axis draw offset */
+   switch (line_ticker->type_enum)
+   {
+      case TICKER_TYPE_LOOP:
+         xmb_animation_line_ticker_smooth_loop(
+               line_ticker->idx,
+               line_ticker->fade_enabled,
+               line_len, (size_t)glyph_height,
+               max_display_lines, lines.size,
+               &num_display_lines, &line_offset, line_ticker->y_offset,
+               &fade_active,
+               &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
+               &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
+
+         break;
+      case TICKER_TYPE_BOUNCE:
+      default:
+         xmb_animation_line_ticker_smooth_generic(
+               line_ticker->idx,
+               line_ticker->fade_enabled,
+               line_len, (size_t)glyph_height,
+               max_display_lines, lines.size,
+               &num_display_lines, &line_offset, line_ticker->y_offset,
+               &fade_active,
+               &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
+               &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
+
+         break;
+   }
+
+   /* Build output string from required lines */
+   xmb_animation_build_line_ticker_string(
+         num_display_lines, line_offset, &lines, lines.size,
+         line_ticker->dst_str, line_ticker->dst_str_len);
+
+   /* Extract top/bottom fade strings, if required */
+   if (fade_active)
+   {
+      size_t top_fade_line_index    = top_fade_line_offset    % (lines.size + 1);
+      size_t bottom_fade_line_index = bottom_fade_line_offset % (lines.size + 1);
+      /* Is line valid? */
+      if (top_fade_line_index < lines.size)
+         strlcpy(line_ticker->top_fade_str, lines.elems[top_fade_line_index].data, line_ticker->top_fade_str_len);
+      if (bottom_fade_line_index < lines.size)
+         strlcpy(line_ticker->bottom_fade_str, lines.elems[bottom_fade_line_index].data, line_ticker->bottom_fade_str_len);
+   }
+
+   success                  = true;
+   is_active                = true;
+   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
+
+end:
+
+   if (wrapped_str)
+   {
+      free(wrapped_str);
+      wrapped_str = NULL;
+   }
+
+   string_list_deinitialize(&lines);
+
+   if (!success)
+   {
+      if (line_ticker->dst_str_len > 0)
+         line_ticker->dst_str[0] = '\0';
+
+      if (line_ticker->fade_enabled)
+      {
+         if (line_ticker->top_fade_str_len > 0)
+            line_ticker->top_fade_str[0] = '\0';
+
+         if (line_ticker->bottom_fade_str_len > 0)
+            line_ticker->bottom_fade_str[0] = '\0';
+
+         *line_ticker->top_fade_alpha = 0.0f;
+         *line_ticker->bottom_fade_alpha = 0.0f;
+      }
+   }
+
+   return is_active;
+}
+
+
 static int xmb_draw_item(
       struct menu_state *menu_st,
       void *userdata,
@@ -3974,7 +4552,7 @@ static int xmb_draw_item(
             line_ticker_smooth.bottom_fade_y_offset = &ticker_bottom_fade_y_offset;
             line_ticker_smooth.bottom_fade_alpha    = &ticker_bottom_fade_alpha;
 
-            gfx_animation_line_ticker_smooth(&line_ticker_smooth);
+            xmb_animation_line_ticker_smooth(p_anim, &line_ticker_smooth);
          }
          else
          {
@@ -3992,7 +4570,7 @@ static int xmb_draw_item(
             line_ticker.len       = sizeof(entry_sublabel);
             line_ticker.str       = entry.sublabel;
 
-            gfx_animation_line_ticker(&line_ticker);
+            xmb_animation_line_ticker(p_anim, &line_ticker);
          }
 
          label_offset = -xmb->margins_label_top;

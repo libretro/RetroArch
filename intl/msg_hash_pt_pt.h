@@ -3237,7 +3237,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
    "Analisar sem correspondência do núcleo"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

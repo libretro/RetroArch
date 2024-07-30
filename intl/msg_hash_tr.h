@@ -7853,7 +7853,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Etkinleştirildiğinde, küçük resimleri giriş etiketi yerine dosya adına göre bulur."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Küçük Resimler için Desteklenen Tüm Resim Türlerine İzin Ver"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Etkinleştirildiğinde, RetroArch tarafından desteklenen tüm görüntü türlerine (jpeg gibi) yerel küçük resimler eklenebilir. Küçük bir performans kaybı olabilir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Yönet"
    )

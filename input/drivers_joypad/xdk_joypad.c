@@ -322,8 +322,10 @@ input_device_driver_t xdk_joypad = {
    NULL,
    xdk_joypad_axis,
    xdk_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    xdk_joypad_name,
    "xdk",
 };

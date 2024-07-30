@@ -7725,7 +7725,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Wenn aktiviert, werden Miniaturansichten anhand des Dateinamens des Eintrags und nicht anhand seines Labels gefunden."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Alle unterstützten Bildtypen für Thumbnails erlauben"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Wenn aktiviert, können lokale Thumbnails in allen von RetroArch unterstützten Bildtypen (wie z. B. jpeg) hinzugefügt werden. Kann zu einer geringen Leistungseinbuße führen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Verwalten"
    )

@@ -3918,6 +3918,10 @@ MSG_HASH(
    "Аўтаматычнае захаванне стану"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   "Аўтаматычная загрузка стану"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Аўтаматычна загружаць стан аўтаматычнага захавання пры запуску."
    )
@@ -5653,7 +5657,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
    "Зрабіць справы па вядзенню плэй-лістоў."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Дазвол усіх, што маюць падтрымку, тыпаў відарысаў для мініяцюр"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Кіраваць"
    )

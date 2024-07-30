@@ -410,8 +410,10 @@ input_device_driver_t parport_joypad = {
    parport_joypad_get_buttons,
    parport_joypad_axis,
    parport_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    parport_joypad_name,
    "parport",
 };

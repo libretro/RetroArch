@@ -496,8 +496,10 @@ input_device_driver_t test_joypad = {
    NULL, /* get_buttons */
    test_joypad_axis,
    test_joypad_poll,
-   NULL, /* rumble */
-   NULL, /* rumble_gain */
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    test_joypad_name,
    "test",
 };
