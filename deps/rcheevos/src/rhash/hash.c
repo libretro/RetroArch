@@ -716,6 +716,12 @@ struct rc_hash_zip_idx
   uint8_t* data;
 };
 
+struct rc_hash_ms_dos_dosz_state
+{
+  const char* path;
+  const struct rc_hash_ms_dos_dosz_state* child;
+};
+
 static int rc_hash_zip_idx_sort(const void* a, const void* b)
 {
   struct rc_hash_zip_idx *A = (struct rc_hash_zip_idx*)a, *B = (struct rc_hash_zip_idx*)b;
@@ -723,9 +729,12 @@ static int rc_hash_zip_idx_sort(const void* a, const void* b)
   return memcmp(A->data, B->data, len);
 }
 
-static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
+static int rc_hash_ms_dos_parent(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *child, const char* parentname, uint32_t parentname_len);
+static int rc_hash_ms_dos_dosc(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *dosz);
+
+static int rc_hash_zip_file(md5_state_t* md5, void* file_handle, const struct rc_hash_ms_dos_dosz_state* dosz)
 {
-  uint8_t buf[2048], *alloc_buf, *cdir_start, *cdir_max, *cdir, *hashdata, eocdirhdr_size, cdirhdr_size;
+  uint8_t buf[2048], *alloc_buf, *cdir_start, *cdir_max, *cdir, *hashdata, eocdirhdr_size, cdirhdr_size, nparents;
   uint32_t cdir_entry_len;
   size_t sizeof_idx, indices_offset, alloc_size;
   int64_t i_file, archive_size, ecdh_ofs, total_files, cdir_size, cdir_ofs;
@@ -789,7 +798,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
     rc_file_seek(file_handle, ecdh_ofs - 20, SEEK_SET);
     if (rc_file_read(file_handle, buf, 20) == 20 && RC_ZIP_READ_LE32(buf) == 0x07064b50) /* locator signature */
     {
-      /* Found the locator, now read the actual ZIP64 end of central directory header */ 
+      /* Found the locator, now read the actual ZIP64 end of central directory header */
       int64_t ecdh64_ofs = (int64_t)RC_ZIP_READ_LE64(buf + 0x08);
       if (ecdh64_ofs <= (archive_size - 56))
       {
@@ -837,7 +846,7 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
   hashindex = hashindices;
 
   /* Now process the central directory file records */
-  for (i_file = 0, cdir = cdir_start; i_file < total_files && cdir >= cdir_start && cdir <= cdir_max; i_file++, cdir += cdir_entry_len)
+  for (i_file = nparents = 0, cdir = cdir_start; i_file < total_files && cdir >= cdir_start && cdir <= cdir_max; i_file++, cdir += cdir_entry_len)
   {
     const uint8_t *name, *name_end;
     uint32_t signature     = RC_ZIP_READ_LE32(cdir + 0x00);
@@ -907,6 +916,27 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
       return rc_hash_error("Encountered invalid entry in ZIP central directory");
     }
 
+    /* A DOSZ file can contain a special empty <base>.dosz.parent file in its root which means a parent dosz file is used */
+    if (dosz && decomp_size == 0 && filename_len > 7 && !strncasecmp((const char*)name + filename_len - 7, ".parent", 7) && !memchr(name, '/', filename_len) && !memchr(name, '\\', filename_len))
+    {
+      /* A DOSZ file can only have one parent file */
+      if (nparents++)
+      {
+        free(alloc_buf);
+        return rc_hash_error("Invalid DOSZ file with multiple parents");
+      }
+
+      /* If there is an error with the parent DOSZ, abort now */
+      if (!rc_hash_ms_dos_parent(md5, dosz, (const char*)name, (filename_len - 7)))
+      {
+        free(alloc_buf);
+        return 0;
+      }
+
+      /* We don't hash this meta file so a user is free to rename it and the parent file */
+      continue;
+    }
+
     /* Write the pointer and length of the data we record about this file */
     hashindex->data = hashdata;
     hashindex->length = filename_len + 1 + 4 + 8;
@@ -951,6 +981,11 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
     md5_append(md5, hashindices->data, (int)hashindices->length);
 
   free(alloc_buf);
+
+  /* If this is a .dosz file, check if an associated .dosc file exists */
+  if (dosz && !rc_hash_ms_dos_dosc(md5, dosz))
+    return 0;
+
   return 1;
 
   #undef RC_ZIP_READ_LE16
@@ -960,10 +995,86 @@ static int rc_hash_zip_file(md5_state_t* md5, void* file_handle)
   #undef RC_ZIP_WRITE_LE64
 }
 
+static int rc_hash_ms_dos_parent(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *child, const char* parentname, uint32_t parentname_len)
+{
+  const char *lastfslash = strrchr(child->path, '/');
+  const char *lastbslash = strrchr(child->path, '\\');
+  const char *lastslash = (lastbslash > lastfslash ? lastbslash : lastfslash);
+  size_t dir_len = (lastslash ? (lastslash + 1 - child->path) : 0);
+  char* parent_path = (char*)malloc(dir_len + parentname_len + 1);
+  struct rc_hash_ms_dos_dosz_state parent;
+  const struct rc_hash_ms_dos_dosz_state *check;
+  void* parent_handle;
+  int parent_res;
+
+  /* Build the path of the parent by combining the directory of the current file with the name */
+  if (!parent_path)
+    return rc_hash_error("Could not allocate temporary buffer");
+
+  memcpy(parent_path, child->path, dir_len);
+  memcpy(parent_path + dir_len, parentname, parentname_len);
+  parent_path[dir_len + parentname_len] = '\0';
+
+  /* Make sure there is no recursion where a parent DOSZ is an already seen child DOSZ */
+  for (check = child->child; check; check = check->child)
+  {
+    if (!strcmp(check->path, parent_path))
+    {
+        free(parent_path);
+        return rc_hash_error("Invalid DOSZ file with recursive parents");
+    }
+  }
+
+  /* Try to open the parent DOSZ file */
+  parent_handle = rc_file_open(parent_path);
+  if (!parent_handle)
+  {
+    char message[1024];
+    snprintf(message, sizeof(message), "DOSZ parent file '%s' does not exist", parent_path);
+    free(parent_path);
+    return rc_hash_error(message);
+  }
+
+  /* Fully hash the parent DOSZ ahead of the child */
+  parent.path = parent_path;
+  parent.child = child;
+  parent_res = rc_hash_zip_file(md5, parent_handle, &parent);
+  rc_file_close(parent_handle);
+  free(parent_path);
+  return parent_res;
+}
+
+static int rc_hash_ms_dos_dosc(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *dosz)
+{
+  size_t path_len = strlen(dosz->path);
+  if (dosz->path[path_len-1] == 'z' || dosz->path[path_len-1] == 'Z')
+  {
+    void* file_handle;
+    char *dosc_path = strdup(dosz->path);
+    if (!dosc_path)
+        return rc_hash_error("Could not allocate temporary buffer");
+
+    /* Swap the z to c and use the same capitalization, hash the file if it exists */
+    dosc_path[path_len-1] = (dosz->path[path_len-1] == 'z' ? 'c' : 'C');
+    file_handle = rc_file_open(dosc_path);
+    free(dosc_path);
+
+    if (file_handle)
+    {
+      /* Hash the DOSC as a plain zip file (pass NULL as dosz state) */
+      int res = rc_hash_zip_file(md5, file_handle, NULL);
+      rc_file_close(file_handle);
+      if (!res)
+        return 0;
+    }
+  }
+  return 1;
+}
+
 static int rc_hash_ms_dos(char hash[33], const char* path)
 {
+  struct rc_hash_ms_dos_dosz_state dosz;
   md5_state_t md5;
-  size_t path_len;
   int res;
 
   void* file_handle = rc_file_open(path);
@@ -972,33 +1083,13 @@ static int rc_hash_ms_dos(char hash[33], const char* path)
 
   /* hash the main content zip file first */
   md5_init(&md5);
-  res = rc_hash_zip_file(&md5, file_handle);
+  dosz.path = path;
+  dosz.child = NULL;
+  res = rc_hash_zip_file(&md5, file_handle, &dosz);
   rc_file_close(file_handle);
 
   if (!res)
     return 0;
-
-  /* if this is a .dosz file, check if an associated .dosc file exists */
-  path_len = strlen(path);
-  if (path[path_len-1] == 'z' || path[path_len-1] == 'Z')
-  {
-    char *dosc_path = strdup(path);
-    if (!dosc_path)
-        return rc_hash_error("Could not allocate temporary buffer");
-
-    /* swap the z to c and use the same capitalization, hash the file if it exists*/
-    dosc_path[path_len-1] = (path[path_len-1] == 'z' ? 'c' : 'C');
-    file_handle = rc_file_open(dosc_path);
-    free((void*)dosc_path);
-    if (file_handle)
-    {
-      res = rc_hash_zip_file(&md5, file_handle);
-      rc_file_close(file_handle);
-
-      if (!res)
-        return 0;
-    }
-  }
 
   return rc_hash_finalize(&md5, hash);
 }
@@ -1008,11 +1099,12 @@ static int rc_hash_arcade(char hash[33], const char* path)
   /* arcade hash is just the hash of the filename (no extension) - the cores are pretty stringent about having the right ROM data */
   const char* filename = rc_path_get_filename(path);
   const char* ext = rc_path_get_extension(filename);
+  char buffer[128]; /* realistically, this should never need more than ~32 characters */
   size_t filename_length = ext - filename - 1;
 
   /* fbneo supports loading subsystems by using specific folder names.
    * if one is found, include it in the hash.
-   * https://github.com/libretro/FBNeo/blob/master/src/burner/libretro/README.md#emulating-consoles
+   * https://github.com/libretro/FBNeo/blob/master/src/burner/libretro/README.md#emulating-consoles-and-computers
    */
   if (filename > path + 1)
   {
@@ -1029,31 +1121,67 @@ static int rc_hash_arcade(char hash[33], const char* path)
     } while (folder > path);
 
     parent_folder_length = filename - folder - 1;
+    if (parent_folder_length < 16)
+    {
+      char* ptr = buffer;
+      while (folder < filename - 1)
+        *ptr++ = tolower(*folder++);
+      *ptr = '\0';
+
+      folder = buffer;
+    }
+
     switch (parent_folder_length)
     {
       case 3:
-        if (memcmp(folder, "nes", 3) == 0 ||
-            memcmp(folder, "fds", 3) == 0 ||
-            memcmp(folder, "sms", 3) == 0 ||
-            memcmp(folder, "msx", 3) == 0 ||
-            memcmp(folder, "ngp", 3) == 0 ||
-            memcmp(folder, "pce", 3) == 0 ||
-            memcmp(folder, "sgx", 3) == 0)
+        if (memcmp(folder, "nes", 3) == 0 || /* NES */
+            memcmp(folder, "fds", 3) == 0 || /* FDS */
+            memcmp(folder, "sms", 3) == 0 || /* Master System */
+            memcmp(folder, "msx", 3) == 0 || /* MSX */
+            memcmp(folder, "ngp", 3) == 0 || /* NeoGeo Pocket */
+            memcmp(folder, "pce", 3) == 0 || /* PCEngine */
+            memcmp(folder, "chf", 3) == 0 || /* ChannelF */
+            memcmp(folder, "sgx", 3) == 0)   /* SuperGrafX */
           include_folder = 1;
         break;
       case 4:
-        if (memcmp(folder, "tg16", 4) == 0)
+        if (memcmp(folder, "tg16", 4) == 0 || /* TurboGrafx-16 */
+            memcmp(folder, "msx1", 4) == 0)   /* MSX */
+          include_folder = 1;
+        break;
+      case 5:
+        if (memcmp(folder, "neocd", 5) == 0) /* NeoGeo CD */
           include_folder = 1;
         break;
       case 6:
-        if (memcmp(folder, "coleco", 6) == 0 ||
-            memcmp(folder, "sg1000", 6) == 0)
+        if (memcmp(folder, "coleco", 6) == 0 || /* Colecovision */
+            memcmp(folder, "sg1000", 6) == 0)   /* SG-1000 */
+          include_folder = 1;
+        break;
+      case 7:
+        if (memcmp(folder, "genesis", 7) == 0) /* Megadrive (Genesis) */
           include_folder = 1;
         break;
       case 8:
-        if (memcmp(folder, "gamegear", 8) == 0 ||
-            memcmp(folder, "megadriv", 8) == 0 ||
-            memcmp(folder, "spectrum", 8) == 0)
+        if (memcmp(folder, "gamegear", 8) == 0 || /* Game Gear */
+            memcmp(folder, "megadriv", 8) == 0 || /* Megadrive */
+            memcmp(folder, "pcengine", 8) == 0 || /* PCEngine */
+            memcmp(folder, "channelf", 8) == 0 || /* ChannelF */
+            memcmp(folder, "spectrum", 8) == 0)   /* ZX Spectrum */
+          include_folder = 1;
+        break;
+      case 9:
+        if (memcmp(folder, "megadrive", 9) == 0) /* Megadrive */
+          include_folder = 1;
+        break;
+      case 10:
+        if (memcmp(folder, "supergrafx", 10) == 0 || /* SuperGrafX */
+            memcmp(folder, "zxspectrum", 10) == 0)   /* ZX Spectrum */
+          include_folder = 1;
+        break;
+      case 12:
+        if (memcmp(folder, "mastersystem", 12) == 0 || /* Master System */
+            memcmp(folder, "colecovision", 12) == 0)   /* Colecovision */
           include_folder = 1;
         break;
       default:
@@ -1062,10 +1190,8 @@ static int rc_hash_arcade(char hash[33], const char* path)
 
     if (include_folder)
     {
-      char buffer[128]; /* realistically, this should never need more than ~20 characters */
       if (parent_folder_length + filename_length + 1 < sizeof(buffer))
       {
-        memcpy(&buffer[0], folder, parent_folder_length);
         buffer[parent_folder_length] = '_';
         memcpy(&buffer[parent_folder_length + 1], filename, filename_length);
         return rc_hash_buffer(hash, (uint8_t*)&buffer[0], parent_folder_length + filename_length + 1);

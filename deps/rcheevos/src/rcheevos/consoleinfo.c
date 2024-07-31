@@ -368,9 +368,14 @@ static const rc_memory_regions_t rc_memory_regions_atari_lynx = { _rc_memory_reg
 
 /* ===== ColecoVision ===== */
 static const rc_memory_region_t _rc_memory_regions_colecovision[] = {
-    { 0x000000U, 0x0003FFU, 0x006000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    /* "System RAM" refers to the main RAM at 0x6000-0x63FF. However, this RAM might not always be visible.
+     * If the Super Game Module (SGM) is active, then it might overlay its own RAM at 0x0000-0x1FFF and 0x2000-0x7FFF.
+     * These positions overlap the BIOS and System RAM, therefore we use virtual addresses for these memory spaces. */
+    { 0x000000U, 0x0003FFU, 0x006000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x000400U, 0x0023FFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "SGM Low RAM" }, /* Normally situated at 0x0000-0x1FFF, which overlaps the BIOS */
+    { 0x002400U, 0x0083FFU, 0x012000U, RC_MEMORY_TYPE_SYSTEM_RAM, "SGM High RAM" } /* Normally situated at 0x2000-0x7FFF, which overlaps System RAM */
 };
-static const rc_memory_regions_t rc_memory_regions_colecovision = { _rc_memory_regions_colecovision, 1 };
+static const rc_memory_regions_t rc_memory_regions_colecovision = { _rc_memory_regions_colecovision, 3 };
 
 /* ===== Commodore 64 ===== */
 /* https://www.c64-wiki.com/wiki/Memory_Map */
@@ -770,10 +775,11 @@ static const rc_memory_regions_t rc_memory_regions_pcfx = { _rc_memory_regions_p
 /* ===== PlayStation ===== */
 /* http://www.raphnet.net/electronique/psx_adaptor/Playstation.txt */
 static const rc_memory_region_t _rc_memory_regions_playstation[] = {
-    { 0x000000U, 0x00FFFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
-    { 0x010000U, 0x1FFFFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    { 0x000000U, 0x00FFFFU, 0x00000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
+    { 0x010000U, 0x1FFFFFU, 0x00010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x200000U, 0x2003FFU, 0x1F800000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Scratchpad RAM" }
 };
-static const rc_memory_regions_t rc_memory_regions_playstation = { _rc_memory_regions_playstation, 2 };
+static const rc_memory_regions_t rc_memory_regions_playstation = { _rc_memory_regions_playstation, 3 };
 
 /* ===== PlayStation 2 ===== */
 /* https://psi-rockin.github.io/ps2tek/ */
