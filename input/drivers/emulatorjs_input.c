@@ -347,14 +347,8 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
       case EMSCRIPTEN_EVENT_TOUCHSTART: {
          touch_handler->last_canvasX = touch.targetX;
          touch_handler->last_canvasY = touch.targetY;
+
          if (touch_handler->clicked_yet) {
-            if (touch_handler->clicked_twice) {
-               //printf("Click end!.\n");
-               rwebinput->mouse.buttons &= ~(1 << 0);
-               touch_handler->clicked_yet = true;
-               touch_handler->clicked_twice = false;
-               break;
-            }
             long is_pressed = calculate_diff(touch_handler->last_touchdown_location, touch);
             if (is_pressed && !touch_handler->clicked_twice) {
                //printf("Click start!.\n");
@@ -392,6 +386,13 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
       }
       case EMSCRIPTEN_EVENT_TOUCHCANCEL:
       case EMSCRIPTEN_EVENT_TOUCHEND: {
+         if (touch_handler->clicked_yet && touch_handler->clicked_twice) {
+            //printf("Click end!.\n");
+            rwebinput->mouse.buttons &= ~(1 << 0);
+            touch_handler->clicked_yet = false;
+            touch_handler->clicked_twice = false;
+            break;
+         }
          long is_pressed = calculate_diff(touch_handler->last_touchdown_location, touch);
          if (!is_pressed) {
             touch_handler->clicked_yet = false;
