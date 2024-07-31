@@ -6,13 +6,6 @@
 
 APPSTORE_BUILD = 1
 
-// the app store versioning tries to track closely to RetroArch's, however
-// the app store version must be major.minor.patch and always incrementing,
-// so any follow up/hotfix releases will necessarily have the patch version
-// drift a little bit
-MARKETING_VERSION = 1.18.3
-CURRENT_PROJECT_VERSION = 12
-
 OTHER_CFLAGS = $(inherited) -DHAVE_APPLE_STORE
 OTHER_CFLAGS = $(inherited) -DHAVE_ICLOUD
 OTHER_CFLAGS = $(inherited) -DkRetroArchAppGroup=@\"group.com.libretro.dist.RetroArchGroup\"
@@ -22,6 +15,7 @@ TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch
 
 IOS_CODE_SIGN_ENTITLEMENTS = iOS/RetroArchiOS.entitlements
 TVOS_CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTV.entitlements
+TVOS_TOPSHELF_CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTopShelf.entitlements
 
-IPHONEOS_DEPLOYMENT_TARGET = 14.2
+RA_IPHONEOS_DEPLOYMENT_TARGET = 14.2
 TVOS_DEPLOYMENT_TARGET = 14.2
