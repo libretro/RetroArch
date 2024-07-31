@@ -65,13 +65,11 @@ typedef struct rwebinput_keyboard_event_queue
 
 typedef struct rwebinput_touch
 {
-   long touch_id;
    long last_canvasX;
    long last_canvasY;
-   bool down;
-   long last_touchdown_id;
    long last_touchdown_location;
    bool clicked_yet;
+   bool clicked_twice;
 } rwebinput_touch_t;
 
 typedef struct rwebinput_mouse_states
@@ -321,79 +319,87 @@ static EM_BOOL rwebinput_wheel_cb(int event_type,
    return EM_TRUE;
 }
 
+static bool calculate_diff(long last_touchdown_location, EmscriptenTouchPoint touch) {
+   long press_diff = 25;
+   long diff = last_touchdown_location - (touch.targetX + touch.targetY);
+   //printf("Touch of diff: %li\n", diff);
+   return abs(diff) < press_diff;
+}
+
 static EM_BOOL rwebinput_touch_cb(int event_type,
    const EmscriptenTouchEvent *touch_event, void *user_data)
 {
    rwebinput_input_t       *rwebinput = (rwebinput_input_t*)user_data;
    rwebinput_touch_t       *touch_handler = &rwebinput->touch;
 
-   EmscriptenTouchPoint changed_touch;
+   EmscriptenTouchPoint touch;
    bool touch_changed = false;
    for (int i=0; i<touch_event->numTouches; i++) {
       if (touch_event->touches[i].isChanged) {
-         changed_touch = touch_event->touches[i];
+         touch = touch_event->touches[i];
          touch_changed = true;
       }
    }
    if (!touch_changed) return EM_TRUE;
-   if (event_type == EMSCRIPTEN_EVENT_TOUCHSTART && touch_handler->last_touchdown_id != changed_touch.identifier) {
-      touch_handler->clicked_yet = false;
-      touch_handler->last_touchdown_id = changed_touch.identifier;
-      touch_handler->last_touchdown_location = (changed_touch.canvasX + changed_touch.canvasY);
-   }
-   if (event_type == EMSCRIPTEN_EVENT_TOUCHSTART && touch_handler->clicked_yet) {
-      rwebinput->mouse.buttons |= 1 << 0;
-   }
-   if (event_type == EMSCRIPTEN_EVENT_TOUCHMOVE && touch_handler->last_touchdown_id == changed_touch.identifier) {
-      long u = touch_handler->last_touchdown_location - (changed_touch.canvasX + changed_touch.canvasY);
-      //25 may be too much of an offset...
-      if (((u<0)?-u:u) > 25) {
-         touch_handler->last_touchdown_id = -1;
-      }
-   }
+   //printf("Touch changed. %li %i %i\n", touch.identifier, touch.targetX, touch.targetY);
 
-   if (event_type == EMSCRIPTEN_EVENT_TOUCHCANCEL || event_type == EMSCRIPTEN_EVENT_TOUCHEND) {
-      if (changed_touch.identifier == touch_handler->touch_id) {
-         touch_handler->down = false;
-      }
-      if (touch_handler->last_touchdown_id == changed_touch.identifier && !touch_handler->clicked_yet) {
+   switch (event_type) {
+      case EMSCRIPTEN_EVENT_TOUCHSTART: {
+         touch_handler->last_canvasX = touch.targetX;
+         touch_handler->last_canvasY = touch.targetY;
+         if (touch_handler->clicked_yet) {
+            if (touch_handler->clicked_twice) {
+               //printf("Click end!.\n");
+               rwebinput->mouse.buttons &= ~(1 << 0);
+               touch_handler->clicked_yet = true;
+               touch_handler->clicked_twice = false;
+               break;
+            }
+            long is_pressed = calculate_diff(touch_handler->last_touchdown_location, touch);
+            if (is_pressed && !touch_handler->clicked_twice) {
+               //printf("Click start!.\n");
+               touch_handler->clicked_twice = true;
+               rwebinput->mouse.buttons |= 1 << 0;
+               break;
+            }
+         }
+         //printf("Touch start.\n");
          touch_handler->clicked_yet = true;
-      } else if (touch_handler->clicked_yet) {
-         rwebinput->mouse.buttons &= ~(1 << 0);
-         touch_handler->clicked_yet = false;
-         touch_handler->last_touchdown_id = -1;
+         touch_handler->clicked_twice = false;
+         touch_handler->last_touchdown_location = (touch.targetX + touch.targetY);
+         break;
       }
-      return EM_TRUE;
-   } else if (touch_handler->down && changed_touch.identifier != touch_handler->touch_id) {
-      return EM_TRUE; //I am not supporting multi touch
-   }
-   if (event_type == EMSCRIPTEN_EVENT_TOUCHSTART) {
-      touch_handler->down = true;
-      touch_handler->touch_id = changed_touch.identifier;
-      touch_handler->last_canvasX = changed_touch.canvasX;
-      touch_handler->last_canvasY = changed_touch.canvasY;
-   } else if (event_type == EMSCRIPTEN_EVENT_TOUCHMOVE) {
-      long diffX = changed_touch.canvasX - touch_handler->last_canvasX;
-      long diffY = changed_touch.canvasY - touch_handler->last_canvasY;
-      touch_handler->last_canvasX = changed_touch.canvasX;
-      touch_handler->last_canvasY = changed_touch.canvasY;
+      case EMSCRIPTEN_EVENT_TOUCHMOVE: {
+         long diffX = (touch.targetX - touch_handler->last_canvasX) / 2;
+         long diffY = (touch.targetY - touch_handler->last_canvasY) / 2;
+         touch_handler->last_canvasX = touch.targetX;
+         touch_handler->last_canvasY = touch.targetY;
+         //printf("Touch move. %li %li\n", diffX, diffY);
 
 #ifdef WEB_SCALING
-      double dpr = emscripten_get_device_pixel_ratio();
-      rwebinput->mouse.x                = (long)(changed_touch.canvasX * dpr);
-      rwebinput->mouse.y                = (long)(changed_touch.canvasY * dpr);
-      rwebinput->mouse.pending_delta_x += (long)(diffX * dpr);
-      rwebinput->mouse.pending_delta_y += (long)(diffY * dpr);
+         double dpr = emscripten_get_device_pixel_ratio();
+         rwebinput->mouse.x                = (long)(touch.targetX * dpr);
+         rwebinput->mouse.y                = (long)(touch.targetY * dpr);
+         rwebinput->mouse.pending_delta_x += (long)(diffX * dpr);
+         rwebinput->mouse.pending_delta_y += (long)(diffY * dpr);
 #else
-      rwebinput->mouse.x                = changed_touch.canvasX;
-      rwebinput->mouse.y                = changed_touch.canvasY;
-      rwebinput->mouse.pending_delta_x += diffX;
-      rwebinput->mouse.pending_delta_y += diffY;
+         rwebinput->mouse.x                = touch.targetX;
+         rwebinput->mouse.y                = touch.targetY;
+         rwebinput->mouse.pending_delta_x += diffX;
+         rwebinput->mouse.pending_delta_y += diffY;
 #endif
-
-      //printf("diff: %li\n", diffX);
+         break;
+      }
+      case EMSCRIPTEN_EVENT_TOUCHCANCEL:
+      case EMSCRIPTEN_EVENT_TOUCHEND: {
+         long is_pressed = calculate_diff(touch_handler->last_touchdown_location, touch);
+         if (!is_pressed) {
+            touch_handler->clicked_yet = false;
+            touch_handler->clicked_twice = false;
+         }
+         break;
+      }
    }
-
    return EM_TRUE;
 }
 
