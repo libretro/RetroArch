@@ -18,6 +18,12 @@
 #define _GNU_SOURCE /* See feature_test_macros(7) */
 #endif
 
+#ifdef HAVE_GLIB
+#include <glib.h>
+#endif
+#include "../../tasks/task_content.h"
+#include "../../paths.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -961,6 +967,67 @@ static void wl_data_device_handle_motion(void *data,
       struct wl_data_device *data_device, uint32_t time,
       wl_fixed_t x, wl_fixed_t y) { }
 
+static bool wayland_load_content_from_drop(const char* path)
+{
+   core_info_list_t *core_info_list = NULL;
+   core_info_get_list(&core_info_list);
+   if (core_info_list)
+   {
+      size_t list_size;
+      content_ctx_info_t content_info  = { 0 };
+      const core_info_t *core_info     = NULL;
+      core_info_list_get_supported_cores(core_info_list,
+            (const char*)path, &core_info, &list_size);
+      if (list_size)
+      {
+         path_set(RARCH_PATH_CONTENT, path);
+
+         if (!path_is_empty(RARCH_PATH_CONTENT))
+         {
+            unsigned i;
+            core_info_t *current_core = NULL;
+            core_info_get_current_core(&current_core);
+
+            /*we already have path for libretro core */
+            for (i = 0; i < list_size; i++)
+            {
+               const core_info_t *info = (const core_info_t*)&core_info[i];
+
+               if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+               {
+                  /* Our previous core supports the current rom */
+                  task_push_load_content_with_current_core_from_companion_ui(
+                        NULL,
+                        &content_info,
+                        CORE_TYPE_PLAIN,
+                        NULL, NULL);
+                  return true;
+               }
+            }
+         }
+      }
+
+      if (list_size >= 1)
+      {
+         /*pick core that only exists and is bound to work. Ish. */
+         const core_info_t *info = (const core_info_t*)&core_info[0];
+
+         if (info)
+         {
+            task_push_load_content_with_new_core_from_companion_ui(
+                  info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
+            return true;
+         }
+      }
+      else
+      {
+         RARCH_WARN("There are no core to open %s\n", path);
+      }
+   }
+
+   return false;
+}
+
 static void wl_data_device_handle_drop(void *data,
       struct wl_data_device *data_device)
 {
@@ -1008,7 +1075,7 @@ static void wl_data_device_handle_drop(void *data,
 
       /* TODO/FIXME: Convert from file:// URI, Implement file loading
        * Drag and Drop */
-#if 0
+#ifdef HAVE_GLIB
       if (wayland_load_content_from_drop(g_filename_from_uri(line, NULL, NULL)))
          RARCH_WARN("----- wayland_load_content_from_drop success\n");
 #endif
