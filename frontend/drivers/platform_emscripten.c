@@ -173,7 +173,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 int main(int argc, char *argv[])
 {
    dummyErrnoCodes();
-   printf("Built for EmulatorJS Version 4.0.11\nDownload a copy from https://github.com/EmulatorJS/EmulatorJS\nView the licence here: https://github.com/EmulatorJS/EmulatorJS/blob/main/LICENSE\n");
+   printf("Built for EmulatorJS Version 4.0.13\nDownload a copy from https://github.com/EmulatorJS/EmulatorJS\nView the licence here: https://github.com/EmulatorJS/EmulatorJS/blob/main/LICENSE\n");
 
    EM_ASM({
       specialHTMLTargets["!canvas"] = Module.canvas;
