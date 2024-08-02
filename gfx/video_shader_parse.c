@@ -639,6 +639,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->type_x = RARCH_SCALE_VIEWPORT;
       else if (string_is_equal(scale_type_x, "absolute"))
          scale->type_x = RARCH_SCALE_ABSOLUTE;
+      else if (string_is_equal(scale_type_x, "original"))
+         scale->type_x = RARCH_SCALE_ORIGINAL;
       else
       {
          RARCH_ERR("[Shaders]: Invalid attribute: \"%s\".\n", scale_type_x);
@@ -654,6 +656,8 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->type_y = RARCH_SCALE_VIEWPORT;
       else if (string_is_equal(scale_type_y, "absolute"))
          scale->type_y = RARCH_SCALE_ABSOLUTE;
+      else if (string_is_equal(scale_type_x, "original"))
+         scale->type_y = RARCH_SCALE_ORIGINAL;
       else
       {
          RARCH_ERR("[Shaders]: Invalid attribute: \"%s\".\n", scale_type_y);
@@ -1015,6 +1019,8 @@ static const char *video_shader_scale_type_to_str(enum gfx_scale_type type)
          return "viewport";
       case RARCH_SCALE_ABSOLUTE:
          return "absolute";
+      case RARCH_SCALE_ORIGINAL:
+         return "original";
       default:
          break;
    }
