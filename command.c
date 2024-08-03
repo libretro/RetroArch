@@ -1558,7 +1558,13 @@ void command_event_set_savestate_garbage_collect(
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
    if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
+   {
       filestream_delete(oldest_save);
+      /* Construct the save state thumbnail name 
+       * and delete that one as well. */
+      i = strlcpy(state_dir,oldest_save,PATH_MAX_LENGTH);
+      strlcpy(state_dir + i,".png",STRLEN_CONST(".png")+1);
+   }
 
    dir_list_free(dir_list);
 }
