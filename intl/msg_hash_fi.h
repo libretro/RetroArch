@@ -635,6 +635,10 @@ MSG_HASH(
    "Suorittimen ytimet"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT-käytettävissä"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Käyttöliittymän tunniste"
    )
@@ -1209,9 +1213,21 @@ MSG_HASH(
    "Tuhoava pilvisynkronointi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Synkronointi: peli- ja tilatallennukset"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
+   "Synkronointi: asetustiedostot"
    )      
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Kun käytössä, peli- ja tilatallennukset synkronoidaan pilveen."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Kun käytössä, asetustiedostot synkronoidaan pilveen."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Kun pois käytöstä, tiedostot siirretään varmuuskopio-kansioon, ennen kuin niitä korvataan tai poistetaan."
@@ -1887,6 +1903,66 @@ MSG_HASH(
    "15 - Näytön 960 Hz:n virkistystaajuudelle"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - 120 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - 180 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - 240 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - 300 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - 360 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - 420 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - 480 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - 540 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - 600 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - 660 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - 720 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - 780 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - 840 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - 900 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - 960 Hz:n virkistystaajuuden näytöille"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Näytönohjaimen kuvakaappaus"
    )
@@ -2029,6 +2105,10 @@ MSG_HASH(
    "Käytetty monitori. 0 (oletus) ei valitse mitään tiettyä, 1 (ensimmäinen monitori) ja ylöspäin kehottaa RetroArchia käyttämään kyseistä monitoria."
    )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimoi Wii U GamePad:ille (uudelleenkäynnistys vaaditaan)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Käytä tarkkaa kaksinkertaista skaalausta Wii U:n Gamepadin ikkunoinnissa. Poista käytöstä näyttääksesi alkuperäisessä TV:n resoluutiossa."
@@ -3577,6 +3657,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Tekoälypalvelu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "Kaappaa kuvan nykyisestä sisällöstä kääntääksseen ja/tai lukeakseen ääneen minkä tahansa näytön tekstin. 'Tekoälypalvelu' tulee olla käytössä ja konfiguroitu."
    )
 
 MSG_HASH(
@@ -13250,6 +13334,22 @@ MSG_HASH(
    "Uusien osumien määrä = %u"
    )
 MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   "Vastaavuuksien lisääminen epäonnistui."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   "Luotiin koodi vastaavuudesta."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   "Koodin luominen epäonnistui."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   "Poista vastaavuus."
+   )
+MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    "Ei tarpeeksi tilaa. Enimmäismäärä samanaikaisia huijauksia on 100."
    )
@@ -13286,8 +13386,28 @@ MSG_HASH(
    "Huijaus poistettu."
    )
 MSG_HASH(
+   MSG_FAILED_TO_SET_DISK,
+   "Levyn asettaminen epäonnistui."
+   )
+MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
    "Viimeksi käytetyn levyn asetus epäonnistui."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   "Yhteyden muodostaminen asiakkaaseen epäonnistui."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Yhteyden muodostaminen isäntään epäonnistui."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Sinulla on porttikielto tälle palvelimelle."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   "Otsakkeen vastaanottaminen isännältä epäonnistui."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13330,6 +13450,18 @@ MSG_HASH(
    "Korkein"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Varoitus: Resursseja puuttuu. Käytä verkkopäivittäjää, jos se on saatavilla."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Varoitus: Puutteelliset fontit valitulle kielelle. Käytä verkkopäivittäjää, jos se on saatavilla."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Varoitus: Kieltä ei tueta. Käytetään englantia."
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Kopioidaan levyä..."
    )
@@ -13362,8 +13494,24 @@ MSG_HASH(
    "Virhe poistettaessa varjostimen esiasetusta."
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Virheellinen arcade DAT -tiedosto valittu."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Valittu arcade DAT -tiedosto on liian suuri (ei tarpeeksi vapaata muistia)."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    "Arcade DAT -tiedoston lataaminen epäonnistui (virheellinen muoto?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Manuaalisen skannauksen asetukset eivät kelpaa."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Kelvollista sisältöä ei havaittu."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
@@ -13460,6 +13608,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_UNLOCK_FAILED,
    "Ytimen lukituksen avaaminen epäonnistui: "
+   )
+MSG_HASH(
+   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   "Ei voitu poistaa ydintä 'Sisällöttömät ytimet' -luettelosta: "
+   )
+MSG_HASH(
+   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   "Ytimen lisääminen 'Sisällöttömät ytimet' -luetteloon epäonnistui: "
    )
 MSG_HASH(
    MSG_CORE_DELETE_DISABLED,
@@ -14113,4 +14269,8 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Kosketus hiiri on pois käytöstä"
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "pysäytetty."
    )
