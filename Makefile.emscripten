@@ -123,9 +123,8 @@ LDFLAGS := -L. --no-heap-copy $(LIBS) -s TOTAL_STACK=$(STACK_MEMORY) -s TOTAL_ME
            -s GL_ENABLE_GET_PROC_ADDRESS=1 \
            -s ALLOW_MEMORY_GROWTH=1 \
            --js-library emscripten/library_rwebcam.js \
-           --js-library emscripten/library_errno_codes.js
-
-#           -s MODULARIZE=1 -s EXPORT_ES6=1
+           --js-library emscripten/library_errno_codes.js \
+           -s MODULARIZE=1 -s 'EXPORT_NAME="EJS_Runtime"'
 
 
 ifeq ($(HAVE_RWEBAUDIO), 1)
