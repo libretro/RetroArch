@@ -4252,6 +4252,14 @@ MSG_HASH(
    "Putuskan"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+   "Betulkan Lebihan Pindai (Atas)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   "Perbaikan Lebihan Pindai (Bawah)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Mulai Ulang RetroArch"
    )
