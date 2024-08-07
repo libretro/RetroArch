@@ -326,9 +326,12 @@ static bool calculate_diff(long last_touchdown_location, EmscriptenTouchPoint to
    return abs(diff) < press_diff;
 }
 
+bool ejs_is_paused(void);
+
 static EM_BOOL rwebinput_touch_cb(int event_type,
    const EmscriptenTouchEvent *touch_event, void *user_data)
 {
+   EM_BOOL rv = ejs_is_paused() ? EM_FALSE : EM_TRUE;
    rwebinput_input_t       *rwebinput = (rwebinput_input_t*)user_data;
    rwebinput_touch_t       *touch_handler = &rwebinput->touch;
 
@@ -340,7 +343,7 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
          touch_changed = true;
       }
    }
-   if (!touch_changed) return EM_TRUE;
+   if (!touch_changed) return rv;
    //printf("Touch changed. %li %i %i\n", touch.identifier, touch.targetX, touch.targetY);
 
    switch (event_type) {
@@ -401,7 +404,7 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
          break;
       }
    }
-   return EM_TRUE;
+   return rv;
 }
 
 static void *rwebinput_input_init(const char *joypad_driver)

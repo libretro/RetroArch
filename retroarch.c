@@ -6047,6 +6047,10 @@ void emscripten_mainloop(void)
 
 #ifdef EMULATORJS
 
+bool ejs_is_paused(void) {
+   return EJS_PAUSED;
+}
+
 void cmd_take_screenshot(void)
 {
    EJS_PENDING_SCREENSHOT = true;
