@@ -3467,6 +3467,10 @@ void playlist_set_thumbnail_mode(
          playlist->left_thumbnail_mode = thumbnail_mode;
          playlist->modified            = true;
          break;
+      case PLAYLIST_THUMBNAIL_ICON:
+         /* should never be reached.  Do Nothing */
+         break;
+
    }
 }
 

@@ -274,6 +274,7 @@ typedef struct settings
       unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_icon_thumbnails;
       unsigned gfx_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
