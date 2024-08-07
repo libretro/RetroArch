@@ -275,7 +275,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
             [super pressesBegan:presses withEvent:event];
         else if (!press.key && [self didMicroGamepadPress:press.type])
             [self sendKeyForPress:press.type down:true];
-        else
+        else if (press.key)
             [super pressesBegan:[NSSet setWithObject:press] withEvent:event];
     }
 }
