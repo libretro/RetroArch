@@ -88,8 +88,10 @@ static void icloud_query_path(const char *path, void(^cb)(CKRecord * results, NS
    }];
 }
 
-static bool icloud_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data)
+static bool icloud_read(const char *p, const char *f, cloud_sync_complete_handler_t cb, void *user_data)
 {
+   char *path = strdup(p);
+   char *file = strdup(f);
    icloud_query_path(path, ^(CKRecord *result, NSError *error) {
       if (result)
       {
@@ -116,16 +118,23 @@ static bool icloud_read(const char *path, const char *file, cloud_sync_complete_
                }
                cb(user_data, path, true, rfile);
             }
+            free(path);
+            free(file);
          }];
       }
       else
+      {
          cb(user_data, path, error == nil, NULL);
+         free(path);
+         free(file);
+      }
    });
    return true;
 }
 
-static bool icloud_update(const char *path, RFILE *rfile, cloud_sync_complete_handler_t cb, void *user_data)
+static bool icloud_update(const char *p, RFILE *rfile, cloud_sync_complete_handler_t cb, void *user_data)
 {
+   char *path = strdup(p);
    icloud_query_path(path, ^(CKRecord *record, NSError *error) {
       bool update = true;
       if (error || !record)
@@ -142,13 +151,15 @@ static bool icloud_update(const char *path, RFILE *rfile, cloud_sync_complete_ha
          if (error)
             RARCH_DBG("[iCloud] error: %s\n", [[error debugDescription] UTF8String]);
          cb(user_data, path, error == nil, rfile);
+         free(path);
       }];
    });
    return true;
 }
 
-static bool icloud_delete(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
+static bool icloud_delete(const char *p, cloud_sync_complete_handler_t cb, void *user_data)
 {
+   char *path = strdup(p);
    NSPredicate *pred = [NSComparisonPredicate
                         predicateWithLeftExpression:[NSExpression expressionForKeyPath:@"path"]
                         rightExpression:[NSExpression expressionForConstantValue:[NSString stringWithUTF8String:path]]
@@ -170,6 +181,7 @@ static bool icloud_delete(const char *path, cloud_sync_complete_handler_t cb, vo
          }];
       }
       cb(user_data, path, error == nil, NULL);
+      free(path);
    }];
    return true;
 }
