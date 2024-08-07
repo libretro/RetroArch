@@ -1564,6 +1564,7 @@ void command_event_set_savestate_garbage_collect(
        * and delete that one as well. */
       i = strlcpy(state_dir,oldest_save,PATH_MAX_LENGTH);
       strlcpy(state_dir + i,".png",STRLEN_CONST(".png")+1);
+      filestream_delete(state_dir);
    }
 
    dir_list_free(dir_list);
