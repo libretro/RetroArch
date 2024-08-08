@@ -2,7 +2,7 @@
 <!-- Copyright 2019 Rob Loach <robloach@gmail.com> -->
 <component type="desktop-application">
   <id>com.libretro.RetroArch</id>
-  <launchable type="desktop-id">org.libretro.RetroArch.desktop</launchable>
+  <launchable type="desktop-id">com.libretro.RetroArch.desktop</launchable>
   <name>RetroArch</name>
   <summary>Frontend for emulators, game engines and media players</summary>
   <developer_name>libretro</developer_name>
