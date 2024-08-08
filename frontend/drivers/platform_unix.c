@@ -2507,11 +2507,16 @@ static uint64_t frontend_unix_get_free_mem(void)
 static void frontend_unix_sighandler(int sig)
 {
 #ifdef VALGRIND_PRINTF_BACKTRACE
-VALGRIND_PRINTF_BACKTRACE("SIGINT");
+   VALGRIND_PRINTF_BACKTRACE("SIGINT");
 #endif
    (void)sig;
    unix_sighandler_quit++;
-   if (unix_sighandler_quit == 1) {}
+   if (unix_sighandler_quit == 1)
+   {
+#if defined(HAVE_SDL_DINGUX)
+      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+#endif
+   }
    if (unix_sighandler_quit == 2) exit(1);
    /* in case there's a second deadlock in a C++ destructor or something */
    if (unix_sighandler_quit >= 3) abort();
