@@ -172,6 +172,7 @@ else
                 np2kai
                 numero
                 nxengine
+                opera
                 pcsx_rearmed
                 picodrive
                 #play
