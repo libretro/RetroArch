@@ -72,6 +72,10 @@ MSG_HASH(
    "Chọn nhân nào sẽ dùng."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Duyệt qua các lõi libretro. Khi trình quản lý tập tin bắt đầu dựa vào đường dẫn thư mục lõi. Nếu nó trống, nó sẽ được bắt đầu ở thư mục gốc.\nNếu thư mục lõi của bạn là một thư mục, menu sẽ sử dụng thư mục đó là thư mục trên cùng. Nếu thư mục lõi của bạn là đường dẫn đầy đủ, nó sẽ bắt đầu ở thư mục nơi tệp nằm ở đó."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Tải Content"
    )
