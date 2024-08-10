@@ -495,7 +495,7 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
    for (i=0; i<MAX_USERS; i++)
    {
       struct iohidmanager_hid_adapter *a = (struct iohidmanager_hid_adapter*)hid->slots[i].data;
-      if (!a)
+      if (!a || !hid->slots[i].connected)
          continue;
       if (a->handle == device)
       {
@@ -517,6 +517,7 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
 
       hid->buttons[adapter->slot] = 0;
       memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
+      hid->slots[adapter->slot].data = NULL;
 
       pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
    }
