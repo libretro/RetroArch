@@ -1639,6 +1639,16 @@ ANDROID PLAY FEATURE DELIVERY
 #include "../play_feature_delivery/play_feature_delivery.c"
 #endif
 
+
+/*============================================================
+FFMPEG
+============================================================ */
+#ifdef HAVE_FFMPEG
+#include "../cores/libretro-ffmpeg/packet_buffer.c"
+#include "../cores/libretro-ffmpeg/video_buffer.c"
+#include "../libretro-common/rthreads/tpool.c"
+#endif
+
 /*============================================================
 STEAM INTEGRATION USING MIST
 ============================================================ */
