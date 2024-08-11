@@ -964,6 +964,8 @@ typedef struct settings
       bool cloud_sync_destructive;
       bool cloud_sync_sync_saves;
       bool cloud_sync_sync_configs;
+      bool cloud_sync_sync_thumbs;
+      bool cloud_sync_sync_system;
 
       /* Misc. */
       bool discord_enable;

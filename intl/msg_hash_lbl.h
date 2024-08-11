@@ -3643,7 +3643,15 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "cloud_sync_sync_configs"
-   )      
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "cloud_sync_sync_thumbs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "cloud_sync_sync_system"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
    "cloud_sync_driver"
