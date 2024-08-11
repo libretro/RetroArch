@@ -334,7 +334,7 @@ input_driver_t *input_drivers[] = {
 #ifdef HAVE_DINPUT
    &input_dinput,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    &input_sdl,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
