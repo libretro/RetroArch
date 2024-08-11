@@ -136,7 +136,7 @@ static char unix_cpu_model_name[64]      = {0};
 #define PROC_MEMINFO_CACHED_TAG          "Cached:"
 #define PROC_MEMINFO_SHMEM_TAG           "Shmem:"
 
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static int speak_pid                     = 0;
 #endif
 
@@ -2793,7 +2793,7 @@ enum retro_language frontend_unix_get_user_language(void)
    return lang;
 }
 
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static bool is_narrator_running_unix(void)
 {
    return (kill(speak_pid, 0) == 0);
@@ -3057,7 +3057,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_set_sustained_performance_mode,
    frontend_unix_get_cpu_model_name,
    frontend_unix_get_user_language,
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
    is_narrator_running_unix,     /* is_narrator_running */
    accessibility_speak_unix,     /* accessibility_speak */
 #else
