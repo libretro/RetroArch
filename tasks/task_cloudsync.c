@@ -336,6 +336,20 @@ static struct string_list *task_cloud_sync_directory_map(void)
          string_list_append(list, "states", attr);
          list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVESTATE));
       }
+
+      if (settings->bools.cloud_sync_sync_thumbs)
+      {
+         string_list_append(list, "thumbnails", attr);
+         strlcpy(dir, settings->paths.directory_thumbnails, sizeof(dir));
+         list->elems[list->size - 1].userdata = strdup(dir);
+      }
+
+      if (settings->bools.cloud_sync_sync_system)
+      {
+         string_list_append(list, "system", attr);
+         strlcpy(dir, settings->paths.directory_system, sizeof(dir));
+         list->elems[list->size - 1].userdata = strdup(dir);
+      }
    }
 
    return list;
