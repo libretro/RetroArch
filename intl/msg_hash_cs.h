@@ -1201,13 +1201,9 @@ MSG_HASH(
    "Destruktivní cloudová synchronizace"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Pokud je tato funkce vypnuta, jsou soubory před přepsáním nebo odstraněním přesunuty do záložní složky."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend cloudové synchronizace"

@@ -1195,7 +1195,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Sincronizza: File Di Configurazione"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Se abilitata, i salvataggi/stati verranno sincronizzati su cloud."
@@ -1207,7 +1207,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Quando disabilitato, i file vengono spostati in una cartella di backup prima di essere sovrascritti o cancellati."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend Sincronizzazione Cloud"

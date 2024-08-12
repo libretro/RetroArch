@@ -1235,7 +1235,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Синхронізація: Файли конфігурації"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Коли увімкнено, збереження чи стани будуть синхронізуватись до хмари."
@@ -1247,7 +1247,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "У вимкненому стані, файли переміщуються до резервного каталогу перед перезаписом чи видаленням."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Бекенд хмарної синхронізації"

@@ -1227,7 +1227,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Sincronización: Ficheiros de Configuración"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Cando está activado, os gardados/estados sincronizaranse coa nube."
@@ -1239,7 +1239,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Cando está desactivado, os ficheiros móvense a un cartafol de copia de seguranza antes de sobrescribilos ou eliminalos."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend de sincronización na nube"

@@ -1229,13 +1229,41 @@ MSG_HASH(
    "Дэструктыўная воблачная сінхранізацыя"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Сінхранізацыя: захаванні/станы"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
+   "Сінхранізацыя: файлы канфігурацыі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Сінхранізацыя: эскізы мініяцюр"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Сінхранізацыя: сістэмныя файлы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Калі ўключана, захаванні/станы будуць сінхранізавацца з воблакам."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Калі ўключана, файлы канфігурацыі будуць сінхранізавацца з воблакам."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Калі ўключана, эскізы мініяцюр будуць сінхранізавацца з воблакам. У большасці выпадкаў не рэкамендуецца, апрача багатых калекцый уласных эскізаў мініяцюр; інакш спампоўванне мініяцюр - лепшы выбар."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Калі ўключана, сістэмныя файлы будуць сінхранізавацца з воблакам. Гэта можа значна павялічыць час, неабходны для сінхранізацыі; выкарыстоўвайце ўсвядомлена."
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Калі адключана, файлы будуць перасунутыя ў тэчку рэзервовай копіі перад іх перазапісам ці выдаленнем."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Бэкенд воблачнай сінхранізацыі"
@@ -5040,6 +5068,14 @@ MSG_HASH(
    "Паказ 'Карыстальнік'"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Значкі плэй-ліста"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Тып мініяцюры для адлюстравання значкоў плэй-ліста."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Паказваць налады 'Карыстальнік'."
    )
@@ -7080,6 +7116,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
    "Здымак экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Лагатып змесціва"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ON,

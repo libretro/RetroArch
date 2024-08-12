@@ -1223,7 +1223,15 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Eşitleyici: Yapılandırma Dosyaları"
-   )      
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Eşitle: Küçük Resimler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Eşitle: Sistem Dosyaları"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Etkinleştirildiğinde, kayıtlar/durumlar bulut ile eşitlenecektir."
@@ -1233,9 +1241,17 @@ MSG_HASH(
    "Etkinleştirildiğinde yapılandırma dosyaları bulut ile eşitlenecektir."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Etkinleştirildiğinde küçük resim görüntüleri bulutla eşitlenecektir. Özel küçük resim resimlerinden oluşan geniş koleksiyonlar dışında genellikle önerilmez; diğer türlü küçük resim indirici daha iyi bir seçimdir."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Etkinleştirildiğinde sistem dosyaları buluta eşitlenecektir. Bu, eşitleme için gereken süreyi önemli ölçüde artırabilir; dikkatli kullanın."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Devre dışı bırakıldığında, dosyalar üzerine yazılmadan veya silinmeden önce yedek klasörüne taşınır."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Bulut Eşitleyici Arka Uç"

@@ -1203,7 +1203,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Synchronisation : Fichiers de configuration"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Lorsque cette option est activée, les sauvegardes/sauvegardes instantanées seront synchronisés avec le cloud."
@@ -1215,7 +1215,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Lorsque cette option est désactivée, les fichiers sont déplacés vers un dossier de sauvegarde avant d'être remplacés ou supprimés."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Plateforme de synchronisation avec le Cloud"

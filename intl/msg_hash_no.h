@@ -1161,13 +1161,9 @@ MSG_HASH(
    "Aktiver Sky-Synkronisering"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Når deaktivert, flyttes filer til en sikkerhetskopimappe før de overskrives eller slettes."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
    "URL for sky-lagring"
