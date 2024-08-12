@@ -2754,6 +2754,7 @@ static uint8_t materialui_count_sublabel_lines(
    menu_entry_t entry;
    char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
    int sublabel_width_max   = 0;
+   settings_t *settings     = config_get_ptr();
 
    wrapped_sublabel_str[0] = '\0';
 
@@ -2764,7 +2765,7 @@ static uint8_t materialui_count_sublabel_lines(
    menu_entry_get(&entry, 0, entry_idx, NULL, true);
 
    /* If sublabel is empty, return immediately */
-   if (string_is_empty(entry.sublabel))
+   if (!settings->bools.menu_show_sublabels || string_is_empty(entry.sublabel))
       return 0;
 
    /* Wrap sublabel string to fit available width */
@@ -4014,6 +4015,7 @@ static void materialui_render_menu_entry_default(
    bool draw_text_outside                            = (x_offset != 0);
    gfx_display_t *p_disp                             = disp_get_ptr();
    uico_driver_state_t *uico_st                      = uico_state_get_ptr();
+   settings_t *settings                              = config_get_ptr();
 
    static float color_white[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
@@ -4190,7 +4192,7 @@ static void materialui_render_menu_entry_default(
    /* Draw entry sublabel
     * > Must be done before label + value, since it
     *   affects y offset positions */
-   if (!string_is_empty(entry->sublabel))
+   if (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -4550,7 +4552,7 @@ static void materialui_render_menu_entry_playlist_list(
    /* Draw entry sublabel
     * > Must be done before label, since it
     *   affects y offset positions */
-   if (!string_is_empty(entry->sublabel))
+   if (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
