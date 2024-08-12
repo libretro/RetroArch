@@ -1223,7 +1223,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Synkronointi: asetustiedostot"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Kun käytössä, peli- ja tilatallennukset synkronoidaan pilveen."
@@ -1235,7 +1235,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Kun pois käytöstä, tiedostot siirretään varmuuskopio-kansioon, ennen kuin niitä korvataan tai poistetaan."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Pilvisynkronoinnin taustaosa"

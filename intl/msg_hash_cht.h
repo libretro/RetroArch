@@ -1189,13 +1189,9 @@ MSG_HASH(
    "嘗試將雲端設定檔、記憶存檔與狀態同步到雲端儲存供應商。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "若未啟用，覆蓋或刪除前檔案將會移動到備份資料夾。"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "雲端同步後端"

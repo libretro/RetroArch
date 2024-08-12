@@ -1145,13 +1145,9 @@ MSG_HASH(
    "Destruktiv molnsynkning"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Inaktiverat flyttas filer till en säkerhetskopia innan de skrivs över eller raderas."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend för molnsynk"

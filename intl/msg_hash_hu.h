@@ -1211,7 +1211,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Szinkronizálás: konfigurációs fájlok"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Bekapcsolva a mentések és játékállapotok szinkronizálódnak a felhőbe."
@@ -1223,7 +1223,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Kikapcsolt állapotban a fájlok egy tartalék könyvtárba kerülnek felülírás vagy törlés előtt."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "A felhőszinkronizálás háttértára"

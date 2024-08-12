@@ -1235,7 +1235,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "同期: 設定ファイル"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "有効にすると、セーブ/ステートがクラウドに同期されます。"
@@ -1247,7 +1247,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "無効にすると、ファイルは上書きまたは削除される前にバックアップフォルダに移動されます。"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "クラウド同期のバックエンド"

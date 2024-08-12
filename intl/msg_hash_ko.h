@@ -1239,7 +1239,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "동기화: 구성 파일"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "사용할 경우, 저장/상태저장이 클라우드에 동기화됩니다."
@@ -1251,7 +1251,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "비활성화할 경우, 동기화 대상 파일들을 덮어씌우거나 삭제하지 않고 백업 폴더에 저장합니다."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "클라우드 동기화 백엔드"

@@ -1227,7 +1227,15 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Sincronizar: archivos de configuración"
-   )      
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Sincronizar: imágenes de miniaturas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Sincronizar: archivos del sistema"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Al activar esta opción se sincronizarán los datos guardados y los guardados rápidos a la nube."
@@ -1237,9 +1245,17 @@ MSG_HASH(
    "Al activar esta opción se sincronizarán los archivos de configuración a la nube."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Al activar esta opción se sincronizarán las imágenes de las miniaturas a la nube. No se recomienda usar esta opción salvo que tengas una gran colección de miniaturas, en caso contrario, el descargador de miniaturas es una alternativa mejor."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Al activar esta opción se sincronizarán los archivos del sistema a la nube. Puede aumentar significativamente el tiempo que se tarda en sincronizar. Utilizar con precaución."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Al desactivar esta opción, los archivos serán trasladados a una carpeta de copia de seguridad antes de ser sobrescritos o eliminados."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Motor de sincronización en la nube"

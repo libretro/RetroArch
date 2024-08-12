@@ -1233,13 +1233,9 @@ MSG_HASH(
    "破坏性云同步"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
-MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "禁用后，文件会在被覆盖或删除之前移至备份文件夹。"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "云同步后端"

@@ -1219,7 +1219,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Synchronizacja: Pliki konfiguracyjne"
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Po włączeniu zapisy/stany zostaną zsynchronizowane z chmurą."
@@ -1231,7 +1231,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Gdy wyłączone, pliki są przenoszone do folderu kopii zapasowej przed nadpisaniem lub usunięciem."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Back-end synchronizacji w chmurze"
