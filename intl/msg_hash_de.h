@@ -1169,12 +1169,28 @@ MSG_HASH(
    "Synchronisieren: Konfigurationsdateien"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Sync: Vorschaubilder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Sync: Systemdateien"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Wenn aktiviert, werden Speicherdaten/Savestates mit der Cloud synchronisiert."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "Wenn aktiviert, werden Konfigurationsdateien mit der Cloud synchronisiert."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Wenn aktiviert, werden Miniaturbilder mit der Cloud synchronisiert. Allgemein nicht empfohlen, außer für große Sammlungen benutzerdefinierter Miniaturbilder. Andernfalls ist der Downloader eine bessere Wahl."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Wenn aktiviert, werden die Systemdateien mit der Cloud synchronisiert. Dadurch kann sich die Zeit zum Synchronisieren erheblich verlängern; daher mit Vorsicht verwenden."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,

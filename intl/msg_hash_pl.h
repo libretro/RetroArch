@@ -1221,6 +1221,10 @@ MSG_HASH(
    "Synchronizacja: Pliki konfiguracyjne"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Synchronizacja: Pliki systemowe"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Po włączeniu zapisy/stany zostaną zsynchronizowane z chmurą."
    )
