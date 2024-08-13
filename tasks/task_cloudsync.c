@@ -641,7 +641,7 @@ static void task_cloud_sync_upload_cb(void *user_data, const char *path, bool su
    }
 
    slock_lock(tcs_running_lock);
-   sync_state->waiting++;
+   sync_state->waiting--;
    slock_unlock(tcs_running_lock);
 }
 
