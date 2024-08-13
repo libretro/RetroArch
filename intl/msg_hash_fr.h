@@ -1205,12 +1205,28 @@ MSG_HASH(
    "Synchronisation : Fichiers de configuration"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Synchronisation : Images miniatures"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Synchronisation : Fichiers système"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Lorsque cette option est activée, les sauvegardes/sauvegardes instantanées seront synchronisés avec le cloud."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "Lorsque cette option est activée, les fichiers de configuration seront synchronisés avec le cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Lorsque cette option est activée, les images miniatures seront synchronisées sur le cloud. Non recommandé généralement à l'exception des grandes collections d'images miniatures personnalisées, sinon l'outil de téléchargement de miniatures est un meilleur choix."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Lorsque cette option est activée, les fichiers système seront synchronisés sur le cloud. Cela peut augmenter considérablement le temps de synchronisation ; utiliser avec prudence."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,

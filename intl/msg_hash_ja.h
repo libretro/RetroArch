@@ -1237,12 +1237,28 @@ MSG_HASH(
    "同期: 設定ファイル"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "同期: サムネイル画像"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "同期: システムファイル"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "有効にすると、セーブ/ステートがクラウドに同期されます。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "有効にすると、設定ファイルがクラウドに同期されます。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "有効にすると、サムネイル画像がクラウドに同期されます。カスタムサムネイル画像の大規模なコレクションを除いて、一般的にはサムネイルダウンローダーを使用することが推奨されます。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "有効にすると、システムファイルがクラウドに同期されます。同期にかかる時間が大幅に増加する可能性があります。注意して使用してください。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
