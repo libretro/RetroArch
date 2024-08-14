@@ -45,6 +45,10 @@ MSG_HASH(
    "עיין"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "ליבות ללא תוכן"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "ייבוא תוכן"
    )
@@ -60,11 +64,43 @@ MSG_HASH(
    "גישה מהירה להגדרות משחק."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   "טעינת ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_LIST,
+   "בחרו באיזו ליבה להשתמש."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "עיון אחר ליבה עבור הטמעת ליבת libretro. היכן העיון מתחיל תלוי בנתיב הליבה שלך. אם ריק, העיון יתחיל בנתיב הראשי.\nאם נתיב הליבה הוא תיקייה, התפריט ישתמש בה כתיקיית על. אם נתיב ליבה הוא נתיב מלא, העיון יתחיל בתיקייה שבה הקובץ."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "טעינת תוכן"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   "בחרו איזה תוכן להתחיל."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   "טען דיסק"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   "שמירת דיסק"
+   )
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+   "הוצאת דיסק"
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   "רשימות"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
    "ייבוא תוכן"
@@ -105,12 +141,36 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_LIST,
    "עזרה"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "אתחל"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "הפעל מחדש את אפליקציית RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   "יציאה"
+   )
 
 /* Main Menu > Load Core */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   "הורד ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   "התקנה או שיחזור של ליבה"
+   )
 
 /* Main Menu > Load Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FAVORITES,
+   "תיקיית ההתחלה"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    "הורדות"
@@ -146,9 +206,21 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
    "עיין"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "ליבות ללא תוכן"
+   )
 
 /* Main Menu > Online Updater */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   "מוריד הליבות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   "עדכן ליבות מותקנות"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
    "עדכון תמונות ממוזערות"
@@ -172,9 +244,49 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    "מנהל בסיס נתונים"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   "הצג מסדי נתונים."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   "מנהל מצביע"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   "הצג חיפושים קודמים."
+   )
 
 /* Main Menu > Information > Core Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   "שם ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   "תגית ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   "גירסאת ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   "שם המערכת"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   "יצרן המערכת"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   "קטגוריות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   "מחבר"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
    "הרשאות"
@@ -184,8 +296,56 @@ MSG_HASH(
    "רישיון"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   "תוספים נתמכים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   "ללא"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "קושחה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   "חסר, נצרך:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   "חסר, אופציונאלי:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   "קיים, נצרך:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   "קיים, אופציונאלי:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   "נעל ליבה מותקנת"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   "מחק ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   "גבה ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   "שחזר גיבוי"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   "מחק גיבוי"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   "[אוטומטי]"
    )
 
 /* Main Menu > Information > System Information */
@@ -193,6 +353,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "תאריך הגרסה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   "גירסאת גיט"
    )
 MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
    MSG_COMPILER,
@@ -214,6 +378,26 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "ליבות מעבד"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT זמין"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   "מזהה ממשק"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   "מערכת הפעלת ממשק"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   "מקור חשמל"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   "DPI מסך"
+   )
 
 /* Main Menu > Information > Database Manager */
 
@@ -223,6 +407,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
    "הישגים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   "מדיה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   "פקדים"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   "מפיץ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   "מפתח"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   "מקור"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
@@ -237,9 +441,45 @@ MSG_HASH(
 
 /* Main Menu > Help > Basic Menu Controls */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   "גלול למעלה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   "גלול למטה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   "אישור"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   "מידע"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   "התחל"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   "הצגת\\הסתרת תפריט"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   "יציאה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   "הצגת/הסתרת מקלדת"
+   )
 
 /* Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   "מנהלי התקנים"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    "וידאו"
@@ -251,6 +491,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "קלט"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   "ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   "שינוי הגדרות ליבה."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   "הגדרות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   "שמירות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "סנכרון ענן"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -289,13 +549,45 @@ MSG_HASH(
    "רשת"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   "רשימות"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
    "משתמש"
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   "מדיה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "שמע"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "מפרט"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "אחסון"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   "מערכת"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "תזמון"
+   )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
+   "סטים"
+   )
 #endif
 
 /* Settings > Drivers */
@@ -332,6 +624,10 @@ MSG_HASH(
    "בחר התקן מצלמה."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
+   "בלוטות'"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    "רשת אלחוטית"
    )
@@ -359,6 +655,22 @@ MSG_HASH(
 /* Settings > Video */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   "פלט"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   "מצב מסך מלא"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   "מצב חלון"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   "שינוי קנה מידה"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "סינכרון"
    )
@@ -375,10 +687,26 @@ MSG_HASH(
 #if defined (WIIU)
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
+   "60 הרץ"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
+   "50 הרץ"
+   )
 #endif
 
 /* Settings > Video > Fullscreen Mode */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   "רוחב מסך מלא"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   "גובה מסך מלא"
+   )
 
 /* Settings > Video > Windowed Mode */
 
@@ -397,6 +725,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "יחס גובה-רוחב"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   "מותאם אישית"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
+   "מלא"
+   )
 #if defined(DINGUX)
 #endif
 #if defined(RARCH_MOBILE)
@@ -404,13 +740,33 @@ MSG_HASH(
 
 /* Settings > Video > HDR */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
+   "ניגודיות"
+   )
 
 /* Settings > Video > Synchronization */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   "אוטומטי"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   "בפועל"
+   )
 
 /* Settings > Audio */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   "פלט"
+   )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "מיקרופון"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -441,8 +797,16 @@ MSG_HASH(
    "השתק"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   "השתק שמע."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    "השתק מערבל שמע (מיקסר)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   "השתק מערבל שמע (מיקסר)."
    )
 
 /* Settings > Audio > Output */
@@ -458,6 +822,10 @@ MSG_HASH(
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "מיקרופון"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "התקן"
@@ -481,12 +849,28 @@ MSG_HASH(
    "קלט"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   "פלט"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
    "עוצמת שמע"
    )
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   "נגן"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   "נגן (בלופ)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   "עצור"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "הסר"
@@ -522,6 +906,10 @@ MSG_HASH(
 
 /* Settings > Input > Hotkeys */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   "יציאה"
+   )
 
 
 
@@ -716,6 +1104,10 @@ MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "סייר קבצים"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   "רשימות"
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
@@ -762,6 +1154,10 @@ MSG_HASH(
 
 /* Playlist Item > Information */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   "ליבה"
+   )
 
 /* Quick Menu */
 
@@ -866,6 +1262,10 @@ MSG_HASH(
 /* Qt (Desktop Menu) */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_INFO,
+   "מידע"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    "הגדרות"
    )
@@ -874,12 +1274,28 @@ MSG_HASH(
    "&עזרה"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   "טעינת ליבה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   "רשימות"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
    "סייר קבצים"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE,
+   "ליבה"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    "מידע נוסף"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_STOP,
+   "עצור"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_REMOVE,
@@ -895,6 +1311,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "משתמש"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   "התחל"
    )
 
 /* Unused (Only Exist in Translation Files) */
@@ -917,6 +1337,26 @@ MSG_HASH(
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
    "הורדות"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_INFO,
+   "מידע"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_QUIT,
+   "יציאה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
+   "גלול למעלה"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
+   "הצגת/הסתרת מקלדת"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
+   "הצגת\\הסתרת תפריט"
    )
 
 /* Discord Status */
