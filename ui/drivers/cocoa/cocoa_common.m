@@ -771,8 +771,8 @@ void *cocoa_screen_get_chosen(void)
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
-    return ([[UIApplication sharedApplication] applicationState]
-            == UIApplicationStateActive);
+    /* if we are running, we are foregrounded */
+    return true;
 #else
     return [NSApp isActive];
 #endif

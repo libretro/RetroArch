@@ -186,12 +186,18 @@ apple_frontend_settings_t apple_frontend_settings;
 
 void get_ios_version(int *major, int *minor)
 {
-    NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
+   static int savedMajor, savedMinor;
+   static dispatch_once_t onceToken;
 
-    if (major && decomposed_os_version.count > 0)
-        *major = (int)[decomposed_os_version[0] integerValue];
-    if (minor && decomposed_os_version.count > 1)
-        *minor = (int)[decomposed_os_version[1] integerValue];
+   dispatch_once(&onceToken, ^ {
+         NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
+         if (decomposed_os_version.count > 0)
+            savedMajor = (int)[decomposed_os_version[0] integerValue];
+         if (decomposed_os_version.count > 1)
+            savedMinor = (int)[decomposed_os_version[1] integerValue];
+      });
+   if (major) *major = savedMajor;
+   if (minor) *minor = savedMinor;
 }
 
 /* Input helpers: This is kept here because it needs ObjC */
