@@ -1237,12 +1237,28 @@ MSG_HASH(
    "Синхронизация: файлы конфигураций"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Синхронизация: Миниатюры изображений"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Синхронизация: Системные файлы"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Если включено, карты памяти/сохранения будут синхронизироваться с облаком."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "Если включено, файлы конфигураций будут синхронизироваться с облаком."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Когда включено, эскизы изображений будут синхронизированы с облаком. Не рекомендуется, кроме больших коллекций пользовательских картинок, в противном случае сканер эскизов является лучшим выбором."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Если включено, системные файлы будут синхронизированы в облако. Это может значительно увеличить время синхронизации, используйте с осторожностью."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -6892,6 +6908,14 @@ MSG_HASH(
    "Показывать 'Пользователь'"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Значки в плейлистах"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Тип иконки плейлиста для отображения."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Показать настройки 'Пользователя'."
    )
@@ -10584,6 +10608,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
    "Титульный экран"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Логотип содержимого"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
