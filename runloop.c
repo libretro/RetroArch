@@ -6814,10 +6814,10 @@ static enum runloop_state_enum runloop_check_state(
       cbs->poll_cb();
       return RUNLOOP_STATE_PAUSE;
    }
-
+#if HAVE_MENU
    if (menu_was_alive)
       return RUNLOOP_STATE_MENU;
-
+#endif
    return RUNLOOP_STATE_ITERATE;
 }
 
