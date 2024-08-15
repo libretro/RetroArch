@@ -8217,6 +8217,10 @@ MSG_HASH(
    "Гісторыя"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
+   "Выбраць змесціва з плэй-ліста апошняй гісторыі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
    "Падсістэмы"
    )
