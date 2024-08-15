@@ -4463,6 +4463,7 @@ bool command_event(enum event_command cmd, void *data)
             }
             break;
          }
+#if HAVE_MENU
          case CMD_EVENT_ADD_TO_PLAYLIST:
          {
             struct string_list *str_list = (struct string_list*)data;
@@ -4533,6 +4534,7 @@ bool command_event(enum event_command cmd, void *data)
             }
             break;
          }
+#endif
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
          {
             const char *core_name          = "DETECT";

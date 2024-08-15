@@ -18,7 +18,7 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/cheevos.h"
+#include "../../cheevos/cheevos.h"
 #include <features/features_cpu.h>
 
 #define CHEEVO_LBOARD_ARRAY_SIZE 4

@@ -22,16 +22,18 @@
 #include "../gfx/gfx_display.h"
 #include "../file_path_special.h"
 
-#ifdef HAVE_MENU
-
 #include "cheevos.h"
 
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 #include "../deps/rcheevos/src/rc_client_internal.h"
 
+#if HAVE_MENU
+
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
+
+#endif
 
 #include <features/features_cpu.h>
 #include <retro_assert.h>
@@ -42,6 +44,8 @@
 #define MENU_BADGE_RETRY_RELOAD_FRAMES 64
 
 #ifdef HAVE_RC_CLIENT
+
+#if HAVE_MENU
 
 bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_size)
 {
@@ -512,6 +516,7 @@ void rcheevos_menu_populate(void* data)
    }
 }
 
+#endif /* HAVE_MENU */
 
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
@@ -573,6 +578,8 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
 }
 
 #else /* !HAVE_RC_CLIENT */
+
+#if HAVE_MENU
 
 enum rcheevos_menuitem_bucket
 {
@@ -1193,6 +1200,8 @@ void rcheevos_menu_populate(void* data)
    }
 }
 
+#endif /* HAVE_MENU */
+
 uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked, bool download_if_missing)
 {
    if (badge)
@@ -1222,5 +1231,3 @@ uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked, bool downlo
 }
 
 #endif /* HAVE_RC_CLIENT */
-
-#endif /* HAVE_MENU */

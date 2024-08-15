@@ -3473,10 +3473,15 @@ void video_driver_frame(const void *data, unsigned width,
     *   current frame is not (i.e. if core was
     *   previously sending duped frames, ensure
     *   that the next frame update is captured) */
+#if HAVE_MENU
    if (   video_info.input_driver_nonblock_state
        && video_info.fastforward_frameskip
        &&  !((video_info.menu_st_flags & MENU_ST_FLAG_ALIVE)
        ||   (last_frame_duped && !!data)))
+#else
+   if (   video_info.input_driver_nonblock_state
+       && video_info.fastforward_frameskip)
+#endif
    {
       retro_time_t frame_time_accumulator_prev = frame_time_accumulator;
       retro_time_t frame_time_delta            = new_time - last_time;
@@ -3788,7 +3793,11 @@ void video_driver_frame(const void *data, unsigned width,
                   msg_entry.category,
                   msg_entry.prio,
                   false,
+#if HAVE_MENU
                   (video_info.menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false
+#else
+                  false
+#endif
             );
       }
       /* ...otherwise, just output message via
@@ -3972,8 +3981,12 @@ void video_driver_frame(const void *data, unsigned width,
       if (video_st->current_video->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,
+#if HAVE_MENU
                   ((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) > 0)
                || video_info.notifications_hidden ? "" : video_driver_msg,
+#else
+               video_info.notifications_hidden ? "" : video_driver_msg,
+#endif
                &video_info))
          video_st->flags |=  VIDEO_FLAG_ACTIVE;
       else
@@ -3988,7 +4001,9 @@ void video_driver_frame(const void *data, unsigned width,
           || video_info.memory_show
           || video_info.core_status_msg_show
          )
+#if HAVE_MENU
        && !((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
+#endif
        && !video_info.notifications_hidden
       )
    {

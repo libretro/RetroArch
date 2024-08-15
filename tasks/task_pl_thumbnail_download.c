@@ -39,6 +39,8 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_cbs.h"
 #include "../menu/menu_driver.h"
+#else
+#include <queues/message_queue.h>
 #endif
 #endif
 
