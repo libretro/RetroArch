@@ -4463,9 +4463,9 @@ bool command_event(enum event_command cmd, void *data)
             }
             break;
          }
-#if HAVE_MENU
          case CMD_EVENT_ADD_TO_PLAYLIST:
          {
+#ifdef HAVE_MENU
             struct string_list *str_list = (struct string_list*)data;
             struct menu_state *menu_st     = menu_state_get_ptr();
             settings_t *settings = config_get_ptr();
@@ -4532,9 +4532,9 @@ bool command_event(enum event_command cmd, void *data)
                            NULL, menu_st->userdata);
                }
             }
+#endif
             break;
          }
-#endif
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
          {
             const char *core_name          = "DETECT";
