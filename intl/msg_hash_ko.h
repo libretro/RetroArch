@@ -1241,12 +1241,28 @@ MSG_HASH(
    "동기화: 구성 파일"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "동기화: 미리보기 이미지"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "동기화: 시스템 파일"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "사용할 경우, 저장/상태저장이 클라우드에 동기화됩니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "사용할 경우, 구성 파일이 클라우드에 동기화됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "사용할 경우, 미리보기 이미지가 클라우드에 동기화됩니다. 커스텀 미리보기 이미지가 아주 많이 있는 경우가 아니라면 권장하지 않으며, 대신 미리보기 다운로더를 사용하는 것이 더 좋습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "사용할 경우, 시스템 파일이 클라우드에 동기화됩니다. 주의: 이 옵션을 사용하면 동기화가 매우 오래 걸릴 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
