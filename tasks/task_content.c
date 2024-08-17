@@ -1432,10 +1432,14 @@ static bool content_load(content_ctx_info_t *info,
    wrap_args->flags          = 0;
    wrap_args->argc           = 0;
 
+   /* The following snippet breaks command-line arguments on Haiku which in turn
+      prevents from using RA without a menu or to start it from a front-end like ES-DE.
+      All things considered, the risk/reward is favorable to just skipping this. */
+#ifndef __HAIKU__
    if (info->environ_get)
       info->environ_get(rarch_argc_ptr,
             rarch_argv_ptr, info->args, wrap_args);
-
+#endif
    if (wrap_args->flags & RARCH_MAIN_WRAP_FLAG_TOUCHED)
    {
       content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv);
