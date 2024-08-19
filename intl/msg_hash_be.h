@@ -2840,7 +2840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
-   "Частата дыскрэтызацыі гуку ўваходнага сігналу; выкарыстоўваецца, калі ядро не запытвае пэўную велічыню."
+   "Частата дыскрэтызацыі гуку ўваходнага сігналу; выкарыстоўваецца, калі ядро не запрошвае пэўную велічыню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
@@ -5521,11 +5521,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
-   "Запыт прылады %u"
+   "Запатрабаванне прылады %u"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
-   "Запытваць гульню з дадзенай прыладай уводу."
+   "Запрошваць гульню з дадзенай прыладай уводу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -5557,7 +5557,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
-   "Сцягванне мініяцюр на запыт"
+   "Сцягванне мініяцюр па патрабаванні"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
@@ -8547,7 +8547,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_RESETTING_CORES,
-   "Скід ядраў: "
+   "Скіданне ядраў: "
    )
 MSG_HASH(
    MSG_PLAYLIST_MANAGER_CORES_RESET,
@@ -8707,7 +8707,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESET,
-   "Скід"
+   "Скіданне"
    )
 MSG_HASH(
    MSG_SHADER,
