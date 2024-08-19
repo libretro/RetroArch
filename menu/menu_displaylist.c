@@ -9731,13 +9731,13 @@ unsigned menu_displaylist_build_list(
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
-                     PARSE_ONLY_UINT, false) == 0)
+                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
+                     PARSE_ONLY_BOOL, false) == 0)
                count++;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,
-                     PARSE_ONLY_BOOL, false) == 0)
+                     MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,
+                     PARSE_ONLY_UINT, false) == 0)
                count++;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -10273,8 +10273,8 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT, true },
-               {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,                PARSE_ONLY_BOOL, true },
+               {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,                     PARSE_ONLY_UINT, true },
 #ifdef HAVE_RUNAHEAD
                {MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,                     PARSE_ONLY_BOOL, false },
                {MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,                      PARSE_ONLY_UINT, false },

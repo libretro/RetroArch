@@ -6407,6 +6407,10 @@ void menu_driver_toggle(
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
    }
+
+   /* Ignore frame delay target temporarily */
+   if (settings->bools.video_frame_delay_auto)
+      video_state_get_ptr()->frame_delay_pause = true;
 }
 
 void retroarch_menu_running(void)
@@ -6572,10 +6576,6 @@ void retroarch_menu_running_finished(bool quit)
       if (settings && settings->bools.input_overlay_hide_in_menu)
          input_overlay_init();
 #endif
-
-   /* Ignore frame delay target temporarily */
-   if (settings->bools.video_frame_delay_auto)
-      video_st->frame_delay_pause = true;
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
