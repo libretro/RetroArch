@@ -240,6 +240,7 @@ OBJ += frontend/frontend_driver.o \
        ui/ui_companion_driver.o \
        camera/camera_driver.o \
        record/record_driver.o \
+       record/drivers/record_wav.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \

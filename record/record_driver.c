@@ -31,6 +31,8 @@
 #include "../defaults.h"
 
 #include "record_driver.h"
+#include "drivers/record_ffmpeg.h"
+#include "drivers/record_wav.h"
 
 static recording_state_t recording_state = {0};
 
@@ -47,6 +49,7 @@ const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
+   &record_wav,
    &record_null,
    NULL,
 };
