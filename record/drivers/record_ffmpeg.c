@@ -41,7 +41,7 @@
 #include <time.h>
 #endif
 
-#include "../record_driver.h"
+#include "record_ffmpeg.h"
 
 #ifdef __cplusplus
 extern "C" {
