@@ -688,16 +688,6 @@ void cocoa_file_load_with_detect_core(const char *filename);
    }
 }
 
--(void)handlePointerMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)
-      input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->window_pos_x = (int16_t)x;
-   apple->window_pos_y = (int16_t)y;
-}
-
 #endif
 
 #pragma mark GCDWebServerDelegate

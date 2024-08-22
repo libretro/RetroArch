@@ -22,7 +22,6 @@ import UIKit
 @objc public protocol EmulatorTouchMouseHandlerDelegate: AnyObject {
    func handleMouseClick(isLeftClick: Bool, isPressed: Bool)
    func handleMouseMove(x: CGFloat, y: CGFloat)
-   func handlePointerMove(x: CGFloat, y: CGFloat)
 }
 
 @objcMembers public class EmulatorTouchMouseHandler: NSObject, UIPointerInteractionDelegate {
@@ -74,12 +73,6 @@ import UIKit
             self?.pendingMouseEvents.append(value)
             self?.processMouseEvents()
          })
-      if #available(iOS 13.4, *) {
-         // get pointer interactions
-         let pointerInteraction = UIPointerInteraction(delegate: self)
-         self.view.addInteraction(pointerInteraction)
-         self.view.isUserInteractionEnabled=true
-      }
    }
    
    private func processMouseEvents() {
@@ -202,17 +195,5 @@ import UIKit
       let dx = pointA.x - pointB.x
       let dy = pointA.y - pointB.y
       return sqrt(dx*dx*dy*dy)
-   }
-
-   @available(iOS 13.4, *)
-   public func pointerInteraction(
-       _ interaction: UIPointerInteraction,
-       regionFor request: UIPointerRegionRequest,
-       defaultRegion: UIPointerRegion
-     ) -> UIPointerRegion? {
-        guard !enabled else { return defaultRegion }
-        let location = request.location;
-        delegate?.handlePointerMove(x: location.x, y: location.y)
-        return defaultRegion
    }
 }
