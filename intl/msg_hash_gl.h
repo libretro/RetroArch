@@ -383,7 +383,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Anovar as trampas"
+   "Actualizar trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -1229,12 +1229,28 @@ MSG_HASH(
    "Sincronización: Ficheiros de Configuración"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Sincronizar: Imaxes en miniatura"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Sincronizar: Ficheiros do sistema"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Cando está activado, os gardados/estados sincronizaranse coa nube."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "Cando está habilitado, os ficheiros de configuración sincronizaranse coa nube."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Cando está activado, as imaxes en miniatura serán sincronizadas ca nube. Non se recomenda xeralmente a menos que se trate de grandes coleccións de imaxes en miniatura personalizadas; de non ser así, o descargador de miniaturas é unha mellor opción."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Cando está activado, os ficheiros do sistema serán sincronizados na nube. Isto pode aumentar significativamente o tempo que tarda en sincronizar; utilizar con precaución."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -5990,7 +6006,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
-   "Menú Salvapantallas Animación"
+   "Animación do protector de pantalla do menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
@@ -6018,7 +6034,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Toca Soporte"
+   "Soporte táctil"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
@@ -6026,7 +6042,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Tarefas roscadas"
+   "Tarefas en fío"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
@@ -6764,6 +6780,14 @@ MSG_HASH(
    "Mostrar \"Usuario\""
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Iconas de listas de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Tipo de miniatura da icona da lista de reprodución a amosar."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Mostrar a configuración de \"Usuario\"."
    )
@@ -6972,7 +6996,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Desactiva as trampas, o rebobinado, a cámara lenta e os estados de gardado de carga. Os logros obtidos no modo hardcore están marcados de xeito exclusivo para que poidas mostrar aos demais o que conseguiches sen as funcións de asistencia do emulador. Cambiar esta configuración no tempo de execución reiniciarase o xogo."
+   "Desactiva os trucos, o rebobinado, a cámara lenta e os estados de gardado de carga. Os logros obtidos no modo hardcore están marcados de xeito exclusivo para que poidas mostrar aos demais o que conseguiches sen as funcións de asistencia do emulador. Cambiar esta configuración no tempo de execución reiniciarase o xogo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -7746,6 +7770,14 @@ MSG_HASH(
    "Cando estea activado, atopará miniaturas polo nome do ficheiro da entrada, en lugar da súa etiqueta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Permitir todos os tipos de imaxes compatibles para miniaturas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Cando está activado, pódense engadir miniaturas locais en todos os tipos de imaxes compatibles con RetroArch (como jpeg). Pode ter un pequeno impacto no rendemento."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Xestionar"
    )
@@ -8010,7 +8042,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
-   "Os ficheiros de trampas almacénanse neste directorio."
+   "Os ficheiros de trucos almacénanse neste directorio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
@@ -9207,7 +9239,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
@@ -9219,7 +9251,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Cargue un ficheiro de trampas e substitúa os trucos existentes."
+   "Cargue un ficheiro de trucos e substitúa os trucos existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
@@ -9227,7 +9259,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
-   "Cargue un ficheiro de trampas e engádeo ós trucos existentes."
+   "Cargue un ficheiro de trucos e engádeo aos trucos existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
@@ -9235,7 +9267,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-   "Gardar o ficheiro de trampas como"
+   "Gardar o ficheiro de trucos como"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
@@ -10404,6 +10436,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
    "Titulo en Pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Logo do contido"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
@@ -11735,7 +11771,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
-   "S&air"
+   "&Sair"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
@@ -12366,7 +12402,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -12689,7 +12725,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
@@ -12724,7 +12760,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
@@ -14419,7 +14455,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Iniciouse correctamente a busca de trampas."
+   "Iniciouse correctamente a busca de trucos."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
@@ -14455,7 +14491,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "Non hai espazo suficiente. O número máximo de trampas simultáneas é de 100."
+   "Non hai espazo suficiente. O número máximo de trucos simultáneos é de 100."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
