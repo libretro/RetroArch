@@ -5272,13 +5272,6 @@ unsigned menu_event(
       menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
 
       /* Read mouse */
-#ifdef HAVE_IOS_TOUCHMOUSE
-      if (menu_mouse_enable)
-      {
-         settings->bools.menu_pointer_enable = true;
-         menu_pointer_enable = true;
-      }
-#else
       if (menu_mouse_enable)
          menu_input_get_mouse_hw_state(
                p_disp,
@@ -5292,7 +5285,7 @@ unsigned menu_event(
                input_overlay_enable,
                overlay_active,
                &mouse_hw_state);
-#endif
+
       /* Read touchscreen
        * Note: Could forgo this if mouse is currently active,
        * but this is 'cleaner' code... (if performance is a
