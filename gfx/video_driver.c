@@ -2055,62 +2055,67 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewp
    settings_t *settings     = config_get_ptr();
    int x                    = 0;
    int y                    = 0;
+   
+   float viewport_bias_x    = settings->floats.video_viewport_bias_x;
+   float viewport_bias_y    = settings->floats.video_viewport_bias_y;
+#if defined(RARCH_MOBILE)
+   if (viewport_width < viewport_height)
+   {
+      viewport_bias_x = settings->floats.video_viewport_bias_portrait_x;
+      viewport_bias_y = settings->floats.video_viewport_bias_portrait_y;
+   }
+#endif
+   if (!ydown)
+      viewport_bias_y = 1.0 - viewport_bias_y;
 
-#if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   {
+      video_viewport_t *custom_vp = &settings->video_viewport_custom;
+      int padding_x               = 0;
+      int padding_y               = 0;
+      x                           = custom_vp->x;
+      y                           = custom_vp->y;
+      if (!ydown)
+         y                        = vp->full_height - (y + custom_vp->height);
+      padding_x += (viewport_width - custom_vp->width);
+      if (padding_x < 0)
+         padding_x *= 2;
+      padding_y = viewport_height - custom_vp->height;
+      if (padding_y < 0)
+         padding_y *= 2;
+      viewport_width = custom_vp->width;
+      viewport_height = custom_vp->height;
+      x += padding_x * viewport_bias_x;
+      y += padding_y * viewport_bias_y;
+   }
+   else
+   {
+      float delta;
+
+      if (fabsf(device_aspect - desired_aspect) < 0.0001f)
       {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         if (!ydown)
-         {
-            y = y + custom_vp->height;
-            y = vp->full_height - y;
-         }
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
+         /* If the aspect ratios of screen and desired aspect
+          * ratio are sufficiently equal (floating point stuff),
+          * assume they are actually equal.
+          */
+      }
+      else if (device_aspect > desired_aspect)
+      {
+         delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+         x    += (int)roundf(viewport_width * ((0.5f - delta) * (viewport_bias_x * 2.0f)));
+         viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
       }
       else
-#endif
       {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            float viewport_bias = settings->floats.video_viewport_bias_x;
-#if defined(RARCH_MOBILE)
-            if (device_aspect < 1.0f)
-               viewport_bias = settings->floats.video_viewport_bias_portrait_x;
-#endif
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            float viewport_bias = settings->floats.video_viewport_bias_y;
-#if defined(RARCH_MOBILE)
-            if (device_aspect < 1.0f)
-               viewport_bias = settings->floats.video_viewport_bias_portrait_y;
-#endif
-            if (!ydown)
-               viewport_bias = 1.0 - viewport_bias;
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
+         delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+         y     += (int)roundf(viewport_height * ((0.5f - delta) * (viewport_bias_y * 2.0f)));
+         viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
       }
-      vp->x      = x;
-      vp->y      = y;
-      vp->width  = viewport_width;
-      vp->height = viewport_height;
+   }
+   vp->x      = x;
+   vp->y      = y;
+   vp->width  = viewport_width;
+   vp->height = viewport_height;
 }
 
 void video_driver_update_viewport(
@@ -2382,10 +2387,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          x         = custom_vp->x;
          y         = custom_vp->y;
          if (!ydown)
-         {
-            y     += custom_vp->height;
-            y      = vp->height - y;
-         }
+            y      = vp->height - (y + custom_vp->height);
          padding_x = width - custom_vp->width;
          if (padding_x < 0)
             padding_x *= 2;
