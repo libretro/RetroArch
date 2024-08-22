@@ -481,8 +481,7 @@ enum
 @end
 
 #if TARGET_OS_IOS
-@interface RetroArch_iOS () <MXMetricManagerSubscriber>
-
+@interface RetroArch_iOS () <MXMetricManagerSubscriber, UIPointerInteractionDelegate>
 @end
 #endif
 
@@ -535,6 +534,13 @@ enum
    _renderView.translatesAutoresizingMaskIntoConstraints = NO;
    UIView *rootView = [CocoaView get].view;
    [rootView addSubview:_renderView];
+#if TARGET_OS_IOS
+   if (@available(iOS 13.4, *))
+   {
+      [_renderView addInteraction:[[UIPointerInteraction alloc] initWithDelegate:self]];
+      _renderView.userInteractionEnabled = YES;
+   }
+#endif
    [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
@@ -824,13 +830,38 @@ enum
     }
 }
 
-- (void)didReceiveDiagnosticPayloads:(NSArray<MXDiagnosticPayload *> *)payloads
+- (void)didReceiveDiagnosticPayloads:(NSArray<MXDiagnosticPayload *> *)payloads API_AVAILABLE(ios(14.0))
 {
     for (MXDiagnosticPayload *payload in payloads)
     {
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
         RARCH_LOG("Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
+}
+
+- (UIPointerStyle *)pointerInteraction:(UIPointerInteraction *)interaction styleForRegion:(UIPointerRegion *)region API_AVAILABLE(ios(13.4))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return nil;
+   if (apple->mouse_grabbed)
+      return [UIPointerStyle hiddenPointerStyle];
+   return nil;
+}
+
+- (UIPointerRegion *)pointerInteraction:(UIPointerInteraction *)interaction
+                       regionForRequest:(UIPointerRegionRequest *)request
+                          defaultRegion:(UIPointerRegion *)defaultRegion API_AVAILABLE(ios(13.4))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return nil;
+   CGPoint location = [apple_platform.renderView convertPoint:[request location] fromView:nil];
+   apple->touches[0].screen_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);
+   apple->touches[0].screen_y = (int16_t)(location.y * [[UIScreen mainScreen] scale]);
+   apple->window_pos_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);
+   apple->window_pos_y = (int16_t)(location.y * [[UIScreen mainScreen] scale]);
+   return [UIPointerRegion regionWithRect:[apple_platform.renderView bounds] identifier:@"game view"];
 }
 #endif
 
