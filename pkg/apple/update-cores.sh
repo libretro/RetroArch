@@ -51,18 +51,18 @@ NC='\033[0m'
 
 function update_dylib() {
     dylib=$1
-    printf "Updating ${YELLOW}$dylib${NC}... "
+    printf "Updating ${YELLOW}$dylib${NC}...\n"
     if [ -n "$DRY_RUN" ] ; then
-        echo
         return
     fi
     if [ -f "$dylib" ] ; then
         mv "$dylib" "$dylib".bak
     fi
     debug curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
+    (
     curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
     if [ ! -f "$dylib".zip ] ; then
-        printf "${RED}Download failed${NC}\n"
+        printf "${RED}Download ${dylib} failed${NC}\n"
         if [ -f "$dylib".bak ] ; then
             mv "$dylib".bak "$dylib"
         fi
@@ -70,13 +70,14 @@ function update_dylib() {
         debug unzip $UNZIP_DEBUG "$dylib".zip
         unzip $UNZIP_DEBUG "$dylib".zip
         if [ ! -f "$dylib" ] ; then
-            printf "${RED}Unzip failed${NC}\n"
+            printf "${RED}Unzip ${dylib} failed${NC}\n"
             mv "$dylib".bak "$dylib"
         else
-            printf "${GREEN}Success!${NC}\n"
+            printf "${GREEN}Download ${dylib} success!${NC}\n"
             [ -n "$NO_RM" ] || rm -f "$dylib".zip "$dylib".bak
         fi
     fi
+    ) &
 }
 
 allcores=
@@ -236,3 +237,4 @@ fi
 for dylib in "${dylibs[@]}" ; do
     update_dylib "$dylib"
 done
+wait
