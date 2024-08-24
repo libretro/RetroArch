@@ -126,6 +126,9 @@ LDFLAGS := -L. --no-heap-copy $(LIBS) -s TOTAL_STACK=$(STACK_MEMORY) -s TOTAL_ME
            --js-library emscripten/library_errno_codes.js \
            -s MODULARIZE=1 -s 'EXPORT_NAME="EJS_Runtime"'
 
+ifneq (,$(findstring same_cdi,$(TARGET)))
+   LDFLAGS += -s ASSERTIONS -s DISABLE_EXCEPTION_CATCHING=0
+endif
 
 ifeq ($(HAVE_RWEBAUDIO), 1)
    LDFLAGS += --js-library emscripten/library_rwebaudio.js
