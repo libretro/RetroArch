@@ -766,6 +766,15 @@ int rcheevos_get_richpresence(char* s, size_t len)
    return (int)rc_client_get_rich_presence_message(rcheevos_locals.client, s, (size_t)len);
 }
 
+int rcheevos_get_game_badge_url(char* s, size_t len)
+{
+   const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals.client);
+   if (!game || !game->id || !game->badge_name || !game->badge_name[0])
+      return 0;
+
+   return (rc_client_game_get_image_url(game, s, len) == RC_OK);
+}
+
 #else /* !HAVE_RC_CLIENT */
 
 void rcheevos_award_achievement(rcheevos_locals_t* locals,
