@@ -693,7 +693,7 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
       }
    }
    if (!gamepad && !sensor){
-      RARCH_ERR("[sdl]: sdl_input_get_sensor_input recieved a "
+      RARCH_ERR("[sdl]: sdl_input_get_sensor_input received a "
       "device where none of it's children are sensors\n");
       return 0.f;
    }
