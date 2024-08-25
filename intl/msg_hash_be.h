@@ -1542,7 +1542,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Драйвер уводу для выкарыстання. Некаторыя драйверы відэа прымусова ўжываюць іншыя драйверы ўводу."
+   "Драйвер увода для выкарыстання. Некаторыя драйверы відэа прымусова ўжываюць іншыя драйверы ўвода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
@@ -1554,7 +1554,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
-   "Драйвер уводу. Драйвер відэа можа прымусова вызначаць іншы драйвер уводу."
+   "Драйвер увода. Драйвер відэа можа прымусова вызначаць іншы драйвер увода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -3134,6 +3134,14 @@ MSG_HASH(
    "Прыпыняць змесціва пры адключэнні любога кантролера. Узнаўляць пры націсканні на Start."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   "Мёртвая зона аналагавага ўвода"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   "Чуласць аналагавага ўвода"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    "Тайм-аўт прызначэння"
    )
@@ -3220,6 +3228,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
    "Змяніць налады ды прызначэнні гарачых клавіш, накшталт выкліку меню падчас гульнявога працэсу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   "Прызначэнні RetroPad"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -3622,8 +3634,16 @@ MSG_HASH(
    "Сінхранізацыя з частатой кадраў змесціва (пераключэнне)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   "Уключае/адключае сінхранізацыю з частатой кадраў змесціва."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
    "Забяганне (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   "Уключае/выключае забяганне."
    )
 
 MSG_HASH(
@@ -3631,12 +3651,24 @@ MSG_HASH(
    "Паказ кадр/с (пераключэнне)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
+   "Уключае/выключае індыкатар частаты кадраў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
    "Паказ тэхнічнай статыстыкі (пераключэнне)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   "Уключае/выключае адлюстраванне на экране тэхнічнай статыстыкі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
    "Накладка клавіятуры (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   "Уключае/выключае накладку клавіятуры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
@@ -3654,6 +3686,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
    "Хостынг сеткавай гульні (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
+   "Уключае/выключае хостынг сеткавай гульні."
    )
 
 MSG_HASH(
@@ -4135,6 +4171,18 @@ MSG_HASH(
    "Лічыльнік часу кадра"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   "Хуткасць перамоткі наперад"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   "Прапусканне кадраў пры перамотцы наперад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   "Прапускаць кадры ў адпаведнасці з хуткасцю перамоткі наперад. Эканоміць энергію і дазваляе выкарыстоўваць старонняе абмежаванне кадраў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Паказчык запаволенага руху"
    )
@@ -4157,9 +4205,49 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
    "Кадры перамоткі назад"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+   "Памер буфера перамоткі (МБ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   "Аб’ём памяці (у МБ), які трэба зарэзерваваць для буфера перамоткі. Павелічэнне гэтай велічыні павялічыць даўжыню гісторыі перамоткі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+   "Крок памеру буфера перамоткі (МБ)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+   "Кожны раз, калі значэнне памеру буфера перамоткі павялічваецца або памяншаецца, яно будзе змяняцца на гэтую велічыню."
+   )
 
 /* Settings > Frame Throttle > Frame Time Counter */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Скіданне пасля перамоткі наперад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_FASTFORWARDING,
+   "Скідаць лічыльнік часу кадра пасля перамоткі наперад."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Скіданне пасля загрузкі стану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_LOAD_STATE,
+   "Скідаць лічыльнік часу кадра пасля загрузкі стану."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Скіданне пасля захавання стану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_RESET_AFTER_SAVE_STATE,
+   "Скідаць лічыльнік часу кадра пасля захавання стану."
+   )
 
 /* Settings > Recording */
 
@@ -4198,6 +4286,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
    "Уласная канфігурацыя запісу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   "Колькасць патокаў запісу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   "Запіс з дапамогай ГП"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
@@ -4251,6 +4347,10 @@ MSG_HASH(
 /* Settings > On-Screen Display */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+   "Накладка на экране"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "Экранныя апавяшчэнні"
    )
@@ -4268,6 +4368,14 @@ MSG_HASH(
 
 #if defined(ANDROID)
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY,
+   "Накладка"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
+   "Непразрыстасць накладкі"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
    "Набор налад накладкі"
@@ -4330,6 +4438,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Апавяшчэнні пра чыт-коды"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Апавяшчэнні пра перамотку наперад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
+   "Адлюстроўваць на экране індыкатар пры перамотцы змесціва наперад."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
@@ -8213,6 +8329,10 @@ MSG_HASH(
    "Гарызантальнае меню"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
+   "Накладка на экране"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    "Гісторыя"
    )
@@ -8720,6 +8840,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SLOW_MOTION,
    "Запаволены рух."
+   )
+MSG_HASH(
+   MSG_FAST_FORWARD,
+   "Перамотка наперад."
    )
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,
