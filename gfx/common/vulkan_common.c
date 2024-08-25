@@ -206,14 +206,16 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
       mailbox->result          = vkAcquireNextImageKHR(
             mailbox->device, mailbox->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &mailbox->index);
-#ifdef ANDROID
+
       /* VK_SUBOPTIMAL_KHR can be returned on Android 10
        * when prerotate is not dealt with.
+       * It can also be returned by WSI when the surface
+       * is _temorarily_ suboptimal.
        * This is not an error we need to care about,
        * and we'll treat it as SUCCESS. */
       if (mailbox->result == VK_SUBOPTIMAL_KHR)
          mailbox->result = VK_SUCCESS;
-#endif
+
       if (mailbox->result == VK_SUCCESS)
       {
          vkWaitForFences(mailbox->device, 1, &fence, true, UINT64_MAX);
@@ -1835,14 +1837,6 @@ retry:
       err = vkAcquireNextImageKHR(vk->context.device,
             vk->swapchain, UINT64_MAX,
             semaphore, fence, &vk->context.current_swapchain_index);
-#ifdef ANDROID
-      /* VK_SUBOPTIMAL_KHR can be returned on Android 10
-       * when prerotate is not dealt with.
-       * This is not an error we need to care about, and
-       * we'll treat it as SUCCESS. */
-      if (err == VK_SUBOPTIMAL_KHR)
-         err = VK_SUCCESS;
-#endif
    }
 
    if (err == VK_SUCCESS || err == VK_SUBOPTIMAL_KHR)
@@ -1887,10 +1881,10 @@ retry:
    {
       case VK_NOT_READY:
       case VK_TIMEOUT:
+      case VK_SUBOPTIMAL_KHR:
          /* Do nothing. */
          break;
       case VK_ERROR_OUT_OF_DATE_KHR:
-      case VK_SUBOPTIMAL_KHR:
          /* Throw away the old swapchain and try again. */
          vulkan_destroy_swapchain(vk);
          /* Swapchain out of date, trying to create new one ... */
@@ -2604,16 +2598,16 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #endif
    err = vkQueuePresentKHR(vk->context.queue, &present);
 
-#ifdef ANDROID
    /* VK_SUBOPTIMAL_KHR can be returned on
     * Android 10 when prerotate is not dealt with.
+    * It can also be returned by WSI when the surface
+    * is _temorarily_ suboptimal.
     * This is not an error we need to care about,
     * and we'll treat it as SUCCESS. */
    if (result == VK_SUBOPTIMAL_KHR)
       result = VK_SUCCESS;
    if (err == VK_SUBOPTIMAL_KHR)
       err = VK_SUCCESS;
-#endif
 
 #ifdef WSI_HARDENING_TEST
    trigger_spurious_error_vkresult(&err);
