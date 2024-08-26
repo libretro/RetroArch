@@ -4,7 +4,6 @@
 //
 //
 
-OTHER_CFLAGS = $(inherited) -DENABLE_HLSL
 OTHER_CFLAGS = $(inherited) -DFLAC__HAS_OGG=0
 OTHER_CFLAGS = $(inherited) -DGLSLANG_OSINCLUDE_UNIX
 OTHER_CFLAGS = $(inherited) -DHAVE_7ZIP
@@ -107,3 +106,5 @@ HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE) $(SRCBASE)/gfx/include $(SRCBASE)/
 CLANG_CXX_LANGUAGE_STANDARD=c++11
 CLANG_ENABLE_OBJC_ARC=YES
 INFOPLIST_FILE = $(SRCROOT)/OSX/Info_Metal.plist
+
+#include? "/usr/local/share/retroarch-apple-deps/deps.xcconfig"

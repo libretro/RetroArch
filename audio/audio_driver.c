@@ -1009,44 +1009,29 @@ bool audio_driver_get_devices_list(void **data)
 #ifdef HAVE_AUDIOMIXER
 bool audio_driver_mixer_extension_supported(const char *ext)
 {
-   unsigned i;
-   struct string_list str_list;
-   union string_list_elem_attr attr;
-   bool ret                      = false;
-
-   attr.i = 0;
-   if (!string_list_initialize(&str_list))
-      return false;
-
 #ifdef HAVE_STB_VORBIS
-   string_list_append(&str_list, "ogg", attr);
+   if (string_is_equal_noncase("ogg", ext))
+      return true;
 #endif
 #ifdef HAVE_IBXM
-   string_list_append(&str_list, "mod", attr);
-   string_list_append(&str_list, "s3m", attr);
-   string_list_append(&str_list, "xm", attr);
+   if (string_is_equal_noncase("mod", ext))
+      return true;
+   if (string_is_equal_noncase("s3m", ext))
+      return true;
+   if (string_is_equal_noncase("xm", ext))
+      return true;
 #endif
 #ifdef HAVE_DR_FLAC
-   string_list_append(&str_list, "flac", attr);
+   if (string_is_equal_noncase("flac", ext))
+      return true;
 #endif
 #ifdef HAVE_DR_MP3
-   string_list_append(&str_list, "mp3", attr);
+   if (string_is_equal_noncase("mp3", ext))
+      return true;
 #endif
-   string_list_append(&str_list, "wav", attr);
-
-   for (i = 0; i < str_list.size; i++)
-   {
-      const char *str_ext = str_list.elems[i].data;
-      if (string_is_equal_noncase(str_ext, ext))
-      {
-         ret = true;
-         break;
-      }
-   }
-
-   string_list_deinitialize(&str_list);
-
-   return ret;
+   if (string_is_equal_noncase("wav", ext))
+      return true;
+   return false;
 }
 
 static int audio_mixer_find_index(
@@ -1686,6 +1671,14 @@ error:
          msg_hash_to_str(MSG_FAILED_TO_START_AUDIO_DRIVER));
    audio_driver_st.flags &= ~AUDIO_FLAG_ACTIVE;
    return false;
+}
+
+const char *audio_driver_get_ident(void)
+{
+   audio_driver_state_t *audio_st  = &audio_driver_st;
+   if (!audio_st->current_audio)
+      return NULL;
+   return audio_st->current_audio->ident;
 }
 
 bool audio_driver_stop(void)

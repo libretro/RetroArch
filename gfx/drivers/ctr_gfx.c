@@ -762,52 +762,14 @@ static void ctr_update_viewport(
 
    if (video_scale_integer)
    {
+      /* TODO: does CTR use top-left or bottom-left coordinates? assuming top-left. */
       video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
-            ctr->vp.full_height, desired_aspect, ctr->keep_aspect);
+          ctr->vp.full_height, desired_aspect, ctr->keep_aspect,
+          true);
    }
    else if (ctr->keep_aspect)
    {
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         x      = custom_vp_x;
-         y      = custom_vp_y;
-         width  = custom_vp_width;
-         height = custom_vp_height;
-      }
-      else
-#endif
-      {
-         float delta;
-         float device_aspect  = ((float)ctr->vp.full_width) / ctr->vp.full_height;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta    = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x        = (int)roundf(width * (0.5f - delta));
-            width    = (unsigned)roundf(2.0f * width * delta);
-         }
-         else
-         {
-            delta    = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y        = (int)roundf(height * (0.5f - delta));
-            height   = (unsigned)roundf(2.0f * height * delta);
-         }
-      }
-
-      ctr->vp.x      = x;
-      ctr->vp.y      = y;
-      ctr->vp.width  = width;
-      ctr->vp.height = height;
+      video_viewport_get_scaled_aspect(&ctr->vp, width, height, true);
    }
    else
    {
@@ -1449,8 +1411,9 @@ static void ctr_render_bottom_screen(void *data)
    }
 }
 
-// graphic function originates from here:
-// https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
+/* graphic function originates from here:
+ * https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
+ */
 void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
 {
 #ifndef CONSOLE_LOG

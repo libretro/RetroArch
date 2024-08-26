@@ -35,7 +35,7 @@ extern "C" {
 #define APIENTRYP APIENTRY *
 #endif
 
-// GL.h types
+/* GL.h types */
 typedef unsigned int	GLenum;
 typedef unsigned char	GLboolean;
 typedef unsigned int	GLbitfield;
@@ -52,7 +52,7 @@ typedef float		GLclampf;	/* single precision float in [0,1] */
 typedef double		GLdouble;	/* double precision float */
 typedef double		GLclampd;	/* double precision float in [0,1] */
 
-// GL.h defines
+/* GL.h defines */
 #define GL_ARB_imaging   1
 #define GL_FALSE                                0
 #define GL_TRUE                                 1
@@ -845,4 +845,4 @@ typedef double		GLclampd;	/* double precision float in [0,1] */
 }
 #endif
 
-#endif // __NX_GL_H__
+#endif /* __NX_GL_H__ */

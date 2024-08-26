@@ -230,7 +230,7 @@ static void command_network_poll(command_t *handle)
 command_t* command_network_new(uint16_t port)
 {
    struct addrinfo     *res  = NULL;
-   command_t            *cmd = (command_t*)calloc(1, sizeof(command_t));
+   command_t            *cmd = (command_t*)calloc(1, sizeof(*cmd));
    command_network_t *netcmd = (command_network_t*)calloc(
                                    1, sizeof(command_network_t));
    int fd                    = socket_init(
@@ -413,7 +413,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
                (long long)(input_st->bsv_movie_state_handle->identifier),
                input_st->bsv_movie_state.flags);
       else
-         snprintf(value_dynamic, sizeof(value_dynamic), "0 0");
+         strlcpy(value_dynamic, "0 0", sizeof(value_dynamic));
    }
    #endif
    /* TODO: query any string */
@@ -919,7 +919,6 @@ bool command_get_status(command_t *cmd, const char* arg)
    {
       /* add some content info */
       runloop_state_t *runloop_st = runloop_state_get_ptr();
-      const char *status          = "PLAYING";
       const char *content_name    = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
       int content_crc32           = content_get_crc();
       const char* system_id       = NULL;
@@ -929,15 +928,20 @@ bool command_get_status(command_t *cmd, const char* arg)
 
       core_info_get_current_core(&core_info);
 
-      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-         status                   = "PAUSED";
       if (core_info)
          system_id                = core_info->system_id;
       if (!system_id)
          system_id                = runloop_st->system.info.library_name;
-
-      _len = snprintf(reply, sizeof(reply), "GET_STATUS %s %s,%s,crc32=%x\n",
-            status, system_id, content_name, content_crc32);
+      _len  = strlcpy(reply, "GET_STATUS ",       sizeof(reply));
+      if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         _len += strlcpy(reply + _len, "PAUSED",  sizeof(reply) - _len);
+      else
+         _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, " ",          sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, system_id,    sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, ",",          sizeof(reply) - _len);
+      _len += strlcpy(reply + _len, content_name, sizeof(reply) - _len);
+      _len += snprintf(reply + _len, sizeof(reply) - _len, ",crc32=%x\n", content_crc32);
    }
    else
        _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
@@ -1554,7 +1558,14 @@ void command_event_set_savestate_garbage_collect(
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
    if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
+   {
       filestream_delete(oldest_save);
+      /* Construct the save state thumbnail name 
+       * and delete that one as well. */
+      i = strlcpy(state_dir,oldest_save,PATH_MAX_LENGTH);
+      strlcpy(state_dir + i,".png",STRLEN_CONST(".png")+1);
+      filestream_delete(state_dir);
+   }
 
    dir_list_free(dir_list);
 }
@@ -1778,12 +1789,14 @@ bool command_event_save_core_config(
       for (i = 0; i < 16; i++)
       {
          size_t _len = strlcpy(tmp, config_path, sizeof(tmp));
+
          if (i)
             _len += snprintf(tmp + _len, sizeof(tmp) - _len, "-%u", i);
          strlcpy(tmp + _len, ".cfg", sizeof(tmp) - _len);
 
          if (!path_is_valid(tmp))
          {
+            strlcpy(config_path, tmp, sizeof(config_path));
             new_path_available = true;
             break;
          }
@@ -1969,7 +1982,7 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_SAVE_STATE_TO_RAM:
             {
                /* TODO: Saving state during recording should associate the state with the replay. */
-               video_driver_state_t *video_st                 = 
+               video_driver_state_t *video_st                 =
                   video_state_get_ptr();
                bool savestate_auto_index                      =
                      settings->bools.savestate_auto_index;
@@ -2096,15 +2109,15 @@ void command_event_reinit(const int flags)
    bool adaptive_vsync            = settings->bools.video_adaptive_vsync;
    unsigned swap_interval_config  = settings->uints.video_swap_interval;
 #endif
-   enum input_game_focus_cmd_type 
+   enum input_game_focus_cmd_type
       game_focus_cmd              = GAME_FOCUS_CMD_REAPPLY;
-   const input_device_driver_t 
+   const input_device_driver_t
       *joypad                     = input_st->primary_joypad;
 #ifdef HAVE_MFI
-   const input_device_driver_t 
+   const input_device_driver_t
       *sec_joypad                 = input_st->secondary_joypad;
 #else
-   const input_device_driver_t 
+   const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
 

@@ -155,7 +155,10 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 {
    struct retro_vfs_file_handle  *fp = NULL;
-   RFILE* output                     = NULL;
+   RFILE* output                     = (RFILE*)malloc(sizeof(RFILE));
+
+   if (!output)
+      return NULL;
 
    if (filestream_open_cb)
       fp = (struct retro_vfs_file_handle*)
@@ -165,9 +168,11 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
          retro_vfs_file_open_impl(path, mode, hints);
 
    if (!fp)
+   {
+      free(output);
       return NULL;
+   }
 
-   output             = (RFILE*)malloc(sizeof(RFILE));
    output->error_flag = false;
    output->hfile      = fp;
    return output;

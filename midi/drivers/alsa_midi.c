@@ -157,7 +157,11 @@ static void alsa_midi_free(void *p)
    if (d)
    {
       if (d->seq)
+      {
+         snd_seq_drain_output(d->seq);
          snd_seq_close(d->seq);
+      }
+
       free(d);
    }
 }

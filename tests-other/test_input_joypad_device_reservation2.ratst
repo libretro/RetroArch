@@ -1,0 +1,33 @@
+[
+{
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(0001:0002) Test joypad device A",
+  "frame": 0
+},
+{
+  "action": 1,
+  "param_num": 1,
+  "param_str": "(0003:0004) Test joypad device B"
+},
+{
+  "action": 1,
+  "param_num": 2,
+  "param_str": "(0005:0006) Test joypad device C"
+},
+{
+  "action": 1,
+  "param_num": 3,
+  "param_str": "(0005:0006) Test joypad device C"
+},
+{
+  "action": 1,
+  "param_num": 4,
+  "param_str": "(0005:0006) Test joypad device C"
+},
+{
+  "action": 1,
+  "param_num": 5,
+  "param_str": "(0005:0006) Test joypad device C"
+}
+]

@@ -330,35 +330,61 @@ bool core_updater_list_get_core(
 static bool core_updater_list_set_date(
       core_updater_list_entry_t *entry, const char *date_str)
 {
-   struct string_list date_list = {0};
+   char *tok, *save;
+   char *elem0        = NULL;
+   char *elem1        = NULL;
+   char *elem2        = NULL;
+   unsigned list_size = 0;
+   char *date_str_cpy = NULL;
 
    if (!entry || string_is_empty(date_str))
-      goto error;
+      return false;
+
+   date_str_cpy = strdup(date_str);
 
    /* Split date string into component values */
-   string_list_initialize(&date_list);
-   if (!string_split_noalloc(&date_list, date_str, "-"))
-         goto error;
+   if ((tok = strtok_r(date_str_cpy, "-", &save)))
+   {
+      elem0 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, "-", &save)))
+   {
+      elem1 = strdup(tok);
+      list_size++;
+   }
+   if ((tok = strtok_r(NULL, "-", &save)))
+   {
+      elem2 = strdup(tok);
+      list_size++;
+   }
+   free(date_str_cpy);
 
    /* Date string must have 3 values:
     * [year] [month] [day] */
-   if (date_list.size < 3)
-      goto error;
+   if (list_size < 3)
+   {
+      if (elem0)
+         free(elem0);
+      if (elem1)
+         free(elem1);
+      if (elem2)
+         free(elem2);
+
+      return false;
+   }
 
    /* Convert date string values */
-   entry->date.year  = string_to_unsigned(date_list.elems[0].data);
-   entry->date.month = string_to_unsigned(date_list.elems[1].data);
-   entry->date.day   = string_to_unsigned(date_list.elems[2].data);
+   entry->date.year  = string_to_unsigned(elem0);
+   entry->date.month = string_to_unsigned(elem1);
+   entry->date.day   = string_to_unsigned(elem2);
 
    /* Clean up */
-   string_list_deinitialize(&date_list);
+   free(elem0);
+   free(elem1);
+   free(elem2);
 
    return true;
-
-error:
-   string_list_deinitialize(&date_list);
-
-   return false;
 }
 
 /* Parses crc string and adds value to
@@ -656,31 +682,12 @@ static void core_updater_list_add_entry(
       const char *path_dir_libretro,
       const char *path_libretro_info,
       const char *network_buildbot_url,
-      struct string_list *network_core_entry_list)
+      const char *date_str,
+      const char *crc_str,
+      const char *filename_str)
 {
-   const char *date_str                          = NULL;
-   const char *crc_str                           = NULL;
-   const char *filename_str                      = NULL;
    const core_updater_list_entry_t *search_entry = NULL;
    core_updater_list_entry_t entry               = {0};
-
-   if (!core_list || !network_core_entry_list)
-      goto error;
-
-   /* > Listings must have 3 entries:
-    *   [date] [crc] [filename] */
-   if (network_core_entry_list->size < 3)
-      goto error;
-
-   /* Get handles of the individual listing strings */
-   date_str     = network_core_entry_list->elems[0].data;
-   crc_str      = network_core_entry_list->elems[1].data;
-   filename_str = network_core_entry_list->elems[2].data;
-
-   if (   string_is_empty(date_str)
-       || string_is_empty(crc_str)
-       || string_is_empty(filename_str))
-      goto error;
 
    /* Check whether core file is already included
     * in the list (this is *not* an error condition,
@@ -777,13 +784,13 @@ bool core_updater_list_parse_network_data(
       const char *network_buildbot_url,
       const char *data, size_t len)
 {
-   size_t i;
-   char *data_buf                       = NULL;
-   struct string_list network_core_list = {0};
+   char *tok, *save;
+   unsigned list_size = 0;
+   char *data_buf     = NULL;
 
    /* Sanity check */
    if (!core_list || string_is_empty(data) || (len < 1))
-      goto error;
+      return false;
 
    /* We're populating a list 'from scratch' - remove
     * any existing entries */
@@ -792,55 +799,73 @@ bool core_updater_list_parse_network_data(
    /* Input data string is not terminated - have
     * to copy it to a temporary buffer... */
    if (!(data_buf = (char*)malloc((len + 1) * sizeof(char))))
-      goto error;
+      return false;
 
    memcpy(data_buf, data, len * sizeof(char));
    data_buf[len] = '\0';
 
-   /* Split network listing request into lines */
-   string_list_initialize(&network_core_list);
-   if (!string_split_noalloc(&network_core_list, data_buf, "\n"))
-      goto error;
+   list_size     = string_count_occurrences_single_character(data_buf, '\n');
 
-   if (network_core_list.size < 1)
-      goto error;
+   if (list_size < 1)
+   {
+      free(data_buf);
+      return false;
+   }
+
+   /* Split network listing request into lines */
+   /* Loop over lines */
+   for (tok = strtok_r(data_buf, "\n", &save); tok;
+        tok = strtok_r(NULL, "\n", &save))
+   {
+      char *tok2, *save2;
+      char *elem0      = NULL;
+      char *elem1      = NULL;
+      char *elem2      = NULL;
+      char *line_cpy   = NULL;
+      const char *line = tok;
+
+      if (string_is_empty(line))
+         continue;
+
+      line_cpy = strdup(line);
+
+      /* Split line into listings info components */
+      if ((tok2 = strtok_r(line_cpy, " ", &save2)))
+         elem0 = strdup(tok2); /* date */
+      if ((tok2 = strtok_r(NULL, " ", &save2)))
+         elem1 = strdup(tok2); /* crc  */
+      if ((tok2 = strtok_r(NULL, " ", &save2)))
+         elem2 = strdup(tok2); /* filename */
+
+      free(line_cpy);
+
+      /* Parse listings info and add to core updater
+       * list */
+      /* > Listings must have 3 entries:
+       *   [date] [crc] [filename] */
+      if (     !string_is_empty(elem0)
+            && !string_is_empty(elem1)
+            && !string_is_empty(elem2))
+         core_updater_list_add_entry(
+               core_list,
+               path_dir_libretro,
+               path_libretro_info,
+               network_buildbot_url,
+               elem0, elem1, elem2);
+
+      /* Clean up */
+      free(elem0);
+      free(elem1);
+      free(elem2);
+   }
 
    /* Temporary data buffer is no longer required */
    free(data_buf);
    data_buf = NULL;
 
-   /* Loop over lines */
-   for (i = 0; i < network_core_list.size; i++)
-   {
-      struct string_list network_core_entry_list  = {0};
-      const char *line = network_core_list.elems[i].data;
-
-      if (string_is_empty(line))
-         continue;
-
-      string_list_initialize(&network_core_entry_list);
-      /* Split line into listings info components */
-      string_split_noalloc(&network_core_entry_list, line, " ");
-
-      /* Parse listings info and add to core updater
-       * list */
-      core_updater_list_add_entry(
-            core_list,
-            path_dir_libretro,
-            path_libretro_info,
-            network_buildbot_url,
-            &network_core_entry_list);
-
-      /* Clean up */
-      string_list_deinitialize(&network_core_entry_list);
-   }
-
    /* Sanity check */
    if (RBUF_LEN(core_list->entries) < 1)
-      goto error;
-
-   /* Clean up */
-   string_list_deinitialize(&network_core_list);
+      return false;
 
    /* Sort completed list */
    core_updater_list_qsort(core_list);
@@ -849,14 +874,6 @@ bool core_updater_list_parse_network_data(
    core_list->type = CORE_UPDATER_LIST_TYPE_BUILDBOT;
 
    return true;
-
-error:
-   string_list_deinitialize(&network_core_list);
-
-   if (data_buf)
-      free(data_buf);
-
-   return false;
 }
 
 /* Parses a single play feature delivery core

@@ -91,6 +91,8 @@
 
 #if defined(DINGUX)
 #endif
+#if defined(RARCH_MOBILE)
+#endif
 
 /* Settings > Video > HDR */
 
@@ -231,8 +233,6 @@
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 
@@ -265,7 +265,7 @@
 
 /* Settings > Playlists */
 
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

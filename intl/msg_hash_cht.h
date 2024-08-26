@@ -2340,17 +2340,11 @@ MSG_HASH(
    "自訂水平位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "自訂影像顯示水平位置, 正數向右移動, 負數向左移動。\n開啟「整數縮放」時此選項被忽略。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "自訂垂直位置"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自訂影像顯示垂直位置, 正數向下移動, 負數向上移動。\n開啟「整數縮放」時此選項被忽略。"
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "自訂寬度"
@@ -4915,6 +4909,10 @@ MSG_HASH(
    "載入覆蓋元件 (預設)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "從檔案瀏覽器選擇覆疊設定"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "(橫向) 縮放大小"
    )
@@ -5009,6 +5007,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "設定螢幕直向顯示時, 覆蓋元件的垂直位置, 正數為向上偏移, 負數為向下偏移。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "啟用覆疊介面的光線槍、滑鼠以及指向裝置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "於核心中使用非按下覆疊介面的任何觸控以建立指向裝置的輸入。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "覆疊介面的光線槍"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "設定在覆疊介面的光線槍輸入傳送。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "覆疊介面的滑鼠"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "設定在覆疊介面的滑鼠輸入傳送。備註: 單指、雙指、三指的輕碰各自傳送滑鼠左鍵、右鍵、以及中鍵的點按操作。"
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -6010,8 +6032,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "顯示「加入到我的最愛」選項。"
    )
-
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "顯示「預設載入核心」"
@@ -7161,7 +7181,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "開啟時加入「開始資料夾」參數, 依開始資料夾路徑設定, 自動變更列表項目路徑, 可用於移動到開啟此選項的裝置。"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

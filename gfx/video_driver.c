@@ -157,7 +157,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
    &gfx_ctx_cocoagl,
 #endif
 #endif
-#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE))
+#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_COCOA)
    &gfx_ctx_sdl_gl,
 #endif
 #ifdef HAVE_OSMESA
@@ -406,7 +406,7 @@ const video_driver_t *video_drivers[] = {
 #if defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
    &video_sdl,
 #endif
-#ifdef HAVE_SDL2
+#if defined(HAVE_SDL2) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    &video_sdl2,
 #endif
 #ifdef HAVE_SDL_DINGUX
@@ -747,7 +747,7 @@ void video_monitor_compute_fps_statistics(uint64_t
    if (frame_time_count <
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
-      RARCH_LOG(
+      RARCH_DBG(
             "[Video]: Does not have enough samples for monitor refresh rate"
             " estimation. Requires to run for at least %u frames.\n",
             2 * MEASURE_FRAME_TIME_SAMPLES_COUNT);
@@ -756,7 +756,8 @@ void video_monitor_compute_fps_statistics(uint64_t
 
    if (video_monitor_fps_statistics(&avg_fps, &stddev, &samples))
    {
-      RARCH_LOG("[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
+      RARCH_DBG(
+            "[Video]: Average monitor Hz: %.6f Hz. (%.3f %% frame time"
             " deviation, based on %u last samples).\n",
             avg_fps, 100.0f * stddev, samples);
    }
@@ -1213,9 +1214,14 @@ bool video_display_server_has_refresh_rate(float hz)
 
       for (i = 0; i < size && !rate_exists; i++)
       {
-         if (   (video_list[i].width       == video_driver_width)
-             && (video_list[i].height      == video_driver_height)
-             && (video_list[i].refreshrate == floor(hz)))
+         /* Float difference added to enable 49.95Hz modelines for PAL. *
+          * Actual mode selection will be done in context driver,       *
+          * with some logic in video_switch_refresh_rate_maybe          *   
+          * and in action_cb_push_dropdown_item_resolution              */
+         if (   (video_list[i].width        == video_driver_width)
+             && (video_list[i].height       == video_driver_height)
+             && ((video_list[i].refreshrate == floor(hz)) ||
+                 (fabsf(video_list[i].refreshrate_float - hz) < 0.06f)))
             rate_exists = true;
       }
 
@@ -1242,7 +1248,8 @@ void video_switch_refresh_rate_maybe(
    unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
    unsigned shader_subframes          = settings->uints.video_shader_subframes;
    bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
-   bool exclusive_fullscreen          = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+   bool exclusive_fullscreen          = (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN) || (
+                                        settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen);
    bool windowed_fullscreen           = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
    bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
 
@@ -2037,13 +2044,85 @@ void video_driver_set_aspect_ratio(void)
       video_st->poke->set_aspect_ratio(video_st->data, aspect_ratio_idx);
 }
 
+void video_viewport_get_scaled_aspect(struct video_viewport *vp, unsigned viewport_width, unsigned viewport_height, bool ydown) {
+   float device_aspect      = (float)viewport_width / viewport_height;
+   float desired_aspect     = video_driver_get_aspect_ratio();
+   video_viewport_get_scaled_aspect2(vp, viewport_width, viewport_height, ydown, device_aspect, desired_aspect);
+}
+
+void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewport_width, unsigned viewport_height, bool ydown, float device_aspect, float desired_aspect)
+{
+   settings_t *settings     = config_get_ptr();
+   int x                    = 0;
+   int y                    = 0;
+   
+   float viewport_bias_x    = settings->floats.video_viewport_bias_x;
+   float viewport_bias_y    = settings->floats.video_viewport_bias_y;
+#if defined(RARCH_MOBILE)
+   if (viewport_width < viewport_height)
+   {
+      viewport_bias_x = settings->floats.video_viewport_bias_portrait_x;
+      viewport_bias_y = settings->floats.video_viewport_bias_portrait_y;
+   }
+#endif
+   if (!ydown)
+      viewport_bias_y = 1.0 - viewport_bias_y;
+
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   {
+      video_viewport_t *custom_vp = &settings->video_viewport_custom;
+      int padding_x               = 0;
+      int padding_y               = 0;
+      x                           = custom_vp->x;
+      y                           = custom_vp->y;
+      if (!ydown)
+         y                        = vp->full_height - (y + custom_vp->height);
+      padding_x += (viewport_width - custom_vp->width);
+      if (padding_x < 0)
+         padding_x *= 2;
+      padding_y = viewport_height - custom_vp->height;
+      if (padding_y < 0)
+         padding_y *= 2;
+      viewport_width = custom_vp->width;
+      viewport_height = custom_vp->height;
+      x += padding_x * viewport_bias_x;
+      y += padding_y * viewport_bias_y;
+   }
+   else
+   {
+      float delta;
+
+      if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+      {
+         /* If the aspect ratios of screen and desired aspect
+          * ratio are sufficiently equal (floating point stuff),
+          * assume they are actually equal.
+          */
+      }
+      else if (device_aspect > desired_aspect)
+      {
+         delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+         x    += (int)roundf(viewport_width * ((0.5f - delta) * (viewport_bias_x * 2.0f)));
+         viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
+      }
+      else
+      {
+         delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+         y     += (int)roundf(viewport_height * ((0.5f - delta) * (viewport_bias_y * 2.0f)));
+         viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
+      }
+   }
+   vp->x      = x;
+   vp->y      = y;
+   vp->width  = viewport_width;
+   vp->height = viewport_height;
+}
+
 void video_driver_update_viewport(
       struct video_viewport* vp, bool force_full, bool keep_aspect)
 {
-   float            device_aspect  = (float)vp->full_width / vp->full_height;
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
    video_driver_state_t *video_st  = &video_driver_st;
    float video_driver_aspect_ratio = video_st->aspect_ratio;
 
@@ -2057,58 +2136,9 @@ void video_driver_update_viewport(
             vp,
             vp->full_width,
             vp->full_height,
-            video_driver_aspect_ratio, keep_aspect);
+            video_driver_aspect_ratio, keep_aspect, true);
    else if (keep_aspect && !force_full)
-   {
-      float desired_aspect = video_driver_aspect_ratio;
-
-#if defined(HAVE_MENU)
-      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         const struct video_viewport *custom_vp = &settings->video_viewport_custom;
-         vp->x      = custom_vp->x;
-         vp->y      = custom_vp->y;
-         vp->width  = custom_vp->width;
-         vp->height = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta      = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            vp->x      = (int)roundf(vp->full_width * (0.5f - delta));
-            vp->width  = (unsigned)roundf(2.0f * vp->full_width * delta);
-            vp->y      = 0;
-            vp->height = vp->full_height;
-         }
-         else
-         {
-            vp->x      = 0;
-            vp->width  = vp->full_width;
-            delta      = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            vp->y      = (int)roundf(vp->full_height * (0.5f - delta));
-            vp->height = (unsigned)roundf(2.0f * vp->full_height * delta);
-         }
-      }
-   }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      vp->y = 0;
-#endif
+      video_viewport_get_scaled_aspect(vp, vp->full_width, vp->full_height, true);
 }
 
 void video_driver_restore_cached(void *settings_data)
@@ -2297,90 +2327,111 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport)
  * @height        : Height.
  * @aspect_ratio  : Aspect ratio (in float).
  * @keep_aspect   : Preserve aspect ratio?
+ * @ydown         : Positive y points down?
  *
  * Gets viewport scaling dimensions based on
  * scaled integer aspect ratio.
  **/
 void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
-      float aspect_ratio, bool keep_aspect)
+      float aspect_ratio, bool keep_aspect,
+      bool ydown)
 {
-   int padding_x                   = 0;
-   int padding_y                   = 0;
+   int x                           = 0;
+   int y                           = 0;
    settings_t *settings            = config_get_ptr();
    video_driver_state_t *video_st  = &video_driver_st;
    unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
    bool overscale                  = settings->bools.video_scale_integer_overscale;
+   int padding_x                   = 0;
+   int padding_y                   = 0;
+   float viewport_bias_x           = settings->floats.video_viewport_bias_x;
+   float viewport_bias_y           = settings->floats.video_viewport_bias_y;
+   /* Use system reported sizes as these define the
+    * geometry for the "normal" case. */
+   unsigned content_width          =
+      video_st->av_info.geometry.base_width;
+   unsigned content_height         =
+      video_st->av_info.geometry.base_height;
+   unsigned int rotation           = retroarch_get_rotation();
+#if defined(RARCH_MOBILE)
+   if (width < height)
+   {
+      viewport_bias_x = settings->floats.video_viewport_bias_portrait_x;
+      viewport_bias_y = settings->floats.video_viewport_bias_portrait_y;
+   }
+#endif
+
+   if (!ydown)
+      viewport_bias_y = 1.0 - viewport_bias_y;
+
+   if (rotation % 2)
+      content_height     = video_st->av_info.geometry.base_width;
+
+   if (content_height == 0)
+      content_height     = 1;
+
+   /* Account for non-square pixels.
+    * This is sort of contradictory with the goal of integer scale,
+    * but it is desirable in some cases.
+    *
+    * If square pixels are used, base_height will be equal to
+    * system->av_info.base_height. */
+   content_width = (unsigned)roundf(content_height * aspect_ratio);
 
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       struct video_viewport *custom_vp = &settings->video_viewport_custom;
-
       if (custom_vp)
       {
-         padding_x = width  - custom_vp->width;
+         x         = custom_vp->x;
+         y         = custom_vp->y;
+         if (!ydown)
+            y      = vp->height - (y + custom_vp->height);
+         padding_x = width - custom_vp->width;
+         if (padding_x < 0)
+            padding_x *= 2;
          padding_y = height - custom_vp->height;
+         if (padding_y < 0)
+            padding_y *= 2;
          width     = custom_vp->width;
          height    = custom_vp->height;
       }
    }
-   else
+   /* Make sure that we don't get 0x scale ... */
+   else if (width >= content_width && height >= content_height)
    {
-      unsigned base_width;
-      /* Use system reported sizes as these define the
-       * geometry for the "normal" case. */
-      unsigned base_height  =
-         video_st->av_info.geometry.base_height;
-      unsigned int rotation = retroarch_get_rotation();
-
-      if (rotation % 2)
-         base_height        = video_st->av_info.geometry.base_width;
-
-      if (base_height == 0)
-         base_height        = 1;
-
-      /* Account for non-square pixels.
-       * This is sort of contradictory with the goal of integer scale,
-       * but it is desirable in some cases.
-       *
-       * If square pixels are used, base_height will be equal to
-       * system->av_info.base_height. */
-      base_width = (unsigned)roundf(base_height * aspect_ratio);
-
-      /* Make sure that we don't get 0x scale ... */
-      if (width >= base_width && height >= base_height)
+      if (keep_aspect)
       {
-         if (keep_aspect)
-         {
-            /* X/Y scale must be same. */
-            unsigned max_scale = 1;
+         /* X/Y scale must be same. */
+         unsigned max_scale = 1;
 
-            if (overscale)
-               max_scale = MIN((width / base_width) + !!(width % base_width),
-                     (height / base_height) + !!(height % base_height));
-            else
-               max_scale = MIN(width / base_width,
-                     height / base_height);
-
-            padding_x          = width  - base_width  * max_scale;
-            padding_y          = height - base_height * max_scale;
-         }
+         if (overscale)
+            max_scale = MIN((width / content_width) + !!(width % content_width),
+                            (height / content_height) + !!(height % content_height));
          else
-         {
-            /* X/Y can be independent, each scaled as much as possible. */
-            padding_x = width  % base_width;
-            padding_y = height % base_height;
-         }
-      }
+            max_scale = MIN(width / content_width,
+                            height / content_height);
 
+         padding_x          = width  - content_width  * max_scale;
+         padding_y          = height - content_height * max_scale;
+      }
+      else
+      {
+         /* X/Y can be independent, each scaled as much as possible. */
+         padding_x = width  % content_width;
+         padding_y = height % content_height;
+      }
       width  -= padding_x;
       height -= padding_y;
    }
+   x += padding_x * viewport_bias_x;
+   y += padding_y * viewport_bias_y;
 
    vp->width  = width;
    vp->height = height;
-   vp->x      = padding_x / 2;
-   vp->y      = padding_y / 2;
+   vp->x      = x;
+   vp->y      = y;
 }
 
 void video_driver_display_type_set(enum rarch_display_type type)
@@ -3427,10 +3478,15 @@ void video_driver_frame(const void *data, unsigned width,
     *   current frame is not (i.e. if core was
     *   previously sending duped frames, ensure
     *   that the next frame update is captured) */
+#if HAVE_MENU
    if (   video_info.input_driver_nonblock_state
        && video_info.fastforward_frameskip
        &&  !((video_info.menu_st_flags & MENU_ST_FLAG_ALIVE)
        ||   (last_frame_duped && !!data)))
+#else
+   if (   video_info.input_driver_nonblock_state
+       && video_info.fastforward_frameskip)
+#endif
    {
       retro_time_t frame_time_accumulator_prev = frame_time_accumulator;
       retro_time_t frame_time_delta            = new_time - last_time;
@@ -3742,7 +3798,11 @@ void video_driver_frame(const void *data, unsigned width,
                   msg_entry.category,
                   msg_entry.prio,
                   false,
+#if HAVE_MENU
                   (video_info.menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false
+#else
+                  false
+#endif
             );
       }
       /* ...otherwise, just output message via
@@ -3926,8 +3986,12 @@ void video_driver_frame(const void *data, unsigned width,
       if (video_st->current_video->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,
+#if HAVE_MENU
                   ((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) > 0)
                || video_info.notifications_hidden ? "" : video_driver_msg,
+#else
+               video_info.notifications_hidden ? "" : video_driver_msg,
+#endif
                &video_info))
          video_st->flags |=  VIDEO_FLAG_ACTIVE;
       else
@@ -3942,7 +4006,9 @@ void video_driver_frame(const void *data, unsigned width,
           || video_info.memory_show
           || video_info.core_status_msg_show
          )
+#if HAVE_MENU
        && !((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
+#endif
        && !video_info.notifications_hidden
       )
    {

@@ -263,7 +263,7 @@ void fill_pathname_application_special(char *s,
             else
 #endif
 #if defined(HAVE_MATERIALUI) || defined(HAVE_OZONE)
-            if (     string_is_equal(menu_ident, "glui") 
+            if (     string_is_equal(menu_ident, "glui")
                   || string_is_equal(menu_ident, "ozone"))
             {
                char s4[PATH_MAX_LENGTH];
@@ -283,8 +283,8 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_SYSICONS:
          {
 #ifdef HAVE_MENU
-            settings_t *settings   = config_get_ptr();
 #if defined(HAVE_XMB) || defined(HAVE_MATERIALUI) || defined(HAVE_OZONE)
+            settings_t *settings   = config_get_ptr();
             const char *menu_ident = settings->arrays.menu_driver;
 #endif
 
@@ -321,8 +321,7 @@ void fill_pathname_application_special(char *s,
             }
             else
 #endif
-               if (len)
-               s[0] = '\0';
+               if (len) s[0] = '\0';
 #endif
          }
 

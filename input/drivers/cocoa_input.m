@@ -570,10 +570,6 @@ static int16_t cocoa_input_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          {
-#ifdef IOS
-            if (!apple->touch_count)
-                return 0;
-#endif
             // with a physical mouse that is hovering, the touch_count will be 0
             // and apple->touches[0] will have the hover position
             if ((idx == 0 || idx < apple->touch_count) && (idx < MAX_TOUCHES))
@@ -771,6 +767,13 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    cocoa_show_mouse(nil, !state);
    apple->mouse_grabbed = state;
 }
+#elif TARGET_OS_IOS
+static void cocoa_input_grab_mouse(void *data, bool state)
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+
+   apple->mouse_grabbed = state;
+}
 #endif
 
 input_driver_t input_cocoa = {
@@ -782,7 +785,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-#ifdef OSX
+#if defined(OSX) || TARGET_OS_IOS
    cocoa_input_grab_mouse,
 #else
    NULL,                         /* grab_mouse */

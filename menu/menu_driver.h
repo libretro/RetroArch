@@ -110,6 +110,7 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
 #ifdef ANDROID
     MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -626,7 +627,7 @@ bool menu_driver_init(bool video_is_threaded);
 
 retro_time_t menu_driver_get_current_time(void);
 
-void menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
 
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 

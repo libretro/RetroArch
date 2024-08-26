@@ -26,6 +26,7 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
+#import <AVFoundation/AVFoundation.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -721,7 +722,11 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
 
    if (list->size == 0)
       menu_entries_append(list,
+#if TARGET_OS_TV
+            "~/Library/Caches/RetroArch",
+#else
             "~/Documents/RetroArch",
+#endif
             msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
@@ -735,6 +740,17 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    string_list_free(str_list);
+
+#if TARGET_OS_IOS
+   if (   filebrowser_get_type() == FILEBROWSER_NONE ||
+          filebrowser_get_type() == FILEBROWSER_SCAN_FILE ||
+          filebrowser_get_type() == FILEBROWSER_SELECT_FILE)
+      menu_entries_append(list,
+                          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+                          msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+                          MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+                          MENU_SETTING_ACTION, 0, 0, NULL);
+#endif
 
    ret = 0;
 #endif
@@ -755,7 +771,7 @@ static uint64_t frontend_darwin_get_total_mem(void)
     task_vm_info_data_t vmInfo;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-       return vmInfo.resident_size_peak;
+       return vmInfo.phys_footprint + vmInfo.limit_bytes_remaining;
 #endif
     return 0;
 }
@@ -782,7 +798,7 @@ static uint64_t frontend_darwin_get_free_mem(void)
     task_vm_info_data_t vmInfo;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-        return vmInfo.resident_size_peak - vmInfo.resident_size;
+        return vmInfo.limit_bytes_remaining;
 #endif
     return 0;
 }
@@ -794,7 +810,18 @@ static const char* frontend_darwin_get_cpu_model_name(void)
    return darwin_cpu_model_name;
 }
 
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
+static enum retro_language frontend_darwin_get_user_language(void)
+{
+   char s[128];
+   CFArrayRef langs = CFLocaleCopyPreferredLanguages();
+   CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
+   CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
+   /* iOS and OS X only support the language ID syntax consisting of a language designator and optional region or script designator. */
+   string_replace_all_chars(s, '-', '_');
+   return retroarch_get_language_from_iso(s);
+}
+
+#if defined(OSX)
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -875,10 +902,6 @@ static bool accessibility_speak_macos(int speed,
    char* language_speaker = accessibility_mac_language_code(voice);
    char* speeds[10]       = {"80",  "100", "125", "150", "170", "210",
                              "260", "310", "380", "450"};
-   if (speed < 1)
-      speed               = 1;
-   else if (speed > 10)
-      speed               = 10;
 
    if (priority < 10 && speak_pid > 0)
    {
@@ -928,7 +951,59 @@ static bool accessibility_speak_macos(int speed,
    }
    return true;
 }
+
 #endif
+
+static bool frontend_darwin_is_narrator_running(void)
+{
+   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+      return true;
+#if OSX
+   return is_narrator_running_macos();
+#else
+   return false;
+#endif
+}
+
+static bool frontend_darwin_accessibility_speak(int speed,
+      const char* speak_text, int priority)
+{
+   if (speed < 1)
+      speed               = 1;
+   else if (speed > 10)
+      speed               = 10;
+
+   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+   {
+      static dispatch_once_t once;
+      static AVSpeechSynthesizer *synth;
+      dispatch_once(&once, ^{
+         synth = [[AVSpeechSynthesizer alloc] init];
+      });
+      if ([synth isSpeaking])
+      {
+         if (priority < 10)
+            return true;
+         else
+            [synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+      }
+
+      AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:[NSString stringWithUTF8String:speak_text]];
+      if (!utterance)
+         return false;
+      utterance.rate = (float)speed / 10.0f;
+      const char *language = get_user_language_iso639_1(false);
+      utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:[NSString stringWithUTF8String:language]];
+      [synth speakUtterance:utterance];
+      return true;
+   }
+
+#if defined(OSX)
+   return accessibility_speak_macos(speed, speak_text, priority);
+#else
+   return false;
+#endif
+}
 
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_env,         /* get_env */
@@ -960,14 +1035,9 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
-   NULL,                            /* get_user_language   */
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-   is_narrator_running_macos,       /* is_narrator_running */
-   accessibility_speak_macos,       /* accessibility_speak */
-#else
-   NULL,                            /* is_narrator_running */
-   NULL,                            /* accessibility_speak */
-#endif
+   frontend_darwin_get_user_language, /* get_user_language   */
+   frontend_darwin_is_narrator_running, /* is_narrator_running */
+   frontend_darwin_accessibility_speak, /* accessibility_speak */
    NULL,                            /* set_gamemode        */
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */

@@ -477,6 +477,8 @@ enum retro_language
    RETRO_LANGUAGE_BRITISH_ENGLISH     = 30,
    RETRO_LANGUAGE_HUNGARIAN           = 31,
    RETRO_LANGUAGE_BELARUSIAN          = 32,
+   RETRO_LANGUAGE_GALICIAN            = 33,
+   RETRO_LANGUAGE_NORWEGIAN           = 34,
    RETRO_LANGUAGE_LAST,
 
    /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
@@ -663,6 +665,25 @@ enum retro_key
    RETROK_EURO           = 321,
    RETROK_UNDO           = 322,
    RETROK_OEM_102        = 323,
+
+   RETROK_BROWSER_BACK      = 324,
+   RETROK_BROWSER_FORWARD   = 325,
+   RETROK_BROWSER_REFRESH   = 326,
+   RETROK_BROWSER_STOP      = 327,
+   RETROK_BROWSER_SEARCH    = 328,
+   RETROK_BROWSER_FAVORITES = 329,
+   RETROK_BROWSER_HOME      = 330,
+   RETROK_VOLUME_MUTE       = 331,
+   RETROK_VOLUME_DOWN       = 332,
+   RETROK_VOLUME_UP         = 333,
+   RETROK_MEDIA_NEXT        = 334,
+   RETROK_MEDIA_PREV        = 335,
+   RETROK_MEDIA_STOP        = 336,
+   RETROK_MEDIA_PLAY_PAUSE  = 337,
+   RETROK_LAUNCH_MAIL       = 338,
+   RETROK_LAUNCH_MEDIA      = 339,
+   RETROK_LAUNCH_APP1       = 340,
+   RETROK_LAUNCH_APP2       = 341,
 
    RETROK_LAST,
 
@@ -1742,7 +1763,7 @@ enum retro_mod
 /**
  * Gets an interface that the core can use for raw MIDI I/O.
  *
- * @param[out] data <tt>struct retro_midi_interface **</tt>.
+ * @param[out] data <tt>struct retro_midi_interface *</tt>.
  * Pointer to the MIDI interface.
  * May be \c NULL.
  * @return \c true if the environment call is available,

@@ -1611,6 +1611,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Προτιμώμενη Θέση Άξωνα Y Αναλογίας Οθόνης"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Προτιμώμενο Πλάτος Αναλογίας Οθόνης"
@@ -2811,8 +2813,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 
@@ -2985,7 +2985,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Φορητές Λίστες Αναπαραγωγής"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

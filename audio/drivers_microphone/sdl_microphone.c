@@ -42,7 +42,7 @@ typedef struct sdl_microphone
    bool nonblock;
 } sdl_microphone_t;
 
-static INLINE int find_num_frames(int rate, int latency)
+static INLINE int sdl_microphone_find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
 
@@ -157,7 +157,7 @@ static void *sdl_microphone_open_mic(void *driver_context,
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
-   frames                = find_num_frames(rate, latency / 4);
+   frames                = sdl_microphone_find_num_frames(rate, latency / 4);
 
    desired_spec.freq     = rate;
    desired_spec.format   = AUDIO_F32SYS;

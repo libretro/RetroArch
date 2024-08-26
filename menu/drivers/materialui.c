@@ -37,6 +37,7 @@
 #endif
 
 #include "../../frontend/frontend_driver.h"
+#include "../../ui/ui_companion_driver.h"
 
 #include "../menu_driver.h"
 #include "../menu_screensaver.h"
@@ -175,7 +176,8 @@ enum materialui_node_icon_type
    MUI_ICON_TYPE_MENU_EXPLORE,
    MUI_ICON_TYPE_PLAYLIST,
    MUI_ICON_TYPE_MENU_CONTENTLESS_CORE,
-   MUI_ICON_TYPE_ACHIEVEMENT
+   MUI_ICON_TYPE_ACHIEVEMENT,
+   MUI_ICON_TYPE_APPICON
 };
 
 /* Defines all standard menu textures */
@@ -2752,6 +2754,7 @@ static uint8_t materialui_count_sublabel_lines(
    menu_entry_t entry;
    char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
    int sublabel_width_max   = 0;
+   settings_t *settings     = config_get_ptr();
 
    wrapped_sublabel_str[0] = '\0';
 
@@ -2762,7 +2765,7 @@ static uint8_t materialui_count_sublabel_lines(
    menu_entry_get(&entry, 0, entry_idx, NULL, true);
 
    /* If sublabel is empty, return immediately */
-   if (string_is_empty(entry.sublabel))
+   if (!settings->bools.menu_show_sublabels || string_is_empty(entry.sublabel))
       return 0;
 
    /* Wrap sublabel string to fit available width */
@@ -4011,6 +4014,15 @@ static void materialui_render_menu_entry_default(
    uintptr_t icon_texture                            = 0;
    bool draw_text_outside                            = (x_offset != 0);
    gfx_display_t *p_disp                             = disp_get_ptr();
+   uico_driver_state_t *uico_st                      = uico_state_get_ptr();
+   settings_t *settings                              = config_get_ptr();
+
+   static float color_white[16] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+   };
 
    if (!p_disp->dispctx->handles_transform)
    {
@@ -4076,12 +4088,6 @@ static void materialui_render_menu_entry_default(
          if (icon_texture)
          {
             /* draw the icon ourselves - the draw_icon below tints it to match the theme */
-            static float color_white[16] = {
-               1.0f, 1.0f, 1.0f, 1.0f,
-               1.0f, 1.0f, 1.0f, 1.0f,
-               1.0f, 1.0f, 1.0f, 1.0f,
-               1.0f, 1.0f, 1.0f, 1.0f,
-            };
             materialui_draw_icon(
                   userdata, p_disp,
                   video_width,
@@ -4116,6 +4122,33 @@ static void materialui_render_menu_entry_default(
          }
          break;
 #endif
+      case MUI_ICON_TYPE_APPICON:
+         if (uico_st->drv && uico_st->drv->get_app_icon_texture)
+         {
+            icon_texture = uico_st->drv->get_app_icon_texture(entry_label);
+            if (icon_texture)
+            {
+               /* draw the icon ourselves - the draw_icon below tints it to match the theme */
+               materialui_draw_icon(
+                     userdata, p_disp,
+                     video_width,
+                     video_height,
+                     mui->icon_size,
+                     (uintptr_t)icon_texture,
+                     entry_x + (int)mui->landscape_optimization.entry_margin,
+                     entry_y + (node->entry_height / 2.0f) - (mui->icon_size / 2.0f),
+                     0,
+                     1,
+                     color_white,
+                     &mymat);
+
+               entry_margin += mui->icon_size;
+               usable_width -= mui->icon_size;
+
+               icon_texture = 0; /* prevent drawing tinted icon */
+            }
+         }
+         break;
       default:
          switch (entry_file_type)
          {
@@ -4159,7 +4192,7 @@ static void materialui_render_menu_entry_default(
    /* Draw entry sublabel
     * > Must be done before label + value, since it
     *   affects y offset positions */
-   if (!string_is_empty(entry->sublabel))
+   if (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -4519,7 +4552,7 @@ static void materialui_render_menu_entry_playlist_list(
    /* Draw entry sublabel
     * > Must be done before label, since it
     *   affects y offset positions */
-   if (!string_is_empty(entry->sublabel))
+   if (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -5828,7 +5861,7 @@ static void materialui_render_header(
       gfx_display_ctx_datetime_t datetime;
       char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
 
-      timedate_str[0] = '\0';
+      timedate_str[0]         = '\0';
 
       datetime.s              = timedate_str;
       datetime.len            = sizeof(timedate_str);
@@ -5843,7 +5876,7 @@ static void materialui_render_header(
       if (!string_is_equal(timedate_str, mui->sys_bar_cache.timedate_str))
       {
          /* Cache new string */
-         strlcpy(mui->sys_bar_cache.timedate_str, timedate_str,
+         size_t _len = strlcpy(mui->sys_bar_cache.timedate_str, timedate_str,
                MUI_TIMEDATE_MAX_LENGTH * sizeof(char));
 
          /* Cache width */
@@ -5851,7 +5884,7 @@ static void materialui_render_header(
             = font_driver_get_message_width(
                mui->font_data.hint.font,
                mui->sys_bar_cache.timedate_str,
-               strlen(mui->sys_bar_cache.timedate_str),
+               _len,
                1.0f);
       }
 
@@ -10481,6 +10514,13 @@ static void materialui_list_insert(
          case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
             node->icon_type          = MUI_ICON_TYPE_MENU_CONTENTLESS_CORE;
             break;
+         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM:
+            if (atoi(fullpath) == MENU_ENUM_LABEL_APPICON_SETTINGS)
+            {
+               node->icon_type       = MUI_ICON_TYPE_APPICON;
+            }
+            /* for other types we don't have an icon */
+            break;
          case FILE_TYPE_RPL_ENTRY:
          case MENU_SETTING_DROPDOWN_ITEM:
          case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
@@ -10498,7 +10538,6 @@ static void materialui_list_insert(
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION:
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD:
          case MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM:
-         case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM:
          case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM:
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
@@ -10642,6 +10681,11 @@ static void materialui_list_insert(
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_ADD_TO_FAVORITES;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            }
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST)))
+            {
+               node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_RENAME_ENTRY))
@@ -10837,7 +10881,7 @@ static void materialui_list_insert(
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SCAN_FILE))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST))
-                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST))
+                     || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM))
                      || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_ADD_NEW_AFTER))

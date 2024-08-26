@@ -1,0 +1,52 @@
+name: CI Generate Source Only Tarball
+
+# Trigger whenever a release and/or is created
+on:
+  release:
+    types:
+      - created
+  push:
+    tags:
+      - "v*.*"
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: archive
+      id: archive
+      run: |
+        VERSION=${GITHUB_REF##*/}
+        test -z "$VERSION" && VERSION=${{ github.event.release.tag_name }}
+        VERSION=$(printf "%s\n" "$VERSION" | sed 's/^v//')
+        PKGNAME="retroarch-sourceonly-$VERSION"
+        mkdir -p /tmp/$PKGNAME
+        mv * /tmp/$PKGNAME
+        mv /tmp/$PKGNAME .
+        rm -rf $PKGNAME/pkg || true
+        rm -rf $PKGNAME/wii/libogc || true
+        rm -rf $PKGNAME/deps/glslang/glslang/Test || true
+        rm -rf $PKGNAME/deps/SPIRV-Cross/reference || true
+        rm -rf $PKGNAME/gfx/include/userland || true
+        find $PKGNAME/ -type f -name '*.a' -delete || true
+        find $PKGNAME/ -type f -name '*.lib' -delete || true
+        find $PKGNAME/ -type f -name '*.dylib' -delete || true
+        find $PKGNAME/ -type f -name '*.so.*' -delete || true
+        find $PKGNAME/ -type f -name '*.dll' -delete || true
+        TARBALL=$PKGNAME.tar.xz
+        tar cJf $TARBALL $PKGNAME
+        echo "tarball=$TARBALL" >> $GITHUB_OUTPUT
+
+    - name: upload tarball
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ${{ steps.archive.outputs.tarball }}

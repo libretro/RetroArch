@@ -122,8 +122,9 @@ static void task_database_scan_console_output(const char *label, const char *db_
       unsigned green  = FOREGROUND_GREEN;
       unsigned yellow = FOREGROUND_RED | FOREGROUND_GREEN;
       unsigned reset  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-
-      snprintf(string, sizeof(string), " %s ", prefix);
+      size_t _len     = strlcpy(string, " ", sizeof(string));
+      _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
+      strlcpy(string + _len, " ", sizeof(string) - _len);
       SetConsoleTextAttribute(con, (add) ? green : (db_name) ? yellow : red);
       WriteConsole(con, string, strlen(string), NULL, NULL);
       SetConsoleTextAttribute(con, reset);
@@ -135,14 +136,23 @@ static void task_database_scan_console_output(const char *label, const char *db_
       const char *green  = "\x1B[32m";
       const char *yellow = "\x1B[33m";
       const char *reset  = "\x1B[0m";
-
-      snprintf(string, sizeof(string), "%s %s %s", (add) ? green : (db_name) ? yellow : red, prefix, reset);
+      size_t _len        = 0;
+      if (add)
+         _len += strlcpy(string + _len, green, sizeof(string) - _len);
+      else
+         _len += strlcpy(string + _len, (db_name) ? yellow : red, sizeof(string) - _len);
+      _len    += strlcpy(string + _len, " ",    sizeof(string) - _len);
+      _len    += strlcpy(string + _len, prefix, sizeof(string) - _len);
+      _len    += strlcpy(string + _len, " ",    sizeof(string) - _len);
+      strlcpy(string + _len, reset,  sizeof(string) - _len);
       fputs(string, stdout);
    }
 #endif
    else
    {
-      snprintf(string, sizeof(string), " %s ", prefix);
+      size_t _len     = strlcpy(string, " ", sizeof(string));
+      _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
+      strlcpy(string + _len, " ", sizeof(string) - _len);
       fputs(string, stdout);
    }
 
@@ -197,7 +207,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
    if (detect_system(fd, &system_name, filename) >= 1)
    {
       size_t system_len = strlen(system_name);
-      if (string_starts_with_size(system_name, "Sony", system_len))
+      if (string_starts_with_size(system_name, "Sony", STRLEN_CONST("Sony")))
       {
          if (string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
          {
@@ -215,7 +225,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
                return 1;
          }
       }
-      else if (string_starts_with_size(system_name, "Nintendo", system_len))
+      else if (string_starts_with_size(system_name, "Nintendo", STRLEN_CONST("Nintendo")))
       {
          if (string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
          {
@@ -228,7 +238,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
                return 1;
          }
       }
-      else if (string_starts_with_size(system_name, "Sega", system_len))
+      else if (string_starts_with_size(system_name, "Sega", STRLEN_CONST("Sega")))
       {
          if (string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
          {
@@ -251,7 +261,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
 }
 
 static bool intfstream_file_get_serial(const char *name,
-      uint64_t offset, uint64_t size, char *serial, size_t serial_len)
+      uint64_t offset, size_t size, char *serial, size_t serial_len)
 {
    int rv;
    uint8_t *data     = NULL;
@@ -273,12 +283,12 @@ static bool intfstream_file_get_serial(const char *name,
    if (file_size < 0)
       goto error;
 
-   if (offset != 0 || size < (uint64_t) file_size)
+   if (offset != 0 || size < (size_t) file_size)
    {
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
-      data = (uint8_t*)malloc((size_t)size);
+      data = (uint8_t*)malloc(size);
 
       if (intfstream_read(fd, data, size) != (int64_t) size)
       {
@@ -312,10 +322,10 @@ error:
 static int task_database_cue_get_serial(const char *name, char* serial, size_t serial_len)
 {
    char track_path[PATH_MAX_LENGTH];
-   uint64_t offset                  = 0;
-   uint64_t size                    = 0;
+   uint64_t offset  = 0;
+   size_t size      = 0;
 
-   track_path[0]                    = '\0';
+   track_path[0]    = '\0';
 
    if (cue_find_track(name, true, &offset, &size, track_path,
             sizeof(track_path)) < 0)
@@ -429,7 +439,7 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
-   uint64_t size    = 0;
+   size_t size      = 0;
 
    track_path[0]    = '\0';
 
@@ -443,7 +453,7 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-   return intfstream_file_get_crc(track_path, offset, (size_t)size, crc);
+   return intfstream_file_get_crc(track_path, offset, size, crc);
 }
 
 static int task_database_gdi_get_crc(const char *name, uint32_t *crc)

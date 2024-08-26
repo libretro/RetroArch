@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <compat/strl.h>
 #include <array/rbuf.h>
 #include <file/file_path.h>
@@ -91,6 +92,9 @@
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
+#endif
+#ifdef IOS
+#include "../../ui/drivers/cocoa/apple_platform.h"
 #endif
 
 #if defined(ANDROID)
@@ -243,30 +247,6 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok_help(path, label, type, idx, entry_idx, _id, _id2); \
 }
 
-#ifdef HAVE_NETWORKING
-#ifdef HAVE_LAKKA
-static char *lakka_get_project(void)
-{
-#ifndef HAVE_LAKKA_CANARY
-   size_t len;
-   static char lakka_project[128];
-   FILE *command_file = popen("cat /etc/release | cut -d - -f 1", "r");
-
-   fgets(lakka_project, sizeof(lakka_project), command_file);
-   len = strlen(lakka_project);
-
-   if (len > 0 && lakka_project[len-1] == '\n')
-      lakka_project[--len] = '\0';
-
-   pclose(command_file);
-   return lakka_project;
-#else
-   return "/";
-#endif
-}
-#endif
-#endif
-
 static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 {
    switch (lbl)
@@ -313,6 +293,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE;
 #ifdef ANDROID
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD;
@@ -866,6 +848,15 @@ int generic_action_ok_displaylist_push(
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
 #ifdef ANDROID
        case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
            info.type          = type;
@@ -956,9 +947,14 @@ int generic_action_ok_displaylist_push(
             content_path = menu->scratch_buf;
          }
          if (content_path)
-            fill_pathname_join_special(menu->detect_content_path,
-                  menu_path, content_path,
-                  sizeof(menu->detect_content_path));
+         {
+            if (path_is_absolute(content_path))
+               strlcpy(menu->detect_content_path, content_path, sizeof(menu->detect_content_path));
+            else
+               fill_pathname_join_special(menu->detect_content_path,
+                     menu_path, content_path,
+                     sizeof(menu->detect_content_path));
+         }
 
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
@@ -1471,13 +1467,26 @@ int generic_action_ok_displaylist_push(
          parent_dir[0]  = '\0';
 
          if (path && menu_path)
+         {
+#if IOS
+            fill_pathname_expand_special(parent_dir, menu_path, sizeof(parent_dir));
+            fill_pathname_join_special(tmp,
+                  parent_dir, path, sizeof(tmp));
+#else
             fill_pathname_join_special(tmp,
                   menu_path, path, sizeof(tmp));
+#endif
+         }
 
          fill_pathname_parent_dir(parent_dir,
                tmp, sizeof(parent_dir));
          fill_pathname_parent_dir(parent_dir,
                parent_dir, sizeof(parent_dir));
+
+#if IOS
+         fill_pathname_abbreviate_special(tmp, parent_dir, sizeof(tmp));
+         strlcpy(parent_dir, tmp, sizeof(parent_dir));
+#endif
 
          info.type          = type;
          info.directory_ptr = idx;
@@ -1970,17 +1979,36 @@ static int file_load_with_detect_core_wrapper(
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
+#if IOS
+      char tmp_path[PATH_MAX_LENGTH];
+      if (menu_path)
+      {
+         fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
+         menu_path = tmp_path;
+      }
+#endif
+
       if (!string_is_empty(menu_path))
          strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
       if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
-         fill_pathname_join_special(menu_path_new,
-               menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      {
+         if (path_is_absolute(menu->scratch_buf))
+            strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
+         else
+            fill_pathname_join_special(menu_path_new,
+                  menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      }
       else if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
-         fill_pathname_join_special(menu_path_new,
-               menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      {
+         if (path_is_absolute(menu->scratch_buf))
+            strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
+         else
+            fill_pathname_join_special(menu_path_new,
+                  menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+      }
 
       core_info_get_list(&list);
 
@@ -2150,6 +2178,12 @@ static int generic_action_ok(const char *path,
 
    menu_entries_get_last_stack(&menu_path,
          &menu_label, NULL, &enum_idx, NULL);
+
+#if IOS
+   char tmp_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
+   menu_path = tmp_path;
+#endif
 
    if (!string_is_empty(path))
       fill_pathname_join_special(action_path,
@@ -5003,7 +5037,7 @@ static int generic_action_ok_network(const char *path,
          /* TODO unhardcode this path */
          fill_pathname_join_special(url_path,
                FILE_PATH_LAKKA_URL,
-               lakka_get_project(), sizeof(url_path));
+               LAKKA_PROJECT, sizeof(url_path));
          fill_pathname_join_special(url_path, url_path,
                FILE_PATH_INDEX_URL,
                sizeof(url_path));
@@ -5277,12 +5311,11 @@ static int action_ok_download_generic(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          {
-            struct string_list str_list  = {0};
-
-            string_list_initialize(&str_list);
-            if (string_split_noalloc(&str_list, menu_label, ";"))
-               strlcpy(s, str_list.elems[0].data, sizeof(s));
-            string_list_deinitialize(&str_list);
+            char *tok, *save;
+            char *menu_label_cpy         = strdup(menu_label);
+            if ((tok = strtok_r(menu_label_cpy, ";", &save)))
+               strlcpy(s, tok, sizeof(s));
+            free(menu_label_cpy);
          }
          break;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -5294,7 +5327,7 @@ static int action_ok_download_generic(const char *path,
 #ifdef HAVE_LAKKA
          /* TODO unhardcode this path*/
          fill_pathname_join_special(s, FILE_PATH_LAKKA_URL,
-               lakka_get_project(), sizeof(s));
+               LAKKA_PROJECT, sizeof(s));
 #endif
          break;
       case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
@@ -5565,9 +5598,10 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    menu_st->selection_ptr       = 0;
 
    /* Check if we need to quit */
-   check_quit_on_close();
+   if (should_quit_on_close())
+      return generic_action_ok_command(CMD_EVENT_QUIT);
 
-   /* Unload core */
+   /* Otherwise, unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* If close content was selected via any means other than
@@ -5917,9 +5951,9 @@ static int action_ok_add_entry_to_playlist(const char *path,
 
 static void action_input_add_entry_to_new_playlist(void *userdata, const char *line)
 {
-   settings_t *settings             = config_get_ptr();
-   size_t path_length               = 0;
    char path[PATH_MAX_LENGTH];
+   settings_t *settings       = config_get_ptr();
+   size_t _len                = 0;
 
    menu_input_dialog_end();
 
@@ -5927,9 +5961,8 @@ static void action_input_add_entry_to_new_playlist(void *userdata, const char *l
       return;
 
    /* Create path for new file */
-   path_length = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
-   strlcat(path, ".lpl",  sizeof(path) - path_length);
-
+   _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
+   strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
    action_ok_add_entry_to_playlist(NULL, path, 0, 0, 0);
 }
 
@@ -6149,61 +6182,38 @@ static int action_ok_delete_entry(const char *path,
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   union string_list_elem_attr attr;
+   char *tok, *save;
+   char new_str[PATH_MAX_LENGTH];
    char new_label[PATH_MAX_LENGTH];
-   int ret                         = -1;
-   char *rdb                       = NULL;
-   int len                         = 0;
-   struct string_list str_list     = {0};
-   struct string_list str_list2    = {0};
+   size_t _len                     = 0;
+   char *label_cpy                 = NULL;
 
    if (!label)
       return -1;
 
    new_label[0]                    =  '\0';
+   label_cpy                       = strdup(label);
 
-   string_list_initialize(&str_list);
-   if (!string_split_noalloc(&str_list, label, "|"))
-      goto end;
-
-   string_list_initialize(&str_list2);
-
-   /* element 0 : label
-    * element 1 : value
-    * element 2 : database path
-    */
-
-   attr.i = 0;
-
-   len += strlen(str_list.elems[1].data) + 1;
-   string_list_append(&str_list2, str_list.elems[1].data, attr);
-
-   len += strlen(str_list.elems[2].data) + 1;
-   string_list_append(&str_list2, str_list.elems[2].data, attr);
-
-   if (!(rdb = (char*)calloc(len, sizeof(char))))
-      goto end;
-
-   string_list_join_concat(rdb, len, &str_list2, "|");
-
-   fill_pathname_join_delim(new_label,
-         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
-         str_list.elems[0].data, '_',
-         sizeof(new_label));
-
-   ret = generic_action_ok_displaylist_push(
-         rdb, NULL,
+   /* element 0: label */
+   if ((tok = strtok_r(label_cpy, "|", &save)))
+      fill_pathname_join_delim(new_label,
+            msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+            tok, '_', sizeof(new_label));
+   /* element 1: value */
+   if ((tok = strtok_r(NULL, "|", &save)))
+      _len += strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
+   /* element 2: database path */
+   if ((tok = strtok_r(NULL, "|", &save)))
+   {
+      _len += strlcpy(new_str + _len, "|", sizeof(new_str) - _len);
+      _len += strlcpy(new_str + _len, tok, sizeof(new_str) - _len);
+   }
+   free(label_cpy);
+   return generic_action_ok_displaylist_push(
+         new_str, NULL,
          new_label, type,
          idx, entry_idx,
          ACTION_OK_DL_RDB_ENTRY_SUBMENU);
-
-end:
-   if (rdb)
-      free(rdb);
-   string_list_deinitialize(&str_list);
-   string_list_deinitialize(&str_list2);
-
-   return ret;
 }
 
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_browse_url_start, ACTION_OK_DL_BROWSE_URL_START)
@@ -6396,6 +6406,10 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+#if TARGET_OS_IOS
+   ios_show_file_sheet();
+   return 0;
+#else
    char *new_path = NULL;
    int ret        = generic_action_ok_displaylist_push(
          path, new_path,
@@ -6405,6 +6419,7 @@ static int action_ok_open_picker(const char *path,
 
    free(new_path);
    return ret;
+#endif
 }
 
 #ifdef HAVE_NETWORKING
@@ -6831,9 +6846,8 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-
 static int generic_action_ok_dropdown_setting(const char *path, const char *label,
-      unsigned type, size_t idx)
+      unsigned type, size_t idx, size_t entry_idx)
 {
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
@@ -6861,18 +6875,22 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
       case ST_STRING_OPTIONS:
          if (setting->get_string_representation)
          {
-            struct string_list tmp_str_list = { 0 };
-            string_list_initialize(&tmp_str_list);
-            string_split_noalloc(&tmp_str_list,
-               setting->values, "|");
+            char *tok, *save;
+            unsigned tok_idx         = 0;
+            char *setting_values_cpy = strdup(setting->values);
 
-            if (idx < tmp_str_list.size)
+            for (tok = strtok_r(setting_values_cpy, "|", &save); tok != NULL;
+                 tok = strtok_r(NULL, "|", &save), tok_idx++)
             {
-               strlcpy(setting->value.target.string,
-                  tmp_str_list.elems[idx].data, setting->size);
+               if (idx == tok_idx)
+               {
+                  strlcpy(setting->value.target.string, tok,
+                        setting->size);
+                  break;
+               }
             }
 
-            string_list_deinitialize(&tmp_str_list);
+            free(setting_values_cpy);
             break;
          }
          /* fallthrough */
@@ -6892,12 +6910,6 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_setting(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
 static int action_ok_push_dropdown_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6907,25 +6919,27 @@ static int action_ok_push_dropdown_item(const char *path,
 int action_cb_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char str[100];
-   char *pch            = NULL;
+   char *save           = NULL;
+   char *tok            = NULL;
    unsigned width       = 0;
    unsigned height      = 0;
-   unsigned refreshrate = 0;
+   float refreshrate    = 0.0f;
+   char *str            = path ? strdup(path) : NULL;
 
-   strlcpy(str, path, sizeof(str));
-   pch            = strtok(str, "x");
-   if (pch)
-      width       = (unsigned)strtoul(pch, NULL, 0);
-   pch            = strtok(NULL, " ");
-   if (pch)
-      height      = (unsigned)strtoul(pch, NULL, 0);
-   pch            = strtok(NULL, "(");
-   if (pch)
-      refreshrate = (unsigned)strtoul(pch, NULL, 0);
+   if (!str)
+      return -1;
+
+   if ((tok = strtok_r(str, "x", &save)))
+      width       = (unsigned)strtoul(tok, NULL, 0);
+   if ((tok = strtok_r(NULL, " ", &save)))
+      height      = (unsigned)strtoul(tok, NULL, 0);
+   if ((tok = strtok_r(NULL, "(", &save)))
+      refreshrate = (float)strtod(tok, NULL);
+
+   free(str);
 
    if (video_display_server_set_resolution(width, height,
-         refreshrate, (float)refreshrate, 0, 0, 0, 0))
+         floor(refreshrate), refreshrate, 0, 0, 0, 0))
    {
       settings_t *settings = config_get_ptr();
 #ifdef _MSC_VER
@@ -6937,7 +6951,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       float refresh_exact  = refreshrate;
 
       /* 59 Hz is an inaccurate representation of the real value (59.94).
-       * And since we at this point only have the integer to work with,
+       * In case at this point we only have the integer to work with,
        * the exact float needs to be calculated for 'video_refresh_rate' */
       if (refreshrate == (60.0f * refresh_mod) - 1)
          refresh_exact = 59.94f * refresh_mod;
@@ -7283,6 +7297,64 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+static int action_ok_push_dropdown_item_input_select_reserved_device(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+    unsigned user;
+    const char *no_device;
+    const char *reserved_device_name;
+    enum msg_hash_enums enum_idx;
+    rarch_setting_t *setting     = NULL;
+    settings_t *settings         = config_get_ptr();
+    const char *menu_path        = NULL;
+    struct menu_state *menu_st   = menu_state_get_ptr();
+
+    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+    enum_idx = (enum msg_hash_enums)atoi(menu_path);
+    setting  = menu_setting_find_enum(enum_idx);
+    user     = enum_idx - MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME;
+
+    if (!setting)
+        return -1;
+
+    reserved_device_name = path;
+    no_device = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+
+    if (string_is_equal(reserved_device_name, no_device))
+       settings->arrays.input_reserved_devices[user][0] = '\0';
+    else
+    {
+       int i;
+       for (i = 0; i < MAX_INPUT_DEVICES; i++)
+       {
+          const char* device_name = input_config_get_device_display_name(i)
+                                    ? input_config_get_device_display_name(i)
+                                    : input_config_get_device_name(i);
+
+          if (string_is_equal(device_name, reserved_device_name))
+          {
+             uint16_t vendor_id = input_config_get_device_vid(i);
+             uint16_t product_id = input_config_get_device_pid(i);
+             snprintf(settings->arrays.input_reserved_devices[user],
+                   sizeof(settings->arrays.input_reserved_devices[user]),
+                   "%04x:%04x %s",
+                   vendor_id, product_id, reserved_device_name);
+             break;
+          }
+       }
+    }
+    settings->modified = true;
+
+    command_event(CMD_EVENT_REINIT, NULL);
+
+    /* Refresh menu */
+    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                     | MENU_ST_FLAG_PREVENT_POPULATE;
+
+    return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
+
 #ifdef ANDROID
 static int action_ok_push_dropdown_item_input_select_physical_keyboard(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -7553,6 +7625,12 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
 
+#if IOS
+   char tmp_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
+   menu_path = tmp_path;
+#endif
+
    core_info_get_list(&list);
 
    def_info.data       = list;
@@ -7568,9 +7646,12 @@ static int action_ok_load_archive_detect_core(const char *path,
             new_core_path, sizeof(new_core_path)))
       ret = -1;
 
-   fill_pathname_join_special(
-         menu->detect_content_path, menu_path, content_path,
-         sizeof(menu->detect_content_path));
+   if (path_is_absolute(content_path))
+      strlcpy(menu->detect_content_path, content_path, sizeof(menu->detect_content_path));
+   else
+      fill_pathname_join_special(
+            menu->detect_content_path, menu_path, content_path,
+            sizeof(menu->detect_content_path));
 
    switch (ret)
    {
@@ -9158,7 +9239,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting);
+            BIND_ACTION_OK(cbs, generic_action_ok_dropdown_setting);
             break;
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item_special);
@@ -9205,6 +9286,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_device_type);
             break;
+          case MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE:
+              BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_select_reserved_device);
+              break;
 #ifdef ANDROID
           case MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD:
               BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_select_physical_keyboard);

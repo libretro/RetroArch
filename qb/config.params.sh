@@ -92,6 +92,7 @@ HAVE_OPENGLES3_1=no        # OpenGLES3.1 support
 HAVE_OPENGLES3_2=no        # OpenGLES3.2 support
 HAVE_X11=auto              # everything X11.
 HAVE_XRANDR=auto           # Xrandr support.
+HAVE_XSCRNSAVER=auto       # Xss support.
 HAVE_OMAP=no               # OMAP video support
 HAVE_XINERAMA=auto         # Xinerama support.
 HAVE_KMS=auto              # KMS context support

@@ -1273,10 +1273,7 @@ static void gl2_set_viewport(gl2_t *gl,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings     = config_get_ptr();
-   unsigned height          = gl->video_height;
-   int x                    = 0;
-   int y                    = 0;
-   float device_aspect      = (float)viewport_width / viewport_height;
+   float device_aspect = (float) viewport_width / (float)viewport_height;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
@@ -1287,54 +1284,17 @@ static void gl2_set_viewport(gl2_t *gl,
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
             video_driver_get_aspect_ratio(),
-            (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false);
+            (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false,
+            false);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
    else if ((gl->flags & GL2_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* OpenGL has bottom-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = height - custom_vp->y - custom_vp->height;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl->vp.x      = x;
-      gl->vp.y      = y;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.full_height = gl->video_height;
+      video_viewport_get_scaled_aspect2(&gl->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
+      viewport_width  = gl->vp.width;
+      viewport_height = gl->vp.height;
    }
    else
    {
@@ -1342,12 +1302,6 @@ static void gl2_set_viewport(gl2_t *gl,
       gl->vp.width  = viewport_width;
       gl->vp.height = viewport_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl->vp.y *= 2;
-#endif
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl2_set_projection(gl, &default_ortho, allow_rotate);
@@ -3426,8 +3380,6 @@ static bool gl2_frame(void *data, const void *frame,
    bool use_rgba                       = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
-   int bfi_light_frames;
-   unsigned n;
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
@@ -3713,6 +3665,8 @@ static bool gl2_frame(void *data, const void *frame,
          && !video_info->runloop_is_paused
          && !(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
    {
+      unsigned n;
+      int bfi_light_frames;
 
       if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
       video_info->bfi_dark_frames = video_info->black_frame_insertion;
@@ -4258,6 +4212,7 @@ static void *gl2_init(const video_info_t *video,
    unsigned temp_width                  = 0;
    unsigned temp_height                 = 0;
    bool force_smooth                    = false;
+   bool force_fullscreen                = false;
    const char *vendor                   = NULL;
    const char *renderer                 = NULL;
    const char *version                  = NULL;
@@ -4280,6 +4235,13 @@ static void *gl2_init(const video_info_t *video,
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,
                &mode_width, &mode_height);
+
+   if (!video->fullscreen && !gl->ctx_driver->has_windowed)
+   {
+      RARCH_DBG("[GL]: Config requires windowed mode, but context driver does not support it. "
+                "Forcing fullscreen for this session.\n");
+      force_fullscreen = true;
+   }
 
 #if defined(DINGUX)
    mode_width  = 320;
@@ -4311,17 +4273,23 @@ static void *gl2_init(const video_info_t *video,
       win_width  = full_x;
       win_height = full_y;
    }
+   /* If fullscreen had to be forced, video->width/height is incorrect */
+   else if (force_fullscreen)
+   {
+      win_width  = settings->uints.video_fullscreen_x;
+      win_height = settings->uints.video_fullscreen_y;
+   }
 
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, video->fullscreen))
+            win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
 #if defined(__APPLE__) && !defined(IOS) && !defined(HAVE_COCOA_METAL)
    /* This is a hack for now to work around a very annoying
     * issue that currently eludes us. */
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, video->fullscreen))
+            win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
 #endif
 
@@ -4446,7 +4414,7 @@ static void *gl2_init(const video_info_t *video,
    gl2_begin_debug(gl);
 #endif
 
-   if (video->fullscreen)
+   if (video->fullscreen || force_fullscreen)
       gl->flags  |=  GL2_FLAG_FULLSCREEN;
 
    mode_width     = 0;
@@ -4667,8 +4635,8 @@ static bool gl2_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //match the output res to the display res
-      temp_width = uwp_get_width();
+      /* Match the output res to the display resolution */
+      temp_width  = uwp_get_width();
       temp_height = uwp_get_height();
    }
 #endif
@@ -5156,23 +5124,45 @@ static void video_texture_load_gl2(
 static int video_texture_load_wrap_gl2_mipmap(void *data)
 {
    uintptr_t id = 0;
+   gl2_t    *gl = (gl2_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl2((struct texture_image*)data,
-         TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl2((struct texture_image*)data,
+            TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
 
 static int video_texture_load_wrap_gl2(void *data)
 {
    uintptr_t id = 0;
+   gl2_t    *gl = (gl2_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl2((struct texture_image*)data,
-         TEXTURE_FILTER_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl2((struct texture_image*)data,
+            TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
+}
+
+static int video_texture_unload_wrap_gl2(void *data)
+{
+   GLuint  glid;
+   uintptr_t id = (uintptr_t)data;
+#if 0
+   /*FIXME: crash on reinit*/
+   gl2_t    *gl = (gl2_t*)video_driver_get_ptr();
+
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+#endif
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
+   return 0;
 }
 #endif
 
@@ -5184,12 +5174,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl2_t *gl                    = (gl2_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl2;
-
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
-
       switch (filter_type)
       {
          case TEXTURE_FILTER_MIPMAP_LINEAR:
@@ -5199,7 +5184,7 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return video_thread_texture_load(data, func);
+      return video_thread_texture_handle(data, func);
    }
 #endif
 
@@ -5217,10 +5202,9 @@ static void gl2_unload_texture(void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl2_t *gl = (gl2_t*)data;
-      if (gl && gl->ctx_driver)
-         if (gl->ctx_driver->make_current)
-            gl->ctx_driver->make_current(false);
+      custom_command_method_t func = video_texture_unload_wrap_gl2;
+      video_thread_texture_handle((void *)id, func);
+      return;
    }
 #endif
 

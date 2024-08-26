@@ -795,7 +795,7 @@ static ui_application_t ui_application_cocoa = {
     {
        int ret;
 #ifdef HAVE_QT
-       const ui_application_t *application = &ui_application_qt;
+       const ui_application_t *application = uico_state_get_ptr()->drv->application;
 #else
        const ui_application_t *application = &ui_application_cocoa;
 #endif
@@ -815,7 +815,7 @@ static ui_application_t ui_application_cocoa = {
        if (ret == -1)
        {
 #ifdef HAVE_QT
-          ui_application_qt.quit();
+          application->quit();
 #endif
           break;
        }
@@ -1117,6 +1117,7 @@ ui_companion_driver_t ui_companion_cocoa = {
    NULL, /* is_active */
    NULL, /* get_app_icons */
    NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

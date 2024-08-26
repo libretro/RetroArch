@@ -27,6 +27,9 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
+/* Max time to wait before continuing */
+#define WASAPI_TIMEOUT 256
+
 typedef struct
 {
    HANDLE write_event;
@@ -200,7 +203,7 @@ static ssize_t wasapi_write_sh_buffer(wasapi_t *w, const void *data, size_t size
    if (!write_avail)
    {
       size_t read_avail = 0;
-      if (!(WaitForSingleObject(w->write_event, INFINITE) == WAIT_OBJECT_0))
+      if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
          return -1;
 
       if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
@@ -228,7 +231,7 @@ static ssize_t wasapi_write_sh(wasapi_t *w, const void *data, size_t size)
    size_t write_avail = 0;
    UINT32 padding     = 0;
 
-   if (!(WaitForSingleObject(w->write_event, INFINITE) == WAIT_OBJECT_0))
+   if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
       return -1;
 
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
@@ -319,6 +322,8 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
    ssize_t ir     = 0;
    wasapi_t *w    = (wasapi_t*)wh;
 
+   if (!w->running) return -1;
+
    if (w->nonblock)
    {
       if (w->exclusive)
@@ -330,7 +335,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
    {
       for (ir = -1; written < size; written += ir)
       {
-         ir = wasapi_write_ex(w, (char*)data + written, size - written, INFINITE);
+         ir = wasapi_write_ex(w, (char*)data + written, size - written, WASAPI_TIMEOUT);
          if (ir == -1)
             return -1;
       }
@@ -395,22 +400,9 @@ static bool wasapi_alive(void *wh)
    return w->running;
 }
 
-static void wasapi_insert_silence(wasapi_t *w)
-{
-   int i;
-
-   for (i = 0; i < 12; i++)
-      audio_driver_menu_sample();
-}
-
 static void wasapi_set_nonblock_state(void *wh, bool nonblock)
 {
    wasapi_t *w = (wasapi_t*)wh;
-
-   /* Since exclusive mode keeps repeating last sample while
-    * in paused menu, generate some silence first. */
-   if (!nonblock && w->exclusive)
-      wasapi_insert_silence(w);
 
    w->nonblock = nonblock;
 }

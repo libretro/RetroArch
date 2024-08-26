@@ -26,6 +26,15 @@
 #include "font_driver.h"
 
 #define TICKER_SPACER_DEFAULT "   |   "
+#define TICKER_SPEED       333333
+
+/* Pixel ticker nominally increases by one after each
+ * TICKER_PIXEL_PERIOD ms (actual increase depends upon
+ * ticker speed setting and display resolution)
+ *
+ * Formula is: (1.0f / 60.0f) * 1000.0f
+ * */
+#define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
 #define ANIM_IS_ACTIVE(_p) (((_p)->flags & (GFX_ANIM_FLAG_IS_ACTIVE)) || ((_p)->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
 
@@ -133,7 +142,7 @@ typedef struct gfx_animation_ctx_ticker_smooth
    const char *src_str;
    const char *spacer;
    char *dst_str;
-   unsigned *dst_str_width; /* May be set to NULL 
+   unsigned *dst_str_width; /* May be set to NULL
                                (RGUI + XMB do not require this info) */
    unsigned *x_offset;
    font_data_t *font;
@@ -241,10 +250,6 @@ bool gfx_animation_update(
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker);
 
 bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker);
-
-bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker);
-
-bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker);
 
 bool gfx_animation_kill_by_tag(uintptr_t *tag);
 

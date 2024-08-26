@@ -1,0 +1,16 @@
+[Desktop Entry]
+Version=1.0
+Name=RetroArch
+GenericName=Frontend for the libretro API
+Type=Application
+Comment=Frontend for emulators, game engines and media players
+Comment[ru]=Графический интерфейс для эмуляторов, игровых движков и медиаплееров
+Comment[fr]=Interface graphique pour émulateurs, moteurs de jeu et lecteurs multimédia
+Comment[de]=Front-End für Emulatoren, Spiel-Engines und Mediaplayer
+Icon=retroarch
+Exec=retroarch
+Terminal=false
+StartupNotify=false
+StartupWMClass=retroarch
+Keywords=multi;engine;emulator;xmb;
+Categories=Game;Emulator;

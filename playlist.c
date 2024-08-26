@@ -112,7 +112,7 @@ typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
       const struct playlist_entry *b);
 
-/* TODO/FIXME - hack for allowing the explore view to switch 
+/* TODO/FIXME - hack for allowing the explore view to switch
  * over to a playlist item */
 void playlist_set_cached_external(playlist_t* pl)
 {
@@ -139,7 +139,7 @@ void playlist_config_set_path(playlist_config_t *config, const char *path)
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object.
- * Also sets autofix_paths boolean, depending on base 
+ * Also sets autofix_paths boolean, depending on base
  * content directory value */
 void playlist_config_set_base_content_directory(
       playlist_config_t* config, const char* path)
@@ -209,7 +209,7 @@ static void path_replace_base_path_and_convert_to_local_file_system(
             strlen(in_path) - in_oldrefpath_length + 1);
 #ifdef _WIN32
       /* If we are running under a Windows filesystem,
-       * '/' characters are not allowed anywhere. 
+       * '/' characters are not allowed anywhere.
        * We replace with '\' and hope for the best... */
       string_replace_all_chars(out_path,
             POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
@@ -498,7 +498,7 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
    char entry_real_core_path[PATH_MAX_LENGTH];
 
    /* Sanity check */
-   if (     string_is_empty(real_core_path) 
+   if (     string_is_empty(real_core_path)
          || string_is_empty(entry_core_path))
       return false;
 
@@ -1059,7 +1059,7 @@ error:
    return false;
 }
 
-void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx, 
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
       enum playlist_thumbnail_name_flags thumbnail_flags)
 {
    struct playlist_entry *entry = NULL;
@@ -1131,11 +1131,23 @@ void playlist_resolve_path(enum playlist_file_mode mode,
           string_starts_with(path, ":/modules/") &&
           string_ends_with(path, ".dylib"))
       {
+         /* iOS cores used to be packaged as .dylib files in the modules
+          * directory; App Store rules require turning them into Frameworks and
+          * putting them in the Frameworks directory. Because some playlists
+          * include the old core path, we'll translate it here.
+          */
          path[string_index_last_occurance(path, '.')] = '\0';
          if (string_ends_with(path, "_ios"))
             path[string_index_last_occurance(path, '_')] = '\0';
          strlcpy(tmp, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
          strlcpy(tmp + STRLEN_CONST(":/Frameworks/"), path + STRLEN_CONST(":/modules/"), sizeof(tmp) - STRLEN_CONST(":/Frameworks/"));
+         /* iOS framework names, to quote Apple:
+          * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
+          *
+          * Since core names include underscore, which is not allowed, but not dot,
+          * which is, we change underscore to dot.
+          */
+         string_replace_all_chars(tmp, '_', '.');
          strlcat(tmp, ".framework", sizeof(tmp));
          fill_pathname_expand_special(path, tmp, len);
       }
@@ -1401,19 +1413,19 @@ bool playlist_push(playlist_t *playlist,
        * or command line, certain entry values will be missing.
        * If we are now loading the same content from a playlist,
        * fill in any blanks */
-      if (     !playlist->entries[i].label 
+      if (     !playlist->entries[i].label
             && !string_is_empty(entry->label))
       {
          playlist->entries[i].label       = strdup(entry->label);
          entry_updated                    = true;
       }
-      if (     !playlist->entries[i].crc32 
+      if (     !playlist->entries[i].crc32
             && !string_is_empty(entry->crc32))
       {
          playlist->entries[i].crc32       = strdup(entry->crc32);
          entry_updated                    = true;
       }
-      if (     !playlist->entries[i].db_name 
+      if (     !playlist->entries[i].db_name
             && !string_is_empty(entry->db_name))
       {
          playlist->entries[i].db_name     = strdup(entry->db_name);
@@ -2201,11 +2213,11 @@ static bool JSONEndArrayHandler(void *context)
 
    pCtx->array_depth--;
 
-   if (     pCtx->in_items 
+   if (     pCtx->in_items
          && (pCtx->array_depth  == 0)
          && (pCtx->object_depth <= 1))
       pCtx->in_items = false;
-   else if (pCtx->in_subsystem_roms 
+   else if (pCtx->in_subsystem_roms
          && (pCtx->array_depth  <= 1)
          && (pCtx->object_depth <= 2))
       pCtx->in_subsystem_roms = false;
@@ -2219,11 +2231,11 @@ static bool JSONStartObjectHandler(void *context)
 
    pCtx->object_depth++;
 
-   if (      pCtx->in_items 
+   if (      pCtx->in_items
          && (pCtx->object_depth == 2))
    {
       if (
-            (pCtx->array_depth == 1) 
+            (pCtx->array_depth == 1)
          && !pCtx->capacity_exceeded)
       {
          size_t len = RBUF_LEN(pCtx->playlist->entries);
@@ -2263,10 +2275,10 @@ static bool JSONEndObjectHandler(void *context)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
+   if (     pCtx->in_items
          && pCtx->object_depth == 2)
    {
-      if (     (pCtx->array_depth == 1) 
+      if (     (pCtx->array_depth == 1)
             && !pCtx->capacity_exceeded)
          RBUF_RESIZE(pCtx->playlist->entries,
                RBUF_LEN(pCtx->playlist->entries) + 1);
@@ -2281,8 +2293,8 @@ static bool JSONStringHandler(void *context, const char *pValue, size_t length)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
-         && pCtx->in_subsystem_roms 
+   if (     pCtx->in_items
+         && pCtx->in_subsystem_roms
          && (pCtx->object_depth == 2)
          && (pCtx->array_depth  == 2))
    {
@@ -2301,8 +2313,8 @@ static bool JSONStringHandler(void *context, const char *pValue, size_t length)
    {
       if (pCtx->array_depth == 1)
       {
-         if (     pCtx->current_string_val 
-               && length 
+         if (     pCtx->current_string_val
+               && length
                && !string_is_empty(pValue))
          {
             if (*pCtx->current_string_val)
@@ -2315,8 +2327,8 @@ static bool JSONStringHandler(void *context, const char *pValue, size_t length)
    {
       if (pCtx->array_depth == 0)
       {
-         if (     pCtx->current_string_val 
-               && length 
+         if (     pCtx->current_string_val
+               && length
                && !string_is_empty(pValue))
          {
             /* handle any top-level playlist metadata here */
@@ -2336,11 +2348,11 @@ static bool JSONNumberHandler(void *context, const char *pValue, size_t length)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
+   if (     pCtx->in_items
          && (pCtx->object_depth == 2))
    {
       if (    (pCtx->array_depth == 1)
-            && length 
+            && length
             && !string_is_empty(pValue))
       {
          if (pCtx->current_entry_uint_val)
@@ -2394,7 +2406,7 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
+   if (     pCtx->in_items
          && (pCtx->object_depth == 2))
    {
       if (pCtx->array_depth == 1)
@@ -2778,32 +2790,32 @@ static bool playlist_read_file(playlist_t *playlist)
                      line_buf[3],
                      STRLEN_CONST("thumbnail_mode")) == 0)
             {
+               char *tok, *save;
                char thumbnail_mode_str[8]          = {0};
-               struct string_list thumbnail_modes  = {0};
+               char *thumbnail_mode_str_cpy = strdup(thumbnail_mode_str);
 
                playlist_get_old_format_metadata_value(
                      line_buf[3], thumbnail_mode_str,
                      sizeof(thumbnail_mode_str));
-               string_list_initialize(&thumbnail_modes);
-               if (string_split_noalloc(&thumbnail_modes,
-                        thumbnail_mode_str, "|"))
+
+               if ((tok = strtok_r(thumbnail_mode_str_cpy, "|", &save)))
                {
-                  if (thumbnail_modes.size == 2)
+                  char *elem0 = strdup(tok);
+                  if ((tok = strtok_r(NULL, "|", &save)))
                   {
                      /* Right thumbnail mode */
-                     unsigned thumbnail_mode = string_to_unsigned(
-                           thumbnail_modes.elems[0].data);
+                     unsigned thumbnail_mode = string_to_unsigned(elem0);
                      if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
                         playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
 
                      /* Left thumbnail mode */
-                     thumbnail_mode = string_to_unsigned(
-                           thumbnail_modes.elems[1].data);
+                     thumbnail_mode = string_to_unsigned(tok);
                      if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
                         playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                   }
+                  free(elem0);
                }
-               string_list_deinitialize(&thumbnail_modes);
+               free(thumbnail_mode_str_cpy);
             }
 
             /* Get sort_mode */
@@ -3455,6 +3467,10 @@ void playlist_set_thumbnail_mode(
          playlist->left_thumbnail_mode = thumbnail_mode;
          playlist->modified            = true;
          break;
+      case PLAYLIST_THUMBNAIL_ICON:
+         /* should never be reached.  Do Nothing */
+         break;
+
    }
 }
 

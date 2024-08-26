@@ -99,8 +99,12 @@ void libretro_dummy_retro_init(void)
 #endif
 
    dummy_frame_buf = (uint16_t*)calloc(frame_buf_width * frame_buf_height, sizeof(uint16_t));
-   for (i = 0; i < (unsigned)(frame_buf_width * frame_buf_height); i++)
-      dummy_frame_buf[i] = 4 << 5;
+
+   if (dummy_frame_buf)
+   {
+      for (i = 0; i < (unsigned)(frame_buf_width * frame_buf_height); i++)
+         dummy_frame_buf[i] = 4 << 5;
+   }
 }
 
 void libretro_dummy_retro_deinit(void)

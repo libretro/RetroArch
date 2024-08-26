@@ -207,11 +207,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "RetroArch 응용 프로그램을 종료합니다. 종료 시 구성 저장이 활성화됩니다."
+   "RetroArch 응용 프로그램을 종료합니다. 종료 시 구성 저장이 활성화되어 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "RetroArch 응용 프로그램을 종료합니다. 종료 시 구성 저장이 비활성화됩니다."
+   "RetroArch 응용 프로그램을 종료합니다. 종료 시 구성 저장이 비활성화되어 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
@@ -1233,6 +1233,38 @@ MSG_HASH(
    "파괴적 클라우드 동기화"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "동기화: 저장/상태저장"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "동기화: 구성 파일"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "동기화: 미리보기 이미지"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "동기화: 시스템 파일"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "사용할 경우, 저장/상태저장이 클라우드에 동기화됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "사용할 경우, 구성 파일이 클라우드에 동기화됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "사용할 경우, 미리보기 이미지가 클라우드에 동기화됩니다. 커스텀 미리보기 이미지가 아주 많이 있는 경우가 아니라면 권장하지 않으며, 대신 미리보기 다운로더를 사용하는 것이 더 좋습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "사용할 경우, 시스템 파일이 클라우드에 동기화됩니다. 주의: 이 옵션을 사용하면 동기화가 매우 오래 걸릴 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "비활성화할 경우, 동기화 대상 파일들을 덮어씌우거나 삭제하지 않고 백업 폴더에 저장합니다."
    )
@@ -1923,10 +1955,6 @@ MSG_HASH(
    "향상된 모션 선명도를 위해 프레임 사이에 검정색 프레임을 삽입합니다. 현재 디스플레이의 주사율과 일치하는 옵션만 사용하십시오. 144Hz, 165Hz 등과 같이 60Hz의 배수가 아닌 새로 고침 빈도에서는 사용하지 마십시오. 스왑 간격 > 1, 서브프레임, 프레임 지연, 정확한 프레임 동기화 설정들과 함께 사용하지 마십시오. 시스템의 VRR 설정을 켜두는 것은 괜찮습니다. 일시적인 화면 [...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "끔"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - 120Hz 디스플레이 주사율"
    )
@@ -2011,10 +2039,6 @@ MSG_HASH(
    "콘텐츠의 프레임 레이트보다 더 높은 프레임 레이트로 실행되도록 설계된 셰이더를 위해 프레임 사이에 추가 셰이더 프레임을 삽입합니다. 현재 디스플레이의 주사율과 일치하는 옵션만 사용하십시오. 144Hz, 165Hz 등과 같이 60Hz의 배수가 아닌 새로 고침 빈도에서는 사용하지 마십시오. 스왑 간격 > 1, 검정색 프레임 삽입, 프레임 지연, 정확한 프레임 동기화 설정들과 함께 사용[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "끔"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
    "2 - 120Hz 디스플레이 주사율 전용"
    )
@@ -2084,11 +2108,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "여러 개의 서브프레임을 가지고 화면을 세로로 나눠 각 구간에 맞는 서브프레임을 렌더하는 식으로 롤링 스캔라인 효과를 흉내냅니다."
+   "화면을 여러 세로 구간으로 나누고 다수의 서브프레임으로부터 각 구간에 해당하는 서브프레임을 렌더하는 방식으로 롤링 스캔라인 효과를 흉내냅니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "여러 개의 서브프레임을 가지고 화면을 세로로 나눠 위에서 아래로 내려가며 각 구간에 맞는 서브프레임을 렌더하는 식으로 롤링 스캔라인 효과를 흉내냅니다."
+   "화면을 여러 세로 구간으로 나누고 다수의 서브프레임으로부터 각 구간에 해당하는 서브프레임을 위에서 아래로 렌더하는 방식으로 롤링 스캔라인 효과를 흉내냅니다."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2565,7 +2589,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "뷰포트의 X축 위치를 정의하는 데 사용되는 사용자 뷰포트 오프셋입니다.\n'정수 단위 화면 크기'가 활성화된 경우 무시되고 자동으로 중앙이 됩니다."
+   "뷰포트의 X축 위치를 정의하는 데 사용되는 사용자 뷰포트 오프셋입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2573,8 +2597,58 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "뷰포트의 Y축 위치를 정의하는 데 사용되는 사용자 뷰포트 오프셋입니다.\n'정수 단위 화면 크기'가 활성화된 경우 무시되고 자동으로 중앙이 됩니다."
+   "뷰포트의 Y축 위치를 정의하는 데 사용되는 사용자 뷰포트 오프셋입니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "뷰포트 기준점 바이어스 X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "뷰포트 기준점 바이어스 X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "뷰포트 기준점 바이어스 Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "뷰포트 기준점 바이어스 Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다."
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "뷰포트 기준점 바이어스 X (세로 화면)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "뷰포트 기준점 바이어스 X (세로 화면)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "뷰포트 기준점 바이어스 Y (세로 화면)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "뷰포트 기준점 바이어스 Y (세로 화면)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다. (세로 화면)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다. (세로 화면)"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "사용자 화면비 폭"
@@ -4100,6 +4174,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    "RetroArch가 인식하는 물리적 컨트롤러입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "이 플레이어에게 예약된 장치"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "예약 형식에 따라, 이 컨트롤러를 이 플레이어에게 할당합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "예약 없음"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "선호"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "예약"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "장치 예약 형식"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "선호: 지정된 장치가 연결되어 있으면 이 플레이어에게 할당합니다. 예약: 이 플레이어에게는 지정된 장치 외의 다른 장치가 할당되지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
@@ -6610,32 +6712,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "'즐겨찾기에 추가' 항목을 표시합니다."
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "실행목록에 추가"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "'실행목록에 추가' 표시"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "이 콘텐츠를 실행목록에 추가합니다."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "'실행목록에 추가' 항목을 표시합니다."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "새 실행목록 만들기"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "실행목록에 추가됨"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "실행목록에 추가하지 못했습니다: 실행목록이 가득 참"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "새로운 실행목록을 만들고 현재 항목을 새 실행목록에 추가합니다."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "'코어 연결 설정' 표시"
@@ -6836,6 +6920,14 @@ MSG_HASH(
    "'사용자' 표시"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "실행목록 아이콘"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "표시할 실행목록 아이콘 섬네일의 종류입니다."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "'사용자' 설정을 표시합니다."
    )
@@ -6965,6 +7057,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "AI 서비스 출력"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "번역을 텍스트 오버레이(이미지 모드), 음성합성(음성 모드), NVDA 등의 시스템 나레이터(나레이터 모드)로 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -7821,7 +7917,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "활성화할 경우, 항목의 미리보기를 라벨이 아닌 파일명을 기준으로 검색합니다."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "미리보기에 지원되는 모든 이미지 형식 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "사용할 경우, RetroArch가 지원하는 모든 이미지 형식(예: JPEG)의 파일을 로컬 미리보기로 사용할 수 있게 됩니다. 약간의 성능 저하가 있을 수 있습니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "관리"
    )
@@ -8791,6 +8895,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "항목을 '즐겨찾기'에 추가합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "실행목록에 추가"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "이 콘텐츠를 실행목록에 추가합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "새 실행목록 만들기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "새로운 실행목록을 만들고 현재 항목을 새 실행목록에 추가합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -10526,6 +10646,10 @@ MSG_HASH(
    "타이틀 화면"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "콘텐츠 로고"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "보통"
    )
@@ -11332,6 +11456,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI,
    "플랫UI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX,
+   "플랫UX"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
@@ -13410,6 +13538,14 @@ MSG_HASH(
    "즐겨찾기에 추가하지 못했습니다: 실행목록이 가득 참"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "실행목록에 추가됨"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "실행목록에 추가하지 못했습니다: 실행목록이 가득 참"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "코어 설정: "
    )
@@ -14262,6 +14398,10 @@ MSG_HASH(
    "도전과제 해제"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "희귀 도전과제 해제"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "리더보드 시도 시작됨"
    )
@@ -14272,6 +14412,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "%s 제출함 (%s)" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "순위: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "최고: %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,

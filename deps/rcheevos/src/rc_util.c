@@ -184,6 +184,8 @@ const char* rc_error_str(int ret)
     case RC_INVALID_CREDENTIALS: return "Invalid credentials";
     case RC_EXPIRED_TOKEN: return "Expired token";
     case RC_INSUFFICIENT_BUFFER: return "Buffer not large enough";
+    case RC_INVALID_VARIABLE_NAME: return "Invalid variable name";
+    case RC_UNKNOWN_VARIABLE_NAME: return "Unknown variable name";
     default: return "Unknown error";
   }
 }

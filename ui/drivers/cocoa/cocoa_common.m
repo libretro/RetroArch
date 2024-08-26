@@ -20,6 +20,7 @@
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
+#include <compat/apple_compat.h>
 
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
@@ -31,15 +32,45 @@
 #import <TVServices/TVServices.h>
 #import "../../pkg/apple/RetroArchTopShelfExtension/ContentProvider.h"
 #endif
+#if TARGET_OS_IOS
+#import <MobileCoreServices/MobileCoreServices.h>
+#import "../../../menu/menu_cbs.h"
+#endif
 #endif
 
 #include "../../../configuration.h"
+#include "../../../content.h"
+#include "../../../core_info.h"
+#include "../../../defaults.h"
+#include "../../../file_path_special.h"
+#include "../../../menu/menu_cbs.h"
 #include "../../../paths.h"
 #include "../../../retroarch.h"
+#include "../../../tasks/task_content.h"
 #include "../../../verbosity.h"
 
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#if IOS
+#import <UIKit/UIAccessibility.h>
+extern bool RAIsVoiceOverRunning(void)
+{
+   return UIAccessibilityIsVoiceOverRunning();
+}
+#elif OSX
+#import <AppKit/AppKit.h>
+extern bool RAIsVoiceOverRunning(void)
+{
+   if (@available(macOS 10.13, *))
+      return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
+   return false;
+}
+#endif
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 id<ApplePlatform> apple_platform;
@@ -51,10 +82,14 @@ static CocoaView* g_instance;
 
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
+void cocoa_file_load_with_detect_core(const char *filename);
 
 @interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
 #ifdef HAVE_IOS_TOUCHMOUSE
 ,EmulatorTouchMouseHandlerDelegate
+#endif
+#if TARGET_OS_IOS
+,UIDocumentPickerDelegate
 #endif
 >
 @end
@@ -135,65 +170,73 @@ void *glkitview_init(void);
     return true;
 }
 
+- (bool)isSiri:(GCController *)controller
+{
+    return (controller.microGamepad && !controller.extendedGamepad && [@"Remote" isEqualToString:controller.vendorName]);
+}
+
 - (bool)didMicroGamepadPress:(UIPressType)type
 {
-    NSArray<GCController*>* controllers = [GCController controllers];
-    if ([controllers count] == 1)
-        return !controllers[0].extendedGamepad;
-
     /* Are these presses that controllers send? */
     if (@available(tvOS 14.3, *))
         if (type == UIPressTypePageUp || type == UIPressTypePageDown)
             return true;
 
-    bool microPress = false;
-    bool extendedPress = false;
-    for (GCController *controller in [GCController controllers]) {
-        if (controller.extendedGamepad)
+    NSArray<GCController*>* controllers = [GCController controllers];
+
+    bool foundSiri = false;
+    bool nonSiriPress = false;
+    for (GCController *controller in controllers) {
+        if ([self isSiri:controller])
+        {
+            foundSiri = true;
+            if (type == UIPressTypeSelect)
+                return controller.microGamepad.buttonA.pressed;
+            else if (type == UIPressTypePlayPause)
+               return controller.microGamepad.buttonX.pressed;
+        }
+        else if (controller.extendedGamepad)
         {
             if (type == UIPressTypeUpArrow)
-                extendedPress |= controller.extendedGamepad.dpad.up.pressed
-                              || controller.extendedGamepad.leftThumbstick.up.pressed
-                              || controller.extendedGamepad.rightThumbstick.up.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.up.pressed
+                             || controller.extendedGamepad.leftThumbstick.up.pressed
+                             || controller.extendedGamepad.rightThumbstick.up.pressed;
             else if (type == UIPressTypeDownArrow)
-                extendedPress |= controller.extendedGamepad.dpad.down.pressed
-                              || controller.extendedGamepad.leftThumbstick.down.pressed
-                              || controller.extendedGamepad.rightThumbstick.down.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.down.pressed
+                             || controller.extendedGamepad.leftThumbstick.down.pressed
+                             || controller.extendedGamepad.rightThumbstick.down.pressed;
             else if (type == UIPressTypeLeftArrow)
-                extendedPress |= controller.extendedGamepad.dpad.left.pressed
-                              || controller.extendedGamepad.leftShoulder.pressed
-                              || controller.extendedGamepad.leftTrigger.pressed
-                              || controller.extendedGamepad.leftThumbstick.left.pressed
-                              || controller.extendedGamepad.rightThumbstick.left.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.left.pressed
+                             || controller.extendedGamepad.leftShoulder.pressed
+                             || controller.extendedGamepad.leftTrigger.pressed
+                             || controller.extendedGamepad.leftThumbstick.left.pressed
+                             || controller.extendedGamepad.rightThumbstick.left.pressed;
             else if (type == UIPressTypeRightArrow)
-                extendedPress |= controller.extendedGamepad.dpad.right.pressed
-                              || controller.extendedGamepad.rightShoulder.pressed
-                              || controller.extendedGamepad.rightTrigger.pressed
-                              || controller.extendedGamepad.leftThumbstick.right.pressed
-                              || controller.extendedGamepad.rightThumbstick.right.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.right.pressed
+                             || controller.extendedGamepad.rightShoulder.pressed
+                             || controller.extendedGamepad.rightTrigger.pressed
+                             || controller.extendedGamepad.leftThumbstick.right.pressed
+                            || controller.extendedGamepad.rightThumbstick.right.pressed;
             else if (type == UIPressTypeSelect)
-                extendedPress |= controller.extendedGamepad.buttonA.pressed;
+                nonSiriPress |= controller.extendedGamepad.buttonA.pressed;
             else if (type == UIPressTypeMenu)
-                extendedPress |= controller.extendedGamepad.buttonB.pressed;
+                nonSiriPress |= controller.extendedGamepad.buttonB.pressed;
             else if (type == UIPressTypePlayPause)
-                extendedPress |= controller.extendedGamepad.buttonX.pressed;
-
+                nonSiriPress |= controller.extendedGamepad.buttonX.pressed;
         }
-        else if (controller.microGamepad)
+        else
         {
-            if (type == UIPressTypeSelect)
-                microPress |= controller.microGamepad.buttonA.pressed;
-            else if (type == UIPressTypePlayPause)
-                microPress |= controller.microGamepad.buttonX.pressed;
-            else if (@available(tvOS 13, *)) {
-                if (type == UIPressTypeMenu)
-                    extendedPress |= controller.microGamepad.buttonMenu.pressed ||
-                    controller.microGamepad.buttonMenu.isPressed;
-            }
+            /* we have a remote that is not extended. some of these remotes send
+             * spurious presses. the only way to get them to work properly is to
+             * make the siri remote work improperly. */
+            nonSiriPress = true;
         }
     }
 
-    return microPress || !extendedPress;
+    if (!foundSiri || [controllers count] == 1)
+        return foundSiri;
+
+    return !nonSiriPress;
 }
 
 - (void)sendKeyForPress:(UIPressType)type down:(bool)down
@@ -230,8 +273,10 @@ void *glkitview_init(void);
         /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
             [super pressesBegan:presses withEvent:event];
-        else if ([self didMicroGamepadPress:press.type])
+        else if (!press.key && [self didMicroGamepadPress:press.type])
             [self sendKeyForPress:press.type down:true];
+        else if (press.key)
+            [super pressesBegan:[NSSet setWithObject:press] withEvent:event];
     }
 }
 
@@ -283,6 +328,50 @@ void *glkitview_init(void);
       apple_direct_input_keyboard_event(false, code, 0, 0, RETRO_DEVICE_KEYBOARD);
    });
 }
+#endif
+
+#if TARGET_OS_IOS
+
+#pragma mark UIDocumentPickerViewController
+
+-(void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url
+{
+   NSFileManager *manager = [NSFileManager defaultManager];
+   NSString     *filename = (NSString*)url.path.lastPathComponent;
+   NSError         *error = nil;
+   settings_t *settings   = config_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join_special(fullpath, settings->paths.directory_core_assets, [filename UTF8String], sizeof(fullpath));
+   NSString  *destination = [NSString stringWithUTF8String:fullpath];
+   NSString *documentsDir = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+   /* Copy file to documents directory if it's not already
+    * inside Documents directory */
+   if (![[url path] containsString:documentsDir])
+      if (![manager fileExistsAtPath:destination])
+         [manager copyItemAtPath:[url path] toPath:destination error:&error];
+   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+      action_scan_file(fullpath, NULL, 0, 0);
+   else
+   {
+      cocoa_file_load_with_detect_core(fullpath);
+   }
+}
+
+-(void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller
+{
+}
+
+-(void)showDocumentPicker
+{
+   UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc]
+                                                     initWithDocumentTypes:@[(NSString *)kUTTypeDirectory,
+                                                                             (NSString *)kUTTypeItem]
+                                                     inMode:UIDocumentPickerModeImport];
+   documentPicker.delegate = self;
+   documentPicker.modalPresentationStyle = UIModalPresentationFormSheet;
+   [self presentViewController:documentPicker animated:YES completion:nil];
+}
+
 #endif
 
 #if defined(OSX)
@@ -599,16 +688,6 @@ void *glkitview_init(void);
    }
 }
 
--(void)handlePointerMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)
-      input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->window_pos_x = (int16_t)x;
-   apple->window_pos_y = (int16_t)y;
-}
-
 #endif
 
 #pragma mark GCDWebServerDelegate
@@ -657,6 +736,13 @@ void *glkitview_init(void);
 
 @end
 
+#if TARGET_OS_IOS
+void ios_show_file_sheet(void)
+{
+   [[CocoaView get] showDocumentPicker];
+}
+#endif
+
 void *cocoa_screen_get_chosen(void)
 {
     unsigned monitor_index;
@@ -675,8 +761,8 @@ void *cocoa_screen_get_chosen(void)
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
-    return ([[UIApplication sharedApplication] applicationState]
-            == UIApplicationStateActive);
+    /* if we are running, we are foregrounded */
+    return true;
 #else
     return [NSApp isActive];
 #endif
@@ -750,6 +836,10 @@ float cocoa_screen_get_native_scale(void)
             ret              = screen.scale;
     }
 
+#if TARGET_OS_TV
+    if (ret < 1.0f)
+       ret = 1.0f;
+#endif
     return ret;
 }
 #endif
@@ -971,3 +1061,45 @@ void update_topshelf(void)
    }
 }
 #endif
+
+void cocoa_file_load_with_detect_core(const char *filename)
+{
+   /* largely copied from file_load_with_detect_core() in menu_cbs_ok.c */
+   core_info_list_t *list = NULL;
+   const core_info_t *info = NULL;
+   size_t supported = 0;
+
+   if (path_is_compressed_file(filename))
+   {
+      generic_action_ok_displaylist_push(filename, NULL,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+            FILE_TYPE_CARCHIVE, 0, 0, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE);
+      return;
+   }
+
+   core_info_get_list(&list);
+   core_info_list_get_supported_cores(list, filename, &info, &supported);
+   if (supported > 1)
+   {
+      struct menu_state *menu_st          = menu_state_get_ptr();
+      menu_handle_t *menu                 = menu_st->driver_data;
+      strlcpy(menu->deferred_path, filename, sizeof(menu->deferred_path));
+      strlcpy(menu->detect_content_path, filename, sizeof(menu->detect_content_path));
+      generic_action_ok_displaylist_push(filename, NULL, NULL, FILE_TYPE_NONE, 0, 0, ACTION_OK_DL_DEFERRED_CORE_LIST);
+   }
+   else if (supported == 1)
+   {
+      content_ctx_info_t content_info;
+
+      content_info.argc        = 0;
+      content_info.argv        = NULL;
+      content_info.args        = NULL;
+      content_info.environ_get = NULL;
+
+      task_push_load_content_with_new_core_from_menu(
+               info->path, filename,
+               &content_info,
+               CORE_TYPE_PLAIN,
+               NULL, NULL);
+   }
+}

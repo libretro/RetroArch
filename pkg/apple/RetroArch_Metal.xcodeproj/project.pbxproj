@@ -15,7 +15,6 @@
 		053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25521433F1700D98D46 /* QtConcurrent.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		053FC275214341F000D98D46 /* QtCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 053FC25421433F1700D98D46 /* QtCore.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		05422E402140C8DB00F09961 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		05422E432140C8DB00F09961 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
 		05422E442140C8DB00F09961 /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		05422E452140C8DB00F09961 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
@@ -42,10 +41,8 @@
 		070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		0720993E29B1258C001642BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
-		0720993F29B1258C001642BB /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		0720994029B1258C001642BB /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		0720994129B1258C001642BB /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
-		0720994229B1258C001642BB /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
 		0720994429B1258C001642BB /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
 		0720994529B1258C001642BB /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
 		0720994629B1258C001642BB /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
@@ -55,7 +52,6 @@
 		0720994B29B1258C001642BB /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
 		0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0720994D29B1258C001642BB /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
-		0720994E29B1258C001642BB /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; };
 		0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
 		0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
 		0720995129B1258C001642BB /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
@@ -67,12 +63,49 @@
 		0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */; };
 		0720995829B1258C001642BB /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
 		0720995929B1258C001642BB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
-		0720995B29B1258C001642BB /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
-		079371D0296392420059A71C /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		075650252C488918004C5E7E /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075650242C488918004C5E7E /* CloudKit.framework */; };
+		076E640C2BF30A7A00681536 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
+		076E640D2BF30A9200681536 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
+		076E640E2BF30AA200681536 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
+		076E64102BF30AFF00681536 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		076E64112BF30AFF00681536 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0790F6792BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
+		0790F67A2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
+		0790F67B2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
+		0790F67C2BF2925400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
-		07B634D0296391FF00B3D78D /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 07B634CF296391FF00B3D78D /* libMoltenVK.dylib */; };
+		07EF0FF92BEB117000EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		07EF0FFA2BEB117000EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		07EF0FFC2BEB117400EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		07EF0FFF2BEB117900EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
+		07EF10002BEB117900EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
+		07F2BBC92BE83A4700FD1295 /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
+		07F2BBCC2BE83A4700FD1295 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
+		07F2BBCD2BE83A4700FD1295 /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05770B9820E805160013DABC /* menu_pipeline.metal */; };
+		07F2BBCE2BE83A4700FD1295 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
+		07F2BBCF2BE83A4700FD1295 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
+		07F2BBD02BE83A4700FD1295 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
+		07F2BBD12BE83A4700FD1295 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 05A8C74E20DB72F100FF7857 /* Shaders.metal */; };
+		07F2BBD32BE83A4700FD1295 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
+		07F2BBD42BE83A4700FD1295 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
+		07F2BBD52BE83A4700FD1295 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
+		07F2BBD72BE83A4700FD1295 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
+		07F2BBD82BE83A4700FD1295 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
+		07F2BBD92BE83A4700FD1295 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23920A63CED0084ABDA /* IOSurface.framework */; };
+		07F2BBDA2BE83A4700FD1295 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
+		07F2BBDB2BE83A4700FD1295 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23720A63CB40084ABDA /* Metal.framework */; };
+		07F2BBDC2BE83A4700FD1295 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05269A6120ABF20500C29F1E /* MetalKit.framework */; };
+		07F2BBDD2BE83A4700FD1295 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
+		07F2BBDE2BE83A4700FD1295 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
+		07F2BBDF2BE83A4700FD1295 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
+		07F2BBE02BE83A4700FD1295 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */; };
+		07F2BBE12BE83A4700FD1295 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29B97324FDCFA39411CA2CEA /* AppKit.framework */; };
+		07F2BBE22BE83A4700FD1295 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
 		5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5061C8A31AE47E510080AE14 /* libz.dylib */; };
 		509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 509F0C9C1AA23AFC00619ECC /* griffin_objc.m */; };
 		840222FC1A889EE2009AB261 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 840222FB1A889EE2009AB261 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
@@ -80,7 +113,6 @@
 		84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EA81A89E4BE007336C1 /* CoreAudio.framework */; };
 		84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */; };
 		84DD5EB51A89E737007336C1 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84DD5EB41A89E737007336C1 /* IOKit.framework */; };
-		84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84DD5EB71A89F1C7007336C1 /* retroarch.icns */; };
 		8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		9254B33125FA0BA300A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		9254B33825FA72F100A1E0DA /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
@@ -89,28 +121,16 @@
 		D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
 		D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50872228360000113BC0 /* AVFoundation.framework */; };
 		D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D27C50892228360D00113BC0 /* AudioToolbox.framework */; };
-		F0B12390270D73A90006E60F /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
-		F0B12391270D73A90006E60F /* connect in Resources */ = {isa = PBXBuildFile; fileRef = F0B1238F270D73A90006E60F /* connect */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		0536DF8D20A6BDAC00BBB67F /* Embed Libraries */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				079371D0296392420059A71C /* libMoltenVK.dylib in Embed Libraries */,
-			);
-			name = "Embed Libraries";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		053FC26721433F2200D98D46 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				076E64112BF30AFF00681536 /* MoltenVK.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -125,15 +145,37 @@
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0720995A29B1258C001642BB /* Embed Libraries */ = {
+		07EF0FFB2BEB117000EDCA9B /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				0720995B29B1258C001642BB /* libMoltenVK.dylib in Embed Libraries */,
+				07EF0FFA2BEB117000EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
 			);
-			name = "Embed Libraries";
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07EF0FFE2BEB117400EDCA9B /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07EF10012BEB117900EDCA9B /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				07EF10002BEB117900EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -518,12 +560,19 @@
 		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
 		070A883F2A4E7A1B003161C0 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
+		071051BE2BEFEFBA009C29D8 /* Info_AppStore.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info_AppStore.plist; path = OSX/Info_AppStore.plist; sourceTree = "<group>"; };
 		0720996029B1258C001642BB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		072976DC296284F600D6E00C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
+		075650242C488918004C5E7E /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
+		075650262C48B417004C5E7E /* RetroArchCI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchCI.entitlements; sourceTree = "<group>"; };
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
+		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
-		07B634CF296391FF00B3D78D /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libMoltenVK.dylib; path = Frameworks/MoltenVK/dylib/macOS/libMoltenVK.dylib; sourceTree = "<group>"; };
+		07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
+		07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppStore.xcconfig; sourceTree = "<group>"; };
+		07F2BBE92BE83A4700FD1295 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07F8037C2BEFE4BD000FD557 /* RetroArchAppStore.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchAppStore.entitlements; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = OSX/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		5061C8A31AE47E510080AE14 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
@@ -537,7 +586,6 @@
 		84DD5EB01A89E664007336C1 /* Cg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cg.framework; path = /Library/Frameworks/Cg.framework; sourceTree = "<absolute>"; };
 		84DD5EB21A89E6C0007336C1 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = /System/Library/Frameworks/AudioUnit.framework; sourceTree = "<absolute>"; };
 		84DD5EB41A89E737007336C1 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = ../../../../../../System/Library/Frameworks/IOKit.framework; sourceTree = "<group>"; };
-		84DD5EB71A89F1C7007336C1 /* retroarch.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = retroarch.icns; path = ../../media/retroarch.icns; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9254B2E625F5516A00A1E0DA /* GitLabCI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = GitLabCI.xcconfig; sourceTree = "<group>"; };
 		9254B33025FA0BA300A1E0DA /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = assets.zip; path = OSX/assets.zip; sourceTree = "<group>"; };
@@ -563,14 +611,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				076E640E2BF30AA200681536 /* OpenAL.framework in Frameworks */,
 				D27C508A2228360D00113BC0 /* AudioToolbox.framework in Frameworks */,
 				D27C50882228360000113BC0 /* AVFoundation.framework in Frameworks */,
+				076E640D2BF30A9200681536 /* GameController.framework in Frameworks */,
 				053FC272214341E000D98D46 /* QtConcurrent.framework in Frameworks */,
 				053FC275214341F000D98D46 /* QtCore.framework in Frameworks */,
 				053FC270214340F500D98D46 /* QtGui.framework in Frameworks */,
 				053FC271214340F500D98D46 /* QtNetwork.framework in Frameworks */,
 				053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */,
+				076E640C2BF30A7A00681536 /* CoreHaptics.framework in Frameworks */,
 				05422E4A2140C8DB00F09961 /* QuartzCore.framework in Frameworks */,
+				076E64102BF30AFF00681536 /* MoltenVK.xcframework in Frameworks */,
 				05422E4B2140C8DB00F09961 /* IOSurface.framework in Frameworks */,
 				05422E4C2140C8DB00F09961 /* Metal.framework in Frameworks */,
 				05422E4D2140C8DB00F09961 /* MetalKit.framework in Frameworks */,
@@ -590,7 +642,6 @@
 				0720994B29B1258C001642BB /* AudioToolbox.framework in Frameworks */,
 				0720994C29B1258C001642BB /* OpenGL.framework in Frameworks */,
 				0720994D29B1258C001642BB /* GameController.framework in Frameworks */,
-				0720994E29B1258C001642BB /* libMoltenVK.dylib in Frameworks */,
 				0720994F29B1258C001642BB /* AVFoundation.framework in Frameworks */,
 				0720995029B1258C001642BB /* QuartzCore.framework in Frameworks */,
 				0720995129B1258C001642BB /* IOSurface.framework in Frameworks */,
@@ -599,10 +650,34 @@
 				0720995429B1258C001642BB /* MetalKit.framework in Frameworks */,
 				0720995529B1258C001642BB /* libz.dylib in Frameworks */,
 				070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */,
+				07EF0FFC2BEB117400EDCA9B /* MoltenVK.xcframework in Frameworks */,
 				0720995629B1258C001642BB /* CoreAudio.framework in Frameworks */,
 				0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */,
 				0720995829B1258C001642BB /* AppKit.framework in Frameworks */,
 				0720995929B1258C001642BB /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07F2BBD22BE83A4700FD1295 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07F2BBD32BE83A4700FD1295 /* AudioToolbox.framework in Frameworks */,
+				07F2BBD42BE83A4700FD1295 /* OpenGL.framework in Frameworks */,
+				07F2BBD52BE83A4700FD1295 /* GameController.framework in Frameworks */,
+				07F2BBD72BE83A4700FD1295 /* AVFoundation.framework in Frameworks */,
+				07F2BBD82BE83A4700FD1295 /* QuartzCore.framework in Frameworks */,
+				07F2BBD92BE83A4700FD1295 /* IOSurface.framework in Frameworks */,
+				07F2BBDA2BE83A4700FD1295 /* CoreHaptics.framework in Frameworks */,
+				07F2BBDB2BE83A4700FD1295 /* Metal.framework in Frameworks */,
+				07F2BBDC2BE83A4700FD1295 /* MetalKit.framework in Frameworks */,
+				07F2BBDD2BE83A4700FD1295 /* libz.dylib in Frameworks */,
+				07F2BBDE2BE83A4700FD1295 /* OpenAL.framework in Frameworks */,
+				07EF0FFF2BEB117900EDCA9B /* MoltenVK.xcframework in Frameworks */,
+				07F2BBDF2BE83A4700FD1295 /* CoreAudio.framework in Frameworks */,
+				07F2BBE02BE83A4700FD1295 /* AudioUnit.framework in Frameworks */,
+				07F2BBE12BE83A4700FD1295 /* AppKit.framework in Frameworks */,
+				07F2BBE22BE83A4700FD1295 /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -613,15 +688,16 @@
 				D27C508C2228362700113BC0 /* AudioToolbox.framework in Frameworks */,
 				072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */,
 				0746953A2997393000CCB7BD /* GameController.framework in Frameworks */,
-				07B634D0296391FF00B3D78D /* libMoltenVK.dylib in Frameworks */,
 				D27C508B2228361D00113BC0 /* AVFoundation.framework in Frameworks */,
 				05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */,
 				05A8E23A20A63CED0084ABDA /* IOSurface.framework in Frameworks */,
 				0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */,
 				05A8E23820A63CB40084ABDA /* Metal.framework in Frameworks */,
 				05269A6220ABF20500C29F1E /* MetalKit.framework in Frameworks */,
+				075650252C488918004C5E7E /* CloudKit.framework in Frameworks */,
 				5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */,
 				070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */,
+				07EF0FF92BEB117000EDCA9B /* MoltenVK.xcframework in Frameworks */,
 				84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */,
 				84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */,
 				84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */,
@@ -1385,6 +1461,7 @@
 				8D1107320486CEB800E47090 /* RetroArch.app */,
 				05422E592140C8DB00F09961 /* RetroArch.app */,
 				0720996029B1258C001642BB /* RetroArch.app */,
+				07F2BBE92BE83A4700FD1295 /* RetroArch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1392,12 +1469,15 @@
 		29B97314FDCFA39411CA2CEA /* RetroArch */ = {
 			isa = PBXGroup;
 			children = (
+				07F8037C2BEFE4BD000FD557 /* RetroArchAppStore.entitlements */,
+				075650262C48B417004C5E7E /* RetroArchCI.entitlements */,
 				686201AB24B823A800EBDD95 /* RetroArch.entitlements */,
 				05D7753120A55D2700646447 /* BaseConfig.xcconfig */,
 				05422E5C2140CFC500F09961 /* Metal.xcconfig */,
 				A90207489289602F593626D5 /* QTConfig.xcconfig */,
 				9254B2E625F5516A00A1E0DA /* GitLabCI.xcconfig */,
 				0776EF3829A005D600AF0237 /* Steam.xcconfig */,
+				07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */,
 				840222FA1A889EA2009AB261 /* Core */,
 				05A8C51920DB72C200FF7857 /* Sources */,
 				841CBB821A8A33810066E9F1 /* Assets */,
@@ -1414,10 +1494,11 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				84DD5EB71A89F1C7007336C1 /* retroarch.icns */,
+				071051BE2BEFEFBA009C29D8 /* Info_AppStore.plist */,
 				A90205FD4D5979BD8B7E4DD6 /* Info_Metal.plist */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 				A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */,
+				0790F6782BF282B400AA58C9 /* Media.xcassets */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -1425,11 +1506,12 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				075650242C488918004C5E7E /* CloudKit.framework */,
+				07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */,
 				070A883F2A4E7A1B003161C0 /* OpenAL.framework */,
 				0795A8C6299A095300D5035D /* CoreHaptics.framework */,
 				074695362995C03900CCB7BD /* GameController.framework */,
 				D27C50892228360D00113BC0 /* AudioToolbox.framework */,
-				07B634CF296391FF00B3D78D /* libMoltenVK.dylib */,
 				072976DC296284F600D6E00C /* OpenGL.framework */,
 				D27C50872228360000113BC0 /* AVFoundation.framework */,
 				053FC25521433F1700D98D46 /* QtConcurrent.framework */,
@@ -1500,8 +1582,8 @@
 				0720993D29B1258C001642BB /* Resources */,
 				0720994329B1258C001642BB /* Sources */,
 				0720994A29B1258C001642BB /* Frameworks */,
-				0720995A29B1258C001642BB /* Embed Libraries */,
 				0720995C29B1258C001642BB /* ShellScript */,
+				07EF0FFE2BEB117400EDCA9B /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1513,6 +1595,27 @@
 			productReference = 0720996029B1258C001642BB /* RetroArch.app */;
 			productType = "com.apple.product-type.application";
 		};
+		07F2BBC32BE83A4700FD1295 /* RetroArch AppStore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 07F2BBE62BE83A4700FD1295 /* Build configuration list for PBXNativeTarget "RetroArch AppStore" */;
+			buildPhases = (
+				07F2BBC42BE83A4700FD1295 /* ShellScript */,
+				07F2BBC52BE83A4700FD1295 /* Resources */,
+				07F2BBCB2BE83A4700FD1295 /* Sources */,
+				07F2BBD22BE83A4700FD1295 /* Frameworks */,
+				070CCFA82BF248E600E560BA /* ShellScript */,
+				07EF10012BEB117900EDCA9B /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "RetroArch AppStore";
+			productInstallPath = "$(HOME)/Applications";
+			productName = RetroArch;
+			productReference = 07F2BBE92BE83A4700FD1295 /* RetroArch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		8D1107260486CEB800E47090 /* RetroArch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "RetroArch" */;
@@ -1521,8 +1624,8 @@
 				8D1107290486CEB800E47090 /* Resources */,
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
-				0536DF8D20A6BDAC00BBB67F /* Embed Libraries */,
 				07B7872F29EA3B7D0088B74F /* ShellScript */,
+				07EF0FFB2BEB117000EDCA9B /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1557,6 +1660,7 @@
 				8D1107260486CEB800E47090 /* RetroArch */,
 				05422E3C2140C8DB00F09961 /* RetroArchQt */,
 				0720993B29B1258C001642BB /* RetroArchSteam */,
+				07F2BBC32BE83A4700FD1295 /* RetroArch AppStore */,
 			);
 		};
 /* End PBXProject section */
@@ -1567,10 +1671,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				05422E3E2140C8DB00F09961 /* InfoPlist.strings in Resources */,
-				05422E402140C8DB00F09961 /* retroarch.icns in Resources */,
 				9254B33825FA72F100A1E0DA /* assets.zip in Resources */,
 				0502387C2179713000789627 /* MainMenu_Metal.xib in Resources */,
-				F0B12391270D73A90006E60F /* connect in Resources */,
+				0790F67C2BF2925400AA58C9 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1579,10 +1682,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				0720993E29B1258C001642BB /* InfoPlist.strings in Resources */,
-				0720993F29B1258C001642BB /* retroarch.icns in Resources */,
 				0720994029B1258C001642BB /* assets.zip in Resources */,
 				0720994129B1258C001642BB /* MainMenu_Metal.xib in Resources */,
-				0720994229B1258C001642BB /* connect in Resources */,
+				0790F67A2BF282B400AA58C9 /* Media.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07F2BBC52BE83A4700FD1295 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */,
+				07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */,
+				07F2BBC92BE83A4700FD1295 /* MainMenu_Metal.xib in Resources */,
+				0790F67B2BF282B400AA58C9 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1591,10 +1704,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D11072B0486CEB800E47090 /* InfoPlist.strings in Resources */,
-				84DD5EB81A89F1C7007336C1 /* retroarch.icns in Resources */,
 				9254B33125FA0BA300A1E0DA /* assets.zip in Resources */,
 				A90209ED44A1161587F10CA4 /* MainMenu_Metal.xib in Resources */,
-				F0B12390270D73A90006E60F /* connect in Resources */,
+				0790F6792BF282B400AA58C9 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1627,6 +1739,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "make -C ${SRCBASE} -f Makefile.apple HAVE_MENU=1 HAVE_CONFIGFILE=1 HAVE_PATCH=1 HAVE_DSP_FILTER=1 HAVE_REWIND=1 HAVE_SCREENSHOTS=1 HAVE_CHEATS=1 HAVE_CORE_INFO_CACHE=1 HAVE_GFX_WIDGETS=1 HAVE_QT=1 HAVE_SLANG=1 MOC=${QT_INSTALL}/bin/moc generate\n";
+		};
+		070CCFA82BF248E600E560BA /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "FILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
 		};
 		0720993C29B1258C001642BB /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1663,7 +1793,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\nif [ -d \"$MIST_PATH\" ]; then\n    cp \"$MIST_PATH\"/mist/*.txt \"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/\n\n    cp \"$MIST_PATH\"/libmist.dylib \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/libmist.dylib\n\n    mkdir \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist\n\n    cp \"$MIST_PATH\"/mist/libsteam_api.dylib \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/libsteam_api.dylib\n\n    cp \"$MIST_PATH\"/mist/mist \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/mist\nfi\n\nFILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
+			shellScript = "\nif [ -d \"$MIST_PATH\" ]; then\n    cp \"$MIST_PATH\"/mist/*.txt \"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/\n\n    cp \"$MIST_PATH\"/libmist.dylib \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/libmist.dylib\n\n    mkdir \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist\n\n    cp \"$MIST_PATH\"/mist/libsteam_api.dylib \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/libsteam_api.dylib\n\n    cp \"$MIST_PATH\"/mist/mist \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/mist\nfi\n\nFILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
 		};
 		07340E8B2B4750520076B75D /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1701,7 +1831,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "FILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
+			shellScript = "FILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
+		};
+		07F2BBC42BE83A4700FD1295 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.git/**",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/git_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCBASE\"\nif [ -f \".git_version.h\" ] ; then\n   cp .git_version.h ${DERIVED_FILE_DIR}/git_version.h\nelse\n   echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > ${DERIVED_FILE_DIR}/git_version.h\nfi\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1729,6 +1879,19 @@
 				0720994729B1258C001642BB /* griffin_objc.m in Sources */,
 				0720994829B1258C001642BB /* griffin.c in Sources */,
 				0720994929B1258C001642BB /* Shaders.metal in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07F2BBCB2BE83A4700FD1295 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07F2BBCC2BE83A4700FD1295 /* griffin_glslang.cpp in Sources */,
+				07F2BBCD2BE83A4700FD1295 /* menu_pipeline.metal in Sources */,
+				07F2BBCE2BE83A4700FD1295 /* griffin_cpp.cpp in Sources */,
+				07F2BBCF2BE83A4700FD1295 /* griffin_objc.m in Sources */,
+				07F2BBD02BE83A4700FD1295 /* griffin.c in Sources */,
+				07F2BBD12BE83A4700FD1295 /* Shaders.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1772,6 +1935,8 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
@@ -1782,10 +1947,6 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INSTALL_PATH = "@rpath";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				OTHER_CFLAGS = (
 					"$(inherited)",
@@ -1811,6 +1972,8 @@
 			baseConfigurationReference = A90207489289602F593626D5 /* QTConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				CODE_SIGN_STYLE = Manual;
@@ -1821,10 +1984,6 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INSTALL_PATH = "@rpath";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
 				OTHER_CFLAGS = (
 					"$(inherited)",
 					"$(QT_CFLAGS)",
@@ -1848,6 +2007,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 			};
 			name = Debug;
 		};
@@ -1855,6 +2016,34 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0776EF3829A005D600AF0237 /* Steam.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+			};
+			name = Release;
+		};
+		07F2BBE72BE83A4700FD1295 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = RetroArchAppStore.entitlements;
+				CURRENT_PROJECT_VERSION = 44;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
+			};
+			name = Debug;
+		};
+		07F2BBE82BE83A4700FD1295 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = RetroArchAppStore.entitlements;
+				CURRENT_PROJECT_VERSION = 44;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
 			};
 			name = Release;
 		};
@@ -1862,6 +2051,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 			};
 			name = Debug;
 		};
@@ -1869,6 +2060,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 05422E5C2140CFC500F09961 /* Metal.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 			};
 			name = Release;
 		};
@@ -1897,8 +2090,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1936,19 +2128,16 @@
 				);
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = (
-					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
+					"$(inherited)",
 					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
-					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MARKETING_VERSION = 1.19.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
-				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
 				PRODUCT_NAME = RetroArch;
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				SDKROOT = macosx;
@@ -1981,8 +2170,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArch.entitlements;
-				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -2021,19 +2209,16 @@
 				);
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				LD_RUNPATH_SEARCH_PATHS = (
-					"$(LD_RUNPATH_SEARCH_PATHS_$(IS_MACCATALYST))",
+					"$(inherited)",
 					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(SRCBASE)/pkg/apple/Frameworks/MoltenVK/dylib/macOS",
-					"$(PROJECT_DIR)/Frameworks/MoltenVK/dylib/macOS",
+					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MARKETING_VERSION = 1.19.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				MTL_IGNORE_WARNINGS = YES;
-				OTHER_CODE_SIGN_FLAGS = "--deep --timestamp";
-				PRODUCT_BUNDLE_IDENTIFIER = libretro.RetroArch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
 				PRODUCT_NAME = RetroArch;
 				SDKROOT = macosx;
 				STRIP_STYLE = debugging;
@@ -2057,6 +2242,15 @@
 			buildConfigurations = (
 				0720995E29B1258C001642BB /* Debug */,
 				0720995F29B1258C001642BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		07F2BBE62BE83A4700FD1295 /* Build configuration list for PBXNativeTarget "RetroArch AppStore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				07F2BBE72BE83A4700FD1295 /* Debug */,
+				07F2BBE82BE83A4700FD1295 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

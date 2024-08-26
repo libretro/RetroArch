@@ -47,16 +47,17 @@
 #include "../accessibility.h"
 #include "../command.h"
 #include "../config.def.keybinds.h"
-#include "../driver.h"
-#include "../retroarch.h"
-#include "../verbosity.h"
 #include "../configuration.h"
+#include "../driver.h"
+#include "../frontend/frontend_driver.h"
 #include "../list_special.h"
 #include "../performance_counters.h"
+#include "../retroarch.h"
 #ifdef HAVE_BSV_MOVIE
 #include "../tasks/task_content.h"
 #endif
 #include "../tasks/tasks_internal.h"
+#include "../verbosity.h"
 
 #define HOLD_BTN_DELAY_SEC 2
 
@@ -169,6 +170,8 @@ static input_device_driver_t null_joypad = {
    NULL, /* poll */
    NULL, /* rumble */
    NULL, /* rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    NULL, /* name */
    "null",
 };
@@ -331,7 +334,7 @@ input_driver_t *input_drivers[] = {
 #ifdef HAVE_DINPUT
    &input_dinput,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    &input_sdl,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -363,6 +366,9 @@ input_driver_t *input_drivers[] = {
 #endif
 #ifdef DJGPP
    &input_dos,
+#endif
+#ifdef HAVE_TEST_DRIVERS
+   &input_test,
 #endif
    &input_null,
    NULL,
@@ -514,7 +520,11 @@ bool input_driver_set_sensor(
       return current_driver->set_sensor_state(current_data,
             port, action, rate);
    }
-
+   else if (input_driver_st.primary_joypad && input_driver_st.primary_joypad->set_sensor_state)
+   {
+      return input_driver_st.primary_joypad->set_sensor_state(NULL,
+            port, action, rate);
+   }
    return false;
 }
 
@@ -530,6 +540,12 @@ float input_driver_get_sensor(
       {
          void *current_data = input_driver_st.current_data;
          return current_driver->get_sensor_input(current_data, port, id);
+      }
+      else if (sensors_enable && input_driver_st.primary_joypad && 
+               input_driver_st.primary_joypad->get_sensor_input)
+      {
+         return input_driver_st.primary_joypad->get_sensor_input(NULL,
+               port, id);
       }
    }
 
@@ -1097,7 +1113,7 @@ const char **input_keyboard_start_line(
 }
 
 #ifdef HAVE_OVERLAY
-static int16_t input_overlay_mouse_state(input_overlay_t *ol, unsigned id)
+static int16_t input_overlay_device_mouse_state(input_overlay_t *ol, unsigned id)
 {
    input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
    int16_t res;
@@ -1212,10 +1228,9 @@ static int16_t input_overlay_lightgun_state(settings_t *settings,
 }
 
 static int16_t input_overlay_pointer_state(input_overlay_t *ol,
+      input_overlay_pointer_state_t *ptr_st,
       unsigned idx, unsigned id)
 {
-   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
-
    ptr_st->device_mask                  |= (1 << RETRO_DEVICE_POINTER);
 
    switch (id)
@@ -1242,14 +1257,16 @@ static int16_t input_overlay_pointing_device_state(settings_t *settings,
    switch (device)
    {
       case RETRO_DEVICE_MOUSE:
-         return input_overlay_mouse_state(ol, id);
+         return input_overlay_device_mouse_state(ol, id);
       case RETRO_DEVICE_LIGHTGUN:
          if (     settings->ints.input_overlay_lightgun_port == -1
                || settings->ints.input_overlay_lightgun_port == (int)port)
             return input_overlay_lightgun_state(settings, ol, id);
          break;
       case RETRO_DEVICE_POINTER:
-         return input_overlay_pointer_state(ol, idx, id);
+         return input_overlay_pointer_state(ol,
+               (input_overlay_pointer_state_t*)&ol->pointer_state,
+               idx, id);
       default:
          break;
    }
@@ -1336,12 +1353,16 @@ static void input_remote_parse_packet(
    switch (msg->device)
    {
       case RETRO_DEVICE_JOYPAD:
-         input_state->buttons[user] &= ~(1 << msg->id);
-         if (msg->state)
-            input_state->buttons[user] |= 1 << msg->id;
+         if (msg->id < 16)
+         {
+            input_state->buttons[user] &= ~(1 << msg->id);
+            if (msg->state)
+               input_state->buttons[user] |= 1 << msg->id;
+         }
          break;
       case RETRO_DEVICE_ANALOG:
-         input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
+         if (msg->id<2 && msg->index<2)
+            input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
          break;
    }
 }
@@ -1606,7 +1627,7 @@ static int16_t input_state_device(
             if (id == RETRO_DEVICE_ID_ANALOG_Y)
                base += 1;
 #ifdef HAVE_NETWORKGAMEPAD
-            if (     input_st->remote
+            if (     input_st->remote && idx < RETRO_DEVICE_INDEX_ANALOG_BUTTON
                   && input_state && input_state->analog[base][port])
                res          = input_state->analog[base][port];
             else
@@ -3028,14 +3049,15 @@ static void input_overlay_get_mouse_scale(settings_t *settings,
  * Updates button state of the overlay mouse.
  */
 static void input_overlay_poll_mouse(settings_t *settings,
-      input_overlay_t *ol, const int old_ptr_count)
+      struct input_overlay_mouse_state *mouse_st,
+      input_overlay_t *ol,
+      const int ptr_count,
+      const int old_ptr_count)
 {
    input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
-   struct input_overlay_mouse_state *mouse_st = &ptr_st->mouse;
    const retro_time_t now_usec                = cpu_features_get_time_usec();
    const retro_time_t hold_usec               = settings->uints.input_overlay_mouse_hold_msec * 1000;
    const retro_time_t dtap_usec               = settings->uints.input_overlay_mouse_dtap_msec * 1000;
-   const int ptr_count                        = ptr_st->count;
    int swipe_thres_x                          = 0;
    int swipe_thres_y                          = 0;
    const bool hold_to_drag                    = settings->bools.input_overlay_mouse_hold_to_drag;
@@ -3427,28 +3449,32 @@ static void input_poll_overlay(
 
    if (ol_ptr_enable)
    {
+      input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
+      struct input_overlay_mouse_state *mouse_st = (struct input_overlay_mouse_state*)&ptr_st->mouse;
+
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
          input_overlay_poll_lightgun(settings, ol, old_ptr_count);
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
-         input_overlay_poll_mouse(settings, ol, old_ptr_count);
+         input_overlay_poll_mouse(settings, mouse_st, ol,
+               ptr_st->count, old_ptr_count);
 
       ptr_state->device_mask = 0;
    }
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
       key_mod |= RETROKMOD_SHIFT;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LCTRL) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LCTRL)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
       key_mod |= RETROKMOD_CTRL;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LALT) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RALT))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LALT)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RALT))
       key_mod |= RETROKMOD_ALT;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LMETA) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LMETA)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
       key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
@@ -3596,38 +3622,39 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
    return RARCH_BIND_LIST_END;
 }
 
-void input_config_get_bind_string(
+size_t input_config_get_bind_string(
       void *settings_data,
-      char *buf,
+      char *s,
       const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind,
-      size_t size)
+      size_t len)
 {
    settings_t *settings                 = (settings_t*)settings_data;
+   size_t _len                          = 0;
    int delim                            = 0;
    bool  input_descriptor_label_show    =
       settings->bools.input_descriptor_label_show;
 
-   *buf                                 = '\0';
+   *s                                 = '\0';
 
    if      (bind      && bind->joykey  != NO_BTN)
-      input_config_get_bind_string_joykey(
+      _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            buf, "", bind, size);
+            s, "", bind, len);
    else if (bind      && bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(
+      _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            buf, "", bind, size);
+            s, "", bind, len);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
-      input_config_get_bind_string_joykey(
+      _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            buf, "(Auto)", auto_bind, size);
+            s, "(Auto)", auto_bind, len);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(
+      _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            buf, "(Auto)", auto_bind, size);
+            s, "(Auto)", auto_bind, len);
 
-   if (*buf)
+   if (*s)
       delim = 1;
 
 #ifndef RARCH_CONSOLE
@@ -3645,15 +3672,10 @@ void input_config_get_bind_string(
       /*empty?*/
       else if (*key != '\0')
       {
-         char keybuf[64];
-
-         keybuf[0] = '\0';
-
          if (delim)
-            strlcat(buf, ", ", size);
-         snprintf(keybuf, sizeof(keybuf),
+            _len += strlcpy(s + _len, ", ", len - _len);
+         _len += snprintf(s + _len, len - _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
-         strlcat(buf, keybuf, size);
          delim = 1;
       }
    }
@@ -3696,51 +3718,49 @@ void input_config_get_bind_string(
       if (tag != 0)
       {
          if (delim)
-            strlcat(buf, ", ", size);
-         strlcat(buf, msg_hash_to_str((enum msg_hash_enums)tag), size);
+            _len += strlcpy(s + _len, ", ", len - _len);
+         _len += strlcpy(s + _len, msg_hash_to_str((enum msg_hash_enums)tag), len - _len);
       }
    }
 
    /*completely empty?*/
-   if (*buf == '\0')
-      strlcat(buf, "---", size);
+   if (*s == '\0')
+      _len += strlcpy(s + _len, "---", len - _len);
+   return _len;
 }
 
-void input_config_get_bind_string_joykey(
+size_t input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
-      char *buf, const char *suffix,
-      const struct retro_keybind *bind, size_t size)
+      char *s, const char *suffix,
+      const struct retro_keybind *bind, size_t len)
 {
+   size_t _len = 0;
    if (GET_HAT_DIR(bind->joykey))
    {
       if (      bind->joykey_label
             && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim(buf,
-               bind->joykey_label, suffix, ' ', size);
-      else
+         return fill_pathname_join_delim(s,
+               bind->joykey_label, suffix, ' ', len);
+      _len  = snprintf(s, len,
+            "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
+      switch (GET_HAT_DIR(bind->joykey))
       {
-         size_t len  = snprintf(buf, size,
-               "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
-
-         switch (GET_HAT_DIR(bind->joykey))
-         {
-            case HAT_UP_MASK:
-               strlcpy(buf + len, "Up",    size - len);
-               break;
-            case HAT_DOWN_MASK:
-               strlcpy(buf + len, "Down",  size - len);
-               break;
-            case HAT_LEFT_MASK:
-               strlcpy(buf + len, "Left",  size - len);
-               break;
-            case HAT_RIGHT_MASK:
-               strlcpy(buf + len, "Right", size - len);
-               break;
-            default:
-               strlcpy(buf + len, "?",     size - len);
-               break;
-         }
+         case HAT_UP_MASK:
+            _len += strlcpy(s + _len, "Up",    len - _len);
+            break;
+         case HAT_DOWN_MASK:
+            _len += strlcpy(s + _len, "Down",  len - _len);
+            break;
+         case HAT_LEFT_MASK:
+            _len += strlcpy(s + _len, "Left",  len - _len);
+            break;
+         case HAT_RIGHT_MASK:
+            _len += strlcpy(s + _len, "Right", len - _len);
+            break;
+         default:
+            _len += strlcpy(s + _len, "?",     len - _len);
+            break;
       }
    }
    else
@@ -3748,34 +3768,34 @@ void input_config_get_bind_string_joykey(
       if (      bind->joykey_label
             && !string_is_empty(bind->joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim(buf,
-               bind->joykey_label, suffix, ' ', size);
-      else
-         snprintf(buf, size, "%s%u",
-               "Button ", (unsigned)bind->joykey);
+         return fill_pathname_join_delim(s,
+               bind->joykey_label, suffix, ' ', len);
+      _len  = strlcpy(s, "Button ", len);
+      _len += snprintf(s + _len, len - _len, "%u",
+            (unsigned)bind->joykey);
    }
+   return _len;
 }
 
-void input_config_get_bind_string_joyaxis(
+size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
-      char *buf, const char *suffix,
-      const struct retro_keybind *bind, size_t size)
+      char *s, const char *suffix,
+      const struct retro_keybind *bind, size_t len)
 {
+   size_t _len = 0;
    if (      bind->joyaxis_label
          && !string_is_empty(bind->joyaxis_label)
          && input_descriptor_label_show)
-      fill_pathname_join_delim(buf,
-            bind->joyaxis_label, suffix, ' ', size);
-   else
-   {
-      size_t _len = strlcpy(buf, "Axis ", size);
-      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf + _len, size - _len, "-%u",
-               (unsigned)AXIS_NEG_GET(bind->joyaxis));
-      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf + _len, size - _len, "+%u",
-               (unsigned)AXIS_POS_GET(bind->joyaxis));
-   }
+      return fill_pathname_join_delim(s,
+            bind->joyaxis_label, suffix, ' ', len);
+   _len = strlcpy(s, "Axis ", len);
+   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      _len += snprintf(s + _len, len - _len, "-%u",
+            (unsigned)AXIS_NEG_GET(bind->joyaxis));
+   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      _len += snprintf(s + _len, len - _len, "+%u",
+            (unsigned)AXIS_POS_GET(bind->joyaxis));
+   return _len;
 }
 
 void osk_update_last_codepoint(
@@ -4428,11 +4448,24 @@ bool video_driver_init_input(
    void              *new_data    = NULL;
    input_driver_t         **input = &input_driver_st.current_driver;
    if (*input)
+#if HAVE_TEST_DRIVERS
+      if (strcmp(settings->arrays.input_driver,"test") != 0)
+         /* Test driver not in use, keep selected driver */
+         return true;
+      else if (string_is_empty(settings->paths.test_input_file_general))
+          {
+            RARCH_LOG("[Input]: Test input driver selected, but no input file provided - falling back.\n");
+            return true;
+          }
+      else
+         RARCH_LOG("[Video]: Graphics driver initialized an input driver, but ignoring it as test input driver is in use.\n");
+#else
       return true;
-
-   /* Video driver didn't provide an input driver,
-    * so we use configured one. */
-   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
+#endif
+   else
+      /* Video driver didn't provide an input driver,
+       * so we use configured one. */
+      RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
          " Attempting to pick a suitable driver.\n");
 
    if (tmp)
@@ -5671,6 +5704,7 @@ void bsv_movie_frame_rewind(void)
 {
    input_driver_state_t *input_st = &input_driver_st;
    bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
+   bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;
 
    if (!handle)
       return;
@@ -5683,6 +5717,8 @@ void bsv_movie_frame_rewind(void)
       /* If we're at the beginning... */
       handle->frame_ptr = 0;
       intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
+      if (recording)
+         intfstream_truncate(handle->file, (int)handle->min_file_pos);
    }
    else
    {
@@ -5694,8 +5730,9 @@ void bsv_movie_frame_rewind(void)
        * plus another. */
       handle->frame_ptr = (handle->frame_ptr -
             (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      intfstream_seek(handle->file,
-            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
+      intfstream_seek(handle->file, (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
+      if (recording)
+         intfstream_truncate(handle->file, (int)handle->frame_pos[handle->frame_ptr]);
    }
 
    if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
@@ -5710,6 +5747,7 @@ void bsv_movie_frame_rewind(void)
           * the starting point. Nice and easy. */
 
          intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
+         intfstream_truncate(handle->file, 4 * sizeof(uint32_t));
 
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
@@ -5967,17 +6005,14 @@ bool replay_set_serialized_data(void* buf)
       if (is_compatible)
       {
          /* If the state is part of this replay, go back to that state
-            and rewind the replay; otherwise
-            halt playback and go to that state normally.
+            and rewind/fast forward the replay.
 
             If the savestate movie is after the current replay
             length we can replace the current replay data with it,
             but if it's earlier we can rewind the replay to the
             savestate movie time point.
 
-            This can truncate the current recording, so beware!
-
-            TODO/FIXME: Figure out what to do about rewinding across load
+            This can truncate the current replay if we're in recording mode.
          */
          if (loaded_len > handle_idx)
          {
@@ -5988,10 +6023,15 @@ bool replay_set_serialized_data(void* buf)
             intfstream_write(input_st->bsv_movie_state_handle->file, buffer+sizeof(int32_t), loaded_len);
          }
          else
+         {
             intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
+            if (recording)
+               intfstream_truncate(input_st->bsv_movie_state_handle->file, loaded_len);
+         }
       }
       else
       {
+         /* otherwise, if recording do not allow the load */
          if (recording)
          {
             const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
@@ -6001,7 +6041,7 @@ bool replay_set_serialized_data(void* buf)
             RARCH_ERR("[Replay] %s.\n", str);
             return false;
          }
-
+         /* if in playback, halt playback and go to that state normally */
          if (playback)
          {
             const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);

@@ -240,7 +240,7 @@
 #include "lakka.h"
 #endif
 
-#if defined(HAVE_COCOATOUCH) && TARGET_OS_IOS
+#if TARGET_OS_IPHONE
 #include "JITSupport.h"
 #endif
 
@@ -3110,7 +3110,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
       {
-         enum retro_av_enable_flags result = 0;
+         enum retro_av_enable_flags result = (enum retro_av_enable_flags)0;
          video_driver_state_t *video_st    = video_state_get_ptr();
          audio_driver_state_t *audio_st    = audio_state_get_ptr();
 
@@ -3502,7 +3502,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
-#if defined(HAVE_COCOATOUCH) && TARGET_OS_IOS
+#if TARGET_OS_IPHONE
             *(bool*)data             = jit_available();
 #else
             *(bool*)data             = true;
@@ -6814,10 +6814,10 @@ static enum runloop_state_enum runloop_check_state(
       cbs->poll_cb();
       return RUNLOOP_STATE_PAUSE;
    }
-
+#if HAVE_MENU
    if (menu_was_alive)
       return RUNLOOP_STATE_MENU;
-
+#endif
    return RUNLOOP_STATE_ITERATE;
 }
 

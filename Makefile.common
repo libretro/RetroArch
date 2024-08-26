@@ -240,6 +240,7 @@ OBJ += frontend/frontend_driver.o \
        ui/ui_companion_driver.o \
        camera/camera_driver.o \
        record/record_driver.o \
+       record/drivers/record_wav.o \
        command.o \
        msg_hash.o \
        intl/msg_hash_us.o \
@@ -753,7 +754,8 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
    OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
 else ifeq ($(HAVE_SSL), 1)
    DEFINES += -DHAVE_SSL
-   LIBS += $(SYSTEMMBEDTLS_LIBS)
+   LIBS += $(SYSTEMMBEDTLS_LIBS) $(SYSTEMMBEDX509_LIBS) $(SYSTEMMBEDCRYPTO_LIBS)
+   DEF_FLAGS += $(SYSTEMMBEDTLS_CFLAGS) $(SYSTEMMBEDX509_CFLAGS) $(SYSTEMMBEDCRYPTO_CFLAGS)
 endif
 
 # Miscellaneous
@@ -1056,22 +1058,20 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
+   ifneq ($(HAVE_LAKKA_PROJECT),)
+      DEFINES += -DHAVE_LAKKA_PROJECT=\"${HAVE_LAKKA_PROJECT}\"
+   else
+      $(error You asked for Lakka, but you did not specify a target device name in HAVE_LAKKA_PROJECT)
+   endif
+   ifneq ($(HAVE_LAKKA_SERVER),)
+      DEFINES += -DHAVE_LAKKA_SERVER=\"${HAVE_LAKKA_SERVER}\"
+   else
+      $(error You asked for Lakka, but you did not specify update server in HAVE_LAKKA_SERVER)
+   endif
 endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
-endif
-
-ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
-   DEFINES += -DHAVE_LAKKA_NIGHTLY
-endif
-
-ifneq ($(HAVE_LAKKA_CANARY),)
-   DEFINES += -DHAVE_LAKKA_CANARY=\"${HAVE_LAKKA_CANARY}\"
-endif
-
-ifeq ($(HAVE_LAKKA_DEVBUILD), 1)
-   DEFINES += -DHAVE_LAKKA_DEVBUILD
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
@@ -1306,6 +1306,9 @@ ifeq ($(HAVE_X11), 1)
    DEF_FLAGS += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
+   endif
+   ifeq ($(HAVE_XSCRNSAVER),1)
+      LIBS += -lXss
    endif
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
@@ -1843,10 +1846,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DENABLE_HLSL
-      GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
-   endif
 else ifeq ($(HAVE_GLSLANG),1)
    HAVE_GLSLANG_COMMON = 1
    GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
@@ -1857,7 +1856,6 @@ else ifeq ($(HAVE_GLSLANG),1)
            $(GLSLANG_GENERICCODEGEN_LIBS) \
            $(GLSLANG_OSDEPENDENT_LIBS) \
            $(GLSLANG_OGLCOMPILER_LIBS) \
-           $(GLSLANG_HLSL_LIBS) \
            $(GLSLANG_SPIRV_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_OPT_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_LIBS)
@@ -2089,6 +2087,17 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += tasks/task_core_updater.o
+   endif
+
+   ifneq ($(findstring Linux,$(OS)),)
+      HAVE_CLOUDSYNC = 1
+   endif
+
+   ifeq ($(HAVE_CLOUDSYNC), 1)
+      DEFINES += -DHAVE_CLOUDSYNC
+      OBJ += tasks/task_cloudsync.o \
+             network/cloud_sync/webdav.o \
+             network/cloud_sync_driver.o
    endif
 
    ifeq ($(HAVE_BUILTINBEARSSL), 1)
@@ -2438,6 +2447,7 @@ endif
 ifeq ($(HAVE_TEST_DRIVERS), 1)
   DEFINES += -DHAVE_TEST_DRIVERS
   OBJ += input/drivers_joypad/test_joypad.o
+  OBJ += input/drivers/test_input.o
 endif
 
 

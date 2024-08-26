@@ -61,9 +61,7 @@ enum {
     AMOTION_EVENT_BUTTON_FORWARD = 1 << 4,
     AMOTION_EVENT_AXIS_VSCROLL = 9,
     AMOTION_EVENT_ACTION_HOVER_MOVE = 7,
-    AINPUT_SOURCE_STYLUS = 0x00004000 | AINPUT_SOURCE_CLASS_POINTER,
-    AMOTION_EVENT_BUTTON_STYLUS_PRIMARY = 1 << 5,
-    AMOTION_EVENT_BUTTON_STYLUS_SECONDARY = 1 << 6
+    AINPUT_SOURCE_STYLUS = 0x00004000
 };
 #endif
 /* If using an NDK lower than 16b then add missing definition */
@@ -851,86 +849,6 @@ static INLINE void android_input_poll_event_type_motion(
       android->mouse_r = (android->pointer_count == 2);
 }
 
-
-static INLINE void android_input_poll_event_type_motion_stylus(
-      android_input_t *android, AInputEvent *event,
-      int port, int source)
-{
-   int getaction     = AMotionEvent_getAction(event);
-   int action        = getaction  & AMOTION_EVENT_ACTION_MASK;
-   size_t motion_ptr = getaction >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-
-   if (ENABLE_TOUCH_SCREEN_MOUSE)
-   {
-      // mouse right button press on stylus primary button
-      int btn              = (int)AMotionEvent_getButtonState(event);
-      android->mouse_r     = (btn & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY);
-   }
-
-   bool hovered_or_moving        = (
-            action == AMOTION_EVENT_ACTION_HOVER_MOVE
-         || action == AMOTION_EVENT_ACTION_MOVE);
-
-   if (hovered_or_moving && motion_ptr < MAX_TOUCH)
-   {
-      if (ENABLE_TOUCH_SCREEN_MOUSE)
-      {
-         if (action == AMOTION_EVENT_ACTION_MOVE) {
-            android->mouse_l = 1;
-         } else {
-            android->mouse_l = 0;
-         }
-
-         android_mouse_calculate_deltas(android,event,motion_ptr,source);
-      }
-
-      if (action == AMOTION_EVENT_ACTION_MOVE) {
-         // move pointer
-
-         struct video_viewport vp;
-         float x = AMotionEvent_getX(event, motion_ptr);
-         float y = AMotionEvent_getY(event, motion_ptr);
-
-         vp.x                        = 0;
-         vp.y                        = 0;
-         vp.width                    = 0;
-         vp.height                   = 0;
-         vp.full_width               = 0;
-         vp.full_height              = 0;
-
-         video_driver_translate_coord_viewport_wrap(
-               &vp,
-               x, y,
-               &android->pointer[motion_ptr].x,
-               &android->pointer[motion_ptr].y,
-               &android->pointer[motion_ptr].full_x,
-               &android->pointer[motion_ptr].full_y);
-
-         android->pointer_count = MAX(
-               android->pointer_count,
-               motion_ptr + 1);
-      } else if (action == AMOTION_EVENT_ACTION_HOVER_MOVE) {
-         // release the pointer
-
-         memmove(android->pointer + motion_ptr,
-         android->pointer + motion_ptr + 1,
-         (MAX_TOUCH - motion_ptr - 1) * sizeof(struct input_pointer));
-
-         if (android->pointer_count > 0)
-            android->pointer_count--;
-      }
-   } else if ((action == AMOTION_EVENT_ACTION_HOVER_EXIT) && motion_ptr < MAX_TOUCH) {
-      if (ENABLE_TOUCH_SCREEN_MOUSE)
-      {
-         android->mouse_l        = 0;
-
-         android_mouse_calculate_deltas(android,event,motion_ptr,source);
-      }
-
-      // pointer was already released during AMOTION_EVENT_ACTION_HOVER_MOVE
-   }
-}
-
 static bool android_is_keyboard_id(int id)
 {
    unsigned i;
@@ -957,6 +875,14 @@ static INLINE void android_input_poll_event_type_keyboard(
       mod |= RETROKMOD_CTRL;
    if (meta & AMETA_SHIFT_ON)
       mod |= RETROKMOD_SHIFT;
+   if (meta & AMETA_CAPS_LOCK_ON)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (meta & AMETA_NUM_LOCK_ON)
+      mod |= RETROKMOD_NUMLOCK;
+   if (meta & AMETA_SCROLL_LOCK_ON)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (meta & AMETA_META_ON)
+      mod |= RETROKMOD_META;
 
    input_keyboard_event(keydown, keyboardcode,
          keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
@@ -1593,13 +1519,10 @@ static void android_input_poll_input_default(android_input_t *android)
             case AINPUT_EVENT_TYPE_MOTION:
                if ((source & AINPUT_SOURCE_TOUCHPAD))
                   engine_handle_touchpad(android_app, event, port);
-               else if ((source & AINPUT_SOURCE_STYLUS) == AINPUT_SOURCE_STYLUS)
-                  android_input_poll_event_type_motion_stylus(android, event,
-                        port, source);
                /* Only handle events from a touchscreen or mouse */
                else if ((source & (AINPUT_SOURCE_TOUCHSCREEN 
-                           | AINPUT_SOURCE_MOUSE
-                           | AINPUT_SOURCE_MOUSE_RELATIVE)))
+                           | AINPUT_SOURCE_MOUSE_RELATIVE
+                           | AINPUT_SOURCE_STYLUS | AINPUT_SOURCE_MOUSE)))
                   android_input_poll_event_type_motion(android, event,
                         port, source);
                else

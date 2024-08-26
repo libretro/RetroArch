@@ -321,7 +321,7 @@ static bool winmm_midi_write_short_event(winmm_midi_buffer_t *buf,
 
    buf->data[i++] = delta_time;
    buf->data[i++] = 0;
-   buf->data[i] = MEVT_F_SHORT << 24;
+   buf->data[i] = MEVT_F_SHORT;
    if (data_size == 0)
       buf->data[i] |= MEVT_NOP;
    else
@@ -343,13 +343,16 @@ static bool winmm_midi_write_long_event(winmm_midi_buffer_t *buf,
 {
    DWORD i = buf->header.dwBytesRecorded / sizeof(DWORD);
 
+   /* data size has to be DWORD aligned */
+   data_size = (data_size + (sizeof(DWORD) - 1)) & ~(sizeof(DWORD) - 1);
+
    if (buf->header.dwBytesRecorded + sizeof(DWORD) * 3 + data_size >
          sizeof(DWORD) * WINMM_MIDI_BUF_LEN)
       return false;
 
    buf->data[i++] = delta_time;
    buf->data[i++] = 0;
-   buf->data[i++] = MEVT_F_LONG << 24 | MEVT_LONGMSG << 24 | data_size;
+   buf->data[i++] = MEVT_F_LONG | MEVT_LONGMSG << 24 | data_size;
 
    memcpy(&buf->data[i], data, data_size);
    buf->header.dwBytesRecorded += sizeof(DWORD) * 3 + data_size;

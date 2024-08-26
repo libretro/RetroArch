@@ -29,19 +29,19 @@
 #include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
-#include "../config.h"
+#include "config.h"
 #endif
 
-#include "../content.h"
-#include "../core.h"
-#include "../core_info.h"
-#include "../file_path_special.h"
-#include "../configuration.h"
-#include "../msg_hash.h"
-#include "../runloop.h"
-#include "../verbosity.h"
+#include "content.h"
+#include "core.h"
+#include "core_info.h"
+#include "file_path_special.h"
+#include "configuration.h"
+#include "msg_hash.h"
+#include "runloop.h"
+#include "verbosity.h"
 #ifdef HAVE_CHEATS
-#include "../cheat_manager.h"
+#include "cheat_manager.h"
 #endif
 
 struct ram_type
@@ -427,10 +427,9 @@ static bool dump_to_file_desperate(const void *data,
       strftime(timebuf, 256 * sizeof(char),
             "%Y-%m-%d-%H-%M-%S", &tm_);
 
-      _len = strlcat(path, "/RetroArch-recovery-", sizeof(path));
-
-      snprintf(path + _len, sizeof(path) - _len,
-            "%u%s", type, timebuf);
+      _len  = strlcat(path, "/RetroArch-recovery-", sizeof(path));
+      _len += snprintf(path + _len, sizeof(path) - _len, "%u", type);
+      strlcpy(path + _len, timebuf, sizeof(path) - _len);
 
       /* Fallback (emergency) saves are always
        * uncompressed

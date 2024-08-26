@@ -1763,7 +1763,13 @@ static uintptr_t ozone_entries_icon_get_texture(
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES_PLAYLIST:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ADD_FAVORITE];
+      case MENU_ENUM_LABEL_ADD_TO_PLAYLIST:
+      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST];
+      case MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ADD];
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
       case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
       case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
@@ -1835,7 +1841,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_PLAYLISTS_TAB:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ZIP];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
-      case MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE];
       case MENU_ENUM_LABEL_GOTO_IMAGES:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
@@ -2364,22 +2369,22 @@ static uintptr_t ozone_entries_icon_get_texture(
             /* account for the additional split joycon option in Input User # Binds */
             input_id++;
 #endif
-            if (type == input_id + 1)
+            if (type >= input_id + 1 && type <= input_id + 3)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
-            if (type == input_id + 2)
-               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
-            if (type == input_id + 3)
-               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BIND_ALL];
             if (type == input_id + 4)
-               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
             if (type == input_id + 5)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BIND_ALL];
+            if (type == input_id + 6)
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RELOAD];
+            if (type == input_id + 7)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_SAVING];
-            if ((type > (input_id + 29)) && (type < (input_id + 41)))
+            if ((type > (input_id + 31)) && (type < (input_id + 43)))
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
-            if (type == input_id + 41)
+            if (type == input_id + 43)
                return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
             /* align to use the same code of Quickmenu controls*/
-            input_id = input_id + 6;
+            input_id = input_id + 8;
          }
          else
          {
@@ -4897,7 +4902,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len;
+         size_t len, syslen;
          struct texture_image ti;
          char sysname[PATH_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
@@ -4906,14 +4911,14 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(ozone->playlist_db_node_map, path, node);
 
-         len                = fill_pathname_base(
-               sysname, path, sizeof(sysname));
+         syslen = fill_pathname_base(sysname, path, sizeof(sysname));
          /* Manually strip the extension (and dot) from sysname */
-            sysname[len-4]  =
-            sysname[len-3]  =
-            sysname[len-2]  =
-            sysname[len-1]  = '\0';
-         len                = fill_pathname_join_special(texturepath,
+            sysname[syslen-4]  =
+            sysname[syslen-3]  =
+            sysname[syslen-2]  =
+            sysname[syslen-1]  = '\0';
+         syslen -= 4;
+         len = fill_pathname_join_special(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
          texturepath[  len] = '.';
@@ -4952,7 +4957,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             image_texture_free(&ti);
          }
 
-         strlcat(sysname, "-content.png", sizeof(sysname));
+         strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          /* Assemble new icon path */
          fill_pathname_join_special(
                content_texturepath, ozone->icons_path, sysname,
@@ -6670,19 +6675,20 @@ static void ozone_draw_osk(
       unsigned video_height,
       const char *label, const char *str)
 {
-   unsigned i;
    char message[2048];
-   gfx_display_t *p_disp               = (gfx_display_t*)disp_userdata;
-   const char *text                    = str;
-   unsigned text_color                 = 0xffffffff;
+   gfx_display_t *p_disp          = (gfx_display_t*)disp_userdata;
+   const char *text               = str;
+   unsigned text_color            = 0xffffffff;
    static float ozone_osk_backdrop[16] = {
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
    };
+   char *tok, *save;
+   unsigned i                     = 0;
    static retro_time_t last_time  = 0;
-   struct string_list list        = {0};
+   unsigned list_size             = 0;
    float scale_factor             = ozone->last_scale_factor;
    unsigned margin                = 75 * scale_factor;
    unsigned padding               = 10 * scale_factor;
@@ -6792,12 +6798,12 @@ static void ozone_draw_osk(
          ozone->fonts.entries_label.wideglyph_width,
          0);
 
-   string_list_initialize(&list);
-   string_split_noalloc(&list, message, "\n");
+   tok       = strtok_r(message, "\n", &save);
+   list_size = string_count_occurrences_single_character(message, '\n');
 
-   for (i = 0; i < list.size; i++)
+   while (tok)
    {
-      const char *msg = list.elems[i].data;
+      const char *msg = tok;
 
       gfx_display_draw_text(
             ozone->fonts.entries_label.font,
@@ -6814,7 +6820,7 @@ static void ozone_draw_osk(
             false);
 
       /* Cursor */
-      if (i == list.size - 1)
+      if (i == list_size - 1)
       {
          if (ozone->flags & OZONE_FLAG_OSK_CURSOR)
          {
@@ -6845,6 +6851,9 @@ static void ozone_draw_osk(
       }
       else
          y_offset += 25 * scale_factor;
+
+      tok = strtok_r(NULL, "\n", &save);
+      i++;
    }
 
    /* Keyboard */
@@ -6863,8 +6872,6 @@ static void ozone_draw_osk(
             input_st->osk_ptr,
             ozone->theme->text_rgba);
    }
-
-   string_list_deinitialize(&list);
 }
 
 static void ozone_draw_messagebox(
@@ -10483,9 +10490,7 @@ static void ozone_draw_header(
    if (timedate_enable)
    {
       gfx_display_ctx_datetime_t datetime;
-      char timedate[255];
-
-      timedate[0]             = '\0';
+      char timedate[256];
 
       datetime.s              = timedate;
       datetime.time_mode      = settings->uints.menu_timedate_style;

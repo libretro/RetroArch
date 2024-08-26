@@ -1875,10 +1875,6 @@ MSG_HASH(
    "Vkládá mezi snímky černý rámeček (rámečky) pro lepší zřetelnost pohybu. Použijte pouze možnost určenou pro aktuální obnovovací frekvenci displeje. Nelze použít při obnovovací frekvenci, která není násobkem 60 Hz, jako je 144 Hz, 165 Hz atd. Nekombinujte s funkcemi Výměna intervalu > 1, dílčími snímky, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu. Ponechání zapnutého systémového VRR je v pořádku, jen ne toto nastavení. Pokud zaznamen[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Vypnuto"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - pro displeje s zobrazovací frekvenci 120Hz"
    )
@@ -1963,10 +1959,6 @@ MSG_HASH(
    "Vkládá mezi snímky další snímky shaderu pro případné efekty shaderu, které jsou navrženy tak, aby běžely rychleji než rychlost obsahu. Použijte pouze možnost určenou pro aktuální obnovovací frekvenci displeje. Není určeno pro použití při obnovovacích frekvencích, které nejsou násobkem 60 Hz, například 144 Hz, 165 Hz atd. Nekombinujte s funkcemi Interval výměny > 1, BFI, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu. Ponechání zapnutého [...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "Vypnuto"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
    "2 - pro displeje s zobrazovací frekvenci 120Hz"
    )
@@ -2033,14 +2025,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Simulace valivé skenovací linie"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "Simuluje základní klouzavý skenovací řádek ve více dílčích snímcích vertikálním rozdělením obrazovky a vykreslením každé části obrazovky podle počtu dílčích snímků"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "Simuluje základní klouzavý skenovací řádek ve více dílčích snímcích vertikálním rozdělením obrazovky a vykreslením každé části obrazovky podle toho, kolik dílčích snímků je od horního okraje obrazovky dolů"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2508,17 +2492,11 @@ MSG_HASH(
    "Vlastní poměr stran (poloha X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Vlastní posun zobrazení, který se používá k určení polohy zobrazení v ose X.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Vlastní poměr stran (poloha Y)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Vlastní posun zobrazení, který se používá k určení polohy osy Y zobrazení.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Vlastní poměr stran (na šířku)"
@@ -6334,8 +6312,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Zobrazit možnost \"Přidat k oblíbeným\"."
    )
-
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Zobrazit 'Nastavit sdružení jádra'"
@@ -7505,7 +7481,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Je-li tato funkce povolena, vyhledá náhledy podle názvu souboru, nikoli podle jeho popisku."
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Správa"
    )

@@ -6,18 +6,6 @@ MSG_HASH(
 #endif
 
 MSG_HASH(
-   MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
-   "playlist_add"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST,
-   "deferred_add_to_playlist_list"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
-   "add_entry_to_playlist"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME,
    "accounts_cheevos_username"
    )
@@ -1021,6 +1009,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,
    "deferred_dropdown_box_list_input_device_type"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE,
+   "deferred_dropdown_box_list_input_select_reserved_device"
+   )
 #ifdef ANDROID
 MSG_HASH(
         MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD,
@@ -1995,6 +1987,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DEVICE_INDEX,
    "input_device_p%u"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "input_device_reserved_device_p%u"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "input_device_reservation_type_p%u"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
@@ -3547,6 +3547,22 @@ MSG_HASH(
    "favorites_add_playlist"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+   "playlist_add"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST,
+   "deferred_add_to_playlist_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
+   "add_entry_to_playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
+   "playlist_create"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,
    "set_core_association"
    )
@@ -3691,6 +3707,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
    "cloud_sync_destructive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,
+   "cloud_sync_sync_saves"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "cloud_sync_sync_configs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "cloud_sync_sync_thumbs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "cloud_sync_sync_system"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
@@ -3942,6 +3974,10 @@ MSG_HASH(
    "system_info_entry"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ICON_THUMBNAILS,
+   "icon_thumbnails"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_TAKE_SCREENSHOT,
    "take_screenshot"
    )
@@ -4182,6 +4218,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
    "aspect_ratio_index"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "video_viewport_bias_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "video_viewport_bias_y"
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "video_viewport_bias_portrait_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "video_viewport_bias_portrait_y"
+   )
+#endif
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -5293,6 +5347,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "quick_menu_show_add_to_favorites"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "quick_menu_show_add_to_playlist"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,

@@ -175,6 +175,10 @@ MSG_HASH(
    "Suspends the screensaver. Is a hint that does not necessarily have to be honoured by the video driver."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Inserts black frame(s) in between frames for enhanced motion clarity. Only use option designated for your current display refresh rate. Not for use at refresh rates that are non-multiples of 60Hz such as 144Hz, 165Hz, etc. Do not combine with Swap Interval > 1, sub-frames, Frame Delay, or Sync to Exact Content Framerate. Leaving system VRR on is ok, just not that setting. If you notice -any- temporary image retention, you should disable at 120Hz, and for higher Hz adjust the dark frames setting [...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    "Adjusts the number of frames displayed in the BFI sequence that are black. More black frames increases motion clarity but reduces brightness. Not applicable at 120hz as there is only one total extra 60hz frame, so it must be black otherwise BFI would not be active at all."
    )
@@ -241,6 +245,10 @@ MSG_HASH(
 /* Settings > Video > Output */
 
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimise for Wii U GamePad (Restart required)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -318,6 +326,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    "Maintain 1:1 pixel aspect ratios when scaling content with the internal IPU. If it's disabled, images will then be stretched to fill the entire display."
    )
+#endif
+#if defined(RARCH_MOBILE)
 #endif
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -479,6 +489,10 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   "Polling Behaviour (Restart required)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Remap the Controls for This Core"
@@ -658,8 +672,16 @@ MSG_HASH(
    "Map specified analogue stick for D-Pad input.\nIf core has native analogue support, D-Pad mapping will be disabled unless a '(Forced)' option is selected.\nIf D-Pad mapping is forced, core will receive no analogue input from specified stick."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   "The physical controller as recognised by RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    "Specifies which core port will receive input from front-end controller port %u."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   "The physical mouse as recognised by RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
@@ -832,6 +854,18 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "Select input to send when two pointers are on screen. Trigger Delay should be non-zero to distinguish from other input."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Select input to send when three pointers are on screen. Trigger Delay should be non-zero to distinguish from other input."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Select input to send when four pointers are on screen. Trigger Delay should be non-zero to distinguish from other input."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
@@ -988,6 +1022,10 @@ MSG_HASH(
    "Show 'Favourites'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   "Show the 'Favourites' menu. (Restart required on Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Show 'Net-play'"
    )
@@ -1006,8 +1044,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Show the 'Add to Favourites' option."
    )
-
-
 
 /* Settings > User Interface > Views > Settings */
 
@@ -1217,7 +1253,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    "Select which type of runtime log record to display on playlist sub-labels.\nThe corresponding runtime log must be enabled with the 'Saving' options menu."
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
@@ -2120,6 +2156,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    "Password is incorrect."
+   )
+MSG_HASH(
+   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   "Searching has not been initialised/started."
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,

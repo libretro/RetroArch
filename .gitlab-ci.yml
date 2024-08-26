@@ -348,7 +348,7 @@ build-retroarch-linux-i686:
     - xcodebuild -exportArchive -archivePath ${XCARCHIVE_PATH}.xcarchive -exportPath . -exportOptionsPlist pkg/apple/OSX/ExportOptions.plist
     - ditto -c -k --sequesterRsrc --keepParent RetroArch.app ${XCPROJECT_NAME}.zip
     - mkdir .retroarch-repo
-    - "cp -r ./* .retroarch-repo"
+    - "cp -R ./* .retroarch-repo"
     - echo '#define GIT_VERSION ' $(git rev-parse --short HEAD) > .retroarch-repo/.git_version.h
     - "mv .retroarch-repo/ retroarch-repo/"
 
