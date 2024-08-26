@@ -47,6 +47,10 @@
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
 
+#ifdef HAVE_MFI
+#import <GameController/GCMouse.h>
+#endif
+
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 #import "JITSupport.h"
 id<ApplePlatform> apple_platform;
@@ -670,6 +674,23 @@ enum
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
+   [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidConnectNotification
+                                                     object:nil
+                                                      queue:[NSOperationQueue mainQueue]
+                                                 usingBlock:^(NSNotification *note)
+    {
+      GCMouse *mouse = note.object;
+      mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float delta_x, float delta_y)
+      {
+         cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+         if (!apple || !apple->mouse_grabbed)
+            return;
+         apple->mouse_rel_x       += (int16_t)delta_x;
+         apple->mouse_rel_y       -= (int16_t)delta_y;
+         apple->window_pos_x      += (int16_t)delta_x;
+         apple->window_pos_y      -= (int16_t)delta_y;
+      };
+   }];
 #endif
 }
 
