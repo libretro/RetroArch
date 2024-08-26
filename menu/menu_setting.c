@@ -9573,9 +9573,9 @@ static bool setting_append_list_input_player_options(
       snprintf(device_reserved_device[user],  sizeof(device_reserved_device[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME), user + 1);
       snprintf(mouse_index[user],              sizeof(mouse_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),                 user + 1);
       snprintf(sensor_index[user],              sizeof(sensor_index[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX),                user + 1);
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),                 user + 1);
       snprintf(bind_all[user],                 sizeof(bind_all[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),              user + 1);
       snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
