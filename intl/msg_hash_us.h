@@ -2781,15 +2781,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Frame Delay (ms)"
+   "Frame Delay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Reduces latency at the cost of a higher risk of video stuttering. Adds a delay in milliseconds after video presentation and before core frame."
+   "Reduces latency at the cost of a higher risk of video stuttering."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Sets how many milliseconds to delay after video presentation before running the core. Can reduce latency at the cost of higher risk of stuttering. Maximum is %d."
+   "Sets how many milliseconds to sleep before running the core after video presentation. Reduces latency at the cost of higher risk of stuttering.\nValues 20 and above are treated as frame time percentages."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2797,11 +2797,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Decrease effective 'Frame Delay' temporarily to prevent future frame drops. Starting point is half frame time when 'Frame Delay' is 0."
+   "Adjust effective 'Frame Delay' dynamically."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Temporarily decreases effective 'Frame Delay' until target refresh rate is stable. Measuring starts from half frame time when 'Frame Delay' is 0. E.g. 8 for NTSC and 10 for PAL."
+   "Attempt to hold desired 'Frame Delay' target and minimize frame drops. Starting point is 3/4 frame time when 'Frame Delay' is 0 (Auto)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,

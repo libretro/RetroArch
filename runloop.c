@@ -2664,6 +2664,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (video_display_server_has_resolution_list())
                video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
 
+            /* Recalibrate frame delay target when video reinits
+             * and pause frame delay when video does not reinit */
+            if (settings->bools.video_frame_delay_auto)
+            {
+               if (no_video_reinit && !video_switch_refresh_rate)
+                  video_st->frame_delay_pause  = true;
+               else
+                  video_st->frame_delay_target = 0;
+            }
+
             no_video_reinit                       = (
                      (crt_switch_resolution     == 0)
                   && (video_switch_refresh_rate == false)
@@ -2730,16 +2740,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                if (     video_st->poke
                      && video_st->poke->show_mouse)
                   video_st->poke->show_mouse(video_st->data, false);
-            }
-
-            /* Recalibrate frame delay target when video reinits
-             * and pause frame delay when video does not reinit */
-            if (settings->bools.video_frame_delay_auto)
-            {
-               if (no_video_reinit)
-                  video_st->frame_delay_pause  = true;
-               else
-                  video_st->frame_delay_target = 0;
             }
 
             return true;
@@ -4047,7 +4047,6 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
       runloop_set_frame_limit(&video_st->av_info,
             fastforward_ratio_current);
 }
-
 
 void runloop_event_deinit_core(void)
 {
@@ -7096,6 +7095,9 @@ int runloop_iterate(void)
       }
    }
 
+   /* Measure the time between core_run() and video_driver_frame() */
+   runloop_st->core_run_time = cpu_features_get_time_usec();
+
    {
 #ifdef HAVE_RUNAHEAD
       bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
@@ -7179,11 +7181,6 @@ int runloop_iterate(void)
       autosave_unlock();
 #endif
 
-   /* Frame delay */
-   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
-         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-      video_frame_delay(video_st, settings, core_paused);
-
 end:
    if (vrr_runloop_enable)
    {
@@ -7266,6 +7263,11 @@ end:
    if (      settings->bools.video_frame_rest
          && !(input_st->flags & INP_FLAG_NONBLOCKING))
       video_frame_rest(video_st, settings, current_time);
+
+   /* Frame delay */
+   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
+         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+      video_frame_delay(video_st, settings);
 
    /* Set paused state after x frames */
    if (runloop_st->run_frames_and_pause > 0)

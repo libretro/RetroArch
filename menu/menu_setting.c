@@ -6660,32 +6660,65 @@ static void setting_get_string_representation_video_frame_delay(rarch_setting_t 
       struct menu_state *menu_st     = menu_state_get_ptr();
       file_list_t *menu_stack        = MENU_LIST_GET(menu_st->entries.list, 0);
       const char *label              = NULL;
+      const char *target_unit        = (*setting->value.target.unsigned_integer >= 20 ? "\%" : "ms");
 
       if (menu_stack && menu_stack->size)
          label = menu_stack->list[menu_stack->size - 1].label;
 
       if (*setting->value.target.unsigned_integer == 0)
       {
-	      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
+         size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC), len);
          if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-            snprintf(s + _len, len - _len, " (%u %s)",
+            snprintf(s + _len, len - _len, " (%ums %s)",
                   video_st->frame_delay_effective,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
       }
       else
       {
          if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)))
-            snprintf(s, len, "%u",
-                  *setting->value.target.unsigned_integer);
+         {
+            if (*setting->value.target.unsigned_integer >= 20)
+               snprintf(s, len, "%u%s (%ums)",
+                     *setting->value.target.unsigned_integer,
+                     target_unit,
+                     (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
+            else
+               snprintf(s, len, "%u%s",
+                     *setting->value.target.unsigned_integer,
+                     target_unit);
+         }
          else
-            snprintf(s, len, "%u (%u %s)",
-                  *setting->value.target.unsigned_integer,
-                  video_st->frame_delay_effective,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+         {
+            if (*setting->value.target.unsigned_integer >= 20)
+               snprintf(s, len, "%u%s (%ums, %ums %s)",
+                     *setting->value.target.unsigned_integer,
+                     target_unit,
+                     (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (*setting->value.target.unsigned_integer / 100.0f)),
+                     video_st->frame_delay_effective,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+            else
+               snprintf(s, len, "%u%s (%ums %s)",
+                     *setting->value.target.unsigned_integer,
+                     target_unit,
+                     video_st->frame_delay_effective,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE));
+         }
       }
    }
    else
-      snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+   {
+      const char *target_unit        = (*setting->value.target.unsigned_integer >= 20 ? "\%" : "ms");
+
+      if (*setting->value.target.unsigned_integer >= 20)
+         snprintf(s, len, "%u%s (%ums)",
+               *setting->value.target.unsigned_integer,
+               target_unit,
+               (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
+      else
+         snprintf(s, len, "%u%s",
+               *setting->value.target.unsigned_integer,
+               target_unit);
+   }
 }
 
 static void setting_get_string_representation_uint_video_rotation(rarch_setting_t *setting,
@@ -8535,6 +8568,8 @@ static void general_write_handler(rarch_setting_t *setting)
                settings->uints.video_black_frame_insertion);
          break;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY:
+         /* Recalibrate frame delay */
+         video_state_get_ptr()->frame_delay_target = 0;
       case MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO:
       case MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL:
       case MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE:

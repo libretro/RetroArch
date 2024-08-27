@@ -3764,8 +3764,8 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_AUDIO_REINIT, NULL);
 #endif
 
-         /* Recalibrate frame delay target */
-         if (settings->bools.video_frame_delay_auto)
+         /* Recalibrate frame delay target if not pausing */
+         if (settings->bools.video_frame_delay_auto && !video_st->frame_delay_pause)
             video_st->frame_delay_target = 0;
 
          break;
