@@ -74,6 +74,8 @@ OTHER_CFLAGS = $(inherited) -DINLINE=inline
 OTHER_CFLAGS = $(inherited) -DRARCH_INTERNAL
 OTHER_CFLAGS = $(inherited) -DRC_DISABLE_LUA
 OTHER_CFLAGS = $(inherited) -DWANT_GLSLANG
+OTHER_CFLAGS = $(inherited) -DWANT_RAW_DATA_SECTOR=1
+OTHER_CFLAGS = $(inherited) -DWANT_SUBCODE=1
 OTHER_CFLAGS = $(inherited) -D_7ZIP_ST
 OTHER_CFLAGS = $(inherited) -D__LIBRETRO__
 
@@ -81,6 +83,7 @@ OTHER_CFLAGS[arch=x86_64] = $(inherited) -DHAVE_SSE
 OTHER_CFLAGS[arch=arm64*] = $(inherited) -D__ARM_NEON__ -DHAVE_NEON
 
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DFLAC__HAS_OGG=0
+OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DGL_SILENCE_DEPRECATION
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COMMAND
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREAUDIO3
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DISCORD
