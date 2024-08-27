@@ -578,6 +578,14 @@ void cocoa_file_load_with_detect_core(const char *filename);
 
 #ifdef HAVE_COCOATOUCH
 
+-(BOOL) prefersPointerLocked API_AVAILABLE(ios(14.0))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return NO;
+   return apple->mouse_grabbed;
+}
+
 #pragma mark - UIViewController Lifecycle
 
 -(void)loadView {

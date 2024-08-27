@@ -511,7 +511,7 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_x > 0)
+                  if (apple->window_pos_x > 0 || apple->mouse_grabbed)
                   {
                      val = apple->window_pos_x - apple->mouse_x_last;
                      apple->mouse_x_last = apple->window_pos_x;
@@ -537,7 +537,7 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_y > 0)
+                  if (apple->window_pos_y > 0 || apple->mouse_grabbed)
                   {
                      val = apple->window_pos_y - apple->mouse_y_last;
                      apple->mouse_y_last = apple->window_pos_y;
@@ -773,6 +773,8 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
    apple->mouse_grabbed = state;
+
+   [[CocoaView get] setNeedsUpdateOfPrefersPointerLocked];
 }
 #endif
 
