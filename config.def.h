@@ -396,7 +396,7 @@
  * Can reduce latency at cost of higher risk of stuttering.
  */
 #define DEFAULT_FRAME_DELAY 0
-#define MAXIMUM_FRAME_DELAY 19
+#define MAXIMUM_FRAME_DELAY 99
 #define DEFAULT_FRAME_DELAY_AUTO false
 
 /* Try to sleep the spare time after frame is presented in order to reduce vsync CPU usage. */

@@ -168,6 +168,7 @@ struct runloop
 #endif
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
+   retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;                /* int64_t alignment */
