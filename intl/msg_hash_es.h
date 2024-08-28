@@ -2725,15 +2725,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Retraso de fotogramas (ms)"
+   "Retraso de fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Reduce la latencia a costa de aumentar la probabilidad de que haya tirones en la imagen. Añade un retraso en milisegundos después de la presentación de vídeo y antes del fotograma generado por el núcleo."
+   "Reduce la latencia a cambio de aumentar la probabilidad de que se produzcan tirones de vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Establece la cantidad de retraso en milisegundos posteriores a la presentación de vídeo previos a la ejecución del núcleo. Puede reducir la latencia a costa de aumentar la probabilidad de sufrir tirones de imagen. El valor máximo es %d."
+   "Establece el tiempo de espera en milisegundos entre la ejecución del núcleo y la presentación de la imagen. Puede reducir la latencia a costa de aumentar la probabilidad de sufrir tirones de imagen.\nUn valor igual o superior a 20 se considerará como un porcentaje de la duración de fotogramas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2741,11 +2741,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Disminuye temporalmente el retraso de fotogramas real para evitar saltos de fotogramas en el futuro. Si el valor «Retraso de fotogramas» es 0, se empezará a calcular a partir de la duración de medio fotograma."
+   "Ajusta el retraso de fotogramas real de forma dinámica."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Reduce temporalmente el retraso de fotogramas real hasta que se estabilice la frecuencia de actualización deseada. Si la opción Retraso de fotogramas está configurada en 0, se empezará a medir a partir de la duración de medio fotograma, por ejemplo: 8 para imágenes NTSC y 10 para imágenes PAL."
+   "Intenta mantener el retraso de fotogramas objetivo y minimizar los fotogramas perdidos. Si el retraso de fotogramas está establecido en 0 (automático), el punto de partida será de 3/4 partes de la duración de fotogramas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,

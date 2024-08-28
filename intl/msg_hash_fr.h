@@ -2701,27 +2701,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Retard d'images (ms)"
+   "Retarder les images "
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Réduit la latence au prix d'un risque plus élevé de saccades vidéo. Ajoute un délai en millisecondes après présentation vidéo et avant l'image du coeur."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Définit le nombre de millisecondes de délai à ajouter après présentation vidéo avant d'exécuter le cœur. Peut réduire la latence au prix d'un risque de saccades plus élevé. Le maximum est de %d."
+   "Réduit la latence au prix d'un risque plus élevé de saccades visuelles."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Retard d'images automatique"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Diminuer temporairement le 'Retard d'images' pour éviter les futures sautes d'images. Le point de départ est la demi-cadence d'images quand le 'Retard d'images' est 0."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Diminue temporairement le 'retard d'images' jusqu'à ce que la fréquence de rafraîchissement cible soit stable. La mesure commence à partir de mi-temps d'image quand 'Retard d'images (ms)' est à 0 (8 pour NTSC et 10 pour PAL par exemple)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,

@@ -2020,18 +2020,6 @@ MSG_HASH(
    "خودکار"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "تاخیر فریم (میلی ثانیه)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "کاهش تاخیر به قیمت افزایش خطر خراب شدن ویدئو. این کار، تاخیری بر حسب میلی‌ثانیه به انتهای نمایش ویدئو و پیش از فریم هسته اضافه می‌کند."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "تنظیم می‌کند که چند میلی‌ثانیه تاخیر به انتهای نمایش ویدئو و پیش از هستهٔ در حال اجرا اضافه شود. می‌تواند تاخیر را به قیمت افزایش خطر خراب شدن تصویر کاهش دهد. مقدار بیشینه، %d است."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "تأخیر خودکار فریم"
    )
