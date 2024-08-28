@@ -1940,10 +1940,6 @@ MSG_HASH(
    "Adaptívny VSync"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Trvanie snímky (ms)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatické trvanie snímky"
    )

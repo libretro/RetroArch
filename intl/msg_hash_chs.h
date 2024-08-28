@@ -2664,28 +2664,8 @@ MSG_HASH(
    "垂直同步默认启用，除非性能降到低于目标刷新率。当性能低于实时水平，这可以最大限度地减少卡顿，并且更加节能。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "帧延迟 (毫秒)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "减少延迟的代价是视频停顿的风险更高。在视频演示之后和核心帧之前增加一个以毫秒为单位的延迟。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "设置在视频呈现后延迟多少毫秒再运行核心。可以减少延迟，但代价是更高的卡顿风险。最大为%d。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "自动帧延迟"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "暂时降低有效的“帧延迟”以防止将来的帧丢失。起始点是当“帧延迟”为0时的半帧时间。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "暂时减少有效的 \"帧延迟\"，直到目标刷新率稳定。当 \"帧延迟 \"为0时，从一半的帧时间开始测量，例如NTSC为8，PAL为10。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,

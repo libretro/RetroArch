@@ -1904,10 +1904,6 @@ MSG_HASH(
    "Retardament automàtic de fotogrames"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Aminora temporalment el retardament de fotogrames real per evitar futures filtracions. Si el valor de \"Retardament de fotogrames\" és a 0, es comença a calcular a partir de mig fotograma de duració."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "Selecció automàtica"
    )

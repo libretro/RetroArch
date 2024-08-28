@@ -2568,10 +2568,6 @@ MSG_HASH(
    "Адаптыўны VSync"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Затрымка кадра (мс)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Аўтаматычная затрымка кадраў"
    )

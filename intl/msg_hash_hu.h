@@ -2696,28 +2696,8 @@ MSG_HASH(
    "A VSync aktív, amíg a teljesítmény a megcélzott képfrissítés alá nem esik. Minimalizálja a döcögősséget, amikor a teljesítmény nem éri el a valós időt, és energiát takaríthat meg."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Képvárakoztatás (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "A késleltetés csökkentése a kép döcögősségének nagyobb kockázata mellett. Ezredmásodpercben mért várakozást iktat be a képmegjelenítés után, a mag új képkockája előtt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Ezredmásodpercben mért késleltetés a képmegjelenítés után, mielőtt a mag továbbfut. Csökkentheti a késleltetést, döcögősebb megjelenítés kockázata mellett. A legnagyobb lehetséges érték %d."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatikus képvárakoztatás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Időlegesen csökkenti a \"Képvárakoztatás\" mértékét, hogy elkerülje a képkockák eldobását. 0-s \"Képvárakoztatás\" esetén a kezdőérték a kép előállítási idejének a fele."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "A tényleges képkocka késleltetést ideiglenesen csökkenti, amíg a megcélzott frissítési ütem stabil nem lesz. 0-s képvárakoztatás esetén a képkocka idejének feléről indul, pl. 8 NTSC és 10 PAL esetben."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,

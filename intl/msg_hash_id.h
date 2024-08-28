@@ -1508,7 +1508,7 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "Penundaan Shader Otomatis"
+   "Tundaan Shader Otomatis"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
@@ -1917,15 +1917,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Tundaan Bingkai (ms)"
+   "Tundaan Bingkai"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   "Frame Delay Otomatis"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Turunkan sementara 'Frame Delay' untuk mencegah frame tersendat. Dimulai dari setengah frame jika 'Frame Delay' adalah 0."
+   "Tundaan Bingkai Otomatis"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -1941,11 +1937,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "Bingkai Sinkronisasi Hard GPU"
+   "Bingkai Sinkron GPU Keras"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Atur berapa laju bingkai yang dapat dijalankan CPU lebih dari GPU saat 'Sinkron Hard GPU' aktif."
+   "Atur berapa laju bingkai yang dijalankan CPU lebih dari GPU saat 'Sinkron GPU Keras' aktif."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
@@ -2066,11 +2062,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Panjang Penyangga Bersama WASAPI"
+   "Panjang Dapar Bersama WASAPI"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Panjang penyangga data menengah (berjumlah bingkai) saat menggunakan pengandar WASAPI di 'mode bersama'."
+   "Panjang dapar data menengah (sejumlah bingkai) saat menggunakan WASAPI di 'mode bersama'."
    )
 
 /* Settings > Audio > Output */
@@ -2124,11 +2120,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "Panjang Penyangga Bersama WASAPI"
+   "Panjang Dapar Bersama WASAPI"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "Panjang penyangga data menengah (berjumlah bingkai) saat menggunakan pengandar WASAPI di 'mode bersama'."
+   "Panjang dapar data menengah (sejumlah bingkai) saat menggunakan WASAPI di 'mode bersama'."
    )
 #endif
 
@@ -2371,39 +2367,39 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-   "Lamanya Bertubi"
+   "Lama Turbo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Lamanya (jumlah bingkai) saat tombol berkemampuan bertubi ditekan."
+   "Lamanya (sejumlah bingkai) saat tombol berturbo ditekan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Daur Kerja Bertubi"
+   "Daur Kerja Turbo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Jumlah bingkai dari Lamanya Bertubi yang tombolnya ditekan. Jika bilangan ini sama atau lebih besar dari yang di Lamanya Bertubi, tombol akan ditekan terus."
+   "Jumlah bingkai dari Lama Turbo yang tombolnya ditekan. Jika bilangan ini sama atau lebih besar dari yang di Lama Turbo, tombol akan ditekan terus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   "Mode Bertubi"
+   "Mode Turbo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "Pilih tindakan utama tombol mode bertubi."
+   "Pilih tindakan utama tombol mode turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Tombol Bawaan Bertubi"
+   "Tombol Bawaan Turbo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Tombol aktif bawaan untuk 'Satu Tombol' Mode Bertubi."
+   "Tombol aktif bawaan untuk Mode Turbo 'Satu Tombol'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "Tekan Bertubi"
+   "Tekan Turbo"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -2492,7 +2488,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "Tombol Kombinasi Mengaktifkan 'Delay' (Frame)"
+   "Tundaan Hotkey Aktif (Bingkai)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
@@ -2614,7 +2610,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SEND_DEBUG_INFO,
-   "Kirim Info Debug"
+   "Kirim Info Awakutu"
    )
 
 /* Settings > Input > Port # Controls */
@@ -2642,10 +2638,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
    "Tombol Mulai"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Bertubi"
    )
 
 /* Settings > Latency */
@@ -2700,6 +2692,10 @@ MSG_HASH(
 
 /* Settings > Logging */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+   "0 (Awakutu)"
+   )
 
 /* Settings > File Browser */
 
@@ -2731,11 +2727,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   "Ukuran Penyangga Gerak Mundur (MB)"
+   "Ukuran Dapar Gerak Mundur (MB)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "Banyaknya memori (bentuk MB) untuk meluangkan penyangga gerak mundur. Meningkatkan jumlahnya akan menambah riwayat gerak mundur."
+   "Banyaknya memori (ukuran MB) untuk meluangkan dapar gerak mundur. Menambah jumlah ini akan menambah riwayat gerak mundur."
    )
 
 /* Settings > Frame Throttle > Frame Time Counter */
@@ -4001,7 +3997,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_SEND_DEBUG_INFO,
-   "Kirim Info Debug"
+   "Kirim Info Awakutu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
@@ -4065,12 +4061,28 @@ MSG_HASH(
 /* Notifications */
 
 MSG_HASH(
+   MSG_FAILED_TO_SAVE_DEBUG_INFO,
+   "Gagal menyimpan info awakutu."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_DEBUG_INFO,
+   "Gagal mengirim info awakutu ke server."
+   )
+MSG_HASH(
+   MSG_SENDING_DEBUG_INFO,
+   "Mengirim info awakutu..."
+   )
+MSG_HASH(
+   MSG_SENT_DEBUG_INFO,
+   "Info awakutu berhasil dikirim. Nomor ID Anda %u."
+   )
+MSG_HASH(
    MSG_NATIVE,
    "Lokal"
    )
 MSG_HASH(
    MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-   "Berkasnya sudah ada. Menyimpan ke penyangga cadangan"
+   "Berkas sudah ada. Menyimpan ke dapar cadangan"
    )
 MSG_HASH(
    MSG_SETTING_DISK_IN_TRAY,
@@ -4179,7 +4191,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_REWIND_REACHED_END,
-   "Sudah di ujung penyangga gerak mundur."
+   "Sudah di ujung dapar gerak mundur."
    )
 MSG_HASH(
    MSG_SLOW_MOTION_REWIND,

@@ -2592,28 +2592,8 @@ MSG_HASH(
    "Funkce VSync je povolena, dokud výkon neklesne pod cílovou obnovovací frekvenci. Může minimalizovat zadrhávání při poklesu výkonu pod reálný čas a být energeticky úspornější."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Zpoždění snímku (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Snižuje latenci za cenu vyššího rizika zadrhávání videa. Přidává zpoždění v milisekundách po prezentaci videa a před hlavní snímek."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Nastavuje, kolik milisekund se má odložit prezentace videa před spuštěním jádra. Může snížit latenci za cenu vyššího rizika zadrhávání. Maximum je %d."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatické zpoždění snímků"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Dočasně snižte efektivní 'Zpoždění snímků', abyste zabránili budoucím výpadkům snímků. Výchozím bodem je polovina času snímku, když je hodnota 'Zpoždění snímků' 0."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Dočasně sníží efektivní 'Zpoždění snímků', dokud není cílová obnovovací frekvence stabilní. Měření začíná od poloviny doby snímku, když je 'Zpoždění snímků' 0. Např. 8 pro NTSC a 10 pro PAL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
