@@ -14920,14 +14920,6 @@ MSG_HASH(
    "A Linux GameMode engedélyezése segíthet a késleltetésen, megjavíthatja a hang recsegését és az általános teljesítményt maximalizálhatja, a CPU és a GPU konfigurálásával a legjobb teljesítményhez.\nA GameMode programot ehhez telepíteni kell. A GameMode telepítési információi: https://github.com/FeralInteractive/gamemode."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Képkocka pihentetés"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "A függőleges szinkron CPU használatának csökkentése, a képmegjelenítés után alvó módba állítás, ameddig csak lehetséges. Elsősorban külső scanline szinkronizáló programokhoz."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 mód használata"
    )

@@ -15156,14 +15156,6 @@ MSG_HASH(
    "Linux GameMode を有効にすることで、レイテンシを改善し、音割れの問題を修正し、最高のパフォーマンスを得るために CPU と GPU を自動的に設定することで全体的なパフォーマンスを最大化できます。\nGame Mode ソフトウェアをインストールする必要があります。GameMode のインストール方法については、https://github.com/FeralInteractive/gamemode を参照してください。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "フレームレスト"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "フレーム提示のあと、できるだけスリープさせることで垂直同期の CPU 使用率の軽減を試みます。主にサードパーティのスキャンライン同期用に設計されています。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60モードを使用"
    )

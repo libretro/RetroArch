@@ -14648,14 +14648,6 @@ MSG_HASH(
    "Zapnutím režimu Linux GameMode lze zlepšit latenci, odstranit problémy s praskáním zvuku a maximalizovat celkový výkon automatickou konfigurací CPU a GPU pro nejlepší výkon.\nPro fungování tohoto režimu je třeba nainstalovat software Herní mód. Informace o instalaci Herní mód naleznete na adrese https://github.com/FeralInteractive/gamemode."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Snímkový odpočinek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Pokuste se snížit využití procesoru vsync tím, že po prezentaci snímku co nejvíce uspíte. Určeno především pro synchronizaci skenovací linie třetích stran."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Použít režim PAL60r"
    )

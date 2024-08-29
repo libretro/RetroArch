@@ -15164,14 +15164,6 @@ MSG_HASH(
    "启用 Linux 游戏模式可以通过自动配置 CPU 和 GPU 的最佳性能来提高延迟性，修复音频破解问题，并最大限度地提高整体性能。\n需要安装游戏模式软件才能正常工作。请参阅https://github.com/FeralInteractive/gamemode获取如何安装 GameMode的信息。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "图像休眠"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "尽量在图像显示后通过休眠来减少垂直同步 CPU使用率。主要为第三方扫描同步设计。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "使用 PAL60 模式"
    )

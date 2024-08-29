@@ -68,7 +68,6 @@
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
 #define FRAME_DELAY_AUTO_DEBUG 0
-#define FRAME_REST_DEBUG 0
 
 typedef struct
 {
@@ -2708,7 +2707,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_paused           = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
    video_info->runloop_is_slowmotion       = (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
    video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
-   video_info->frame_rest                  = settings->bools.video_frame_rest;
 
 #ifdef _WIN32
 #ifdef HAVE_VULKAN
@@ -3840,7 +3838,6 @@ void video_driver_frame(const void *data, unsigned width,
       audio_statistics_t audio_stats;
       char tmp[256];
       char latency_stats[256];
-      char throttle_stats[128];
       size_t len;
       double stddev                          = 0.0;
       float font_size_scale                  = (float)video_info.font_size / 100;
@@ -3886,25 +3883,7 @@ void video_driver_frame(const void *data, unsigned width,
 
       audio_compute_buffer_statistics(&audio_stats);
 
-      throttle_stats[0] = '\0';
       latency_stats[0]  = '\0';
-      tmp[0]            = '\0';
-      len               = 0;
-
-      if (video_info.frame_rest)
-         len = snprintf(tmp + len, sizeof(throttle_stats),
-               " Frame Rest:  %2u.00 ms\n"
-               " - Rested:    %5.2f %%\n",
-               video_st->frame_rest,
-               (float)video_st->frame_rest_time_count / runloop_st->core_runtime_usec * 100);
-
-      if (len)
-      {
-         /* TODO/FIXME - localize */
-         size_t _len = strlcpy(throttle_stats, "THROTTLE\n", sizeof(throttle_stats));
-         strlcpy(throttle_stats + _len, tmp, sizeof(throttle_stats) - _len);
-      }
-
       tmp[0]            = '\0';
       len               = 0;
 
@@ -3968,7 +3947,6 @@ void video_driver_frame(const void *data, unsigned width,
             " Underrun:    %5.2f %%\n"
             " Blocking:    %5.2f %%\n"
             " Samples:  %8d\n"
-            "%s"
             "%s",
             av_info->geometry.base_width,
             av_info->geometry.base_height,
@@ -3992,7 +3970,6 @@ void video_driver_frame(const void *data, unsigned width,
             audio_stats.close_to_underrun,
             audio_stats.close_to_blocking,
             audio_stats.samples,
-            throttle_stats,
             latency_stats);
 
       /* TODO/FIXME - add OSD chat text here */
@@ -4564,150 +4541,4 @@ void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_delay_au
             video_st->frame_time_samples[frame_time_index - 1]
       );
 #endif
-}
-
-void video_frame_rest(video_driver_state_t *video_st,
-      settings_t *settings,
-      retro_time_t current_time)
-{
-   runloop_state_t *runloop_st         = runloop_state_get_ptr();
-   audio_statistics_t audio_stats      = {0};
-   double video_stddev                 = 0;
-   static retro_time_t after_present   = 0;
-   retro_time_t latest_time            = cpu_features_get_time_usec();
-   retro_time_t frame_time_delta       = latest_time - current_time;
-   uint16_t     frame_time_target      = 1000000.0f / settings->floats.video_refresh_rate;
-   uint16_t     frame_time             = 0;
-   static int8_t frame_time_over_count = 0;
-   static int8_t frame_time_near_count = 0;
-   static int8_t frame_time_try_count  = 0;
-   uint8_t frame_time_near_req_count   = ceil(settings->floats.video_refresh_rate / 2);
-   uint8_t sleep_max                   = frame_time_target / 1000 / 2;
-   uint8_t sleep                       = 0;
-#ifdef HAVE_MENU
-   bool menu_is_alive                  = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
-   bool menu_is_pausing                = settings->bools.menu_pause_libretro && menu_is_alive;
-#else
-   bool menu_is_alive                  = false;
-   bool menu_is_pausing                = false;
-#endif
-
-   /* Don't care about deviations when core is not running */
-   if (     !menu_is_alive
-         && !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-         &&  (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
-   {
-      /* Must require video and audio deviation standards */
-      video_monitor_fps_statistics(NULL, &video_stddev, NULL);
-      audio_compute_buffer_statistics(&audio_stats);
-   }
-
-   /* Compare to previous timestamp */
-   frame_time                        = latest_time - after_present;
-
-   /* Count running timers */
-   if (frame_time > frame_time_target)
-      frame_time_over_count++;
-   else if (frame_time < frame_time_target)
-      frame_time_over_count--;
-
-   if (abs(frame_time - frame_time_target) < frame_time_target * 0.002f)
-      frame_time_near_count++;
-   else
-      frame_time_near_count--;
-
-   /* Take new timestamp */
-   after_present                     = latest_time;
-
-   /* Ignore unreasonable frame times */
-   if (     frame_time < frame_time_target / 2
-         || frame_time > frame_time_target * 2)
-      return;
-
-   /* Carry the extra */
-   frame_time_delta                 -= frame_time_target - frame_time;
-   sleep                             = (frame_time_delta > 0) ? frame_time_delta : 0;
-
-   /* No rest with bogus values */
-   if (     sleep < 0
-         || (  frame_time_target < frame_time_delta
-            && frame_time_target < frame_time))
-      sleep                          = 0;
-
-   /* Reset over the target counter */
-   if (!sleep)
-      frame_time_over_count          = 0;
-
-   frame_time_try_count++;
-   if (     frame_time_try_count > frame_time_near_req_count * 2
-         || frame_time_try_count < frame_time_near_count)
-      frame_time_over_count          = frame_time_near_count = frame_time_try_count = 0;
-
-   /* Increase */
-   if (     sleep
-         && (frame_time_over_count < 2)
-         && (video_stddev * 100.0f < 20.00f)
-         && (audio_stats.std_deviation_percentage < 25.00f)
-         && (frame_time_near_count > frame_time_try_count / 2)
-         && (frame_time_near_count > frame_time_near_req_count)
-      )
-   {
-#if FRAME_REST_DEBUG
-      RARCH_DBG("+ frame=%5d delta=%5d sleep=%2d over=%3d near=%3d try=%3d\n", frame_time, frame_time_delta, video_st->frame_rest, frame_time_over_count, frame_time_near_count, frame_time_try_count);
-#endif
-      video_st->frame_rest++;
-      frame_time_over_count          = frame_time_near_count = frame_time_try_count = 0;
-   }
-   /* Decrease */
-   else if (sleep
-         && (frame_time_over_count != 0)
-         && (frame_time_try_count > 10)
-         && (  (frame_time_near_count < -2 && -frame_time_near_count >= frame_time_try_count)
-            || (frame_time_over_count > frame_time_near_req_count / 2)
-            || (frame_time_over_count < -(frame_time_near_req_count / 2))
-            )
-      )
-   {
-#if FRAME_REST_DEBUG
-      RARCH_DBG("- frame=%5d delta=%5d sleep=%2d over=%3d near=%3d try=%3d\n", frame_time, frame_time_delta, video_st->frame_rest, frame_time_over_count, frame_time_near_count, frame_time_try_count);
-#endif
-      if (video_st->frame_rest)
-         video_st->frame_rest--;
-      frame_time_over_count          = frame_time_near_count = frame_time_try_count = 0;
-   }
-
-   /* Limit to maximum sleep */
-   if (video_st->frame_rest > sleep_max)
-      video_st->frame_rest           = sleep_max;
-
-   /* Subtract effective frame delay */
-   if (video_st->frame_delay_effective >= 0 && video_st->frame_rest > 0)
-   {
-      int new_rest = video_st->frame_rest;
-
-      if (new_rest + video_st->frame_delay_effective > sleep_max)
-         new_rest = sleep_max - video_st->frame_delay_effective;
-      if (new_rest < 0)
-         new_rest = 0;
-
-      /* Only allow recover from dropped frame delay if in menu */
-      if (     video_st->frame_delay_effective < video_st->frame_delay_target
-            && video_st->frame_delay_effective < video_st->frame_rest
-            && !menu_is_alive)
-         new_rest = video_st->frame_delay_effective;
-
-      video_st->frame_rest = new_rest;
-   }
-
-#if FRAME_REST_DEBUG
-   RARCH_DBG("  frame=%5d delta=%5d sleep=%2d over=%3d near=%3d try=%3d %f %f\n", frame_time, frame_time_delta, video_st->frame_rest, frame_time_over_count, frame_time_near_count, frame_time_try_count, video_stddev, audio_stats.std_deviation_percentage);
-#endif
-
-   /* Do what is promised and add to statistics */
-   if (video_st->frame_rest > 0)
-   {
-      if (!menu_is_pausing)
-         video_st->frame_rest_time_count += video_st->frame_rest * 1000;
-      retro_sleep(video_st->frame_rest);
-   }
 }

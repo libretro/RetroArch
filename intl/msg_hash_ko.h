@@ -15320,14 +15320,6 @@ MSG_HASH(
    "Linux에서 GameMode를 활성화하면 자동으로 CPU와 GPU를 최고 성능 모드로 변경하여 지연 시간이 줄어들고, 오디오 깨짐이 고쳐지고, 전체적인 성능이 최대화되는 등의 효과를 볼 수 있습니다.\n사용하려면 GameMode 소프트웨어가 설치되어 있어야 합니다. GameMode를 설치하는 방법은 https://github.com/FeralInteractive/gamemode 에서 확인하실 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "프레임 휴식"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "프레임 표시 후에 가능한 만큼 최대한 슬립하여 수직 동기 시 CPU 사용량을 줄입니다. 서드 파티 스캔라인 동기화를 위한 기능입니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 모드 사용"
    )

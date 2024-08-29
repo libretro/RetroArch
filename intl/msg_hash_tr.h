@@ -15292,14 +15292,6 @@ MSG_HASH(
    "Linux GameMode etkinleştirilmesi, en iyi performans için CPU ve GPU'nuzu otomatik olarak yapılandırarak gecikmeyi iyileştirebilir, ses cızırtı sorunlarını düzeltebilir ve genel performansı en üst düzeye çıkarabilir.\nBunun çalışması için GameMode yazılımının yüklenmesi gerekir. GameMode nasıl kurulacağı hakkında bilgi için https://github.com/FeralInteractive/gamemode adresine bakın."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Kare Desteği"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Kare sunumundan sonra mümkün olduğunca uyuyarak vsync CPU kullanımını azaltmaya çalışın. Öncelikle üçüncü taraf tarama hattı eşitlenmesi için tasarlandı."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "PAL60 Kipi Kullan"
    )
