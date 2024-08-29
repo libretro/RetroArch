@@ -8944,10 +8944,6 @@ MSG_HASH(
    "Злучыцца з сеткай"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Спакой кадраў"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Перазапуск RetroArch"
    )

@@ -4102,10 +4102,6 @@ void runloop_event_deinit_core(void)
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   /* Reset frame rest counter */
-   if (settings->bools.video_frame_rest)
-      video_st->frame_rest_time_count = video_st->frame_rest = 0;
-
    driver_uninit(DRIVERS_CMD_ALL, 0);
 
 #ifdef HAVE_CONFIGFILE
@@ -7258,11 +7254,6 @@ end:
 
       runloop_st->frame_limit_last_time = end_frame_time;
    }
-
-   /* Post-frame power saving sleep resting */
-   if (      settings->bools.video_frame_rest
-         && !(input_st->flags & INP_FLAG_NONBLOCKING))
-      video_frame_rest(video_st, settings, current_time);
 
    /* Frame delay */
    if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
