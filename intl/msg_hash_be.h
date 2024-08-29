@@ -4420,8 +4420,36 @@ MSG_HASH(
    "Экранныя апавяшчэнні"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+   "Адлюстраванне частаты кадраў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_SHOW,
+   "Адлюстроўваць бягучаю колькасць кадраў за секунду."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+   "Інтэрвал абнаўлення паказу частаты кадраў (у кадрах)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+   "Адлюстраванне частаты кадраў будзе абнаўляцца з зададзеным інтэрвалам у кадрах."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+   "Адлюстраванне колькасці кадраў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+   "Адлюстроўваць на экране бягучую колькасць кадраў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-   "Адлюстроўваць статыстыку"
+   "Адлюстраванне статыстыкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+   "Адлюстроўваць на экране тэхнічную статыстыку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
