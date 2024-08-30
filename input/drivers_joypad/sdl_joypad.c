@@ -107,7 +107,7 @@ static void sdl_pad_connect(unsigned id)
 
    for (int i = 0; i < MAX_USERS; i++) {
        if (sdl_pads[i].joypad == NULL) {
-           RARCH_WARN("[SDL_JOYPAD]: using port: %d\n", i);
+           RARCH_LOG("[SDL_JOYPAD]: using port: %d\n", i);
            port_num = i;
            break;
        }
@@ -124,7 +124,7 @@ static void sdl_pad_connect(unsigned id)
 
    if (SDL_IsGameController(id))
    {
-      RARCH_WARN("[SDL_JOYSTICK]: opening #%d as GameController\n", id);
+      RARCH_LOG("[SDL_JOYPAD]: opening #%d as GameController\n", id);
       pad->controller = SDL_GameControllerOpen(id);
       pad->joypad     = SDL_GameControllerGetJoystick(pad->controller);
 
@@ -133,14 +133,14 @@ static void sdl_pad_connect(unsigned id)
    else
 #endif
    {
-      RARCH_WARN("[SDL_JOYSTICK]: opening #%d as Joystick\n", id);
+      RARCH_LOG("[SDL_JOYPAD]: opening #%d as Joystick\n", id);
       pad->joypad = SDL_JoystickOpen(id);
       success = pad->joypad != NULL;
    }
 
    if (!success)
    {
-      RARCH_ERR("[SDL]: Couldn't open joystick #%u: %s.\n", id, SDL_GetError());
+      RARCH_WARN("[SDL_JOYPAD]: Couldn't open joystick #%u: %s.\n", id, SDL_GetError());
 
       if (pad->joypad)
          SDL_JoystickClose(pad->joypad);
@@ -162,7 +162,7 @@ static void sdl_pad_connect(unsigned id)
    product    = guid_ptr[1];
 #endif
 #ifdef WEBOS
-   RARCH_WARN("[SDL_JOYPAD] #%d: vendor: %04x; product: %04x\n", id, vendor, product);
+   RARCH_LOG("[SDL_JOYPAD] #%d: vendor: %04x; product: %04x\n", id, vendor, product);
    if (vendor == 0x9999 && product == 0x9999)
    {
       RARCH_WARN("[SDL_JOYPAD]: Ignoring pad #%d (vendor: %04x; product: %04x)\n", id, vendor, product);
@@ -178,7 +178,7 @@ static void sdl_pad_connect(unsigned id)
 
    pad->sdl_id = id;
 
-   RARCH_WARN("[SDL_JOYPAD]: registering %d as port %d\n", id, port_num);
+   RARCH_LOG("[SDL_JOYPAD]: registering %d as port %d\n", id, port_num);
 
    input_autoconfigure_connect(
          sdl_joypad_name(port_num),
@@ -224,7 +224,7 @@ static void sdl_pad_connect(unsigned id)
       pad->haptic = SDL_HapticOpenFromJoystick(pad->joypad);
 
       if (!pad->haptic)
-         RARCH_WARN("[SDL]: Couldn't open haptic device of the joypad #%u: %s\n",
+         RARCH_WARN("[SDL_JOYPAD]: Couldn't open haptic device of the joypad #%u: %s\n",
                id, SDL_GetError());
    }
 
@@ -241,13 +241,13 @@ static void sdl_pad_connect(unsigned id)
       if (SDL_HapticEffectSupported(pad->haptic, &efx) == SDL_FALSE)
       {
          pad->rumble_effect = -2;
-         RARCH_WARN("[SDL]: Device #%u does not support leftright haptic effect.\n", id);
+         RARCH_WARN("[SDL_JOYPAD]: Device #%u does not support leftright haptic effect.\n", id);
       }
    }
 #if SDL_VERSION_ATLEAST(2, 0, 9)
    if (!pad->haptic || pad->rumble_effect == -2) {
       pad->rumble_effect = -3;
-      RARCH_LOG("[SDL]: Falling back to joystick rumble\n");
+      RARCH_LOG("[SDL_JOYPAD]: Falling back to joystick rumble\n");
    }
 #endif
 #else
@@ -317,14 +317,14 @@ static void *sdl_joypad_init(void *data)
    if ((sdl_subsystem_flags & SDL_INIT_HAPTIC) == 0)
    {
       if (SDL_InitSubSystem(SDL_INIT_HAPTIC) < 0)
-         RARCH_WARN("[SDL]: Failed to initialize haptic device support: %s\n",
+         RARCH_WARN("[SDL_JOYPAD]: Failed to initialize haptic device support: %s\n",
                SDL_GetError());
       else
          g_has_haptic = true;
    }
    else
       g_has_haptic = true;
-      
+
 #if SDL_VERSION_ATLEAST(2, 0, 9)
    /* enable extended hid reports to support ps4/ps5 rumble over bluetooth */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
@@ -417,7 +417,7 @@ static int16_t sdl_joypad_axis_state(
       if (val < 0)
       {
          /* Clamp - -0x8000 can cause trouble if we later abs() it. */
-         if (val < -0x7fff) 
+         if (val < -0x7fff)
             return -0x7fff;
          return val;
       }
@@ -463,12 +463,12 @@ static int16_t sdl_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && sdl_joypad_button_state(pad, port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(sdl_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(sdl_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -489,20 +489,17 @@ static void sdl_joypad_poll(void)
       switch (event.type)
       {
          case SDL_JOYDEVICEADDED:
-            RARCH_WARN("[SDL_JOYPAD] hotplug added: %d\n", event.jdevice.which);
+            RARCH_LOG("[SDL_JOYPAD] Contoller added: %d\n", event.jdevice.which);
             sdl_pad_connect(event.jdevice.which);
             break;
          case SDL_JOYDEVICEREMOVED:
-            RARCH_WARN("[SDL_JOYPAD] hotplug removed: %d\n", event.jdevice.which);
-
+            RARCH_LOG("[SDL_JOYPAD] Contoller removed: %d\n", event.jdevice.which);
             for (int i = 0 ; i < MAX_USERS ; i++) {
                 if (SDL_JoystickInstanceID(sdl_pads[i].joypad) == event.jdevice.which) {
-                    RARCH_WARN("Found joystick: %d\n", i);
                     sdl_pad_disconnect(i);
                     break;
                 }
             }
-
             break;
       }
    }
@@ -545,7 +542,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
    {
       if (SDL_JoystickRumble(joypad->joypad, efx.leftright.large_magnitude, efx.leftright.small_magnitude, efx.leftright.length) == -1)
       {
-         RARCH_WARN("[SDL]: Failed to rumble joypad %u: %s\n",
+         RARCH_WARN("[SDL_JOYPAD]: Failed to rumble joypad %u: %s\n",
                     pad, SDL_GetError());
          joypad->rumble_effect = -2;
          return false;
@@ -561,7 +558,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
       joypad->rumble_effect = SDL_HapticNewEffect(joypad->haptic, &efx);
       if (joypad->rumble_effect < 0)
       {
-         RARCH_WARN("[SDL]: Failed to create rumble effect for joypad %u: %s\n",
+         RARCH_WARN("[SDL_JOYPAD]: Failed to create rumble effect for joypad %u: %s\n",
                     pad, SDL_GetError());
          joypad->rumble_effect = -2;
          return false;
@@ -575,7 +572,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
 
    if (SDL_HapticRunEffect(joypad->haptic, joypad->rumble_effect, 1) < 0)
    {
-      RARCH_WARN("[SDL]: Failed to set rumble effect on joypad %u: %s\n",
+      RARCH_WARN("[SDL_JOYPAD]: Failed to set rumble effect on joypad %u: %s\n",
                           pad, SDL_GetError());
       return false;
    }
