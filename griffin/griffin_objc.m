@@ -23,14 +23,14 @@
 #define __IPHONE_OS_VERSION_MAX_ALLOWED 00000
 #endif
 
-#if defined(__APPLE__) && defined(__MACH__)
-#include "../frontend/drivers/platform_darwin.m"
+#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
+#define HAVE_COMPRESSION 1
 #endif
 
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_ES)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/cocoa_gl_ctx.m"
 #endif
 #if defined(HAVE_VULKAN)
@@ -43,10 +43,16 @@
 #include "../ui/drivers/ui_cocoatouch.m"
 #endif
 
+#include "../input/drivers/cocoa_input.m"
+
 #endif
 
 #ifdef HAVE_MFI
 #include "../input/drivers_joypad/mfi_joypad.m"
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+#include "../frontend/drivers/platform_darwin.m"
 #endif
 
 #ifdef HAVE_COREAUDIO3
@@ -59,8 +65,13 @@
 
 #ifdef HAVE_METAL
 #import "../gfx/common/metal/metal_renderer.m"
-#import "../gfx/common/metal_common.m"
 #import "../gfx/drivers/metal.m"
-#import "../gfx/drivers_display/gfx_display_metal.m"
-#import "../gfx/drivers_font/metal_raster_font.m"
+#endif
+
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
+#import "../network/netplay/netplay_nsnetservice.m"
+#endif
+
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD)
+#include "../network/cloud_sync/icloud.m"
 #endif

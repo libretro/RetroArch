@@ -74,8 +74,6 @@ extern bool g_egl_inited;
 extern unsigned g_egl_major;
 extern unsigned g_egl_minor;
 
-void egl_report_error(void);
-
 void egl_destroy(egl_ctx_data_t *egl);
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
@@ -122,6 +120,8 @@ bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
 
 bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config,
       EGLint attribute, EGLint *value);
+
+void egl_report_error(void);
 
 bool egl_has_config(egl_ctx_data_t *egl);
 

@@ -24,7 +24,6 @@
 #include "metal_shader_types.h"
 
 #include "../../gfx_display.h"
-#include "../../../retroarch.h"
 
 /* TODO/FIXME: implement triple buffering */
 /*! @brief maximum inflight frames */
@@ -54,7 +53,7 @@ typedef NS_ENUM(NSUInteger, RPixelFormat)
    RPixelFormatBGRA8Unorm,
    RPixelFormatBGRX8Unorm, /* RetroArch XRGB */
 
-   RPixelFormatCount,
+   RPixelFormatCount
 };
 
 extern NSUInteger RPixelFormatToBPP(RPixelFormat format);
@@ -63,14 +62,10 @@ typedef NS_ENUM(NSUInteger, RTextureFilter)
 {
    RTextureFilterNearest,
    RTextureFilterLinear,
-
-   RTextureFilterCount,
+   RTextureFilterCount
 };
 
 extern matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom);
-extern matrix_float4x4 matrix_rotate_z(float rot);
-extern matrix_float4x4 make_matrix_float4x4(const float *v);
-
 
 
 @interface Texture : NSObject
@@ -190,7 +185,7 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
    ViewDrawStateContext = 0x01,
    ViewDrawStateEncoder = 0x02,
 
-   ViewDrawStateAll     = 0x03,
+   ViewDrawStateAll     = 0x03
 };
 
 @interface ViewDescriptor : NSObject

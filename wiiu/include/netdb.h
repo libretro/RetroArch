@@ -9,13 +9,36 @@ extern "C" {
 
 typedef uint32_t socklen_t;
 
-#define NI_NUMERICHOST  2
-#define NI_NUMERICSERV  8
+#define AI_PASSIVE     1
+#define AI_CANONNAME   2
+#define AI_NUMERICHOST 4
+#define AI_NUMERICSERV 8
 
-#define AI_PASSIVE      1
+#define NI_MAXHOST 1025
+#define NI_MAXSERV 32
 
-#define NI_MAXHOST      1025
-#define NI_MAXSERV      32
+#define NI_NOFQDN      1
+#define NI_NUMERICHOST 2
+#define NI_NAMEREQD    4
+#define NI_NUMERICSERV 8
+#define NI_DGRAM       16
+
+#define EAI_ADDRFAMILY 1
+#define EAI_AGAIN      2
+#define EAI_BADFLAGS   3
+#define EAI_FAIL       4
+#define EAI_FAMILY     5
+#define EAI_MEMORY     6
+#define EAI_NODATA     7
+#define EAI_NONAME     8
+#define EAI_SERVICE    9
+#define EAI_SOCKTYPE   10
+#define EAI_SYSTEM     11
+#define EAI_BADHINTS   12
+#define EAI_PROTOCOL   13
+#define EAI_OVERFLOW   14
+#define EAI_INPROGRESS 15
+#define EAI_MAX        16
 
 struct addrinfo {
   int     ai_flags;     /* AI_PASSIVE, AI_CANONNAME,

@@ -271,13 +271,13 @@ int main(int argc, char **argv)
    }
 
    /* Connect to the netplay server */
-   if ((sock = socket_init((void **) &addr, port, host, SOCKET_PROTOCOL_TCP)) < 0)
+   if ((sock = socket_init((void**)&addr, port, host, SOCKET_PROTOCOL_TCP, 0)) < 0)
    {
       perror("socket");
       return 1;
    }
 
-   if (socket_connect(sock, addr, false) < 0)
+   if (socket_connect(sock, addr) < 0)
    {
       perror("connect");
       return 1;

@@ -1,0 +1,4 @@
+module CAltKit {
+    umbrella "./include"
+    export *
+}

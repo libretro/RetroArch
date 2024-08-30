@@ -20,7 +20,6 @@
 #include <malloc.h>
 #endif
 #include <string.h>
-#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -37,7 +36,6 @@
 
 #include <memmap.h>
 
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
@@ -379,8 +377,6 @@ static bool preprocess_image(void *data)
 
       return false;
    }
-
-   retro_assert(buf.index < v4l->n_buffers);
 
    ctx = &v4l->scaler;
 

@@ -99,7 +99,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #if defined(_XBOX1)
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_CORE], "D:");
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], "D:", g_defaults.dirs[DEFAULT_DIR_CORE]);
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_CORE],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
@@ -122,12 +122,10 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "overlays",
          sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT],
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
          g_defaults.dirs[DEFAULT_DIR_CORE],
-         "layouts",
-         sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
+         "overlays\\keyboards",
+         sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "media", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -141,22 +139,22 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
          g_defaults.dirs[DEFAULT_DIR_CORE],
          "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #elif defined(_XBOX360)
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_CORE],
-         "game:");
-   strcpy_literal(g_defaults.path_config,
-         "game:\\retroarch.cfg");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
-         "game:");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
-         "game:\\savestates");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-         "game:\\playlists");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SRAM],
-         "game:\\savefiles");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-         "game:\\system");
-   strcpy_literal(g_defaults.dirs[DEFAULT_DIR_LOGS],
-         "game:\\logs");
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE],
+         "game:", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   strlcpy(g_defaults.path_config,
+         "game:\\retroarch.cfg", sizeof(g_defaults.path_config));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
+         "game:", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
+         "game:\\savestates", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
+         "game:\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SRAM],
+         "game:\\savefiles", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+         "game:\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   strlcpy(g_defaults.dirs[DEFAULT_DIR_LOGS],
+         "game:\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
          g_defaults.dirs[DEFAULT_DIR_CORE],
@@ -207,9 +205,9 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
       if (args)
       {
          /* Auto-start game. */
-         args->touched        = true;
-         args->no_content     = false;
-         args->verbose        = false;
+         args->flags         &= ~(RARCH_MAIN_WRAP_FLAG_VERBOSE
+                                | RARCH_MAIN_WRAP_FLAG_NO_CONTENT);
+         args->flags         |=   RARCH_MAIN_WRAP_FLAG_TOUCHED;
          args->config_path    = NULL;
          args->sram_path      = NULL;
          args->state_path     = NULL;
@@ -271,7 +269,7 @@ static void frontend_xdk_exec(const char *path, bool should_load_content)
    memset(&ptr, 0, sizeof(ptr));
 
    if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
-      snprintf((char*)ptr.Data, sizeof(ptr.Data), "%s", path_get(RARCH_PATH_CONTENT));
+      strlcpy((char*)ptr.Data, path_get(RARCH_PATH_CONTENT), sizeof(ptr.Data));
 
    if (!string_is_empty(path))
       XLaunchNewImage(path, !string_is_empty((const char*)ptr.Data) ? &ptr : NULL);
@@ -371,37 +369,37 @@ static int frontend_xdk_parse_drive_list(void *data, bool load_content)
       MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
 
 #if defined(_XBOX1)
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "C:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "D:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "E:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "F:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list,
          "G:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #elif defined(_XBOX360)
-   menu_entries_append_enum(list,
+   menu_entries_append(list,
          "game:",
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
 #endif
 

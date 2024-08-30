@@ -29,7 +29,7 @@ class windows_display : public display_manager
 	public:
 		windows_display(display_settings *ds);
 		~windows_display();
-		bool init();
+		bool init(void* = nullptr);
 		bool set_mode(modeline *mode);
 
 	private:

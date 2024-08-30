@@ -98,18 +98,6 @@ static bool DCifJSONStringHandler(void* context, const char *pValue, size_t leng
 /* Initialisation */
 /******************/
 
-/* Resets existing disk index record */
-static void disk_index_file_reset(disk_index_file_t *disk_index_file)
-{
-   if (!disk_index_file)
-      return;
-
-   disk_index_file->modified      = false;
-   disk_index_file->image_index   = 0;
-   disk_index_file->image_path[0] = '\0';
-   disk_index_file->file_path[0]  = '\0';
-}
-
 /* Parses disk index file referenced by
  * disk_index_file->file_path.
  * Does nothing if disk index file does not exist. */
@@ -127,8 +115,8 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
 
    file_path = disk_index_file->file_path;
 
-   if (   string_is_empty(file_path) ||
-         !path_is_valid(file_path)
+   if (    string_is_empty(file_path)
+       || !path_is_valid(file_path)
       )
       return false;
 
@@ -147,8 +135,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    }
 
    /* Initialise JSON parser */
-   parser = rjson_open_rfile(file);
-   if (!parser)
+   if (!(parser = rjson_open_rfile(file)))
    {
       RARCH_ERR("[disk index file] Failed to create JSON parser.\n");
       goto end;
@@ -217,14 +204,10 @@ bool disk_index_file_init(
       const char *content_path,
       const char *dir_savefile)
 {
+   size_t len;
    const char *content_file = NULL;
-   char content_name[PATH_MAX_LENGTH];
+   char content_name[256];
    char disk_index_file_dir[PATH_MAX_LENGTH];
-   char disk_index_file_path[PATH_MAX_LENGTH];
-
-   content_name[0]         = '\0';
-   disk_index_file_dir[0]  = '\0';
-   disk_index_file_path[0] = '\0';
 
    /* Sanity check */
    if (!disk_index_file)
@@ -271,35 +254,33 @@ bool disk_index_file_init(
    }
 
    /* > Generate final path */
-   fill_pathname_join(
-         disk_index_file_path, disk_index_file_dir,
-         content_name, sizeof(disk_index_file_path));
-   strlcat(
-         disk_index_file_path,
-         FILE_PATH_DISK_CONTROL_INDEX_EXTENSION,
-         sizeof(disk_index_file_path));
-   if (string_is_empty(disk_index_file_path))
-      goto error;
+   len = fill_pathname_join_special(
+         disk_index_file->file_path, disk_index_file_dir,
+         content_name, sizeof(disk_index_file->file_path));
+   strlcpy(disk_index_file->file_path       + len,
+         ".ldci",
+         sizeof(disk_index_file->file_path) - len);
 
    /* All is well - reset disk_index_file_t and
     * attempt to load values from file */
-   disk_index_file_reset(disk_index_file);
-   strlcpy(
-         disk_index_file->file_path,
-         disk_index_file_path,
-         sizeof(disk_index_file->file_path));
+   disk_index_file->modified      = false;
+   disk_index_file->image_index   = 0;
+   disk_index_file->image_path[0] = '\0';
 
    /* > If file does not exist (or some other
     *   error occurs) then this is a new record
     *   - in this case, 'modified' flag should
     *   be set to 'true' */
    if (!disk_index_file_read(disk_index_file))
-      disk_index_file->modified = true;
+      disk_index_file->modified   = true;
 
    return true;
 
 error:
-   disk_index_file_reset(disk_index_file);
+   disk_index_file->modified      = false;
+   disk_index_file->image_index   = 0;
+   disk_index_file->image_path[0] = '\0';
+   disk_index_file->file_path[0]  = '\0';
    return false;
 }
 
@@ -319,8 +300,8 @@ void disk_index_file_set(
    /* Check whether image index should be updated */
    if (disk_index_file->image_index != image_index)
    {
-      disk_index_file->image_index = image_index;
-      disk_index_file->modified    = true;
+      disk_index_file->image_index   = image_index;
+      disk_index_file->modified      = true;
    }
 
    /* Check whether image path should be updated */
@@ -331,7 +312,7 @@ void disk_index_file_set(
          strlcpy(
                disk_index_file->image_path, image_path,
                sizeof(disk_index_file->image_path));
-         disk_index_file->modified = true;
+         disk_index_file->modified   = true;
       }
    }
    else if (!string_is_empty(disk_index_file->image_path))
@@ -365,21 +346,19 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
       return true;
 
    file_path = disk_index_file->file_path;
-   
+
    if (string_is_empty(file_path))
       return false;
 
    RARCH_LOG(
          "[disk index file] Saving disk index file: %s\n",
          file_path);
-   
+
    /* Attempt to open disk index file */
-   file = filestream_open(
+   if (!(file = filestream_open(
          file_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
       RARCH_ERR(
             "[disk index file] Failed to open disk index file: %s\n",
@@ -388,47 +367,45 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    }
 
    /* Initialise JSON writer */
-   writer = rjsonwriter_open_rfile(file);
-
-   if (!writer)
+   if (!(writer = rjsonwriter_open_rfile(file)))
    {
       RARCH_ERR("[disk index file] Failed to create JSON writer.\n");
       goto end;
    }
 
    /* Write output file */
-   rjsonwriter_add_start_object(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, "{", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* > Version entry */
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "version");
-   rjsonwriter_add_colon(writer);
-   rjsonwriter_add_space(writer);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, "1.0");
-   rjsonwriter_add_comma(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* > image index entry */
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "image_index");
-   rjsonwriter_add_colon(writer);
-   rjsonwriter_add_space(writer);
-   rjsonwriter_add_unsigned(writer, disk_index_file->image_index);
-   rjsonwriter_add_comma(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_rawf(writer, "%u", disk_index_file->image_index);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* > image path entry */
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "image_path");
-   rjsonwriter_add_colon(writer);
-   rjsonwriter_add_space(writer);
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, disk_index_file->image_path);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* > Finalise */
-   rjsonwriter_add_end_object(writer);
-   rjsonwriter_add_newline(writer);
+   rjsonwriter_raw(writer, "}", 1);
+   rjsonwriter_raw(writer, "\n", 1);
 
    /* Free JSON writer */
    if (!rjsonwriter_free(writer))

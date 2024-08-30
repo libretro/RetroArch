@@ -44,11 +44,34 @@ RETRO_BEGIN_DECLS
 enum gfx_thumbnail_id
 {
    GFX_THUMBNAIL_RIGHT = 0,
-   GFX_THUMBNAIL_LEFT
+   GFX_THUMBNAIL_LEFT,
+   GFX_THUMBNAIL_ICON
 };
 
 /* Prevent direct access to gfx_thumbnail_path_data_t members */
 typedef struct gfx_thumbnail_path_data gfx_thumbnail_path_data_t;
+
+/* Used fixed size char arrays here, just to avoid
+ * the inconvenience of having to calloc()/free()
+ * each individual entry by hand... */
+struct gfx_thumbnail_path_data
+{
+   enum playlist_thumbnail_mode playlist_right_mode;
+   enum playlist_thumbnail_mode playlist_left_mode;
+   enum playlist_thumbnail_mode playlist_icon_mode;
+   size_t playlist_index;
+   char content_path[PATH_MAX_LENGTH];
+   char content_img[PATH_MAX_LENGTH];
+   char content_img_short[PATH_MAX_LENGTH];
+   char content_img_full[PATH_MAX_LENGTH];
+   char right_path[PATH_MAX_LENGTH];
+   char left_path[PATH_MAX_LENGTH];
+   char icon_path[PATH_MAX_LENGTH];
+   char content_label[256];
+   char content_core_name[256];
+   char system[256];
+   char content_db_name[256];
+};
 
 /* Initialisation */
 
@@ -63,12 +86,6 @@ gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void);
 void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data);
 
 /* Utility Functions */
-
-/* Fetches the thumbnail subdirectory (Named_Snaps,
- * Named_Titles, Named_Boxarts) corresponding to the
- * specified 'type index' (1, 2, 3).
- * Returns true if 'type index' is valid */
-bool gfx_thumbnail_get_sub_directory(unsigned type_idx, const char **sub_directory);
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
@@ -102,6 +119,8 @@ bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *path_data, const
  *   core name). 'Real' labels should be extracted from source */
 bool gfx_thumbnail_set_content_playlist(gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 
+bool gfx_thumbnail_set_icon_playlist(
+      gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 /* Updaters */
 
 /* Updates path for specified thumbnail identifier (right, left).
@@ -124,10 +143,6 @@ bool gfx_thumbnail_get_path(gfx_thumbnail_path_data_t *path_data, enum gfx_thumb
  * Returns true if 'system' is valid. */
 bool gfx_thumbnail_get_system(gfx_thumbnail_path_data_t *path_data, const char **system);
 
-/* Fetches current content path.
- * Returns true if content path is valid. */
-bool gfx_thumbnail_get_content_path(gfx_thumbnail_path_data_t *path_data, const char **content_path);
-
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
 bool gfx_thumbnail_get_label(gfx_thumbnail_path_data_t *path_data, const char **label);
@@ -136,14 +151,10 @@ bool gfx_thumbnail_get_label(gfx_thumbnail_path_data_t *path_data, const char **
  * Returns true if core name is valid. */
 bool gfx_thumbnail_get_core_name(gfx_thumbnail_path_data_t *path_data, const char **core_name);
 
-/* Fetches current database name.
- * Returns true if database name is valid. */
-bool gfx_thumbnail_get_db_name(gfx_thumbnail_path_data_t *path_data, const char **db_name);
-
 /* Fetches current thumbnail image name
  * (name is the same for all thumbnail types).
  * Returns true if image name is valid. */
-bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name);
+bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name, enum playlist_thumbnail_name_flags name_flags);
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */

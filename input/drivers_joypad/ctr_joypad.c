@@ -64,51 +64,53 @@ static int32_t ctr_joypad_button(unsigned port_num, uint16_t joykey)
 
 static void ctr_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-	if (port_num < DEFAULT_MAX_PADS)
+   if (port_num < DEFAULT_MAX_PADS)
    {
-		BITS_COPY16_PTR( state, pad_state );
-	}
+      BITS_COPY16_PTR( state, pad_state );
+   }
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t ctr_joypad_axis_state(unsigned port_num, uint32_t joyaxis)
 {
-   int    val  = 0;
-   int    axis = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis   = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      int val  = 0;
+      int axis = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port_num][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port_num][1][axis - 2];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis   = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      int val  = 0;
+      int axis = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port_num][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port_num][1][axis - 2];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-      case 1:
-         val = analog_state[port_num][0][axis];
-         break;
-      case 2:
-      case 3:
-         val = analog_state[port_num][1][axis - 2];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   return val;
+   return 0;
 }
 
 static int16_t ctr_joypad_axis(unsigned port_num, uint32_t joyaxis)
@@ -189,14 +191,6 @@ static void ctr_joypad_poll(void)
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y]  = -ctr_joypad_fix_range(state_tmp_left_analog.dy);
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_X] =  ctr_joypad_fix_range(state_tmp_right_analog.dx);
    analog_state[0][RETRO_DEVICE_INDEX_ANALOG_RIGHT] [RETRO_DEVICE_ID_ANALOG_Y] = -ctr_joypad_fix_range(state_tmp_right_analog.dy);
-
-   /* panic button */
-   if((state_tmp & KEY_START) &&
-         (state_tmp & KEY_SELECT) &&
-         (state_tmp & KEY_L) &&
-         (state_tmp & KEY_R))
-      command_event(CMD_EVENT_QUIT, NULL);
-
 }
 
 static bool ctr_joypad_query_pad(unsigned pad)
@@ -218,8 +212,10 @@ input_device_driver_t ctr_joypad = {
    ctr_joypad_get_buttons,
    ctr_joypad_axis,
    ctr_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    ctr_joypad_name,
    "ctr",
 };

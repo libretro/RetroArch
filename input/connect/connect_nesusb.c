@@ -79,7 +79,7 @@ static int16_t hidpad_nesusb_get_axis(void *data, unsigned axis)
    if (!device || axis >= 2)
       return 0;
 
-   val = device->data[4 + axis];
+   val = device->data[3 + axis];
    val = (val << 8) - 0x8000;
 
    if (abs(val) > 0x1000)
@@ -118,7 +118,7 @@ static void hidpad_nesusb_packet_handler(void *data,
    memcpy(device->data, packet, size);
 
    device->buttons = 0;
-   pressed_keys    = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[6] | (device->data[5] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -126,17 +126,11 @@ static void hidpad_nesusb_packet_handler(void *data,
 }
 
 static void hidpad_nesusb_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-	(void)data;
-	(void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char * hidpad_nesusb_get_name(void *data)
 {
-   (void)data;
-   /* For now we return a single static name */
    return "Generic NES USB Controller";
 }
 

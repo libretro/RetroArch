@@ -17,7 +17,6 @@
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
-#include "../menu_dialog.h"
 
 #include "../../configuration.h"
 #include "../../audio/audio_driver.h"
@@ -33,8 +32,10 @@
 static int action_info_default(unsigned type, const char *label)
 {
    menu_displaylist_info_t info;
-   file_list_t *menu_stack       = menu_entries_get_menu_stack_ptr(0);
-   size_t selection              = menu_navigation_get_selection();
+   struct menu_state *menu_st    = menu_state_get_ptr();
+   menu_list_t *menu_list        = menu_st->entries.list;
+   file_list_t *menu_stack       = MENU_LIST_GET(menu_list, 0);
+   size_t selection              = menu_st->selection_ptr;
    settings_t *settings          = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
    bool        audio_enable_menu = settings->bools.audio_enable_menu;
@@ -76,9 +77,11 @@ int  generic_action_ok_help(const char *path,
 
 static int action_info_cheevos(unsigned type, const char *label)
 {
-   unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
+   struct menu_state    *menu_st  = menu_state_get_ptr();
+   menu_dialog_t        *p_dialog = &menu_st->dialog_st;
+   unsigned new_id                = type - MENU_SETTINGS_CHEEVOS_START;
 
-   menu_dialog_set_current_id(new_id);
+   p_dialog->current_id           = new_id;
 
    return generic_action_ok_help(NULL, label, new_id, 0, 0,
       MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION,
@@ -89,19 +92,19 @@ static int action_info_cheevos(unsigned type, const char *label)
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
-   if (!cbs)
-      return -1;
-
-#ifdef HAVE_CHEEVOS
-   if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
-      (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
+   if (cbs)
    {
-      BIND_ACTION_INFO(cbs, action_info_cheevos);
-      return 0;
-   }
+#ifdef HAVE_CHEEVOS
+      if ((type >= MENU_SETTINGS_CHEEVOS_START) &&
+            (type < MENU_SETTINGS_NETPLAY_ROOMS_START))
+      {
+         BIND_ACTION_INFO(cbs, action_info_cheevos);
+         return 0;
+      }
 #endif
 
-   BIND_ACTION_INFO(cbs, action_info_default);
+      BIND_ACTION_INFO(cbs, action_info_default);
+   }
 
    return -1;
 }

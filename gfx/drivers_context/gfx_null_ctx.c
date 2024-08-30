@@ -21,7 +21,6 @@
 static void gfx_ctx_null_get_video_size(
       void *data, unsigned *width, unsigned *height)
 {
-   (void)data;
 #ifdef VITA
    *width  = 960;
    *height = 544;

@@ -42,7 +42,7 @@ static void delta_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
    unsigned i, c;
-   struct delta_data *d = (struct delta_data*)data;
+   struct delta_data *d   = (struct delta_data*)data;
    float *out             = output->samples;
    output->samples        = input->samples;
    output->frames         = input->frames;
@@ -51,9 +51,9 @@ static void delta_process(void *data, struct dspfilter_output *output,
    {
       for (c = 0; c < 2; c++)
       {
-           float current = *out;
-           *out++ = current + (current - d->old[c]) * d->intensity;
-           d->old[c] = current;
+           float current  = *out;
+           *out++         = current + (current - d->old[c]) * d->intensity;
+           d->old[c]      = current;
       }
    }
 }
@@ -83,7 +83,6 @@ static const struct dspfilter_implementation delta_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)mask;
    return &delta_plug;
 }
 

@@ -69,7 +69,7 @@ static void *alsa_qsa_init(const char *device,
       goto error;
    }
 
-   if((err = snd_pcm_nonblock_mode(alsa->pcm, 1)) < 0)
+   if ((err = snd_pcm_nonblock_mode(alsa->pcm, 1)) < 0)
    {
       RARCH_ERR("[ALSA QSA]: Can't set blocking mode: %s\n",
             snd_strerror(err));
@@ -313,11 +313,10 @@ static bool alsa_qsa_start(void *data, bool is_shutdown)
 
 static void alsa_qsa_set_nonblock_state(void *data, bool state)
 {
+   int err;
    alsa_qsa_t *alsa = (alsa_qsa_t*)data;
 
-   int err;
-
-   if((err = snd_pcm_nonblock_mode(alsa->pcm, state)) < 0)
+   if ((err = snd_pcm_nonblock_mode(alsa->pcm, state)) < 0)
    {
       RARCH_ERR("Can't set blocking mode to %d: %s\n", state,
             snd_strerror(err));

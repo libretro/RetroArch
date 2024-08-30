@@ -24,7 +24,7 @@
 
 #include <switch.h>
 
-#include "../common/switch_common.h"
+#include "../common/switch_defines.h"
 #include "../../frontend/frontend_driver.h"
 
 /* TODO/FIXME - global referenced */
@@ -48,17 +48,17 @@ static void switch_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    switch (appletGetOperationMode())
-      {
-         default:
-         case AppletOperationMode_Handheld:
-            *width = 1280;
-            *height = 720;
-            break;
-         case AppletOperationMode_Console:
-            *width = 1920;
-            *height = 1080;
-            break;
-      }
+   {
+      default:
+      case AppletOperationMode_Handheld:
+         *width  = 1280;
+         *height = 720;
+         break;
+      case AppletOperationMode_Console:
+         *width  = 1920;
+         *height = 1080;
+         break;
+   }
 }
 
 static void *switch_ctx_init(void *video_driver)
@@ -94,9 +94,9 @@ static void *switch_ctx_init(void *video_driver)
     setenv("NV50_PROG_CHIPSET", "0x120", 1);
 #endif
 
-    // Needs to be here
-   ctx_nx->win = nwindowGetDefault();
-   nwindowSetDimensions(ctx_nx->win, 1920, 1080);
+    /* Needs to be here */
+    ctx_nx->win = nwindowGetDefault();
+    nwindowSetDimensions(ctx_nx->win, 1920, 1080);
 
 #ifdef HAVE_EGL
     if (!egl_init_context(&ctx_nx->egl, EGL_NONE, EGL_DEFAULT_DISPLAY,
@@ -110,7 +110,6 @@ static void *switch_ctx_init(void *video_driver)
     return ctx_nx;
 
 error:
-    printf("[NXGL]: EGL error: %d.\n", eglGetError());
     switch_ctx_destroy(video_driver);
     return NULL;
 }
@@ -136,7 +135,6 @@ static void switch_ctx_check_window(void *data, bool *quit,
         ctx_nx->resize = true;
 
         *resize = true;
-        printf("[NXGL]: Resizing to %dx%d\n", *width, *height);
         nwindowSetCrop(ctx_nx->win, 0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
     }
 
@@ -180,9 +178,7 @@ static bool switch_ctx_set_video_mode(void *data,
     return true;
 
 error:
-    printf("[NXGL]: EGL error: %d.\n", eglGetError());
     switch_ctx_destroy(data);
-
     return false;
 }
 
@@ -194,10 +190,7 @@ static void switch_ctx_input_driver(void *data,
     *input_data = NULL;
 }
 
-static enum gfx_ctx_api switch_ctx_get_api(void *data)
-{
-    return GFX_CTX_OPENGL_API;
-}
+static enum gfx_ctx_api switch_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }
 
 static bool switch_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -205,44 +198,39 @@ static bool switch_ctx_bind_api(void *data,
     if (api == GFX_CTX_OPENGL_API)
         if (egl_bind_api(EGL_OPENGL_API))
             return true;
-
     return false;
 }
 
 static bool switch_ctx_has_focus(void *data) { return platform_switch_has_focus; }
 static bool switch_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
-static void switch_ctx_set_swap_interval(void *data,
-                                         int swap_interval)
+static void switch_ctx_set_swap_interval(void *data, int swap_interval)
 {
-    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
-
 #ifdef HAVE_EGL
+    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
     egl_set_swap_interval(&ctx_nx->egl, swap_interval);
 #endif
 }
 
 static void switch_ctx_swap_buffers(void *data)
 {
-    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t*)data;
     egl_swap_buffers(&ctx_nx->egl);
 #endif
 }
 
 static void switch_ctx_bind_hw_render(void *data, bool enable)
 {
-    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
-
 #ifdef HAVE_EGL
+    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
     egl_bind_hw_render(&ctx_nx->egl, enable);
 #endif
 }
 
 static uint32_t switch_ctx_get_flags(void *data)
 {
-    uint32_t flags = 0;
+   uint32_t flags = 0;
 
    if (string_is_equal(video_driver_get_ident(), "glcore"))
    {
@@ -265,7 +253,6 @@ static void switch_ctx_set_flags(void *data, uint32_t flags) { }
 static float switch_ctx_get_refresh_rate(void *data)
 {
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
-
     return ctx_nx->refresh_rate;
 }
 

@@ -337,7 +337,7 @@ static INLINE __attribute__((always_inline)) void drmp3_cpuid(int CPUInfo[], con
 #endif
 }
 #endif
-static int drmp3_have_simd()
+static int drmp3_have_simd(void)
 {
 #ifdef DR_MP3_ONLY_SIMD
     return 1;
@@ -365,7 +365,7 @@ test_nosimd:
     return 0;
 #endif
 }
-#elif defined(__ARM_NEON) || defined(__aarch64__)
+#elif defined(__ARM_NEON) || defined(__aarch64__) || defined(__ARM_NEON__) || defined(_M_ARM64)
 #include <arm_neon.h>
 #define DRMP3_HAVE_SIMD 1
 #define DRMP3_VSTORE vst1q_f32
@@ -379,7 +379,7 @@ test_nosimd:
 #define DRMP3_VMUL_S(x, s)  vmulq_f32(x, vmovq_n_f32(s))
 #define DRMP3_VREV(x) vcombine_f32(vget_high_f32(vrev64q_f32(x)), vget_low_f32(vrev64q_f32(x)))
 typedef float32x4_t drmp3_f4;
-static int drmp3_have_simd()
+static int drmp3_have_simd(void)
 {   /* TODO: detect neon for !DR_MP3_ONLY_SIMD */
     return 1;
 }

@@ -1,0 +1,14 @@
+void main
+(
+  uniform sampler2D texture,
+  uniform float4 bgcolor,
+  float2 texcoord : TEXCOORD0,
+  float4 color : COLOR,
+  out float4 oColor : COLOR
+)
+{
+  if (bgcolor.a > 0.0)
+    oColor = bgcolor;
+  else
+    oColor = tex2D(texture, texcoord) * color;
+}

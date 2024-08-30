@@ -175,66 +175,104 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void)
    return frontend_ctx_drivers[0];
 }
 
-bool frontend_driver_get_core_extension(char *s, size_t len)
+size_t frontend_driver_get_core_extension(char *s, size_t len)
 {
 #ifdef HAVE_DYNAMIC
 
 #ifdef _WIN32
-   strcpy_literal(s, "dll");
-   return true;
+   s[0] = 'd';
+   s[1] = 'l';
+   s[2] = 'l';
+   s[3] = '\0';
+   return 3;
+#elif defined(IOS)
+   s[0] = 'f';
+   s[1] = 'r';
+   s[2] = 'a';
+   s[3] = 'm';
+   s[4] = 'e';
+   s[5] = 'w';
+   s[6] = 'o';
+   s[7] = 'r';
+   s[8] = 'k';
+   s[9] = '\0';
+   return 9;
 #elif defined(__APPLE__) || defined(__MACH__)
-   strcpy_literal(s, "dylib");
-   return true;
+   s[0] = 'd';
+   s[1] = 'y';
+   s[2] = 'l';
+   s[3] = 'i';
+   s[4] = 'b';
+   s[5] = '\0';
+   return 5;
 #else
-   strcpy_literal(s, "so");
-   return true;
+   s[0] = 's';
+   s[1] = 'o';
+   s[2] = '\0';
+   return 2;
 #endif
 
 #else
 
 #if defined(PSP)
-   strcpy_literal(s, "pbp");
-   return true;
-#elif defined(VITA)
-   strcpy_literal(s, "self|bin");
-   return true;
+   s[0] = 'p';
+   s[1] = 'b';
+   s[2] = 'p';
+   s[3] = '\0';
+   return 3;
+#elif defined(ORBIS) || defined(VITA) || defined(__PS3__)
+   return strlcpy(s, "self|bin", len);
 #elif defined(PS2)
-   strcpy_literal(s, "elf");
-   return true;
-#elif defined(__PS3__)
-   strcpy_literal(s, "self|bin");
-   return true;
+   s[0] = 'e';
+   s[1] = 'l';
+   s[2] = 'f';
+   s[3] = '\0';
+   return 3;
 #elif defined(_XBOX1)
-   strcpy_literal(s, "xbe");
-   return true;
+   s[0] = 'x';
+   s[1] = 'b';
+   s[2] = 'e';
+   s[3] = '\0';
+   return 3;
 #elif defined(_XBOX360)
-   strcpy_literal(s, "xex");
-   return true;
+   s[0] = 'x';
+   s[1] = 'e';
+   s[2] = 'x';
+   s[3] = '\0';
+   return 3;
 #elif defined(GEKKO)
-   strcpy_literal(s, "dol");
-   return true;
+   s[0] = 'd';
+   s[1] = 'o';
+   s[2] = 'l';
+   s[3] = '\0';
+   return 3;
 #elif defined(HW_WUP)
-   strcpy_literal(s, "rpx|elf");
-   return true;
+   return strlcpy(s, "rpx|elf", len);
 #elif defined(__linux__)
-   strcpy_literal(s, "elf");
-   return true;
+   s[0] = 'e';
+   s[1] = 'l';
+   s[2] = 'f';
+   s[3] = '\0';
+   return 3;
 #elif defined(HAVE_LIBNX)
-   strcpy_literal(s, "nro");
-   return true;
+   s[0] = 'n';
+   s[1] = 'r';
+   s[2] = 'o';
+   s[3] = '\0';
+   return 3;
 #elif defined(DJGPP)
-   strcpy_literal(s, "exe");
-   return true;
+   s[0] = 'e';
+   s[1] = 'x';
+   s[2] = 'e';
+   s[3] = '\0';
+   return 3;
 #elif defined(_3DS)
    if (envIsHomebrew())
-      strcpy_literal(s, "3dsx");
-   else
-      strcpy_literal(s, "cia");
-   return true;
+      return strlcpy(s, "3dsx", len);
+   return strlcpy(s, "cia", len);
 #else
-   return false;
+   return 0;
 #endif
-
 #endif
 }
 
@@ -245,37 +283,40 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #else
 
 #if defined(PSP)
-   strcpy_literal(s, "EBOOT.PBP");
+   strlcpy(s, "EBOOT.PBP", len);
+   return true;
+#elif defined(ORBIS)
+   strlcpy(s, "eboot.bin", len);
    return true;
 #elif defined(VITA)
-   strcpy_literal(s, "eboot.bin");
+   strlcpy(s, "eboot.bin", len);
    return true;
 #elif defined(PS2)
-   strcpy_literal(s, "eboot.elf");
+   strlcpy(s, "raboot.elf", len);
    return true;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
-   strcpy_literal(s, "EBOOT.BIN");
+   strlcpy(s, "EBOOT.BIN", len);
    return true;
 #elif defined(_XBOX1)
-   strcpy_literal(s, "default.xbe");
+   strlcpy(s, "default.xbe", len);
    return true;
 #elif defined(_XBOX360)
-   strcpy_literal(s, "default.xex");
+   strlcpy(s, "default.xex", len);
    return true;
 #elif defined(HW_RVL)
-   strcpy_literal(s, "boot.dol");
+   strlcpy(s, "boot.dol", len);
    return true;
 #elif defined(HW_WUP)
-   strcpy_literal(s, "retroarch.rpx");
+   strlcpy(s, "retroarch.rpx", len);
    return true;
 #elif defined(_3DS)
-   strcpy_literal(s, "retroarch.core");
+   strlcpy(s, "retroarch.core", len);
    return true;
 #elif defined(DJGPP)
-   strcpy_literal(s, "retrodos.exe");
+   strlcpy(s, "retrodos.exe", len);
    return true;
 #elif defined(SWITCH)
-   strcpy_literal(s, "retroarch_switch.nro");
+   strlcpy(s, "retroarch_switch.nro", len);
    return true;
 #else
    return false;
@@ -344,7 +385,7 @@ void frontend_driver_init_first(void *args)
    frontend_st->current_frontend_ctx = (frontend_ctx_driver_t*)
       frontend_ctx_init_first();
 
-   if (     frontend_st->current_frontend_ctx 
+   if (     frontend_st->current_frontend_ctx
          && frontend_st->current_frontend_ctx->init)
       frontend_st->current_frontend_ctx->init(args);
 }
@@ -406,7 +447,7 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
 }
 
 const void *frontend_driver_get_cpu_architecture_str(
-      char *architecture, size_t size)
+      char *s, size_t len)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
@@ -415,32 +456,67 @@ const void *frontend_driver_get_cpu_architecture_str(
    switch (arch)
    {
       case FRONTEND_ARCH_X86:
-         strcpy_literal(architecture, "x86");
+         s[0] = 'x';
+         s[1] = '8';
+         s[2] = '6';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_X86_64:
-         strcpy_literal(architecture, "x64");
+         s[0] = 'x';
+         s[1] = '6';
+         s[2] = '4';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_PPC:
-         strcpy_literal(architecture, "PPC");
+         s[0] = 'P';
+         s[1] = 'P';
+         s[2] = 'C';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_ARM:
-         strcpy_literal(architecture, "ARM");
+         s[0] = 'A';
+         s[1] = 'R';
+         s[2] = 'M';
+         s[3] = '\0';
          break;
       case FRONTEND_ARCH_ARMV7:
-         strcpy_literal(architecture, "ARMv7");
+         s[0] = 'A';
+         s[1] = 'R';
+         s[2] = 'M';
+         s[3] = 'v';
+         s[4] = '7';
+         s[5] = '\0';
          break;
       case FRONTEND_ARCH_ARMV8:
-         strcpy_literal(architecture, "ARMv8");
+         s[0] = 'A';
+         s[1] = 'R';
+         s[2] = 'M';
+         s[3] = 'v';
+         s[4] = '8';
+         s[5] = '\0';
          break;
       case FRONTEND_ARCH_MIPS:
-         strcpy_literal(architecture, "MIPS");
+         s[0] = 'M';
+         s[1] = 'I';
+         s[2] = 'P';
+         s[3] = 'S';
+         s[4] = '\0';
          break;
       case FRONTEND_ARCH_TILE:
-         strcpy_literal(architecture, "Tilera");
+         s[0] = 'T';
+         s[1] = 'i';
+         s[2] = 'l';
+         s[3] = 'e';
+         s[4] = 'r';
+         s[5] = 'a';
+         s[6] = '\0';
          break;
       case FRONTEND_ARCH_NONE:
       default:
-         strcpy_literal(architecture, "N/A");
+         s[0] = 'N';
+         s[1] = '/';
+         s[2] = 'A';
+         s[3] = '\0';
          break;
    }
 
@@ -494,15 +570,15 @@ void frontend_driver_attach_console(void)
 {
    /* TODO/FIXME - the frontend driver code is garbage and needs to be
       redesigned. Apparently frontend_driver_attach_console can be called
-      BEFORE frontend_driver_init_first is called, hence why we need 
-      to resort to the check for non-NULL below. This is just awful, 
-      BEFORE we make any frontend function call, we should be 100% 
+      BEFORE frontend_driver_init_first is called, hence why we need
+      to resort to the check for non-NULL below. This is just awful,
+      BEFORE we make any frontend function call, we should be 100%
       sure frontend_driver_init_first has already been called first.
 
       For now, we do this hack, but this absolutely should be redesigned
       as soon as possible.
     */
-   if(      frontend_driver_st.current_frontend_ctx 
+   if (     frontend_driver_st.current_frontend_ctx
          && frontend_driver_st.current_frontend_ctx->attach_console)
       frontend_driver_st.current_frontend_ctx->attach_console();
 }

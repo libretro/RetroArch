@@ -262,6 +262,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = (
+					i386,
+					x86_64,
+					ppc64,
+					ppc,
+				);
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_OBJC_ARC = NO;
@@ -287,9 +293,10 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/OSX/Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_ACCESSIBILITY",
 					"-DHAVE_COMMAND",
@@ -297,6 +304,7 @@
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORES",
+					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_CHEEVOS",
 					"-DRC_DISABLE_LUA",
@@ -315,6 +323,7 @@
 					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
 					"-DHAVE_OPENGL",
+					"-DHAVE_OPENGL1",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -322,7 +331,6 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -332,6 +340,7 @@
 					"-DHAVE_MAIN",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",
@@ -382,6 +391,7 @@
 					"-DNS_BLOCK_ASSERTIONS=1",
 					"-DNDEBUG",
 					"-DHAVE_RUNAHEAD",
+					"-DHAVE_BSV_MOVIE",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_ACCESSIBILITY",
 					"-DHAVE_COMMAND",
@@ -389,6 +399,7 @@
 					"-DHAVE_GRIFFIN",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_UPDATE_CORES",
+					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_CHEEVOS",
 					"-DRC_DISABLE_LUA",
@@ -407,6 +418,7 @@
 					"-DHAVE_GFX_WIDGETS",
 					"-DOSX",
 					"-DHAVE_OPENGL",
+					"-DHAVE_OPENGL1",
 					"-DHAVE_CC_RESAMPLER",
 					"-DHAVE_GLSL",
 					"-DINLINE=inline",
@@ -414,7 +426,6 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_VIDEO_LAYOUT",
 					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RJPEG",
@@ -424,6 +435,7 @@
 					"-DHAVE_MAIN",
 					"-DHAVE_NETWORKGAMEPAD",
 					"-DHAVE_NETWORKING",
+					"-DHAVE_IFINFO",
 					"-DHAVE_NETPLAYDISCOVERY",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_THREADS",

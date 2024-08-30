@@ -30,6 +30,7 @@
 #endif
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_12
+#define HAS_MACOSX_10_12 0
 #define NSEventModifierFlagCommand NSCommandKeyMask
 #define NSEventModifierFlagControl NSControlKeyMask
 #define NSEventModifierFlagHelp NSHelpKeyMask
@@ -68,6 +69,8 @@
 #define NSAlertStyleWarning  NSWarningAlertStyle
 #define NSEventModifierFlagCapsLock NSAlphaShiftKeyMask
 #define NSControlSizeRegular NSRegularControlSize
+#else
+#define HAS_MACOSX_10_12 1
 #endif
 
 #endif

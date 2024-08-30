@@ -29,7 +29,6 @@
 #include <exynos/exynos_fimg2d.h>
 
 #include <retro_inline.h>
-#include <retro_assert.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -65,7 +64,7 @@ enum exynos_buffer_type
 
 /* We have to handle three types of 'data' from the frontend, each abstracted by a *
  * G2D image object. The image objects are then backed by some storage buffer.     *
- * (1) the core framebuffer (backed by main buffer)                            *
+ * (1) the core framebuffer (backed by main buffer)                                *
  * (2) the menu buffer (backed by aux buffer)                                      *
  * (3) the font rendering buffer (backed by aux buffer)                            */
 enum exynos_image_type
@@ -267,7 +266,6 @@ static const char *exynos_buffer_name(enum exynos_buffer_type type)
       case EXYNOS_BUFFER_AUX:
          return "aux";
       default:
-         retro_assert(false);
          break;
    }
 
@@ -410,7 +408,7 @@ static void exynos_perf_memcpy(struct exynos_perf *p, bool start)
       clock_gettime(CLOCK_MONOTONIC, &p->tspec);
    else
    {
-      struct timespec new = { 0 };
+      struct timespec new;
       clock_gettime(CLOCK_MONOTONIC, &new);
 
       p->memcpy_time += (new.tv_sec - p->tspec.tv_sec) * 1000000;
@@ -425,7 +423,7 @@ static void exynos_perf_g2d(struct exynos_perf *p, bool start)
       clock_gettime(CLOCK_MONOTONIC, &p->tspec);
    else
    {
-      struct timespec new = { 0 };
+      struct timespec new;
       clock_gettime(CLOCK_MONOTONIC, &new);
 
       p->g2d_time += (new.tv_sec - p->tspec.tv_sec) * 1000000;
@@ -907,7 +905,7 @@ static int exynos_blit_frame(
       const void *frame,
       unsigned src_pitch)
 {
-   const enum exynos_buffer_type 
+   const enum exynos_buffer_type
       buf_type           = defaults[EXYNOS_IMAGE_FRAME].buf_type;
    const unsigned size   = src_pitch * pdata->blit_params[5];
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
@@ -1166,7 +1164,7 @@ static int exynos_render_msg(struct exynos_video *vid,
    return exynos_blend_font(pdata);
 }
 
-static void *exynos_gfx_init(const video_info_t *video,
+static void *exynos_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    struct exynos_video *vid;
@@ -1245,7 +1243,7 @@ fail_data:
    return NULL;
 }
 
-static void exynos_gfx_free(void *data)
+static void exynos_free(void *data)
 {
    struct exynos_video *vid = data;
    struct exynos_data *pdata;
@@ -1277,15 +1275,14 @@ static void exynos_gfx_free(void *data)
    free(vid);
 }
 
-static bool exynos_gfx_frame(void *data, const void *frame, unsigned width,
+static bool exynos_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
 #ifdef HAVE_MENU
-   bool menu_is_alive       = video_info->menu_is_alive;
-
+   bool menu_is_alive       = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    /* Check if neither menu nor core framebuffer is to be displayed. */
    if (!vid->menu_active && !frame)
       return true;
@@ -1362,7 +1359,7 @@ fail:
    return false;
 }
 
-static void exynos_gfx_set_nonblock_state(void *data, bool state,
+static void exynos_set_nonblock_state(void *data, bool state,
       bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    struct exynos_video *vid = data;
@@ -1370,34 +1367,19 @@ static void exynos_gfx_set_nonblock_state(void *data, bool state,
       vid->data->sync = !state;
 }
 
-static bool exynos_gfx_alive(void *data)
-{
-   (void)data;
-   return true; /* always alive */
-}
+static bool exynos_alive(void *data) { return true; }
+/* DRM device always has focus */
+static bool exynos_focus(void *data) { return true; }
+static bool exynos_suppress_screensaver(void *data, bool enable) { return false; }
 
-static bool exynos_gfx_focus(void *data)
-{
-   (void)data;
-   return true; /* drm device always has focus */
-}
-
-static bool exynos_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static void exynos_gfx_set_rotation(void *data, unsigned rotation)
+static void exynos_set_rotation(void *data, unsigned rotation)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
    if (vid)
       vid->menu_rotation = rotation;
 }
 
-static void exynos_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void exynos_viewport_info(void *data, struct video_viewport *vp)
 {
    struct exynos_video *vid = (struct exynos_video*)data;
 
@@ -1464,23 +1446,13 @@ static void exynos_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void exynos_set_osd_msg(void *data, const char *msg,
-      const struct font_params *params)
-{
-   (void)data;
-   (void)msg;
-   (void)params;
-}
-
-static void exynos_show_mouse(void *data, bool state)
-{
-   (void)data;
-   (void)state;
-}
+      const struct font_params *params) { }
+static void exynos_show_mouse(void *data, bool state) { }
 
 static const video_poke_interface_t exynos_poke_interface = {
    NULL, /* get_flags */
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    NULL, /* set_video_mode */
    drm_get_refresh_rate,
    NULL, /* set_filtering */
@@ -1495,55 +1467,50 @@ static const video_poke_interface_t exynos_poke_interface = {
    exynos_set_texture_enable,
    exynos_set_osd_msg,
    exynos_show_mouse,
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
-static void exynos_gfx_get_poke_interface(void *data,
+static void exynos_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &exynos_poke_interface;
 }
 
-static bool exynos_gfx_set_shader(void *data,
+static bool exynos_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-   (void)data;
-   (void)type;
-   (void)path;
-
    return false;
 }
 
 video_driver_t video_exynos = {
-  exynos_gfx_init,
-  exynos_gfx_frame,
-  exynos_gfx_set_nonblock_state,
-  exynos_gfx_alive,
-  exynos_gfx_focus,
-  exynos_gfx_suppress_screensaver,
-  NULL, /* has_windowed */
-  exynos_gfx_set_shader,
-  exynos_gfx_free,
-  "exynos",
-  NULL, /* set_viewport */
-  exynos_gfx_set_rotation,
-  exynos_gfx_viewport_info,
-  NULL, /* read_viewport */
-  NULL, /* read_frame_raw */
-
+   exynos_init,
+   exynos_frame,
+   exynos_set_nonblock_state,
+   exynos_alive,
+   exynos_focus,
+   exynos_suppress_screensaver,
+   NULL, /* has_windowed */
+   exynos_set_shader,
+   exynos_free,
+   "exynos",
+   NULL, /* set_viewport */
+   exynos_set_rotation,
+   exynos_viewport_info,
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   exynos_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-  exynos_gfx_get_poke_interface
 };

@@ -124,7 +124,7 @@ bool glslang_read_shader_file(const char *path,
    /* Read file contents */
    if (!filestream_read_file(path, (void**)&buf, &buf_len))
    {
-      RARCH_ERR("Failed to open shader file: \"%s\".\n", path);
+      RARCH_ERR("[slang]: Failed to open shader file: \"%s\".\n", path);
       return false;
    }
 
@@ -158,7 +158,7 @@ bool glslang_read_shader_file(const char *path,
 
       if (strncmp("#version ", line, STRLEN_CONST("#version ")))
       {
-         RARCH_ERR("First line of the shader must contain a valid "
+         RARCH_ERR("[slang]: First line of the shader must contain a valid "
                "#version string.\n");
          goto error;
       }
@@ -201,7 +201,7 @@ bool glslang_read_shader_file(const char *path,
 
          if (string_is_empty(include_file))
          {
-            RARCH_ERR("Invalid include statement \"%s\".\n", line);
+            RARCH_ERR("[slang]: Invalid include statement \"%s\".\n", line);
             goto error;
          }
 

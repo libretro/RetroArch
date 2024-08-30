@@ -13,13 +13,18 @@
  **************************************************************/
 
 #include <stdio.h>
+#include <ctype.h>
+#include <string.h>
 #include "display.h"
 #if defined(_WIN32)
 #include "display_windows.h"
 #elif defined(__linux__)
-#include <string.h>
 #include "display_linux.h"
 #endif
+#ifdef SR_WITH_SDL2
+#include "display_sdl2.h"
+#endif
+
 #include "log.h"
 
 //============================================================
@@ -30,10 +35,30 @@ display_manager *display_manager::make(display_settings *ds)
 {
 	display_manager *display = nullptr;
 
+	if (!strcmp(ds->screen, "dummy"))
+	{
+		display = new dummy_display(ds);
+		return display;
+	}
+
+#ifdef SR_WITH_SDL2
+	try
+	{
+		display = new sdl2_display(ds);
+	}
+	catch (...) {};
+	if (!display)
+	{
+#endif
+
 #if defined(_WIN32)
 	display = new windows_display(ds);
 #elif defined(__linux__)
 	display = new linux_display(ds);
+#endif
+
+#ifdef SR_WITH_SDL2
+	}
 #endif
 
 	return display;
@@ -45,6 +70,9 @@ display_manager *display_manager::make(display_settings *ds)
 
 void display_manager::parse_options()
 {
+	log_verbose("Switchres: display[%d] options: monitor[%s] generation[%s]\n",
+		m_index, m_ds.monitor, m_ds.modeline_generation?"on":"off");
+
 	// Get user_mode as <w>x<h>@<r>
 	set_user_mode(&m_ds.user_mode);
 
@@ -54,6 +82,7 @@ void display_manager::parse_options()
 	{
 		if (modeline_parse(m_ds.user_modeline, &user_mode))
 		{
+			memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 			user_mode.type |= MODE_USER_DEF;
 			set_user_mode(&user_mode);
 		}
@@ -66,29 +95,37 @@ void display_manager::parse_options()
 		monitor_show_range(range);
 	}
 	else
-	{
-		char default_monitor[] = "generic_15";
+		set_preset(m_ds.monitor);
+}
 
-		memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
+//============================================================
+//  display_manager::set_preset
+//============================================================
 
-		if (!strcmp(m_ds.monitor, "custom"))
-			for (int i = 0; i < MAX_RANGES; i++) monitor_fill_range(&range[i], m_ds.crt_range[i]);
+void display_manager::set_preset(const char *preset)
+{
+	for (size_t i = 0; i < strlen(m_ds.monitor); i++) m_ds.monitor[i] = tolower(m_ds.monitor[i]);
 
-		else if (!strcmp(m_ds.monitor, "lcd"))
-			monitor_fill_lcd_range(&range[0], m_ds.lcd_range);
+	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);
 
-		else if (monitor_set_preset(m_ds.monitor, range) == 0)
-			monitor_set_preset(default_monitor, range);
-	}
+	if (!strcmp(preset, "custom"))
+		for (int i = 0; i < MAX_RANGES; i++) monitor_fill_range(&range[i], m_ds.crt_range[i]);
+
+	else if (!strcmp(preset, "lcd"))
+		monitor_fill_lcd_range(&range[0], m_ds.lcd_range);
+
+	else if (monitor_set_preset(preset, range) == 0)
+		monitor_set_preset("generic_15", range);
 }
 
 //============================================================
 //  display_manager::init
 //============================================================
 
-bool display_manager::init()
+bool display_manager::init(void* pf_data)
 {
 	sprintf(m_ds.screen, "ram");
+	m_pf_data = pf_data;
 
 	return true;
 }
@@ -99,7 +136,7 @@ bool display_manager::init()
 
 int display_manager::caps()
 {
-	if (video())
+	if (video() != nullptr)
 		return video()->caps();
 	else
 		return CUSTOM_VIDEO_CAPS_ADD;
@@ -111,11 +148,8 @@ int display_manager::caps()
 
 bool display_manager::add_mode(modeline *mode)
 {
-	if (video() == nullptr)
-		return false;
-
 	// Add new mode
-	if (!video()->add_mode(mode))
+	if (video() != nullptr && !video()->add_mode(mode))
 	{
 		log_verbose("Switchres: error adding mode ");
 		log_mode(mode);
@@ -136,10 +170,7 @@ bool display_manager::add_mode(modeline *mode)
 
 bool display_manager::delete_mode(modeline *mode)
 {
-	if (video() == nullptr)
-		return false;
-
-	if (!video()->delete_mode(mode))
+	if (video() != nullptr && !video()->delete_mode(mode))
 	{
 		log_verbose("Switchres: error deleting mode ");
 		log_mode(mode);
@@ -148,6 +179,10 @@ bool display_manager::delete_mode(modeline *mode)
 
 	log_verbose("Switchres: deleted ");
 	log_mode(mode);
+
+	ptrdiff_t i = mode - &video_modes[0];
+	video_modes.erase(video_modes.begin() + i);
+
 	return true;
 }
 
@@ -157,11 +192,8 @@ bool display_manager::delete_mode(modeline *mode)
 
 bool display_manager::update_mode(modeline *mode)
 {
-	if (video() == nullptr)
-		return false;
-
 	// Apply new timings
-	if (!video()->update_mode(mode))
+	if (video() != nullptr && !video()->update_mode(mode))
 	{
 		log_verbose("Switchres: error updating mode ");
 		log_mode(mode);
@@ -191,7 +223,7 @@ bool display_manager::set_mode(modeline *)
 void display_manager::log_mode(modeline *mode)
 {
 	char modeline_txt[256];
-	log_verbose("%s timing %s\n", video()->api_name(), modeline_print(mode, modeline_txt, MS_FULL));
+	log_verbose("%s timing %s\n", video() != nullptr? video()->api_name() : "dummy", modeline_print(mode, modeline_txt, MS_FULL));
 }
 
 //============================================================
@@ -227,9 +259,6 @@ bool display_manager::flush_modes()
 	bool error = false;
 	std::vector<modeline *> modified_modes = {};
 
-	if (video() == nullptr)
-		return false;
-
 	// Loop through our mode table to collect all pending changes
 	for (auto &mode : video_modes)
 		if (mode.type & (MODE_UPDATE | MODE_ADD | MODE_DELETE))
@@ -238,7 +267,8 @@ bool display_manager::flush_modes()
 	// Flush pending changes to driver
 	if (modified_modes.size() > 0)
 	{
-		video()->process_modelist(modified_modes);
+		if (video() != nullptr)
+			video()->process_modelist(modified_modes);
 
 		// Log error/success result for each mode
 		for (auto &mode : modified_modes)
@@ -259,7 +289,7 @@ bool display_manager::flush_modes()
 			if (video_modes[i].type & MODE_DELETE)
 			{
 				video_modes.erase(video_modes.begin() + i);
-				m_best_mode = 0;
+				m_selected_mode = 0;
 			}
 			else
 				video_modes[i].type &= ~(MODE_UPDATE | MODE_ADD);
@@ -319,25 +349,32 @@ bool display_manager::filter_modes()
 //  display_manager::get_video_mode
 //============================================================
 
-modeline *display_manager::get_mode(int width, int height, float refresh, bool interlaced)
+modeline *display_manager::get_mode(int width, int height, float refresh, int flags)
 {
 	modeline s_mode = {};
 	modeline t_mode = {};
 	modeline best_mode = {};
 	char result[256]={'\x00'};
 
-	log_verbose("Switchres: Calculating best video mode for %dx%d@%.6f%s orientation: %s\n",
-						width, height, refresh, interlaced?"i":"", rotation()?"rotated":"normal");
+	bool rotated = flags & SR_MODE_ROTATED;
+	bool interlaced = flags & SR_MODE_INTERLACED;
+
+	log_info("Switchres: Calculating best video mode for %dx%d@%.6f%s orientation: %s\n",
+						width, height, refresh, interlaced?"i":"", rotated?"rotated":"normal");
 
 	best_mode.result.weight |= R_OUT_OF_RANGE;
 
 	s_mode.interlace = interlaced;
 	s_mode.vfreq = refresh;
 
-	s_mode.hactive = normalize(width, 8);
+	s_mode.hactive = width;
 	s_mode.vactive = height;
 
-	if (rotation()) std::swap(s_mode.hactive, s_mode.vactive);
+	if (rotated)
+	{
+		std::swap(s_mode.hactive, s_mode.vactive);
+		s_mode.type |= MODE_ROTATED;
+	}
 
 	// Create a dummy mode entry if allowed
 	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation)
@@ -357,63 +394,66 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 			mode.type & MODE_DISABLED?" - locked":"");
 
 		// now get the mode if allowed
-		if (!(mode.type & MODE_DISABLED))
+		if (mode.type & MODE_DISABLED)
+			continue;
+
+		for (int i = 0 ; i < MAX_RANGES ; i++)
 		{
-			for (int i = 0 ; i < MAX_RANGES ; i++)
+			if (range[i].hfreq_min == 0)
+				continue;
+
+			t_mode = mode;
+
+			// init all editable fields with source or user values
+			if (t_mode.type & X_RES_EDITABLE)
+				t_mode.hactive = m_user_mode.width? m_user_mode.width : s_mode.hactive;
+
+			if (t_mode.type & Y_RES_EDITABLE)
+				t_mode.vactive = m_user_mode.height? m_user_mode.height : s_mode.vactive;
+
+			if (t_mode.type & V_FREQ_EDITABLE)
 			{
-				if (range[i].hfreq_min)
-				{
-					t_mode = mode;
+				// If user's vfreq is defined, it means we have an user modeline, so force it
+				if (m_user_mode.vfreq)
+					modeline_copy_timings(&t_mode, &m_user_mode);
+				else
+					t_mode.vfreq = s_mode.vfreq;
+			}
 
-					// init all editable fields with source or user values
-					if (t_mode.type & X_RES_EDITABLE)
-						t_mode.hactive = m_user_mode.width? m_user_mode.width : s_mode.hactive;
+			// lock resolution fields if required
+			if (m_user_mode.width) t_mode.type &= ~X_RES_EDITABLE;
+			if (m_user_mode.height) t_mode.type &= ~Y_RES_EDITABLE;
+			if (m_user_mode.vfreq) t_mode.type &= ~V_FREQ_EDITABLE;
 
-					if (t_mode.type & Y_RES_EDITABLE)
-						t_mode.vactive = m_user_mode.height? m_user_mode.height : s_mode.vactive;
+			modeline_create(&s_mode, &t_mode, &range[i], &m_ds.gs);
+			t_mode.range = i;
 
-					if (t_mode.type & V_FREQ_EDITABLE)
-					{
-						// If user's vfreq is defined, it means we have an user modeline, so force it
-						if (m_user_mode.vfreq)
-							t_mode = m_user_mode;
-						else
-							t_mode.vfreq = s_mode.vfreq;
-					}
+			log_verbose("%s\n", modeline_result(&t_mode, result));
 
-					// lock resolution fields if required
-					if (m_user_mode.width) t_mode.type &= ~X_RES_EDITABLE;
-					if (m_user_mode.height) t_mode.type &= ~Y_RES_EDITABLE;
-					if (m_user_mode.vfreq) t_mode.type &= ~V_FREQ_EDITABLE;
-
-					modeline_create(&s_mode, &t_mode, &range[i], &m_ds.gs);
-					t_mode.range = i;
-
-					log_verbose("%s\n", modeline_result(&t_mode, result));
-
-					if (modeline_compare(&t_mode, &best_mode))
-					{
-						best_mode = t_mode;
-						m_best_mode = &mode;
-					}
-				}
+			if (modeline_compare(&t_mode, &best_mode))
+			{
+				best_mode = t_mode;
+				m_selected_mode = &mode;
 			}
 		}
 	}
 
 	// If we didn't need to create a new mode, remove our dummy entry
-	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation && m_best_mode != &video_modes.back())
+	if (caps() & CUSTOM_VIDEO_CAPS_ADD && m_ds.modeline_generation && m_selected_mode != &video_modes.back())
 		video_modes.pop_back();
 
 	// If we didn't find a suitable mode, exit now
 	if (best_mode.result.weight & R_OUT_OF_RANGE)
 	{
-		m_best_mode = 0;
+		m_selected_mode = 0;
 		log_error("Switchres: could not find a video mode that meets your specs\n");
 		return nullptr;
 	}
 
-	log_verbose("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotation()?"rotated":"normal",
+	if ((best_mode.type & V_FREQ_EDITABLE) && !(best_mode.result.weight & R_OUT_OF_RANGE))
+		modeline_adjust(&best_mode, range[best_mode.range].hfreq_max, &m_ds.gs);
+
+	log_verbose("\nSwitchres: %s (%dx%d@%.6f)->(%dx%d@%.6f)\n", rotated?"rotated":"normal",
 		width, height, refresh, best_mode.hactive, best_mode.vactive, best_mode.vfreq);
 
 	log_verbose("%s\n", modeline_result(&best_mode, result));
@@ -427,9 +467,9 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 			best_mode.height = best_mode.vactive;
 			best_mode.refresh = int(best_mode.vfreq);
 			// lock new mode
-			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE | (caps() & CUSTOM_VIDEO_CAPS_UPDATE? 0 : V_FREQ_EDITABLE));
+			best_mode.type &= ~(X_RES_EDITABLE | Y_RES_EDITABLE);
 		}
-		else if (modeline_is_different(&best_mode, m_best_mode) != 0)
+		else if (modeline_is_different(&best_mode, m_selected_mode) != 0)
 			best_mode.type |= MODE_UPDATE;
 
 		char modeline[256]={'\x00'};
@@ -437,10 +477,14 @@ modeline *display_manager::get_mode(int width, int height, float refresh, bool i
 	}
 
 	// Check if new best mode is different than previous one
-	m_switching_required = (m_current_mode != m_best_mode || best_mode.type & MODE_UPDATE);
+	m_switching_required = (m_current_mode != m_selected_mode || best_mode.type & MODE_UPDATE);
 
-	*m_best_mode = best_mode;
-	return m_best_mode;
+	// Add id to mode
+	if (best_mode.id == 0)
+		best_mode.id = ++m_id_counter;
+
+	*m_selected_mode = best_mode;
+	return m_selected_mode;
 }
 
 //============================================================
@@ -478,4 +522,25 @@ bool display_manager::auto_specs()
 	set_user_mode(&user_mode);
 
 	return true;
+}
+
+//============================================================
+//  display_manager::get_aspect
+//============================================================
+
+double display_manager::get_aspect(const char* aspect)
+{
+	int num, den;
+	if (sscanf(aspect, "%d:%d", &num, &den) == 2)
+	{
+		if (den == 0)
+		{
+			log_error("Error: denominator can't be zero\n");
+			return STANDARD_CRT_ASPECT;
+		}
+		return (double(num)/double(den));
+	}
+
+	log_error("Error: use format --aspect <num:den>\n");
+	return STANDARD_CRT_ASPECT;
 }

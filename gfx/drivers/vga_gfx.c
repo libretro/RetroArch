@@ -15,21 +15,98 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 #include <dpmi.h>
 #include <pc.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
 
-#include "../common/vga_common.h"
+#include "../common/vga_defines.h"
 
 #include "../font_driver.h"
 
 #include "../../driver.h"
 #include "../../verbosity.h"
 
+/*
+ * FONT DRIVER
+ */
+
+typedef struct
+{
+   const font_renderer_driver_t *font_driver;
+   void *font_data;
+   vga_t *vga;
+} vga_raster_t;
+
+static void *vga_font_init(void *data,
+      const char *font_path, float font_size,
+      bool is_threaded)
+{
+   vga_raster_t *font  = (vga_raster_t*)calloc(1, sizeof(*font));
+
+   if (!font)
+      return NULL;
+
+   font->vga = (vga_t*)data;
+
+   font_size = 1;
+
+   if (!font_renderer_create_default(
+            &font->font_driver,
+            &font->font_data, font_path, font_size))
+      return NULL;
+
+   return font;
+}
+
+static void vga_font_render_free(void *data, bool is_threaded)
+{
+  vga_raster_t *font  = (vga_raster_t*)data;
+
+  if (!font)
+     return;
+
+  if (font->font_driver && font->font_data)
+     font->font_driver->free(font->font_data);
+
+  free(font);
+}
+
+static int vga_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale) { return 0; }
+static const struct font_glyph *vga_font_get_glyph(
+      void *data, uint32_t code) { return NULL; }
+/* TODO/FIXME -implement font rendering */
+static void vga_font_render_msg(
+      void *userdata,
+      void *data, const char *msg,
+      const struct font_params *params) { }
+
+font_renderer_t vga_font = {
+   vga_font_init,
+   vga_font_render_free,
+   vga_font_render_msg,
+   "vga",
+   vga_font_get_glyph,         /* get_glyph */
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   vga_font_get_message_width, /* get_message_width */
+   NULL                        /* get_line_metrics */
+};
+
+/*
+ * VIDEO DRIVER
+ */
 
 static void vga_set_mode_13h(void)
 {
@@ -139,13 +216,11 @@ static bool vga_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    unsigned width, height, bits;
-   size_t len                = 0;
-   void *buffer              = NULL;
    const void *frame_to_copy = frame;
    bool draw                 = true;
    vga_t *vga                = (vga_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive        = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame || !frame_width || !frame_height)
@@ -155,9 +230,9 @@ static bool vga_gfx_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  vga->vga_video_width  != frame_width   ||
-         vga->vga_video_height != frame_height  ||
-         vga->vga_video_pitch  != pitch)
+   if (     (vga->vga_video_width  != frame_width)
+         || (vga->vga_video_height != frame_height)
+         || (vga->vga_video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
@@ -199,7 +274,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
 
       if (frame_to_copy == vga->vga_menu_frame)
          dosmemput(frame_to_copy,
-               MIN(VGA_WIDTH,width)*MIN(VGA_HEIGHT,height), 0xA0000);
+               VGA_WIDTH*VGA_HEIGHT, 0xA0000);
       else
       {
          if (bits == 32)
@@ -366,30 +441,30 @@ static uint32_t vga_get_flags(void *data) { return 0; }
 
 static const video_poke_interface_t vga_poke_interface = {
    vga_get_flags,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
    vga_set_texture_frame,
-   NULL,
+   NULL, /* set_texture_enable */
    font_driver_render_msg,
-   NULL,                   /* show_mouse */
-   NULL,                   /* grab_mouse_toggle */
-   NULL,                   /* get_current_shader */
-   NULL,                   /* get_current_software_framebuffer */
-   NULL,                   /* get_hw_render_interface */
-   NULL,                   /* set_hdr_max_nits */
-   NULL,                   /* set_hdr_paper_white_nits */
-   NULL,                   /* set_hdr_contrast */
-   NULL                    /* set_hdr_expand_gamut */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void vga_gfx_get_poke_interface(void *data,
@@ -413,12 +488,12 @@ video_driver_t video_vga = {
    NULL, /* viewport_info */
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   vga_gfx_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-  vga_gfx_get_poke_interface,
 };

@@ -38,10 +38,9 @@
 
 #include "core.h"
 
+#include "driver.h"
 #include "runloop.h"
 #include "retroarch_types.h"
-
-RETRO_BEGIN_DECLS
 
 #define RETRO_ENVIRONMENT_RETROARCH_START_BLOCK 0x800000
 
@@ -60,7 +59,7 @@ RETRO_BEGIN_DECLS
 
 #define RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE (4 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
                                             /* unsigned * --
-                                            * Tells the frontend to override the poll type behavior. 
+                                            * Tells the frontend to override the poll type behavior.
                                             * Allows the frontend to influence the polling behavior of the
                                             * frontend.
                                             *
@@ -74,6 +73,7 @@ RETRO_BEGIN_DECLS
 
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
+      | DRIVER_MICROPHONE_MASK \
       | DRIVER_VIDEO_MASK \
       | DRIVER_INPUT_MASK \
       | DRIVER_CAMERA_MASK \
@@ -84,6 +84,30 @@ RETRO_BEGIN_DECLS
       | DRIVER_WIFI_MASK \
       | DRIVER_LED_MASK \
       | DRIVER_MIDI_MASK )
+
+
+RETRO_BEGIN_DECLS
+
+enum rarch_state_flags
+{
+   RARCH_FLAGS_HAS_SET_USERNAME             = (1 << 0),
+   RARCH_FLAGS_HAS_SET_VERBOSITY            = (1 << 1),
+   RARCH_FLAGS_HAS_SET_LIBRETRO             = (1 << 2),
+   RARCH_FLAGS_HAS_SET_LIBRETRO_DIRECTORY   = (1 << 3),
+   RARCH_FLAGS_HAS_SET_SAVE_PATH            = (1 << 4),
+   RARCH_FLAGS_HAS_SET_STATE_PATH           = (1 << 5),
+   RARCH_FLAGS_HAS_SET_UPS_PREF             = (1 << 6),
+   RARCH_FLAGS_HAS_SET_BPS_PREF             = (1 << 7),
+   RARCH_FLAGS_HAS_SET_IPS_PREF             = (1 << 8),
+   RARCH_FLAGS_HAS_SET_LOG_TO_FILE          = (1 << 9),
+   RARCH_FLAGS_UPS_PREF                     = (1 << 10),
+   RARCH_FLAGS_BPS_PREF                     = (1 << 11),
+   RARCH_FLAGS_IPS_PREF                     = (1 << 12),
+   RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
+   RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14),
+   RARCH_FLAGS_HAS_SET_XDELTA_PREF          = (1 << 15),
+   RARCH_FLAGS_XDELTA_PREF                  = (1 << 16)
+};
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
@@ -96,7 +120,7 @@ void retroarch_override_setting_unset(enum rarch_override_setting enum_idx, void
 
 bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, void *data);
 
-const char* retroarch_get_shader_preset(void);
+const char* video_shader_get_current_shader_preset(void);
 
 /**
  * retroarch_main_init:
@@ -105,7 +129,7 @@ const char* retroarch_get_shader_preset(void);
  *
  * Initializes the program.
  *
- * Returns: 1 (true) on success, otherwise false (0) if there was an error.
+ * @return true on success, otherwise false if there was an error.
  **/
 bool retroarch_main_init(int argc, char *argv[]);
 
@@ -121,15 +145,13 @@ int content_get_subsystem(void);
 
 void retroarch_menu_running(void);
 
-void retroarch_path_set_redirect(settings_t *settings);
-
 void retroarch_menu_running_finished(bool quit);
 
-enum retro_language rarch_get_language_from_iso(const char *lang);
+enum retro_language retroarch_get_language_from_iso(const char *lang);
 
-void rarch_favorites_init(void);
+void retroarch_favorites_init(void);
 
-void rarch_favorites_deinit(void);
+void retroarch_favorites_deinit(void);
 
 /* Audio */
 
@@ -142,62 +164,38 @@ void rarch_favorites_deinit(void);
  **/
 const char* config_get_audio_driver_options(void);
 
-/* BSV Movie */
-
-void bsv_movie_frame_rewind(void);
+#ifdef HAVE_MICROPHONE
+/**
+ * config_get_microphone_driver_options:
+ *
+ * Get an enumerated list of all microphone driver names, separated by '|'.
+ *
+ * Returns: string listing of all microphone driver names, separated by '|'.
+ **/
+const char* config_get_microphone_driver_options(void);
+#endif
 
 /* Camera */
 
+/*
+   Returns rotation requested by the core regardless of if it has been
+   applied with the final video rotation
+*/
+unsigned int retroarch_get_core_requested_rotation(void);
+
+/*
+   Returns final rotation including both user chosen video rotation
+   and core requested rotation if allowed by video_allow_rotate
+*/
 unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);
-
-/* Human readable order of input binds */
-static const unsigned input_config_bind_order[] = {
-   RETRO_DEVICE_ID_JOYPAD_UP,
-   RETRO_DEVICE_ID_JOYPAD_DOWN,
-   RETRO_DEVICE_ID_JOYPAD_LEFT,
-   RETRO_DEVICE_ID_JOYPAD_RIGHT,
-   RETRO_DEVICE_ID_JOYPAD_A,
-   RETRO_DEVICE_ID_JOYPAD_B,
-   RETRO_DEVICE_ID_JOYPAD_X,
-   RETRO_DEVICE_ID_JOYPAD_Y,
-   RETRO_DEVICE_ID_JOYPAD_SELECT,
-   RETRO_DEVICE_ID_JOYPAD_START,
-   RETRO_DEVICE_ID_JOYPAD_L,
-   RETRO_DEVICE_ID_JOYPAD_R,
-   RETRO_DEVICE_ID_JOYPAD_L2,
-   RETRO_DEVICE_ID_JOYPAD_R2,
-   RETRO_DEVICE_ID_JOYPAD_L3,
-   RETRO_DEVICE_ID_JOYPAD_R3,
-   19, /* Left Analog Up */
-   18, /* Left Analog Down */
-   17, /* Left Analog Left */
-   16, /* Left Analog Right */
-   23, /* Right Analog Up */
-   22, /* Right Analog Down */
-   21, /* Right Analog Left */
-   20, /* Right Analog Right */
-};
 
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
 void core_options_reset(void);
 void core_options_flush(void);
-
-typedef enum apple_view_type
-{
-   APPLE_VIEW_TYPE_NONE = 0,
-   APPLE_VIEW_TYPE_OPENGL_ES,
-   APPLE_VIEW_TYPE_OPENGL,
-   APPLE_VIEW_TYPE_VULKAN,
-   APPLE_VIEW_TYPE_METAL
-} apple_view_type_t;
-
-bool retroarch_get_current_savestate_path(char *path, size_t len);
-
-bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot);
 
 /**
  * retroarch_fail:
@@ -207,6 +205,10 @@ bool retroarch_get_entry_state_path(char *path, size_t len, unsigned slot);
  * Sanely kills the program.
  **/
 void retroarch_fail(int error_code, const char *error);
+
+bool should_quit_on_close(void);
+
+uint16_t retroarch_get_flags(void);
 
 RETRO_END_DECLS
 

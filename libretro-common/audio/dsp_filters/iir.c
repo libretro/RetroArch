@@ -142,6 +142,7 @@ static enum IIRFilter str_to_type(const char *str)
 
    return LPF; /* Fallback. */
 }
+#undef CHECK
 
 static void make_poly_from_roots(
       const double *roots, unsigned num_roots, float *poly)
@@ -364,7 +365,6 @@ static const struct dspfilter_implementation iir_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)mask;
    return &iir_plug;
 }
 

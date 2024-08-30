@@ -21,20 +21,50 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-void *mmdevice_list_new(void *u)
+char* mmdevice_name(IMMDevice *device)
+{
+   HRESULT hr;
+   IPropertyStore *prop_store = NULL;
+   PROPVARIANT prop_var;
+   bool prop_var_init         = false;
+   char* result               = NULL;
+
+   if (!device)
+      return NULL;
+
+   hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
+
+   if (FAILED(hr))
+      return NULL;
+
+   PropVariantInit(&prop_var);
+   prop_var_init = true;
+   hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName, &prop_var);
+   if (FAILED(hr))
+      goto done;
+
+   result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
+
+done:
+   if (prop_var_init)
+      PropVariantClear(&prop_var);
+
+   IFACE_RELEASE(prop_store);
+
+   return result;
+}
+
+void *mmdevice_list_new(const void *u, EDataFlow data_flow)
 {
    HRESULT hr;
    UINT i;
-   PROPVARIANT prop_var;
    union string_list_elem_attr attr;
    IMMDeviceEnumerator *enumerator = NULL;
    IMMDeviceCollection *collection = NULL;
    UINT dev_count                  = 0;
    IMMDevice *device               = NULL;
    LPWSTR dev_id_wstr              = NULL;
-   IPropertyStore *prop_store      = NULL;
    bool br                         = false;
-   bool prop_var_init              = false;
    char *dev_id_str                = NULL;
    char *dev_name_str              = NULL;
    struct string_list *sl          = string_list_new();
@@ -54,7 +84,7 @@ void *mmdevice_list_new(void *u)
       goto error;
 
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         eRender, DEVICE_STATE_ACTIVE, &collection);
+         data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
       goto error;
 
@@ -75,19 +105,7 @@ void *mmdevice_list_new(void *u)
       if (!(dev_id_str = utf16_to_utf8_string_alloc(dev_id_wstr)))
          goto error;
 
-      hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
-      if (FAILED(hr))
-         goto error;
-
-      PropVariantInit(&prop_var);
-      prop_var_init = true;
-      hr            = _IPropertyStore_GetValue(
-            prop_store, PKEY_Device_FriendlyName,
-            &prop_var);
-      if (FAILED(hr))
-         goto error;
-
-      if (!(dev_name_str = utf16_to_utf8_string_alloc(prop_var.pwszVal)))
+      if (!(dev_name_str = mmdevice_name(device)))
          goto error;
 
       br = string_list_append(sl, dev_name_str, attr);
@@ -96,15 +114,12 @@ void *mmdevice_list_new(void *u)
       if (dev_id_str)
          sl->elems[sl->size-1].userdata = dev_id_str;
 
-      PropVariantClear(&prop_var);
-      prop_var_init = false;
       if (dev_id_wstr)
          CoTaskMemFree(dev_id_wstr);
       if (dev_name_str)
          free(dev_name_str);
       dev_name_str = NULL;
       dev_id_wstr  = NULL;
-      IFACE_RELEASE(prop_store);
       IFACE_RELEASE(device);
    }
 
@@ -120,9 +135,6 @@ error:
       free(dev_name_str);
    dev_id_str   = NULL;
    dev_name_str = NULL;
-   if (prop_var_init)
-      PropVariantClear(&prop_var);
-   IFACE_RELEASE(prop_store);
    if (dev_id_wstr)
       CoTaskMemFree(dev_id_wstr);
    dev_id_wstr = NULL;

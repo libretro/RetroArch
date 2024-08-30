@@ -421,6 +421,7 @@ static INLINE UINT32 get_bigendian_uint32(const UINT8 *base)
     the data stream in bigendian order
 -------------------------------------------------*/
 
+#if 0
 static INLINE void put_bigendian_uint32(UINT8 *base, UINT32 value)
 {
    base[0] = value >> 24;
@@ -428,6 +429,7 @@ static INLINE void put_bigendian_uint32(UINT8 *base, UINT32 value)
 	base[2] = value >> 8;
 	base[3] = value;
 }
+#endif
 
 /*-------------------------------------------------
     put_bigendian_uint24 - write a UINT24 to
@@ -491,6 +493,7 @@ static INLINE void map_extract(const UINT8 *base, map_entry *entry)
     entry to the datastream
 -------------------------------------------------*/
 
+#if 0
 static INLINE void map_assemble(UINT8 *base, map_entry *entry)
 {
 	put_bigendian_uint64(&base[0], entry->offset);
@@ -499,6 +502,7 @@ static INLINE void map_assemble(UINT8 *base, map_entry *entry)
 	base[14] = entry->length >> 16;
 	base[15] = entry->flags;
 }
+#endif
 
 /*-------------------------------------------------
     map_size_v5 - calculate CHDv5 map size
@@ -637,7 +641,7 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 		return CHDERR_DECOMPRESSION_ERROR;
 	}
 
-	for (hunknum = 0; hunknum < header->hunkcount; hunknum++)
+	for (hunknum = 0; hunknum < (int)header->hunkcount; hunknum++)
 	{
 		uint8_t *rawmap = header->rawmap + (hunknum * 12);
 		if (repcount > 0)
@@ -666,7 +670,7 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 
 	/* then iterate through the hunks and extract the needed data */
 	curoffset = firstoffs;
-	for (hunknum = 0; hunknum < header->hunkcount; hunknum++)
+	for (hunknum = 0; hunknum < (int)header->hunkcount; hunknum++)
 	{
 		uint8_t *rawmap = header->rawmap + (hunknum * 12);
 		uint64_t offset = curoffset;
@@ -856,7 +860,7 @@ chd_error chd_open_file(RFILE *file, int mode, chd_file *parent, chd_file **chd)
 	/* find the codec interface */
 	if (newchd->header.version < 5)
 	{
-		for (intfnum = 0; intfnum < ARRAY_SIZE(codec_interfaces); intfnum++)
+		for (intfnum = 0; intfnum < (int)ARRAY_SIZE(codec_interfaces); intfnum++)
 			if (codec_interfaces[intfnum].compression == newchd->header.compression[0])
 			{
 				newchd->codecintf[0] = &codec_interfaces[intfnum];
@@ -878,9 +882,9 @@ chd_error chd_open_file(RFILE *file, int mode, chd_file *parent, chd_file **chd)
 	{
 		int i, decompnum;
 		/* verify the compression types and initialize the codecs */
-		for (decompnum = 0; decompnum < ARRAY_SIZE(newchd->header.compression); decompnum++)
+		for (decompnum = 0; decompnum < (int)ARRAY_SIZE(newchd->header.compression); decompnum++)
 		{
-			for (i = 0 ; i < ARRAY_SIZE(codec_interfaces) ; i++)
+			for (i = 0 ; i < (int)ARRAY_SIZE(codec_interfaces); i++)
 			{
 				if (codec_interfaces[i].compression == newchd->header.compression[decompnum])
 				{
@@ -1331,7 +1335,7 @@ static chd_error header_validate(const chd_header *header)
 			return CHDERR_INVALID_PARAMETER;
 
 		/* require a supported compression mechanism */
-		for (intfnum = 0; intfnum < ARRAY_SIZE(codec_interfaces); intfnum++)
+		for (intfnum = 0; intfnum < (int)ARRAY_SIZE(codec_interfaces); intfnum++)
 			if (codec_interfaces[intfnum].compression == header->compression[0])
 				break;
 
@@ -1571,7 +1575,7 @@ static UINT8* hunk_read_compressed(chd_file *chd, UINT64 offset, size_t size)
       return chd->file_cache + offset;
    filestream_seek(chd->file, offset, SEEK_SET);
    bytes = filestream_read(chd->file, chd->compressed, size);
-   if (bytes != size)
+   if (bytes != (int64_t)size)
       return NULL;
    return chd->compressed;
 }
@@ -1591,7 +1595,7 @@ static chd_error hunk_read_uncompressed(chd_file *chd, UINT64 offset, size_t siz
    }
    filestream_seek(chd->file, offset, SEEK_SET);
    bytes = filestream_read(chd->file, dest, size);
-   if (bytes != size)
+   if (bytes != (int64_t)size)
       return CHDERR_READ_ERROR;
    return CHDERR_NONE;
 }
@@ -1825,7 +1829,7 @@ static chd_error map_read(chd_file *chd)
 
 	/* read the map entries in in chunks and extract to the map list */
 	fileoffset = chd->header.length;
-	for (i = 0; i < chd->header.totalhunks; i += MAP_STACK_ENTRIES)
+	for (i = 0; i < (int)chd->header.totalhunks; i += MAP_STACK_ENTRIES)
 	{
 		/* compute how many entries this time */
 		int entries = chd->header.totalhunks - i, j;

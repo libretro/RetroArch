@@ -21,7 +21,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
 static bool load_xinput_dll(void)
 {
    const char *version = "1.4";
@@ -44,7 +44,7 @@ static bool load_xinput_dll(void)
 
    if (!g_xinput_dll)
    {
-      RARCH_ERR("[XInput]: Failed to load XInput, ensure DirectX and controller drivers are up to date.\n");
+      RARCH_ERR("[XInput]: Failed to load XInput. Ensure DirectX and controller drivers are up to date.\n");
       return false;
    }
 

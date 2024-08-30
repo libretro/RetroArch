@@ -1,3 +1,16 @@
+/*  RetroArch - A frontend for libretro.
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -136,14 +149,14 @@ typedef struct switch_input
 
 #ifdef HAVE_LIBNX
 /* beginning of touch mouse function declarations */
-static void handle_touch_mouse(switch_input_t *sw);
-static void normalize_touch_mouse_xy(float *normalized_x, float *normalized_y, int reported_x, int reported_y);
-static void process_touch_mouse_event(switch_input_t *sw, TouchEvent *event);
-static void process_touch_mouse_finger_down(switch_input_t * sw, TouchEvent *event);
-static void process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event);
-static void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event);
-static void normalized_to_screen_xy(int *screenX, int *screenY, float x, float y);
-static void finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTime);
+static void switch_handle_touch_mouse(switch_input_t *sw);
+static void switch_normalize_touch_mouse_xy(float *normalized_x, float *normalized_y, int reported_x, int reported_y);
+static void switch_process_touch_mouse_event(switch_input_t *sw, TouchEvent *event);
+static void switch_process_touch_mouse_finger_down(switch_input_t * sw, TouchEvent *event);
+static void switch_process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event);
+static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event);
+static void switch_normalized_to_screen_xy(int *screenX, int *screenY, float x, float y);
+static void switch_finish_simulated_mouse_clicks(switch_input_t *sw, uint64_t currentTime);
 /* end of touch mouse function declarations */
 #endif
 
@@ -196,26 +209,33 @@ static void switch_input_poll(void *data)
       }
    }
 
-   mod = 0;
    hidGetKeyboardStates(&kbd_state, 1);
-   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftAlt) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightAlt))
+   if (kbd_state.modifiers & (HidKeyboardModifier_LeftAlt | HidKeyboardModifier_RightAlt))
       mod |= RETROKMOD_ALT;
-   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftControl) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightControl))
+   if (kbd_state.modifiers & HidKeyboardModifier_Control)
       mod |= RETROKMOD_CTRL;
-   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftShift) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightShift))
+   if (kbd_state.modifiers & HidKeyboardModifier_Shift)
       mod |= RETROKMOD_SHIFT;
+   if (kbd_state.modifiers & HidKeyboardModifier_Gui)
+      mod |= RETROKMOD_META;
+   if (kbd_state.modifiers & HidKeyboardModifier_CapsLock)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (kbd_state.modifiers & HidKeyboardModifier_ScrollLock)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (kbd_state.modifiers & HidKeyboardModifier_NumLock)
+      mod |= RETROKMOD_NUMLOCK;
 
    for (i = 0; i < SWITCH_NUM_SCANCODES; i++)
    {
-      key_sym = rarch_key_map_switch[i].sym;
-      key_code = input_keymaps_translate_keysym_to_rk(key_sym);
+      key_sym     = rarch_key_map_switch[i].sym;
+      key_code    = input_keymaps_translate_keysym_to_rk(key_sym);
       key_pressed = hidKeyboardStateGetKey(&kbd_state, key_sym);
-      if (key_pressed && !(sw->keyboard_state[key_sym]))
+      if (key_sym && key_pressed && !(sw->keyboard_state[key_sym]))
       {
          sw->keyboard_state[key_sym] = true;
          input_keyboard_event(true, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
       }
-      else if (!key_pressed && sw->keyboard_state[key_sym])
+      else if (key_sym && !key_pressed && sw->keyboard_state[key_sym])
       {
          sw->keyboard_state[key_sym] = false;
          input_keyboard_event(false, key_code, 0, mod, RETRO_DEVICE_KEYBOARD);
@@ -257,25 +277,25 @@ static void switch_input_poll(void *data)
    sw->mouse_x_delta = mouse_state.delta_x;
    sw->mouse_y_delta = mouse_state.delta_y;
 
-   sw->mouse_x = mouse_state.x;
-   sw->mouse_y = mouse_state.y;
+   sw->mouse_x       = mouse_state.x;
+   sw->mouse_y       = mouse_state.y;
 
    /* touch mouse events
-    * handle_touch_mouse will update sw->mouse_* variables
+    * switch_handle_touch_mouse will update sw->mouse_* variables
     * depending on touch input gestures
-    * see first comment in process_touch_mouse_event() for a list of
+    * see first comment in switch_process_touch_mouse_event() for a list of
     * supported touch gestures */
-   handle_touch_mouse(sw);
+   switch_handle_touch_mouse(sw);
 
    if (sw->mouse_x < 0)
-      sw->mouse_x = 0;
+      sw->mouse_x  = 0;
    else if (sw->mouse_x > MOUSE_MAX_X)
-      sw->mouse_x = MOUSE_MAX_X;
+      sw->mouse_x  = MOUSE_MAX_X;
 
    if (sw->mouse_y < 0) 
-      sw->mouse_y = 0;
+      sw->mouse_y  = 0;
    else if (sw->mouse_y > MOUSE_MAX_Y)
-      sw->mouse_y = MOUSE_MAX_Y;
+      sw->mouse_y  = MOUSE_MAX_Y;
 
    sw->mouse_wheel = mouse_state.wheel_delta_y;
 }
@@ -305,8 +325,7 @@ static int16_t switch_input_state(
          break;
 #ifdef HAVE_LIBNX
       case RETRO_DEVICE_KEYBOARD:
-         return ((id < RETROK_LAST) && 
-               sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]]);
+         return (id && id < RETROK_LAST) && sw->keyboard_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {
@@ -324,29 +343,29 @@ static int16_t switch_input_state(
                   if (screen)
                      return sw->mouse_x;
 
-                  val = sw->mouse_x_delta;
-                  sw->mouse_x_delta = 0;
+                  val                = sw->mouse_x_delta;
+                  sw->mouse_x_delta  = 0;
                   /* flush delta after it has been read */
                   break;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (screen)
                      return sw->mouse_y;
 
-                  val = sw->mouse_y_delta;
-                  sw->mouse_y_delta = 0;
+                  val                = sw->mouse_y_delta;
+                  sw->mouse_y_delta  = 0;
                   /* flush delta after it has been read */
                   break;
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                   if (sw->mouse_wheel > 0)
                   {
-                     val = sw->mouse_wheel;
+                     val             = sw->mouse_wheel;
                      sw->mouse_wheel = 0;
                   }
                   break;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                   if (sw->mouse_wheel < 0)
                   {
-                     val = sw->mouse_wheel;
+                     val             = sw->mouse_wheel;
                      sw->mouse_wheel = 0;
                   }
                   break;
@@ -390,12 +409,13 @@ static int16_t switch_input_state(
 }
 
 #ifdef HAVE_LIBNX
-void handle_touch_mouse(switch_input_t *sw)
+static void switch_handle_touch_mouse(switch_input_t *sw)
 {
    unsigned int i;
    int finger_id         = 0;
    uint64_t current_time = svcGetSystemTick() * 1000 / 19200000;
-   finish_simulated_mouse_clicks(sw, current_time);
+
+   switch_finish_simulated_mouse_clicks(sw, current_time);
 
    for (i = 0; i < MULTITOUCH_LIMIT; i++)
    {
@@ -403,7 +423,7 @@ void handle_touch_mouse(switch_input_t *sw)
       {
          float x   = 0;
          float y   = 0;
-         normalize_touch_mouse_xy(&x, &y, sw->touch_x[i], sw->touch_y[i]);
+         switch_normalize_touch_mouse_xy(&x, &y, sw->touch_x[i], sw->touch_y[i]);
          finger_id = i;
 
          /* Send an initial touch if finger hasn't been down */
@@ -415,7 +435,7 @@ void handle_touch_mouse(switch_input_t *sw)
             ev.tfinger.fingerId  = finger_id;
             ev.tfinger.x         = x;
             ev.tfinger.y         = y;
-            process_touch_mouse_event(sw, &ev);
+            switch_process_touch_mouse_event(sw, &ev);
          }
          else
          {
@@ -426,7 +446,7 @@ void handle_touch_mouse(switch_input_t *sw)
                TouchEvent ev;
                float oldx = 0;
                float oldy = 0;
-               normalize_touch_mouse_xy(&oldx, &oldy, sw->touch_previous_x[i], sw->touch_previous_y[i]);
+               switch_normalize_touch_mouse_xy(&oldx, &oldy, sw->touch_previous_x[i], sw->touch_previous_y[i]);
                ev.type              = FINGERMOTION;
                ev.tfinger.timestamp = current_time;
                ev.tfinger.fingerId  = finger_id;
@@ -434,7 +454,7 @@ void handle_touch_mouse(switch_input_t *sw)
                ev.tfinger.y         = y;
                ev.tfinger.dx        = x - oldx;
                ev.tfinger.dy        = y - oldy;
-               process_touch_mouse_event(sw, &ev);
+               switch_process_touch_mouse_event(sw, &ev);
             }
          }
       }
@@ -445,7 +465,7 @@ void handle_touch_mouse(switch_input_t *sw)
          float x = 0;
          float y = 0;
          TouchEvent ev;
-         normalize_touch_mouse_xy(&x, &y,
+         switch_normalize_touch_mouse_xy(&x, &y,
                sw->touch_previous_x[i], sw->touch_previous_y[i]);
          finger_id            = i;
          /* finger released from screen */
@@ -454,31 +474,31 @@ void handle_touch_mouse(switch_input_t *sw)
          ev.tfinger.fingerId  = finger_id;
          ev.tfinger.x         = x;
          ev.tfinger.y         = y;
-         process_touch_mouse_event(sw, &ev);
+         switch_process_touch_mouse_event(sw, &ev);
       }
    }
 }
 
-void normalize_touch_mouse_xy(float *normalized_x,
+static void switch_normalize_touch_mouse_xy(float *normalized_x,
       float *normalized_y, int reported_x, int reported_y)
 {
    float x = (float) reported_x / TOUCH_MAX_X;
    float y = (float) reported_y / TOUCH_MAX_Y;
 
-   if (x < 0.0)
-      x = 0.0;
-   else if (x > 1.0)
-      x = 1.0;
+   if (x < 0.0f)
+      x = 0.0f;
+   else if (x > 1.0f)
+      x = 1.0f;
 
-   if (y < 0.0)
-      y = 0.0;
-   else if (y > 1.0)
-      y = 1.0;
+   if (y < 0.0f)
+      y = 0.0f;
+   else if (y > 1.0f)
+      y = 1.0f;
    *normalized_x = x;
    *normalized_y = y;
 }
 
-void process_touch_mouse_event(switch_input_t *sw, TouchEvent *event)
+static void switch_process_touch_mouse_event(switch_input_t *sw, TouchEvent *event)
 {
    /* supported touch gestures:
     * pointer motion = single finger drag
@@ -494,19 +514,19 @@ void process_touch_mouse_event(switch_input_t *sw, TouchEvent *event)
       switch (event->type)
       {
          case FINGERDOWN:
-            process_touch_mouse_finger_down(sw, event);
+            switch_process_touch_mouse_finger_down(sw, event);
             break;
          case FINGERUP:
-            process_touch_mouse_finger_up(sw, event);
+            switch_process_touch_mouse_finger_up(sw, event);
             break;
          case FINGERMOTION:
-            process_touch_mouse_finger_motion(sw, event);
+            switch_process_touch_mouse_finger_motion(sw, event);
             break;
       }
    }
 }
 
-void process_touch_mouse_finger_down(switch_input_t *sw, TouchEvent *event)
+static void switch_process_touch_mouse_finger_down(switch_input_t *sw, TouchEvent *event)
 {
    /* id (for multitouch) */
    unsigned int i;
@@ -537,7 +557,7 @@ void process_touch_mouse_finger_down(switch_input_t *sw, TouchEvent *event)
    }
 }
 
-void process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event)
+static void switch_process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event)
 {
    unsigned int i;
    /* id (for multitouch) */
@@ -592,11 +612,11 @@ void process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event)
             {
                int x;
                int y;
-               normalized_to_screen_xy(&x, &y, event->tfinger.x, event->tfinger.y);
+               switch_normalized_to_screen_xy(&x, &y, event->tfinger.x, event->tfinger.y);
                sw->mouse_x_delta = x - sw->mouse_x;
                sw->mouse_y_delta = y - sw->mouse_y;
-               sw->mouse_x = x;
-               sw->mouse_y = y;
+               sw->mouse_x       = x;
+               sw->mouse_y       = y;
             }
             simulated_button = TOUCH_MOUSE_BUTTON_LEFT;
             /* need to raise the button later */
@@ -621,7 +641,7 @@ void process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent *event)
    }
 }
 
-void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
+static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
 {
    unsigned int i;
    unsigned int j;
@@ -701,7 +721,7 @@ void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
    {
       int x;
       int y;
-      normalized_to_screen_xy(&x, &y, event->tfinger.x, event->tfinger.y);
+      switch_normalized_to_screen_xy(&x, &y, event->tfinger.x, event->tfinger.y);
       sw->mouse_x_delta = x - sw->mouse_x;
       sw->mouse_y_delta = y - sw->mouse_y;
       sw->mouse_x       = x;
@@ -730,7 +750,7 @@ void process_touch_mouse_finger_motion(switch_input_t *sw, TouchEvent *event)
    }
 }
 
-static void normalized_to_screen_xy(
+static void switch_normalized_to_screen_xy(
       int *screenX, int *screenY, float x, float y)
 {
    /* map to display */
@@ -738,7 +758,7 @@ static void normalized_to_screen_xy(
    *screenY = y * TOUCH_MAX_Y;
 }
 
-static void finish_simulated_mouse_clicks(
+static void switch_finish_simulated_mouse_clicks(
       switch_input_t *sw, uint64_t currentTime)
 {
    unsigned int i;
@@ -791,11 +811,7 @@ static void* switch_input_init(const char *joypad_driver)
     hidInitializeMouse();
     hidInitializeKeyboard();
 
-   /*
-      Here we assume that the touch screen is always 1280x720
-      Call me back when a Nintendo Switch XL is out
-   */
-
+   /* Here we assume that the touch screen is always 1280x720 */
    input_keymaps_init_keyboard_lut(rarch_key_map_switch);
    for (i = 0; i <= SWITCH_MAX_SCANCODE; i++)
       sw->keyboard_state[i]     = false;
@@ -807,7 +823,7 @@ static void* switch_input_init(const char *joypad_driver)
    /* touch mouse init */
    sw->touch_mouse_indirect     = true;
    /* direct mode is not calibrated it seems */
-   sw->touch_mouse_speed_factor = 1.0;
+   sw->touch_mouse_speed_factor = 1.0f;
    for (i = 0; i < MAX_NUM_FINGERS; i++)
       sw->finger[i].id = NO_TOUCH;
 
@@ -815,7 +831,6 @@ static void* switch_input_init(const char *joypad_driver)
 
    for (i = 0; i < 2; i++)
       sw->simulated_click_start_time[i] = 0;
-
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
       sw->sixaxis_handles_count[i]      = 0;
 #endif
@@ -825,15 +840,14 @@ static void* switch_input_init(const char *joypad_driver)
 
 static uint64_t switch_input_get_capabilities(void *data)
 {
-   (void) data;
-
-   uint64_t caps =  (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
-
+   return
 #ifdef HAVE_LIBNX
-   caps |= (1 << RETRO_DEVICE_POINTER) | (1 << RETRO_DEVICE_KEYBOARD) | (1 << RETRO_DEVICE_MOUSE);
+           (1 << RETRO_DEVICE_POINTER) 
+         | (1 << RETRO_DEVICE_KEYBOARD) 
+         | (1 << RETRO_DEVICE_MOUSE) |
 #endif
-
-   return caps;
+           (1 << RETRO_DEVICE_JOYPAD) 
+         | (1 << RETRO_DEVICE_ANALOG);
 }
 
 static bool switch_input_set_sensor_state(void *data, unsigned port,
@@ -841,48 +855,46 @@ static bool switch_input_set_sensor_state(void *data, unsigned port,
 {
 #ifdef HAVE_LIBNX
    unsigned i, handles_count;
-   bool available;
    switch_input_t *sw = (switch_input_t*) data;
 
-   if(!sw)
-      return false;
-
-   switch(action)
+   if (sw)
    {
-      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
-         available = false;
-         appletIsIlluminanceAvailable(&available);
-         return available;
+      bool available = false;
+      switch(action)
+      {
+         case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+            appletIsIlluminanceAvailable(&available);
+            return available;
 
-      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
-      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-      case RETRO_SENSOR_GYROSCOPE_DISABLE:
-         return true;
+         case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         case RETRO_SENSOR_GYROSCOPE_DISABLE:
+            return true;
 
-      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-      case RETRO_SENSOR_GYROSCOPE_ENABLE:
-         if(port < DEFAULT_MAX_PADS && sw->sixaxis_handles_count[port] == 0)
-         {
-            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][0], 2, port, HidNpadStyleTag_NpadJoyDual);
-
-            hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][2], 1, port, HidNpadStyleTag_NpadFullKey);
-
-            if(port == 0)
+         case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         case RETRO_SENSOR_GYROSCOPE_ENABLE:
+            if (port < DEFAULT_MAX_PADS && sw->sixaxis_handles_count[port] == 0)
             {
-               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][3], 1, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
-               handles_count = 4;
+               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][0], 2, port, HidNpadStyleTag_NpadJoyDual);
+               hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][2], 1, port, HidNpadStyleTag_NpadFullKey);
+
+               if (port == 0)
+               {
+                  hidGetSixAxisSensorHandles(&sw->sixaxis_handles[port][3], 1, HidNpadIdType_Handheld, HidNpadStyleTag_NpadHandheld);
+                  handles_count = 4;
+               }
+               else
+                  handles_count = 3;
+
+               for (i = 0; i < handles_count; i++)
+                  hidStartSixAxisSensor(sw->sixaxis_handles[port][i]);
+
+               sw->sixaxis_handles_count[port] = handles_count;
             }
-            else
-               handles_count = 3;
-
-            for (i = 0; i < handles_count; i++)
-               hidStartSixAxisSensor(sw->sixaxis_handles[port][i]);
-
-            sw->sixaxis_handles_count[port] = handles_count;
-         }
-         return true;
-      case RETRO_SENSOR_DUMMY:
-         break;
+            return true;
+         case RETRO_SENSOR_DUMMY:
+            break;
+      }
    }
 #endif
 
@@ -901,10 +913,10 @@ static float switch_input_get_sensor_input(void *data,
    if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z
       && port < DEFAULT_MAX_PADS)
    {
-      for(i = 0; i < sw->sixaxis_handles_count[port]; i++)
+      for (i = 0; i < sw->sixaxis_handles_count[port]; i++)
       {
          hidGetSixAxisSensorStates(sw->sixaxis_handles[port][i], &sixaxis, 1);
-         if(sixaxis.delta_time)
+         if (sixaxis.delta_time)
             break;
       }
 
@@ -925,7 +937,7 @@ static float switch_input_get_sensor_input(void *data,
       }
    }
 
-   if(id == RETRO_SENSOR_ILLUMINANCE)
+   if (id == RETRO_SENSOR_ILLUMINANCE)
    {
       appletGetCurrentIlluminance(&f);
       return f;
@@ -949,5 +961,6 @@ input_driver_t input_switch = {
    switch_input_get_capabilities,
    "switch",
    NULL,                            /* grab_mouse */
+   NULL,
    NULL
 };

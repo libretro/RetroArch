@@ -38,7 +38,14 @@
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
 #include "../../retroarch.h"
-#include "../video_crt_switch.h" /* needed to set aspect for low res in linux */
+#include "../video_crt_switch.h" /* Needed to set aspect for low resolution in Linux */
+
+enum dispserv_x11_flags
+{
+   DISPSERV_X11_FLAG_USING_GLOBAL_DPY  = (1 << 0),
+   DISPSERV_X11_FLAG_CRT_EN            = (1 << 1),
+   DISPSERV_X11_FLAG_DECORATIONS       = (1 << 2)
+};
 
 typedef struct
 {
@@ -48,34 +55,35 @@ typedef struct
    int crt_name_id;
    int monitor_index;
    unsigned opacity;
+   uint8_t flags;
    char crt_name[16];
    char new_mode[256];
    char old_mode[256];
    char orig_output[256];
-   bool using_global_dpy;
-   bool crt_en;
-   bool decorations;
 } dispserv_x11_t;
 
 #ifdef HAVE_XRANDR
 static Display* x11_display_server_open_display(dispserv_x11_t *dispserv)
 {
-   Display *dpy                           = g_x11_dpy;
+   Display *dpy        = g_x11_dpy;
    if (!dispserv)
       return NULL;
-   dispserv->using_global_dpy             = (dpy != NULL);
-
+   if (dpy)
+   {
+      dispserv->flags |= DISPSERV_X11_FLAG_USING_GLOBAL_DPY;
+      return dpy;
+   }
    /* SDL might use X11 but doesn't use g_x11_dpy, so open it manually */
-   if (!dpy)
-      dpy                                 = XOpenDisplay(0);
-
-   return dpy;
+   return XOpenDisplay(0);
 }
 
 static void x11_display_server_close_display(dispserv_x11_t *dispserv,
       Display *dpy)
 {
-   if (!dpy || !dispserv || dispserv->using_global_dpy || dpy == g_x11_dpy)
+   if (     !dpy
+         || !dispserv
+         || (dispserv->flags & DISPSERV_X11_FLAG_USING_GLOBAL_DPY)
+         || dpy == g_x11_dpy)
       return;
 
    XCloseDisplay(dpy);
@@ -85,9 +93,10 @@ static bool x11_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
 {
+   size_t _len;
    int m, screen;
    Window window;
-   XRRScreenResources 
+   XRRScreenResources
       *resources            = NULL;
    XRRScreenResources  *res = NULL;
    Display *dpy             = NULL;
@@ -111,10 +120,12 @@ static bool x11_display_server_set_resolution(void *data,
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
    dispserv->monitor_index  = monitor_index;
-   dispserv->crt_en         = true;
+   dispserv->flags         |= DISPSERV_X11_FLAG_CRT_EN;
    dispserv->crt_name_id   += 1;
-   snprintf(dispserv->crt_name, sizeof(dispserv->crt_name),
-         "CRT%d", dispserv->crt_name_id);
+   _len  = strlcpy(dispserv->crt_name, "CRT", sizeof(dispserv->crt_name));
+   _len += snprintf(dispserv->crt_name + _len,
+         sizeof(dispserv->crt_name) - _len,
+         "%d", dispserv->crt_name_id);
 
    strlcpy(dispserv->old_mode, dispserv->new_mode,
          sizeof(dispserv->old_mode));
@@ -182,22 +193,22 @@ static bool x11_display_server_set_resolution(void *data,
       pixel_clock = (hmax * vmax * hz) / 2;
    /* above code is the modeline generator */
 
-   /* create interlaced newmode from modline variables */
+   /* Create interlaced new mode from modline variables */
    if (height < 300)
-      crt_mode_flag = 10; 
+      crt_mode_flag = 10;
 
-   /* create interlaced newmode from modline variables */
+   /* Create interlaced new mode from modline variables */
    if (height > 300)
-      crt_mode_flag = 26; 
+      crt_mode_flag = 26;
    strlcpy(dispserv->old_mode, dispserv->new_mode, sizeof(dispserv->old_mode));
    /* variable for new mode */
    strlcpy(dispserv->new_mode, dispserv->crt_name, sizeof(dispserv->new_mode));
 
-   /* need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
+   /* Need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
     * add and delete modes */
 
    dispserv->crt_rrmode.name          = dispserv->new_mode;
-   dispserv->crt_rrmode.nameLength    = strlen(dispserv->crt_name);
+   dispserv->crt_rrmode.nameLength    = _len;
    dispserv->crt_rrmode.dotClock      = pixel_clock;
    dispserv->crt_rrmode.width         = width;
    dispserv->crt_rrmode.hSyncStart    = hfp;
@@ -227,7 +238,7 @@ static bool x11_display_server_set_resolution(void *data,
    XRRFreeScreenResources(resources);
 
    if (!crt_exists)
-      XRRCreateMode(dpy, window, &dispserv->crt_rrmode); 
+      XRRCreateMode(dpy, window, &dispserv->crt_rrmode);
 
    resources = XRRGetScreenResourcesCurrent(dpy, window);
 
@@ -265,7 +276,7 @@ static bool x11_display_server_set_resolution(void *data,
             XSync(dpy, False);
             XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
                   crtc->x, crtc->y, crtc->mode, crtc->rotation,
-                  crtc->outputs, crtc->noutput);   
+                  crtc->outputs, crtc->noutput);
             XSync(dpy, False);
 
 
@@ -471,10 +482,9 @@ static void* x11_display_server_init(void)
 {
    dispserv_x11_t *dispserv = (dispserv_x11_t*)calloc(1, sizeof(*dispserv));
 
-   if (!dispserv)
-      return NULL;
-
-   return dispserv;
+   if (dispserv)
+      return dispserv;
+   return NULL;
 }
 
 static void x11_display_server_destroy(void *data)
@@ -488,18 +498,18 @@ static void x11_display_server_destroy(void *data)
       return;
 
 #ifdef HAVE_XRANDR
-   if (dispserv->crt_en)
+   if (dispserv->flags & DISPSERV_X11_FLAG_CRT_EN)
    {
+      char dmode[25];
       XRRModeInfo *swoldmode   = NULL;
       XRRModeInfo *swdeskmode  = NULL;
-      XRRScreenResources 
+      XRRScreenResources
          *resources            = NULL;
       XRRScreenResources  *res = NULL;
       Display *dpy             = XOpenDisplay(0);
       int screen               = DefaultScreen(dpy);
       Window window            = RootWindow(dpy, screen);
       bool crt_exists          = false;
-      char dmode[25]           = {0};
 
       strlcpy(dmode, "d_mo", sizeof(dmode));
 
@@ -537,7 +547,7 @@ static void x11_display_server_destroy(void *data)
 
 
       if (!crt_exists)
-         XRRCreateMode(dpy, window, &dispserv->crt_rrmode); 
+         XRRCreateMode(dpy, window, &dispserv->crt_rrmode);
 
       resources = XRRGetScreenResourcesCurrent(dpy, window);
 
@@ -554,7 +564,7 @@ static void x11_display_server_destroy(void *data)
       {
          for (i = 0; i < res->noutput; i++)
          {
-            XRROutputInfo *outputs = 
+            XRROutputInfo *outputs =
                XRRGetOutputInfo(dpy, res, res->outputs[i]);
 
             if (outputs->connection == RR_Connected)
@@ -579,9 +589,10 @@ static void x11_display_server_destroy(void *data)
 
 
                XRRFreeCrtcInfo(crtc);
-            }  
+            }
             XRRFreeOutputInfo(outputs);
          }
+
          for (m = 0; m < resources->nmode; m++)
          {
             for (j = 0; j < res->noutput; j++)
@@ -640,7 +651,6 @@ static void x11_display_server_destroy(void *data)
 
          for (m = 0; m < resources->nmode; m++)
          {
-
             for (i = 1 ; i <= dispserv->crt_name_id; i++ )
             {
                XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[dispserv->monitor_index]);
@@ -658,8 +668,6 @@ static void x11_display_server_destroy(void *data)
                   }
                }
             }
-            
-         
          }
       }
 
@@ -667,7 +675,6 @@ static void x11_display_server_destroy(void *data)
       XRRFreeScreenResources(res);
       XCloseDisplay(dpy);
    }
-
 #endif
 
    if (dispserv)
@@ -696,13 +703,10 @@ static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
 static bool x11_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_x11_t *serv = (dispserv_x11_t*)data;
-
    if (serv)
-      serv->decorations = on;
-
+      serv->flags |= DISPSERV_X11_FLAG_DECORATIONS;
    /* menu_setting performs a reinit instead to properly apply
     * decoration changes */
-
    return true;
 }
 
@@ -710,11 +714,11 @@ static bool x11_display_server_set_window_decorations(void *data, bool on)
 const char *x11_display_server_get_output_options(void *data)
 {
 #ifdef HAVE_XRANDR
+   int i;
    Display *dpy;
    XRRScreenResources *res;
    XRROutputInfo *info;
    Window root;
-   int i;
    static char s[PATH_MAX_LENGTH];
 
    if (!(dpy = XOpenDisplay(0)))
@@ -727,12 +731,16 @@ const char *x11_display_server_get_output_options(void *data)
 
    for (i = 0; i < res->noutput; i++)
    {
+      size_t _len;
       if (!(info = XRRGetOutputInfo(dpy, res, res->outputs[i])))
          return NULL;
 
-      strlcat(s, info->name, sizeof(s));
+      _len = strlcat(s, info->name, sizeof(s));
       if ((i+1) < res->noutput)
-         strlcat(s, "|", sizeof(s));
+      {
+         s[  _len] = '|';
+         s[++_len] = '\0';
+      }
    }
 
    return s;

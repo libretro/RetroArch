@@ -1,4 +1,18 @@
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+#extension GL_EXT_control_flow_attributes : require
+#define SPIRV_CROSS_FLATTEN [[flatten]]
+#define SPIRV_CROSS_BRANCH [[dont_flatten]]
+#define SPIRV_CROSS_UNROLL [[unroll]]
+#define SPIRV_CROSS_LOOP [[dont_unroll]]
+#else
+#define SPIRV_CROSS_FLATTEN
+#define SPIRV_CROSS_BRANCH
+#define SPIRV_CROSS_UNROLL
+#define SPIRV_CROSS_LOOP
+#endif
+
+int _231;
 
 layout(binding = 0, std140) uniform Foo
 {
@@ -10,65 +24,60 @@ layout(binding = 0, std140) uniform Foo
 layout(location = 0) in vec3 fragWorld;
 layout(location = 0) out int _entryPointOutput;
 
-int _240;
+mat4 spvWorkaroundRowMajor(mat4 wrap) { return wrap; }
 
 void main()
 {
-    uint _227;
-    int _236;
-    for (;;)
+    int _228;
+    do
     {
-        _227 = 0u;
-        bool _231;
-        int _237;
+        bool _225;
+        int _229;
+        uint _222 = 0u;
+        SPIRV_CROSS_UNROLL
         for (;;)
         {
-            if (_227 < _11.shadowCascadesNum)
+            if (_222 < _11.shadowCascadesNum)
             {
-                mat4 _228;
-                for (;;)
+                mat4 _223;
+                do
                 {
                     if (_11.test == 0)
                     {
-                        _228 = mat4(vec4(0.5, 0.0, 0.0, 0.0), vec4(0.0, 0.5, 0.0, 0.0), vec4(0.0, 0.0, 0.5, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+                        _223 = mat4(vec4(0.5, 0.0, 0.0, 0.0), vec4(0.0, 0.5, 0.0, 0.0), vec4(0.0, 0.0, 0.5, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
                         break;
                     }
-                    _228 = mat4(vec4(1.0, 0.0, 0.0, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(0.0, 0.0, 1.0, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+                    _223 = mat4(vec4(1.0, 0.0, 0.0, 0.0), vec4(0.0, 1.0, 0.0, 0.0), vec4(0.0, 0.0, 1.0, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+                    break;
+                } while(false);
+                vec4 _170 = (_223 * spvWorkaroundRowMajor(_11.lightVP[_222])) * vec4(fragWorld, 1.0);
+                float _172 = _170.z;
+                float _179 = _170.x;
+                float _181 = _170.y;
+                if ((((_172 >= 0.0) && (_172 <= 1.0)) && (max(_179, _181) <= 1.0)) && (min(_179, _181) >= 0.0))
+                {
+                    _229 = int(_222);
+                    _225 = true;
                     break;
                 }
-                vec4 _177 = (_228 * _11.lightVP[_227]) * vec4(fragWorld, 1.0);
-                float _179 = _177.z;
-                float _186 = _177.x;
-                float _188 = _177.y;
-                if ((((_179 >= 0.0) && (_179 <= 1.0)) && (max(_186, _188) <= 1.0)) && (min(_186, _188) >= 0.0))
-                {
-                    _237 = int(_227);
-                    _231 = true;
-                    break;
-                }
-                else
-                {
-                    _227++;
-                    continue;
-                }
-                _227++;
+                _222++;
                 continue;
             }
             else
             {
-                _237 = _240;
-                _231 = false;
+                _229 = _231;
+                _225 = false;
                 break;
             }
         }
-        if (_231)
+        if (_225)
         {
-            _236 = _237;
+            _228 = _229;
             break;
         }
-        _236 = -1;
+        _228 = -1;
         break;
-    }
-    _entryPointOutput = _236;
+    } while(false);
+    _entryPointOutput = _228;
 }
 

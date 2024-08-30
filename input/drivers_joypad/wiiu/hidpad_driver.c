@@ -73,25 +73,25 @@ static int16_t hidpad_state(
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (!hidpad_query_pad(port_idx))
-      return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (hidpad_query_pad(port_idx))
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if (
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      {
+         /* Auto-binds are per joypad, not per user. */
+         const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+            ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+         const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+            ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+         if (
                (uint16_t)joykey != NO_BTN
-            && wiiu_hid.button(hid_driver_get_data(), port_idx, (uint16_t)joykey)
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(wiiu_hid.axis(hid_driver_get_data(), port_idx, joyaxis)) 
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
+               && wiiu_hid.button(hid_driver_get_data(), port_idx, (uint16_t)joykey)
+            )
+            ret |= ( 1 << i);
+         else if (joyaxis != AXIS_NONE &&
+               ((float)abs(wiiu_hid.axis(hid_driver_get_data(), port_idx, joyaxis)) 
+                / 0x8000) > joypad_info->axis_threshold)
+            ret |= (1 << i);
+      }
    }
 
    return ret;
@@ -117,6 +117,8 @@ input_device_driver_t hidpad_driver =
   hidpad_poll,
   NULL, /* set_rumble */
   NULL, /* set_rumble_gain */
+  NULL, /* set_sensor_state */
+  NULL, /* get_sensor_input */
   hidpad_name,
   "hid"
 };

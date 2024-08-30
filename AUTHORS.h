@@ -3,54 +3,63 @@ RetroArch and the libretro team would like to
 acknowledge the following contributors:
 
 1ch (L0sted)
-51eating (dnjstlr555)
+23rd
 6lackmag3
 A Schain (aschain)
 Aaron Oneal (aarononeal)
+Aaron Ramirez (aaronbytes)
+Abadede
 Adam Londero (alondero)
 Adam Mechtley (amechtley)
-AdrianoML
+Adriano de Moura Leite (amlib)
 Adrien Moulin (elyosh)
 Aethyrion
 ajefr
 AKuHAK
 Alberto Alonso Ruibal (albertoruibal)
+Alberto Fustinoni (albertofustinoni)
 Alberto Simon (asimonf)
 Alcaro
+aldebaran27
 Aleksey Samoilov (Sunderland93)
 Alessandro Mangone (Vektor) (zevektor)
-Alessio Tosto (Rinnegatamante)
-Alex Eckhart (alex34567)
 Alex Folland (AlexFolland)
 Alex Kornitzer (alexkornitzer)
 Alexander Spady (alkaseltzerspadt)
+Alexander Trufanov (trufanov-nok)
 Alexandre Garcia (Alexandre-Garcia)
 Alfredo Monclus (alfrix)
 aliaspider
 alphanu1
 altiereslima
 Alwin Garside (Yogarine)
-Amiga1200Gamer (amigagamer)
 amtz
+Anders Storhaug (andersstorhaug)
 Andre Leiradella (leiradel)
 Andrés (fr500)
 Andy Nguyen (TheOfficialFloW)
 Anthony J. Bentley (bentley)
 Antonio Jose Ramos Marquez (psxdev)
+antonioginer
+Apaczer
 AridRayne
 ArnaudFaucher
+arpruss
 arstn
+Artem Polishchuk (tim77)
 Arto Vainiolehto (arakerlu)
 asavah
-Ash (QuarkTheAwesome)
+Ash (ashquarky)
 Ashura (CoalaJoe)
-Autechre (twinaphex)
 Avton1
 ayssia
+BananaRama203
 barbudreadmon
 Barry Rowe (BarryJRowe)
 Bartłomiej Burdukiewicz (dev-0x7C6)
+Bashar Astifan (basharast)
 bearoso
+Ben Hamilton (Ben Gertzfield) (bhamiltoncx)
 benklop
 benutzer193
 Bernhard Schelling (schellingb)
@@ -74,6 +83,7 @@ C.W. Betts (MaddTheSane)
 Casey Borders (CaseyB)
 CatGreen90
 ceb33
+cedorg
 celerizer
 Charlène (julianaito)
 CheezeCake
@@ -81,11 +91,13 @@ Chris Merrett (chrisfu)
 Christian Murphy (grimpunch)
 christianhaitian
 Christoffer Tibell (Brottweiler)
+Christopher Snowhill (kode54)
 chu (9chu)
 Chuck Smith (chucksmith)
 CidVonHighwind
 clienthax
 cold-brewed
+Colin Kinloch (ColinKinloch)
 CompCom
 ComradeEcho
 confusedguy9
@@ -104,7 +116,7 @@ crystalct
 CTCaer
 cucholix
 cudencuden
-Cyan (44100hertz)
+CyberLabSystems
 Daehan Kim (iAmGhost)
 dalter
 Dan Weiss (Dwedit)
@@ -120,6 +132,7 @@ David Erickson (daviderickson)
 David G. F. (davidgfnet)
 David Lawson (dmrlawson)
 David Walters (hiddenasbestos)
+dbaronica
 DEX357
 diablodiab
 dibas
@@ -136,6 +149,7 @@ duganchen
 dukemiller
 duskgao
 Dylan Scott (dyscott)
+Dystopian
 eadmaster
 Eduard Strehlau (Herdinger)
 ekipan
@@ -150,8 +164,9 @@ Fabio (Oibaf66)
 Fabio Ritrovato (Sephiroth87)
 Fayne Aldan (FayneAldan)
 fff (felinben)
+Filipe Azevedo (pasnox)
 FIX94
-Flame Sage (chris062689)
+Flame Sage (flamesage)
 flyinghead
 FmT0
 francescotintori
@@ -159,6 +174,7 @@ Francisco Javier Trujillo Mata (fjtrujy)
 Francisco José García García (frangarcj)
 FreeShippingParty
 fuzzydunlops732 (JKoppel93)
+GABO1423
 Gabriel (Ghabry)
 GameDragon2k
 Garrett Brown (garbear)
@@ -166,11 +182,11 @@ gatecat (daveshah1)
 GavinDarkglider
 gblues
 Geoffrey Plitt (GeoffreyPlitt)
+Giovanni Cascione (spleen1981)
 Glenn Hevey (hevey)
 Googer
 gordon-fish
 gouchi
-grant2258
 Gregor Richards (GregorR)
 Grzegorz Raciborski (graciborski)
 Gui Andrade (archshift)
@@ -178,7 +194,6 @@ Guillaume Thiolliere (thiolliere)
 Guo Yunhe (guoyunhe)
 Gustavo Maciel Dias Vieira (gmdvieira)
 gvbr
-H. İbrahim Güngör (igungor)
 hadess
 Hans-Kristian Arntzen (Themaister)
 Henri Gomez (hgomez)
@@ -194,10 +209,13 @@ HyperspaceMadness
 i30817
 im4potato
 ImJezze
+İbrahim Güngör (igungor)
 Jack (jakcron)
 Jacob (cubtekki)
+Jacob (RegenJacob)
 Jacob Patterson (jacobpa)
 jacobsson (Roet-Ivar)
+Jahed
 Jake Stine (jstine35)
 James Le Cuirot (chewi)
 James Sexton (Bezier89)
@@ -213,10 +231,12 @@ Jean-Sébastien Guay (Skylark13)
 Jeff (jeffbdavenport)
 Jeff Sousa (LordeIlluminati)
 jess (winneon)
+Jesse Talavera-Greenberg (JesseTG)
 Joan Coll Cerdán (johanbcn)
 Job Adrian Salinas Gonzalez (efylan)
 Joe Osborn (JoeOsborn)
 Joel (joel16)
+Joel Puig Rubio (XXLuigiMario)
 Joerg Sonnenberger (jsonn)
 Johannes Schickel (lordhoto)
 John Parton (john-parton)
@@ -227,18 +247,22 @@ Jonathan Relf (jonathanrelf)
 Joohan Lee (losernator)
 Jools Wills (joolswills)
 Jose Lage Miguez (Joselagem)
-Joseph Carter (iKarith)
+Joseph Carter (knghtbrd)
 Joseph Conan Montgomery (Grotke)
 jsd1982 (JamesDunne)
+jSTE0
 JuanVCS
 Justin Jacobs (dorkster)
 Justin Weiss (justinweiss)
 JustMeDaFaq
+Kangmo-Ahn
 Karl Forshaw (karlforshaw)
+Kate Eckhart (katepango)
 Keith Bowes (keithbowes)
 Ken Rossato (rossato)
+kikmon
 Kopert
-krzys_h (krzys-h)
+Krzysztof Haładyn (krzys_h) (krzys-h)
 kurumushi
 kwyxz
 l3iggs
@@ -248,26 +272,29 @@ Lawrence Kesteloot (lkesteloot)
 LazyBumHorse
 LazyFunker
 Lennard Kittner (Lennard599)
+LibretroAdmin
 Lionel Flandrin (simias)
 littleguy77
 liushuyu
-Logan (loganmc10)
+Logan McNaughton (loganmc10)
 lordashram
 Lothar Serra Mari (lotharsm)
 Lubosz Sarnecki (lubosz)
+lucasmr
 lucianposton
 lxerandrew
 m4xw
 mahoneyt944
 Mahyar Koshkouei (deltabeard)
-Mai M. (lioncash)
+Mai (lioncash)
+MajorPainTheCactus
 maksun
 Manuel Alfayate Corchete (vanfanel)
 Marcelo Munhoz Pélos (mpelos)
 Marcus Crisostomo (mcrisostomo)
 markwkidd
 Maschell
-Mats (m4tsa)
+Mats (Myaats)
 Matt Sephton (gingerbeardman)
 Matthew Bauer (matthewbauer)
 Matthew Wang (asakous)
@@ -288,28 +315,32 @@ Mike Swanson (chungy)
 mikeOSX
 minucce
 misson20000
+Mohmoud (esoptron) (Hedonium)
 Monroe88
-Morgane (Niouby)
+Morgane (MorganeAD)
 mprobinson
 MrHuu
 MrJs (mrjschulte)
-mudlord
 Muhamed Hobi (mmhobi7)
 muzuiget
+N/A (inactive123)
 Nargash
 Nathan S. (natinusala)
 NathanStrong-Tripwire
 nattycleopatra
+Naveen (naveensrinivasan)
 nayslayer
 negativeExponent
 Neil Barkhina (nbarkhina)
-Nephilim (Nephil1m)
+neil4
 netux79
 nfnty
+nfp0
 nia (alarixnia)
 Nicolas Adenis-Lamarre (nadenislamarre)
 Nicolas Guillaumin (nguillaumin)
 Nicolas Roehm (NicolasRoehm)
+Nik (WerWolv)
 Nikita Vakhrushev (XF10C)
 Nikola Kocić (nikola-kocic)
 Nikos Chantziaras (realnc)
@@ -321,7 +352,9 @@ notaz
 nstCactus
 nurupo
 Oggom
+Oh Won Sik (dnjstlr555)
 Oleg Shevchenko (olsh)
+Omar Saleem (ofsaleem)
 opendata26
 Ophidon
 orbea
@@ -335,22 +368,28 @@ Paul McCarty (notabeatle)
 pcjco
 Pedro Ferraz (ferrazpedro)
 Pedro Ribeiro (pedrib)
+Peter J Kos (pkos)
+Philippe Simons (loki666)
 pinumbernumber
+Piotr Dobrowolski (Informatic)
 pjft
+Poligraf
 pponso1
 pyroesp
 R-YaTian
+Rafael Toledo (rafaeltoledo)
 Ramiro Morales (ramiro)
 Raphaël Zumer (rzumer)
+redenvelope2000
 Reid Kleckner (rnk)
 repojohnray
 retrotails
 revvv
 reztek
 Richard Howell (rmaz)
+Rinnegatamante
 rlnilsen
 Rob Loach (RobLoach)
-Roberto V. Rampim (Cthulhu)
 Robin de Rooij (rrooij)
 Romain Gay (vikbez)
 Romain Graillot (notnotme)
@@ -359,20 +398,27 @@ Roman Fomin (rfomin)
 Roman Kalashnikov (lunixoid)
 Royerson
 rsn8887
+Ruben Nine (rnine)
 Ryan C. Gordon (icculus)
+Ryan Kuba (thelamer)
 Ryunam
 rz5
+Sage (neonfuz)
 Saggi Mizrahi (ficoos)
 SAKUJ0
+Salvador (salvacam)
+Sam (44100hertz)
 Sam Lantinga (slouken)
 Sam Stenvall (Jalle19)
 Samuel P. (p-sam)
 Sanaki
 Scheiker
+Sean O'Neil (seanocali)
 Sebastien Ronsse (sronsse)
 SecularSteve
 Sefa Eyeoglu (Scrumplex)
 Sergei Nikitin (Kert)
+Sergei Trofimovich (trofi)
 Sergi Granell (xerpi)
 Sergio Padrino (sergiou87)
 sergio-br2 (sergiobenrocha2)
@@ -387,19 +433,23 @@ SindenLightgun
 Sirrempat
 slotek
 Soar Qin (soarqin)
+sonninnos
+Sou Bunnbu (iyzsong)
 sparklewind
 spec-chum
 Stefan (gizmo98)
 stefan-gr
 stellarporter
 Stephanie Gawroriski (XerTheSquirrel)
+Steve Cox (stevenjamescox)
 Stevoisiak
 stoofin
+StormedBubbles
+strotlog
 Stuart Carnie (stuartcarnie)
 Sunguk Lee (d3m3vilurr)
 Supernature2k
 Sven (RetroSven)
-Swingflip
 Swizzy
 Sylvain Colinet (Skarsnik)
 Szunti
@@ -410,34 +460,38 @@ thedax
 theheroGAC
 TheMrIron2
 ThePhxRises
+TheRhysWyrill
 Thomas Lorblanchès (Zlika)
+Tilman M. Jaeschke (asciibeats)
 Tim Van den Langenbergh (tmtvl)
 Tobias Gruetzmacher (TobiX)
 Tobias Jakobi (tobiasjakobi)
 Todd Laney (ToddLa)
 Tomáš Kelemen (ToKe79)
-Tony (sonninnos)
 Tor Arne Vestbø (torarnv)
 Torsten Paul (t-paul)
-toshixm
 TotalCaesar659
+tr12345
 TroggleMonkey
 tunip3
+txorion
 Tyler Loch (TylerLoch)
-unrelentingtech
 URBANsUNITED
+vaguerant
+Val Packett (valpackett)
 Valerio Proietti (kamicane)
 vgmoose
 Vicki Pfau (endrift)
 Vicky C Lau (vickychenglau)
 vin (suseme)
+Vincent Pelletier (vpelletier)
 Vladimir Panteleev (CyberShadow)
 Vladimir Serbinenko (phcoder)
 Víctor "IlDucci" (IlDucci)
 waitingmoon
+Warning: Non-Potable Water (warningnonpotablewater)
 webgeek1234
 Weedy Weed Smoker (WeedyWeedSmoker)
-WerWolv
 whorsemaster
 Wiimpathy
 Wiktor Strzębała (wiktorek140)

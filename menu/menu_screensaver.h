@@ -20,6 +20,7 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
+#include "menu_defines.h"
 #include "../retroarch.h"
 #include "../gfx/gfx_display.h"
 #include "../gfx/gfx_animation.h"
@@ -28,16 +29,6 @@ RETRO_BEGIN_DECLS
 
 /* Prevent direct access to menu_screensaver_t members */
 typedef struct menu_ss_handle menu_screensaver_t;
-
-/* Specifies all available screensaver effects */
-enum menu_screensaver_effect
-{
-   MENU_SCREENSAVER_BLANK = 0,
-   MENU_SCREENSAVER_SNOW,
-   MENU_SCREENSAVER_STARFIELD,
-   MENU_SCREENSAVER_VORTEX,
-   MENU_SCREENSAVER_LAST
-};
 
 /******************/
 /* Initialisation */

@@ -13,13 +13,15 @@
 extern "C"
 void *genode_alloc_secondary_stack(unsigned long stack_size)
 {
-	try {
-		return Genode::Thread::myself()->alloc_secondary_stack("libco", stack_size); }
-	catch (...) {
+	try
+   {
+		return Genode::Thread::myself()->alloc_secondary_stack("libco", stack_size);
+   }
+	catch (...)
+   {
 		Genode::error("libco: failed to allocate ", stack_size, " byte secondary stack");
 		return nullptr;
 	}
-
 }
 
 extern "C"

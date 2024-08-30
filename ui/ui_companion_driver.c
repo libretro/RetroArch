@@ -20,7 +20,6 @@
 #include "../config.h"
 #endif
 
-#include "../driver.h"
 #include "../list_special.h"
 #include "../retroarch.h"
 #include "../runloop.h"
@@ -33,14 +32,15 @@ static ui_companion_driver_t ui_companion_null = {
    NULL, /* deinit */
    NULL, /* toggle */
    NULL, /* event_command */
-   NULL, /* notify_content_loaded */
-   NULL, /* notify_list_loaded */
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */
    NULL, /* get_main_window */
    NULL, /* log_msg */
    NULL, /* is_active */
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    NULL, /* browser_window */
    NULL, /* msg_window */
    NULL, /* window */
@@ -55,6 +55,9 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(OSX)
    &ui_companion_cocoa,
 #endif
+#if defined(IOS)
+   &ui_companion_cocoatouch,
+#endif
    &ui_companion_null,
    NULL
 };
@@ -67,33 +70,22 @@ uico_driver_state_t *uico_state_get_ptr(void)
    return &uico_driver_st;
 }
 
-void ui_companion_set_foreground(unsigned enable)
-{
-   uico_driver_state_t *uico_st    = &uico_driver_st;
-   if (uico_st)
-      uico_st->is_on_foreground    = enable;
-}
-
-bool ui_companion_is_on_foreground(void)
+uint8_t ui_companion_get_flags(void)
 {
    uico_driver_state_t *uico_st    = &uico_driver_st;
    if (!uico_st)
-      return false;
-   return uico_st->is_on_foreground;
+	   return 0;
+   return uico_st->flags;
 }
 
 void ui_companion_event_command(enum event_command action)
 {
    uico_driver_state_t *uico_st    = &uico_driver_st;
-#ifdef HAVE_QT
-   bool qt_is_inited               = uico_st->qt_is_inited;
-#endif
    const ui_companion_driver_t *ui = uico_st->drv;
-
    if (ui && ui->event_command)
       ui->event_command(uico_st->data, action);
 #ifdef HAVE_QT
-   if (ui_companion_qt.toggle && qt_is_inited)
+   if (ui_companion_qt.toggle && (uico_st->flags & UICO_ST_FLAG_QT_IS_INITED))
       ui_companion_qt.event_command(uico_st->qt_data, action);
 #endif
 }
@@ -101,9 +93,6 @@ void ui_companion_event_command(enum event_command action)
 void ui_companion_driver_deinit(void)
 {
    uico_driver_state_t *uico_st    = &uico_driver_st;
-#ifdef HAVE_QT
-   bool qt_is_inited               = uico_st->qt_is_inited;
-#endif
    const ui_companion_driver_t *ui = uico_st->drv;
 
    if (!ui)
@@ -112,13 +101,13 @@ void ui_companion_driver_deinit(void)
       ui->deinit(uico_st->data);
 
 #ifdef HAVE_QT
-   if (qt_is_inited)
+   if (uico_st->flags & UICO_ST_FLAG_QT_IS_INITED)
    {
       ui_companion_qt.deinit(uico_st->qt_data);
       uico_st->qt_data = NULL;
    }
 #endif
-   uico_st->data = NULL;
+   uico_st->data       = NULL;
 }
 
 void ui_companion_driver_toggle(
@@ -133,13 +122,13 @@ void ui_companion_driver_toggle(
 #ifdef HAVE_QT
    if (desktop_menu_enable)
    {
-      if ((ui_companion_toggle || force) && !uico_st->qt_is_inited)
+      if ((ui_companion_toggle || force) && (!(uico_st->flags & UICO_ST_FLAG_QT_IS_INITED)))
       {
          uico_st->qt_data          = ui_companion_qt.init();
-         uico_st->qt_is_inited     = true;
+         uico_st->flags           |= UICO_ST_FLAG_QT_IS_INITED;
       }
 
-      if (ui_companion_qt.toggle && uico_st->qt_is_inited)
+      if (ui_companion_qt.toggle && (uico_st->flags & UICO_ST_FLAG_QT_IS_INITED))
          ui_companion_qt.toggle(uico_st->qt_data, force);
    }
 #endif
@@ -156,7 +145,7 @@ void ui_companion_driver_init_first(void)
    if (desktop_menu_enable && ui_companion_toggle)
    {
       uico_st->qt_data                 = ui_companion_qt.init();
-      uico_st->qt_is_inited            = true;
+      uico_st->flags                  |= UICO_ST_FLAG_QT_IS_INITED;
    }
 #else
    bool desktop_menu_enable            = false;
@@ -181,39 +170,16 @@ void ui_companion_driver_notify_refresh(void)
 {
    uico_driver_state_t *uico_st    = &uico_driver_st;
    const ui_companion_driver_t *ui = uico_st->drv;
-#ifdef HAVE_QT
-   settings_t      *settings       = config_get_ptr();
-   bool desktop_menu_enable        = settings->bools.desktop_menu_enable;
-   bool qt_is_inited               = uico_st->qt_is_inited;
-#endif
-
    if (!ui)
       return;
    if (ui->notify_refresh)
       ui->notify_refresh(uico_st->data);
 
 #ifdef HAVE_QT
-   if (desktop_menu_enable)
-      if (ui_companion_qt.notify_refresh && qt_is_inited)
+   if (config_get_ptr()->bools.desktop_menu_enable)
+      if (ui_companion_qt.notify_refresh && (uico_st->flags & UICO_ST_FLAG_QT_IS_INITED))
          ui_companion_qt.notify_refresh(uico_st->qt_data);
 #endif
-}
-
-void ui_companion_driver_notify_list_loaded(
-      file_list_t *list, file_list_t *menu_list)
-{
-   uico_driver_state_t *uico_st    = &uico_driver_st;
-   const ui_companion_driver_t *ui = uico_st->drv;
-   if (ui && ui->notify_list_loaded)
-      ui->notify_list_loaded(uico_st->data, list, menu_list);
-}
-
-void ui_companion_driver_notify_content_loaded(void)
-{
-   uico_driver_state_t *uico_st    = &uico_driver_st;
-   const ui_companion_driver_t *ui = uico_st->drv;
-   if (ui && ui->notify_content_loaded)
-      ui->notify_content_loaded(uico_st->data);
 }
 
 const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void)
@@ -254,17 +220,11 @@ void ui_companion_driver_msg_queue_push(
       ui->msg_queue_push(uico_st->data, msg, priority, duration, flush);
 
 #ifdef HAVE_QT
-   {
-      settings_t *settings     = config_get_ptr();
-      bool qt_is_inited        = uico_st->qt_is_inited;
-      bool desktop_menu_enable = settings->bools.desktop_menu_enable;
-
-      if (desktop_menu_enable)
-         if (ui_companion_qt.msg_queue_push && qt_is_inited)
-            ui_companion_qt.msg_queue_push(
-                  uico_st->qt_data,
-                  msg, priority, duration, flush);
-   }
+   if (config_get_ptr()->bools.desktop_menu_enable)
+      if (ui_companion_qt.msg_queue_push && (uico_st->flags & UICO_ST_FLAG_QT_IS_INITED))
+         ui_companion_qt.msg_queue_push(
+               uico_st->qt_data,
+               msg, priority, duration, flush);
 #endif
 }
 
@@ -290,13 +250,9 @@ void ui_companion_driver_log_msg(const char *msg)
 {
 #ifdef HAVE_QT
    uico_driver_state_t *uico_st= &uico_driver_st;
-   settings_t *settings        = config_get_ptr();
-   bool qt_is_inited           = uico_st->qt_is_inited;
-   bool desktop_menu_enable    = settings->bools.desktop_menu_enable;
-   bool window_is_active       = uico_st->qt_data && qt_is_inited
+   bool window_is_active       = uico_st->qt_data && (uico_st->flags & UICO_ST_FLAG_QT_IS_INITED)
       && ui_companion_qt.is_active(uico_st->qt_data);
-
-   if (desktop_menu_enable)
+   if (config_get_ptr()->bools.desktop_menu_enable)
       if (window_is_active)
          ui_companion_qt.log_msg(uico_st->qt_data, msg);
 #endif

@@ -1,0 +1,10 @@
+//
+//  Steam.xcconfig
+//  RetroArch_Metal
+//
+
+OTHER_CFLAGS = $(inherited) -DHAVE_MAIN -DHAVE_STEAM -DHAVE_MIST -DHAVE_PRESENCE
+HEADER_SEARCH_PATHS = $(inherited) $(MIST_PATH)/include
+OTHER_LDFLAGS = $(inherited) -L$(MIST_PATH) -lmist
+
+DEVELOPMENT_TEAM=UK699V5ZS8

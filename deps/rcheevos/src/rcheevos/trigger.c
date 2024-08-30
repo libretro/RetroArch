@@ -42,8 +42,8 @@ void rc_parse_trigger_internal(rc_trigger_t* self, const char** memaddr, rc_pars
   *next = 0;
   *memaddr = aux;
 
-  self->measured_value = 0;
   self->measured_target = parse->measured_target;
+  self->measured_value = parse->measured_target ? RC_MEASURED_UNKNOWN : 0;
   self->measured_as_percent = parse->measured_as_percent;
   self->state = RC_TRIGGER_STATE_WAITING;
   self->has_hits = 0;
@@ -96,16 +96,29 @@ int rc_trigger_state_active(int state)
   }
 }
 
+static int rc_condset_is_measured_from_hitcount(const rc_condset_t* condset, uint32_t measured_value)
+{
+  const rc_condition_t* condition;
+  for (condition = condset->conditions; condition; condition = condition->next) {
+    if (condition->type == RC_CONDITION_MEASURED && condition->required_hits &&
+        condition->current_hits == measured_value) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 static void rc_reset_trigger_hitcounts(rc_trigger_t* self) {
   rc_condset_t* condset;
 
-  if (self->requirement != 0) {
+  if (self->requirement) {
     rc_reset_condset(self->requirement);
   }
 
   condset = self->alternative;
 
-  while (condset != 0) {
+  while (condset) {
     rc_reset_condset(condset);
     condset = condset->next;
   }
@@ -168,7 +181,7 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
       sub_primed |= eval_state.primed;
 
       condset = condset->next;
-    } while (condset != 0);
+    } while (condset);
 
     /* to trigger, the core must be true and at least one alt must be true */
     ret &= sub;
@@ -179,24 +192,36 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
   }
 
   /* if paused, the measured value may not be captured, keep the old value */
-  if (!is_paused)
-    self->measured_value = eval_state.measured_value;
-
-  /* if the state is WAITING and the trigger is ready to fire, ignore it and reset the hit counts */
-  /* otherwise, if the state is WAITING, proceed to activating the trigger */
-  if (self->state == RC_TRIGGER_STATE_WAITING && ret) {
-    rc_reset_trigger(self);
-    self->has_hits = 0;
-    return RC_TRIGGER_STATE_WAITING;
+  if (!is_paused) {
+    rc_typed_value_convert(&eval_state.measured_value, RC_VALUE_TYPE_UNSIGNED);
+    self->measured_value = eval_state.measured_value.value.u32;
   }
 
+  /* if any ResetIf condition was true, reset the hit counts */
   if (eval_state.was_reset) {
-    /* if any ResetIf condition was true, reset the hit counts */
-    rc_reset_trigger_hitcounts(self);
-
-    /* if the measured value came from a hit count, reset it too */
-    if (eval_state.measured_from_hits)
+    /* if the measured value came from a hit count, reset it. do this before calling
+     * rc_reset_trigger_hitcounts in case we need to call rc_condset_is_measured_from_hitcount */
+    if (eval_state.measured_from_hits) {
       self->measured_value = 0;
+    }
+    else if (is_paused && self->measured_value) {
+      /* if the measured value is in a paused group, measured_from_hits won't have been set.
+       * attempt to determine if it should have been */
+      if (self->requirement && self->requirement->is_paused &&
+          rc_condset_is_measured_from_hitcount(self->requirement, self->measured_value)) {
+        self->measured_value = 0;
+      }
+      else {
+        for (condset = self->alternative; condset; condset = condset->next) {
+          if (condset->is_paused && rc_condset_is_measured_from_hitcount(condset, self->measured_value)) {
+            self->measured_value = 0;
+            break;
+          }
+        }
+      }
+    }
+
+    rc_reset_trigger_hitcounts(self);
 
     /* if there were hit counts to clear, return RESET, but don't change the state */
     if (self->has_hits) {
@@ -204,7 +229,7 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
 
       /* cannot be PRIMED while ResetIf is true */
       if (self->state == RC_TRIGGER_STATE_PRIMED)
-          self->state = RC_TRIGGER_STATE_ACTIVE;
+        self->state = RC_TRIGGER_STATE_ACTIVE;
 
       return RC_TRIGGER_STATE_RESET;
     }
@@ -214,6 +239,13 @@ int rc_evaluate_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State*
     is_primed = 0;
   }
   else if (ret) {
+    /* if the state is WAITING and the trigger is ready to fire, ignore it and reset the hit counts */
+    if (self->state == RC_TRIGGER_STATE_WAITING) {
+      rc_reset_trigger(self);
+      self->has_hits = 0;
+      return RC_TRIGGER_STATE_WAITING;
+    }
+
     /* trigger was triggered */
     self->state = RC_TRIGGER_STATE_TRIGGERED;
     return RC_TRIGGER_STATE_TRIGGERED;
@@ -248,9 +280,15 @@ int rc_test_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State* L) 
 }
 
 void rc_reset_trigger(rc_trigger_t* self) {
+  if (!self)
+    return;
+
   rc_reset_trigger_hitcounts(self);
 
   self->state = RC_TRIGGER_STATE_WAITING;
-  self->measured_value = 0;
+
+  if (self->measured_target)
+    self->measured_value = RC_MEASURED_UNKNOWN;
+
   self->has_hits = 0;
 }

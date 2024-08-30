@@ -2,6 +2,7 @@
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
  *  Copyright (C) 2014-2017 - Higor Euripedes
+ *  Copyright (C)      2023 - Carlo Refice
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -32,7 +33,7 @@ typedef struct _sdl_joypad
 #ifdef HAVE_SDL2
    SDL_GameController *controller;
    SDL_Haptic *haptic;
-   int rumble_effect; /* -1 = not initialized, -2 = error/unsupported */
+   int rumble_effect; /* -1 = not initialized, -2 = error/unsupported, -3 = use SDL_JoystickRumble instead of haptic */
 #endif
    unsigned num_axes;
    unsigned num_buttons;
@@ -240,9 +241,15 @@ static void sdl_pad_connect(unsigned id)
       if (SDL_HapticEffectSupported(pad->haptic, &efx) == SDL_FALSE)
       {
          pad->rumble_effect = -2;
-         RARCH_WARN("[SDL]: Device #%u does not support rumble.\n", id);
+         RARCH_WARN("[SDL]: Device #%u does not support leftright haptic effect.\n", id);
       }
    }
+#if SDL_VERSION_ATLEAST(2, 0, 9)
+   if (!pad->haptic || pad->rumble_effect == -2) {
+      pad->rumble_effect = -3;
+      RARCH_LOG("[SDL]: Falling back to joystick rumble\n");
+   }
+#endif
 #else
    pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
    pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
@@ -317,6 +324,11 @@ static void *sdl_joypad_init(void *data)
    }
    else
       g_has_haptic = true;
+      
+#if SDL_VERSION_ATLEAST(2, 0, 9)
+   /* enable extended hid reports to support ps4/ps5 rumble over bluetooth */
+   SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
+#endif
 #endif
 
    memset(sdl_pads, 0, sizeof(sdl_pads));
@@ -390,7 +402,7 @@ static int32_t sdl_joypad_button(unsigned port, uint16_t joykey)
    sdl_joypad_t *pad                    = (sdl_joypad_t*)&sdl_pads[port];
    if (!pad || !pad->joypad)
       return 0;
-   if (port >= DEFAULT_MAX_PADS)
+   if (port >= MAX_USERS)
       return 0;
    return sdl_joypad_button_state(pad, port, joykey);
 }
@@ -401,16 +413,18 @@ static int16_t sdl_joypad_axis_state(
 {
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
    {
-      int16_t val    = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
-      /* -0x8000 can cause trouble if we later abs() it. */
-      if (val < -0x7fff) 
-         return -0x7fff;
-      else if (val < 0)
+      int16_t val  = sdl_pad_get_axis(pad, AXIS_NEG_GET(joyaxis));
+      if (val < 0)
+      {
+         /* Clamp - -0x8000 can cause trouble if we later abs() it. */
+         if (val < -0x7fff) 
+            return -0x7fff;
          return val;
+      }
    }
    else if (AXIS_POS_GET(joyaxis) < pad->num_axes)
    {
-      int16_t val    = sdl_pad_get_axis(pad, AXIS_POS_GET(joyaxis));
+      int16_t val  = sdl_pad_get_axis(pad, AXIS_POS_GET(joyaxis));
       if (val > 0)
          return val;
    }
@@ -438,7 +452,7 @@ static int16_t sdl_joypad_state(
 
    if (!pad || !pad->joypad)
       return 0;
-   if (port_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= MAX_USERS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -507,7 +521,7 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
 
    memset(&efx, 0, sizeof(efx));
 
-   if (!joypad->joypad || !joypad->haptic)
+   if (!joypad->joypad)
       return false;
 
    efx.type             = SDL_HAPTIC_LEFTRIGHT;
@@ -526,9 +540,25 @@ static bool sdl_joypad_set_rumble(unsigned pad, enum retro_rumble_effect effect,
          return false;
    }
 
+#if SDL_VERSION_ATLEAST(2, 0, 9)
+   if (joypad->rumble_effect == -3)
+   {
+      if (SDL_JoystickRumble(joypad->joypad, efx.leftright.large_magnitude, efx.leftright.small_magnitude, efx.leftright.length) == -1)
+      {
+         RARCH_WARN("[SDL]: Failed to rumble joypad %u: %s\n",
+                    pad, SDL_GetError());
+         joypad->rumble_effect = -2;
+         return false;
+      }
+   }
+#endif
+
+   if (!joypad->haptic)
+      return false;
+
    if (joypad->rumble_effect == -1)
    {
-      joypad->rumble_effect = SDL_HapticNewEffect(sdl_pads[pad].haptic, &efx);
+      joypad->rumble_effect = SDL_HapticNewEffect(joypad->haptic, &efx);
       if (joypad->rumble_effect < 0)
       {
          RARCH_WARN("[SDL]: Failed to create rumble effect for joypad %u: %s\n",
@@ -571,9 +601,11 @@ input_device_driver_t sdl_joypad = {
 #ifdef HAVE_SDL2
    sdl_joypad_set_rumble,
 #else
-   NULL,
+   NULL, /* set_rumble */
 #endif
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    sdl_joypad_name,
 #ifdef HAVE_SDL2
    "sdl2",

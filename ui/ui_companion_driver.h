@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <lists/file_list.h>
+#include <lists/string_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -56,6 +57,12 @@ enum ui_msg_window_type
     UI_MSG_WINDOW_TYPE_WARNING
 };
 
+enum uico_driver_state_flags
+{
+   UICO_ST_FLAG_QT_IS_INITED     = (1 << 0),
+   UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
+};
+
 typedef struct ui_msg_window_state
 {
    enum ui_msg_window_buttons buttons;
@@ -66,17 +73,6 @@ typedef struct ui_msg_window_state
 
 typedef struct ui_browser_window_state
 {
-   struct
-   {
-      bool can_choose_directories;
-      bool can_choose_directories_val;
-      bool can_choose_files;
-      bool can_choose_files_val;
-      bool allows_multiple_selection;
-      bool allows_multiple_selection_val;
-      bool treat_file_packages_as_directories;
-      bool treat_file_packages_as_directories_val;
-   } capabilities;
    void *window;
    char *filters;
    char *filters_title;
@@ -129,14 +125,15 @@ typedef struct ui_companion_driver
    void (*deinit)(void *data);
    void (*toggle)(void *data, bool force);
    void (*event_command)(void *data, enum event_command action);
-   void (*notify_content_loaded)(void *data);
-   void (*notify_list_loaded)(void *data, file_list_t *list, file_list_t *menu_list);
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(void *data, const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
    void *(*get_main_window)(void *data);
    void (*log_msg)(void *data, const char *msg);
    bool (*is_active)(void *data);
+   struct string_list *(*get_app_icons)(void);
+   void (*set_app_icon)(const char *icon);
+   uintptr_t (*get_app_icon_texture)(const char *icon);
    ui_browser_window_t *browser_window;
    ui_msg_window_t     *msg_window;
    ui_window_t         *window;
@@ -150,29 +147,15 @@ typedef struct
    void *data;
 #ifdef HAVE_QT
    void *qt_data;
-   bool qt_is_inited;
 #endif
-   bool is_on_foreground;
+   uint8_t flags;
 } uico_driver_state_t;
 
-extern ui_companion_driver_t ui_companion_cocoa;
-extern ui_companion_driver_t ui_companion_cocoatouch;
-extern ui_companion_driver_t ui_companion_qt;
-extern ui_companion_driver_t ui_companion_win32;
-
-extern ui_msg_window_t ui_msg_window_win32;
-
-bool ui_companion_is_on_foreground(void);
-
-void ui_companion_set_foreground(unsigned enable);
+uint8_t ui_companion_get_flags(void);
 
 void ui_companion_event_command(enum event_command action);
 
 void ui_companion_driver_notify_refresh(void);
-
-void ui_companion_driver_notify_list_loaded(file_list_t *list, file_list_t *menu_list);
-
-void ui_companion_driver_notify_content_loaded(void);
 
 const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void);
 
@@ -200,6 +183,14 @@ void ui_companion_driver_toggle(
       bool force);
 
 uico_driver_state_t *uico_state_get_ptr(void);
+
+extern ui_companion_driver_t ui_companion_cocoa;
+extern ui_companion_driver_t ui_companion_cocoatouch;
+extern ui_companion_driver_t ui_companion_qt;
+extern ui_companion_driver_t ui_companion_win32;
+
+extern ui_msg_window_t ui_msg_window_win32;
+
 
 RETRO_END_DECLS
 

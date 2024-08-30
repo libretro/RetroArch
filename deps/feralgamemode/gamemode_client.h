@@ -141,9 +141,8 @@ __attribute__((always_inline)) static inline int internal_bind_libgamemode_symbo
 __attribute__((always_inline)) static inline int internal_load_libgamemode(void)
 {
 	/* We start at 1, 0 is a success and -1 is a fail */
-	if (internal_libgamemode_loaded != 1) {
+	if (internal_libgamemode_loaded != 1)
 		return internal_libgamemode_loaded;
-	}
 
 	/* Anonymous struct type to define our bindings */
 	struct binding {
@@ -227,10 +226,8 @@ __attribute__((always_inline)) static inline const char *gamemode_error_string(v
 {
 	/* If we fail to load the system gamemode, or we have an error string already, return our error
 	 * string instead of diverting to the system version */
-	if (internal_load_libgamemode() < 0 || internal_gamemode_client_error_string[0] != '\0') {
+	if (internal_load_libgamemode() < 0 || internal_gamemode_client_error_string[0] != '\0')
 		return internal_gamemode_client_error_string;
-	}
-
 	return REAL_internal_gamemode_error_string();
 }
 
@@ -247,19 +244,11 @@ __attribute__((always_inline)) static inline
 int gamemode_request_start(void)
 {
 	/* Need to load gamemode */
-	if (internal_load_libgamemode() < 0) {
-#ifdef GAMEMODE_AUTO
-		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
-#endif
+	if (internal_load_libgamemode() < 0)
 		return -1;
-	}
 
-	if (REAL_internal_gamemode_request_start() < 0) {
-#ifdef GAMEMODE_AUTO
-		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
-#endif
+	if (REAL_internal_gamemode_request_start() < 0)
 		return -1;
-	}
 
 	return 0;
 }
@@ -273,19 +262,11 @@ __attribute__((always_inline)) static inline
 int gamemode_request_end(void)
 {
 	/* Need to load gamemode */
-	if (internal_load_libgamemode() < 0) {
-#ifdef GAMEMODE_AUTO
-		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
-#endif
+	if (internal_load_libgamemode() < 0)
 		return -1;
-	}
 
-	if (REAL_internal_gamemode_request_end() < 0) {
-#ifdef GAMEMODE_AUTO
-		fprintf(stderr, "gamemodeauto: %s\n", gamemode_error_string());
-#endif
+	if (REAL_internal_gamemode_request_end() < 0)
 		return -1;
-	}
 
 	return 0;
 }
@@ -294,9 +275,8 @@ int gamemode_request_end(void)
 __attribute__((always_inline)) static inline int gamemode_query_status(void)
 {
 	/* Need to load gamemode */
-	if (internal_load_libgamemode() < 0) {
+	if (internal_load_libgamemode() < 0)
 		return -1;
-	}
 
 	if (REAL_internal_gamemode_query_status == NULL) {
 		snprintf(internal_gamemode_client_error_string,
@@ -312,9 +292,8 @@ __attribute__((always_inline)) static inline int gamemode_query_status(void)
 __attribute__((always_inline)) static inline int gamemode_request_start_for(pid_t pid)
 {
 	/* Need to load gamemode */
-	if (internal_load_libgamemode() < 0) {
+	if (internal_load_libgamemode() < 0)
 		return -1;
-	}
 
 	if (REAL_internal_gamemode_request_start_for == NULL) {
 		snprintf(internal_gamemode_client_error_string,
@@ -330,9 +309,8 @@ __attribute__((always_inline)) static inline int gamemode_request_start_for(pid_
 __attribute__((always_inline)) static inline int gamemode_request_end_for(pid_t pid)
 {
 	/* Need to load gamemode */
-	if (internal_load_libgamemode() < 0) {
+	if (internal_load_libgamemode() < 0)
 		return -1;
-	}
 
 	if (REAL_internal_gamemode_request_end_for == NULL) {
 		snprintf(internal_gamemode_client_error_string,
@@ -348,9 +326,8 @@ __attribute__((always_inline)) static inline int gamemode_request_end_for(pid_t 
 __attribute__((always_inline)) static inline int gamemode_query_status_for(pid_t pid)
 {
 	/* Need to load gamemode */
-	if (internal_load_libgamemode() < 0) {
+	if (internal_load_libgamemode() < 0)
 		return -1;
-	}
 
 	if (REAL_internal_gamemode_query_status_for == NULL) {
 		snprintf(internal_gamemode_client_error_string,

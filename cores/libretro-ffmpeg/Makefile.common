@@ -8,7 +8,7 @@ GL_SOURCE          :=
 
 CPUOPTS            :=
 DEPS_DIR           := $(CORE_DIR)/deps
-LIBRETRO_COMM_DIR  := $(CORE_DIR)/libretro-common
+LIBRETRO_COMM_DIR  := $(CORE_DIR)/../../libretro-common
 BASE_DIR       	 := $(CORE_DIR)/..
 AVFORMAT_DIR   	 := $(BASE_DIR)/libavformat
 AVCODEC_DIR    	 := $(BASE_DIR)/libavcodec

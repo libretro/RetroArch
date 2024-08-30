@@ -1,6 +1,6 @@
 Name:           retroarch
-Version:        1.10.0
-Release:        v1.10.0
+Version:        1.19.1
+Release:        v1.19.1
 Summary:        Official reference frontend for libretro
 
 Group:          Applications/Emulators
@@ -32,7 +32,7 @@ cores also in their own programs or devices.
 %ifarch armv7hl
 ./configure --prefix=%{_prefix} --enable-opengles --enable-neon --enable-egl --enable-wayland
 %else
-./configure --prefix=%{_prefix} --enable-gles
+./configure --prefix=%{_prefix} --enable-opengles
 %endif
 make %{?_smp_mflags}
 
@@ -63,7 +63,7 @@ sed -i \
 
 sed -i \
   's|^Exec=retroarch|Exec=retroarch --menu|' \
-  %{buildroot}/usr/share/applications/retroarch.desktop
+  %{buildroot}/usr/share/applications/org.libretro.RetroArch.desktop
 
   # Install icon file in the correct place
   mkdir -p %{buildroot}/usr/share/icons/hicolor/86x86/apps
@@ -75,8 +75,7 @@ sed -i \
 %doc README.md
 %config /etc/retroarch.cfg
 %{_prefix}/bin/retroarch
-%{_prefix}/bin/retroarch-cg2glsl
-%{_prefix}/share/applications/retroarch.desktop
+%{_prefix}/share/applications/org.libretro.RetroArch.desktop
 %{_prefix}/share/man/man6/*.6*
 %{_prefix}/share/icons/hicolor/86x86/apps/retroarch.*
 %{_prefix}/share/doc/retroarch/*

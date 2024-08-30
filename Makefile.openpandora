@@ -32,7 +32,6 @@ DEFINES += -DHAVE_THREADS \
 	   -DHAVE_RPNG \
 	   -DHAVE_RJPEG \
 	   -DHAVE_OVERLAY \
-	   -DHAVE_VIDEO_LAYOUT \
 	   -DHAVE_ALSA \
 	   -DHAVE_ZLIB \
 	   -D__linux__ \

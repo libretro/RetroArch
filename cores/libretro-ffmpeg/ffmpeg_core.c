@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdarg.h>
 
 #ifdef RARCH_INTERNAL
@@ -66,6 +65,8 @@ extern "C" {
    s ##_version() >> 8 & 0xFF, \
    s ##_version() & 0xFF);
 
+#define HAVE_CH_LAYOUT (LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100))
+
 static bool reset_triggered;
 static bool libretro_supports_bitmasks = false;
 
@@ -96,11 +97,8 @@ static unsigned sw_sws_threads;
 static video_buffer_t *video_buffer;
 static tpool_t *tpool;
 
-/* If libavutil is at least version 55 or higher,
- * and if libavcodec is at least version 57.80.100 or higher,
- * enable hardware acceleration */
-#define ENABLE_HW_ACCEL ((LIBAVUTIL_VERSION_MAJOR > 55) && ENABLE_HW_ACCEL_CHECK2())
-#define ENABLE_HW_ACCEL_CHECK2() ((LIBAVCODEC_VERSION_MAJOR == 57 && LIBAVCODEC_VERSION_MINOR >= 80 && LIBAVCODEC_VERSION_MICRO >= 100) || (LIBAVCODEC_VERSION_MAJOR > 57))
+#define FFMPEG3 ((LIBAVUTIL_VERSION_INT < (56, 6, 100)) || \
+      (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)))
 
 #if ENABLE_HW_ACCEL
 static enum AVHWDeviceType hw_decoder;
@@ -240,7 +238,9 @@ void CORE_PREFIX(retro_init)(void)
 {
    reset_triggered = false;
 
+#if FFMPEG3
    av_register_all();
+#endif
 
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_INPUT_BITMASKS, NULL))
       libretro_supports_bitmasks = true;
@@ -462,10 +462,12 @@ static void check_variables(bool firststart)
             hw_decoder = AV_HWDEVICE_TYPE_DRM;
          else if (string_is_equal(hw_var.value, "dxva2"))
             hw_decoder = AV_HWDEVICE_TYPE_DXVA2;
+#if !FFMPEG3
          else if (string_is_equal(hw_var.value, "mediacodec"))
             hw_decoder = AV_HWDEVICE_TYPE_MEDIACODEC;
          else if (string_is_equal(hw_var.value, "opencl"))
             hw_decoder = AV_HWDEVICE_TYPE_OPENCL;
+#endif
          else if (string_is_equal(hw_var.value, "qsv"))
             hw_decoder = AV_HWDEVICE_TYPE_QSV;
          else if (string_is_equal(hw_var.value, "vaapi"))
@@ -613,7 +615,7 @@ void CORE_PREFIX(retro_run)(void)
    static bool last_l;
    static bool last_r;
    double min_pts;
-   int16_t audio_buffer[2048];
+   int16_t audio_buffer[media.sample_rate / 20];
    bool left, right, up, down, l, r;
    int16_t ret                  = 0;
    size_t to_read_frames        = 0;
@@ -855,7 +857,7 @@ void CORE_PREFIX(retro_run)(void)
                glBindTexture(GL_TEXTURE_2D, frames[1].tex);
 #if defined(HAVE_OPENGLES)
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                     media.width, media.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                     media.width, media.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, video_frame_temp_buffer);
 #else
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                      media.width, media.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
@@ -988,8 +990,9 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
 {
    int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
-   struct AVCodec *codec = avcodec_find_decoder(fctx->streams[video_stream_index]->codec->codec_id);
+   const AVCodec *codec = avcodec_find_decoder(fctx->streams[video_stream_index]->codecpar->codec_id);
 
+#if !FFMPEG3
    for (int i = 0;; i++)
    {
       const AVCodecHWConfig *config = avcodec_get_hw_config(codec, i);
@@ -1002,12 +1005,15 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
       if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
          config->device_type == type)
       {
+         enum AVPixelFormat device_pix_fmt = config->pix_fmt;
+#else
+   enum AVPixelFormat device_pix_fmt =
+      pix_fmts ? ctx->get_format(ctx, pix_fmts) : decoder_pix_fmt;
+#endif
          log_cb(RETRO_LOG_INFO, "[FFMPEG] Selected HW decoder %s.\n",
                   av_hwdevice_get_type_name(type));
          log_cb(RETRO_LOG_INFO, "[FFMPEG] Selected HW pixel format %s.\n",
-                  av_get_pix_fmt_name(config->pix_fmt));
-         
-         enum AVPixelFormat device_pix_fmt = config->pix_fmt;
+                  av_get_pix_fmt_name(device_pix_fmt));
 
          if (pix_fmts != NULL)
          {
@@ -1019,16 +1025,17 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
                   goto exit;
                }
             log_cb(RETRO_LOG_ERROR, "[FFMPEG] Codec %s does not support device pixel format %s.\n",
-                  codec->name, av_get_pix_fmt_name(config->pix_fmt));
+                  codec->name, av_get_pix_fmt_name(device_pix_fmt));
          }
          else
          {
             decoder_pix_fmt = device_pix_fmt;
             goto exit;
          }
-         
+#if !FFMPEG3
       }
    }
+#endif
 
 exit:
    if (decoder_pix_fmt != AV_PIX_FMT_NONE)
@@ -1055,7 +1062,6 @@ exit:
 static enum AVPixelFormat auto_hw_decoder(AVCodecContext *ctx,
                                     const enum AVPixelFormat *pix_fmts)
 {
-   int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
    enum AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
 
@@ -1070,7 +1076,6 @@ static enum AVPixelFormat auto_hw_decoder(AVCodecContext *ctx,
 }
 #endif
 
-
 static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
                                     const enum AVPixelFormat *pix_fmts)
 {
@@ -1080,11 +1085,9 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
    if (!force_sw_decoder)
    {
       if (hw_decoder == AV_HWDEVICE_TYPE_NONE)
-      {
-         format = auto_hw_decoder(ctx, pix_fmts);
-      }
+         format              = auto_hw_decoder(ctx, pix_fmts);
       else
-         format = init_hw_decoder(ctx, hw_decoder, pix_fmts);
+         format              = init_hw_decoder(ctx, hw_decoder, pix_fmts);
    }
 
    /* Fallback to SW rendering */
@@ -1094,17 +1097,17 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Using SW decoding.\n");
 
-      ctx->thread_type = FF_THREAD_FRAME;
-      ctx->thread_count = sw_decoder_threads;
+      ctx->thread_type       = FF_THREAD_FRAME;
+      ctx->thread_count      = sw_decoder_threads;
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding threads: %d\n", sw_decoder_threads);
 
-      format = fctx->streams[video_stream_index]->codec->pix_fmt;
+      format                 = (enum AVPixelFormat)fctx->streams[video_stream_index]->codecpar->format;
 
 #if ENABLE_HW_ACCEL
-      hw_decoding_enabled = false;
+      hw_decoding_enabled    = false;
    }
    else
-      hw_decoding_enabled = true;
+      hw_decoding_enabled    = true;
 #endif
 
    return format;
@@ -1117,10 +1120,10 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 {
    /* Look if we can reuse the current decoder */
    for (size_t i = 0; pix_fmts[i] != AV_PIX_FMT_NONE; i++)
+   {
       if (pix_fmts[i] == pix_fmt)
-      {
          return pix_fmt;
-      }
+   }
 
    pix_fmt = select_decoder(ctx, pix_fmts);
 
@@ -1130,16 +1133,16 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 
 static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned index)
 {
-   int ret = 0;
-
-   AVCodec *codec = avcodec_find_decoder(fctx->streams[index]->codec->codec_id);
+   int ret              = 0;
+   const AVCodec *codec = avcodec_find_decoder(fctx->streams[index]->codecpar->codec_id);
    if (!codec)
    {
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Couldn't find suitable decoder\n");
       return false;
    }
 
-   *ctx = fctx->streams[index]->codec;
+   *ctx = avcodec_alloc_context3(codec);
+   avcodec_parameters_to_context((*ctx), fctx->streams[index]->codecpar);
 
    if (type == AVMEDIA_TYPE_VIDEO)
    {
@@ -1230,7 +1233,7 @@ static bool open_codecs(void)
 
    for (i = 0; i < fctx->nb_streams; i++)
    {
-      enum AVMediaType type = fctx->streams[i]->codec->codec_type;
+      enum AVMediaType type = fctx->streams[i]->codecpar->codec_type;
       switch (type)
       {
          case AVMEDIA_TYPE_AUDIO:
@@ -1245,7 +1248,7 @@ static bool open_codecs(void)
 
          case AVMEDIA_TYPE_VIDEO:
             if (!vctx
-                  && !codec_is_image(fctx->streams[i]->codec->codec_id))
+                  && !codec_is_image(fctx->streams[i]->codecpar->codec_id))
             {
                if (!open_codec(&vctx, type, i))
                   return false;
@@ -1255,7 +1258,7 @@ static bool open_codecs(void)
          case AVMEDIA_TYPE_SUBTITLE:
 #ifdef HAVE_SSA
             if (subtitle_streams_num < MAX_STREAMS
-                  && codec_id_is_ass(fctx->streams[i]->codec->codec_id))
+                  && codec_id_is_ass(fctx->streams[i]->codecpar->codec_id))
             {
                int size;
                AVCodecContext **s = &sctx[subtitle_streams_num];
@@ -1280,9 +1283,9 @@ static bool open_codecs(void)
 
          case AVMEDIA_TYPE_ATTACHMENT:
             {
-               AVCodecContext *ctx = fctx->streams[i]->codec;
-               if (codec_id_is_ttf(ctx->codec_id))
-                  append_attachment(ctx->extradata, ctx->extradata_size);
+               AVCodecParameters *params = fctx->streams[i]->codecpar;
+               if (codec_id_is_ttf(params->codec_id))
+                  append_attachment(params->extradata, params->extradata_size);
             }
             break;
 
@@ -1464,12 +1467,12 @@ static void sws_worker_thread(void *arg)
 
    ctx->sws = sws_getCachedContext(ctx->sws,
          media.width, media.height, (enum AVPixelFormat)tmp_frame->format,
-         media.width, media.height, PIX_FMT_RGB32,
+         media.width, media.height, AV_PIX_FMT_RGB32,
          SWS_POINT, NULL, NULL, NULL);
 
    set_colorspace(ctx->sws, media.width, media.height,
-         av_frame_get_colorspace(tmp_frame),
-         av_frame_get_color_range(tmp_frame));
+         tmp_frame->colorspace,
+         tmp_frame->color_range);
 
    if ((ret = sws_scale(ctx->sws, (const uint8_t *const*)tmp_frame->data,
          tmp_frame->linesize, 0, media.height,
@@ -1620,7 +1623,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
 #endif
          break;
       }
-      
+
       required_buffer = frame->nb_samples * sizeof(int16_t) * 2;
       if (required_buffer > *buffer_cap)
       {
@@ -1637,7 +1640,7 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       pts = frame->best_effort_timestamp;
       slock_lock(fifo_lock);
 
-      while (!decode_thread_dead && 
+      while (!decode_thread_dead &&
             FIFO_WRITE_AVAIL(audio_decode_fifo) < required_buffer)
       {
          if (!main_sleeping)
@@ -1673,7 +1676,7 @@ static void decode_thread_seek(double time)
 
    decode_last_audio_time = time;
 
-   if(avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0) < 0)
+   if (avformat_seek_file(fctx, -1, INT64_MIN, seek_to, INT64_MAX, 0) < 0)
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] av_seek_frame() failed.\n");
 
    if (video_stream_index >= 0)
@@ -1725,8 +1728,14 @@ static void decode_thread(void *data)
    {
       swr[i] = swr_alloc();
 
+#if HAVE_CH_LAYOUT
+      AVChannelLayout out_chlayout = AV_CHANNEL_LAYOUT_STEREO;
+      av_opt_set_chlayout(swr[i], "in_chlayout", &actx[i]->ch_layout, 0);
+      av_opt_set_chlayout(swr[i], "out_chlayout", &out_chlayout, 0);
+#else
       av_opt_set_int(swr[i], "in_channel_layout", actx[i]->channel_layout, 0);
       av_opt_set_int(swr[i], "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+#endif
       av_opt_set_int(swr[i], "in_sample_rate", actx[i]->sample_rate, 0);
       av_opt_set_int(swr[i], "out_sample_rate", media.sample_rate, 0);
       av_opt_set_int(swr[i], "in_sample_fmt", actx[i]->sample_fmt, 0);
@@ -1740,7 +1749,7 @@ static void decode_thread(void *data)
 
    if (video_stream_index >= 0)
    {
-      frame_size = avpicture_get_size(PIX_FMT_RGB32, media.width, media.height);
+      frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32, media.width, media.height, 1);
       video_buffer = video_buffer_create(4, frame_size, media.width, media.height);
       tpool = tpool_create(sw_sws_threads);
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n", sw_sws_threads);
@@ -1813,7 +1822,7 @@ static void decode_thread(void *data)
       if (!packet_buffer_empty(video_packet_buffer))
          next_video_end = video_timebase * packet_buffer_peek_end_pts(video_packet_buffer);
 
-      /* 
+      /*
        * Decode audio packet if:
        *  1. it's the start of file or it's audio only media
        *  2. there is a video packet for in the buffer
@@ -1835,7 +1844,7 @@ static void decode_thread(void *data)
          av_packet_unref(pkt);
       }
 
-      /* 
+      /*
        * Decode video packet if:
        *  1. we already decoded an audio packet
        *  2. there is no audio stream to play
@@ -1865,7 +1874,7 @@ static void decode_thread(void *data)
          av_packet_free(&pkt);
          break;
       }
-   
+
       // Read the next frame and stage it in case of audio or video frame.
       if (av_read_frame(fctx, pkt) < 0)
          eof = true;
@@ -1878,7 +1887,7 @@ static void decode_thread(void *data)
          /**
           * Decode subtitle packets right away, since SSA/ASS can operate this way.
           * If we ever support other subtitles, we need to handle this with a
-          * buffer too 
+          * buffer too
           **/
          AVSubtitle sub;
          int finished = 0;

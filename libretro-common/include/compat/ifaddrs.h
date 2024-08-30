@@ -47,7 +47,20 @@ struct ifaddrs
 
 #include <sys/cdefs.h>
 
+/**
+ * Portable reimplementation of \c getifaddrs().
+ * The original function will be used if it's available.
+ *
+ * @see https://man7.org/linux/man-pages/man3/getifaddrs.3.html
+ */
 extern int getifaddrs(struct ifaddrs **ifap);
+
+/**
+ * Portable reimplementation of \c freeifaddrs().
+ * The original function will be used if it's available.
+ *
+ * @see https://man7.org/linux/man-pages/man3/getifaddrs.3.html
+ */
 extern void freeifaddrs(struct ifaddrs *ifa);
 
 #endif

@@ -63,39 +63,43 @@ static int16_t qnx_joypad_axis_state(
       qnx_input_device_t *controller,
       unsigned port, uint32_t joyaxis)
 {
-   int val             = 0;
-   int axis            = -1;
-   bool is_neg         = false;
-   bool is_pos         = false;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis   = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      int16_t val   = 0;
+      int16_t axis  = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = controller->analog0[axis];
+            break;
+         case 2:
+         case 3:
+            val = controller->analog1[axis - 2];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis   = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      int16_t val   = 0;
+      int16_t axis  = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = controller->analog0[axis];
+            break;
+         case 2:
+         case 3:
+            val = controller->analog1[axis - 2];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-
-   switch (axis)
-   {
-      case 0:
-      case 1:
-         val = controller->analog0[axis];
-         break;
-      case 2:
-      case 3:
-         val = controller->analog1[axis-2];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   return val;
+   return 0;
 }
 
 static int16_t qnx_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -165,8 +169,10 @@ input_device_driver_t qnx_joypad = {
    NULL,
    qnx_joypad_axis,
    qnx_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    qnx_joypad_name,
    "qnx",
 };

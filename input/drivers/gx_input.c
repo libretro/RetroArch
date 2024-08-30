@@ -23,12 +23,14 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include <libretro.h>
 
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../../gfx/video_driver.h"
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -265,16 +267,16 @@ static void rvl_input_poll(void *data)
 
 static uint64_t rvl_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG) |
-          (1 << RETRO_DEVICE_MOUSE) |
-          (1 << RETRO_DEVICE_LIGHTGUN);
+   return   (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG)
+          | (1 << RETRO_DEVICE_MOUSE)
+          | (1 << RETRO_DEVICE_LIGHTGUN);
 }
 #else
 static uint64_t gx_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG);
+   return   (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG);
 }
 #endif
 
@@ -298,5 +300,6 @@ input_driver_t input_gx = {
    "gx",
 
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

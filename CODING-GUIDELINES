@@ -1,3 +1,6 @@
+Refer also to this page for more information -
+https://docs.libretro.com/development/coding-standards/
+
 Struct ordering
 ---------------
 
@@ -24,7 +27,7 @@ For POD-types, try to order structs as follows (first to last):
    * enum            (4 bytes)
    * int16_t         (2 bytes)
    * char            (1 byte)
-* bool            (1 byte)
+   * bool            (1 byte)
 
    [1] PS3 uses 4 byte pointers despite having a 64bit processor
 
@@ -107,3 +110,11 @@ VLA (Variable Length Array)
 ---------------------------
 Do not use VLAs (Variable Length Array) in C source files. These are not
 C89-compliant.
+
+Miscellaneous
+-------------
+- Brace usage follows "Allman style". The brace associated with a control statement is placed on the following line, 
+  indented to the same level as the control statement. 
+  Statements within the braces are indented to the next level.
+- A single statement block must not include brackets (unless the block uses a macro that expands into multiple lines)
+- If possible, avoid 'while (true)' and use 'for (;;)' instead

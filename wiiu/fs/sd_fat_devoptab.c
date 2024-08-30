@@ -84,9 +84,9 @@ typedef struct _sd_fat_dir_entry_t {
 
 static sd_fat_private_t *sd_fat_get_device_data(const char *path)
 {
+    int i;
     const devoptab_t *devoptab = NULL;
     char name[128] = {0};
-    int i;
 
     /* Get the device name from the path */
     strncpy(name, path, 127);
@@ -668,7 +668,8 @@ static int sd_fat_mkdir_r (struct _reent *r, const char *path, int mode)
 
     OSUnlockMutex(dev->pMutex);
 
-    if(result < 0) {
+    if(result < 0)
+    {
         r->_errno = result;
         return -1;
     }
@@ -679,7 +680,8 @@ static int sd_fat_mkdir_r (struct _reent *r, const char *path, int mode)
 static int sd_fat_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf)
 {
     sd_fat_private_t *dev = sd_fat_get_device_data(path);
-    if(!dev) {
+    if (!dev)
+    {
         r->_errno = ENODEV;
         return -1;
     }
@@ -826,7 +828,8 @@ static int sd_fat_dirreset_r (struct _reent *r, DIR_ITER *dirState)
 static int sd_fat_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct stat *st)
 {
     sd_fat_dir_entry_t *dirIter = (sd_fat_dir_entry_t *)dirState->dirStruct;
-    if(!dirIter->dev) {
+    if(!dirIter->dev)
+    {
         r->_errno = ENODEV;
         return -1;
     }
@@ -899,20 +902,21 @@ static const devoptab_t devops_sd_fat = {
 
 static int sd_fat_add_device (const char *name, const char *mount_path, void *pClient, void *pCmd)
 {
+    int i;
     devoptab_t *dev = NULL;
     char *devname = NULL;
     char *devpath = NULL;
-    int i;
 
     /* Sanity check */
-    if (!name) {
+    if (!name)
+    {
         errno = EINVAL;
         return -1;
     }
 
     /* Allocate a devoptab for this device */
-    dev = (devoptab_t *) malloc(sizeof(devoptab_t) + strlen(name) + 1);
-    if (!dev) {
+    if (!(dev = (devoptab_t *) malloc(sizeof(devoptab_t) + strlen(name) + 1)))
+    {
         errno = ENOMEM;
         return -1;
     }
@@ -923,22 +927,24 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
 
     /* create private data */
     sd_fat_private_t *priv = (sd_fat_private_t *)malloc(sizeof(sd_fat_private_t) + strlen(mount_path) + 1);
-    if(!priv) {
+    if (!priv)
+    {
         free(dev);
         errno = ENOMEM;
         return -1;
     }
 
-    devpath = (char*)(priv+1);
+    devpath          = (char*)(priv+1);
     strcpy(devpath, mount_path);
 
     /* setup private data */
     priv->mount_path = devpath;
-    priv->pClient = pClient;
-    priv->pCmd = pCmd;
-    priv->pMutex = malloc(sizeof(OSMutex));
+    priv->pClient    = pClient;
+    priv->pCmd       = pCmd;
+    priv->pMutex     = malloc(sizeof(OSMutex));
 
-    if(!priv->pMutex) {
+    if (!priv->pMutex)
+    {
         free(dev);
         free(priv);
         errno = ENOMEM;
@@ -953,8 +959,10 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
     dev->deviceData = priv;
 
     /* Add the device to the devoptab table (if there is a free slot) */
-    for (i = 3; i < STD_MAX; i++) {
-        if (devoptab_list[i] == devoptab_list[0]) {
+    for (i = 3; i < STD_MAX; i++)
+    {
+        if (devoptab_list[i] == devoptab_list[0])
+        {
             devoptab_list[i] = dev;
             return 0;
         }
@@ -971,9 +979,9 @@ static int sd_fat_add_device (const char *name, const char *mount_path, void *pC
 
 static int sd_fat_remove_device (const char *path, void **pClient, void **pCmd, char **mountPath)
 {
+    int i;
     const devoptab_t *devoptab = NULL;
     char name[128] = {0};
-    int i;
 
     /* Get the device name from the path */
     strncpy(name, path, 127);
@@ -983,27 +991,30 @@ static int sd_fat_remove_device (const char *path, void **pClient, void **pCmd, 
     /* NOTE: We do this manually due to a 'bug' in RemoveDevice */
     /*       which ignores names with suffixes and causes names */
     /*       like "ntfs" and "ntfs1" to be seen as equals */
-    for (i = 3; i < STD_MAX; i++) {
+    for (i = 3; i < STD_MAX; i++)
+    {
         devoptab = devoptab_list[i];
-        if (devoptab && devoptab->name) {
-            if (strcmp(name, devoptab->name) == 0) {
-                devoptab_list[i] = devoptab_list[0];
+        if (devoptab && devoptab->name)
+        {
+            if (strcmp(name, devoptab->name) == 0)
+            {
+               devoptab_list[i] = devoptab_list[0];
 
-                if(devoptab->deviceData)
-                {
-                    sd_fat_private_t *priv = (sd_fat_private_t *)devoptab->deviceData;
-                    *pClient = priv->pClient;
-                    *pCmd = priv->pCmd;
-                    *mountPath = (char*) malloc(strlen(priv->mount_path)+1);
-                    if(*mountPath)
-                        strcpy(*mountPath, priv->mount_path);
-                    if(priv->pMutex)
-                        free(priv->pMutex);
-                    free(devoptab->deviceData);
-                }
+               if(devoptab->deviceData)
+               {
+                  sd_fat_private_t *priv = (sd_fat_private_t *)devoptab->deviceData;
+                  *pClient               = priv->pClient;
+                  *pCmd                  = priv->pCmd;
+                  *mountPath             = (char*) malloc(strlen(priv->mount_path)+1);
+                  if(*mountPath)
+                     strcpy(*mountPath, priv->mount_path);
+                  if(priv->pMutex)
+                     free(priv->pMutex);
+                  free(devoptab->deviceData);
+               }
 
-                free((devoptab_t*)devoptab);
-                return 0;
+               free((devoptab_t*)devoptab);
+               return 0;
             }
         }
     }
@@ -1013,30 +1024,30 @@ static int sd_fat_remove_device (const char *path, void **pClient, void **pCmd, 
 
 int mount_sd_fat(const char *path)
 {
-    int result = -1;
-
+    char *mountPath = NULL;
+    int result      = -1;
     /* get command and client */
-    void* pClient = malloc(sizeof(FSClient));
-    void* pCmd = malloc(sizeof(FSCmdBlock));
+    void* pClient   = malloc(sizeof(FSClient));
+    void* pCmd      = malloc(sizeof(FSCmdBlock));
 
-    if(!pClient || !pCmd) {
-        /* just in case free if not 0 */
-        if(pClient)
-            free(pClient);
-        if(pCmd)
-            free(pCmd);
-        return -2;
+    if(!pClient || !pCmd)
+    {
+       /* just in case free if not 0 */
+       if(pClient)
+          free(pClient);
+       if(pCmd)
+          free(pCmd);
+       return -2;
     }
 
     FSInit();
     FSInitCmdBlock(pCmd);
     FSAddClient(pClient, -1);
 
-    char *mountPath = NULL;
-
-    if(MountFS(pClient, pCmd, &mountPath) == 0) {
-        result = sd_fat_add_device(path, mountPath, pClient, pCmd);
-        free(mountPath);
+    if(MountFS(pClient, pCmd, &mountPath) == 0)
+    {
+       result = sd_fat_add_device(path, mountPath, pClient, pCmd);
+       free(mountPath);
     }
 
     return result;
@@ -1051,7 +1062,7 @@ int unmount_sd_fat(const char *path)
     int result = sd_fat_remove_device(path, &pClient, &pCmd, &mountPath);
     if(result == 0)
     {
-        UmountFS(pClient, pCmd, mountPath);
+        FSUnmount(pClient, pCmd, mountPath, -1);
         FSDelClient(pClient, -1);
         free(pClient);
         free(pCmd);

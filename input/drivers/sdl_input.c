@@ -28,7 +28,6 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef HAVE_SDL2
@@ -39,9 +38,6 @@
 #include <SDL_webOS.h>
 #include <dlfcn.h>
 #endif
-
-/* TODO/FIXME -
- * fix game focus toggle */
 
 typedef struct sdl_input
 {
@@ -61,7 +57,8 @@ typedef struct sdl_input
 } sdl_input_t;
 
 #ifdef WEBOS
-enum sdl_webos_special_key {
+enum sdl_webos_special_key
+{
    sdl_webos_spkey_back,
    sdl_webos_spkey_size,
 };
@@ -90,6 +87,9 @@ static bool sdl_key_pressed(int key)
    const uint8_t *keymap = SDL_GetKeyState(&num_keys);
    unsigned sym          = rarch_keysym_lut[(enum retro_key)key];
 #endif
+
+   if (!key)
+      return false;
 
 #ifdef WEBOS
    if (   (key == RETROK_BACKSPACE )
@@ -129,7 +129,8 @@ static int16_t sdl_input_state(
       unsigned idx,
       unsigned id)
 {
-   sdl_input_t            *sdl = (sdl_input_t*)data;
+   int16_t      ret = 0;
+   sdl_input_t *sdl = (sdl_input_t*)data;
 
    switch (device)
    {
@@ -137,13 +138,18 @@ static int16_t sdl_input_state(
          if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
          {
             unsigned i;
-            int16_t ret = 0;
 
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (!keyboard_mapping_blocked)
             {
-               if (binds[port][i].valid)
-                  if (sdl_key_pressed(binds[port][i].key))
-                     ret |= (1 << i);
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               {
+                  if (binds[port][i].valid)
+                  {
+                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                           && sdl_key_pressed(binds[port][i].key))
+                        ret |= (1 << i);
+                  }
+               }
             }
 
             return ret;
@@ -152,18 +158,21 @@ static int16_t sdl_input_state(
          if (id < RARCH_BIND_LIST_END)
          {
             if (binds[port][id].valid)
-               if (sdl_key_pressed(binds[port][id].key))
+            {
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && sdl_key_pressed(binds[port][id].key)
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
                   return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (binds[port])
          {
             int id_minus_key      = 0;
             int id_plus_key       = 0;
             unsigned id_minus     = 0;
             unsigned id_plus      = 0;
-            int16_t ret           = 0;
             bool id_plus_valid    = false;
             bool id_minus_valid   = false;
 
@@ -174,20 +183,18 @@ static int16_t sdl_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                if (sdl_key_pressed(id_plus_key))
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                if (sdl_key_pressed(id_minus_key))
                   ret += -0x7fff;
             }
-
-            return ret;
          }
-         break;
+         return ret;
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
@@ -206,14 +213,14 @@ static int16_t sdl_input_state(
                       sdl->mouse_wd = 0;
                       return 1;
                   }
-                  return 0;
+                  break;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                   if (sdl->mouse_wu != 0)
                   {
                       sdl->mouse_wu = 0;
                       return 1;
                   }
-                  return 0;
+                  break;
                case RETRO_DEVICE_ID_MOUSE_X:
                   return sdl->mouse_abs_x;
                case RETRO_DEVICE_ID_MOUSE_Y:
@@ -288,7 +295,7 @@ static int16_t sdl_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && sdl_key_pressed(id);
+         return (id && id < RETROK_LAST) && sdl_key_pressed(id);
       case RETRO_DEVICE_LIGHTGUN:
          switch (id)
          {
@@ -343,16 +350,14 @@ static void sdl2_grab_mouse(void *data, bool state)
 
    video_ptr = (sdl2_video_t*)video_driver_get_ptr();
 
-   if (!video_ptr)
-      return;
-
-   SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
+   if (video_ptr)
+      SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
 }
 #endif
 
 static void sdl_poll_mouse(sdl_input_t *sdl)
 {
-   Uint8 btn = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
+   Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
 
    SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
 
@@ -437,6 +442,11 @@ static void sdl_input_poll(void *data)
          if (event.key.keysym.mod & KMOD_CAPS)
             mod |= RETROKMOD_CAPSLOCK;
 
+         /* KMOD_SCROLL was added in SDL 2.0.18, use the raw number
+            to stay backwards compatible with older versions */
+         if (event.key.keysym.mod & 0x8000 /*KMOD_SCROLL*/)
+            mod |= RETROKMOD_SCROLLOCK;
+
          input_keyboard_event(event.type == SDL_KEYDOWN, code, code, mod,
                RETRO_DEVICE_KEYBOARD);
       }
@@ -455,16 +465,13 @@ static void sdl_input_poll(void *data)
 
 static uint64_t sdl_get_capabilities(void *data)
 {
-   uint64_t caps = 0;
-
-   caps |= (1 << RETRO_DEVICE_JOYPAD);
-   caps |= (1 << RETRO_DEVICE_MOUSE);
-   caps |= (1 << RETRO_DEVICE_KEYBOARD);
-   caps |= (1 << RETRO_DEVICE_LIGHTGUN);
-   caps |= (1 << RETRO_DEVICE_POINTER);
-   caps |= (1 << RETRO_DEVICE_ANALOG);
-
-   return caps;
+   return
+           (1 << RETRO_DEVICE_JOYPAD)
+         | (1 << RETRO_DEVICE_MOUSE)
+         | (1 << RETRO_DEVICE_KEYBOARD)
+         | (1 << RETRO_DEVICE_LIGHTGUN)
+         | (1 << RETRO_DEVICE_POINTER)
+         | (1 << RETRO_DEVICE_ANALOG);
 }
 
 input_driver_t input_sdl = {
@@ -482,6 +489,7 @@ input_driver_t input_sdl = {
    "sdl",
    NULL,                   /* grab_mouse */
 #endif
+   NULL,
    NULL
 };
 
@@ -489,11 +497,11 @@ input_driver_t input_sdl = {
 SDL_bool SDL_webOSCursorVisibility(SDL_bool visible)
 {
    static SDL_bool (*fn)(SDL_bool visible) = NULL;
-   static bool dlsym_called = false;
+   static bool dlsym_called                = false;
    if (!dlsym_called)
    {
-      fn           = dlsym(RTLD_NEXT, "SDL_webOSCursorVisibility");
-      dlsym_called = true;
+      fn                                   = dlsym(RTLD_NEXT, "SDL_webOSCursorVisibility");
+      dlsym_called                         = true;
    }
    if (!fn)
    {

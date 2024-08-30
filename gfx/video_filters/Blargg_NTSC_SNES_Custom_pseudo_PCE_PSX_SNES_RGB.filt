@@ -1,0 +1,51 @@
+# This filter preset was created by Cyber for use with his shader presets.
+# It is labeled "pseudo" because it reuses the SNES version of blargg's NTSC
+# filter to work with other consoles' video output
+
+filter = blargg_ntsc_snes
+
+blargg_ntsc_snes_tvtype = "custom"
+
+# tvtype presets for reference:
+# monochrome = 0,-1, 0, 0, .2,  0, .2,-.2,-.2,-1, 1, 1
+# composite  = 0, 0, 0, 0,  0,  0,  0,  0,  0, 0, 1, 1
+# svideo     = 0, 0, 0, 0, .2,  0, .2, -1, -1, 0, 1, 1
+# rgb        = 0, 0, 0, 0, .2,  0, .7, -1, -1,-1, 1, 1
+
+blargg_ntsc_snes_hue = 0
+# -1 = -180 degrees     +1 = +180 degrees
+
+blargg_ntsc_snes_saturation = 0.1
+# -1 = grayscale (0.0)  +1 = oversaturated colors (2.0)
+
+blargg_ntsc_snes_contrast = 0
+# -1 = dark (0.5)       +1 = light (1.5)
+
+blargg_ntsc_snes_brightness = 0
+# -1 = dark (0.5)       +1 = light (1.5)
+
+blargg_ntsc_snes_sharpness = 0.2
+# edge contrast enhancement/blurring
+
+blargg_ntsc_snes_gamma = 0.2
+# -1 = dark (1.5)       +1 = light (0.5)
+
+blargg_ntsc_snes_resolution = 0.5
+# image resolution (composite 0 - svideo 0.2 - rgb 0.7)
+
+blargg_ntsc_snes_artifacts = -0.9
+# artifacts caused by color changes (-1 is off)
+
+blargg_ntsc_snes_fringing = -0.9
+# color artifacts caused by brightness changes (-1 is off)
+
+blargg_ntsc_snes_bleed = -0.7
+# color bleed (color resolution reduction) (-1 is off)
+
+blargg_ntsc_snes_merge_fields = 0
+# if 1, merges even and odd fields together to reduce flicker
+# if 0, alternate fields every frame
+
+blargg_ntsc_snes_hires_blit = 0
+# do hires blitting when set to 1, assuming 512 width for any res >256 (made for SNES 512 mode)
+# set it to 0 for other resolutions such as 320 (even if a bit out of specs for this filter)

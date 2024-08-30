@@ -15,6 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <math.h>
+
 #include <gccore.h>
 #include <ogc/pad.h>
 #ifdef HW_RVL
@@ -23,6 +26,8 @@
 
 #include "../../config.def.h"
 
+#include "../input_driver.h"
+#include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
 #ifdef GEKKO
@@ -222,7 +227,7 @@ static void check_port0_active(uint8_t pad_count)
    settings_t *settings = config_get_ptr();
    int idx = settings->uints.input_joypad_index[0];
 
-   if(pad_count < 2 && idx != 0)
+   if (pad_count < 2 && idx != 0)
    {
 #ifdef HW_RVL
       pad_type[0] = WPAD_EXP_NONE;
@@ -253,53 +258,53 @@ static int32_t gx_joypad_button(unsigned port, uint16_t joykey)
 
 static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-	if (port < DEFAULT_MAX_PADS)
+   if (port < DEFAULT_MAX_PADS)
    {
-		BITS_COPY16_PTR( state, pad_state[port] );
-	}
+      BITS_COPY16_PTR( state, pad_state[port] );
+   }
    else
-		BIT256_CLEAR_ALL_PTR(state);
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t gx_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
-   int val     = 0;
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis     = AXIS_NEG_GET(joyaxis);
-      is_neg   = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val   = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val   = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis     = AXIS_POS_GET(joyaxis);
-      is_pos   = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val   = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val   = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-
-   switch (axis)
-   {
-      case 0:
-         val   = analog_state[port][0][0];
-         break;
-      case 1:
-         val   = analog_state[port][0][1];
-         break;
-      case 2:
-         val   = analog_state[port][1][0];
-         break;
-      case 3:
-         val   = analog_state[port][1][1];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      val      = 0;
-   else if (is_pos && val < 0)
-      val      = 0;
-   return val;
+   return 0;
 }
 
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -583,7 +588,7 @@ static void gx_joypad_poll(void)
 #endif
 
       /* Count active controllers */
-      if(gx_joypad_query_pad(port))
+      if (gx_joypad_query_pad(port))
          pad_count++;
 
       /* Always enable 1 pad in port 0 if there's only 1 controller connected. 
@@ -667,8 +672,10 @@ input_device_driver_t gx_joypad = {
    gx_joypad_get_buttons,
    gx_joypad_axis,
    gx_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    gx_joypad_name,
    "gx",
 };

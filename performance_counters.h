@@ -24,30 +24,9 @@
 #include <libretro.h>
 #include <features/features_cpu.h>
 
-RETRO_BEGIN_DECLS
-
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
 #endif
-
-typedef struct rarch_timer
-{
-   int64_t current;
-   int64_t timeout_us;
-   int64_t timeout_end;
-   bool timer_begin;
-   bool timer_end;
-} rarch_timer_t;
-
-struct retro_perf_counter **retro_get_perf_counter_rarch(void);
-
-struct retro_perf_counter **retro_get_perf_counter_libretro(void);
-
-unsigned retro_get_perf_count_rarch(void);
-
-unsigned retro_get_perf_count_libretro(void);
-
-void rarch_perf_register(struct retro_perf_counter *perf);
 
 #define performance_counter_init(perf, name) \
    perf.ident = name; \
@@ -80,6 +59,27 @@ void rarch_perf_register(struct retro_perf_counter *perf);
  * Stop performance counter.
  **/
 #define performance_counter_stop_plus(is_perfcnt_enable, perf) performance_counter_stop_internal(is_perfcnt_enable, perf)
+
+RETRO_BEGIN_DECLS
+
+typedef struct rarch_timer
+{
+   int64_t current;
+   int64_t timeout_us;
+   int64_t timeout_end;
+   bool timer_begin;
+   bool timer_end;
+} rarch_timer_t;
+
+struct retro_perf_counter **retro_get_perf_counter_rarch(void);
+
+struct retro_perf_counter **retro_get_perf_counter_libretro(void);
+
+unsigned retro_get_perf_count_rarch(void);
+
+unsigned retro_get_perf_count_libretro(void);
+
+void rarch_perf_register(struct retro_perf_counter *perf);
 
 RETRO_END_DECLS
 

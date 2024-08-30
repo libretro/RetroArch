@@ -86,6 +86,10 @@ void libretro_dummy_retro_init(void)
          case RGUI_ASPECT_RATIO_16_10_CENTRE:
             frame_buf_width = 384;
             break;
+         case RGUI_ASPECT_RATIO_21_9:
+         case RGUI_ASPECT_RATIO_21_9_CENTRE:
+            frame_buf_width = 560;
+            break;
          default:
             /* 4:3 */
             frame_buf_width = 320;
@@ -95,8 +99,12 @@ void libretro_dummy_retro_init(void)
 #endif
 
    dummy_frame_buf = (uint16_t*)calloc(frame_buf_width * frame_buf_height, sizeof(uint16_t));
-   for (i = 0; i < (unsigned)(frame_buf_width * frame_buf_height); i++)
-      dummy_frame_buf[i] = 4 << 5;
+
+   if (dummy_frame_buf)
+   {
+      for (i = 0; i < (unsigned)(frame_buf_width * frame_buf_height); i++)
+         dummy_frame_buf[i] = 4 << 5;
+   }
 }
 
 void libretro_dummy_retro_deinit(void)

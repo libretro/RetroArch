@@ -53,8 +53,16 @@
 /* Settings */
 
 
+/* Core option category placeholders for icons */
+
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
+
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Video */
 
@@ -68,6 +76,8 @@
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
 
@@ -81,6 +91,8 @@
 
 #if defined(DINGUX)
 #endif
+#if defined(RARCH_MOBILE)
+#endif
 
 /* Settings > Video > HDR */
 
@@ -90,9 +102,15 @@
 
 /* Settings > Audio */
 
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Audio > Output */
 
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -113,6 +131,8 @@
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+#ifdef ANDROID
+#endif
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -121,6 +141,16 @@
 
 
 /* Settings > Input > Hotkeys */
+
+
+
+
+
+
+
+
+
+
 
 
 /* Settings > Input > Port # Controls */
@@ -133,7 +163,15 @@
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -167,6 +205,15 @@
 #if defined(ANDROID)
 #endif
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -175,6 +222,8 @@
 
 /* Settings > User Interface */
 
+#ifdef _3DS
+#endif
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -185,6 +234,7 @@
 
 
 /* Settings > User Interface > Views > Settings */
+
 
 
 /* Settings > User Interface > Appearance */
@@ -199,6 +249,12 @@
 /* Settings > Power Management */
 
 /* Settings > Achievements */
+
+
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
 
 
 /* Settings > Network */
@@ -236,6 +292,13 @@
 
 /* Settings > Directory */
 
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 
@@ -282,7 +345,10 @@
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -371,24 +437,28 @@
 /* Notifications */
 
 
+
 /* Lakka */
 
 
 /* Environment Specific Settings */
 
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else
 #endif
-#if defined(_3DS)
+#ifdef _3DS
 #endif
 #ifdef HAVE_QT
 #endif

@@ -11,6 +11,7 @@ HAVE_OPENGL = 1
 HAVE_DYLIB = 1
 HAVE_D3D9 = 1
 HAVE_NETWORKING = 1
+HAVE_IFINFO = 1
 HAVE_NETPLAYDISCOVERY = 1
 HAVE_STDIN_CMD = 1
 HAVE_COMMAND = 1
@@ -25,7 +26,6 @@ HAVE_MATERIALUI = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
 HAVE_7ZIP = 1
-HAVE_PYTHON = 0
 DYNAMIC = 1
 HAVE_CORE_INFO_CACHE = 1
 
@@ -35,7 +35,6 @@ HAVE_WINMM = 1
 HAVE_SDL      := 0
 HAVE_SDL2     := 0
 HAVE_RSOUND   := 0
-HAVE_PYTHON   := 0
 
 HAVE_STB_FONT := 1
 HAVE_FREETYPE := 1
@@ -84,11 +83,6 @@ RSOUND_CFLAGS    := -DHAVE_RSOUND
 RSOUND_LIBS      := -lrsound
 endif
 
-ifeq ($(HAVE_PYTHON), 1)
-PYTHON_LIBS      := -lpython32
-PYTHON_CFLAGS    := -DHAVE_PYTHON -Ipython
-endif
-
 ifeq ($(HAVE_FFMPEG), 1)
 AVCODEC_LIBS     := -lavcodec
 AVUTIL_LIBS      := -lavutil
@@ -105,7 +99,6 @@ OBJ              :=
 LIBS             := -lm
 DEFINES			  :=
 DEFINES          += -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_OVERLAY
-#DEFINES			  += -DHAVE_VIDEO_LAYOUT
 LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common
@@ -176,7 +169,7 @@ $(OBJDIR)/%.o: %.cpp | $(dir $@)
 $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
-	$(Q)$(WINDRES) -o $@ $<
+	$(Q)$(WINDRES) $(DEFINES) -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR)

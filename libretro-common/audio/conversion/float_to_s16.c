@@ -97,22 +97,25 @@ void convert_float_to_s16(int16_t *out,
    size_t i          = 0;
 #if defined(__SSE2__)
    __m128 factor     = _mm_set1_ps((float)0x8000);
+   /* Initialize a 4D vector with 32768.0 for its elements */
 
    for (i = 0; i + 8 <= samples; i += 8, in += 8, out += 8)
-   {
-      __m128 input_l = _mm_loadu_ps(in + 0);
-      __m128 input_r = _mm_loadu_ps(in + 4);
-      __m128 res_l   = _mm_mul_ps(input_l, factor);
-      __m128 res_r   = _mm_mul_ps(input_r, factor);
-      __m128i ints_l = _mm_cvtps_epi32(res_l);
-      __m128i ints_r = _mm_cvtps_epi32(res_r);
-      __m128i packed = _mm_packs_epi32(ints_l, ints_r);
+   { /* Skip forward 8 samples at a time... */
+      __m128 input_a = _mm_loadu_ps(in + 0); /* Create a 4-float vector from the next four samples... */
+      __m128 input_b = _mm_loadu_ps(in + 4); /* ...and another from the *next* next four. */
+      __m128 res_a   = _mm_mul_ps(input_a, factor);
+      __m128 res_b   = _mm_mul_ps(input_b, factor); /* Multiply these samples by 32768 */
+      __m128i ints_a = _mm_cvtps_epi32(res_a);
+      __m128i ints_b = _mm_cvtps_epi32(res_b); /* Convert the samples to 32-bit integers */
+      __m128i packed = _mm_packs_epi32(ints_a, ints_b); /* Then convert them to 16-bit ints, clamping to [-32768, 32767] */
 
-      _mm_storeu_si128((__m128i *)out, packed);
+      _mm_storeu_si128((__m128i *)out, packed); /* Then put the result in the output array */
    }
 
    samples           = samples - i;
    i                 = 0;
+   /* If there are any stray samples at the end, we need to convert them
+    * (maybe the original array didn't contain a multiple of 8 samples) */
 #elif defined(__ALTIVEC__)
    int samples_in    = samples;
 
@@ -165,6 +168,8 @@ void convert_float_to_s16(int16_t *out,
    }
 #endif
 
+   /* This loop converts stray samples to the right format,
+    * but it's also a fallback in case no SIMD instructions are available. */
    for (; i < samples; i++)
    {
       int32_t val    = (int32_t)(in[i] * 0x8000);

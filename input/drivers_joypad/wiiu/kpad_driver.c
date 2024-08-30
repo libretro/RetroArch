@@ -45,8 +45,8 @@ static int get_slot_for_channel(unsigned channel)
    int slot = pad_connection_find_vacant_pad(joypad_state.pads);
    if (slot >= 0)
    {
-      joypad_state.kpad.channel_slot_map[channel]             = slot;
-      joypad_state.pads[slot].connected = true;
+      joypad_state.kpad.channel_slot_map[channel] = slot;
+      joypad_state.pads[slot].connected           = true;
    }
 
    return slot;
@@ -54,11 +54,13 @@ static int get_slot_for_channel(unsigned channel)
 
 static void *kpad_init(void *data)
 {
+   int i;
    memset(&joypad_state.kpad, 0, sizeof(joypad_state.kpad));
 
-   for(int i = 0; i < WIIU_WIIMOTE_CHANNELS; i++) {
+   for (i = 0; i < WIIU_WIIMOTE_CHANNELS; i++)
+   {
       joypad_state.kpad.channel_slot_map[i] = -1;
-      joypad_state.kpad.wiimotes[i].type = WIIMOTE_TYPE_NONE;
+      joypad_state.kpad.wiimotes[i].type    = WIIMOTE_TYPE_NONE;
    }
 
    kpad_poll();
@@ -79,15 +81,14 @@ static void kpad_destroy(void)
 
 static int32_t kpad_button(unsigned port, uint16_t joykey)
 {
-   int channel;
-   if (!kpad_query_pad(port))
-      return 0;
-
-   channel = to_wiimote_channel(port);
-   if (channel < 0)
-      return 0;
-   return (joypad_state.kpad.wiimotes[channel].button_state
-         & (UINT64_C(1) << joykey));
+   if (kpad_query_pad(port))
+   {
+      int channel = to_wiimote_channel(port);
+      if (channel >= 0)
+         return (joypad_state.kpad.wiimotes[channel].button_state
+               & (UINT64_C(1) << joykey));
+   }
+   return 0;
 }
 
 static void kpad_get_buttons(unsigned port, input_bits_t *state)
@@ -149,15 +150,14 @@ static void kpad_register(unsigned channel, uint8_t device_type)
    {
       int slot;
 
-      if(device_type == WIIMOTE_TYPE_NONE) {
+      if (device_type == WIIMOTE_TYPE_NONE)
+      {
          kpad_deregister(channel);
          return;
       }
 
-      slot = joypad_state.kpad.channel_slot_map[channel];
-      if(slot < 0) {
+      if ((slot = joypad_state.kpad.channel_slot_map[channel]) < 0)
          slot = get_slot_for_channel(channel);
-      }
 
       if (slot < 0)
       {
@@ -176,7 +176,7 @@ static void kpad_register(unsigned channel, uint8_t device_type)
 static void kpad_poll_one_channel(unsigned channel, KPADData *kpad)
 {
    kpad_register(channel, kpad->device_type);
-   switch(kpad->device_type)
+   switch (kpad->device_type)
    {
       case WIIMOTE_TYPE_PRO:
          joypad_state.kpad.wiimotes[channel].button_state = kpad->classic.btns_h
@@ -226,33 +226,30 @@ static void kpad_deregister(unsigned channel)
 
 static void kpad_poll(void)
 {
-   unsigned channel;
    KPADData kpad;
+   unsigned channel;
    int32_t result = 0;
 
    for (channel = 0; channel < WIIU_WIIMOTE_CHANNELS; channel++)
    {
       memset(&kpad, 0, sizeof(kpad));
 
-      result = KPADRead(channel, &kpad, 1);
-      /* this is a hack to prevent spurious disconnects */
+      /* This is a hack to prevent spurious disconnects */
       /* TODO: use KPADSetConnectCallback and use callbacks to detect */
       /*       pad disconnects properly. */
-      if (result == 0)
+      if ((result = KPADRead(channel, &kpad, 1)) == 0)
       {
          joypad_state.kpad.poll_failures[channel]++;
-         if (joypad_state.kpad.poll_failures[channel] > 5) {
+         if (joypad_state.kpad.poll_failures[channel] > 5)
             kpad_deregister(channel);
-         }
          continue;
       }
       joypad_state.kpad.poll_failures[channel] = 0;
 
       /* Several reads when a device is connected or an attachment added give */
       /* bogus results, try to weed them out */
-      if (kpad.wpad_error || kpad.device_type == 255) {
+      if (kpad.wpad_error || kpad.device_type == 255)
          continue;
-      }
 
       kpad_poll_one_channel(channel, &kpad);
    }
@@ -264,7 +261,7 @@ static const char *kpad_name(unsigned pad)
    if (channel < 0)
       return "unknown";
 
-   switch(joypad_state.kpad.wiimotes[channel].type)
+   switch (joypad_state.kpad.wiimotes[channel].type)
    {
       case WIIMOTE_TYPE_PRO:
          return PAD_NAME_WIIU_PRO;
@@ -295,8 +292,10 @@ input_device_driver_t kpad_driver =
    kpad_get_buttons,
    kpad_axis,
    kpad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    kpad_name,
    "wiimote",
 };

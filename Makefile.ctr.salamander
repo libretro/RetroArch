@@ -36,6 +36,7 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/lists/dir_list.o \
 		 libretro-common/file/retro_dirent.o \
 		 libretro-common/compat/compat_strl.o \
+		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
@@ -89,6 +90,10 @@ CFLAGS	+=	-mword-relocations \
 
 #CFLAGS	+= -Wall
 CFLAGS	+=	-DARM11 -D_3DS
+
+ifeq ($(strip $(USE_CTRULIB_2)),1)
+   CFLAGS	+= -D__3DS__
+endif
 
 ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g

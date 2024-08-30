@@ -200,11 +200,14 @@ for f in `ls -v *_${platform}.${EXT}`; do
    echo Buildbot: building ${name} for ${platform}
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
    async=0
-   pthread=0
+   pthread=${pthread:-0}
    lto=0
    whole_archive=
    big_stack=
 
+   if [ $PLATFORM = "emscripten" ]; then
+      async=1 #emscripten needs async to sleep
+   fi
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
@@ -244,8 +247,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin $OPTS platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
-       echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js"
-       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
+       echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 LIBRETRO=${name} TARGET=${name}_libretro.js"
+       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 LIBRETRO=${name} TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
@@ -313,7 +316,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
       mv -f ../${name}_libretro.wasm ../pkg/emscripten/${name}_libretro.wasm
       if [ $pthread != 0 ] ; then
-         mv -f ../pthread-main.js ../pkg/emscripten/pthread-main.js
+         mv -f ../${name}_libretro.worker.js ../pkg/emscripten/${name}_libretro.worker.js
       fi
    fi
 

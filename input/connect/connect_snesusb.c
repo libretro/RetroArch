@@ -31,10 +31,11 @@ struct hidpad_snesusb_data
    uint8_t data[64];
 };
 
-static void* hidpad_snesusb_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void* hidpad_snesusb_init(void *data,
+      uint32_t slot, hid_driver_t *driver)
 {
-   struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_snesusb_data* device    = (struct hidpad_snesusb_data*)
+   struct pad_connection* connection  = (struct pad_connection*)data;
+   struct hidpad_snesusb_data* device = (struct hidpad_snesusb_data*)
       calloc(1, sizeof(struct hidpad_snesusb_data));
 
    if (!device)
@@ -79,7 +80,7 @@ static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)
    if (!device || axis >= 2)
       return 0;
 
-   val = device->data[1 + axis];
+   val = device->data[axis];
    val = (val << 8) - 0x8000;
 
    if (abs(val) > 0x1000)
@@ -87,7 +88,8 @@ static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)
    return 0;
 }
 
-static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void hidpad_snesusb_packet_handler(void *data,
+      uint8_t *packet, uint16_t size)
 {
    uint32_t i, pressed_keys;
    static const uint32_t button_mapping[16] =
@@ -118,25 +120,20 @@ static void hidpad_snesusb_packet_handler(void *data, uint8_t *packet, uint16_t 
 
    device->buttons = 0;
 
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys  = device->data[6] | (device->data[5] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
-         device->buttons |= (pressed_keys & (1 << i)) ? (1 << button_mapping[i]) : 0;
+         device->buttons |= (pressed_keys & (1 << i)) 
+            ? (1 << button_mapping[i]) : 0;
 }
 
 static void hidpad_snesusb_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-	(void)data;
-	(void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char * hidpad_snesusb_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
 	return "Generic SNES USB Controller";
 }
 

@@ -274,7 +274,7 @@ fail_audio_output:
 fail_audio_ipc:
    switch_audio_ipc_finalize();
 fail:
-   free(swa); // freeing a null ptr is valid
+   free(swa); /* freeing a NULL ptr is valid */
    return NULL;
 }
 

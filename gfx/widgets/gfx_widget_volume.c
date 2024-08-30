@@ -18,7 +18,6 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
-#include "../../retroarch.h"
 
 /* Constants */
 #define VOLUME_DURATION 3000
@@ -57,7 +56,7 @@ struct gfx_widget_volume_state
    float text_alpha;
    float db;
    float percent;
-   gfx_timer_t timer;   /* float alignment */
+   float timer;   /* float alignment */
 
    bool mute;
 };
@@ -176,7 +175,9 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
             video_width,
             video_height,
             0, 0,
-            state->widget_width,
+            (state->mute)
+                  ? state->widget_height
+                  : state->widget_width,
             state->widget_height,
             video_width,
             video_height,
@@ -198,8 +199,12 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                video_height,
                icon_size, icon_size,
                volume_icon,
-               0, 0,
-               0, 1, pure_white
+               0,
+               0,
+               0.0f, /* rad */
+               1.0f, /* cos(rad)   = cos(0)  = 1.0f */
+               0.0f, /* sine(rad)  = sine(0) = 0.0f */
+               pure_white
                );
          if (dispctx && dispctx->blend_end)
             dispctx->blend_end(userdata);

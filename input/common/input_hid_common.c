@@ -69,7 +69,9 @@ int16_t gamepad_get_axis_value_raw(int16_t state[3][2], axis_data *data, bool do
          value = state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][0];
          break;
    }
-   if(do_clamp) {
+
+   if (do_clamp)
+   {
       if (data->is_negative && value > 0)
          return 0;
       if (!data->is_negative && value < 0)

@@ -22,7 +22,9 @@
 
 #ifdef __unix__
 #ifndef __sun__
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 199309
+#endif
 #endif
 #endif
 
@@ -47,6 +49,7 @@
 #include <mmsystem.h>
 #endif
 #elif defined(GEKKO)
+#include <ogc/lwp_watchdog.h>
 #include "gx_pthread.h"
 #elif defined(_3DS)
 #include "ctr_pthread.h"
@@ -55,8 +58,12 @@
 #include <time.h>
 #endif
 
-#if defined(VITA) || defined(BSD) || defined(ORBIS)
+#if defined(VITA) || defined(BSD) || defined(ORBIS) || defined(__mips__) || defined(_3DS)
 #include <sys/time.h>
+#endif
+
+#if defined(PS2)
+#include <ps2sdkapi.h>
 #endif
 
 #ifdef __MACH__
@@ -145,16 +152,6 @@ static void *thread_wrap(void *data_)
    return 0;
 }
 
-/**
- * sthread_create:
- * @start_routine           : thread entry callback function
- * @userdata                : pointer to userdata that will be made
- *                            available in thread entry callback function
- *
- * Create a new thread.
- *
- * Returns: pointer to new thread if successful, otherwise NULL.
- */
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
 	return sthread_create_with_priority(thread_func, userdata, 0);
@@ -165,21 +162,6 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 #define HAVE_THREAD_ATTR
 #endif
 
-/**
- * sthread_create_with_priority:
- * @start_routine           : thread entry callback function
- * @userdata                : pointer to userdata that will be made
- *                            available in thread entry callback function
- * @thread_priority         : thread priority hint value from [1-100]
- *
- * Create a new thread. It is possible for the caller to give a hint
- * for the thread's priority from [1-100]. Any passed in @thread_priority
- * values that are outside of this range will cause sthread_create() to
- * create a new thread using the operating system's default thread
- * priority.
- *
- * Returns: pointer to new thread if successful, otherwise NULL.
- */
 sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority)
 {
 #ifdef HAVE_THREAD_ATTR
@@ -193,21 +175,21 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    if (!thread)
       return NULL;
 
-   data                     = (struct thread_data*)malloc(sizeof(*data));
-   if (!data)
-      goto error;
+   if (!(data = (struct thread_data*)malloc(sizeof(*data))))
+   {
+      free(thread);
+      return NULL;
+   }
 
    data->func               = thread_func;
    data->userdata           = userdata;
 
-#ifdef USE_WIN32_THREADS
    thread->id               = 0;
+#ifdef USE_WIN32_THREADS
    thread->thread           = CreateThread(NULL, 0, thread_wrap,
          data, 0, &thread->id);
    thread_created           = !!thread->thread;
 #else
-   thread->id               = 0;
-
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
@@ -221,46 +203,36 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
       thread_attr_needed = true;
    }
-#endif
 
 #if defined(VITA)
    pthread_attr_setstacksize(&thread_attr , 0x10000 );
    thread_attr_needed = true;
+#elif defined(__APPLE__)
+   /* Default stack size on Apple is 512Kb;
+    * for PS2 disc scanning and other reasons, we'd like 2MB. */
+   pthread_attr_setstacksize(&thread_attr , 0x200000 );
+   thread_attr_needed = true;
 #endif
 
-#ifdef HAVE_THREAD_ATTR
    if (thread_attr_needed)
       thread_created = pthread_create(&thread->id, &thread_attr, thread_wrap, data) == 0;
    else
-#endif
       thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 
-#ifdef HAVE_THREAD_ATTR
    pthread_attr_destroy(&thread_attr);
+#else
+   thread_created    = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 #endif
+
 #endif
 
    if (thread_created)
       return thread;
-
-error:
-   if (data)
-      free(data);
+   free(data);
    free(thread);
    return NULL;
 }
 
-/**
- * sthread_detach:
- * @thread                  : pointer to thread object
- *
- * Detach a thread. When a detached thread terminates, its
- * resources are automatically released back to the system
- * without the need for another thread to join with the
- * terminated thread.
- *
- * Returns: 0 on success, otherwise it returns a non-zero error number.
- */
 int sthread_detach(sthread_t *thread)
 {
 #ifdef USE_WIN32_THREADS
@@ -274,17 +246,6 @@ int sthread_detach(sthread_t *thread)
 #endif
 }
 
-/**
- * sthread_join:
- * @thread                  : pointer to thread object
- *
- * Join with a terminated thread. Waits for the thread specified by
- * @thread to terminate. If that thread has already terminated, then
- * it will return immediately. The thread specified by @thread must
- * be joinable.
- *
- * Returns: 0 on success, otherwise it returns a non-zero error number.
- */
 void sthread_join(sthread_t *thread)
 {
    if (!thread)
@@ -298,64 +259,34 @@ void sthread_join(sthread_t *thread)
    free(thread);
 }
 
-/**
- * sthread_isself:
- * @thread                  : pointer to thread object
- *
- * Returns: true (1) if calling thread is the specified thread
- */
+#if !defined(GEKKO)
 bool sthread_isself(sthread_t *thread)
 {
-  /* This thread can't possibly be a null thread */
-  if (!thread)
-     return false;
-
 #ifdef USE_WIN32_THREADS
-   return GetCurrentThreadId() == thread->id;
+   return thread ? GetCurrentThreadId() == thread->id        : false;
 #else
-   return pthread_equal(pthread_self(),thread->id);
+   return thread ? pthread_equal(pthread_self(), thread->id) : false;
 #endif
 }
+#endif
 
-/**
- * slock_new:
- *
- * Create and initialize a new mutex. Must be manually
- * freed.
- *
- * Returns: pointer to a new mutex if successful, otherwise NULL.
- **/
 slock_t *slock_new(void)
 {
-   bool mutex_created = false;
    slock_t      *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
-
-
 #ifdef USE_WIN32_THREADS
    InitializeCriticalSection(&lock->lock);
-   mutex_created             = true;
 #else
-   mutex_created             = (pthread_mutex_init(&lock->lock, NULL) == 0);
+   if (pthread_mutex_init(&lock->lock, NULL) != 0)
+   {
+      free(lock);
+      return NULL;
+   }
 #endif
-
-   if (!mutex_created)
-      goto error;
-
    return lock;
-
-error:
-   free(lock);
-   return NULL;
 }
 
-/**
- * slock_free:
- * @lock                    : pointer to mutex object
- *
- * Frees a mutex.
- **/
 void slock_free(slock_t *lock)
 {
    if (!lock)
@@ -369,14 +300,6 @@ void slock_free(slock_t *lock)
    free(lock);
 }
 
-/**
- * slock_lock:
- * @lock                    : pointer to mutex object
- *
- * Locks a mutex. If a mutex is already locked by
- * another thread, the calling thread shall block until
- * the mutex becomes available.
-**/
 void slock_lock(slock_t *lock)
 {
    if (!lock)
@@ -388,30 +311,15 @@ void slock_lock(slock_t *lock)
 #endif
 }
 
-/**
- * slock_try_lock:
- * @lock                    : pointer to mutex object
- *
- * Attempts to lock a mutex. If a mutex is already locked by
- * another thread, return false.  If the lock is acquired, return true.
-**/
 bool slock_try_lock(slock_t *lock)
 {
-   if (!lock)
-      return false;
 #ifdef USE_WIN32_THREADS
-   return TryEnterCriticalSection(&lock->lock);
+   return lock && TryEnterCriticalSection(&lock->lock);
 #else
-   return pthread_mutex_trylock(&lock->lock)==0;
+   return lock && (pthread_mutex_trylock(&lock->lock) == 0);
 #endif
 }
 
-/**
- * slock_unlock:
- * @lock                    : pointer to mutex object
- *
- * Unlocks a mutex.
- **/
 void slock_unlock(slock_t *lock)
 {
    if (!lock)
@@ -423,15 +331,6 @@ void slock_unlock(slock_t *lock)
 #endif
 }
 
-/**
- * scond_new:
- *
- * Creates and initializes a condition variable. Must
- * be manually freed.
- *
- * Returns: pointer to new condition variable on success,
- * otherwise NULL.
- **/
 scond_t *scond_new(void)
 {
    scond_t      *cond = (scond_t*)calloc(1, sizeof(*cond));
@@ -465,11 +364,9 @@ scond_t *scond_new(void)
     *
     * Note: We might could simplify this using vista+ condition variables,
     * but we wanted an XP compatible solution. */
-   cond->event             = CreateEvent(NULL, FALSE, FALSE, NULL);
-   if (!cond->event)
+   if (!(cond->event      = CreateEvent(NULL, FALSE, FALSE, NULL)))
       goto error;
-   cond->hot_potato        = CreateEvent(NULL, FALSE, FALSE, NULL);
-   if (!cond->hot_potato)
+   if (!(cond->hot_potato = CreateEvent(NULL, FALSE, FALSE, NULL)))
    {
       CloseHandle(cond->event);
       goto error;
@@ -488,12 +385,6 @@ error:
    return NULL;
 }
 
-/**
- * scond_free:
- * @cond                    : pointer to condition variable object
- *
- * Frees a condition variable.
-**/
 void scond_free(scond_t *cond)
 {
    if (!cond)
@@ -523,7 +414,6 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    static bool beginPeriod = false;
    DWORD tsBegin;
 #endif
-
    DWORD waitResult;
    DWORD dwFinalTimeout = dwMilliseconds; /* Careful! in case we begin in the head,
                                              we don't do the hot potato stuff,
@@ -543,9 +433,7 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
    }
 
    if (performanceCounterFrequency.QuadPart == 0)
-   {
       QueryPerformanceFrequency(&performanceCounterFrequency);
-   }
 #else
    if (!beginPeriod)
    {
@@ -568,9 +456,9 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 
    /* walk to the end of the linked list */
    while (*ptr)
-      ptr = &((*ptr)->next);
+      ptr       = &((*ptr)->next);
 
-   *ptr = &myentry;
+   *ptr         = &myentry;
    myentry.next = NULL;
 
    cond->waiters++;
@@ -718,13 +606,6 @@ static bool _scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds
 }
 #endif
 
-/**
- * scond_wait:
- * @cond                    : pointer to condition variable object
- * @lock                    : pointer to mutex object
- *
- * Block on a condition variable (i.e. wait on a condition).
- **/
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #ifdef USE_WIN32_THREADS
@@ -734,41 +615,26 @@ void scond_wait(scond_t *cond, slock_t *lock)
 #endif
 }
 
-/**
- * scond_broadcast:
- * @cond                    : pointer to condition variable object
- *
- * Broadcast a condition. Unblocks all threads currently blocked
- * on the specified condition variable @cond.
- **/
 int scond_broadcast(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
-   /* remember: we currently have mutex */
-   if (cond->waiters == 0)
-      return 0;
+   /* Remember, we currently have mutex */
+   if (cond->waiters != 0)
+   {
+      /* Awaken everything which is currently queued up */
+      if (cond->wakens == 0)
+         SetEvent(cond->event);
+      cond->wakens = cond->waiters;
 
-   /* awaken everything which is currently queued up */
-   if (cond->wakens == 0)
-      SetEvent(cond->event);
-   cond->wakens = cond->waiters;
-
-   /* Since there is now at least one pending waken, the potato must be in play */
-   SetEvent(cond->hot_potato);
-
+      /* Since there is now at least one pending waken, the potato must be in play */
+      SetEvent(cond->hot_potato);
+   }
    return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
 #endif
 }
 
-/**
- * scond_signal:
- * @cond                    : pointer to condition variable object
- *
- * Signal a condition. Unblocks at least one of the threads currently blocked
- * on the specified condition variable @cond.
- **/
 void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
@@ -808,18 +674,6 @@ void scond_signal(scond_t *cond)
 #endif
 }
 
-/**
- * scond_wait_timeout:
- * @cond                    : pointer to condition variable object
- * @lock                    : pointer to mutex object
- * @timeout_us              : timeout (in microseconds)
- *
- * Try to block on a condition variable (i.e. wait on a condition) until
- * @timeout_us elapses.
- *
- * Returns: false (0) if timeout elapses before condition variable is
- * signaled or broadcast, otherwise true (1).
- **/
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #ifdef USE_WIN32_THREADS
@@ -828,11 +682,6 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
     * Someone asking for a 0 timeout clearly wants immediate timeout.
     * Someone asking for a 1 timeout clearly wants an actual timeout
     * of the minimum length */
-
-   /* Someone asking for 1000 or 1001 timeout shouldn't
-    * accidentally get 2ms. */
-   DWORD dwMilliseconds = timeout_us/1000;
-
    /* The implementation of a 0 timeout here with pthreads is sketchy.
     * It isn't clear what happens if pthread_cond_timedwait is called with NOW.
     * Moreover, it is possible that this thread gets pre-empted after the
@@ -843,19 +692,17 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    if (timeout_us == 0)
       return false;
    else if (timeout_us < 1000)
-      dwMilliseconds = 1;
-
-   return _scond_wait_win32(cond,lock,dwMilliseconds);
+      return _scond_wait_win32(cond, lock, 1);
+   /* Someone asking for 1000 or 1001 timeout shouldn't
+    * accidentally get 2ms. */
+   return _scond_wait_win32(cond, lock, timeout_us / 1000);
 #else
-   int ret;
    int64_t seconds, remainder;
-   struct timespec now = {0};
-
+   struct timespec now;
 #ifdef __MACH__
    /* OSX doesn't have clock_gettime. */
    clock_serv_t cclock;
    mach_timespec_t mts;
-
    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
    clock_get_time(cclock, &mts);
    mach_port_deallocate(mach_task_self(), cclock);
@@ -864,41 +711,42 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #elif !defined(__PSL1GHT__) && defined(__PS3__)
    sys_time_sec_t s;
    sys_time_nsec_t n;
-
    sys_time_get_current_time(&s, &n);
-   now.tv_sec  = s;
-   now.tv_nsec = n;
+   now.tv_sec            = s;
+   now.tv_nsec           = n;
 #elif defined(PS2)
-   int tickms = ps2_clock();
-   now.tv_sec = tickms/1000;
-   now.tv_nsec = tickms * 1000;
+   int tickms            = ps2_clock();
+   now.tv_sec            = tickms / 1000;
+   now.tv_nsec           = tickms * 1000;
 #elif !defined(DINGUX_BETA) && (defined(__mips__) || defined(VITA) || defined(_3DS))
    struct timeval tm;
-
    gettimeofday(&tm, NULL);
-   now.tv_sec = tm.tv_sec;
-   now.tv_nsec = tm.tv_usec * 1000;
+   now.tv_sec            = tm.tv_sec;
+   now.tv_nsec           = tm.tv_usec * 1000;
 #elif defined(RETRO_WIN32_USE_PTHREADS)
    _ftime64_s(&now);
-#elif !defined(GEKKO)
-   /* timeout on libogc is duration, not end time. */
+#elif defined(GEKKO)
+   /* Avoid gettimeofday due to it being reported to be broken */
+   const uint64_t tickms = gettime() / TB_TIMER_CLOCK;
+   now.tv_sec            = tickms / 1000;
+   now.tv_nsec           = tickms * 1000;
+#else
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
 
-   seconds      = timeout_us / INT64_C(1000000);
-   remainder    = timeout_us % INT64_C(1000000);
+   seconds              = timeout_us / INT64_C(1000000);
+   remainder            = timeout_us % INT64_C(1000000);
 
-   now.tv_sec  += seconds;
-   now.tv_nsec += remainder * INT64_C(1000);
+   now.tv_sec          += seconds;
+   now.tv_nsec         += remainder * INT64_C(1000);
 
    if (now.tv_nsec > 1000000000)
    {
-      now.tv_nsec -= 1000000000;
-      now.tv_sec += 1;
+      now.tv_nsec      -= 1000000000;
+      now.tv_sec       += 1;
    }
 
-   ret = pthread_cond_timedwait(&cond->cond, &lock->lock, &now);
-   return (ret == 0);
+   return (pthread_cond_timedwait(&cond->cond, &lock->lock, &now) == 0);
 #endif
 }
 
@@ -942,9 +790,9 @@ bool sthread_tls_set(sthread_tls_t *tls, const void *data)
 
 uintptr_t sthread_get_thread_id(sthread_t *thread)
 {
-   if (!thread)
-      return 0;
-   return (uintptr_t)thread->id;
+   if (thread)
+      return (uintptr_t)thread->id;
+   return 0;
 }
 
 uintptr_t sthread_get_current_thread_id(void)

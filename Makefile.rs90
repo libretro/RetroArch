@@ -107,6 +107,7 @@ HAVE_OZONE = 0
 HAVE_ZLIB = 1
 HAVE_CONFIGFILE = 1
 HAVE_PATCH = 1
+HAVE_XDELTA = 0 # Disabled until we figure out how to include <lzma.h>
 HAVE_CHEATS = 1
 HAVE_CHEEVOS = 0
 HAVE_LIBSHAKE = 0

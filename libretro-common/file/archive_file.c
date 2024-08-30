@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -63,7 +62,7 @@ static int file_archive_get_file_list_cb(
       /* Skip if directory. */
       if (last_char == '/' || last_char == '\\' )
          return 1;
-      
+
       string_list_initialize(&ext_list);
       if (string_split_noalloc(&ext_list, valid_exts, "|"))
       {
@@ -104,22 +103,19 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       char new_path[PATH_MAX_LENGTH];
       const char *delim;
 
-      delim = path_get_archive_delim(userdata->archive_path);
-
-      if (delim)
+      if ((delim = path_get_archive_delim(userdata->archive_path)))
       {
-         if (!string_is_equal_noncase(userdata->current_file_path, delim + 1))
+         if (!string_is_equal_noncase(
+                  userdata->current_file_path, delim + 1))
            return 1; /* keep searching for the right file */
       }
 
-      new_path[0] = '\0';
       if (userdata->extraction_directory)
-         fill_pathname_join(new_path, userdata->extraction_directory,
+         fill_pathname_join_special(new_path, userdata->extraction_directory,
                path_basename(name), sizeof(new_path));
       else
          fill_pathname_resolve_relative(new_path, userdata->archive_path,
                path_basename(name), sizeof(new_path));
-
 
       if (file_archive_perform_mode(new_path,
                 valid_exts, cdata, cmode, csize, size,
@@ -141,25 +137,18 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    char path[PATH_MAX_LENGTH];
    char *last                 = NULL;
 
-   path[0] = '\0';
-
    strlcpy(path, file, sizeof(path));
 
-   last = (char*)path_get_archive_delim(path);
+   if ((last = (char*)path_get_archive_delim(path)))
+      *last  = '\0';
 
-   if (last)
-      *last = '\0';
-
-   state->backend = file_archive_get_file_backend(path);
-   if (!state->backend)
+   if (!(state->backend = file_archive_get_file_backend(path)))
       return -1;
 
-   state->archive_file = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
    /* Failed to open archive. */
-   if (!state->archive_file)
+   if (!(state->archive_file = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return -1;
 
    state->archive_size = filestream_get_size(state->archive_file);
@@ -187,43 +176,6 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    state->step_total   = 0;
 
    return state->backend->archive_parse_file_init(state, path);
-}
-
-/**
- * file_archive_decompress_data_to_file:
- * @path                        : filename path of archive.
- * @size                        : output file size
- * @checksum                    : CRC32 checksum from input data.
- *
- * Write data to file.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-static int file_archive_decompress_data_to_file(
-      file_archive_transfer_t *transfer,
-      file_archive_file_handle_t *handle,
-      const char *path,
-      uint32_t size,
-      uint32_t checksum)
-{
-   if (!handle)
-      return 0;
-
-#if 0
-   handle->real_checksum = transfer->backend->stream_crc_calculate(
-         0, handle->data, size);
-   if (handle->real_checksum != checksum)
-   {
-      /* File CRC difers from archive CRC. */
-      printf("File CRC differs from archive CRC. File: 0x%x, Archive: 0x%x.\n",
-            (unsigned)handle->real_checksum, (unsigned)checksum);
-   }
-#endif
-
-   if (!filestream_write_file(path, handle->data, size))
-      return 0;
-
-   return 1;
 }
 
 void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
@@ -522,9 +474,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
                userdata->transfer->context, &handle);
    }while (ret == 0);
 
-   if (ret == -1 || !file_archive_decompress_data_to_file(
-            userdata->transfer, &handle, path,
-            size, crc32))
+   if (ret == -1 || !filestream_write_file(path, handle.data, size))
       return false;
 
    return true;
@@ -580,7 +530,7 @@ int file_archive_compressed_read(
       const char * path, void **buf,
       const char* optional_filename, int64_t *length)
 {
-   const struct 
+   const struct
       file_archive_file_backend *backend = NULL;
    struct string_list *str_list          = NULL;
 
@@ -648,16 +598,12 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
    const char *file_ext          = NULL;
    char *last                    = NULL;
 
-   newpath[0] = '\0';
-
    strlcpy(newpath, path, sizeof(newpath));
 
-   last = (char*)path_get_archive_delim(newpath);
+   if ((last = (char*)path_get_archive_delim(newpath)))
+      *last  = '\0';
 
-   if (last)
-      *last = '\0';
-
-   file_ext = path_get_extension(newpath);
+   file_ext  = path_get_extension(newpath);
 
 #ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))

@@ -925,4 +925,4 @@ RGLSYMGLBINDTEXTURESPROC glBindTextures;
 #ifdef __cplusplus
 }
 #endif
-#endif // __NX_GLSYM_H__
+#endif /* __NX_GLSYM_H__ */

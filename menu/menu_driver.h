@@ -34,15 +34,13 @@
 #endif
 
 #include "menu_defines.h"
-#include "menu_dialog.h"
 #include "menu_input.h"
 #include "../input/input_osk.h"
-#include "menu_input_bind_dialog.h"
 #include "menu_entries.h"
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
-
+#include "../gfx/gfx_thumbnail_path.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -69,7 +67,7 @@ RETRO_BEGIN_DECLS
 #define MENU_LIST_GET_STACK_SIZE(list, idx) ((list)->menu_stack[(idx)]->size)
 
 #define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
-#define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!(menu_st->entries_nonblocking_refresh || !menu_st->entries_need_refresh))
+#define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!((menu_st->flags & MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH) || !(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)))
 
 #define MENU_SETTINGS_CORE_INFO_NONE             0xffff
 #define MENU_SETTINGS_CORE_OPTION_NONE           0xffff
@@ -77,6 +75,10 @@ RETRO_BEGIN_DECLS
 #define MENU_SETTINGS_CORE_OPTION_START          0x10000
 #define MENU_SETTINGS_CHEEVOS_START              0x40000
 #define MENU_SETTINGS_NETPLAY_ROOMS_START        0x80000
+
+/* "Normalize" non-alphabetical entries so they
+ * are lumped together for purposes of jumping. */
+#define ELEM_GET_FIRST_CHAR(ret) ((ret < 'a') ? ('a' - 1) : (ret > 'z') ? ('z' + 1) : ret)
 
 enum menu_settings_type
 {
@@ -90,6 +92,7 @@ enum menu_settings_type
    MENU_IMAGES_TAB,
    MENU_NETPLAY_TAB,
    MENU_EXPLORE_TAB,
+   MENU_CONTENTLESS_CORES_TAB,
    MENU_ADD_TAB,
    MENU_PLAYLISTS_TAB,
    MENU_SETTING_DROPDOWN_ITEM,
@@ -107,8 +110,19 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
+#ifdef ANDROID
+    MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DESCRIPTION_KBD,
+   MENU_SETTING_DROPDOWN_ITEM_AUDIO_DEVICE,
+#ifdef HAVE_MICROPHONE
+   MENU_SETTING_DROPDOWN_ITEM_MICROPHONE_DEVICE,
+#endif
+#ifdef HAVE_NETWORKING
+   MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
+#endif
    MENU_SETTING_DROPDOWN_SETTING_CORE_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM,
    MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM,
@@ -128,16 +142,26 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CORE_OPTIONS,
    MENU_SETTING_ACTION_CORE_OPTION_OVERRIDE_LIST,
    MENU_SETTING_ACTION_CORE_INPUT_REMAPPING_OPTIONS,
+   MENU_SETTING_ACTION_REMAP_FILE_MANAGER_LIST,
    MENU_SETTING_ACTION_CORE_CHEAT_OPTIONS,
    MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS,
+#ifdef HAVE_MIST
+   MENU_SETTING_ACTION_CORE_MANAGER_STEAM_OPTIONS,
+   MENU_SETTING_ACTION_CORE_STEAM_INSTALL,
+   MENU_SETTING_ACTION_CORE_STEAM_UNINSTALL,
+#endif
    MENU_SETTING_ACTION_CORE_DISK_OPTIONS,
    MENU_SETTING_ACTION_CORE_SHADER_OPTIONS,
    MENU_SETTING_ACTION_SAVESTATE,
    MENU_SETTING_ACTION_LOADSTATE,
+   MENU_SETTING_ACTION_PLAYREPLAY,
+   MENU_SETTING_ACTION_RECORDREPLAY,
+   MENU_SETTING_ACTION_HALTREPLAY,
    MENU_SETTING_ACTION_SCREENSHOT,
    MENU_SETTING_ACTION_DELETE_ENTRY,
    MENU_SETTING_ACTION_RESET,
    MENU_SETTING_ACTION_CORE_LOCK,
+   MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT,
    MENU_SETTING_ACTION_CORE_DELETE,
    MENU_SETTING_ACTION_FAVORITES_DIR, /* "Start Directory" */
    MENU_SETTING_STRING_OPTIONS,
@@ -146,6 +170,7 @@ enum menu_settings_type
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS,
    MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS,
+   MENU_INFO_ACHIEVEMENTS_SERVER_UNREACHABLE,
    MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE,
    MENU_SETTING_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
@@ -158,6 +183,8 @@ enum menu_settings_type
    MENU_ROOM_LAN,
    MENU_ROOM_RELAY,
    MENU_NETPLAY_LAN_SCAN,
+   MENU_NETPLAY_KICK,
+   MENU_NETPLAY_BAN,
    MENU_INFO_MESSAGE,
    MENU_SETTINGS_SHADER_PARAMETER_0,
    MENU_SETTINGS_SHADER_PARAMETER_LAST = MENU_SETTINGS_SHADER_PARAMETER_0 + (GFX_MAX_PARAMETERS - 1),
@@ -225,10 +252,7 @@ enum menu_settings_type
 
    MENU_SET_SCREEN_BRIGHTNESS,
 
-#ifdef HAVE_LAKKA_SWITCH
-   MENU_SET_SWITCH_GPU_PROFILE,
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
 
@@ -267,6 +291,19 @@ enum menu_settings_type
    MENU_SETTING_ACTION_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
    MENU_SETTING_ACTION_CORE_OPTIONS_RESET,
    MENU_SETTING_ACTION_CORE_OPTIONS_FLUSH,
+
+   MENU_SETTING_ACTION_REMAP_FILE_LOAD,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_AS,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_CORE,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_CONTENT_DIR,
+   MENU_SETTING_ACTION_REMAP_FILE_SAVE_GAME,
+   MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CORE,
+   MENU_SETTING_ACTION_REMAP_FILE_REMOVE_CONTENT_DIR,
+   MENU_SETTING_ACTION_REMAP_FILE_REMOVE_GAME,
+   MENU_SETTING_ACTION_REMAP_FILE_RESET,
+   MENU_SETTING_ACTION_REMAP_FILE_FLUSH,
+
+   MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -350,8 +387,6 @@ typedef struct menu_ctx_driver
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
    void (*refresh_thumbnail_image)(void *data, unsigned i);
-   void (*set_thumbnail_system)(void *data, char* s, size_t len);
-   void (*get_thumbnail_system)(void *data, char* s, size_t len);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
@@ -442,6 +477,7 @@ struct menu_state
 
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
+   gfx_thumbnail_path_data_t *thumbnail_path_data;
    menu_handle_t *driver_data;
    void *userdata;
    const menu_ctx_driver_t *driver_ctx;
@@ -454,6 +490,7 @@ struct menu_state
       size_t begin;
    } entries;
    size_t   selection_ptr;
+   size_t   contentless_core_ptr;
 
    /* Quick jumping indices with L/R.
     * Rebuilt when parsing directory. */
@@ -462,6 +499,7 @@ struct menu_state
       size_t   index_list[SCROLL_INDEX_SIZE];
       unsigned index_size;
       unsigned acceleration;
+      enum menu_scroll_mode mode;
    } scroll;
 
    /* unsigned alignment */
@@ -469,11 +507,15 @@ struct menu_state
    unsigned input_dialog_kb_idx;
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
+   enum menu_action prev_action;
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
 
-   enum menu_action prev_action;
+   uint16_t flags;
+#ifdef HAVE_OVERLAY
+   uint16_t overlay_types;
+#endif
 
    /* When generating a menu list in menu_displaylist_build_list(),
     * the entry with a label matching 'pending_selection' will
@@ -482,34 +524,19 @@ struct menu_state
    /* Storage container for current menu datetime
     * representation string */
    char datetime_cache[255];
+   /* Filled with current content path when a core calls
+    * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
+    * generic_menu_entry_action(), and must be cached
+    * since RETRO_ENVIRONMENT_SHUTDOWN will cause
+    * RARCH_PATH_CONTENT to be cleared */
+   char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
    char input_dialog_kb_label[256];
 #endif
    unsigned char kb_key_state[RETROK_LAST];
-
-   bool input_dialog_kb_display;
-   /* when enabled, on next iteration the 'Quick Menu' list will
-    * be pushed onto the stack */
-   bool pending_quick_menu;
-   bool prevent_populate;
-   /* The menu driver owns the userdata */
-   bool data_own;
-   /* Flagged when menu entries need to be refreshed */
-   bool entries_need_refresh;
-   bool entries_nonblocking_refresh;
-   /* 'Close Content'-hotkey menu resetting */
-   bool pending_close_content;
-   /* Screensaver status
-    * - Does menu driver support screensaver functionality?
-    * - Is screensaver currently active? */
-   bool screensaver_supported;
-   bool screensaver_active;
-   bool is_binding;
-   bool alive;
 };
-
 
 typedef struct menu_content_ctx_defer_info
 {
@@ -554,16 +581,39 @@ typedef struct menu_ctx_bind
    unsigned type;
 } menu_ctx_bind_t;
 
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char* config_get_menu_driver_options(void);
+#if defined(HAVE_LIBRETRODB)
+typedef struct explore_state explore_state_t;
+#endif
+
+typedef struct
+{
+   char *runtime_str;
+   char *last_played_str;
+   enum contentless_core_runtime_status status;
+} contentless_core_runtime_info_t;
+
+typedef struct
+{
+   char *licenses_str;
+   contentless_core_runtime_info_t runtime;
+} contentless_core_info_entry_t;
+
+#if defined(HAVE_LIBRETRODB)
+explore_state_t *menu_explore_build_list(const char *directory_playlist,
+      const char *directory_database);
+uintptr_t menu_explore_get_entry_icon(unsigned type);
+ssize_t menu_explore_get_entry_playlist_index(unsigned type,
+      playlist_t **playlist, const struct playlist_entry **entry,
+      file_list_t *list, size_t *list_pos, size_t *list_size);
+ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
+      gfx_thumbnail_path_data_t *thumbnail_path_data); /* returns list index */
+bool menu_explore_is_content_list(void);
+void menu_explore_context_init(void);
+void menu_explore_context_deinit(void);
+void menu_explore_free_state(explore_state_t *state);
+void menu_explore_free(void);
+void menu_explore_set_state(explore_state_t *state);
+#endif
 
 const char *menu_driver_ident(void);
 
@@ -573,49 +623,11 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info);
 
 int menu_driver_deferred_push_content_list(file_list_t *list);
 
-bool menu_driver_list_cache(menu_ctx_list_t *list);
-
-void menu_driver_navigation_set(bool scroll);
-
-void menu_driver_populate_entries(menu_displaylist_info_t *info);
-
-bool menu_driver_push_list(menu_ctx_displaylist_t *disp_list);
-
 bool menu_driver_init(bool video_is_threaded);
-
-void menu_driver_set_thumbnail_system(char *s, size_t len);
-
-void menu_driver_get_thumbnail_system(char *s, size_t len);
-
-void menu_driver_set_thumbnail_content(char *s, size_t len);
-
-bool menu_driver_list_get_selection(menu_ctx_list_t *list);
-
-bool menu_driver_list_get_entry(menu_ctx_list_t *list);
-
-bool menu_driver_list_get_size(menu_ctx_list_t *list);
-
-bool menu_driver_screensaver_supported(void);
 
 retro_time_t menu_driver_get_current_time(void);
 
-size_t menu_navigation_get_selection(void);
-
-void menu_navigation_set_selection(size_t val);
-
-void menu_display_handle_thumbnail_upload(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err);
-
-void menu_display_handle_left_thumbnail_upload(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err);
-
-void menu_display_handle_savestate_thumbnail_upload(retro_task_t *task,
-      void *task_data,
-      void *user_data, const char *err);
-
-void menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
 
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 
@@ -623,17 +635,15 @@ void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
 
-#if defined(HAVE_LIBRETRODB)
-typedef struct explore_state explore_state_t;
-explore_state_t *menu_explore_build_list(const char *directory_playlist,
-      const char *directory_database);
-uintptr_t menu_explore_get_entry_icon(unsigned type);
-void menu_explore_context_init(void);
-void menu_explore_context_deinit(void);
-void menu_explore_free_state(explore_state_t *state);
-void menu_explore_free(void);
-void menu_explore_set_state(explore_state_t *state);
-#endif
+uintptr_t menu_contentless_cores_get_entry_icon(const char *core_id);
+void menu_contentless_cores_context_init(void);
+void menu_contentless_cores_context_deinit(void);
+void menu_contentless_cores_free(void);
+void menu_contentless_cores_set_runtime(const char *core_id,
+      const contentless_core_runtime_info_t *runtime_info);
+void menu_contentless_cores_get_info(const char *core_id,
+      const contentless_core_info_entry_t **info);
+void menu_contentless_cores_flush_runtime(void);
 
 /* Returns true if search filter is enabled
  * for the specified menu list */
@@ -643,167 +653,17 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type);
 void menu_driver_set_last_shader_preset_path(const char *path);
 void menu_driver_set_last_shader_pass_path(const char *path);
 enum rarch_shader_type menu_driver_get_last_shader_preset_type(void);
-enum rarch_shader_type menu_driver_get_last_shader_pass_type(void);
 void menu_driver_get_last_shader_preset_path(
       const char **directory, const char **file_name);
 void menu_driver_get_last_shader_pass_path(
       const char **directory, const char **file_name);
 #endif
 
-const char *menu_driver_get_last_start_directory(void);
-const char *menu_driver_get_last_start_file_name(void);
-void menu_driver_set_last_start_content(const char *start_content_path);
-const char *menu_driver_get_pending_selection(void);
 void menu_driver_set_pending_selection(const char *pending_selection);
 
 struct menu_state *menu_state_get_ptr(void);
 
-enum action_iterate_type
-{
-   ITERATE_TYPE_DEFAULT = 0,
-   ITERATE_TYPE_HELP,
-   ITERATE_TYPE_INFO,
-   ITERATE_TYPE_BIND
-};
-
-int menu_dialog_iterate(
-      menu_dialog_t *p_dialog,
-      settings_t *settings,
-      char *s, size_t len,
-      retro_time_t current_time);
-
-void menu_entries_settings_deinit(struct menu_state *menu_st);
-
-int menu_input_key_bind_set_mode_common(
-      struct menu_state *menu_st,
-      struct menu_bind_state *binds,
-      enum menu_input_binds_ctl_state state,
-      rarch_setting_t  *setting,
-      settings_t *settings);
-
-void menu_input_key_bind_poll_bind_get_rested_axes(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      struct menu_bind_state *state);
-
-#ifdef ANDROID
-bool menu_input_key_bind_poll_find_hold_pad(
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output,
-      unsigned p);
-#endif
-
-bool menu_input_key_bind_poll_find_trigger_pad(
-      struct menu_bind_state *state,
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output,
-      unsigned p);
-
-bool menu_input_key_bind_poll_find_trigger(
-      unsigned max_users,
-      struct menu_bind_state *state,
-      struct menu_bind_state *new_state,
-      struct retro_keybind * output);
-
-void input_event_osk_iterate(
-      void *osk_grid,
-      enum osk_type osk_idx);
-
-void menu_input_get_mouse_hw_state(
-      gfx_display_t *p_disp,
-      menu_handle_t *menu,
-      input_driver_state_t *input_driver_st,
-      input_driver_t *current_input,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      bool keyboard_mapping_blocked,
-      bool menu_mouse_enable,
-      bool input_overlay_enable,
-      bool overlay_active,
-      menu_input_pointer_hw_state_t *hw_state);
-
-void menu_input_get_touchscreen_hw_state(
-      gfx_display_t *p_disp,
-      menu_handle_t *menu,
-      input_driver_state_t *input_driver_st,
-      input_driver_t *current_input,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      bool keyboard_mapping_blocked,
-      bool overlay_active,
-      bool pointer_enabled,
-      unsigned input_touch_scale,
-      menu_input_pointer_hw_state_t *hw_state);
-
-bool menu_entries_init(
-      struct menu_state *menu_st,
-      const menu_ctx_driver_t *menu_driver_ctx);
-
-void menu_entries_list_deinit(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      struct menu_state *menu_st);
-
-void menu_list_flush_stack(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      struct menu_state *menu_st,
-      menu_list_t *list,
-      size_t idx, const char *needle, unsigned final_type);
-
-bool menu_list_pop_stack(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      menu_list_t *list,
-      size_t idx,
-      size_t *directory_ptr);
-
-bool input_event_osk_show_symbol_pages(
-      menu_handle_t *menu);
-
-float menu_input_get_dpi(
-      menu_handle_t *menu,
-      gfx_display_t *p_disp,
-      unsigned video_width,
-      unsigned video_height);
-
-void menu_input_pointer_close_messagebox(struct menu_state *menu_st);
-
-void menu_input_key_bind_poll_bind_state(
-      input_driver_state_t *input_driver_st,
-      const retro_keybind_set *binds,
-      float input_axis_threshold,
-      unsigned joy_idx,
-      struct menu_bind_state *state,
-      bool timed_out,
-      bool keyboard_mapping_blocked);
-
-enum action_iterate_type action_iterate_type(const char *label);
-
-void menu_cbs_init(
-      struct menu_state *menu_st,
-      const menu_ctx_driver_t *menu_driver_ctx,
-      file_list_t *list,
-      menu_file_list_cbs_t *cbs,
-      const char *path, const char *label,
-      unsigned type, size_t idx);
-
-bool menu_driver_displaylist_push(
-      struct menu_state *menu_st,
-      settings_t *settings,
-      file_list_t *entry_list,
-      file_list_t *entry_stack);
-
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-void menu_driver_get_last_shader_path_int(
-      settings_t *settings, enum rarch_shader_type type,
-      const char *shader_dir, const char *shader_file_name,
-      const char **dir_out, const char **file_name_out);
-#endif
-
-int menu_entries_elem_get_first_char(
-      file_list_t *list, unsigned offset);
 
 void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
@@ -811,75 +671,15 @@ void menu_entries_build_scroll_indices(
 
 void get_current_menu_value(struct menu_state *menu_st,
       char *s, size_t len);
-void get_current_menu_label(struct menu_state *menu_st,
-      char *s, size_t len);
-void get_current_menu_sublabel(struct menu_state *menu_st,
-      char *s, size_t len);
-
-void menu_display_common_image_upload(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      struct texture_image *img,
-      void *user_data,
-      unsigned type);
-
-enum menu_driver_id_type menu_driver_set_id(
-      const char *driver_name);
-
-/**
- * config_get_menu_driver_options:
- *
- * Get an enumerated list of all menu driver names,
- * separated by '|'.
- *
- * Returns: string listing of all menu driver names,
- * separated by '|'.
- **/
-const char *config_get_menu_driver_options(void);
-
-bool generic_menu_init_list(struct menu_state *menu_st,
-      settings_t *settings);
 
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
       struct menu_state *menu_st);
 
-bool rarch_menu_init(
-      struct menu_state *menu_st,
-      menu_dialog_t        *p_dialog,
-      const menu_ctx_driver_t *menu_driver_ctx,
-      menu_input_t *menu_input,
-      menu_input_pointer_hw_state_t *pointer_hw_state,
-      settings_t *settings
-      );
-
-extern menu_ctx_driver_t menu_ctx_ozone;
-extern menu_ctx_driver_t menu_ctx_xui;
-extern menu_ctx_driver_t menu_ctx_rgui;
-extern menu_ctx_driver_t menu_ctx_mui;
-extern menu_ctx_driver_t menu_ctx_xmb;
-extern menu_ctx_driver_t menu_ctx_stripes;
-
-void menu_input_search_cb(void *userdata, const char *str);
-bool menu_input_key_bind_custom_bind_keyboard_cb(
-      void *data, unsigned code);
-/* This callback gets triggered by the keyboard whenever
- * we press or release a keyboard key. When a keyboard
- * key is being pressed down, 'down' will be true. If it
- * is being released, 'down' will be false.
- */
-void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod);
-
 const menu_ctx_driver_t *menu_driver_find_driver(
       settings_t *settings,
       const char *prefix,
       bool verbosity_enabled);
-
-bool menu_input_key_bind_iterate(
-      settings_t *settings,
-      menu_input_ctx_bind_t *bind,
-      retro_time_t current_time);
 
 /*
  * This function gets called in order to process all input events
@@ -906,12 +706,6 @@ unsigned menu_event(
       input_bits_t *p_trigger_input,
       bool display_kb);
 
-int menu_input_post_iterate(
-      gfx_display_t *p_disp,
-      struct menu_state *menu_st,
-      unsigned action,
-      retro_time_t current_time);
-
 /* Gets called when we want to toggle the menu.
  * If the menu is already running, it will be turned off.
  * If the menu is off, then the menu will be started.
@@ -937,7 +731,29 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time);
 
+void menu_display_common_image_upload(void *data,
+      void *user_data, unsigned type);
+
+size_t menu_update_fullscreen_thumbnail_label(
+      char *s, size_t len,
+      bool is_quick_menu, const char *title);
+
+bool menu_is_running_quick_menu(void);
+bool menu_is_nonrunning_quick_menu(void);
+
+bool menu_input_key_bind_set_mode(
+      enum menu_input_binds_ctl_state state, void *data);
+
+void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
+
+size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
+
+extern menu_ctx_driver_t menu_ctx_ozone;
+extern menu_ctx_driver_t menu_ctx_rgui;
+extern menu_ctx_driver_t menu_ctx_mui;
+extern menu_ctx_driver_t menu_ctx_xmb;
 
 RETRO_END_DECLS
 

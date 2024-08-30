@@ -1,15 +1,9 @@
 package com.retroarch.browser.retroactivity;
 
-import com.google.android.play.core.splitinstall.SplitInstallManager;
-import com.google.android.play.core.splitinstall.SplitInstallManagerFactory;
-import com.google.android.play.core.splitinstall.SplitInstallRequest;
-import com.google.android.play.core.splitinstall.SplitInstallSessionState;
-import com.google.android.play.core.splitinstall.SplitInstallStateUpdatedListener;
-import com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus;
-import com.google.android.play.core.tasks.OnFailureListener;
-import com.google.android.play.core.tasks.OnSuccessListener;
 import com.retroarch.BuildConfig;
 import com.retroarch.browser.preferences.util.UserPreferences;
+import com.retroarch.playcore.PlayCoreManager;
+
 import android.annotation.TargetApi;
 import android.app.NativeActivity;
 import android.content.res.Configuration;
@@ -20,7 +14,11 @@ import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.media.AudioAttributes;
 import android.os.Bundle;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.system.Os;
+import android.view.accessibility.AccessibilityManager;
+import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -32,10 +30,10 @@ import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.util.Log;
 
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.Locale;
@@ -60,58 +58,21 @@ public class RetroActivityCommon extends NativeActivity
   public static int FRONTEND_ORIENTATION_270 = 3;
   public static int RETRO_RUMBLE_STRONG = 0;
   public static int RETRO_RUMBLE_WEAK = 1;
-  public static int INSTALL_STATUS_DOWNLOADING = 0;
-  public static int INSTALL_STATUS_INSTALLING = 1;
-  public static int INSTALL_STATUS_INSTALLED = 2;
-  public static int INSTALL_STATUS_FAILED = 3;
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
-
-  private final SplitInstallStateUpdatedListener listener = new SplitInstallStateUpdatedListener() {
-    @Override
-    public void onStateUpdate(SplitInstallSessionState state) {
-      List<String> moduleNames = state.moduleNames();
-      String[] coreNames = new String[moduleNames.size()];
-
-      for(int i = 0; i < moduleNames.size(); i++) {
-        coreNames[i] = unsanitizeCoreName(moduleNames.get(i));
-      }
-
-      switch(state.status()) {
-        case SplitInstallSessionStatus.DOWNLOADING:
-          coreInstallStatusChanged(coreNames, INSTALL_STATUS_DOWNLOADING, state.bytesDownloaded(), state.totalBytesToDownload());
-          break;
-        case SplitInstallSessionStatus.INSTALLING:
-          coreInstallStatusChanged(coreNames, INSTALL_STATUS_INSTALLING, state.bytesDownloaded(), state.totalBytesToDownload());
-          break;
-        case SplitInstallSessionStatus.INSTALLED:
-          updateSymlinks();
-
-          coreInstallStatusChanged(coreNames, INSTALL_STATUS_INSTALLED, state.bytesDownloaded(), state.totalBytesToDownload());
-          break;
-        case SplitInstallSessionStatus.FAILED:
-          coreInstallStatusChanged(coreNames, INSTALL_STATUS_FAILED, state.bytesDownloaded(), state.totalBytesToDownload());
-          break;
-      }
-    }
-  };
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     cleanupSymlinks();
     updateSymlinks();
 
-    SplitInstallManager manager = SplitInstallManagerFactory.create(this);
-    manager.registerListener(listener);
-
+    PlayCoreManager.getInstance().onCreate(this);
     super.onCreate(savedInstanceState);
   }
 
   @Override
   protected void onDestroy() {
-    SplitInstallManager manager = SplitInstallManagerFactory.create(this);
-    manager.unregisterListener(listener);
-
+    PlayCoreManager.getInstance().onDestroy();
     super.onDestroy();
   }
 
@@ -157,12 +118,58 @@ public class RetroActivityCommon extends NativeActivity
     }
   }
 
+  public void doHapticFeedback(int effect)
+  {
+    getWindow().getDecorView().performHapticFeedback(effect,
+        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING | HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+    Log.i("RetroActivity", "Haptic Feedback effect " + effect);
+  }
+
   // Exiting cleanly from NDK seems to be nearly impossible.
   // Have to use exit(0) to avoid weird things happening, even with runOnUiThread() approaches.
   // Use a separate JNI function to explicitly trigger the readback.
   public void onRetroArchExit()
   {
       finish();
+  }
+
+  public int getVolumeCount()
+  {
+    int ret = 0;
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
+      List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
+
+      for (int i = 0; i < storageVolumeList.size(); i++) {
+        ret++;
+      }
+      Log.i("RetroActivity", "volume count: " + ret);
+    }
+
+    return (int)ret;
+  }
+
+  public String getVolumePath(String input)
+  {
+    String ret = "";
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      int index = Integer.valueOf(input);
+      int j = 0;
+
+      StorageManager storageManager = (StorageManager) getApplicationContext().getSystemService(Context.STORAGE_SERVICE);
+      List<StorageVolume> storageVolumeList = storageManager.getStorageVolumes();
+
+      for (int i = 0; i < storageVolumeList.size(); i++) {
+        if (i == j) {
+          ret = String.valueOf(storageVolumeList.get(index).getDirectory());
+        }
+      }
+      Log.i("RetroActivity", "volume path: " + ret);
+    }
+
+    return ret;
   }
 
 // https://stackoverflow.com/questions/4553650/how-to-check-device-natural-default-orientation-on-android-i-e-get-landscape/4555528#4555528
@@ -400,8 +407,7 @@ public class RetroActivityCommon extends NativeActivity
    * @return the list of installed cores
    */
   public String[] getInstalledCores() {
-    SplitInstallManager manager = SplitInstallManagerFactory.create(this);
-    String[] modules = manager.getInstalledModules().toArray(new String[0]);
+    String[] modules = PlayCoreManager.getInstance().getInstalledModules();
     List<String> cores = new ArrayList<>();
     List<String> availableCores = Arrays.asList(getAvailableCores());
 
@@ -431,25 +437,7 @@ public class RetroActivityCommon extends NativeActivity
     SharedPreferences prefs = UserPreferences.getPreferences(this);
     prefs.edit().remove("core_deleted_" + coreName).apply();
 
-    SplitInstallManager manager = SplitInstallManagerFactory.create(this);
-    SplitInstallRequest request = SplitInstallRequest.newBuilder()
-            .addModule(sanitizeCoreName(coreName))
-            .build();
-
-    manager.startInstall(request)
-            .addOnSuccessListener(new OnSuccessListener<Integer>() {
-              @Override
-              public void onSuccess(Integer result) {
-                coreInstallInitiated(coreName, true);
-              }
-            })
-
-            .addOnFailureListener(new OnFailureListener() {
-              @Override
-              public void onFailure(Exception e) {
-                coreInstallInitiated(coreName, false);
-              }
-            });
+    PlayCoreManager.getInstance().downloadCore(coreName);
   }
 
   /**
@@ -469,8 +457,7 @@ public class RetroActivityCommon extends NativeActivity
     SharedPreferences prefs = UserPreferences.getPreferences(this);
     prefs.edit().putBoolean("core_deleted_" + coreName, true).apply();
 
-    SplitInstallManager manager = SplitInstallManagerFactory.create(this);
-    manager.deferredUninstall(Collections.singletonList(sanitizeCoreName(coreName)));
+    PlayCoreManager.getInstance().deleteCore(coreName);
   }
 
 
@@ -485,7 +472,7 @@ public class RetroActivityCommon extends NativeActivity
    * @param coreName Name of the core that the install is initiated for.
    * @param successful true if success, false if failure
    */
-  private native void coreInstallInitiated(String coreName, boolean successful);
+  public native void coreInstallInitiated(String coreName, boolean successful);
 
   /**
    * Called when the status of a core install has changed.
@@ -496,7 +483,7 @@ public class RetroActivityCommon extends NativeActivity
    * @param bytesDownloaded Number of bytes downloaded.
    * @param totalBytesToDownload Total number of bytes to download.
    */
-  private native void coreInstallStatusChanged(String[] coreNames, int status, long bytesDownloaded, long totalBytesToDownload);
+  public native void coreInstallStatusChanged(String[] coreNames, int status, long bytesDownloaded, long totalBytesToDownload);
 
 
 
@@ -512,7 +499,7 @@ public class RetroActivityCommon extends NativeActivity
    * @param coreName Name of the core to sanitize.
    * @return The sanitized core name.
    */
-  private String sanitizeCoreName(String coreName) {
+  public String sanitizeCoreName(String coreName) {
     return "core_" + coreName.replace('-', '_');
   }
 
@@ -522,7 +509,7 @@ public class RetroActivityCommon extends NativeActivity
    * @param coreName Name of the core to unsanitize.
    * @return The unsanitized core name.
    */
-  private String unsanitizeCoreName(String coreName) {
+  public String unsanitizeCoreName(String coreName) {
     if(coreName.equals("core_mesen_s")) {
       return "mesen-s";
     }
@@ -563,7 +550,7 @@ public class RetroActivityCommon extends NativeActivity
    * Triggers a symlink update in the known places that Dynamic Feature Modules
    * are installed to.
    */
-  private void updateSymlinks() {
+  public void updateSymlinks() {
     if(!isPlayStoreBuild()) return;
 
     traverseFilesystem(getFilesDir());
@@ -621,5 +608,16 @@ public class RetroActivityCommon extends NativeActivity
         traverseFilesystem(child);
       }
     }
+  }
+
+  public boolean isScreenReaderEnabled() {
+    AccessibilityManager accessibilityManager = (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+    boolean isAccessibilityEnabled = accessibilityManager.isEnabled();
+    boolean isExploreByTouchEnabled = accessibilityManager.isTouchExplorationEnabled();
+    return isAccessibilityEnabled && isExploreByTouchEnabled;
+  }
+
+  public void accessibilitySpeak(String message) {
+    getWindow().getDecorView().announceForAccessibility(message);
   }
 }

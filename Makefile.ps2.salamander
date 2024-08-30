@@ -20,15 +20,15 @@ ifeq ($(MUTE_WARNINGS), 1)
 endif
 
 INCDIR = -Ilibretro-common/include
-INCDIR += -Ips2/include
+INCDIR += -I$(PS2SDK)/ports/include
 CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) -ffast-math -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES += -DPS2 -DIS_SALAMANDER -DRARCH_CONSOLE
 
 LIBDIR =
-LDFLAGS =
-LIBS = -lelf-loader -lpatches -lfileXio -lpoweroff
+LDFLAGS += -L$(PS2SDK)/ports/lib
+LIBS = -lelf-loader -lps2_drivers -lpatches
 
 ifeq ($(SCREEN_DEBUG), 1)
 LIBS += -ldebug
@@ -53,22 +53,14 @@ EE_OBJS = frontend/frontend_salamander.o \
 		 libretro-common/encodings/encoding_utf.o \
 		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/compat/compat_strl.o \
+		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/lrc_hash.o \
 		 libretro-common/time/rtime.o \
-		 verbosity.o \
-		 ps2/compat_files/ps2_devices.o
-
-# IRX libs
-IRX_FILES += sio2man.irx iomanX.irx fileXio.irx
-IRX_FILES += mcman.irx mcserv.irx
-IRX_FILES += usbd.irx bdm.irx bdmfs_vfat.irx usbmass_bd.irx
-IRX_FILES += cdfs.irx
-IRX_FILES += ps2dev9.irx ps2atad.irx ps2hdd.irx ps2fs.irx poweroff.irx
-EE_OBJS += $(IRX_FILES:.irx=_irx.o)
+		 verbosity.o
 
 EE_CFLAGS = $(CFLAGS)
 EE_CXXFLAGS = $(CFLAGS)
@@ -91,10 +83,6 @@ run:
 
 release: all
 	ps2-packer $(EE_BIN) $(TARGET_RELEASE)
-
-# IRX files
-%_irx.c:
-	$(PS2SDK)/bin/bin2c $(PS2SDK)/iop/irx/$*.irx $@ $*_irx
 
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref

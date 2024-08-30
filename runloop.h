@@ -41,6 +41,9 @@
 #include "core_option_manager.h"
 #include "performance_counters.h"
 #include "state_manager.h"
+#ifdef HAVE_RUNAHEAD
+#include "runahead.h"
+#endif
 #include "tasks/tasks_internal.h"
 
 /* Arbitrary twenty subsystems limit */
@@ -57,12 +60,28 @@
 #define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) (void)(runloop_st)
 #endif
 
-enum  runloop_state_enum
+#ifdef HAVE_BSV_MOVIE
+#define BSV_MOVIE_IS_EOF() || (((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END) && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_EOF_EXIT)))
+#else
+#define BSV_MOVIE_IS_EOF()
+#endif
+
+/* Time to exit out of the main loop?
+ * Reasons for exiting:
+ * a) Shutdown environment callback was invoked.
+ * b) Quit key was pressed.
+ * c) Frame count exceeds or equals maximum amount of frames to run.
+ * d) Video driver no longer alive.
+ * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
+ */
+#define RUNLOOP_TIME_TO_EXIT(quit_key_pressed) ((runloop_state.flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED) || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
+
+enum runloop_state_enum
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
-   RUNLOOP_STATE_MENU_ITERATE,
-   RUNLOOP_STATE_END,
+   RUNLOOP_STATE_PAUSE,
+   RUNLOOP_STATE_MENU,
    RUNLOOP_STATE_QUIT
 };
 
@@ -74,14 +93,41 @@ enum poll_type_override_t
    POLL_TYPE_OVERRIDE_LATE
 };
 
-
-typedef struct runloop_ctx_msg_info
+enum runloop_flags
 {
-   const char *msg;
-   unsigned prio;
-   unsigned duration;
-   bool flush;
-} runloop_ctx_msg_info_t;
+   RUNLOOP_FLAG_MAX_FRAMES_SCREENSHOT             = (1 << 0),
+   RUNLOOP_FLAG_HAS_SET_CORE                      = (1 << 1),
+   RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT           = (1 << 2),
+   RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB             = (1 << 3),
+   RUNLOOP_FLAG_IS_SRAM_LOAD_DISABLED             = (1 << 4),
+   RUNLOOP_FLAG_IS_SRAM_SAVE_DISABLED             = (1 << 5),
+   RUNLOOP_FLAG_USE_SRAM                          = (1 << 6),
+   RUNLOOP_FLAG_PATCH_BLOCKED                     = (1 << 7),
+   RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE         = (1 << 8),
+   RUNLOOP_FLAG_OVERRIDES_ACTIVE                  = (1 << 9),
+   RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE               = (1 << 10),
+   RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE             = (1 << 11),
+   RUNLOOP_FLAG_REMAPS_CORE_ACTIVE                = (1 << 12),
+   RUNLOOP_FLAG_REMAPS_GAME_ACTIVE                = (1 << 13),
+   RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE         = (1 << 14),
+   RUNLOOP_FLAG_SHUTDOWN_INITIATED                = (1 << 15),
+   RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED           = (1 << 16),
+   RUNLOOP_FLAG_CORE_RUNNING                      = (1 << 17),
+   RUNLOOP_FLAG_AUTOSAVE                          = (1 << 18),
+   RUNLOOP_FLAG_HAS_VARIABLE_UPDATE               = (1 << 19),
+   RUNLOOP_FLAG_INPUT_IS_DIRTY                    = (1 << 20),
+   RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN    = (1 << 21),
+   RUNLOOP_FLAG_RUNAHEAD_AVAILABLE                = (1 << 22),
+   RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE = (1 << 23),
+   RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY        = (1 << 24),
+   RUNLOOP_FLAG_SLOWMOTION                        = (1 << 25),
+   RUNLOOP_FLAG_FASTMOTION                        = (1 << 26),
+   RUNLOOP_FLAG_PAUSED                            = (1 << 27),
+   RUNLOOP_FLAG_IDLE                              = (1 << 28),
+   RUNLOOP_FLAG_FOCUSED                           = (1 << 29),
+   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30),
+   RUNLOOP_FLAG_IS_INITED                         = (1 << 31)
+};
 
 /* Contains the current retro_fastforwarding_override
  * parameters along with any pending updates triggered
@@ -115,22 +161,6 @@ typedef struct core_options_callbacks
    retro_core_options_update_display_callback_t update_display;
 } core_options_callbacks_t;
 
-#ifdef HAVE_RUNAHEAD
-typedef bool(*runahead_load_state_function)(const void*, size_t);
-
-typedef void *(*constructor_t)(void);
-typedef void  (*destructor_t )(void*);
-
-typedef struct my_list_t
-{
-   void **data;
-   constructor_t constructor;
-   destructor_t destructor;
-   int capacity;
-   int size;
-} my_list;
-#endif
-
 struct runloop
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -138,6 +168,7 @@ struct runloop
 #endif
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
+   retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;                /* int64_t alignment */
@@ -154,6 +185,7 @@ struct runloop
 #endif
    my_list *runahead_save_state_list;
    my_list *input_state_list;
+   preempt_t *preempt_data;
 #endif
 
 #ifdef HAVE_REWIND
@@ -165,6 +197,7 @@ struct runloop
    struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
+   retro_input_poll_t input_poll_callback_original;      /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
    function_t retro_reset_callback_original;             /* ptr alignment */
@@ -212,6 +245,7 @@ struct runloop
 
    runloop_core_status_msg_t core_status_msg;
 
+   unsigned msg_queue_delay;
    unsigned pending_windowed_scale;
    unsigned max_frames;
    unsigned audio_latency;
@@ -219,6 +253,7 @@ struct runloop
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
    unsigned entry_state_slot;
+   unsigned video_swap_interval_auto;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
 
@@ -231,8 +266,11 @@ struct runloop
    enum rarch_core_type last_core_type;
 #endif
 
+   uint32_t flags;
+   int8_t run_frames_and_pause;
+
    char runtime_content_path_basename[8192];
-   char current_library_name[256];
+   char current_library_name[NAME_MAX_LENGTH];
    char current_library_version[256];
    char current_valid_extensions[256];
    char subsystem_path[256];
@@ -252,75 +290,20 @@ struct runloop
       char *remapfile;
       char savefile[8192];
       char savestate[8192];
+      char replay[8192];
       char cheatfile[8192];
       char ups[8192];
       char bps[8192];
       char ips[8192];
+      char xdelta[8192];
       char label[8192];
    } name;
 
-   bool is_inited;
    bool missing_bios;
-   bool force_nonblock;
-   bool paused;
-   bool idle;
-   bool focused;
-   bool slowmotion;
-   bool fastmotion;
-   bool shutdown_initiated;
-   bool core_shutdown_initiated;
-   bool core_running;
    bool perfcnt_enable;
-   bool game_options_active;
-   bool folder_options_active;
-   bool autosave;
-#ifdef HAVE_CONFIGFILE
-   bool overrides_active;
-#endif
-   bool remaps_core_active;
-   bool remaps_game_active;
-   bool remaps_content_dir_active;
-#ifdef HAVE_SCREENSHOTS
-   bool max_frames_screenshot;
-#endif
-#ifdef HAVE_RUNAHEAD
-   bool has_variable_update;
-   bool input_is_dirty;
-   bool runahead_save_state_size_known;
-   bool request_fast_savestate;
-   bool runahead_available;
-   bool runahead_secondary_core_available;
-   bool runahead_force_input_dirty;
-#endif
-#ifdef HAVE_PATCH
-   bool patch_blocked;
-#endif
-   bool is_sram_load_disabled;
-   bool is_sram_save_disabled;
-   bool use_sram;
-   bool ignore_environment_cb;
-   bool core_set_shared_context;
-   bool has_set_core;
 };
 
 typedef struct runloop runloop_state_t;
-
-#ifdef HAVE_BSV_MOVIE
-#define BSV_MOVIE_IS_EOF() || (input_st->bsv_movie_state.movie_end && \
-input_st->bsv_movie_state.eof_exit)
-#else
-#define BSV_MOVIE_IS_EOF()
-#endif
-
-/* Time to exit out of the main loop?
- * Reasons for exiting:
- * a) Shutdown environment callback was invoked.
- * b) Quit key was pressed.
- * c) Frame count exceeds or equals maximum amount of frames to run.
- * d) Video driver no longer alive.
- * e) End of BSV movie and BSV EOF exit is true. (TODO/FIXME - explain better)
- */
-#define RUNLOOP_TIME_TO_EXIT(quit_key_pressed) (runloop_state.shutdown_initiated || quit_key_pressed || !is_alive BSV_MOVIE_IS_EOF() || ((runloop_state.max_frames != 0) && (frame_count >= runloop_state.max_frames)) || runloop_exec)
 
 RETRO_BEGIN_DECLS
 
@@ -361,11 +344,7 @@ void runloop_set_current_core_type(
  **/
 int runloop_iterate(void);
 
-void runloop_perf_log(void);
-
 void runloop_system_info_free(void);
-
-bool runloop_path_init_subsystem(void);
 
 /**
  * libretro_get_system_info:
@@ -385,7 +364,7 @@ bool libretro_get_system_info(
       bool *load_no_content);
 
 void runloop_performance_counter_register(
-		struct retro_perf_counter *perf);
+      struct retro_perf_counter *perf);
 
 void runloop_runtime_log_deinit(
       runloop_state_t *runloop_st,
@@ -396,18 +375,17 @@ void runloop_runtime_log_deinit(
 
 void runloop_event_deinit_core(void);
 
-#ifdef HAVE_RUNAHEAD
-void runloop_runahead_clear_variables(runloop_state_t *runloop_st);
-#endif
-
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
-      enum rarch_core_type type);
+      enum rarch_core_type type,
+      const char *old_savefile_dir,
+      const char *old_savestate_dir
+      );
 
 void runloop_pause_checks(void);
 
-float runloop_set_frame_limit(
+void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio);
 
@@ -415,37 +393,72 @@ float runloop_get_fastforward_ratio(
       settings_t *settings,
       struct retro_fastforwarding_override *fastmotion_override);
 
+void runloop_set_video_swap_interval(
+      bool vrr_runloop_enable,
+      bool crt_switching_active,
+      unsigned swap_interval_config,
+      unsigned black_frame_insertion,
+      unsigned shader_subframes,
+      float audio_max_timing_skew,
+      float video_refresh_rate,
+      double input_fps);
+unsigned runloop_get_video_swap_interval(
+      unsigned swap_interval_config);
+
 void runloop_task_msg_queue_push(
       retro_task_t *task, const char *msg,
       unsigned prio, unsigned duration,
       bool flush);
 
-void runloop_frame_time_free(void);
-
-void runloop_fastmotion_override_free(void);
-
-void runloop_audio_buffer_status_free(void);
-
-bool secondary_core_ensure_exists(settings_t *settings);
-
-void runloop_core_options_cb_free(void);
+bool secondary_core_ensure_exists(void *data, settings_t *settings);
 
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num);
-
-void runloop_secondary_core_destroy(void);
 
 void runloop_msg_queue_deinit(void);
 
 void runloop_msg_queue_init(void);
 
-void runloop_path_init_savefile(void);
-
 void runloop_path_set_basename(const char *path);
 
-void runloop_path_init_savefile(void);
-
 void runloop_path_set_names(void);
+
+uint32_t runloop_get_flags(void);
+
+bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
+
+bool runloop_get_current_savestate_path(char *path, size_t len);
+
+bool runloop_get_savestate_path(char *path, size_t len, int slot);
+
+bool runloop_get_current_replay_path(char *path, size_t len);
+
+bool runloop_get_replay_path(char *path, size_t len, unsigned slot);
+
+void runloop_state_free(runloop_state_t *runloop_st);
+
+void runloop_path_set_redirect(settings_t *settings, const char *a, const char *b);
+
+void runloop_path_set_special(char **argv, unsigned num_content);
+
+void runloop_path_deinit_subsystem(void);
+
+/**
+ * init_libretro_symbols:
+ * @type                        : Type of core to be loaded.
+ *                                If CORE_TYPE_DUMMY, will
+ *                                load dummy symbols.
+ *
+ * Setup libretro callback symbols.
+ * 
+ * @return true on success, or false if symbols could not be loaded.
+ **/
+bool runloop_init_libretro_symbols(
+      void *data,
+      enum rarch_core_type type,
+      struct retro_core_t *current_core,
+      const char *lib_path,
+      void *_lib_handle_p);
 
 runloop_state_t *runloop_state_get_ptr(void);
 

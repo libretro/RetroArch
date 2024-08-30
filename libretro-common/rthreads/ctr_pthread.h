@@ -162,7 +162,7 @@ static INLINE int pthread_create(pthread_t *thread,
 {
    s32 prio = 0;
    Thread new_ctr_thread;
-   int procnum = -2; // use default cpu
+   int procnum = -2; /* use default cpu */
    bool isNew3DS;
 
    APT_CheckNew3DS(&isNew3DS);
@@ -176,7 +176,7 @@ static INLINE int pthread_create(pthread_t *thread,
       mutex_inited = true;
    }
 
-   /*Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
+   /* Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
    while (LightLock_TryLock(&safe_double_thread_launch) != 0);
 
    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
@@ -242,7 +242,7 @@ static INLINE int pthread_detach(pthread_t thread)
 static INLINE int pthread_join(pthread_t thread, void **retval)
 {
    /*retval is ignored*/
-   if(threadJoin((Thread)thread, INT64_MAX))
+   if (threadJoin((Thread)thread, INT64_MAX))
       return -1;
 
    threadFree((Thread)thread);
@@ -265,26 +265,27 @@ static INLINE int pthread_cond_wait(pthread_cond_t *cond,
 static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
       pthread_mutex_t *mutex, const struct timespec *abstime)
 {
-   struct timespec now = {0};
    /* Missing clock_gettime*/
+   struct timespec now;
    struct timeval tm;
    int retval = 0;
 
-   do {
+   do
+   {
+      s64 timeout;
       gettimeofday(&tm, NULL);
-      now.tv_sec = tm.tv_sec;
+      now.tv_sec  = tm.tv_sec;
       now.tv_nsec = tm.tv_usec * 1000;
-      s64 timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 + (abstime->tv_nsec - now.tv_nsec);
 
-      if (timeout < 0)
+      if ((timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 +
+(abstime->tv_nsec - now.tv_nsec)) < 0)
       {
          retval = ETIMEDOUT;
          break;
       }
 
-      if (!CondVar_WaitTimeout((CondVar *)cond, (LightLock *)mutex, timeout)) {
+      if (!CondVar_WaitTimeout((CondVar *)cond, (LightLock *)mutex, timeout))
          break;
-      }
    } while (1);
 
    return retval;

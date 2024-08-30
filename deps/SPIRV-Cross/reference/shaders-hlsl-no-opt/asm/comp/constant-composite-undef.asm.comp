@@ -1,6 +1,6 @@
-RWByteAddressBuffer block : register(u0);
+static float _15;
 
-float _15;
+RWByteAddressBuffer block : register(u0);
 
 void comp_main()
 {

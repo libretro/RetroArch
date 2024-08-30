@@ -114,10 +114,6 @@ MSG_HASH(
    "Åbn den traditionelle skrivebords menu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Deaktiver Kiosk-tilstand (Genstart Påkrævet)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Vis alle konfigurationsrelaterede indstillinger."
    )
@@ -162,20 +158,8 @@ MSG_HASH(
    "Læs mere om, hvordan programmet virker."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Genstart RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Genstart programmet."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Afslut RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Afslut programmet."
+   "Luk"
    )
 
 /* Main Menu > Load Core */
@@ -506,17 +490,9 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
    "CPU funktioner"
    )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "CPU arkitektur:"
-   )
-MSG_HASH( /* FIXME Colon should be handled in menu_display.c like the rest */
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "CPU kerner:"
-   )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CPU_CORES,
-   "Mængden af kerner, som CPU'en har."
+   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   "CPU arkitektur"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -661,6 +637,10 @@ MSG_HASH(
 /* Main Menu > Information > Database Manager > Information */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   "Præstationer"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
    "Co-op Understøttet"
    )
@@ -672,20 +652,16 @@ MSG_HASH(
    "Indlæs konfiguration"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Nulstil til standardindstillinger"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Nulstil den aktuelle konfiguration til standardværdier."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Gem aktuel konfiguration"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Gem ny konfiguration"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   "Nulstil til standardindstillinger"
    )
 
 /* Main Menu > Help */
@@ -741,10 +717,6 @@ MSG_HASH(
    "Lyd"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Skift indstillinger for lydudgang."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    "Skift controller, tastatur og mus indstillinger."
    )
@@ -791,10 +763,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Filhåndtering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Skift filhåndteringsindstillinger."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -885,16 +853,18 @@ MSG_HASH(
    "Skift standardmapper hvor filer er placeret."
    )
 
+/* Core option category placeholders for icons */
+
+#ifdef HAVE_MIST
+#endif
+
 /* Settings > Drivers */
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
    "Input driver til brug. Nogle videodrivere tvinger en anden inputdriver."
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Controller driver der skal bruges."
-   )
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    "Videodriver der skal bruges."
@@ -907,6 +877,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Lyddriver der skal bruges."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
    "Lyd resampler"
@@ -938,10 +910,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    "Placeringsdriver der skal bruges."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Menudriver der skal bruges."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -988,6 +956,8 @@ MSG_HASH(
 
 /* Settings > Video > Output */
 
+#if defined (WIIU)
+#endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
 #endif
 
@@ -1000,6 +970,8 @@ MSG_HASH(
 /* Settings > Video > Scaling */
 
 #if defined(DINGUX)
+#endif
+#if defined(RARCH_MOBILE)
 #endif
 
 /* Settings > Video > HDR */
@@ -1014,6 +986,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    "Skift indstillinger for lydudgang."
    )
+#ifdef HAVE_MICROPHONE
+#endif
 
 /* Settings > Audio > Output */
 
@@ -1021,6 +995,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    "Lyd"
    )
+
+#ifdef HAVE_MICROPHONE
+/* Settings > Audio > Input */
+#endif
 
 /* Settings > Audio > Resampler */
 
@@ -1041,6 +1019,8 @@ MSG_HASH(
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
+#ifdef ANDROID
+#endif
 
 /* Settings > Input > Haptic Feedback/Vibration */
 
@@ -1052,12 +1032,22 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Afslut RetroArch"
+   "Luk"
    )
+
+
+
+
+
+
+
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "AI Tjeneste"
    )
+
+
 
 /* Settings > Input > Port # Controls */
 
@@ -1069,7 +1059,15 @@ MSG_HASH(
 
 #ifndef HAVE_DYNAMIC
 #endif
+#ifdef HAVE_MIST
 
+
+
+
+
+
+
+#endif
 /* Settings > Configuration */
 
 
@@ -1103,6 +1101,15 @@ MSG_HASH(
 #if defined(ANDROID)
 #endif
 
+/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+
 /* Settings > On-Screen Display > Video Layout */
 
 
@@ -1111,6 +1118,8 @@ MSG_HASH(
 
 /* Settings > User Interface */
 
+#ifdef _3DS
+#endif
 
 /* Settings > User Interface > Menu Item Visibility */
 
@@ -1135,6 +1144,7 @@ MSG_HASH(
 /* Settings > User Interface > Views > Settings */
 
 
+
 /* Settings > User Interface > Appearance */
 
 
@@ -1152,6 +1162,12 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    "Præstationer"
    )
+
+/* Settings > Achievements > Appearance */
+
+
+/* Settings > Achievements > Visibility */
+
 
 /* Settings > Network */
 
@@ -1204,6 +1220,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
    "Spilleliste"
    )
+
+#ifdef HAVE_MIST
+/* Settings > Steam */
+
+
+
+#endif
 
 /* Music */
 
@@ -1262,7 +1285,10 @@ MSG_HASH(
 /* Quick Menu > Controls */
 
 
-/* Quick Menu > Controls > Load Remap File */
+/* Quick Menu > Controls > Manage Remap Files */
+
+
+/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
 
 /* Quick Menu > Cheats */
@@ -1407,6 +1433,7 @@ MSG_HASH(
 /* Notifications */
 
 
+
 /* Lakka */
 
 
@@ -1416,19 +1443,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Genstart RetroArch"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
 #endif
 #ifdef HAVE_ODROIDGO2
 #else
 #endif
-#if defined(_3DS)
+#ifdef _3DS
 #endif
 #ifdef HAVE_QT
 #endif

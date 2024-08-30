@@ -8,11 +8,11 @@ struct Foo
     float var2;
 };
 
+Foo _22;
+
 layout(binding = 0) uniform mediump sampler2D uSampler;
 
 layout(location = 0) out vec4 FragColor;
-
-Foo _22;
 
 void main()
 {

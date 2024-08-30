@@ -55,13 +55,17 @@ IFS="
 # Loop through all items.
 for ITEM in $ITEMS;
 do
-    echo "Signing '${ITEM}'"
-    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${ITEM}"
-    RESULT=$?
-    if [ "$RESULT" != 0 ] ; then
-        echo "Failed to sign '${ITEM}'."
-        IFS=$SAVED_IFS
-        exit 1
+    if codesign --display -r- "${ITEM}" | grep -q "${CODE_SIGN_IDENTITY_FOR_ITEMS}" ; then
+        echo "Skipping '${ITEM}', already signed"
+    else
+        echo "Signing '${ITEM}'"
+        codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${ITEM}"
+        RESULT=$?
+        if [ "$RESULT" != 0 ] ; then
+            echo "Failed to sign '${ITEM}'."
+            IFS=$SAVED_IFS
+            exit 1
+        fi
     fi
 done
 

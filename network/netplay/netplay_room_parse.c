@@ -18,12 +18,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+
 #include <string/stdstring.h>
-#include <compat/strl.h>
 #include <formats/rjson.h>
-#include "netplay.h"
+
 #include "../../verbosity.h"
+
+#include "netplay.h"
 
 enum netplay_parse_state
 {
@@ -284,7 +285,7 @@ void netplay_rooms_free(void)
    net_st->rooms_data = NULL;
 }
 
-int netplay_rooms_parse(const char *buf)
+int netplay_rooms_parse(const char *buf, size_t len)
 {
    struct netplay_json_context ctx;
    net_driver_state_t         *net_st = networking_state_get_ptr(); 
@@ -299,7 +300,7 @@ int netplay_rooms_parse(const char *buf)
    net_st->rooms_data = (struct netplay_rooms*)
       calloc(1, sizeof(*net_st->rooms_data));
 
-   rjson_parse_quick(buf, &ctx, 0,
+   rjson_parse_quick(buf, len, &ctx, 0,
          netplay_json_object_member,
          netplay_json_string,
          netplay_json_number,

@@ -19,7 +19,6 @@
  */
 
 #include <stdint.h>
-#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
@@ -69,17 +68,16 @@ typedef struct gfx_ctx_drm_data
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-   int fd;
-   int interval;
-   unsigned fb_width;
-   unsigned fb_height;
-
-   bool core_hw_context_enable;
-   bool waiting_for_flip;
    struct gbm_bo *bo;
    struct gbm_bo *next_bo;
    struct gbm_surface *gbm_surface;
    struct gbm_device  *gbm_dev;
+   int fd;
+   int interval;
+   unsigned fb_width;
+   unsigned fb_height;
+   bool core_hw_context_enable;
+   bool waiting_for_flip;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -94,396 +92,49 @@ struct drm_fb
  */
 typedef struct hdmi_timings
 {
-   int h_active_pixels; /* horizontal pixels (width) */
-   int h_sync_polarity; /* invert hsync polarity */
-   int h_front_porch;   /* horizontal forward padding from DE acitve edge */
-   int h_sync_pulse;    /* hsync pulse width in pixel clocks */
-   int h_back_porch;    /* vertical back padding from DE active edge */
-   int v_active_lines;  /* vertical pixels height (lines) */
-   int v_sync_polarity; /* invert vsync polarity */
-   int v_front_porch;   /* vertical forward padding from DE active edge */
-   int v_sync_pulse;    /* vsync pulse width in pixel clocks */
-   int v_back_porch;    /* vertical back padding from DE active edge */
-   int v_sync_offset_a; /* leave at zero */
-   int v_sync_offset_b; /* leave at zero */
-   int pixel_rep;       /* leave at zero */
-   int frame_rate;      /* screen refresh rate in Hz */
-   int interlaced;      /* leave at zero */
-   int pixel_freq;      /* clock frequency (width*height*framerate) */
+   int h_active_pixels; /* Horizontal pixels (width) */
+   int h_sync_polarity; /* Invert HSync polarity */
+   int h_front_porch;   /* Horizontal forward padding from DE active edge */
+   int h_sync_pulse;    /* HSync pulse width in pixel clocks */
+   int h_back_porch;    /* Vertical back padding from DE active edge */
+   int v_active_lines;  /* Vertical pixels height (lines) */
+   int v_sync_polarity; /* Invert vsync polarity */
+   int v_front_porch;   /* Vertical forward padding from DE active edge */
+   int v_sync_pulse;    /* VSync pulse width in pixel clocks */
+   int v_back_porch;    /* Vertical back padding from DE active edge */
+   int v_sync_offset_a; /* Leave at zero */
+   int v_sync_offset_b; /* Leave at zero */
+   int pixel_rep;       /* Leave at zero */
+   int frame_rate;      /* Screen refresh rate in Hz */
+   int interlaced;      /* Leave at zero */
+   int pixel_freq;      /* Clock frequency (width*height*framerate) */
    int aspect_ratio;
 } hdmi_timings_t;
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 static drmModeModeInfo gfx_ctx_crt_switch_mode;
+static bool switch_mode                   = false;
 
-/* Load custom hdmi timings from config */
-bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
+static float mode_vrefresh(drmModeModeInfo *mode)
 {
-   int ret;
-   hdmi_timings_t timings;
-   settings_t *settings = config_get_ptr();
-   char *crt_switch_timings = settings->arrays.crt_switch_timings;
-
-   if(modeInfo != NULL && !string_is_empty(crt_switch_timings)) {
-      ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-                   &timings.h_active_pixels, &timings.h_sync_polarity, &timings.h_front_porch,
-                   &timings.h_sync_pulse, &timings.h_back_porch,
-                   &timings.v_active_lines, &timings.v_sync_polarity, &timings.v_front_porch,
-                   &timings.v_sync_pulse, &timings.v_back_porch,
-                   &timings.v_sync_offset_a, &timings.v_sync_offset_b, &timings.pixel_rep, &timings.frame_rate,
-                   &timings.interlaced, &timings.pixel_freq, &timings.aspect_ratio);
-      if (ret != 17) {
-         RARCH_ERR("[DRM]: malformed mode requested: %s\n", crt_switch_timings);
-         return false;
-      }
-
-      memset(modeInfo, 0, sizeof(drmModeModeInfo));
-      modeInfo->clock = timings.pixel_freq / 1000;
-      modeInfo->hdisplay = timings.h_active_pixels;
-      modeInfo->hsync_start = modeInfo->hdisplay + timings.h_front_porch;
-      modeInfo->hsync_end = modeInfo->hsync_start + timings.h_sync_pulse;
-      modeInfo->htotal = modeInfo->hsync_end + timings.h_back_porch;
-      modeInfo->hskew = 0;
-      modeInfo->vdisplay = timings.v_active_lines;
-      modeInfo->vsync_start = modeInfo->vdisplay + (timings.v_front_porch * (timings.interlaced ? 2 : 1));
-      modeInfo->vsync_end = modeInfo->vsync_start + (timings.v_sync_pulse * (timings.interlaced ? 2 : 1));
-      modeInfo->vtotal = modeInfo->vsync_end + (timings.v_back_porch * (timings.interlaced ? 2 : 1));
-      modeInfo->vscan = 0; /* TODO: ?? */
-      modeInfo->vrefresh = timings.frame_rate;
-      modeInfo->flags = timings.interlaced ? DRM_MODE_FLAG_INTERLACE : 0;
-      modeInfo->flags |= timings.v_sync_polarity ? DRM_MODE_FLAG_NVSYNC : DRM_MODE_FLAG_PVSYNC;
-      modeInfo->flags |= timings.h_sync_polarity ? DRM_MODE_FLAG_NHSYNC : DRM_MODE_FLAG_PHSYNC;
-      modeInfo->type = 0;
-      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "CRT_%ux%u_%u",
-               modeInfo->hdisplay, modeInfo->vdisplay, modeInfo->vrefresh);
-
-      return true;
-   }
-
-   return false;
+   return  mode->clock * 1000.00f / (mode->htotal * mode->vtotal);
 }
 
-static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
+static void dump_mode(drmModeModeInfo *mode, int index)
 {
-   struct drm_fb *fb = (struct drm_fb*)data;
-
-   if (fb && fb->fb_id)
-      drmModeRmFB(g_drm_fd, fb->fb_id);
-
-   free(fb);
-}
-
-static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
-{
-   int ret;
-   unsigned width, height, stride, handle;
-   struct drm_fb *fb = (struct drm_fb*)calloc(1, sizeof(*fb));
-
-   fb->bo = bo;
-
-   width  = gbm_bo_get_width(bo);
-   height = gbm_bo_get_height(bo);
-   stride = gbm_bo_get_stride(bo);
-   handle = gbm_bo_get_handle(bo).u32;
-
-   RARCH_LOG("[KMS]: New FB: %ux%u (stride: %u).\n",
-         width, height, stride);
-
-   ret = drmModeAddFB(g_drm_fd, width, height, 24, 32,
-         stride, handle, &fb->fb_id);
-   if (ret < 0)
-      goto error;
-
-   gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
-   return fb;
-
-error:
-   RARCH_ERR("[KMS]: Failed to create FB: %s\n", strerror(errno));
-   free(fb);
-   return NULL;
-}
-
-static void gfx_ctx_drm_swap_interval(void *data, int interval)
-{
-   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
-   drm->interval           = interval;
-
-   if (interval > 1)
-      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
-}
-
-static void gfx_ctx_drm_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
-{
-   *resize = false;
-   *quit   = (bool)frontend_driver_get_signal_handler_state();
-}
-
-static void drm_flip_handler(int fd, unsigned frame,
-      unsigned sec, unsigned usec, void *data)
-{
-#if 0
-   static unsigned first_page_flip;
-   static unsigned last_page_flip;
-
-   if (!first_page_flip)
-      first_page_flip = frame;
-
-   if (last_page_flip)
-   {
-      unsigned missed = frame - last_page_flip - 1;
-      if (missed)
-         RARCH_LOG("[KMS]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
-               missed, frame - first_page_flip, frame);
-   }
-
-   last_page_flip = frame;
-#endif
-
-   *(bool*)data = false;
-}
-
-static bool gfx_ctx_drm_wait_flip(gfx_ctx_drm_data_t *drm, bool block)
-{
-   int timeout = 0;
-
-   if (!drm->waiting_for_flip)
-      return false;
-
-   if (block)
-      timeout = -1;
-
-   while (drm->waiting_for_flip)
-   {
-      if (!drm_wait_flip(timeout))
-         break;
-   }
-
-   if (drm->waiting_for_flip)
-      return true;
-
-   /* Page flip has taken place. */
-
-   /* This buffer is not on-screen anymore. Release it to GBM. */
-   gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
-   /* This buffer is being shown now. */
-   drm->bo = drm->next_bo;
-
-   return false;
-}
-
-static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
-{
-   struct drm_fb *fb = NULL;
-
-   drm->next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
-   fb                = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
-
-   if (!fb)
-      fb             = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
-
-   if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
-         DRM_MODE_PAGE_FLIP_EVENT, &drm->waiting_for_flip) == 0)
-      return true;
-
-   /* Failed to queue page flip. */
-   return false;
-}
-
-static void gfx_ctx_drm_swap_buffers(void *data)
-{
-   gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
-   settings_t *settings           = config_get_ptr();
-   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
-
-#ifdef HAVE_EGL
-   egl_swap_buffers(&drm->egl);
-#endif
-
-   /* I guess we have to wait for flip to have taken
-    * place before another flip can be queued up.
-    *
-    * If true, we are still waiting for a flip
-    * (nonblocking mode, so just drop the frame). */
-   if (gfx_ctx_drm_wait_flip(drm, drm->interval))
-      return;
-
-   drm->waiting_for_flip = gfx_ctx_drm_queue_flip(drm);
-
-   /* Triple-buffered page flips */
-   if (max_swapchain_images >= 3 &&
-         gbm_surface_has_free_buffers(drm->gbm_surface))
-      return;
-
-   gfx_ctx_drm_wait_flip(drm, true);
-}
-
-static void gfx_ctx_drm_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
-
-   if (!drm)
-      return;
-
-   *width  = drm->fb_width;
-   *height = drm->fb_height;
-}
-
-static void free_drm_resources(gfx_ctx_drm_data_t *drm)
-{
-   if (!drm)
-      return;
-
-   /* Restore original CRTC. */
-   drm_restore_crtc();
-
-   if (drm->gbm_surface)
-      gbm_surface_destroy(drm->gbm_surface);
-
-   if (drm->gbm_dev)
-      gbm_device_destroy(drm->gbm_dev);
-
-   drm_free();
-
-   if (drm->fd >= 0)
-   {
-      if (g_drm_fd >= 0)
-      {
-         drmDropMaster(g_drm_fd);
-         close(drm->fd);
-      }
-   }
-
-   drm->gbm_surface   = NULL;
-   drm->gbm_dev       = NULL;
-   g_drm_fd           = -1;
-}
-
-static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
-{
-   if (!drm)
-      return;
-
-   /* Make sure we acknowledge all page-flips. */
-   gfx_ctx_drm_wait_flip(drm, true);
-
-#ifdef HAVE_EGL
-   egl_destroy(&drm->egl);
-#endif
-
-   free_drm_resources(drm);
-
-   g_drm_mode          = NULL;
-   g_crtc_id           = 0;
-   g_connector_id      = 0;
-
-   drm->fb_width       = 0;
-   drm->fb_height      = 0;
-
-   drm->bo             = NULL;
-   drm->next_bo        = NULL;
-}
-
-static void *gfx_ctx_drm_init(void *video_driver)
-{
-   int fd, i;
-   unsigned monitor_index;
-   unsigned gpu_index                   = 0;
-   const char *gpu                      = NULL;
-   struct string_list *gpu_descriptors  = NULL;
-   settings_t *settings                 = config_get_ptr();
-   gfx_ctx_drm_data_t *drm              = (gfx_ctx_drm_data_t*)
-      calloc(1, sizeof(gfx_ctx_drm_data_t));
-   unsigned video_monitor_index         = settings->uints.video_monitor_index;
-
-   if (!drm)
-      return NULL;
-   drm->fd = -1;
-
-   gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
-
-nextgpu:
-   free_drm_resources(drm);
-
-   if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
-   {
-      RARCH_ERR("[KMS]: Couldn't find a suitable DRM device.\n");
-      goto error;
-   }
-   gpu = gpu_descriptors->elems[gpu_index++].data;
-
-   drm->fd    = open(gpu, O_RDWR);
-   if (drm->fd < 0)
-   {
-      RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
-      goto nextgpu;
-   }
-
-   fd = drm->fd;
-
-   if (!drm_get_resources(fd))
-      goto nextgpu;
-
-   if (!drm_get_connector(fd, video_monitor_index))
-      goto nextgpu;
-
-   if (!drm_get_encoder(fd))
-      goto nextgpu;
-
-   drm_setup(fd);
-
-   /* Choose the optimal video mode for get_video_size():
-     - custom timings from configuration
-     - else the current video mode from the CRTC
-     - otherwise pick first connector mode */
-   if(gfx_ctx_drm_load_mode(&gfx_ctx_crt_switch_mode))
-   {
-      drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
-      drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
-   }
-   else if (g_orig_crtc->mode_valid)
-   {
-      drm->fb_width  = g_orig_crtc->mode.hdisplay;
-      drm->fb_height = g_orig_crtc->mode.vdisplay;
-   }
-   else
-   {
-      drm->fb_width  = g_drm_connector->modes[0].hdisplay;
-      drm->fb_height = g_drm_connector->modes[0].vdisplay;
-   }
-
-   drmSetMaster(g_drm_fd);
-
-   drm->gbm_dev      = gbm_create_device(fd);
-
-   if (!drm->gbm_dev)
-   {
-      RARCH_WARN("[KMS]: Couldn't create GBM device.\n");
-      goto nextgpu;
-   }
-
-   dir_list_free(gpu_descriptors);
-
-   /* Setup the flip handler. */
-   g_drm_fds.fd                   = fd;
-   g_drm_fds.events               = POLLIN;
-   g_drm_evctx.version            = DRM_EVENT_CONTEXT_VERSION;
-   g_drm_evctx.page_flip_handler  = drm_flip_handler;
-
-   g_drm_fd                       = fd;
-
-   return drm;
-
-error:
-   dir_list_free(gpu_descriptors);
-
-   gfx_ctx_drm_destroy_resources(drm);
-
-   if (drm)
-      free(drm);
-
-   return NULL;
+   RARCH_DBG("Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
+      index,
+      mode->name,
+      mode_vrefresh(mode),
+      mode->hdisplay,
+      mode->hsync_start,
+      mode->hsync_end,
+      mode->htotal,
+      mode->vdisplay,
+      mode->vsync_start,
+      mode->vsync_end,
+      mode->vtotal,
+      mode->clock);
 }
 
 static EGLint *gfx_ctx_drm_egl_fill_attribs(
@@ -688,40 +339,523 @@ error:
 }
 #endif
 
+
+/* Get the mode from video_state */
+bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
+{
+#ifdef HAVE_CRTSWITCHRES
+   video_driver_state_t *video_st = video_state_get_ptr();
+   if (video_st->crt_switch_st.vdisplay >= 1)
+   {
+      modeInfo->clock       = video_st->crt_switch_st.clock;
+      modeInfo->hdisplay    = video_st->crt_switch_st.hdisplay;
+      modeInfo->hsync_start = video_st->crt_switch_st.hsync_start;
+      modeInfo->hsync_end   = video_st->crt_switch_st.hsync_end;
+      modeInfo->htotal      = video_st->crt_switch_st.htotal;
+      modeInfo->vdisplay    = video_st->crt_switch_st.vdisplay;
+      modeInfo->vsync_start = video_st->crt_switch_st.vsync_start;
+      modeInfo->vsync_end   = video_st->crt_switch_st.vsync_end;
+      modeInfo->vtotal      = video_st->crt_switch_st.vtotal;
+      modeInfo->flags       = (video_st->crt_switch_st.interlace ? DRM_MODE_FLAG_INTERLACE : 0)
+         | (video_st->crt_switch_st.doublescan ? DRM_MODE_FLAG_DBLSCAN : 0)
+         | (video_st->crt_switch_st.hsync      ? DRM_MODE_FLAG_PHSYNC  : DRM_MODE_FLAG_NHSYNC)
+         | (video_st->crt_switch_st.vsync      ? DRM_MODE_FLAG_PVSYNC  : DRM_MODE_FLAG_NVSYNC);
+      modeInfo->hskew       = 0;
+      modeInfo->vscan       = 0;
+      modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
+      modeInfo->type        = DRM_MODE_TYPE_USERDEF;
+
+      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "RetroArch_CRT-%dx%d@%.02f%s"
+            , video_st->crt_switch_st.hdisplay
+            , video_st->crt_switch_st.vdisplay
+            , mode_vrefresh(modeInfo)
+            , video_st->crt_switch_st.interlace ? "i" : "");
+      dump_mode(modeInfo, 0);
+      /* consider the mode read and removed */
+      video_st->crt_switch_st.vdisplay = 0;
+      return true;
+   }
+#endif
+   return false;
+}
+
+/* Load custom hdmi timings from config */
+static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
+{
+   settings_t *settings     = config_get_ptr();
+   char *crt_switch_timings = settings->arrays.crt_switch_timings;
+
+   if (modeInfo && !string_is_empty(crt_switch_timings))
+   {
+      hdmi_timings_t timings;
+      int ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+                   &timings.h_active_pixels, &timings.h_sync_polarity, &timings.h_front_porch,
+                   &timings.h_sync_pulse, &timings.h_back_porch,
+                   &timings.v_active_lines, &timings.v_sync_polarity, &timings.v_front_porch,
+                   &timings.v_sync_pulse, &timings.v_back_porch,
+                   &timings.v_sync_offset_a, &timings.v_sync_offset_b, &timings.pixel_rep, &timings.frame_rate,
+                   &timings.interlaced, &timings.pixel_freq, &timings.aspect_ratio);
+      if (ret != 17)
+      {
+         RARCH_ERR("[DRM]: malformed mode requested: %s\n", crt_switch_timings);
+         return false;
+      }
+
+      memset(modeInfo, 0, sizeof(drmModeModeInfo));
+      modeInfo->clock       = timings.pixel_freq / 1000;
+      modeInfo->hdisplay    = timings.h_active_pixels;
+      modeInfo->hsync_start = modeInfo->hdisplay + timings.h_front_porch;
+      modeInfo->hsync_end   = modeInfo->hsync_start + timings.h_sync_pulse;
+      modeInfo->htotal      = modeInfo->hsync_end + timings.h_back_porch;
+      modeInfo->hskew       = 0;
+      modeInfo->vdisplay    = timings.v_active_lines;
+      modeInfo->vsync_start = modeInfo->vdisplay + (timings.v_front_porch * (timings.interlaced ? 2 : 1));
+      modeInfo->vsync_end   = modeInfo->vsync_start + (timings.v_sync_pulse * (timings.interlaced ? 2 : 1));
+      modeInfo->vtotal      = modeInfo->vsync_end + (timings.v_back_porch * (timings.interlaced ? 2 : 1));
+      modeInfo->vscan       = 0; /* TODO: ?? */
+      modeInfo->vrefresh    = timings.frame_rate;
+      modeInfo->flags       = timings.interlaced ? DRM_MODE_FLAG_INTERLACE : 0;
+      modeInfo->flags      |= timings.v_sync_polarity ? DRM_MODE_FLAG_NVSYNC : DRM_MODE_FLAG_PVSYNC;
+      modeInfo->flags      |= timings.h_sync_polarity ? DRM_MODE_FLAG_NHSYNC : DRM_MODE_FLAG_PHSYNC;
+      modeInfo->type        = 0;
+      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "CRT_%ux%u_%u",
+               modeInfo->hdisplay, modeInfo->vdisplay, modeInfo->vrefresh);
+
+      return true;
+   }
+
+   return false;
+}
+
+static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
+{
+   struct drm_fb *fb = (struct drm_fb*)data;
+
+   if (fb && fb->fb_id)
+      drmModeRmFB(g_drm_fd, fb->fb_id);
+
+   free(fb);
+}
+
+static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
+{
+   int ret;
+   unsigned width, height, stride, handle;
+   struct drm_fb *fb = (struct drm_fb*)calloc(1, sizeof(*fb));
+
+   fb->bo = bo;
+
+   width  = gbm_bo_get_width(bo);
+   height = gbm_bo_get_height(bo);
+   stride = gbm_bo_get_stride(bo);
+   handle = gbm_bo_get_handle(bo).u32;
+
+   RARCH_LOG("[KMS]: New FB: %ux%u (stride: %u).\n",
+         width, height, stride);
+
+   ret = drmModeAddFB(g_drm_fd, width, height, 24, 32,
+         stride, handle, &fb->fb_id);
+   if (ret < 0)
+      goto error;
+
+   gbm_bo_set_user_data(bo, fb, drm_fb_destroy_callback);
+   return fb;
+
+error:
+   RARCH_ERR("[KMS]: Failed to create FB.\n");
+   free(fb);
+   return NULL;
+}
+
+static void gfx_ctx_drm_swap_interval(void *data, int interval)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   drm->interval           = interval;
+
+   if (interval > 1)
+      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
+}
+
+static void gfx_ctx_drm_check_window(void *data, bool *quit,
+      bool *resize, unsigned *width, unsigned *height)
+{
+   *resize = false;
+   *quit   = (bool)frontend_driver_get_signal_handler_state();
+   *width = g_drm_mode->hdisplay;
+   *height = g_drm_mode->vdisplay;
+}
+
+static void drm_flip_handler(int fd, unsigned frame,
+      unsigned sec, unsigned usec, void *data)
+{
+#if 0
+   static unsigned first_page_flip;
+   static unsigned last_page_flip;
+
+   if (!first_page_flip)
+      first_page_flip = frame;
+
+   if (last_page_flip)
+   {
+      unsigned missed = frame - last_page_flip - 1;
+      if (missed)
+         RARCH_LOG("[KMS]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
+               missed, frame - first_page_flip, frame);
+   }
+
+   last_page_flip = frame;
+#endif
+
+   *(bool*)data = false;
+}
+
+static bool gfx_ctx_drm_wait_flip(gfx_ctx_drm_data_t *drm, bool block)
+{
+   int timeout = 0;
+
+   if (!drm->waiting_for_flip)
+      return false;
+
+   if (block)
+      timeout = -1;
+
+   while (drm->waiting_for_flip)
+   {
+      if (!drm_wait_flip(timeout))
+         break;
+   }
+
+   if (drm->waiting_for_flip)
+      return true;
+
+   /* Page flip has taken place. */
+
+   /* This buffer is not on-screen anymore. Release it to GBM. */
+   gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
+   /* This buffer is being shown now. */
+   drm->bo = drm->next_bo;
+
+   return false;
+}
+
+static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
+{
+   struct drm_fb *fb = NULL;
+
+   drm->next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   fb                = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
+
+   if (!fb)
+      fb             = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
+
+   if (switch_mode)
+   {
+      RARCH_DBG("[KMS]: modeswitch detected, creating the new CRTC\n");
+      drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+      switch_mode = false;
+   }
+
+   if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
+         DRM_MODE_PAGE_FLIP_EVENT, &drm->waiting_for_flip) == 0)
+      return true;
+
+   /* Failed to queue page flip. */
+   return false;
+}
+
+static void gfx_ctx_drm_swap_buffers(void *data)
+{
+   gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
+   settings_t *settings           = config_get_ptr();
+   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+
+   /* Recreate the surface */
+   if (switch_mode)
+   {
+      RARCH_DBG("[KMS]: modeswitch detected, doing GBM and EGL stuff\n");
+      if (drm->gbm_surface)
+      {
+         if (drm->bo)
+            gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
+         if (drm->next_bo)
+            gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
+         egl_ctx_data_t *egl = &drm->egl;
+         eglDestroySurface(egl->dpy, egl->surf);
+
+         gbm_surface_destroy(drm->gbm_surface);
+      }
+      drm->gbm_surface = gbm_surface_create(
+            drm->gbm_dev,
+            drm->fb_width,
+            drm->fb_height,
+            GBM_FORMAT_XRGB8888,
+            GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+
+      if (!drm->gbm_surface)
+         RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
+
+      /* Creates an EGL surface and make it current */
+      egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface);
+      egl_bind_hw_render(&drm->egl, true);
+   }
+
+#ifdef HAVE_EGL
+   egl_swap_buffers(&drm->egl);
+#endif
+
+   /* I guess we have to wait for flip to have taken
+    * place before another flip can be queued up.
+    *
+    * If true, we are still waiting for a flip
+    * (nonblocking mode, so just drop the frame). */
+   if (gfx_ctx_drm_wait_flip(drm, drm->interval))
+      return;
+
+   drm->waiting_for_flip = gfx_ctx_drm_queue_flip(drm);
+
+   /* Triple-buffered page flips */
+   if (     max_swapchain_images >= 3
+         && gbm_surface_has_free_buffers(drm->gbm_surface))
+      return;
+
+   gfx_ctx_drm_wait_flip(drm, true);
+}
+
+static void gfx_ctx_drm_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+
+   if (!drm)
+      return;
+
+   *width  = drm->fb_width;
+   *height = drm->fb_height;
+}
+
+static void gfx_ctx_drm_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+
+   if (!drm)
+      return;
+
+   *width  = drm->fb_width;
+   *height = drm->fb_height;
+
+}
+
+static void free_drm_resources(gfx_ctx_drm_data_t *drm)
+{
+   if (!drm)
+      return;
+
+   /* Restore original CRTC. */
+   drm_restore_crtc();
+
+   if (drm->gbm_surface)
+      gbm_surface_destroy(drm->gbm_surface);
+
+   if (drm->gbm_dev)
+      gbm_device_destroy(drm->gbm_dev);
+
+   drm_free();
+
+   if (drm->fd >= 0)
+   {
+      if (g_drm_fd >= 0)
+      {
+         drmDropMaster(g_drm_fd);
+         close(drm->fd);
+      }
+   }
+
+   drm->gbm_surface   = NULL;
+   drm->gbm_dev       = NULL;
+   g_drm_fd           = -1;
+}
+
+static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
+{
+   if (!drm)
+      return;
+
+   /* Make sure we acknowledge all page-flips. */
+   gfx_ctx_drm_wait_flip(drm, true);
+
+#ifdef HAVE_EGL
+   egl_destroy(&drm->egl);
+#endif
+
+   free_drm_resources(drm);
+
+   g_drm_mode          = NULL;
+   g_crtc_id           = 0;
+   g_connector_id      = 0;
+
+   drm->fb_width       = 0;
+   drm->fb_height      = 0;
+
+   drm->bo             = NULL;
+   drm->next_bo        = NULL;
+}
+
+static void *gfx_ctx_drm_init(void *video_driver)
+{
+   int fd, i;
+   unsigned monitor_index;
+   unsigned gpu_index                   = 0;
+   const char *gpu                      = NULL;
+   struct string_list *gpu_descriptors  = NULL;
+   settings_t *settings                 = config_get_ptr();
+   gfx_ctx_drm_data_t *drm              = (gfx_ctx_drm_data_t*)
+      calloc(1, sizeof(gfx_ctx_drm_data_t));
+   unsigned video_monitor_index         = settings->uints.video_monitor_index;
+
+   if (!drm)
+      return NULL;
+   drm->fd = -1;
+
+   gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
+
+nextgpu:
+   free_drm_resources(drm);
+
+   if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
+   {
+      RARCH_ERR("[KMS]: Couldn't find a suitable DRM device.\n");
+      goto error;
+   }
+   gpu = gpu_descriptors->elems[gpu_index++].data;
+
+   drm->fd    = open(gpu, O_RDWR);
+   if (drm->fd < 0)
+   {
+      RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
+      goto nextgpu;
+   }
+
+   fd = drm->fd;
+
+   if (!drm_get_resources(fd))
+      goto nextgpu;
+
+   if (!drm_get_connector(fd, video_monitor_index))
+      goto nextgpu;
+
+   if (!drm_get_encoder(fd))
+      goto nextgpu;
+
+   drm_setup(fd);
+
+   /* Choose the optimal video mode for get_video_size():
+     - video mode issued by switchres through the CRT module
+     - custom timings from configuration
+     - else the current video mode from the CRTC
+     - otherwise pick first connector mode */
+   if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
+   {
+      drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
+      drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
+   }
+   else if (gfx_ctx_drm_load_mode(&gfx_ctx_crt_switch_mode))
+   {
+      drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
+      drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
+   }
+   else if (g_orig_crtc->mode_valid)
+   {
+      drm->fb_width  = g_orig_crtc->mode.hdisplay;
+      drm->fb_height = g_orig_crtc->mode.vdisplay;
+   }
+   else
+   {
+      drm->fb_width  = g_drm_connector->modes[0].hdisplay;
+      drm->fb_height = g_drm_connector->modes[0].vdisplay;
+   }
+
+   drmSetMaster(g_drm_fd);
+
+   drm->gbm_dev      = gbm_create_device(fd);
+
+   if (!drm->gbm_dev)
+   {
+      RARCH_WARN("[KMS]: Couldn't create GBM device.\n");
+      goto nextgpu;
+   }
+
+   dir_list_free(gpu_descriptors);
+
+   /* Setup the flip handler. */
+   g_drm_fds.fd                   = fd;
+   g_drm_fds.events               = POLLIN;
+   g_drm_evctx.version            = DRM_EVENT_CONTEXT_VERSION;
+   g_drm_evctx.page_flip_handler  = drm_flip_handler;
+
+   g_drm_fd                       = fd;
+
+   video_driver_display_type_set(RARCH_DISPLAY_KMS);
+   
+   return drm;
+
+error:
+   dir_list_free(gpu_descriptors);
+
+   gfx_ctx_drm_destroy_resources(drm);
+
+   if (drm)
+      free(drm);
+
+   return NULL;
+}
+
 static bool gfx_ctx_drm_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
    float refresh_mod;
-   int i, ret                  = 0;
-   struct drm_fb *fb           = NULL;
-   gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
-   settings_t *settings        = config_get_ptr();
+   int i, ret                      = 0;
+   struct drm_fb *fb               = NULL;
+   gfx_ctx_drm_data_t *drm         = (gfx_ctx_drm_data_t*)data;
+   settings_t *settings            = config_get_ptr();
    unsigned black_frame_insertion  = settings->uints.video_black_frame_insertion;
-   float video_refresh_rate    = settings->floats.video_refresh_rate;
+   float video_refresh_rate        = settings->floats.video_refresh_rate;
 
    if (!drm)
       return false;
 
    frontend_driver_install_signal_handler();
-
    /* If we use black frame insertion,
     * we fake a 60 Hz monitor for 120 Hz one,
     * etc, so try to match that. */
-   refresh_mod = 1.0f / (black_frame_insertion + 1.0f);
+   refresh_mod                     = 1.0f / (black_frame_insertion + 1.0f);
 
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size,
     * which is not appropriate. */
+   if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
+   {
+      RARCH_DBG("[KMS]: New mode detected: %dx%d\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
+      g_drm_mode     = &gfx_ctx_crt_switch_mode;
+      drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
+      drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
+      switch_mode    = true;
+      /* Let's exit, since modeswitching will happen while swapping buffers */
+      return true;
+   }
    if ((width == 0 && height == 0) || !fullscreen)
-      g_drm_mode = &g_drm_connector->modes[0];
+   {
+      RARCH_WARN("[KMS]: Falling back to mode 0 (default)\n");
+      g_drm_mode     = &g_drm_connector->modes[0];
+   }
    else
    {
-      /* check if custom hdmi timings were asked */
-      if(gfx_ctx_crt_switch_mode.vdisplay > 0)
+      /* check if custom HDMI timings were asked */
+      if (gfx_ctx_crt_switch_mode.vdisplay > 0)
       {
          RARCH_LOG("[DRM]: custom mode requested: %s\n", gfx_ctx_crt_switch_mode.name);
-         g_drm_mode = &gfx_ctx_crt_switch_mode;
+         g_drm_mode  = &gfx_ctx_crt_switch_mode;
       }
       else
       {
@@ -730,26 +864,28 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
           * Lower resolutions tend to have multiple supported
           * refresh rates as well.
           */
-         float minimum_fps_diff = 0.0f;
-         float mode_vrefresh    = 0.0f;
-         drmModeModeInfo *mode;
+         drmModeModeInfo *mode     = NULL;
+         float minimum_fps_diff    = 0.0f;
+         float mode_vrefresh       = 0.0f;
+         g_drm_mode                = 0;
 
          /* Find best match. */
-         for (i = 0; i < g_drm_connector->count_modes; i++) {
+         for (i = 0; i < g_drm_connector->count_modes; i++)
+         {
             float diff;
-            mode = &g_drm_connector->modes[i];
+            mode                   = &g_drm_connector->modes[i];
 
-            if (width != mode->hdisplay ||
-               height != mode->vdisplay)
+            if (   (width  != mode->hdisplay)
+                || (height != mode->vdisplay))
                continue;
 
-            mode_vrefresh = drm_calc_refresh_rate(mode);
+            mode_vrefresh          = drm_calc_refresh_rate(mode);
+            diff                   = fabsf(refresh_mod * mode_vrefresh - video_refresh_rate);
 
-            diff = fabsf(refresh_mod * mode_vrefresh - video_refresh_rate);
-
-            if (!g_drm_mode || diff < minimum_fps_diff) {
-               g_drm_mode = mode;
-               minimum_fps_diff = diff;
+            if (!g_drm_mode || diff < minimum_fps_diff)
+            {
+               g_drm_mode          = mode;
+               minimum_fps_diff    = diff;
             }
          }
       }
@@ -762,11 +898,11 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
    }
 
-   drm->fb_width    = g_drm_mode->hdisplay;
-   drm->fb_height   = g_drm_mode->vdisplay;
+   drm->fb_width                   = g_drm_mode->hdisplay;
+   drm->fb_height                  = g_drm_mode->vdisplay;
 
    /* Create GBM surface. */
-   drm->gbm_surface = gbm_surface_create(
+   drm->gbm_surface                = gbm_surface_create(
          drm->gbm_dev,
          drm->fb_width,
          drm->fb_height,
@@ -786,20 +922,18 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    drm->bo   = gbm_surface_lock_front_buffer(drm->gbm_surface);
 
-   fb        = (struct drm_fb*)gbm_bo_get_user_data(drm->bo);
+   if (!(fb = (struct drm_fb*)gbm_bo_get_user_data(drm->bo)))
+      fb     = drm_fb_get_from_bo(drm->bo);
 
-   if (!fb)
-      fb   = drm_fb_get_from_bo(drm->bo);
-
-   ret     = drmModeSetCrtc(g_drm_fd,
-         g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
-   if (ret < 0)
+   if ((ret  = drmModeSetCrtc(g_drm_fd,
+         g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode)) < 0)
       goto error;
 
    return true;
 
 error:
    gfx_ctx_drm_destroy_resources(drm);
+   RARCH_ERR("[KMS]: Error when switching mode.\n");
 
    if (drm)
       free(drm);
@@ -912,9 +1046,8 @@ static bool gfx_ctx_drm_bind_api(void *video_driver,
 
 static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
 {
-   gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
-
 #ifdef HAVE_EGL
+   gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
    egl_bind_hw_render(&drm->egl, enable);
 #endif
 }
@@ -938,6 +1071,8 @@ static uint32_t gfx_ctx_drm_get_flags(void *data)
    else
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 
+   BIT32_SET(flags, GFX_CTX_FLAGS_CRT_SWITCHRES);
+
    return flags;
 }
 
@@ -957,7 +1092,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_set_video_mode,
    gfx_ctx_drm_get_video_size,
    drm_get_refresh_rate,
-   NULL, /* get_video_output_size */
+   gfx_ctx_drm_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */

@@ -25,6 +25,7 @@ int get_process_id(void)
  * Discord client as discord-<appid>:// */
 void Discord_Register(const char *applicationId, const char *command)
 {
+   size_t _len;
    FILE* fp;
    int fileLen;
    char xdgMimeCommand[1024];
@@ -61,21 +62,39 @@ void Discord_Register(const char *applicationId, const char *command)
          return;
    }
 
-   snprintf(desktopFilename, sizeof(desktopFilename), "/discord-%s.desktop", applicationId);
+   _len  = strlcpy(desktopFilename,
+         "/discord-",
+         sizeof(desktopFilename));
+   _len += strlcpy(desktopFilename + _len,
+         applicationId,
+         sizeof(desktopFilename)   - _len);
+   _len += strlcpy(desktopFilename + _len,
+         ".desktop",
+         sizeof(desktopFilename)   - _len);
 
-   snprintf(desktopFilePath, sizeof(desktopFilePath), "%s/.local", home);
+   _len  = strlcpy(desktopFilePath,
+         home,
+         sizeof(desktopFilePath));
+   _len += strlcpy(desktopFilePath + _len,
+         "/.local",
+         sizeof(desktopFilePath)   - _len);
    if (!path_mkdir(desktopFilePath))
       return;
-   strlcat(desktopFilePath, "/share", sizeof(desktopFilePath));
+   _len += strlcpy(desktopFilePath + _len,
+         "/share",
+         sizeof(desktopFilePath)   - _len);
    if (!path_mkdir(desktopFilePath))
       return;
-   strlcat(desktopFilePath, "/applications", sizeof(desktopFilePath));
+   _len += strlcpy(desktopFilePath + _len,
+         "/applications",
+         sizeof(desktopFilePath)   - _len);
    if (!path_mkdir(desktopFilePath))
       return;
-   strlcat(desktopFilePath, desktopFilename, sizeof(desktopFilePath));
+   _len += strlcpy(desktopFilePath + _len,
+         desktopFilename,
+         sizeof(desktopFilePath)   - _len);
 
-   fp = fopen(desktopFilePath, "w");
-   if (!fp)
+   if (!(fp = fopen(desktopFilePath, "w")))
       return;
 
    fwrite(desktopFile, 1, fileLen, fp);
@@ -93,6 +112,7 @@ void Discord_Register(const char *applicationId, const char *command)
 void Discord_RegisterSteamGame(const char *applicationId, const char *steamId)
 {
    char command[256];
-   snprintf(command, sizeof(command), "xdg-open steam://rungameid/%s", steamId);
+   size_t _len = strlcpy(command, "xdg-open steam://rungameid/", sizeof(command));
+   strlcpy(command + _len, steamId, sizeof(command) - _len);
    Discord_Register(applicationId, command);
 }

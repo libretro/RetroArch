@@ -136,8 +136,8 @@ static void dsound_thread(void *data)
 static DWORD CALLBACK dsound_thread(PVOID data)
 #endif
 {
-   DWORD write_ptr;
-   dsound_t *ds = (dsound_t*)data;
+   DWORD write_ptr = 0;
+   dsound_t *ds    = (dsound_t*)data;
 
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
@@ -315,15 +315,20 @@ static BOOL CALLBACK enumerate_cb(LPGUID guid,
 
    if (guid)
    {
-      unsigned i;
       LPGUID guid_copy = (LPGUID)malloc(sizeof(GUID) * 1);
-      guid_copy->Data1 = guid->Data1;
-      guid_copy->Data2 = guid->Data2;
-      guid_copy->Data3 = guid->Data3;
-      for (i = 0; i < 8; i++)
-         guid_copy->Data4[i] = guid->Data4[i];
 
-      list->elems[list->size-1].userdata = guid_copy;
+      if (guid_copy)
+      {
+         unsigned i;
+
+         guid_copy->Data1 = guid->Data1;
+         guid_copy->Data2 = guid->Data2;
+         guid_copy->Data3 = guid->Data3;
+         for (i = 0; i < 8; i++)
+            guid_copy->Data4[i] = guid->Data4[i];
+
+         list->elems[list->size - 1].userdata = guid_copy;
+      }
    }
 
    return TRUE;

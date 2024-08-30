@@ -8,6 +8,7 @@ layout(location = 0) out float FragColor;
 
 void main()
 {
-    FragColor = float(f);
+    float _17 = float(f);
+    FragColor = _17;
 }
 

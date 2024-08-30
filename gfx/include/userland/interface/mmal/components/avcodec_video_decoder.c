@@ -33,15 +33,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define attribute_deprecated
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT( 52, 23, 0 )
-# include "libavformat/avformat.h"
- static AVPacket null_packet = {AV_NOPTS_VALUE, AV_NOPTS_VALUE};
-# define av_init_packet(a) *(a) = null_packet
-#endif
-
-#if LIBAVCODEC_VERSION_MAJOR < 53
-# define avcodec_decode_video2(a,b,c,d) avcodec_decode_video(a,b,c,(d)->data,(d)->size)
-#endif
 
 /* Buffering requirements */
 #define INPUT_MIN_BUFFER_SIZE (800*1024)
@@ -76,7 +67,7 @@ typedef struct MMAL_COMPONENT_MODULE_T
    int width;
    int height;
    enum PixelFormat pix_fmt;
-   AVPicture layout;
+   AVFrame layout;
    unsigned int planes;
 
    int frame_size;
@@ -180,7 +171,7 @@ static MMAL_STATUS_T avcodec_output_port_set_format(MMAL_PORT_T *port)
    module->height = port->format->es->video.height;
 
    module->frame_size =
-      avpicture_fill(&module->layout, 0, module->pix_fmt, module->width, module->height);
+      av_image_fill_arrays(&module->layout->data, &module->layout->linesize, 0, module->pix_fmt, module->width, module->height, 1);
    if (module->frame_size < 0)
       return MMAL_EINVAL;
 
@@ -309,12 +300,13 @@ static MMAL_STATUS_T avcodec_send_picture(MMAL_COMPONENT_T *component, MMAL_PORT
    if (!out)
       return MMAL_EAGAIN;
 
-   size = avpicture_layout((AVPicture *)module->picture, module->pix_fmt,
-                           module->width, module->height, out->data, out->alloc_size);
+   AVFrame* frame = module->picture;
+   size = av_image_copy_to_buffer(out->data, out->alloc_size, frame->data, frame->linesize, module->pix_fmt,
+                           module->width, module->height, 1);
    if (size < 0)
    {
       mmal_queue_put_back(module->queue_out, out);
-      LOG_ERROR("avpicture_layout failed: %i, %i, %i, %i",module->pix_fmt,
+      LOG_ERROR("av_image_copy_to_buffer failed: %i, %i, %i, %i",module->pix_fmt,
                 module->width, module->height, out->alloc_size );
       mmal_event_error_send(component, MMAL_EINVAL);
       return MMAL_EINVAL;
@@ -526,9 +518,7 @@ static struct {
    {MMAL_ENCODING_WMV1,    CODEC_ID_WMV1},
    {MMAL_ENCODING_WVC1,    CODEC_ID_VC1},
    {MMAL_ENCODING_VP6,     CODEC_ID_VP6},
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT( 52, 68, 2 )
    {MMAL_ENCODING_VP8,     CODEC_ID_VP8},
-#endif
    {MMAL_ENCODING_THEORA,  CODEC_ID_THEORA},
 
    {MMAL_ENCODING_GIF,  CODEC_ID_GIF},

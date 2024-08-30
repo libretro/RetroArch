@@ -75,6 +75,23 @@ enum rotation
    ORIENTATION_END
 };
 
+enum video_rotation_type
+{
+   VIDEO_ROTATION_NORMAL = 0,
+   VIDEO_ROTATION_90_DEG,
+   VIDEO_ROTATION_180_DEG,
+   VIDEO_ROTATION_270_DEG
+};
+
+enum autoswitch_refresh_rate
+{
+   AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN = 0,
+   AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   AUTOSWITCH_REFRESH_RATE_OFF,
+   AUTOSWITCH_REFRESH_RATE_LAST
+};
+
 enum rarch_display_type
 {
    /* Non-bindable types like consoles, KMS, VideoCore, etc. */
@@ -84,7 +101,8 @@ enum rarch_display_type
    /* video_display => N/A, video_window => HWND */
    RARCH_DISPLAY_WIN32,
    RARCH_DISPLAY_WAYLAND,
-   RARCH_DISPLAY_OSX
+   RARCH_DISPLAY_OSX,
+   RARCH_DISPLAY_KMS
 };
 
 enum font_driver_render_api
@@ -109,7 +127,8 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_NETWORK_VIDEO,
    FONT_DRIVER_RENDER_GDI,
    FONT_DRIVER_RENDER_VGA,
-   FONT_DRIVER_RENDER_SWITCH
+   FONT_DRIVER_RENDER_SWITCH,
+   FONT_DRIVER_RENDER_RSX
 };
 
 enum text_alignment
@@ -198,6 +217,7 @@ enum display_flags
    GFX_CTX_FLAGS_GL_CORE_CONTEXT,
    GFX_CTX_FLAGS_MULTISAMPLING,
    GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES,
+   GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY,
    GFX_CTX_FLAGS_HARD_SYNC,
    GFX_CTX_FLAGS_BLACK_FRAME_INSERTION,
    GFX_CTX_FLAGS_MENU_FRAME_FILTERING,
@@ -207,7 +227,9 @@ enum display_flags
    GFX_CTX_FLAGS_SHADERS_HLSL,
    GFX_CTX_FLAGS_SHADERS_SLANG,
    GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED,
-   GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED
+   GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED,
+   GFX_CTX_FLAGS_CRT_SWITCHRES,
+   GFX_CTX_FLAGS_SUBFRAME_SHADERS
 };
 
 enum shader_uniform_type
@@ -229,6 +251,133 @@ enum shader_program_type
    SHADER_PROGRAM_FRAGMENT,
    SHADER_PROGRAM_COMBINED
 };
+
+/* All coordinates and offsets are top-left oriented.
+ *
+ * This is a texture-atlas approach which allows text to
+ * be drawn in a single draw call.
+ *
+ * It is up to the code using this interface to actually
+ * generate proper vertex buffers and upload the atlas texture to GPU. */
+
+struct font_glyph
+{
+   unsigned width;
+   unsigned height;
+
+   /* Texel coordinate offset for top-left pixel of this glyph. */
+   unsigned atlas_offset_x;
+   unsigned atlas_offset_y;
+
+   /* When drawing this glyph, apply an offset to
+    * current X/Y draw coordinate. */
+   int draw_offset_x;
+   int draw_offset_y;
+
+   /* Advance X/Y draw coordinates after drawing this glyph. */
+   int advance_x;
+   int advance_y;
+};
+
+struct font_atlas
+{
+   uint8_t *buffer; /* Alpha channel. */
+   unsigned width;
+   unsigned height;
+   bool dirty;
+};
+
+struct font_params
+{
+   /* Drop shadow offset.
+    * If both are 0, no drop shadow will be rendered. */
+   int drop_x, drop_y;
+
+   /* ABGR. Use the macros. */
+   uint32_t color;
+
+   float x;
+   float y;
+   float scale;
+   /* Drop shadow color multiplier. */
+   float drop_mod;
+   /* Drop shadow alpha */
+   float drop_alpha;
+
+   enum text_alignment text_align;
+
+   bool full_screen;
+};
+
+struct font_line_metrics
+{
+   float height;
+   float ascender;
+   float descender;
+};
+
+struct video_fbo_rect
+{
+   unsigned img_width;
+   unsigned img_height;
+   unsigned max_img_width;
+   unsigned max_img_height;
+   unsigned width;
+   unsigned height;
+};
+
+struct video_ortho
+{
+   float left;
+   float right;
+   float bottom;
+   float top;
+   float znear;
+   float zfar;
+};
+
+struct video_tex_info
+{
+   unsigned int tex;
+   float input_size[2];
+   float tex_size[2];
+   float coord[8];
+};
+
+typedef struct video_coords
+{
+   const float *vertex;
+   const float *color;
+   const float *tex_coord;
+   const float *lut_tex_coord;
+   const unsigned *index;
+   unsigned vertices;
+   unsigned indexes;
+} video_coords_t;
+
+typedef struct video_mut_coords
+{
+   float *vertex;
+   float *color;
+   float *tex_coord;
+   float *lut_tex_coord;
+   unsigned *index;
+   unsigned vertices;
+   unsigned indexes;
+} video_mut_coords_t;
+
+typedef struct video_coord_array
+{
+   video_mut_coords_t coords; /* ptr alignment */
+   unsigned allocated;
+} video_coord_array_t;
+
+typedef struct video_font_raster_block
+{
+   video_coord_array_t carr; /* ptr alignment */
+   bool fullscreen;
+} video_font_raster_block_t;
+
 
 RETRO_END_DECLS
 

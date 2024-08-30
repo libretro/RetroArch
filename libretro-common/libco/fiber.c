@@ -24,7 +24,7 @@ static void __stdcall co_thunk(void *coentry)
 
 cothread_t co_active(void)
 {
-   if(!co_active_)
+   if (!co_active_)
    {
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
       ConvertThreadToFiberEx(0, FIBER_FLAG_FLOAT_SWITCH);
@@ -38,7 +38,7 @@ cothread_t co_active(void)
 
 cothread_t co_create(unsigned int heapsize, void (*coentry)(void))
 {
-   if(!co_active_)
+   if (!co_active_)
    {
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
       ConvertThreadToFiberEx(0, FIBER_FLAG_FLOAT_SWITCH);

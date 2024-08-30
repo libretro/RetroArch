@@ -55,15 +55,9 @@ typedef struct xv
    XShmSegmentInfo shminfo;
 
    XvPortID port;
-   int depth;
-   int visualid;
 
    XvImage *image;
-   uint32_t fourcc;
 
-   unsigned width;
-   unsigned height;
-   bool keep_aspect;
    struct video_viewport vp;
 
    uint8_t *ytable;
@@ -73,20 +67,32 @@ typedef struct xv
    void *font;
    const font_renderer_driver_t *font_driver;
 
-   unsigned luma_index[2];
-   unsigned chroma_u_index;
-   unsigned chroma_v_index;
-
-   uint8_t font_y;
-   uint8_t font_u;
-   uint8_t font_v;
-
-   void (*render_func)(struct xv*, const void *frame,
+   void (*render_func16)(struct xv*, const void *frame,
+         unsigned width, unsigned height, unsigned pitch);
+   void (*render_func32)(struct xv*, const void *frame,
          unsigned width, unsigned height, unsigned pitch);
 
    void (*render_glyph)(struct xv*, int base_x, int base_y,
 			const uint8_t *glyph, int atlas_width,
 			int glyph_width, int glyph_height);
+   int depth;
+   int visualid;
+   unsigned luma_index[2];
+   unsigned chroma_u_index;
+   unsigned chroma_v_index;
+   unsigned width;
+   unsigned height;
+   uint32_t fourcc;
+   uint8_t font_y;
+   uint8_t font_u;
+   uint8_t font_v;
+   bool keep_aspect;
+
+   void *tex_frame;
+   unsigned tex_width;
+   unsigned tex_height;
+   unsigned tex_pitch;
+   unsigned tex_rgb32;
 } xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state, bool c, unsigned d)
@@ -355,7 +361,7 @@ static void render16_yuv12(xv_t *xv, const void *input_,
    {
       for (x = 0; x < width; x++)
       {
-	 uint16_t p         = *input++;
+         uint16_t p         = *input++;
          uint8_t y0         = xv->ytable[p];
          uint8_t u          = xv->utable[p];
          uint8_t v          = xv->vtable[p];
@@ -564,9 +570,9 @@ static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
                   format[i].component_order[3] == formats[j].components[3])
             {
                xv->fourcc         = format[i].id;
-               xv->render_func    = video->rgb32
-                  ? formats[j].render_32 : formats[j].render_16;
-               xv->render_glyph    = formats[j].render_glyph;
+               xv->render_func16  = formats[j].render_16;
+               xv->render_func32  = formats[j].render_32;
+               xv->render_glyph   = formats[j].render_glyph;
 
                xv->luma_index[0]  = formats[j].luma_index[0];
                xv->luma_index[1]  = formats[j].luma_index[1];
@@ -593,9 +599,10 @@ static void xv_calc_out_rect(bool keep_aspect,
    vp->full_width       = vp_width;
    vp->full_height      = vp_height;
 
+   /* TODO: Does xvideo have its origin in top left or bottom-left? Assuming top left. */ 
    if (scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height,
-            video_driver_get_aspect_ratio(), keep_aspect);
+           video_driver_get_aspect_ratio(), keep_aspect, true);
    else if (!keep_aspect)
    {
       vp->x      = 0;
@@ -605,36 +612,7 @@ static void xv_calc_out_rect(bool keep_aspect,
    }
    else
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-      float device_aspect  = (float)vp_width / vp_height;
-
-      /* If the aspect ratios of screen and desired aspect ratio
-       * are sufficiently equal (floating point stuff),
-       * assume they are actually equal.
-       */
-      if (fabs(device_aspect - desired_aspect) < 0.0001)
-      {
-         vp->x       = 0;
-         vp->y       = 0;
-         vp->width   = vp_width;
-         vp->height  = vp_height;
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         vp->x       = vp_width * (0.5 - delta);
-         vp->y       = 0;
-         vp->width   = 2.0 * vp_width * delta;
-         vp->height  = vp_height;
-      }
-      else
-      {
-         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         vp->x       = 0;
-         vp->y       = vp_height * (0.5 - delta);
-         vp->width   = vp_width;
-         vp->height  = 2.0 * vp_height * delta;
-      }
+      video_viewport_get_scaled_aspect(vp, vp_width, vp_height, true);
    }
 }
 
@@ -656,7 +634,8 @@ static void *xv_init(const video_info_t *video,
    XVisualInfo *visualinfo                = NULL;
    XvAdaptorInfo *adaptor_info            = NULL;
    const struct retro_game_geometry *geom = NULL;
-   struct retro_system_av_info *av_info   = NULL;
+   video_driver_state_t *video_st         = video_state_get_ptr();
+   struct retro_system_av_info *av_info   = &video_st->av_info;
    settings_t *settings                   = config_get_ptr();
    bool video_disable_composition         = settings->bools.video_disable_composition;
    xv_t                               *xv = (xv_t*)calloc(1, sizeof(*xv));
@@ -673,8 +652,6 @@ static void *xv_init(const video_info_t *video,
       RARCH_ERR("[XVideo]: Check DISPLAY variable and if X is running.\n");
       goto error;
    }
-
-   av_info = video_viewport_get_system_av_info();
 
    if (av_info)
       geom        = &av_info->geometry;
@@ -807,7 +784,7 @@ static void *xv_init(const video_info_t *video,
    if (video->fullscreen)
    {
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
-      x11_show_mouse(g_x11_dpy, g_x11_win, false);
+      x11_show_mouse(xv, false);
    }
 
    xv->gc = XCreateGC(g_x11_dpy, g_x11_win, 0, 0);
@@ -1011,8 +988,20 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 {
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
+   bool rgb32                = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive        = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+
+   menu_driver_frame(menu_is_alive, video_info);
+
+   if (menu_is_alive && xv->tex_frame)
+   {
+      frame  = xv->tex_frame;
+      width  = xv->tex_width;
+      height = xv->tex_height;
+      pitch  = xv->tex_pitch;
+      rgb32  = xv->tex_rgb32;
+   }
 #endif
 
    if (!frame)
@@ -1022,15 +1011,15 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
       return false;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-   xv->render_func(xv, frame, width, height, pitch);
+
+   if (rgb32)
+      xv->render_func32(xv, frame, width, height, pitch);
+   else
+      xv->render_func16(xv, frame, width, height, pitch);
 
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width  = target.width;
    xv->vp.full_height = target.height;
-
-#ifdef HAVE_MENU
-   menu_driver_frame(menu_is_alive, video_info);
-#endif
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1);
@@ -1043,15 +1032,6 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 
    x11_update_title(NULL);
 
-   return true;
-}
-
-static bool xv_suppress_screensaver(void *data, bool enable)
-{
-   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
-      return false;
-
-   x11_suspend_screensaver(video_driver_window_get(), enable);
    return true;
 }
 
@@ -1092,30 +1072,53 @@ static void xv_viewport_info(void *data, struct video_viewport *vp)
    *vp = xv->vp;
 }
 
-static uint32_t xv_get_flags(void *data) { return 0; }
+static uint32_t xv_poke_get_flags(void *data)
+{
+   return 0;
+}
+
+static void xv_poke_set_texture_frame(void *data,
+      const void *frame, bool rgb32,
+      unsigned width, unsigned height, float alpha)
+{
+   xv_t *xv  = (xv_t*)data;
+   xv->tex_frame = (void*)frame;
+   xv->tex_rgb32 = rgb32;
+   xv->tex_width = width;
+   xv->tex_height = height;
+   xv->tex_pitch = width * (rgb32 ? 4 : 2);
+}
 
 static video_poke_interface_t xv_video_poke_interface = {
-   xv_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   xv_poke_get_flags,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
+#ifdef HAVE_XF86VM
    x11_get_refresh_rate,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-   NULL
+#else
+   NULL, /* get_refresh_rate */
+#endif
+   NULL, /* set_filtering */
+   NULL, /* get_video_output_size */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
+   xv_poke_set_texture_frame,
+   NULL, /* set_texture_enable */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
 static void xv_get_poke_interface(void *data,
@@ -1141,7 +1144,7 @@ video_driver_t video_xvideo = {
    xv_set_nonblock_state,
    x11_alive,
    x11_has_focus_internal,
-   xv_suppress_screensaver,
+   x11_suspend_screensaver,
    xv_has_windowed,
    xv_set_shader,
    xv_free,
@@ -1152,10 +1155,11 @@ video_driver_t video_xvideo = {
    NULL, /* read_viewport */
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   xv_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-  xv_get_poke_interface
 };

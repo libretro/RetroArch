@@ -309,6 +309,26 @@ int64_t intfstream_seek(
    return -1;
 }
 
+int64_t intfstream_truncate(intfstream_internal_t *intf, uint64_t len)
+{
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_truncate(intf->file.fp, len);
+      case INTFSTREAM_MEMORY:
+         break;
+      case INTFSTREAM_CHD:
+         break;
+      case INTFSTREAM_RZIP:
+         break;
+   }
+
+   return 0;
+}
+
 int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
 {
    if (!intf)
@@ -598,6 +618,19 @@ uint32_t intfstream_get_frame_size(intfstream_internal_t *intf)
 #ifdef HAVE_CHD
       if (intf->type == INTFSTREAM_CHD)
          return chdstream_get_frame_size(intf->chd.fp);
+#endif
+   }
+
+   return 0;
+}
+
+uint32_t intfstream_get_first_sector(intfstream_internal_t* intf)
+{
+   if (intf)
+   {
+#ifdef HAVE_CHD
+      if (intf->type == INTFSTREAM_CHD)
+         return chdstream_get_first_track_sector(intf->chd.fp);
 #endif
    }
 

@@ -26,6 +26,9 @@ DEF_FLAGS := -I.
 ASFLAGS :=
 DEFINES := -DHAVE_CONFIG_H -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64
 DEFINES += -DGLOBAL_CONFIG_DIR='"$(GLOBAL_CONFIG_DIR)"'
+DEFINES += -DASSETS_DIR='"$(DESTDIR)$(ASSETS_DIR)"'
+DEFINES += -DFILTERS_DIR='"$(DESTDIR)$(FILTERS_DIR)"'
+DEFINES += -DCORE_INFO_DIR='"$(DESTDIR)$(CORE_INFO_DIR)"'
 
 OBJDIR_BASE := obj-unix
 
@@ -45,7 +48,7 @@ else
    DEF_FLAGS += -ffast-math
 endif
 
-DEF_FLAGS += -Wall
+DEF_FLAGS += -Wall -Wsign-compare
 
 ifneq ($(findstring BSD,$(OS)),)
    DEF_FLAGS += -DBSD
@@ -64,7 +67,7 @@ ifneq ($(findstring FPGA,$(OS)),)
 endif
 
 ifneq ($(findstring Win32,$(OS)),)
-   LDFLAGS += -static-libgcc -lwinmm
+   LDFLAGS += -static-libgcc -lwinmm -limm32
 endif
 
 include Makefile.common
@@ -223,7 +226,7 @@ $(OBJDIR)/%.o: %.S config.h config.mk $(HEADERS)
 $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
-	$(Q)$(WINDRES) -o $@ $<
+	$(Q)$(WINDRES) $(DEFINES) -o $@ $<
 
 install: $(TARGET)
 	mkdir -p $(DESTDIR)$(BIN_DIR) 2>/dev/null || /bin/true
@@ -237,7 +240,7 @@ install: $(TARGET)
 	cp tools/cg2glsl.py $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	cp retroarch.cfg $(DESTDIR)$(GLOBAL_CONFIG_DIR)
 	cp com.libretro.RetroArch.appdata.xml $(DESTDIR)$(DATA_DIR)/metainfo
-	cp retroarch.desktop $(DESTDIR)$(DATA_DIR)/applications
+	cp org.libretro.RetroArch.desktop $(DESTDIR)$(DATA_DIR)/applications
 	cp docs/retroarch.6 $(DESTDIR)$(MAN_DIR)/man6
 	cp docs/retroarch-cg2glsl.6 $(DESTDIR)$(MAN_DIR)/man6
 	cp media/retroarch.svg $(DESTDIR)$(DATA_DIR)/pixmaps
@@ -246,7 +249,7 @@ install: $(TARGET)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/$(TARGET)
 	chmod 755 $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	chmod 644 $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	chmod 644 $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
+	chmod 644 $(DESTDIR)$(DATA_DIR)/applications/org.libretro.RetroArch.desktop
 	chmod 644 $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.appdata.xml
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch.6
 	chmod 644 $(DESTDIR)$(MAN_DIR)/man6/retroarch-cg2glsl.6
@@ -271,7 +274,7 @@ uninstall:
 	rm -f $(DESTDIR)$(BIN_DIR)/$(TARGET)
 	rm -f $(DESTDIR)$(BIN_DIR)/retroarch-cg2glsl
 	rm -f $(DESTDIR)$(GLOBAL_CONFIG_DIR)/retroarch.cfg
-	rm -f $(DESTDIR)$(DATA_DIR)/applications/retroarch.desktop
+	rm -f $(DESTDIR)$(DATA_DIR)/applications/org.libretro.RetroArch.desktop
 	rm -f $(DESTDIR)$(DATA_DIR)/metainfo/com.libretro.RetroArch.appdata.xml
 	rm -f $(DESTDIR)$(DATA_DIR)/pixmaps/retroarch.svg
 	rm -f $(DESTDIR)$(DOC_DIR)/COPYING

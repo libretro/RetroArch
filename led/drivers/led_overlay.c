@@ -1,11 +1,10 @@
-#include <stdio.h>
+#include <stdint.h>
 #include "../led_driver.h"
 #include "../led_defines.h"
 
 #include "../../input/input_overlay.h"
 
 #include "../../configuration.h"
-#include "../../retroarch.h"
 
 typedef struct
 {
@@ -43,9 +42,7 @@ static void overlay_set(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return;
 
-   gpio = ledoverlay_cur->map[led];
-
-   if (gpio < 0)
+   if ((gpio = ledoverlay_cur->map[led]) < 0)
       return;
 
    input_overlay_set_visibility(gpio,

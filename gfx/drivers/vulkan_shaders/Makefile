@@ -1,6 +1,7 @@
 VERT_SHADERS := $(wildcard *.vert)
 FRAG_SHADERS := $(wildcard *.frag)
-SPIRV := $(VERT_SHADERS:.vert=.vert.inc) $(FRAG_SHADERS:.frag=.frag.inc)
+COMP_SHADERS := $(wildcard *.comp)
+SPIRV := $(VERT_SHADERS:.vert=.vert.inc) $(FRAG_SHADERS:.frag=.frag.inc) $(COMP_SHADERS:.comp=.comp.inc)
 
 GLSLANG := glslc
 GLSLFLAGS := -mfmt=c
@@ -11,6 +12,9 @@ all: $(SPIRV)
 	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
 
 %.frag.inc: %.frag
+	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
+
+%.comp.inc: %.comp
 	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
 
 clean:

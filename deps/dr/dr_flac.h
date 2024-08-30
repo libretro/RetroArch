@@ -772,7 +772,7 @@ typedef drflac_int32 drflac_result;
 static drflac_bool32 drflac__gIsLZCNTSupported = DRFLAC_FALSE;
 #ifndef DRFLAC_NO_CPUID
 static drflac_bool32 drflac__gIsSSE42Supported = DRFLAC_FALSE;
-static void drflac__init_cpu_caps()
+static void drflac__init_cpu_caps(void)
 {
     int info[4] = {0};
 
@@ -788,7 +788,7 @@ static void drflac__init_cpu_caps()
 
 
 /* Endian Management */
-static DRFLAC_INLINE drflac_bool32 drflac__is_little_endian()
+static DRFLAC_INLINE drflac_bool32 drflac__is_little_endian(void)
 {
 #if defined(DRFLAC_X86) || defined(DRFLAC_X64)
     return DRFLAC_TRUE;
@@ -1353,7 +1353,7 @@ static DRFLAC_INLINE drflac_bool32 drflac__read_uint32(drflac_bs* bs, unsigned i
         if (!drflac__reload_cache(bs))
             return DRFLAC_FALSE;
 
-        *pResultOut = (drflac_uint32)(resultHi << bitCountLo) | DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountLo);
+        *pResultOut = (drflac_uint32)(resultHi << bitCountLo) | (drflac_uint32)DRFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, bitCountLo);
         bs->consumedBits += bitCountLo;
         bs->cache <<= bitCountLo;
         return DRFLAC_TRUE;
@@ -1618,7 +1618,7 @@ static DRFLAC_INLINE drflac_uint32 drflac__clz_software(drflac_cache_t x)
 }
 
 #ifdef DRFLAC_IMPLEMENT_CLZ_LZCNT
-static DRFLAC_INLINE drflac_bool32 drflac__is_lzcnt_supported()
+static DRFLAC_INLINE drflac_bool32 drflac__is_lzcnt_supported(void)
 {
     /* If the compiler itself does not support the intrinsic then we'll need to return false. */
 #ifdef DRFLAC_HAS_LZCNT_INTRINSIC

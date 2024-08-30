@@ -13,14 +13,15 @@ layout(location = 0) in vec3 vClip3;
 
 void main()
 {
-    vec4 _20 = vClip4;
-    _20.y = vClip4.w;
-    FragColor = textureProj(uShadow1D, vec4(_20.x, 0.0, vClip4.z, _20.y));
-    vec4 _30 = vClip4;
-    _30.z = vClip4.w;
-    FragColor = textureProj(uShadow2D, vec4(_30.xy, vClip4.z, _30.z));
+    vec4 _17 = vClip4;
+    vec4 _20 = _17;
+    _20.y = _17.w;
+    FragColor = textureProj(uShadow1D, vec4(_20.x, 0.0, _17.z, _20.y));
+    vec4 _30 = _17;
+    _30.z = _17.w;
+    FragColor = textureProj(uShadow2D, vec4(_30.xy, _17.z, _30.z));
     FragColor = textureProj(uSampler1D, vClip2).x;
     FragColor = textureProj(uSampler2D, vClip3).x;
-    FragColor = textureProj(uSampler3D, vClip4).x;
+    FragColor = textureProj(uSampler3D, _17).x;
 }
 

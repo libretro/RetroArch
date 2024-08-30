@@ -77,17 +77,16 @@ static int16_t android_joypad_axis_state(
 {
    if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
    {
-      int val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
+      int16_t val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
       if (val < 0)
          return val;
    }
    else if (AXIS_POS_GET(joyaxis) < MAX_AXIS)
    {
-      int val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
+      int16_t val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
       if (val > 0)
          return val;
    }
-
    return 0;
 }
 
@@ -253,7 +252,9 @@ input_device_driver_t android_joypad = {
    android_joypad_axis,
    android_joypad_poll,
    android_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    android_joypad_name,
    "android",
 };

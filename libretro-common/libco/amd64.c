@@ -20,7 +20,7 @@ extern "C" {
 static thread_local long long co_active_buffer[64];
 static thread_local cothread_t co_active_handle = 0;
 #ifndef CO_USE_INLINE_ASM
-static void (*co_swap)(cothread_t, cothread_t) = 0;
+static void (*co_swap)(cothread_t, cothread_t)  = 0;
 #endif
 
 #ifdef _WIN32
@@ -137,9 +137,8 @@ cothread_t co_active(void)
 cothread_t co_create(unsigned int size, void (*entrypoint)(void))
 {
    cothread_t handle;
-
 #ifndef CO_USE_INLINE_ASM
-   if(!co_swap)
+   if (!co_swap)
    {
       co_init();
       co_swap = (void (*)(cothread_t, cothread_t))co_swap_function;
@@ -152,15 +151,15 @@ cothread_t co_create(unsigned int size, void (*entrypoint)(void))
    size &= ~15; /* align stack to 16-byte boundary */
 
 #ifdef __GENODE__
-   if((handle = (cothread_t)genode_alloc_secondary_stack(size)))
+   if ((handle = (cothread_t)genode_alloc_secondary_stack(size)))
    {
-      long long *p = (long long*)((char*)handle); /* OS returns top of stack */
-      *--p = (long long)crash;                    /* crash if entrypoint returns */
-      *--p = (long long)entrypoint;               /* start of function */
-      *(long long*)handle = (long long)p;         /* stack pointer */
+      long long *p        = (long long*)((char*)handle); /* OS returns top of stack */
+      *--p                = (long long)crash;            /* crash if entrypoint returns */
+      *--p                = (long long)entrypoint;       /* start of function */
+      *(long long*)handle = (long long)p;                /* stack pointer */
    }
 #else
-   if((handle = (cothread_t)malloc(size)))
+   if ((handle = (cothread_t)malloc(size)))
    {
       long long *p = (long long*)((char*)handle + size); /* seek to top of stack */
       *--p = (long long)crash;                           /* crash if entrypoint returns */

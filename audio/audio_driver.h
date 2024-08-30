@@ -56,7 +56,7 @@ typedef struct audio_mixer_stream
    char *name;
    size_t bufsize;
    float volume;
-   enum audio_mixer_stream_type  stream_type;
+   enum audio_mixer_stream_type stream_type;
    enum audio_mixer_type type;
    enum audio_mixer_state state;
 } audio_mixer_stream_t;
@@ -70,8 +70,8 @@ typedef struct audio_mixer_stream_params
    unsigned slot_selection_idx;
    float volume;
    enum audio_mixer_slot_selection_type slot_selection_type;
-   enum audio_mixer_stream_type  stream_type;
-   enum audio_mixer_type  type;
+   enum audio_mixer_stream_type stream_type;
+   enum audio_mixer_type type;
    enum audio_mixer_state state;
 } audio_mixer_stream_params_t;
 #endif
@@ -112,10 +112,19 @@ typedef struct audio_driver
     */
    ssize_t (*write)(void *data, const void *buf, size_t size);
 
-   /* Temporarily pauses the audio driver. */
+   /**
+    * Temporarily pauses the audio driver.
+    *
+    * @param data Opaque handle to the audio driver context
+    * that was returned by \c init.
+    * @return \c true if the audio driver was successfully paused,
+    * \c false if there was an error.
+    **/
    bool (*stop)(void *data);
 
-   /* Resumes audio driver from the paused state. */
+   /**
+    * Resumes audio driver from the paused state.
+    **/
    bool (*start)(void *data, bool is_shutdown);
 
    /* Is the audio driver currently running? */
@@ -130,7 +139,7 @@ typedef struct audio_driver
     * */
    void (*set_nonblock_state)(void *data, bool toggle);
 
-   /* Stops and frees driver data. */
+   /* Stops and frees driver. */
    void (*free)(void *data);
 
    /* Defines if driver will take standard floating point samples,
@@ -166,23 +175,45 @@ typedef struct
    uint64_t free_samples_count;
 
    struct string_list *devices_list;
-   float  *output_samples_buf;
+
+   /**
+    * A scratch buffer for audio output to be processed,
+    * up to (but excluding) the point where it's converted to 16-bit audio
+    * to give to the driver.
+    */
+   float *output_samples_buf;
+   size_t output_samples_buf_length;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
 #endif
+
+   /**
+    * A scratch buffer for processed audio output to be converted to 16-bit,
+    * so that it can be sent to the driver.
+    */
    int16_t *output_samples_conv_buf;
+   size_t output_samples_conv_buf_length;
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *dsp;
 #endif
    const retro_resampler_t *resampler;
 
    void *resampler_data;
+
+   /**
+    * The current audio driver.
+    */
    const audio_driver_t *current_audio;
+
    void *context_audio_data;
+
+   /**
+    * Scratch buffer for preparing data for the resampler
+    */
    float *input_data;
+   size_t input_data_length;
 #ifdef HAVE_AUDIOMIXER
-   struct audio_mixer_stream
-      mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
+   struct audio_mixer_stream mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
 #endif
    struct retro_audio_callback callback;                 /* ptr alignment */
                                                          /* ptr alignment */
@@ -197,8 +228,7 @@ typedef struct
    size_t buffer_size;
    size_t data_ptr;
 
-   unsigned free_samples_buf[
-      AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+   unsigned free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
 
 #ifdef HAVE_AUDIOMIXER
    float mixer_volume_gain;
@@ -210,20 +240,19 @@ typedef struct
 
    enum resampler_quality resampler_quality;
 
+   uint8_t flags;
+
    char resampler_ident[64];
 
-   bool active;
-   bool control;
    bool mute_enable;
-   bool use_float;
-   bool suspended;
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
-   bool mixer_active;
 #endif
-#ifdef HAVE_RUNAHEAD
-   bool hard_disable;
-#endif
+
+   /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
+   retro_time_t last_flush_time;
+   /* Exponential moving average */
+   retro_time_t avg_flush_delta;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);
@@ -263,6 +292,8 @@ void audio_driver_mixer_play_stream(unsigned i);
 
 void audio_driver_mixer_play_menu_sound(unsigned i);
 
+void audio_driver_mixer_play_scroll_sound(bool direction_up);
+
 void audio_driver_mixer_play_menu_sound_looped(unsigned i);
 
 void audio_driver_mixer_play_stream_sequential(unsigned i);
@@ -289,48 +320,21 @@ bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
 
+/**
+ * If you need to query the size of audio samples,
+ * use this function instead of checking the flags directly.
+ *
+ * @return The size of a single audio sample in bytes,
+ * as determined by the presence of the \c AUDIO_FLAG_USE_FLOAT flag.
+ * Will currently return either 2 (for \c uint16_t) or 4 (for \c float),
+ * although this may change if we add support for more sample types.
+ */
+unsigned audio_driver_get_sample_size(void);
+
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
 bool audio_driver_is_ai_service_speech_running(void);
 #endif
-
-extern audio_driver_t audio_rsound;
-extern audio_driver_t audio_audioio;
-extern audio_driver_t audio_oss;
-extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
-extern audio_driver_t audio_tinyalsa;
-extern audio_driver_t audio_roar;
-extern audio_driver_t audio_openal;
-extern audio_driver_t audio_opensl;
-extern audio_driver_t audio_jack;
-extern audio_driver_t audio_sdl;
-extern audio_driver_t audio_xa;
-extern audio_driver_t audio_pulse;
-extern audio_driver_t audio_dsound;
-extern audio_driver_t audio_wasapi;
-extern audio_driver_t audio_coreaudio;
-extern audio_driver_t audio_coreaudio3;
-extern audio_driver_t audio_xenon360;
-extern audio_driver_t audio_ps3;
-extern audio_driver_t audio_gx;
-extern audio_driver_t audio_ax;
-extern audio_driver_t audio_psp;
-extern audio_driver_t audio_ps2;
-extern audio_driver_t audio_ctr_csnd;
-extern audio_driver_t audio_ctr_dsp;
-#ifdef HAVE_THREADS
-extern audio_driver_t audio_ctr_dsp_thread;
-#endif
-extern audio_driver_t audio_switch;
-extern audio_driver_t audio_switch_thread;
-extern audio_driver_t audio_switch_libnx_audren;
-extern audio_driver_t audio_switch_libnx_audren_thread;
-extern audio_driver_t audio_rwebaudio;
-
-audio_driver_state_t *audio_state_get_ptr(void);
-
-extern audio_driver_t *audio_drivers[];
 
 /**
  * audio_compute_buffer_statistics:
@@ -339,13 +343,6 @@ extern audio_driver_t *audio_drivers[];
  *
  **/
 bool audio_compute_buffer_statistics(audio_statistics_t *stats);
-
-float audio_driver_monitor_adjust_system_rates(
-      double input_sample_rate,
-      double input_fps,
-      float video_refresh_rate,
-      unsigned video_swap_interval,
-      float audio_max_timing_skew);
 
 bool audio_driver_init_internal(
       void *settings_data,
@@ -409,6 +406,46 @@ size_t audio_driver_sample_batch_rewind(
 #ifdef HAVE_MENU
 void audio_driver_menu_sample(void);
 #endif
+
+extern audio_driver_t audio_rsound;
+extern audio_driver_t audio_audioio;
+extern audio_driver_t audio_oss;
+extern audio_driver_t audio_alsa;
+extern audio_driver_t audio_alsathread;
+extern audio_driver_t audio_tinyalsa;
+extern audio_driver_t audio_roar;
+extern audio_driver_t audio_openal;
+extern audio_driver_t audio_opensl;
+extern audio_driver_t audio_jack;
+extern audio_driver_t audio_sdl;
+extern audio_driver_t audio_xa;
+extern audio_driver_t audio_pulse;
+extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_wasapi;
+extern audio_driver_t audio_coreaudio;
+extern audio_driver_t audio_coreaudio3;
+extern audio_driver_t audio_xenon360;
+extern audio_driver_t audio_ps3;
+extern audio_driver_t audio_gx;
+extern audio_driver_t audio_ax;
+extern audio_driver_t audio_psp;
+extern audio_driver_t audio_ps2;
+extern audio_driver_t audio_ctr_csnd;
+extern audio_driver_t audio_ctr_dsp;
+#ifdef HAVE_THREADS
+extern audio_driver_t audio_ctr_dsp_thread;
+#endif
+extern audio_driver_t audio_switch;
+extern audio_driver_t audio_switch_thread;
+extern audio_driver_t audio_switch_libnx_audren;
+extern audio_driver_t audio_switch_libnx_audren_thread;
+extern audio_driver_t audio_rwebaudio;
+
+audio_driver_state_t *audio_state_get_ptr(void);
+
+const char *audio_driver_get_ident(void);
+
+extern audio_driver_t *audio_drivers[];
 
 RETRO_END_DECLS
 

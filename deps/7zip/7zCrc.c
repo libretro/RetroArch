@@ -53,7 +53,7 @@ uint32_t MY_FAST_CALL CrcUpdateT1(uint32_t v, const void *data, size_t size, con
   return v;
 }
 
-void MY_FAST_CALL CrcGenerateTable()
+void MY_FAST_CALL CrcGenerateTable(void)
 {
   uint32_t i;
   for (i = 0; i < 256; i++)

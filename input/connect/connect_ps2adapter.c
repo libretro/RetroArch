@@ -30,7 +30,8 @@ struct hidpad_ps2adapter_data
    uint32_t buttons;
 };
 
-static void* hidpad_ps2adapter_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void* hidpad_ps2adapter_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
 {
    struct pad_connection* connection     = (struct pad_connection*)data;
    struct hidpad_ps2adapter_data* device = (struct hidpad_ps2adapter_data*)
@@ -45,8 +46,8 @@ static void* hidpad_ps2adapter_init(void *data, uint32_t slot, hid_driver_t *dri
       return NULL;
    }
 
-   device->connection   = connection;
    device->slot         = slot;
+   device->connection   = connection;
 
    return device;
 }
@@ -146,8 +147,7 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
    memcpy(device->data, packet, size);
 
    device->buttons = 0;
-
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[7] | (device->data[6] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -162,17 +162,11 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
 }
 
 static void hidpad_ps2adapter_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-	(void)data;
-	(void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char * hidpad_ps2adapter_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
 	return "PS2/PSX Controller Adapter";
 }
 

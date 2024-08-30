@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include <retro_assert.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -39,7 +39,7 @@ bool g_egl_inited    = false;
 unsigned g_egl_major = 0;
 unsigned g_egl_minor = 0;
 
-#if defined(HAVE_DYNAMIC) && defined(HAVE_DYNAMIC_EGL)
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
 #include <dynamic/dylib.h>
 
 typedef EGLBoolean(* PFN_EGL_QUERY_SURFACE)(
@@ -123,13 +123,11 @@ static PFN_EGL_SWAP_INTERVAL             _egl_swap_interval;
 
 bool egl_init_dll(void)
 {
-#if defined(HAVE_DYNAMIC) && defined(HAVE_DYNAMIC_EGL)
+#if defined(HAVE_DYLIB) && defined(HAVE_DYNAMIC_EGL)
    static dylib_t egl_dll;
-
    if (!egl_dll)
    {
-      egl_dll = dylib_load("libEGL.dll");
-      if (egl_dll)
+      if ((egl_dll = dylib_load("libEGL.dll")))
       {
          /* Setup function callbacks once */
          _egl_query_surface         = (PFN_EGL_QUERY_SURFACE)dylib_proc(
@@ -302,11 +300,11 @@ void egl_destroy(egl_ctx_data_t *egl)
     * If we screw up, any TTY will not restore.
     */
 
-   egl->ctx     = EGL_NO_CONTEXT;
-   egl->hw_ctx  = EGL_NO_CONTEXT;
-   egl->surf    = EGL_NO_SURFACE;
-   egl->dpy     = EGL_NO_DISPLAY;
-   egl->config  = 0;
+   egl->ctx      = EGL_NO_CONTEXT;
+   egl->hw_ctx   = EGL_NO_CONTEXT;
+   egl->surf     = EGL_NO_SURFACE;
+   egl->dpy      = EGL_NO_DISPLAY;
+   egl->config   = 0;
    g_egl_inited  = false;
 
    frontend_driver_destroy_signal_handler_state();
@@ -314,13 +312,12 @@ void egl_destroy(egl_ctx_data_t *egl)
 
 void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
 {
-   egl->use_hw_ctx = enable;
+   egl->use_hw_ctx     = enable;
 
    if (egl->dpy  == EGL_NO_DISPLAY)
       return;
    if (egl->surf == EGL_NO_SURFACE)
       return;
-
    _egl_make_current(egl->dpy, egl->surf,
          egl->surf,
          enable ? egl->hw_ctx : egl->ctx);
@@ -329,9 +326,9 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
 void egl_swap_buffers(void *data)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
-   if (  egl                         &&
-         egl->dpy  != EGL_NO_DISPLAY &&
-         egl->surf != EGL_NO_SURFACE
+   if (     (egl)
+         && (egl->dpy  != EGL_NO_DISPLAY)
+         && (egl->surf != EGL_NO_SURFACE)
          )
       _egl_swap_buffers(egl->dpy, egl->surf);
 }
@@ -344,7 +341,7 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
     */
    egl->interval = interval;
 
-   if (egl->dpy  == EGL_NO_DISPLAY)
+   if (egl->dpy == EGL_NO_DISPLAY)
       return;
    if (!_egl_get_current_context())
       return;
@@ -372,55 +369,54 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
    }
 }
 
-bool check_egl_version(int minMajorVersion, int minMinorVersion)
+#if defined(EGL_VERSION_1_5)
+static bool check_egl_version(int min_major_version, int min_minor_version)
 {
-   int count;
-   int major, minor;
    const char *str = _egl_query_string(EGL_NO_DISPLAY, EGL_VERSION);
 
-   if (!str)
-      return false;
-
-   count = sscanf(str, "%d.%d", &major, &minor);
-   if (count != 2)
-      return false;
-
-   if (major < minMajorVersion)
-      return false;
-
-   if (major > minMajorVersion)
-      return true;
-
-   if (minor >= minMinorVersion)
-      return true;
-
-   return false;
-}
-
-bool check_egl_client_extension(const char *name)
-{
-   size_t nameLen;
-   const char *str = _egl_query_string(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-
-   /* The EGL implementation doesn't support client extensions at all. */
-   if (!str)
-      return false;
-
-   nameLen = strlen(name);
-   while (*str != '\0')
+   if (str)
    {
-      /* Use strspn and strcspn to find the start position and length of each
-       * token in the extension string. Using strtok could also work, but
-       * that would require allocating a copy of the string. */
-      size_t len = strcspn(str, " ");
-      if (len == nameLen && strncmp(str, name, nameLen) == 0)
-         return true;
-      str += len;
-      str += strspn(str, " ");
+      int major, minor;
+      if (sscanf(str, "%d.%d", &major, &minor) == 2)
+      {
+         if (major >= min_major_version)
+         {
+            if (major > min_major_version)
+               return true;
+            else if (minor >= min_minor_version)
+               return true;
+         }
+      }
    }
 
    return false;
 }
+#endif
+
+#if defined(EGL_EXT_platform_base)
+static bool check_egl_client_extension(const char *name, size_t name_len)
+{
+   const char *str = _egl_query_string(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+
+   /* The EGL implementation doesn't support client extensions at all. */
+   if (str)
+   {
+      while (*str != '\0')
+      {
+         /* Use strspn and strcspn to find the start position and length of each
+          * token in the extension string. Using strtok could also work, but
+          * that would require allocating a copy of the string. */
+         size_t len = strcspn(str, " ");
+         if (len == name_len && strncmp(str, name, name_len) == 0)
+            return true;
+         str       += len;
+         str       += strspn(str, " ");
+      }
+   }
+
+   return false;
+}
+#endif
 
 static EGLDisplay get_egl_display(EGLenum platform, void *native)
 {
@@ -450,7 +446,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 #endif /* defined(EGL_VERSION_1_5) */
 
 #if defined(EGL_EXT_platform_base)
-      if (check_egl_client_extension("EGL_EXT_platform_base"))
+      if (check_egl_client_extension("EGL_EXT_platform_base", STRLEN_CONST("EGL_EXT_platform_base")))
       {
          PFNEGLGETPLATFORMDISPLAYEXTPROC ptr_eglGetPlatformDisplayEXT;
 
@@ -625,15 +621,5 @@ bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 
    RARCH_LOG("[EGL]: Current context: %p.\n", (void*)_egl_get_current_context());
 
-   return true;
-}
-
-bool egl_has_config(egl_ctx_data_t *egl)
-{
-   if (!egl->config)
-   {
-      RARCH_ERR("[EGL]: No EGL configurations available.\n");
-      return false;
-   }
    return true;
 }

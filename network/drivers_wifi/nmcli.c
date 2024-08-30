@@ -111,7 +111,7 @@ static void nmcli_scan(void *data)
       memset(&entry, 0, sizeof(entry));
 
       string_trim_whitespace(line);
-      if (strlen(line) < 1)
+      if (!line || line[0] == '\0')
          continue;
 
       if (line[0] == '*')

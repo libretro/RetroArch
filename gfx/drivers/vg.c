@@ -24,7 +24,6 @@
 #include <EGL/eglext.h>
 
 #include <retro_inline.h>
-#include <retro_assert.h>
 #include <gfx/math/matrix_3x3.h>
 #include <libretro.h>
 
@@ -46,37 +45,35 @@
 
 typedef struct
 {
-   bool should_resize;
-   bool keep_aspect;
-   bool mEglImageBuf;
-   bool mFontsOn;
+   void *mFontRenderer;
+   void *ctx_data;
+   const gfx_ctx_driver_t *ctx_driver;
+   const font_renderer_driver_t *font_driver;
+   char *mLastMsg;
 
-   float mScreenAspect;
+   VGint scissor[4];
+   VGImageFormat mTexType;
+   VGImage mImage;
+   EGLImageKHR last_egl_image;
 
+   VGFont mFont;
+   VGuint mMsgLength;
+   VGuint mGlyphIndices[1024];
+   VGPaint mPaintFg;
+   VGPaint mPaintBg;
    unsigned mTextureWidth;
    unsigned mTextureHeight;
    unsigned mRenderWidth;
    unsigned mRenderHeight;
    unsigned x1, y1, x2, y2;
    uint32_t mFontHeight;
+   float mScreenAspect;
+   math_matrix_3x3 mTransformMatrix; /* float alignment */
 
-   char *mLastMsg;
-
-   VGint scissor[4];
-   VGImageFormat mTexType;
-   VGImage mImage;
-   math_matrix_3x3 mTransformMatrix;
-   EGLImageKHR last_egl_image;
-
-   VGFont mFont;
-   void *mFontRenderer;
-   const font_renderer_driver_t *font_driver;
-   VGuint mMsgLength;
-   VGuint mGlyphIndices[1024];
-   VGPaint mPaintFg;
-   VGPaint mPaintBg;
-   void *ctx_data;
-   const gfx_ctx_driver_t *ctx_driver;
+   bool should_resize;
+   bool keep_aspect;
+   bool mEglImageBuf;
+   bool mFontsOn;
 } vg_t;
 
 static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
@@ -321,45 +318,39 @@ static void vg_free(void *data)
 static void vg_calculate_quad(vg_t *vg,
       unsigned width, unsigned height)
 {
-   /* set viewport for aspect ratio, taken from the OpenGL driver. */
-   if (vg->keep_aspect)
-   {
-      float desired_aspect = video_driver_get_aspect_ratio();
+   settings_t *settings      = config_get_ptr();
+   bool video_scale_integer  = settings->bools.video_scale_integer;
+   float device_aspect       = (float)width / height;
+   struct video_viewport_t vp;
 
-      /* If the aspect ratios of screen and desired aspect ratio
-       * are sufficiently equal (floating point stuff),
-       * assume they are actually equal. */
-      if (fabs(vg->mScreenAspect - desired_aspect) < 0.0001)
-      {
-         vg->x1 = 0;
-         vg->y1 = 0;
-         vg->x2 = width;
-         vg->y2 = height;
-      }
-      else if (vg->mScreenAspect > desired_aspect)
-      {
-         float delta = (desired_aspect / vg->mScreenAspect - 1.0) / 2.0 + 0.5;
-         vg->x1 = width * (0.5 - delta);
-         vg->y1 = 0;
-         vg->x2 = 2.0 * width * delta + vg->x1;
-         vg->y2 = height + vg->y1;
-      }
-      else
-      {
-         float delta = (vg->mScreenAspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         vg->x1 = 0;
-         vg->y1 = height * (0.5 - delta);
-         vg->x2 = width + vg->x1;
-         vg->y2 = 2.0 * height * delta + vg->y1;
-      }
-   }
-   else
+   vp.x = 0;
+   vp.y = 0;
+   vp.width = width;
+   vp.height = height;
+   vp.full_width = width;
+   vp.full_height = height;
+
+   if (vg->ctx_driver->translate_aspect)
+      device_aspect = vg->ctx_driver->translate_aspect(vg->ctx_data, width, height);
+
+   vg->mScreenAspect = device_aspect;
+   /* OpenVG uses a bottom-left origin coordinate system */
+   if (video_scale_integer)
    {
-      vg->x1 = 0;
-      vg->y1 = 0;
-      vg->x2 = width;
-      vg->y2 = height;
+      video_viewport_get_scaled_integer(&vp,
+            width, height,
+            video_driver_get_aspect_ratio(),
+            vg->keep_aspect,
+            false);
    }
+   else if (vg->keep_aspect)
+   {
+      video_viewport_get_scaled_aspect(&vp, viewport_width, viewport_height, false);
+   }
+   vg->x1 = vp.x;
+   vg->y1 = vp.y;
+   vg->x2 = vp.width;
+   vg->y2 = vp.height;
 
    vg->scissor[0] = vg->x1;
    vg->scissor[1] = vg->y1;
@@ -386,8 +377,6 @@ static void vg_copy_frame(void *data, const void *frame,
                (vg->mTexType == VG_sXRGB_8888),
                0,
                &img);
-
-      retro_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
       {
@@ -416,10 +405,10 @@ static bool vg_frame(void *data, const void *frame,
    unsigned width                     = video_info->width;
    unsigned height                    = video_info->height;
 #ifdef HAVE_MENU
-   bool menu_is_alive                 = video_info->menu_is_alive;
+   bool menu_is_alive                 = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (     frame_width != vg->mRenderWidth
+   if (     frame_width  != vg->mRenderWidth
          || frame_height != vg->mRenderHeight
          || vg->should_resize)
    {
@@ -521,16 +510,17 @@ video_driver_t video_vg = {
    vg_set_shader,
    vg_free,
    "vg",
-   NULL,                      /* set_viewport */
-   NULL,                      /* set_rotation */
-   NULL,                      /* viewport_info */
-   NULL,                      /* read_viewport */
-   NULL,                      /* read_frame_raw */
+   NULL, /* set_viewport */
+   NULL, /* set_rotation */
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL,                       /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   vg_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-  vg_get_poke_interface
 };

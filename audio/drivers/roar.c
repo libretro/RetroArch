@@ -17,8 +17,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <errno.h>
-
 #include <roaraudio.h>
 
 #include <boolean.h>

@@ -1,5 +1,6 @@
 /*
- * Copyright 2015-2019 Arm Limited
+ * Copyright 2015-2021 Arm Limited
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +15,21 @@
  * limitations under the License.
  */
 
+/*
+ * At your option, you may choose to accept this material under either:
+ *  1. The Apache License, Version 2.0, found at <http://www.apache.org/licenses/LICENSE-2.0>, or
+ *  2. The MIT License, found at <http://opensource.org/licenses/MIT>.
+ */
+
 #ifndef SPIRV_CROSS_ERROR_HANDLING
 #define SPIRV_CROSS_ERROR_HANDLING
 
-#include <stdexcept>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#ifndef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
+#include <stdexcept>
+#endif
 
 #ifdef SPIRV_CROSS_NAMESPACE_OVERRIDE
 #define SPIRV_CROSS_NAMESPACE SPIRV_CROSS_NAMESPACE_OVERRIDE
@@ -33,6 +42,8 @@ namespace SPIRV_CROSS_NAMESPACE
 #ifdef SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS
 #if !defined(_MSC_VER) || defined(__clang__)
 [[noreturn]]
+#elif defined(_MSC_VER)
+__declspec(noreturn)
 #endif
 inline void
 report_and_abort(const std::string &msg)

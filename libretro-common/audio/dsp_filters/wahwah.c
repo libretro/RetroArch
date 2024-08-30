@@ -68,39 +68,39 @@ static void wahwah_process(void *data, struct dspfilter_output *output,
       if ((wah->skipcount++ % WAHWAH_LFO_SKIP_SAMPLES) == 0)
       {
          float omega, sn, cs, alpha;
-         float frequency = (1.0 + cos(wah->skipcount * wah->lfoskip + wah->phase)) / 2.0;
+         float frequency = (1.0f + cos(wah->skipcount * wah->lfoskip + wah->phase)) / 2.0f;
 
-         frequency = frequency * wah->depth * (1.0 - wah->freqofs) + wah->freqofs;
-         frequency = exp((frequency - 1.0) * 6.0);
+         frequency       = frequency * wah->depth * (1.0f - wah->freqofs) + wah->freqofs;
+         frequency       = exp((frequency - 1.0f) * 6.0f);
 
-         omega     = M_PI * frequency;
-         sn        = sin(omega);
-         cs        = cos(omega);
-         alpha     = sn / (2.0 * wah->res);
+         omega           = M_PI * frequency;
+         sn              = sin(omega);
+         cs              = cos(omega);
+         alpha           = sn / (2.0f * wah->res);
 
-         wah->b0   = (1.0 - cs) / 2.0;
-         wah->b1   = 1.0 - cs;
-         wah->b2   = (1.0 - cs) / 2.0;
-         wah->a0   = 1.0 + alpha;
-         wah->a1   = -2.0 * cs;
-         wah->a2   = 1.0 - alpha;
+         wah->b0         = (1.0f - cs) / 2.0f;
+         wah->b1         = 1.0f  - cs;
+         wah->b2         = (1.0f - cs) / 2.0f;
+         wah->a0         = 1.0f + alpha;
+         wah->a1         = -2.0f * cs;
+         wah->a2         = 1.0f - alpha;
       }
 
-      out_l      = (wah->b0 * in[0] + wah->b1 * wah->l.xn1 + wah->b2 * wah->l.xn2 - wah->a1 * wah->l.yn1 - wah->a2 * wah->l.yn2) / wah->a0;
-      out_r      = (wah->b0 * in[1] + wah->b1 * wah->r.xn1 + wah->b2 * wah->r.xn2 - wah->a1 * wah->r.yn1 - wah->a2 * wah->r.yn2) / wah->a0;
+      out_l              = (wah->b0 * in[0] + wah->b1 * wah->l.xn1 + wah->b2 * wah->l.xn2 - wah->a1 * wah->l.yn1 - wah->a2 * wah->l.yn2) / wah->a0;
+      out_r              = (wah->b0 * in[1] + wah->b1 * wah->r.xn1 + wah->b2 * wah->r.xn2 - wah->a1 * wah->r.yn1 - wah->a2 * wah->r.yn2) / wah->a0;
 
-      wah->l.xn2 = wah->l.xn1;
-      wah->l.xn1 = in[0];
-      wah->l.yn2 = wah->l.yn1;
-      wah->l.yn1 = out_l;
+      wah->l.xn2         = wah->l.xn1;
+      wah->l.xn1         = in[0];
+      wah->l.yn2         = wah->l.yn1;
+      wah->l.yn1         = out_l;
 
-      wah->r.xn2 = wah->r.xn1;
-      wah->r.xn1 = in[1];
-      wah->r.yn2 = wah->r.yn1;
-      wah->r.yn1 = out_r;
+      wah->r.xn2         = wah->r.xn1;
+      wah->r.xn1         = in[1];
+      wah->r.yn2         = wah->r.yn1;
+      wah->r.yn1         = out_r;
 
-      out[0]     = out_l;
-      out[1]     = out_r;
+      out[0]             = out_l;
+      out[1]             = out_r;
    }
 }
 
@@ -117,8 +117,8 @@ static void *wahwah_init(const struct dspfilter_info *info,
    config->get_float(userdata, "depth", &wah->depth, 0.7f);
    config->get_float(userdata, "resonance", &wah->res, 2.5f);
 
-   wah->lfoskip = wah->freq * 2.0 * M_PI / info->input_rate;
-   wah->phase   = wah->startphase * M_PI / 180.0;
+   wah->lfoskip = wah->freq * 2.0f * M_PI / info->input_rate;
+   wah->phase   = wah->startphase * M_PI / 180.0f;
 
    return wah;
 }

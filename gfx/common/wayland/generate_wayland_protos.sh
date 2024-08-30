@@ -31,17 +31,14 @@ while [ $# -gt 0 ]; do
 done
 
 WAYSCAN="$(exists wayland-scanner || :)"
+PKGCONFIG="$(exists pkg-config || :)"
 
 [ "${WAYSCAN}" ] || die 1 "Error: No wayscan in ($PATH)"
 
 WAYLAND_PROTOS=''
 
-if [ "$PROTOS" != 'no' ]; then
-   for protos in "$SHARE_DIR" /usr/local/share/wayland-protocols /usr/share/wayland-protocols; do
-      [ -d "$protos" ] || continue
-      WAYLAND_PROTOS="$protos"
-      break
-   done
+if [ "$PROTOS" != 'no' -a "$PKGCONFIG" ]; then
+   WAYLAND_PROTOS="$($PKGCONFIG wayland-protocols --variable=pkgdatadir)"
 fi
 
 if [ -z "${WAYLAND_PROTOS}" ]; then
@@ -55,18 +52,19 @@ else
    CODEGEN=private-code
 fi
 
-XDG_SHELL='stable/xdg-shell/xdg-shell.xml'
-XDG_DECORATION_UNSTABLE='unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'
-IDLE_INHIBIT_UNSTABLE='unstable/idle-inhibit/idle-inhibit-unstable-v1.xml'
+generate_source () {
+   PROTO_DIR="$1"
+   PROTO_NAME="$2"
+   PROTO_FILE="$WAYLAND_PROTOS/$PROTO_DIR/$PROTO_NAME.xml"
 
-#Generate xdg-shell header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_SHELL" ./xdg-shell.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$XDG_SHELL" ./xdg-shell.c
+   "$WAYSCAN" client-header "$PROTO_FILE" "./$PROTO_NAME.h"
+   "$WAYSCAN" $CODEGEN "$PROTO_FILE" "./$PROTO_NAME.c"
+}
 
-#Generate idle-inhibit header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$IDLE_INHIBIT_UNSTABLE" ./idle-inhibit-unstable-v1.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$IDLE_INHIBIT_UNSTABLE" ./idle-inhibit-unstable-v1.c
-
-#Generate xdg-decoration header and .c files
-"$WAYSCAN" client-header "$WAYLAND_PROTOS/$XDG_DECORATION_UNSTABLE" ./xdg-decoration-unstable-v1.h
-"$WAYSCAN" $CODEGEN "$WAYLAND_PROTOS/$XDG_DECORATION_UNSTABLE" ./xdg-decoration-unstable-v1.c
+generate_source 'stable/viewporter' 'viewporter'
+generate_source 'stable/xdg-shell' 'xdg-shell'
+generate_source 'unstable/xdg-decoration' 'xdg-decoration-unstable-v1'
+generate_source 'unstable/idle-inhibit' 'idle-inhibit-unstable-v1'
+generate_source 'unstable/pointer-constraints' 'pointer-constraints-unstable-v1'
+generate_source 'unstable/relative-pointer' 'relative-pointer-unstable-v1'
+generate_source 'staging/fractional-scale' 'fractional-scale-v1'

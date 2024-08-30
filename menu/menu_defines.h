@@ -25,6 +25,54 @@ RETRO_BEGIN_DECLS
 
 #define MENU_SETTINGS_AUDIO_MIXER_MAX_STREAMS        (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1)
 
+enum menu_state_flags
+{
+   MENU_ST_FLAG_ALIVE                       = (1 << 0),
+   MENU_ST_FLAG_IS_BINDING                  = (1 << 1),
+   MENU_ST_FLAG_INP_DLG_KB_DISPLAY          = (1 << 2),
+   /* When enabled, on next iteration the 'Quick Menu'
+    * list will be pushed onto the stack */
+   MENU_ST_FLAG_PENDING_QUICK_MENU          = (1 << 3),
+   MENU_ST_FLAG_PREVENT_POPULATE            = (1 << 4),
+   /* The menu driver owns the userdata */
+   MENU_ST_FLAG_DATA_OWN                    = (1 << 5),
+   /* Flagged when menu entries need to be refreshed */
+   MENU_ST_FLAG_ENTRIES_NEED_REFRESH        = (1 << 6),
+   MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH = (1 << 7),
+   /* 'Close Content'-hotkey menu resetting */
+   MENU_ST_FLAG_PENDING_CLOSE_CONTENT       = (1 << 8),
+   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
+    * requiring the menu to be flushed on the next iteration */
+   MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH  = (1 << 9),
+   /* Screensaver status
+    * - Does menu driver support screensaver functionality?
+    * - Is screensaver currently active? */
+   MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
+   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
+};
+
+enum menu_scroll_mode
+{
+   MENU_SCROLL_PAGE = 0,
+   MENU_SCROLL_START_LETTER
+};
+
+enum contentless_core_runtime_status
+{
+   CONTENTLESS_CORE_RUNTIME_UNKNOWN = 0,
+   CONTENTLESS_CORE_RUNTIME_MISSING,
+   CONTENTLESS_CORE_RUNTIME_VALID
+};
+
+enum action_iterate_type
+{
+   ITERATE_TYPE_DEFAULT = 0,
+   ITERATE_TYPE_HELP,
+   ITERATE_TYPE_INFO,
+   ITERATE_TYPE_BIND
+};
+
+
 enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
@@ -59,22 +107,11 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_NONE = 0,
    RARCH_MENU_CTL_SET_PENDING_QUICK_MENU,
    RARCH_MENU_CTL_DEINIT,
-   RARCH_MENU_CTL_SET_PREVENT_POPULATE,
-   RARCH_MENU_CTL_UNSET_PREVENT_POPULATE,
-   RARCH_MENU_CTL_IS_PREVENT_POPULATE,
-   RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_POINTER_DOWN,
    RARCH_MENU_CTL_POINTER_UP,
    RARCH_MENU_CTL_OSK_PTR_AT_POS,
    RARCH_MENU_CTL_BIND_INIT,
-   RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH,
-   RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE,
-   RARCH_MENU_CTL_REFRESH_THUMBNAIL_IMAGE,
-   RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_PATH,
-   RARCH_MENU_CTL_UPDATE_SAVESTATE_THUMBNAIL_IMAGE,
-   MENU_NAVIGATION_CTL_CLEAR,
-   MENU_NAVIGATION_CTL_SET_LAST,
-   MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL
+   MENU_NAVIGATION_CTL_CLEAR
 };
 
 enum menu_timedate_style_type
@@ -108,6 +145,15 @@ enum menu_timedate_style_type
    MENU_TIMEDATE_STYLE_LAST
 };
 
+enum menu_remember_selection_type
+{
+   MENU_REMEMBER_SELECTION_OFF = 0,
+   MENU_REMEMBER_SELECTION_ALWAYS,
+   MENU_REMEMBER_SELECTION_PLAYLISTS,
+   MENU_REMEMBER_SELECTION_MAIN,
+   MENU_REMEMBER_SELECTION_LAST
+};
+
 /* Note: These must be kept synchronised with
  * 'enum playlist_sublabel_last_played_date_separator_type'
  * in 'runtime_file.h' */
@@ -128,6 +174,17 @@ enum menu_add_content_entry_display_type
    MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    MENU_ADD_CONTENT_ENTRY_DISPLAY_LAST
+};
+
+/* Specifies which type of core will be displayed
+ * in the 'contentless cores' menu */
+enum menu_contentless_cores_display_type
+{
+   MENU_CONTENTLESS_CORES_DISPLAY_NONE = 0,
+   MENU_CONTENTLESS_CORES_DISPLAY_ALL,
+   MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE,
+   MENU_CONTENTLESS_CORES_DISPLAY_CUSTOM,
+   MENU_CONTENTLESS_CORES_DISPLAY_LAST
 };
 
 enum rgui_color_theme
@@ -166,6 +223,9 @@ enum rgui_color_theme
    RGUI_THEME_ZENBURN,
    RGUI_THEME_ANTI_ZENBURN,
    RGUI_THEME_FLUX,
+   RGUI_THEME_DYNAMIC,
+   RGUI_THEME_GRAY_DARK,
+   RGUI_THEME_GRAY_LIGHT,
    RGUI_THEME_LAST
 };
 
@@ -193,6 +253,8 @@ enum materialui_color_theme
    MATERIALUI_THEME_CUTIE_RED,
    MATERIALUI_THEME_VIRTUAL_BOY,
    MATERIALUI_THEME_HACKING_THE_KERNEL,
+   MATERIALUI_THEME_GRAY_DARK,
+   MATERIALUI_THEME_GRAY_LIGHT,
    MATERIALUI_THEME_LAST
 };
 
@@ -261,9 +323,8 @@ enum xmb_icon_theme
 {
    XMB_ICON_THEME_MONOCHROME = 0,
    XMB_ICON_THEME_FLATUI,
-   XMB_ICON_THEME_RETROACTIVE,
+   XMB_ICON_THEME_FLATUX,
    XMB_ICON_THEME_PIXEL,
-   XMB_ICON_THEME_NEOACTIVE,
    XMB_ICON_THEME_SYSTEMATIC,
    XMB_ICON_THEME_DOTART,
    XMB_ICON_THEME_CUSTOM,
@@ -271,6 +332,7 @@ enum xmb_icon_theme
    XMB_ICON_THEME_MONOCHROME_INVERTED,
    XMB_ICON_THEME_AUTOMATIC,
    XMB_ICON_THEME_AUTOMATIC_INVERTED,
+   XMB_ICON_THEME_DAITE,
    XMB_ICON_THEME_LAST
 };
 
@@ -294,7 +356,7 @@ enum xmb_shader_pipeline
    XMB_SHADER_PIPELINE_SNOW,
    XMB_SHADER_PIPELINE_BOKEH,
    XMB_SHADER_PIPELINE_SNOWFLAKE
-#endif   
+#endif
 };
 
 enum rgui_thumbnail_scaler
@@ -327,11 +389,13 @@ enum rgui_aspect_ratio
    RGUI_ASPECT_RATIO_16_9_CENTRE,
    RGUI_ASPECT_RATIO_16_10,
    RGUI_ASPECT_RATIO_16_10_CENTRE,
+   RGUI_ASPECT_RATIO_21_9,
+   RGUI_ASPECT_RATIO_21_9_CENTRE,
    RGUI_ASPECT_RATIO_3_2,
    RGUI_ASPECT_RATIO_3_2_CENTRE,
    RGUI_ASPECT_RATIO_5_3,
    RGUI_ASPECT_RATIO_5_3_CENTRE,
-
+   RGUI_ASPECT_RATIO_AUTO,
    RGUI_ASPECT_RATIO_LAST
 };
 
@@ -367,6 +431,9 @@ enum ozone_color_theme
    OZONE_COLOR_THEME_DRACULA,
    OZONE_COLOR_THEME_SOLARIZED_DARK,
    OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   OZONE_COLOR_THEME_GRAY_DARK,
+   OZONE_COLOR_THEME_GRAY_LIGHT,
+   OZONE_COLOR_THEME_PURPLE_RAIN,
    OZONE_COLOR_THEME_LAST
 };
 
@@ -386,6 +453,8 @@ enum menu_action
    MENU_ACTION_START,
    MENU_ACTION_SCROLL_DOWN,
    MENU_ACTION_SCROLL_UP,
+   MENU_ACTION_SCROLL_HOME,
+   MENU_ACTION_SCROLL_END,
    MENU_ACTION_TOGGLE,
    MENU_ACTION_POINTER_MOVED,
    MENU_ACTION_POINTER_PRESSED,
@@ -434,6 +503,52 @@ enum dingux_rs90_softfilter_type
    DINGUX_RS90_SOFTFILTER_LAST
 };
 #endif
+
+/* Specifies all available screensaver effects */
+enum menu_screensaver_effect
+{
+   MENU_SCREENSAVER_BLANK = 0,
+   MENU_SCREENSAVER_SNOW,
+   MENU_SCREENSAVER_STARFIELD,
+   MENU_SCREENSAVER_VORTEX,
+   MENU_SCREENSAVER_LAST
+};
+
+enum menu_dialog_type
+{
+   MENU_DIALOG_NONE = 0,
+   MENU_DIALOG_WELCOME,
+   MENU_DIALOG_HELP_EXTRACT,
+   MENU_DIALOG_HELP_CONTROLS,
+   MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION,
+   MENU_DIALOG_HELP_LOADING_CONTENT,
+   MENU_DIALOG_HELP_WHAT_IS_A_CORE,
+   MENU_DIALOG_HELP_CHANGE_VIRTUAL_GAMEPAD,
+   MENU_DIALOG_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+   MENU_DIALOG_HELP_SCANNING_CONTENT,
+   MENU_DIALOG_QUIT_CONFIRM,
+   MENU_DIALOG_INFORMATION,
+   MENU_DIALOG_QUESTION,
+   MENU_DIALOG_WARNING,
+   MENU_DIALOG_ERROR,
+   MENU_DIALOG_LAST
+};
+
+enum menu_input_binds_ctl_state
+{
+   MENU_INPUT_BINDS_CTL_BIND_NONE = 0,
+   MENU_INPUT_BINDS_CTL_BIND_SINGLE,
+   MENU_INPUT_BINDS_CTL_BIND_ALL
+};
+
+struct menu_dialog
+{
+   unsigned              current_id;
+   enum menu_dialog_type current_type;
+   bool                  pending_push;
+};
+
+typedef struct menu_dialog menu_dialog_t;
 
 RETRO_END_DECLS
 

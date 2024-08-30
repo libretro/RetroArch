@@ -1,0 +1,9 @@
+filter = upscale_mix_240x160_320x240
+
+# Aspect ratio correction:
+# - 1: 240x160 content is scaled to 320x213, with
+#      padding added to the top and bottom of the
+#      image (letterboxing) to maintain the native
+#      content aspect ratio
+# - 0: 240x160 content is stretched to 320x240
+upscale_mix_240x160_320x240_keep_aspect = "1"

@@ -27,8 +27,8 @@
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
 
-#define phaserlfoshape 4.0
-#define phaserlfoskipsamples 20
+#define PHASER_LFO_SHAPE 4.0
+#define PHASER_LFO_SKIP_SAMPLES 20
 
 struct phaser_data
 {
@@ -71,10 +71,10 @@ static void phaser_process(void *data, struct dspfilter_output *output,
       for (c = 0; c < 2; c++)
          m[c] = in[c] + ph->fbout[c] * ph->fb * 0.01f;
 
-      if ((ph->skipcount++ % phaserlfoskipsamples) == 0)
+      if ((ph->skipcount++ % PHASER_LFO_SKIP_SAMPLES) == 0)
       {
          ph->gain = 0.5 * (1.0 + cos(ph->skipcount * ph->lfoskip + ph->phase));
-         ph->gain = (exp(ph->gain * phaserlfoshape) - 1.0) / (exp(phaserlfoshape) - 1);
+         ph->gain = (exp(ph->gain * PHASER_LFO_SHAPE) - 1.0) / (exp(PHASER_LFO_SHAPE) - 1);
          ph->gain = 1.0 - ph->gain * ph->depth;
       }
 
@@ -138,7 +138,6 @@ static const struct dspfilter_implementation phaser_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)mask;
    return &phaser_plug;
 }
 

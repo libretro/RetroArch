@@ -37,20 +37,10 @@ static NSString *RPixelStrings[RPixelFormatCount];
 
 NSUInteger RPixelFormatToBPP(RPixelFormat format)
 {
-   switch (format)
-   {
-      case RPixelFormatBGRA8Unorm:
-      case RPixelFormatBGRX8Unorm:
-         return 4;
-
-      case RPixelFormatB5G6R5Unorm:
-      case RPixelFormatBGRA4Unorm:
-         return 2;
-
-      default:
-         RARCH_ERR("[Metal]: unknown RPixel format: %d\n", format);
-         return 4;
-   }
+   if (   format == RPixelFormatB5G6R5Unorm
+       || format == RPixelFormatBGRA4Unorm      )
+      return 2;
+   return 4;
 }
 
 static NSString *NSStringFromRPixelFormat(RPixelFormat format)
@@ -69,49 +59,24 @@ static NSString *NSStringFromRPixelFormat(RPixelFormat format)
    });
 
    if (format >= RPixelFormatCount)
-   {
       format = RPixelFormatInvalid;
-   }
-
    return RPixelStrings[format];
 }
 
-matrix_float4x4 make_matrix_float4x4(const float *v)
+static matrix_float4x4 make_matrix_float4x4(const float *v)
 {
-   simd_float4 P = simd_make_float4(v[0], v[1], v[2], v[3]);
+   simd_float4 P       = simd_make_float4(v[0], v[1], v[2], v[3]);
    v += 4;
-   simd_float4 Q = simd_make_float4(v[0], v[1], v[2], v[3]);
+   simd_float4 Q       = simd_make_float4(v[0], v[1], v[2], v[3]);
    v += 4;
-   simd_float4 R = simd_make_float4(v[0], v[1], v[2], v[3]);
+   simd_float4 R       = simd_make_float4(v[0], v[1], v[2], v[3]);
    v += 4;
-   simd_float4 S = simd_make_float4(v[0], v[1], v[2], v[3]);
-
+   simd_float4 S       = simd_make_float4(v[0], v[1], v[2], v[3]);
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;
 }
 
-matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
-{
-   float near = 0;
-   float far = 1;
-
-   float sx = 2 / (right - left);
-   float sy = 2 / (top - bottom);
-   float sz = 1 / (far - near);
-   float tx = (right + left) / (left - right);
-   float ty = (top + bottom) / (bottom - top);
-   float tz = near / (far - near);
-
-   simd_float4 P = simd_make_float4(sx, 0, 0, 0);
-   simd_float4 Q = simd_make_float4(0, sy, 0, 0);
-   simd_float4 R = simd_make_float4(0, 0, sz, 0);
-   simd_float4 S = simd_make_float4(tx, ty, tz, 1);
-
-   matrix_float4x4 mat = {P, Q, R, S};
-   return mat;
-}
-
-matrix_float4x4 matrix_rotate_z(float rot)
+static matrix_float4x4 matrix_rotate_z(float rot)
 {
    float cz, sz;
    __sincosf(rot, &sz, &cz);
@@ -121,6 +86,20 @@ matrix_float4x4 matrix_rotate_z(float rot)
    simd_float4 R = simd_make_float4( 0,   0, 1, 0);
    simd_float4 S = simd_make_float4( 0,   0, 0, 1);
 
+   matrix_float4x4 mat = {P, Q, R, S};
+   return mat;
+}
+
+matrix_float4x4 matrix_proj_ortho(float left, float right, float top, float bottom)
+{
+   float sx            = 2 / (right - left);
+   float sy            = 2 / (top   - bottom);
+   float tx            = (right + left)   / (left   - right);
+   float ty            = (top   + bottom) / (bottom - top);
+   simd_float4 P       = simd_make_float4(sx,  0, 0, 0);
+   simd_float4 Q       = simd_make_float4(0,  sy, 0, 0);
+   simd_float4 R       = simd_make_float4(0,   0, 1, 0);
+   simd_float4 S       = simd_make_float4(tx, ty, 0, 1);
    matrix_float4x4 mat = {P, Q, R, S};
    return mat;
 }
@@ -159,9 +138,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
    id<CAMetalDrawable> _drawable;
    video_viewport_t _viewport;
    id<MTLSamplerState> _samplers[TEXTURE_FILTER_MIPMAP_NEAREST + 1];
-   Filter *_filters[RPixelFormatCount]; // convert to bgra8888
+   Filter *_filters[RPixelFormatCount]; /* convert to BGRA8888 */
 
-   // main render pass state
+   /* Main render pass state */
    id<MTLRenderCommandEncoder> _rce;
 
    id<MTLCommandBuffer> _blitCommandBuffer;
@@ -190,6 +169,8 @@ matrix_float4x4 matrix_rotate_z(float rot)
 {
    if (self = [super init])
    {
+      int i;
+      
       _inflightSemaphore         = dispatch_semaphore_create(MAX_INFLIGHT);
       _device                    = d;
       _layer                     = layer;
@@ -237,10 +218,8 @@ matrix_float4x4 matrix_rotate_z(float rot)
       if (![self _initMenuStates])
          return nil;
 
-      for (int i = 0; i < CHAIN_LENGTH; i++)
-      {
+      for (i = 0; i < CHAIN_LENGTH; i++)
          _chain[i] = [[BufferChain alloc] initWithDevice:_device blockLen:65536];
-      }
    }
    return self;
 }
@@ -252,7 +231,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
 
 - (void)setViewport:(video_viewport_t *)viewport
 {
-   _viewport = *viewport;
+   _viewport            = *viewport;
    _uniforms.outputSize = simd_make_float2(_viewport.full_width, _viewport.full_height);
 }
 
@@ -263,22 +242,13 @@ matrix_float4x4 matrix_rotate_z(float rot)
 
 - (void)setRotation:(unsigned)rotation
 {
-   _rotation = 270 * rotation;
-
+   matrix_float4x4 rot;
+   _rotation                          = 270 * rotation;
    /* Calculate projection. */
-   _mvp_no_rot = matrix_proj_ortho(0, 1, 0, 1);
-
-   bool allow_rotate = true;
-   if (!allow_rotate)
-   {
-      _mvp = _mvp_no_rot;
-      return;
-   }
-
-   matrix_float4x4 rot = matrix_rotate_z((float)(M_PI * _rotation / 180.0f));
-   _mvp = simd_mul(rot, _mvp_no_rot);
-
-   _uniforms.projectionMatrix = _mvp;
+   _mvp_no_rot                        = matrix_proj_ortho(0, 1, 0, 1);
+   rot                                = matrix_rotate_z((float)(M_PI * _rotation / 180.0f));
+   _mvp                               = simd_mul(rot, _mvp_no_rot);
+   _uniforms.projectionMatrix         = _mvp;
    _uniformsNoRotate.projectionMatrix = _mvp_no_rot;
 }
 
@@ -331,24 +301,24 @@ matrix_float4x4 matrix_rotate_z(float rot)
    vd.attributes[1].format = MTLVertexFormatFloat2;
    vd.attributes[2].offset = offsetof(SpriteVertex, color);
    vd.attributes[2].format = MTLVertexFormatFloat4;
-   vd.layouts[0].stride = sizeof(SpriteVertex);
+   vd.layouts[0].stride    = sizeof(SpriteVertex);
    return vd;
 }
 
 - (bool)_initClearState
 {
-   MTLVertexDescriptor *vd = [self _spriteVertexDescriptor];
+   NSError *err;
+   MTLVertexDescriptor          *vd = [self _spriteVertexDescriptor];
    MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-   psd.label = @"clear_state";
+   psd.label                        = @"clear_state";
 
    MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-   ca.pixelFormat = _layer.pixelFormat;
+   ca.pixelFormat       = _layer.pixelFormat;
 
    psd.vertexDescriptor = vd;
-   psd.vertexFunction = [_library newFunctionWithName:@"stock_vertex"];
+   psd.vertexFunction   = [_library newFunctionWithName:@"stock_vertex"];
    psd.fragmentFunction = [_library newFunctionWithName:@"stock_fragment_color"];
 
-   NSError *err;
    _clearState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -361,24 +331,24 @@ matrix_float4x4 matrix_rotate_z(float rot)
 
 - (bool)_initMenuStates
 {
-   MTLVertexDescriptor *vd = [self _spriteVertexDescriptor];
+   NSError *err;
+   MTLVertexDescriptor          *vd = [self _spriteVertexDescriptor];
    MTLRenderPipelineDescriptor *psd = [MTLRenderPipelineDescriptor new];
-   psd.label = @"stock";
+   psd.label                      = @"stock";
 
    MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-   ca.pixelFormat = _layer.pixelFormat;
-   ca.blendingEnabled = NO;
-   ca.sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-   ca.destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-   ca.sourceAlphaBlendFactor = MTLBlendFactorSourceAlpha;
+   ca.pixelFormat                 = _layer.pixelFormat;
+   ca.blendingEnabled             = NO;
+   ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
+   ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
+   ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
    ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
 
-   psd.sampleCount = 1;
+   psd.sampleCount      = 1;
    psd.vertexDescriptor = vd;
-   psd.vertexFunction = [_library newFunctionWithName:@"stock_vertex"];
+   psd.vertexFunction   = [_library newFunctionWithName:@"stock_vertex"];
    psd.fragmentFunction = [_library newFunctionWithName:@"stock_fragment"];
 
-   NSError *err;
    _states[VIDEO_SHADER_STOCK_BLEND][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -386,8 +356,8 @@ matrix_float4x4 matrix_rotate_z(float rot)
       return NO;
    }
 
-   psd.label = @"stock_blend";
-   ca.blendingEnabled = YES;
+   psd.label                            = @"stock_blend";
+   ca.blendingEnabled                   = YES;
    _states[VIDEO_SHADER_STOCK_BLEND][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -397,14 +367,14 @@ matrix_float4x4 matrix_rotate_z(float rot)
 
    MTLFunctionConstantValues *vals;
 
-   psd.label = @"snow_simple";
+   psd.label          = @"snow_simple";
    ca.blendingEnabled = YES;
    {
-      vals = [MTLFunctionConstantValues new];
+      vals            = [MTLFunctionConstantValues new];
       float values[3] = {
-         1.25f,   // baseScale
-         0.50f,   // density
-         0.15f,   // speed
+         1.25f,   /* baseScale */
+         0.50f,   /* density   */
+         0.15f,   /* speed     */
       };
       [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
       [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
@@ -418,14 +388,14 @@ matrix_float4x4 matrix_rotate_z(float rot)
       return NO;
    }
 
-   psd.label = @"snow";
+   psd.label          = @"snow";
    ca.blendingEnabled = YES;
    {
-      vals = [MTLFunctionConstantValues new];
+      vals            = [MTLFunctionConstantValues new];
       float values[3] = {
-         3.50f,   // baseScale
-         0.70f,   // density
-         0.25f,   // speed
+         3.50f,   /* baseScale */
+         0.70f,   /* density   */
+         0.25f,   /* speed     */
       };
       [vals setConstantValue:&values[0] type:MTLDataTypeFloat withName:@"snowBaseScale"];
       [vals setConstantValue:&values[1] type:MTLDataTypeFloat withName:@"snowDensity"];
@@ -439,9 +409,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
       return NO;
    }
 
-   psd.label = @"bokeh";
-   ca.blendingEnabled = YES;
-   psd.fragmentFunction = [_library newFunctionWithName:@"bokeh_fragment"];
+   psd.label                       = @"bokeh";
+   ca.blendingEnabled              = YES;
+   psd.fragmentFunction            = [_library newFunctionWithName:@"bokeh_fragment"];
    _states[VIDEO_SHADER_MENU_5][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -449,9 +419,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
       return NO;
    }
 
-   psd.label = @"snowflake";
-   ca.blendingEnabled = YES;
-   psd.fragmentFunction = [_library newFunctionWithName:@"snowflake_fragment"];
+   psd.label                       = @"snowflake";
+   ca.blendingEnabled              = YES;
+   psd.fragmentFunction            = [_library newFunctionWithName:@"snowflake_fragment"];
    _states[VIDEO_SHADER_MENU_6][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -459,32 +429,32 @@ matrix_float4x4 matrix_rotate_z(float rot)
       return NO;
    }
 
-   psd.label = @"ribbon";
-   ca.blendingEnabled = NO;
-   psd.vertexFunction = [_library newFunctionWithName:@"ribbon_vertex"];
-   psd.fragmentFunction = [_library newFunctionWithName:@"ribbon_fragment"];
-   _states[VIDEO_SHADER_MENU][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   psd.label                       = @"ribbon";
+   ca.blendingEnabled              = NO;
+   psd.vertexFunction              = [_library newFunctionWithName:@"ribbon_vertex"];
+   psd.fragmentFunction            = [_library newFunctionWithName:@"ribbon_fragment"];
+   _states[VIDEO_SHADER_MENU][0]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
       RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
-   psd.label = @"ribbon_blend";
-   ca.blendingEnabled = YES;
-   ca.sourceRGBBlendFactor = MTLBlendFactorOne;
-   ca.destinationRGBBlendFactor = MTLBlendFactorOne;
-   _states[VIDEO_SHADER_MENU][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   psd.label                       = @"ribbon_blend";
+   ca.blendingEnabled              = YES;
+   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
+   ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
+   _states[VIDEO_SHADER_MENU][1]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
       RARCH_ERR("[Metal]: error creating pipeline state %s\n", err.localizedDescription.UTF8String);
       return NO;
    }
 
-   psd.label = @"ribbon_simple";
-   ca.blendingEnabled = NO;
-   psd.vertexFunction = [_library newFunctionWithName:@"ribbon_simple_vertex"];
-   psd.fragmentFunction = [_library newFunctionWithName:@"ribbon_simple_fragment"];
+   psd.label                       = @"ribbon_simple";
+   ca.blendingEnabled              = NO;
+   psd.vertexFunction              = [_library newFunctionWithName:@"ribbon_simple_vertex"];
+   psd.fragmentFunction            = [_library newFunctionWithName:@"ribbon_simple_fragment"];
    _states[VIDEO_SHADER_MENU_2][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -492,10 +462,10 @@ matrix_float4x4 matrix_rotate_z(float rot)
       return NO;
    }
 
-   psd.label = @"ribbon_simple_blend";
-   ca.blendingEnabled = YES;
-   ca.sourceRGBBlendFactor = MTLBlendFactorOne;
-   ca.destinationRGBBlendFactor = MTLBlendFactorOne;
+   psd.label                       = @"ribbon_simple_blend";
+   ca.blendingEnabled              = YES;
+   ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
+   ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
    _states[VIDEO_SHADER_MENU_2][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
    if (err != nil)
    {
@@ -510,9 +480,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
 {
    NSError *err = nil;
    _filters[RPixelFormatBGRA4Unorm] = [Filter newFilterWithFunctionName:@"convert_bgra4444_to_bgra8888"
-                                                                 device:_device
-                                                                library:_library
-                                                                  error:&err];
+      device:_device
+      library:_library
+      error:&err];
    if (err)
    {
       RARCH_LOG("[Metal]: unable to create 'convert_bgra4444_to_bgra8888' conversion filter: %s\n",
@@ -521,9 +491,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
    }
 
    _filters[RPixelFormatB5G6R5Unorm] = [Filter newFilterWithFunctionName:@"convert_rgb565_to_bgra8888"
-                                                                  device:_device
-                                                                 library:_library
-                                                                   error:&err];
+      device:_device
+      library:_library
+      error:&err];
    if (err)
    {
       RARCH_LOG("[Metal]: unable to create 'convert_rgb565_to_bgra8888' conversion filter: %s\n",
@@ -563,25 +533,23 @@ matrix_float4x4 matrix_rotate_z(float rot)
    }
 
    BOOL mipmapped = filter == TEXTURE_FILTER_MIPMAP_LINEAR || filter == TEXTURE_FILTER_MIPMAP_NEAREST;
-
-   Texture *tex = [Texture new];
-   tex.texture = [self newTexture:image mipmapped:mipmapped];
-   tex.sampler = _samplers[filter];
-
+   Texture *tex   = [Texture new];
+   tex.texture    = [self newTexture:image mipmapped:mipmapped];
+   tex.sampler    = _samplers[filter];
    return tex;
 }
 
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped
 {
    MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-                                                                                 width:image.width
-                                                                                height:image.height
-                                                                             mipmapped:mipmapped];
+         width:image.width
+         height:image.height
+         mipmapped:mipmapped];
 
    id<MTLTexture> t = [_device newTextureWithDescriptor:td];
    [t replaceRegion:MTLRegionMake2D(0, 0, image.width, image.height)
         mipmapLevel:0
-          withBytes:image.pixels
+        withBytes:image.pixels
         bytesPerRow:4 * image.width];
 
    if (mipmapped)
@@ -598,9 +566,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
 - (id<CAMetalDrawable>)nextDrawable
 {
    if (_drawable == nil)
-   {
       _drawable = _layer.nextDrawable;
-   }
    return _drawable;
 }
 
@@ -615,8 +581,9 @@ matrix_float4x4 matrix_rotate_z(float rot)
 
 - (id<MTLCommandBuffer>)blitCommandBuffer
 {
-   if (!_blitCommandBuffer) {
-      _blitCommandBuffer = [_commandQueue commandBuffer];
+   if (!_blitCommandBuffer)
+   {
+      _blitCommandBuffer       = [_commandQueue commandBuffer];
       _blitCommandBuffer.label = @"Blit command buffer";
    }
    return _blitCommandBuffer;
@@ -633,8 +600,10 @@ matrix_float4x4 matrix_rotate_z(float rot)
    if (_captureEnabled == captureEnabled)
       return;
 
-   _captureEnabled = captureEnabled;
-   //_layer.framebufferOnly = !captureEnabled;
+   _captureEnabled        = captureEnabled;
+#if 0
+   _layer.framebufferOnly = !captureEnabled;
+#endif
 }
 
 - (bool)captureEnabled
@@ -644,6 +613,10 @@ matrix_float4x4 matrix_rotate_z(float rot)
 
 - (bool)readBackBuffer:(uint8_t *)buffer
 {
+   int x, y;
+   NSUInteger dstStride, srcStride;
+   uint8_t const *src;
+   uint8_t *dst, *tmp;
    if (!_captureEnabled || _backBuffer == nil)
       return NO;
 
@@ -653,22 +626,22 @@ matrix_float4x4 matrix_rotate_z(float rot)
       return NO;
    }
 
-   uint8_t *tmp = malloc(_backBuffer.width * _backBuffer.height * 4);
+   tmp = malloc(_backBuffer.width * _backBuffer.height * 4);
 
    [_backBuffer getBytes:tmp
              bytesPerRow:4 * _backBuffer.width
               fromRegion:MTLRegionMake2D(0, 0, _backBuffer.width, _backBuffer.height)
              mipmapLevel:0];
 
-   NSUInteger srcStride = _backBuffer.width * 4;
-   uint8_t const *src = tmp + (_viewport.y * srcStride);
+   srcStride = _backBuffer.width * 4;
+   src       = tmp + (_viewport.y * srcStride);
 
-   NSUInteger dstStride = _viewport.width * 3;
-   uint8_t *dst = buffer + (_viewport.height - 1) * dstStride;
+   dstStride = _viewport.width * 3;
+   dst       = buffer + (_viewport.height - 1) * dstStride;
 
-   for (int y = 0; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
+   for (y = 0; y < _viewport.height; y++, src += srcStride, dst -= dstStride)
    {
-      for (int x = 0; x < _viewport.width; x++)
+      for (x = 0; x < _viewport.width; x++)
       {
          dst[3 * x + 0] = src[4 * (_viewport.x + x) + 0];
          dst[3 * x + 1] = src[4 * (_viewport.x + x) + 1];
@@ -700,10 +673,8 @@ matrix_float4x4 matrix_rotate_z(float rot)
       rpd.colorAttachments[0].loadAction = MTLLoadActionClear;
       rpd.colorAttachments[0].texture = self.nextDrawable.texture;
       if (_captureEnabled)
-      {
          _backBuffer = self.nextDrawable.texture;
-      }
-      _rce = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
+      _rce       = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
       _rce.label = @"Frame command encoder";
    }
    return _rce;
@@ -712,7 +683,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
 - (void)resetRenderViewport:(ViewportResetMode)mode
 {
    bool fullscreen = mode == kFullscreenViewport;
-   MTLViewport vp = {
+   MTLViewport vp  = {
       .originX = fullscreen ? 0 : _viewport.x,
       .originY = fullscreen ? 0 : _viewport.y,
       .width   = fullscreen ? _viewport.full_width : _viewport.width,
@@ -772,7 +743,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
          [bce endEncoding];
       }
 #endif
-      // pending blits for mipmaps or render passes for slang shaders
+      /* Pending blits for mipmaps or render passes for slang shaders */
       [_blitCommandBuffer commit];
       [_blitCommandBuffer waitUntilCompleted];
       _blitCommandBuffer = nil;
@@ -816,9 +787,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
 - (instancetype)initWithBuffer:(id<MTLBuffer>)src
 {
    if (self = [super init])
-   {
       _src = src;
-   }
    return self;
 }
 
@@ -829,7 +798,7 @@ matrix_float4x4 matrix_rotate_z(float rot)
    id<MTLDevice> _device;
    NSUInteger _blockLen;
    BufferNode *_head;
-   NSUInteger _offset; // offset into _current
+   NSUInteger _offset; /* offset into _current */
    BufferNode *_current;
    NSUInteger _length;
    NSUInteger _allocated;
@@ -846,7 +815,7 @@ static const NSUInteger kConstantAlignment = 4;
 {
    if (self = [super init])
    {
-      _device = device;
+      _device   = device;
       _blockLen = blockLen;
    }
    return self;
@@ -878,16 +847,15 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
 {
-   MTLResourceOptions opts;
-   opts = PLATFORM_METAL_RESOURCE_STORAGE_MODE;
+   MTLResourceOptions opts = PLATFORM_METAL_RESOURCE_STORAGE_MODE;
    memset(range, 0, sizeof(*range));
 
    if (!_head)
    {
-      _head = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:_blockLen options:opts]];
+      _head    = [[BufferNode alloc] initWithBuffer:[_device newBufferWithLength:_blockLen options:opts]];
       _length += _blockLen;
       _current = _head;
-      _offset = 0;
+      _offset  = 0;
    }
 
    if ([self _subAllocRange:range length:length])
@@ -918,20 +886,20 @@ static const NSUInteger kConstantAlignment = 4;
 - (void)_nextNode
 {
    _current = _current.next;
-   _offset = 0;
+   _offset  = 0;
 }
 
 - (BOOL)_subAllocRange:(BufferRange *)range length:(NSUInteger)length
 {
-   NSUInteger nextOffset = _offset + length;
+   NSUInteger nextOffset  = _offset + length;
    if (nextOffset <= _current.src.length)
    {
-      _current.allocated = nextOffset;
-      _allocated += length;
-      range->data = _current.src.contents + _offset;
-      range->buffer = _current.src;
-      range->offset = _offset;
-      _offset = MTL_ALIGN_BUFFER(nextOffset);
+      _current.allocated  = nextOffset;
+      _allocated         += length;
+      range->data         = _current.src.contents + _offset;
+      range->buffer       = _current.src;
+      range->offset       = _offset;
+      _offset             = MTL_ALIGN_BUFFER(nextOffset);
       return YES;
    }
    return NO;
@@ -957,16 +925,14 @@ static const NSUInteger kConstantAlignment = 4;
    id<MTLFunction> function = [library newFunctionWithName:name];
    id<MTLComputePipelineState> kernel = [device newComputePipelineStateWithFunction:function error:error];
    if (*error != nil)
-   {
       return nil;
-   }
 
-   MTLSamplerDescriptor *sd = [MTLSamplerDescriptor new];
-   sd.minFilter = MTLSamplerMinMagFilterNearest;
-   sd.magFilter = MTLSamplerMinMagFilterNearest;
-   sd.sAddressMode = MTLSamplerAddressModeClampToEdge;
-   sd.tAddressMode = MTLSamplerAddressModeClampToEdge;
-   sd.mipFilter = MTLSamplerMipFilterNotMipmapped;
+   MTLSamplerDescriptor *sd    = [MTLSamplerDescriptor new];
+   sd.minFilter                = MTLSamplerMinMagFilterNearest;
+   sd.magFilter                = MTLSamplerMinMagFilterNearest;
+   sd.sAddressMode             = MTLSamplerAddressModeClampToEdge;
+   sd.tAddressMode             = MTLSamplerAddressModeClampToEdge;
+   sd.mipFilter                = MTLSamplerMipFilterNotMipmapped;
    id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:sd];
 
    return [[Filter alloc] initWithKernel:kernel sampler:sampler];
@@ -976,7 +942,7 @@ static const NSUInteger kConstantAlignment = 4;
 {
    if (self = [super init])
    {
-      _kernel = kernel;
+      _kernel  = kernel;
       _sampler = sampler;
    }
    return self;
@@ -994,12 +960,11 @@ static const NSUInteger kConstantAlignment = 4;
 
    [self.delegate configure:ce];
 
-   MTLSize size = MTLSizeMake(16, 16, 1);
+   MTLSize size  = MTLSizeMake(16, 16, 1);
    MTLSize count = MTLSizeMake((tin.width + size.width + 1) / size.width, (tin.height + size.height + 1) / size.height,
                                1);
 
    [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
-
    [ce endEncoding];
 }
 
@@ -1015,11 +980,10 @@ static const NSUInteger kConstantAlignment = 4;
 
    [self.delegate configure:ce];
 
-   MTLSize size = MTLSizeMake(32, 1, 1);
+   MTLSize size  = MTLSizeMake(32, 1, 1);
    MTLSize count = MTLSizeMake((tin.length + 00) / 32, 1, 1);
 
    [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
-
    [ce endEncoding];
 }
 
@@ -1106,30 +1070,19 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (MTLPrimitiveType)_toPrimitiveType:(enum gfx_display_prim_type)prim
 {
-   switch (prim)
-   {
-      case GFX_DISPLAY_PRIM_TRIANGLESTRIP:
-         return MTLPrimitiveTypeTriangleStrip;
-      case GFX_DISPLAY_PRIM_TRIANGLES:
-      default:
-         /* Unexpected primitive type, defaulting to triangle */
-         break;
-   }
-
+   if (prim == GFX_DISPLAY_PRIM_TRIANGLESTRIP)
+      return MTLPrimitiveTypeTriangleStrip;
    return MTLPrimitiveTypeTriangle;
 }
 
 - (void)drawPipeline:(gfx_display_ctx_draw_t *)draw
 {
    static struct video_coords blank_coords;
-
-   draw->x = 0;
-   draw->y = 0;
-   draw->matrix_data = NULL;
-
-   _uniforms.outputSize = simd_make_float2(_context.viewport->full_width, _context.viewport->full_height);
-
-   draw->backend_data = &_uniforms;
+   draw->x                 = 0;
+   draw->y                 = 0;
+   draw->matrix_data       = NULL;
+   _uniforms.outputSize    = simd_make_float2(_context.viewport->full_width, _context.viewport->full_height);
+   draw->backend_data      = &_uniforms;
    draw->backend_data_size = sizeof(_uniforms);
 
    switch (draw->pipeline_id)
@@ -1262,22 +1215,19 @@ static const NSUInteger kConstantAlignment = 4;
 {
    self = [super init];
    if (self)
-   {
       _format = RPixelFormatBGRA8Unorm;
-   }
    return self;
 }
 
 - (NSString *)debugDescription
 {
 #if defined(HAVE_COCOATOUCH)
-    NSString *sizeDesc = [NSString stringWithFormat:@"width: %f, height: %f",_size.width,_size.height];
+   NSString *sizeDesc = [NSString stringWithFormat:@"width: %f, height: %f",_size.width,_size.height];
 #else
-    NSString *sizeDesc = NSStringFromSize(_size);
+   NSString *sizeDesc = NSStringFromSize(_size);
 #endif
    return [NSString stringWithFormat:@"( format = %@, frame = %@ )",
-                                     NSStringFromRPixelFormat(_format),
-                                     sizeDesc];
+           NSStringFromRPixelFormat(_format), sizeDesc];
 }
 
 @end
@@ -1285,13 +1235,12 @@ static const NSUInteger kConstantAlignment = 4;
 @implementation TexturedView
 {
    Context *_context;
-   id<MTLTexture> _texture; // optimal render texture
+   id<MTLTexture> _texture; /* Optimal render texture */
    Vertex _v[4];
-   CGSize _size; // size of view in pixels
+   CGSize _size;            /* Size of view in pixels */
    CGRect _frame;
    NSUInteger _bpp;
-
-   id<MTLTexture> _src;    // source texture
+   id<MTLTexture> _src;     /* Source texture */
    bool _srcDirty;
 }
 
@@ -1300,21 +1249,17 @@ static const NSUInteger kConstantAlignment = 4;
    self = [super init];
    if (self)
    {
-      _format = d.format;
-      _bpp = RPixelFormatToBPP(_format);
-      _filter = d.filter;
-      _context = c;
-      _visible = YES;
+      _format       = d.format;
+      _bpp          = RPixelFormatToBPP(_format);
+      _filter       = d.filter;
+      _context      = c;
+      _visible      = YES;
       if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
-      {
          _drawState = ViewDrawStateEncoder;
-      }
       else
-      {
          _drawState = ViewDrawStateAll;
-      }
-      self.size = d.size;
-      self.frame = CGRectMake(0, 0, 1, 1);
+      self.size     = d.size;
+      self.frame    = CGRectMake(0, 0, 1, 1);
    }
    return self;
 }
@@ -1322,27 +1267,26 @@ static const NSUInteger kConstantAlignment = 4;
 - (void)setSize:(CGSize)size
 {
    if (CGSizeEqualToSize(_size, size))
-   {
       return;
-   }
 
    _size = size;
 
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
-                                                                                    width:(NSUInteger)size.width
-                                                                                   height:(NSUInteger)size.height
-                                                                                mipmapped:NO];
+            width: (NSUInteger)size.width
+            height:(NSUInteger)size.height
+            mipmapped:NO];
       td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
       _texture = [_context.device newTextureWithDescriptor:td];
    }
 
-   if (_format != RPixelFormatBGRA8Unorm && _format != RPixelFormatBGRX8Unorm)
+   if (   _format != RPixelFormatBGRA8Unorm
+       && _format != RPixelFormatBGRX8Unorm)
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
-                                                                                    width:(NSUInteger)size.width
-                                                                                   height:(NSUInteger)size.height
-                                                                                mipmapped:NO];
+               width:(NSUInteger)size.width
+               height:(NSUInteger)size.height
+               mipmapped:NO];
       _src = [_context.device newTextureWithDescriptor:td];
    }
 }
@@ -1355,16 +1299,14 @@ static const NSUInteger kConstantAlignment = 4;
 - (void)setFrame:(CGRect)frame
 {
    if (CGRectEqualToRect(_frame, frame))
-   {
       return;
-   }
 
-   _frame = frame;
+   _frame      = frame;
 
-   float l = (float)CGRectGetMinX(frame);
-   float t = (float)CGRectGetMinY(frame);
-   float r = (float)CGRectGetMaxX(frame);
-   float b = (float)CGRectGetMaxY(frame);
+   float l     = (float)CGRectGetMinX(frame);
+   float t     = (float)CGRectGetMinY(frame);
+   float r     = (float)CGRectGetMaxX(frame);
+   float b     = (float)CGRectGetMaxY(frame);
 
    Vertex v[4] = {
       {simd_make_float3(l, b, 0), simd_make_float2(0, 1)},
@@ -1382,7 +1324,8 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)_convertFormat
 {
-   if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+   if (   _format == RPixelFormatBGRA8Unorm
+       || _format == RPixelFormatBGRX8Unorm)
       return;
 
    if (!_srcDirty)

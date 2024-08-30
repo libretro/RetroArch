@@ -39,25 +39,29 @@
 #include <wiiu/procui.h>
 #include <wiiu/sysapp.h>
 
-#include "file_path_special.h"
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
+#include "../../file_path_special.h"
 #include "../../defaults.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-
-#include "hbl.h"
-#include "wiiu_dbg.h"
-#include "system/exception_handler.h"
-#include "tasks/tasks_internal.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifndef IS_SALAMANDER
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
+
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay.h"
 #endif
+#endif
+
+#include "hbl.h"
+#include "wiiu_dbg.h"
+#include "system/exception_handler.h"
 
 #define WIIU_SD_PATH "sd:/"
 #define WIIU_USB_PATH "usb:/"
@@ -126,10 +130,16 @@ static void frontend_wiiu_get_env_settings(int *argc, char *argv[],
          "filters", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], g_defaults.dirs[DEFAULT_DIR_PORT],
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], g_defaults.dirs[DEFAULT_DIR_PORT],
-         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_CORE],
          "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "screenshots", sizeof(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], g_defaults.dirs[DEFAULT_DIR_PORT],
+         "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
@@ -174,19 +184,19 @@ static int frontend_wiiu_parse_drive_list(void *data, bool load_content)
    if (!list)
       return -1;
 
-   menu_entries_append_enum(list, WIIU_SD_PATH,
+   menu_entries_append(list, WIIU_SD_PATH,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   menu_entries_append_enum(list, WIIU_USB_PATH,
+   menu_entries_append(list, WIIU_USB_PATH,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
-   menu_entries_append_enum(list, WIIU_STORAGE_USB_PATH,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   menu_entries_append(list, WIIU_STORAGE_USB_PATH,
          msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
          enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0);
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
    return 0;
 }
@@ -197,49 +207,74 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
    {
       u32 magic;
       u32 argc;
-      char * argv[3];
-      char args[];
-   }*param     = getApplicationEndAddr();
-   int len     = 0;
-   param->argc = 0;
-
-   if (!path || !*path)
-   {
-      RARCH_LOG("No executable path provided, cannot Restart\n");
-   }
+#ifndef IS_SALAMANDER
+#ifdef HAVE_NETWORKING
+      char *argv[NETPLAY_FORK_MAX_ARGS + 1];
+#else
+      char *argv[3];
+#endif
+#else
+      char *argv[2];
+#endif
+      char  args[];
+   } *param  = getApplicationEndAddr();
+   char *arg = param->args;
 
    DEBUG_STR(path);
 
-   strcpy(param->args + len, elf_path_cst);
-   param->argv[param->argc] = param->args + len;
-   len += strlen(param->args + len) + 1;
-   param->argc++;
+   param->argc    = 1;
+   param->argv[0] = arg;
+   arg += strlcpy(arg, elf_path_cst, PATH_MAX_LENGTH);
+   arg += 1;
 
-   RARCH_LOG("Attempt to load core: [%s].\n", path);
+   param->argv[1] = NULL;
+
 #ifndef IS_SALAMANDER
-   if (should_load_content && !path_is_empty(RARCH_PATH_CONTENT))
+   if (should_load_content)
    {
-      strcpy(param->args + len, path_get(RARCH_PATH_CONTENT));
-      param->argv[param->argc] = param->args + len;
-      len += strlen(param->args + len) + 1;
-      param->argc++;
+      const char *content = path_get(RARCH_PATH_CONTENT);
+#ifdef HAVE_NETWORKING
+      char *arg_data[NETPLAY_FORK_MAX_ARGS];
 
-      RARCH_LOG("content path: [%s].\n", path_get(RARCH_PATH_CONTENT));
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS, (void*)arg_data))
+      {
+         char **cur_arg = arg_data;
+
+         do
+         {
+            param->argv[param->argc++] = arg;
+            arg += strlcpy(arg, *cur_arg, PATH_MAX_LENGTH);
+            arg += 1;
+         }
+         while (*(++cur_arg));
+
+         param->argv[param->argc] = NULL;
+      }
+      else
+#endif
+      if (!string_is_empty(content))
+      {
+         param->argc    = 2;
+         param->argv[1] = arg;
+         arg += strlcpy(arg, content, PATH_MAX_LENGTH);
+         arg += 1;
+
+         param->argv[2] = NULL;
+      }
    }
 #endif
-   param->argv[param->argc] = NULL;
 
+   if (HBL_loadToMemory(path, (u32)arg - (u32)param) < 0)
    {
-      if (HBL_loadToMemory(path, (u32)param->args - (u32)param + len) < 0)
-         RARCH_LOG("Failed to load core\n");
-      else
-      {
-         param->magic = ARGV_MAGIC;
-         ARGV_PTR = param;
-         DEBUG_VAR(param->argc);
-         DEBUG_VAR(param->argv);
+      RARCH_ERR("Failed to load core\n");
+   }
+   else
+   {
+      param->magic = ARGV_MAGIC;
+      ARGV_PTR     = param;
 
-      }
+      DEBUG_VAR(param->argc);
+      DEBUG_VAR(param->argv);
    }
 }
 
@@ -249,15 +284,12 @@ static bool frontend_wiiu_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
          wiiu_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          wiiu_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          /* NOTE: We don't implement Salamander, so just turn
           * this into FRONTEND_FORK_CORE. */
          wiiu_fork_mode  = FRONTEND_FORK_CORE;

@@ -1,13 +1,24 @@
 #include "rc_runtime.h"
 #include "rc_internal.h"
-#include "rc_compat.h"
 
+#include "../rc_compat.h"
 #include "../rhash/md5.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #define RC_RICHPRESENCE_DISPLAY_BUFFER_SIZE 256
+
+rc_runtime_t* rc_runtime_alloc(void) {
+  rc_runtime_t* self = malloc(sizeof(rc_runtime_t));
+
+  if (self) {
+    rc_runtime_init(self);
+    self->owns_self = 1;
+  }
+
+  return self;
+}
 
 void rc_runtime_init(rc_runtime_t* self) {
   memset(self, 0, sizeof(rc_runtime_t));
@@ -16,7 +27,7 @@ void rc_runtime_init(rc_runtime_t* self) {
 }
 
 void rc_runtime_destroy(rc_runtime_t* self) {
-  unsigned i;
+  uint32_t i;
 
   if (self->triggers) {
     for (i = 0; i < self->trigger_count; ++i)
@@ -48,9 +59,13 @@ void rc_runtime_destroy(rc_runtime_t* self) {
 
   self->next_memref = 0;
   self->memrefs = 0;
+
+  if (self->owns_self) {
+    free(self);
+  }
 }
 
-static void rc_runtime_checksum(const char* memaddr, unsigned char* md5) {
+void rc_runtime_checksum(const char* memaddr, uint8_t* md5) {
   md5_state_t state;
   md5_init(&state);
   md5_append(&state, (unsigned char*)memaddr, (int)strlen(memaddr));
@@ -81,7 +96,7 @@ static char rc_runtime_allocated_memrefs(rc_runtime_t* self) {
   return owns_memref;
 }
 
-static void rc_runtime_deactivate_trigger_by_index(rc_runtime_t* self, unsigned index) {
+static void rc_runtime_deactivate_trigger_by_index(rc_runtime_t* self, uint32_t index) {
   if (self->triggers[index].owns_memrefs) {
     /* if the trigger has one or more memrefs in its buffer, we can't free the buffer.
      * just null out the trigger so the runtime processor will skip it
@@ -98,8 +113,8 @@ static void rc_runtime_deactivate_trigger_by_index(rc_runtime_t* self, unsigned 
   }
 }
 
-void rc_runtime_deactivate_achievement(rc_runtime_t* self, unsigned id) {
-  unsigned i;
+void rc_runtime_deactivate_achievement(rc_runtime_t* self, uint32_t id) {
+  uint32_t i;
 
   for (i = 0; i < self->trigger_count; ++i) {
     if (self->triggers[i].id == id && self->triggers[i].trigger != NULL)
@@ -107,14 +122,14 @@ void rc_runtime_deactivate_achievement(rc_runtime_t* self, unsigned id) {
   }
 }
 
-int rc_runtime_activate_achievement(rc_runtime_t* self, unsigned id, const char* memaddr, lua_State* L, int funcs_idx) {
+int rc_runtime_activate_achievement(rc_runtime_t* self, uint32_t id, const char* memaddr, lua_State* L, int funcs_idx) {
   void* trigger_buffer;
   rc_trigger_t* trigger;
   rc_runtime_trigger_t* runtime_trigger;
   rc_parse_state_t parse;
-  unsigned char md5[16];
-  int size;
-  unsigned i;
+  uint8_t md5[16];
+  int32_t size;
+  uint32_t i;
 
   if (memaddr == NULL)
     return RC_INVALID_MEMORY_OPERAND;
@@ -207,9 +222,9 @@ int rc_runtime_activate_achievement(rc_runtime_t* self, unsigned id, const char*
   return RC_OK;
 }
 
-rc_trigger_t* rc_runtime_get_achievement(const rc_runtime_t* self, unsigned id)
+rc_trigger_t* rc_runtime_get_achievement(const rc_runtime_t* self, uint32_t id)
 {
-  unsigned i;
+  uint32_t i;
 
   for (i = 0; i < self->trigger_count; ++i) {
     if (self->triggers[i].id == id && self->triggers[i].trigger != NULL)
@@ -219,7 +234,7 @@ rc_trigger_t* rc_runtime_get_achievement(const rc_runtime_t* self, unsigned id)
   return NULL;
 }
 
-int rc_runtime_get_achievement_measured(const rc_runtime_t* runtime, unsigned id, unsigned* measured_value, unsigned* measured_target)
+int rc_runtime_get_achievement_measured(const rc_runtime_t* runtime, uint32_t id, unsigned* measured_value, unsigned* measured_target)
 {
   const rc_trigger_t* trigger = rc_runtime_get_achievement(runtime, id);
   if (!measured_value || !measured_target)
@@ -231,7 +246,7 @@ int rc_runtime_get_achievement_measured(const rc_runtime_t* runtime, unsigned id
   }
 
   if (rc_trigger_state_active(trigger->state)) {
-    *measured_value = trigger->measured_value;
+    *measured_value = (trigger->measured_value == RC_MEASURED_UNKNOWN) ? 0 : trigger->measured_value;
     *measured_target = trigger->measured_target;
   }
   else {
@@ -242,10 +257,10 @@ int rc_runtime_get_achievement_measured(const rc_runtime_t* runtime, unsigned id
   return 1;
 }
 
-int rc_runtime_format_achievement_measured(const rc_runtime_t* runtime, unsigned id, char* buffer, size_t buffer_size)
+int rc_runtime_format_achievement_measured(const rc_runtime_t* runtime, uint32_t id, char* buffer, size_t buffer_size)
 {
   const rc_trigger_t* trigger = rc_runtime_get_achievement(runtime, id);
-  unsigned value;
+  uint32_t value;
   if (!buffer || !buffer_size)
     return 0;
 
@@ -257,19 +272,19 @@ int rc_runtime_format_achievement_measured(const rc_runtime_t* runtime, unsigned
   }
 
   /* cap the value at the target so we can count past the target: "107 >= 100" */
-  value = trigger->measured_value;
+  value = (trigger->measured_value == RC_MEASURED_UNKNOWN) ? 0 : trigger->measured_value;
   if (value > trigger->measured_target)
     value = trigger->measured_target;
 
   if (trigger->measured_as_percent) {
-    unsigned percent = (unsigned)(((unsigned long long)value * 100) / trigger->measured_target);
+    const uint32_t percent = (uint32_t)(((unsigned long long)value * 100) / trigger->measured_target);
     return snprintf(buffer, buffer_size, "%u%%", percent);
   }
 
   return snprintf(buffer, buffer_size, "%u/%u", value, trigger->measured_target);
 }
 
-static void rc_runtime_deactivate_lboard_by_index(rc_runtime_t* self, unsigned index) {
+static void rc_runtime_deactivate_lboard_by_index(rc_runtime_t* self, uint32_t index) {
   if (self->lboards[index].owns_memrefs) {
     /* if the lboard has one or more memrefs in its buffer, we can't free the buffer.
      * just null out the lboard so the runtime processor will skip it
@@ -286,8 +301,8 @@ static void rc_runtime_deactivate_lboard_by_index(rc_runtime_t* self, unsigned i
   }
 }
 
-void rc_runtime_deactivate_lboard(rc_runtime_t* self, unsigned id) {
-  unsigned i;
+void rc_runtime_deactivate_lboard(rc_runtime_t* self, uint32_t id) {
+  uint32_t i;
 
   for (i = 0; i < self->lboard_count; ++i) {
     if (self->lboards[i].id == id && self->lboards[i].lboard != NULL)
@@ -295,13 +310,14 @@ void rc_runtime_deactivate_lboard(rc_runtime_t* self, unsigned id) {
   }
 }
 
-int rc_runtime_activate_lboard(rc_runtime_t* self, unsigned id, const char* memaddr, lua_State* L, int funcs_idx) {
+int rc_runtime_activate_lboard(rc_runtime_t* self, uint32_t id, const char* memaddr, lua_State* L, int funcs_idx) {
   void* lboard_buffer;
-  unsigned char md5[16];
+  uint8_t md5[16];
   rc_lboard_t* lboard;
   rc_parse_state_t parse;
+  rc_runtime_lboard_t* runtime_lboard;
   int size;
-  unsigned i;
+  uint32_t i;
 
   if (memaddr == 0)
     return RC_INVALID_MEMORY_OPERAND;
@@ -378,14 +394,15 @@ int rc_runtime_activate_lboard(rc_runtime_t* self, unsigned id, const char* mema
   }
 
   /* assign the new lboard */
-  self->lboards[self->lboard_count].id = id;
-  self->lboards[self->lboard_count].value = 0;
-  self->lboards[self->lboard_count].lboard = lboard;
-  self->lboards[self->lboard_count].buffer = lboard_buffer;
-  self->lboards[self->lboard_count].invalid_memref = NULL;
-  memcpy(self->lboards[self->lboard_count].md5, md5, 16);
-  self->lboards[self->lboard_count].owns_memrefs = rc_runtime_allocated_memrefs(self);
-  ++self->lboard_count;
+  runtime_lboard = &self->lboards[self->lboard_count++];
+  runtime_lboard->id = id;
+  runtime_lboard->value = 0;
+  runtime_lboard->lboard = lboard;
+  runtime_lboard->buffer = lboard_buffer;
+  runtime_lboard->invalid_memref = NULL;
+  memcpy(runtime_lboard->md5, md5, 16);
+  runtime_lboard->serialized_size = 0;
+  runtime_lboard->owns_memrefs = rc_runtime_allocated_memrefs(self);
 
   /* reset it, and return it */
   lboard->memrefs = NULL;
@@ -393,9 +410,9 @@ int rc_runtime_activate_lboard(rc_runtime_t* self, unsigned id, const char* mema
   return RC_OK;
 }
 
-rc_lboard_t* rc_runtime_get_lboard(const rc_runtime_t* self, unsigned id)
+rc_lboard_t* rc_runtime_get_lboard(const rc_runtime_t* self, uint32_t id)
 {
-  unsigned i;
+  uint32_t i;
 
   for (i = 0; i < self->lboard_count; ++i) {
     if (self->lboards[i].id == id && self->lboards[i].lboard != NULL)
@@ -405,7 +422,7 @@ rc_lboard_t* rc_runtime_get_lboard(const rc_runtime_t* self, unsigned id)
   return NULL;
 }
 
-int rc_runtime_format_lboard_value(char* buffer, int size, int value, int format)
+int rc_runtime_format_lboard_value(char* buffer, int size, int32_t value, int format)
 {
   return rc_format_value(buffer, size, value, format);
 }
@@ -413,17 +430,52 @@ int rc_runtime_format_lboard_value(char* buffer, int size, int value, int format
 int rc_runtime_activate_richpresence(rc_runtime_t* self, const char* script, lua_State* L, int funcs_idx) {
   rc_richpresence_t* richpresence;
   rc_runtime_richpresence_t* previous;
-  rc_richpresence_display_t* display;
+  rc_runtime_richpresence_t** previous_ptr;
   rc_parse_state_t parse;
+  uint8_t md5[16];
   int size;
 
   if (script == NULL)
     return RC_MISSING_DISPLAY_STRING;
 
+  rc_runtime_checksum(script, md5);
+
+  /* look for existing match */
+  previous_ptr = NULL;
+  previous = self->richpresence;
+  while (previous) {
+    if (previous && self->richpresence->richpresence && memcmp(self->richpresence->md5, md5, 16) == 0) {
+      /* unchanged. reset all of the conditions */
+      rc_reset_richpresence(self->richpresence->richpresence);
+
+      /* move to front of linked list*/
+      if (previous_ptr) {
+        *previous_ptr = previous->previous;
+        if (!self->richpresence->owns_memrefs) {
+          free(self->richpresence->buffer);
+          previous->previous = self->richpresence->previous;
+        }
+        else {
+          previous->previous = self->richpresence;
+        }
+
+        self->richpresence = previous;
+      }
+
+      /* return success*/
+      return RC_OK;
+    }
+
+    previous_ptr = &previous->previous;
+    previous = previous->previous;
+  }
+
+  /* no existing match found, parse script */
   size = rc_richpresence_size(script);
   if (size < 0)
     return size;
 
+  /* if the previous script doesn't have any memrefs, free it */
   previous = self->richpresence;
   if (previous) {
     if (!previous->owns_memrefs) {
@@ -432,12 +484,14 @@ int rc_runtime_activate_richpresence(rc_runtime_t* self, const char* script, lua
     }
   }
 
+  /* allocate and process the new script */
   self->richpresence = (rc_runtime_richpresence_t*)malloc(sizeof(rc_runtime_richpresence_t));
   if (!self->richpresence)
     return RC_OUT_OF_MEMORY;
 
   self->richpresence->previous = previous;
   self->richpresence->owns_memrefs = 0;
+  memcpy(self->richpresence->md5, md5, sizeof(md5));
   self->richpresence->buffer = malloc(size);
 
   if (!self->richpresence->buffer)
@@ -469,17 +523,13 @@ int rc_runtime_activate_richpresence(rc_runtime_t* self, const char* script, lua
   }
   else {
     /* reset all of the conditions */
-    display = richpresence->first_display;
-    while (display != NULL) {
-      rc_reset_trigger(&display->trigger);
-      display = display->next;
-    }
+    rc_reset_richpresence(richpresence);
   }
 
   return RC_OK;
 }
 
-int rc_runtime_get_richpresence(const rc_runtime_t* self, char* buffer, unsigned buffersize, rc_runtime_peek_t peek, void* peek_ud, lua_State* L) {
+int rc_runtime_get_richpresence(const rc_runtime_t* self, char* buffer, size_t buffersize, rc_runtime_peek_t peek, void* peek_ud, lua_State* L) {
   if (self->richpresence && self->richpresence->richpresence)
     return rc_get_richpresence_display_string(self->richpresence->richpresence, buffer, buffersize, peek, peek_ud, L);
 
@@ -499,6 +549,7 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
   for (i = self->trigger_count - 1; i >= 0; --i) {
     rc_trigger_t* trigger = self->triggers[i].trigger;
     int old_state, new_state;
+    uint32_t old_measured_value;
 
     if (!trigger)
       continue;
@@ -517,18 +568,44 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
       continue;
     }
 
+    old_measured_value = trigger->measured_value;
     old_state = trigger->state;
     new_state = rc_evaluate_trigger(trigger, peek, ud, L);
 
-    /* the trigger state doesn't actually change to RESET, RESET just serves as a notification.
+    /* trigger->state doesn't actually change to RESET, RESET just serves as a notification.
      * handle the notification, then look at the actual state */
-    if (new_state == RC_TRIGGER_STATE_RESET)
-    {
+    if (new_state == RC_TRIGGER_STATE_RESET) {
       runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_RESET;
       runtime_event.id = self->triggers[i].id;
       event_handler(&runtime_event);
 
       new_state = trigger->state;
+    }
+
+    /* if the measured value changed and the achievement hasn't triggered, send a notification */
+    if (trigger->measured_value != old_measured_value && old_measured_value != RC_MEASURED_UNKNOWN &&
+        trigger->measured_target != 0 && trigger->measured_value <= trigger->measured_target &&
+        new_state != RC_TRIGGER_STATE_TRIGGERED &&
+        new_state != RC_TRIGGER_STATE_INACTIVE && new_state != RC_TRIGGER_STATE_WAITING) {
+
+      runtime_event.type = RC_RUNTIME_EVENT_ACHIEVEMENT_PROGRESS_UPDATED;
+      runtime_event.id = self->triggers[i].id;
+
+      if (trigger->measured_as_percent) {
+        /* if reporting measured value as a percentage, only send the notification if the percentage changes */
+        const int32_t old_percent = (int32_t)(((unsigned long long)old_measured_value * 100) / trigger->measured_target);
+        const int32_t new_percent = (int32_t)(((unsigned long long)trigger->measured_value * 100) / trigger->measured_target);
+        if (old_percent != new_percent) {
+          runtime_event.value = new_percent;
+          event_handler(&runtime_event);
+        }
+      }
+      else {
+        runtime_event.value = trigger->measured_value;
+        event_handler(&runtime_event);
+      }
+
+      runtime_event.value = 0; /* achievement loop expects this to stay at 0 */
     }
 
     /* if the state hasn't changed, there won't be any events raised */
@@ -638,7 +715,7 @@ void rc_runtime_do_frame(rc_runtime_t* self, rc_runtime_event_handler_t event_ha
 
 void rc_runtime_reset(rc_runtime_t* self) {
   rc_value_t* variable;
-  unsigned i;
+  uint32_t i;
 
   for (i = 0; i < self->trigger_count; ++i) {
     if (self->triggers[i].trigger)
@@ -650,13 +727,8 @@ void rc_runtime_reset(rc_runtime_t* self) {
       rc_reset_lboard(self->lboards[i].lboard);
   }
 
-  if (self->richpresence) {
-    rc_richpresence_display_t* display = self->richpresence->richpresence->first_display;
-    while (display != 0) {
-      rc_reset_trigger(&display->trigger);
-      display = display->next;
-    }
-  }
+  if (self->richpresence && self->richpresence->richpresence)
+    rc_reset_richpresence(self->richpresence->richpresence);
 
   for (variable = self->variables; variable; variable = variable->next)
     rc_reset_value(variable);
@@ -677,7 +749,7 @@ static int rc_condset_contains_memref(const rc_condset_t* condset, const rc_memr
   return 0;
 }
 
-static int rc_value_contains_memref(const rc_value_t* value, const rc_memref_t* memref) {
+int rc_value_contains_memref(const rc_value_t* value, const rc_memref_t* memref) {
   rc_condset_t* condset;
   if (!value)
     return 0;
@@ -690,7 +762,7 @@ static int rc_value_contains_memref(const rc_value_t* value, const rc_memref_t* 
   return 0;
 }
 
-static int rc_trigger_contains_memref(const rc_trigger_t* trigger, const rc_memref_t* memref) {
+int rc_trigger_contains_memref(const rc_trigger_t* trigger, const rc_memref_t* memref) {
   rc_condset_t* condset;
   if (!trigger)
     return 0;
@@ -707,7 +779,7 @@ static int rc_trigger_contains_memref(const rc_trigger_t* trigger, const rc_memr
 }
 
 static void rc_runtime_invalidate_memref(rc_runtime_t* self, rc_memref_t* memref) {
-  unsigned i;
+  uint32_t i;
 
   /* disable any achievements dependent on the address */
   for (i = 0; i < self->trigger_count; ++i) {
@@ -742,7 +814,7 @@ static void rc_runtime_invalidate_memref(rc_runtime_t* self, rc_memref_t* memref
   }
 }
 
-void rc_runtime_invalidate_address(rc_runtime_t* self, unsigned address) {
+void rc_runtime_invalidate_address(rc_runtime_t* self, uint32_t address) {
   rc_memref_t** last_memref = &self->memrefs;
   rc_memref_t* memref = self->memrefs;
 

@@ -80,8 +80,7 @@ static void *ps2_joypad_init(void *data)
             Port 0,3 -> Connector 7
             Port 1,3 -> Connector 8
           */
-
-         if((ret = padPortOpen(port, slot, padBuf[port][slot])) == 0)
+         if ((ret = padPortOpen(port, slot, padBuf[port][slot])) == 0)
             return NULL;
       }
    }
@@ -97,41 +96,43 @@ static int32_t ps2_joypad_button(unsigned port, uint16_t joykey)
 
 static int16_t ps2_joypad_axis_state(unsigned port_num, uint32_t joyaxis)
 {
-   int val     = 0;
-   int axis    = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis   = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port_num][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port_num][1][axis - 2];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis   = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port_num][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port_num][1][axis - 2];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-      case 1:
-         val = analog_state[port_num][0][axis];
-         break;
-      case 2:
-      case 3:
-         val = analog_state[port_num][1][axis-2];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   return val;
+   return 0;
 }
 
 static int16_t ps2_joypad_state(
@@ -143,25 +144,25 @@ static int16_t ps2_joypad_state(
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port_idx >= DEFAULT_MAX_PADS)
-      return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (port_idx < DEFAULT_MAX_PADS)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if (
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      {
+         /* Auto-binds are per joypad, not per user. */
+         const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+            ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+         const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+            ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+         if (
                (uint16_t)joykey != NO_BTN
-            && pad_state[port_idx] & (UINT64_C(1) << joykey)
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(ps2_joypad_axis_state(port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
+               && pad_state[port_idx] & (UINT64_C(1) << joykey)
+            )
+            ret |= ( 1 << i);
+         else if (joyaxis != AXIS_NONE &&
+               ((float)abs(ps2_joypad_axis_state(port_idx, joyaxis))
+                / 0x8000) > joypad_info->axis_threshold)
+            ret |= (1 << i);
+      }
    }
 
    return ret;
@@ -263,7 +264,9 @@ input_device_driver_t ps2_joypad = {
    ps2_joypad_axis,
    ps2_joypad_poll,
    ps2_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    ps2_joypad_name,
    "ps2",
 };

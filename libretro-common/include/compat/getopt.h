@@ -27,9 +27,17 @@
 #include "../../../config.h"
 #endif
 
-/* Custom implementation of the GNU getopt_long for portability.
- * Not designed to be fully compatible, but compatible with
- * the features RetroArch uses. */
+/**
+ * @file getopt.h
+ *
+ * Portable reimplementation of a subset of libc's \c getopt_long.
+ * Not designed to be fully compatible,
+ * but it's enough for RetroArch's purposes.
+ *
+ * If \c getopt_long is available (as determined by \c HAVE_GETOPT_LONG), it will be used instead.
+ *
+ * @see https://man7.org/linux/man-pages/man3/getopt.3.html
+ */
 
 #ifdef HAVE_GETOPT_LONG
 #include <getopt.h>

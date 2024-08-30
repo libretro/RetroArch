@@ -1,5 +1,6 @@
 /*
- * Copyright 2016-2019 Arm Limited
+ * Copyright 2016-2021 Arm Limited
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+
+/*
+ * At your option, you may choose to accept this material under either:
+ *  1. The Apache License, Version 2.0, found at <http://www.apache.org/licenses/LICENSE-2.0>, or
+ *  2. The MIT License, found at <http://opensource.org/licenses/MIT>.
  */
 
 #ifndef SPIRV_CROSS_CFG_HPP
@@ -52,6 +59,11 @@ public:
 			return 0;
 	}
 
+	bool is_reachable(uint32_t block) const
+	{
+		return visit_order.count(block) != 0;
+	}
+
 	uint32_t get_visit_order(uint32_t block) const
 	{
 		auto itr = visit_order.find(block);
@@ -88,12 +100,16 @@ public:
 			return;
 		seen_blocks.insert(block);
 
-		op(block);
-		for (auto b : get_succeeding_edges(block))
-			walk_from(seen_blocks, b, op);
+		if (op(block))
+		{
+			for (auto b : get_succeeding_edges(block))
+				walk_from(seen_blocks, b, op);
+		}
 	}
 
 	uint32_t find_loop_dominator(uint32_t block) const;
+
+	bool node_terminates_control_flow_in_sub_graph(BlockID from, BlockID to) const;
 
 private:
 	struct VisitOrder

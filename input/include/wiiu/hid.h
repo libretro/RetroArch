@@ -34,7 +34,8 @@
 /* The read loop has fully stopped and the adapter can be freed */
 #define ADAPTER_STATE_GC      4
 
-struct wiiu_hid {
+struct wiiu_hid
+{
    /* used to register for HID notifications */
    HIDClient *client;
    /* thread state data for the HID input polling thread */
@@ -49,7 +50,8 @@ struct wiiu_hid {
  * Each HID device attached to the WiiU gets its own adapter, which
  * connects the HID subsystem with the HID device driver.
  */
-struct wiiu_adapter {
+struct wiiu_adapter
+{
    wiiu_adapter_t *next;
    pad_connection_interface_t *pad_driver;
    void *pad_driver_data;
@@ -72,7 +74,8 @@ struct wiiu_adapter {
  * event; the attach event handler translate them into these
  * structures.
  */
-struct wiiu_attach {
+struct wiiu_attach
+{
    wiiu_attach_event *next;
    uint32_t type;
    uint32_t handle;
@@ -86,41 +89,16 @@ struct wiiu_attach {
    uint8_t device_name[32];
 };
 
-struct _wiiu_event_list {
+struct _wiiu_event_list
+{
    OSFastMutex lock;
    wiiu_attach_event *list;
 };
 
-struct _wiiu_adapter_list {
+struct _wiiu_adapter_list
+{
    OSFastMutex lock;
    wiiu_adapter_t *list;
 };
-
-static void *alloc_zeroed(size_t alignment, size_t size);
-static OSThread *new_thread(void);
-static wiiu_hid_t *new_hid(void);
-static void delete_hid(wiiu_hid_t *hid);
-static void delete_hidclient(HIDClient *client);
-static HIDClient *new_hidclient(void);
-static wiiu_adapter_t *new_adapter(wiiu_attach_event *event);
-static void delete_adapter(wiiu_adapter_t *adapter);
-static wiiu_attach_event *new_attach_event(HIDDevice *device);
-static void delete_attach_event(wiiu_attach_event *);
-
-static void wiiu_hid_init_lists(void);
-static void start_polling_thread(wiiu_hid_t *hid);
-static void stop_polling_thread(wiiu_hid_t *hid);
-static int wiiu_hid_polling_thread(int argc, const char **argv);
-static int32_t wiiu_attach_callback(HIDClient *client, HIDDevice *device, uint32_t attach);
-static wiiu_attach_event *synchronized_get_events_list(void);
-static void wiiu_handle_attach_events(wiiu_hid_t *hid, wiiu_attach_event *list);
-static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event);
-static void wiiu_hid_detach(wiiu_hid_t *hid, wiiu_attach_event *event);
-static void synchronized_process_adapters(wiiu_hid_t *hid);
-static void synchronized_add_to_adapters_list(wiiu_adapter_t *adapter);
-static void synchronized_add_event(wiiu_attach_event *event);
-static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t error,
-               uint8_t *buffer, uint32_t buffer_size, void *userdata);
-static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack);
 
 #endif /* __WIIU_HID__H */
