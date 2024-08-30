@@ -146,7 +146,9 @@ static void sdl_pad_connect(unsigned id)
          SDL_JoystickClose(pad->joypad);
 
       pad->joypad = NULL;
+#ifdef HAVE_SDL2
       pad->controller = NULL;
+#endif
 
       return;
    }
