@@ -3653,7 +3653,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
    settings_t *settings                   = config_get_ptr();
    const char *directory_input_remapping  = settings->paths.directory_input_remapping;
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
-   const char *input_device_name          = input_config_get_device_name(joypad_port);
+   const char *input_device_name          = input_config_get_device_display_name(joypad_port);
    const char *input_device_dir           = NULL;
    char *remap_path                       = NULL;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;

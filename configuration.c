@@ -4583,7 +4583,7 @@ bool config_load_remap(const char *directory_input_remapping,
    settings_t *settings                   = config_st;
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
-   const char *input_device_name          = input_config_get_device_name(joypad_port);
+   const char *input_device_name          = input_config_get_device_display_name(joypad_port);
    const char *input_device_dir           = NULL;
    char *remap_path                       = NULL;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
