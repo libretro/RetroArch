@@ -57,7 +57,7 @@ static const char *sdl_joypad_name(unsigned pad)
 
 #ifdef HAVE_SDL2
    if (sdl_pads[pad].controller)
-      return SDL_GameControllerNameForIndex(sdl_pads[pad].sdl_id);
+      return SDL_GameControllerName(sdl_pads[pad].controller);
    return SDL_JoystickNameForIndex(sdl_pads[pad].sdl_id);
 #else
    return SDL_JoystickName(sdl_pads[pad].sdl_id);
