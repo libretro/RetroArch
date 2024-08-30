@@ -4614,7 +4614,7 @@ bool config_load_remap(const char *directory_input_remapping,
 
       /*  Build the new path with the controller name */
       _len  = strlcpy(remap_path, core_name, remap_path_total_len);
-      _len += strlcpy(remap_path + _len, "/", remap_path_total_len - _len);
+      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), remap_path_total_len - _len);
       _len += strlcpy(remap_path + _len, input_device_dir, remap_path_total_len - _len);
 
       /* Deallocate as we no longer this */ 
