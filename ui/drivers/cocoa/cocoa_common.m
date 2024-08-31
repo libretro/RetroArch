@@ -244,7 +244,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
     static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        map = @{
+        NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
             @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
             @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
             @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
@@ -253,10 +253,16 @@ void cocoa_file_load_with_detect_core(const char *filename);
             @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
             @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
             @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
+        }];
 
-            @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
-            @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
-        };
+        if (@available(tvOS 14.3, *))
+        {
+            [dict addEntriesFromDictionary:@{
+                @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
+                @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
+            }];
+        }
+        map = dict;
     });
     NSArray<NSNumber*>* keyvals = map[@(type)];
     if (!keyvals)
@@ -270,12 +276,15 @@ void cocoa_file_load_with_detect_core(const char *filename);
 {
     for (UIPress *press in presses)
     {
+        bool has_key = false;
+        if (@available(tvOS 14, *))
+            has_key = !![press key];
         /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
             [super pressesBegan:presses withEvent:event];
-        else if (!press.key && [self didMicroGamepadPress:press.type])
+        else if (!has_key && [self didMicroGamepadPress:press.type])
             [self sendKeyForPress:press.type down:true];
-        else if (press.key)
+        else if (has_key)
             [super pressesBegan:[NSSet setWithObject:press] withEvent:event];
     }
 }
