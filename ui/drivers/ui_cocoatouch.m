@@ -884,7 +884,7 @@ enum
                           defaultRegion:(UIPointerRegion *)defaultRegion API_AVAILABLE(ios(13.4))
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple)
+   if (!apple || apple->mouse_grabbed)
       return nil;
    CGPoint location = [apple_platform.renderView convertPoint:[request location] fromView:nil];
    apple->touches[0].screen_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);
