@@ -2568,6 +2568,14 @@ MSG_HASH(
    "Адаптыўны VSync"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Затрымка кадра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Скарачае латэнтнасць коштам большай рызыкі заікання відэа."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Аўтаматычная затрымка кадраў"
    )
@@ -4018,6 +4026,14 @@ MSG_HASH(
    "Аўтаматычна загружаць стан аўтаматычнага захавання пры запуску."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   "Мініяцюры станаў захавання"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   "Паказваць у меню мініяцюры станаў захавання."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
    "Сцісканне захавання стану"
    )
@@ -4453,15 +4469,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
-   "Адлюстроўваць выкарыстанне памяці"
+   "Адлюстраванне выкарыстання памяці"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    "Адлюстроўваць скарыстаны ды агульны аб'ём памяці ў сістэме."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
+   "Інтэрвал абнаўлення паказу выкарыстання памяці (у кадрах)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   "Адлюстраванне выкарыстання памяці будзе абнаўляцца з зададзеным інтэрвалам у кадрах."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Апавяшчэнні пра чыт-коды"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   "Апавяшчэнні пра захаванне стану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   "Адлюстроўваць на экране паведамленне пры захаванні ды загрузцы станаў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
