@@ -3558,12 +3558,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
-            int state_slot            = settings->ints.state_slot;
-
             if (settings->bools.savestate_auto_index)
             {
-               int new_state_slot = state_slot + 1;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+               configuration_set_int(settings, settings->ints.state_slot,
+                  command_event_get_next_savestate_auto_index(settings));
             }
          }
          if (!command_event_main_state(cmd))
