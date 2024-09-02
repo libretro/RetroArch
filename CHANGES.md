@@ -2,23 +2,50 @@
 - APPLE: Hide threaded video setting
 - CHEEVOS: Add rarity and points to achievement unlock widget
 - CHEEVOS: Add rank to leaderboard submission notification
+- CHEEVOS: Update to rcheevos 11.5
+- CHEEVOS: Show rcheevos game image in Discord rich presence
 - CLOUDSYNC: Allow saves and configs to be synced optionally
 - CLOUDSYNC: Add iCloud cloud sync driver
+- CLOUDSYNC: Speed up by upload/download in parallel
+- CLOUDSYNC: Allow thumbnails and system dir to be synced optionally
 - CRT/SWITCHRES: Update switchres to 2.2.1
 - GENERAL: Support for mbedtls v3
+- GENERAL: Automatic Frame Delay refactor
+- GENERAL: Remove Frame Rest, obsoleted by Frame Delay refactor
+- HAIKU: Restore Haiku build
 - INPUT: Allow to select a preferred/reserved device for each player
 - INPUT: Enable Caps, Num, Scroll Lock modifiers on multiple platforms
+- INPUT/HID: Fix crash on macOS when disconnecting the controller a second time
 - INPUT/UDEV: Enable mouse buttons 4 and 5
 - INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
 - INPUT/X11: Enable mouse buttons 4 and 5
 - iOS: Enable vibration by default
+- iOS: Better handling of physical mice/magic keyboard trackpad
+- iOS: Mouse grab fixes
+- iOS: Fix mouse cursor movement when button is held down
+- iOS/TVOS: Add Opera to App Store build
+- iOS/TVOS: Bring NEON defines in line with ARM64
+- FFMPEG: Fix crash when playing back a file with 96 kHz audio
+- MIDI: Fix long messages (SysEx) in WinMM driver
+- MIDI: Fix lingering notes on close in Alsa driver
+- MENU: Support local thumbnails in other image formats than png (jpg/jpeg, bmp, tga)
+- MENU: Delete also savestate thumbnails when savestates are garbage collected
+- MENU/GLUI: Make Show Sublabels options effective
+- MENU/XMB: Allow playlist icons to be individually customized, by looking for images in Named_Logos
+- RECORDING: New WAV recording driver (audio only)
 - REMOTE RETROPAD: Add gyro/acceleration/light sensor test screen
 - TVOS: Support bluetooth keyboards on tvOS
+- TVOS: Fixes to run correctly on TVOS13
 - VIDEO: Show and use exact refresh rate (3 decimals) and interlace/doublestrike where available
 - VIDEO: Allow setting viewport bias to offset viewport horizontally/vertically
+- VIDEO: Support viewport bias also with integer overscale and custom aspect ratios
+- VIDEO: Use shader path from CLI for shader cycling
 - VIDEO/D3D: Fix GPU screenshots
 - VIDEO/KMS: Force fullscreen when KMS is used
+- VIDEO/OpenGLES: Improve version directive granularity
+- VIDEO/VULKAN: Fix Vulkan window freezes when swapchain becomes suboptimal
 - VIDEO/X11: Support inhibit of Xss screensaver
+- WINDOWS: Fix restart if path to executable contains non-ASCII symbols
 
 # 1.19.1
 - (WASAPI) Only write when running and fix deadlock
