@@ -1935,6 +1935,14 @@ MSG_HASH(
    "Устаўка чорнага кадра"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Устаўляе чорны кадр(ы) паміж кадрамі. Можа істотна паменшыць размыццё шляхам эмуляцыі разгорткі ЭПТ, але зніжае яркасць. Не ўключайце адначасова з інтэрвалам абнаўлення > 1, падкадрамі, затрымкай кадра ці сінхранізацыяй з кадравай частатой кантэнту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Устаўляе паміж кадрамі кадр(ы) чорнага колеру для падвышэння выразнасці руху. Выкарыстоўвайце значэнне толькі для бягучай частаты абнаўлення. Не дастасавальна з частатой абнаўлення не кратнай 60 Гц, напрыклад 144 Гц, 165 Гц і г. д. Не ўключайце адначасова з інтэрвалам абнаўлен[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 – для частаты абнаўлення экрану 120 Гц"
    )
@@ -1999,8 +2007,24 @@ MSG_HASH(
    "Устаўлянне чорнага кадра - зацямнёныя кадры"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Рэгулюе колькасць чорных кадраў у агульнай паслядоўнасці разгорткі BFI. Падвышэнне значэння паляпшае выразнасць руху, паніжэнне павялічвае яркасць. Не дастасавальна да 120 Гц, паколькі пры гэтым даступны толькі адзін кадр для апрацоўкі BFI. Пры перавышэнні наладкі будзе ўста[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Рэгулюе колькасць кадраў, якія адлюстроўваюцца чорнымі ў паслядоўнасці BFI. Большая колькасць чорных кадраў павялічвае выразнасць руху, але змяншае яркасць. Не дастасавальна для 120 Гц з-за наяўнасці толькі аднаго лішняга кадра ў 60 Гц, які павінен быць чорным, інакш BFI не будз[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
    "Падкадры шэйдэра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Устаўляе паміж кадрамі дадатковы кадр(ы) шэйдара. Дазваляе шэйдарам выводзіць эфекты з кадравай частатой вышэй зыходнай частаты кантэнту. Значэнне павінна адпавядаць бягучай частаце экрана. Не ўключайце адначасова з інтэрвалам абнаўлення > 1, устаўкай чорнага кадра, затр[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Устаўляе паміж кадрамі дадатковы кадр(ы) шэйдара для ўсіх шэйдарных эфектаў з частатой вышэй частаты кантэнту. Выкарыстоўвайце значэнне толькі для бягучай частаты абнаўлення. Не дастасавальна з частатой абнаўлення не кратнай 60 Гц, напрыклад 144 Гц, 165 Гц і г. д. Не ўключайце [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
@@ -2067,12 +2091,28 @@ MSG_HASH(
    "Здымак экрана графічным працэсарам"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Сімуляцыя плывучага радка разгорткі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Імітуе просты плавальны радок разгорткі па-над некалькімі падкадрамі шляхам дзялення экрана па вертыкалі і адмалёўкі кожнай яго часткі зыходзячы з колькасці падкадраў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Імітуе просты плавальны радок разгорткі па-над некалькімі падкадрамі шляхам дзялення экрана па вертыкалі і адмалёўкі кожнай яго часткі зыходзячы з колькасці падкадраў ад верха да нізу экрана."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "Калі падтрымліваецца, рабіць здымкі экрану пасля апрацоўкі GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Білінейная фільтрацыя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Дадае невялікае размыццё выявы для згладжвання рэзкасці пікселяў. Практычна не ўплывае на прадукцыйнасць."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -2190,6 +2230,10 @@ MSG_HASH(
    "Выкарыстоўваць меню высокай раздзяляльнасці"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   "Пераключацца на модлайн высокага раздзялення пры адсутнасці загружанага кантэнту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    "Уласная частата абнаўлення"
    )
@@ -2208,10 +2252,18 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Выбраць, які экран дысплэя будзе выкарыстоўвацца."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "Прыярытэт манітора. 0 (па змаўчанні) азначае, што перавага манітора выключана. 1 і вышэй (дзе 1 азначае першы манітор) паказвае RetroArch, што прыярытэт у дадзенага манітора."
+   )
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
    "Аптымізаваць для Wii U GamePad (патрабуецца перазапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+   "Выкарыстоўваць дакладнае 2x маштабаванне пры вывадзе на GamePad. Адключыце для адлюстравання ў натыўным раздзяленні ТВ."
    )
 #endif
 MSG_HASH(
@@ -2269,6 +2321,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    "Дакладная ацэнка частаты абнаўлення экрана ў Гц."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "Дакладная частата абнаўлення экрана у (Гц). Ужываецца для вылічэння частаты гуку па формуле:\nчастата_гуку = частата ўводу гульні * частата абнаўлення экрана /\nчастата абнаўлення гульні. Калі ядро ​​не паведамляе значэнняў, то для сумяшчальнасці прымяняюцца стандартныя зн[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
@@ -2383,6 +2439,10 @@ MSG_HASH(
    "Маштаб акна"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   "Змяняе памеры акна, цягам ужывання зададзенага множніка да вобласці прагляду ядра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
    "Непразрыстасць акна"
    )
@@ -2462,8 +2522,16 @@ MSG_HASH(
    "Цэлалікавы маштаб"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Маштабаваць малюнак з цэлалікім інтэрвалам. Базавы памер залежыць ад геаметрыі і суадносін бакоў сістэмы. Калі не ўключана 'Прымусовая ўстаноўка' для суадносін бакоў, значэнні X/Y будуць мяняцца незалежна адзін ад аднаго."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
    "Павялічванне цэлалікавага маштабу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
+   "Рабіць акругленне пры цэлалікім маштабаванні ў бок большага, а не меншага цэлага ліку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2476,6 +2544,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Канфігурацыя суадносін бакоў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   "Дробнае значэнне для суадносін бакоў малюнка (шырыня / вышыня)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
@@ -2498,24 +2570,100 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
    "Захоўваць прапорцыі"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+   "Захоўваць піксельныя прапорцыі 1:1 пры маштабаванні кантэнту ўбудаваным апрацоўшчыкам выявы. Калі выключана, выява будзе расцягнута на ўвесь экран."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
    "Уласныя суадносіны бакоў (пазіцыя X)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   "Ўстаноўка зрушэння для вызначэння становішча вобласці прагляду па восі X."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Уласныя суадносіны бакоў (пазіцыя Y)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   "Ўстаноўка зрушэння для вызначэння становішча вобласці прагляду па восі Y."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Зрух вобласці прагляду па X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Зрух вобласці прагляду па X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Зрух вобласці прагляду па Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Зрух вобласці прагляду па Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Ўстаноўка зрушэння вобласці прагляду па гарызанталі (калі шырыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Ўстаноўка зрушэння вобласці прагляду па вертыкалі (калі вышыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму."
+   )
 #if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Зрух вобласці прагляду па X (партрэтны рэжым)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Зрух вобласці прагляду па X (партрэтны рэжым)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Зрух вобласці прагляду па Y (партрэтны рэжым)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Зрух вобласці прагляду па Y (партрэтны рэжым)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Ўстаноўка зрушэння вобласці прагляду па гарызанталі (калі шырыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму. Для (партрэтнага рэжыму)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Ўстаноўка зрушэння вобласці прагляду па вертыкалі (калі вышыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму. Для (партрэтнага рэжыму)"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Уласныя суадносіны бакоў (шырыня)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   "Ручная ўстаноўка шырыні вобласці выявы для карыстальніцкіх суадносін бакоў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Уласныя суадносіны бакоў (вышыня)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   "Ручная ўстаноўка вышыні вобласці выявы для карыстальніцкіх суадносін бакоў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Кадраваць вылеты разгорткі (патрабуецца перазапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   "Зразае некалькі пікселяў па краі карцінкі, якія, як правіла, не выкарыстоўваюцца пры распрацоўцы і могуць уносіць скажэнні."
    )
 
 /* Settings > Video > HDR */
@@ -2533,16 +2681,32 @@ MSG_HASH(
    "Пікавая яскравасць"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
+   "Ўстаноўка максімальнай яркасці (у кд/м2), якую можа выдаваць дысплей. Значэнне пікавай яркасці дысплея гледзіце на рэсурсе RTings."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    "Яскравасць белага аркушу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
+   "Усталёўвае яркасць, пры якой тэкст можна добра чытаць на белым аркушы або яркасць у канцы шкалы SDR (стандартнага дынамічнага дыяпазону). Выкарыстоўваецца для падладкі пад розныя ўмовы асвятлення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_CONTRAST,
    "Кантраст"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_CONTRAST,
+   "Налада гамы/кантраснасці HDR. Пашырае дыяпазон паміж самымі светлымі і самымі цёмнымі часткамі выявы. Чым вышэй кантраст HDR, тым мацней розніца і чым ніжэй кантраст, тым больш размытай будзе выява. Дазваляе дасягнуць найлепшай якасці карцінкі на экране."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
    "Пашыраная каляровая гама"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   "Пасля пераўтварэння каляровай прасторы ў лінейнае вызначае, ці трэба ўжываць пашыраную каляровую гаму для HDR10."
    )
 
 /* Settings > Video > Synchronization */
@@ -2560,12 +2724,20 @@ MSG_HASH(
    "Інтэрвал абмену VSync"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   "Ручная ўстаноўка інтэрвалу падпампоўкі VSync. Паніжае частату экрана на зададзены каэфіцыент. У рэжыме 'Аўтаматычна' значэнне выбіраецца з частаты абнаўлення ядра, што паляпшае размеркаванне кадраў кантэнту ў 30 кад/с на дысплеях 60 Гц або кантэнту ў 60 кад/с на дысплеях 120 Гц."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    "Аўта"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    "Адаптыўны VSync"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   "VSync будзе адключацца пры зніжэнні прадукцыйнасці ніжэй мэтавай частаты абнаўлення. Дапамагае ліквідаваць запавольванні пры пагаршэнні прадукцыйнасці і падвышае энергаэфектыўнасць."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -2576,8 +2748,20 @@ MSG_HASH(
    "Скарачае латэнтнасць коштам большай рызыкі заікання відэа."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Устанаўлівае колькасць мілісекунд бяздзейнасці перад запускам ядра пасля вываду малюнка. Памяншае запазненне, але можа ўплываць на плыўнасць.\nЗначэнне вышэй або роўнае 20 апрацоўваецца як адсотак ад часу кадра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Аўтаматычная затрымка кадраў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Дынамічная падладка дзеючай 'Затрымкі кадра'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "Спрабаваць захоўваць мэтавую 'Затрымку кадра' і мінімізаваць выпадзенне кадраў. Пры значэнні 'Затрымкі кадра' 0 (аўтаматычна) пачатковая кропка роўная 3/4 часу кадра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2610,6 +2794,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    "Сінхранізацыя з частатой кадраў змесціва (G-Sync, FreeSync)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   "Выключае адхіленні ад таймінгу ядра. Ужываецца для манітораў з зменнай частатой абнаўлення (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Сінхранізацыя з дакладнай кадравай частатой кантэнту. Эквівалентна прымусовай усталёўцы хуткасці на 1x, але з магчымасцю паскоранай перамоткі. Выключае адхіленне ад запытанай ядром частаты абнаўлення і не выкарыстоўвае дынамічнае кіраванне частатой гуку."
    )
 
 /* Settings > Audio */
@@ -2715,6 +2907,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    "Гучнасць гуку (у дБ). Значэнню 0 дБ адпавядае нармальная гучнасць без ужывання ўзмацнення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Гучнасць гуку ў дб. Значэнне 0 дб адпавядае нармальнай гучнасці без узмацнення. Узровень узмацнення можна змяняць падчас гульні клавішамі Павялічыць гучнасць / Паменшыць гучнасць."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -2839,6 +3035,10 @@ MSG_HASH(
    "Якасць перадыскрэтызацыі"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   "Нізкія значэнні павялічваюць прадукцыйнасць/зніжаюць затрымку, але пагаршаюць якасць гуку. Высокія паляпшаюць якасць гуку, але змяншаюць прадукцыйнасць/павялічваюць адставанне."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
    "Прадвызначаная ўваходная частата (Гц)"
    )
@@ -2887,6 +3087,10 @@ MSG_HASH(
    "Якасць перадыскрэтызацыі"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   "Нізкія значэнні павялічваюць прадукцыйнасць/зніжаюць затрымку, але пагаршаюць якасць гуку. Высокія паляпшаюць якасць гуку, але змяншаюць прадукцыйнасць/павялічваюць адставанне."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    "Выходная частата (Гц)"
    )
@@ -2910,8 +3114,20 @@ MSG_HASH(
    "Максімальны зрух таймінгу"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   "Максімальнае адхіленне частаты аўдыёсігналу. Павышэнне значэння моцна ўплывае на змены таймінгу, але прыводзіць да недакладнай вышыні гуку (напрыклад пры запуску PAL-кантэнту на NTSC-экранах)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "Максімальнае адхіленне таймінгу гуку.\nВызначае максімальную змену зыходнай частаты. Павышэннем значэння можна дабіцца значных адхіленняў таймінга, напрыклалад пры запуску PAL-ядзер на NTSC-дысплеях, але гэта паўплывае на дакладнасць вышыні гуку.\nРазлік зыходнай частаты:\nз[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    "Дынамічны кантроль частаты гуку"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   "Дапамагае згладжваць адхіленні ад таймінгу пры сінхранізацыі гуку і выявы. Калі выключана, дасягненне дакладнай сінхранізацыі практычна немагчыма."
    )
 
 /* Settings > Audio > MIDI */
@@ -3688,12 +3904,40 @@ MSG_HASH(
    "Пінг сеткавай гульні (пераключэнне)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   "Уключае/адключае адлюстраванне пінга для бягучай сеткавай гульні."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
    "Хостынг сеткавай гульні (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
    "Уключае/выключае хостынг сеткавай гульні."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
+   "Сеткавая гульня/рэжым назіральніка (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
+   "Перамыкае бягучы сеанс Netplay паміж рэжымамі 'гульня' і 'назіральнік'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Сеткавы чат"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   "Адпраўка паведамленняў у чат бягучага сеансу сеткавай гульні."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Згасанне чата (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "Пераключэнне паміж згасаючымі і статычнымі паведамленнямі чата."
    )
 
 MSG_HASH(
@@ -3712,6 +3956,22 @@ MSG_HASH(
    "Тып прылады"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   "Вызначае тып эмуляванага кантролера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   "Аналага-лічбавы рэжым"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   "Указаны аналагавы джойсцік будзе працаваць як D-Pad. Рэжымы 'Прымусова' замяшчае натыўны аналагавы ўвод ядра."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   "Прывязвае паказаны аналагавы джойсцік да D-Pad.\nКалі ядро ​​натыўна падтрымлівае аналагавы ўвод, прывязка да D-Pad будзе працаваць толькі ў рэжыме '(Прымусова)'.\nЗ прымусовай прывязкай да D-Pad ядро ​​не атрымлівае падзеі ўводу з паказанага аналагавага джойсціка."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
    "Індэкс прылады"
    )
@@ -3720,12 +3980,48 @@ MSG_HASH(
    "Фізічны кантролер, апазнаны RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Прылада для дадзенага гульца"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Абраны кантролер будзе прысвоены бягучаму гульцу паводле рэжыму рэзервавання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "Без рэзервавання"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "Пажаданы"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
    "Зарэзервавана"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "Тып рэзервавання прылады"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "Аддаваць перавагу: пры падлучэнні ўказанай прылады яно будзе прысвоена дадзенаму гульцу. Рэзерваваць: не прысвойваць іншыя кантролеры дадзенаму гульцу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   "Порт прывязкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   "Усталёўвае які порт ядра атрымлівае падзеі ўводу ад порта кантролера франтэнда %u."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
    "Назначыць кіраванне цалкам"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   "Па чарзе прызначце ўсе кнопкі і восі ў парадку іх з'яўлення ў дадзеным меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
@@ -3738,6 +4034,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
    "Захаваць профіль кантролера"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   "Стварыць файл аўтаканфігурацыі, які будзе аўтаматычна прымяняцца пры кожным падключэнні кантролера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
@@ -3788,12 +4088,104 @@ MSG_HASH(
    "Кнопка X (угары)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
+   "Кнопка L"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
+   "Кнопка R"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
    "Кнопка L2 (трыгер)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
    "Кнопка R2 (трыгер)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
+   "Кнопка L3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
+   "Кнопка R3"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   "Левы аналагавы стык X+ (направа)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   "Левы аналагавы стык X- (налева)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   "Левы аналагавы стык Y+ (уніз)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   "Левы аналагавы стык Y- (уверх)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   "Правы аналагавы стык X+ (направа)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   "Правы аналагавы стык X- (налева)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   "Правы аналагавы стык Y+ (уніз)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   "Правы аналагавы стык Y- (уверх)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   "Пісталет курок"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   "Пісталет перазарадка"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+   "Пісталет дадатковая A"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+   "Пісталет дадатковая B"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+   "Пісталет дадатковая C"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+   "Пісталет Start"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+   "Пісталет Select"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+   "Пісталет D-Pad уверх"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+   "Пісталет D-Pad ўніз"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+   "Пісталет D-Pad налева"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+   "Пісталет D-Pad направа"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
@@ -3807,12 +4199,24 @@ MSG_HASH(
    "[Забяганне недаступнае]"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+   "Бягучае ядро ​​несумяшчальнае з забяганнем з-за адсутнасці дэтэрмінаванай падтрымкі хуткіх захаванняў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
    "Забяганне для скарачэння латэнтнасці"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
+   "Апрацоўваць логіку ядра на адзін або больш кадраў наперад з наступным адкатам стану для памяншэння атрыманай затрымкі ўводу."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Колькасць кадраў забягання"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   "Колькасць кадраў забягання. Выклікае нестабільнасць геймплэя пры завышэнні колькасці кадраў унутрагульнявой затрымкі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
@@ -3829,6 +4233,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
    "Хаваць папярэджанні, якія паказваюцца пры выкарыстанні забягання з ядром без падтрымкі захавання станаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
+   "[Кадры апярэджання недаступныя]"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
+   "Бягучае ядро ​​несумяшчальнае з кадрамі апярэджання з-за адсутнасці дэтэрмінаванай падтрымкі хуткіх захаванняў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
+   "Апрацоўка кадраў апярэджання"
    )
 
 /* Settings > Core */
@@ -4187,6 +4603,10 @@ MSG_HASH(
    "Хуткасць перамоткі наперад"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   "Максімальная частата кантэнту пры выкарыстанні паскарэння (напрыклад 5.0 для кантэнту ў 60 fps => абмежаванне ў 300 fps).\nRetroArch будзе пераходзіць у рэжым сну, каб гарантавана не перавышаць максімальную частату. Дадзенае абмежаванне не забяспечвае абсалютную дакладнасць."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
    "Прапусканне кадраў пры перамотцы наперад"
    )
@@ -4197,6 +4617,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
    "Паказчык запаволенага руху"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+   "Хуткасць кантэнту пры выкарыстанні функцыі запавольвання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
@@ -4214,8 +4638,16 @@ MSG_HASH(
    "Падтрымка перамоткі назад"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_ENABLE,
+   "Зварот да папярэдняй кропкі гульнявога працэсу. Істотна ўплывае на прадукцыйнасць."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
    "Кадры перамоткі назад"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   "Колькасць кадраў перамоткі за адзін крок. Больш высокія значэнні павялічваюць хуткасць перамоткі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
@@ -4304,8 +4736,20 @@ MSG_HASH(
    "Колькасць патокаў запісу"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   "Запіс пасля фільтрацыі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   "Захопліваць малюнак пасля прымянення фільтраў (але не шэйдараў). Запісанае відэа будзе выглядаць гэтак жа, як на экране."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    "Запіс з дапамогай ГП"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+   "Калі падтрымліваецца, запісваць малюнак пасля апрацоўкі GPU."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
@@ -4363,6 +4807,18 @@ MSG_HASH(
    "Накладка на экране"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   "Налады рамак і экраннага кіравання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "Макет экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   "Налады макета экрана."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
    "Экранныя апавяшчэнні"
    )
@@ -4374,35 +4830,251 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
    "Бачнасць апавяшчэнняў"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   "Настройка бачнасці асобных тыпаў апавяшчэнняў."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   "Паказваць аверлэй"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+   "Аверлэі выкарыстоўваюцца для адлюстравання рамак і экраннага кіравання."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   "Паказваць аверлэй за меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   "Адлюстроўваць меню па-над аверлэем, а не наадварот."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
+   "Хаваць аверлэй у меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+   "Адключаць адлюстраванне аверлэя пры ўваходзе ў меню і аднаўляць пры выхадзе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Хаваць аверлэй пры падключэнні геймпада"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   "Хаваць аверлэй пры падключэнні фізічнага кантролера да порта 1 і ўключаць зноў пры адключэнні."
+   )
 #if defined(ANDROID)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+   "Хаваць аверлэй пры падключэнні фізічнага кантролера да порта 1. Аверлей не будзе аўтаматычна адноўлены пры адключэнні геймпада."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   "Паказваць націскі на аверлэі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   "Адлюстраванне падзей уводу на экранным аверлэе. У рэжыме 'З сэнсарнага экрана' элементы аверлэя падсвятляюцца пры фактычным націску/тыку. У рэжыме 'З фізічнага кантролера' падсвятляюцца падзеі ўводу, якія атрымліваюцца ядром ад падлучанага кантролера/клавіятуры."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
+   "З сэнсарнага экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   "Паказваць курсор мышы пры выкарыстанні экраннага накладання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+   "Аўтапаварот аверлэя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+   "Калі падтрымліваецца бягучым аверлэем, паварочваць макет паводле арыентацыі экрана/суадносін бакоў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Аўтамаштабаванне аверлэя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   "Аўтаматычна падладжваць маштаб і адлегласць паміж элементамі аверлэя пад прапорцыі экрана. Дае лепшы вынік з аверлэямі кантролераў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Адчувальнасць дыяганаляў D-Pad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   "Настройка памеру зон дыяганаляў. Усталюйце на 100% для сіметрыі па 8 напрамках."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "Адчувальнасць перакрыцця ABXY"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   "Настройка памеру зон перакрыцця для блока кнопак. Усталюйце на 100% для сіметрыі па 8 напрамках."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Накладка"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   "Аўтазагрузка аверлэя"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Непразрыстасць накладкі"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   "Настройка празрыстасці элементаў аверлэя."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
    "Набор налад накладкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "Выбар аверлэя ў браўзеры файлаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   "Маштаб аверлэя (ландшафт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   "Змяняе памер усіх элементаў аверлэя ў ландшафтным рэжыме экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Падладка памераў аверлэя (ландшафт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   "Ужывае каэфіцыент карэкцыі суадносін бакоў для аверлэеў у ландшафтным рэжыме экрана. Павялічвае (ці памяншае) значэнне шырыні аверлэя."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Дзяленне аверлэя па гарызанталі (ландшафт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   "Калі падтрымліваецца бягучым макетам, падладжвае адлегласць паміж элементамі левай і правай частак аверлэя ў ландшафтнай арыентацыі экрана. Станоўчыя значэнні павялічваюць падзел паловаў, у той час як адмоўныя памяншаюць."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Дзяленне аверлэя па вертыкалі (ландшафт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   "Калі падтрымліваецца бягучым макетам, падладжвае адлегласць паміж элементамі верхняй і ніжняй частак аверлэя ў ландшафтнай арыентацыі экрана. Станоўчыя значэнні павялічваюць падзел паловаў, у той час як адмоўныя памяншаюць."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Зрух аверлэя па X (ландшафт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   "Зрух аверлэя па гарызанталі ў ландшафтным рэжыме экрана. Станоўчыя значэнні зрушваюць аверлэй направа, адмоўныя налева."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Зрух аверлэя па Y (ландшафт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   "Зрух аверлэя па вертыкалі ў ландшафтным рэжыме экрана. Станоўчыя значэнні зрушваюць аверлэй уверх, адмоўныя - уніз."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   "Маштаб аверлэя (партрэт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   "Змяняе памер усіх элементаў аверлэя ў партрэтным рэжыме экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Падладка памераў аверлэя (партрэт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   "Ужывае каэфіцыент карэкцыі суадносін бакоў для аверлэеў у партрэтным рэжыме экрана. Павялічвае (ці памяншае) значэнне шырыні аверлэя."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Дзяленне аверлэя па гарызанталі (партрэт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   "Калі падтрымліваецца бягучым макетам, падладжвае адлегласць паміж элементамі левай і правай частак аверлэя ў партрэтнай арыентацыі экрана. Станоўчыя значэнні павялічваюць падзел паловаў, у той час як адмоўныя памяншаюць."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Дзяленне аверлэя па вертыкалі (партрэт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   "Калі падтрымліваецца бягучым макетам, падладжвае адлегласць паміж элементамі верхняй і ніжняй частак аверлэя ў партрэтнай арыентацыі экрана. Станоўчыя значэнні павялічваюць падзел паловаў, у той час як адмоўныя памяншаюць."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   "Зрух аверлэя па X (партрэт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   "Зрух аверлэя па гарызанталі ў партрэтным рэжыме экрана. Станоўчыя значэнні зрушваюць аверлэй направа, адмоўныя налева."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Зрух аверлэя па Y (партрэт)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   "Зрух аверлэя па вертыкалі ў партрэтным рэжыме экрана. Станоўчыя значэнні зрушваюць аверлэй уверх, адмоўныя - уніз."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   "Аверлэй клавіятуры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   "Выбар і падладка аверлэя клавіятуры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
    "Накладка светлавога пісталета, мышы ды ўказальніка"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "Выкарыстоўваць любыя дотыкі не па кнопках аверлэя для перадачы ядру падзей уводу з прылады."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
    "Накладка светлавога пісталета"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "Настройка падзей уводу светлавога пісталета, якія адпраўляюцца з аверлэя."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
    "Накладка мышы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "Настройка падзей уводу мышы, якія адпраўляюцца з аверлэя. Заўвага: адзіночныя, падвойныя і трайныя дотыкі перадаюць націскі левай, правай і сярэдняй кнопкамі мышы."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -4410,6 +5082,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
    "Набор налад накладкі клавіятуры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   "Выбар аверлэя клавіятуры ў браўзеры файлаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Аўтамаштабаванне аверлэя клавіятуры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   "Падладка аверлэя клавіятуры пад зыходны фармат. Адключыце для расцягу на ўвесь экран."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   "Бачнасць аверлэя клавіятуры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   "Бачнасць усіх элементаў інтэрфейсу аверлэя клавіятуры."
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
@@ -4419,8 +5111,24 @@ MSG_HASH(
    "Порт светлавога пісталета"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Порт ядра, які атрымлівае падзеі ўводу светлавога пісталета з аверлэя."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
    "Любы"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Націск курка пры дотыку"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "Перадаваць націскі курка, цягам выкарыстання ўводу з паказальніка."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "Затрымка курка (у кадрах)"
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
@@ -4488,6 +5196,18 @@ MSG_HASH(
    "Апавяшчэнні пра чыт-коды"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "Адлюстроўваць паведамленне пры аўтаматычным запуску апошняга выкарыстанага дыска з дапамогай M3U-плэйліста для мультыдыскавага кантэнту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Апавяшчэнне аб аперацыях з дыскам"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Адлюстроўваць паведамленне пры ўстаўцы і выманні дыска."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
    "Апавяшчэнні пра захаванне стану"
    )
@@ -4506,6 +5226,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
    "Апавяшчэнні пра здымкі экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   "Адлюстроўваць паведамленне пры захаванні скрыншота."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
@@ -4536,12 +5260,40 @@ MSG_HASH(
    "Эфект успышкі здымка экрана"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   "Адлюстраванне на экране эфекту ўспышкі з зададзенай працягласцю пры стварэнні скрыншота."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
    "УКЛ (звычайна)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
    "УКЛ (хутка)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Апавяшчэнне аб частаце абнаўлення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   "Адлюстроўваць паведамленне пры змене частаты абнаўлення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Дадатковыя апавяшчэнні Netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   "Адлюстроўваць другарадныя сеткавыя паведамленні."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Апавяшчэнні толькі ў меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   "Адлюстроўваць апавяшчэння толькі калі адкрыта меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
@@ -4556,36 +5308,88 @@ MSG_HASH(
    "Памер апавяшчэнняў"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Ўстаноўка памеру шрыфта апавяшчэнняў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
+   "Палажэнне апавяшчэння (па гарызанталі)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+   "Вызначае становішча тэксту на экране па восі X. 0 адпавядае мяжы злева."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+   "Палажэнне апавяшчэння (па вертыкалі)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+   "Вызначае становішча тэксту на экране па восі Y. 0 адпавядае ніжняй мяжы."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
    "Колер апавяшчэнняў (чырвоны)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   "Ўстаноўка чырвонага колеру для тэкставых паведамленняў на экране. Дыяпазон дапушчальных значэнняў ад 0 да 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
    "Колер апавяшчэнняў (зялёны)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   "Ўстаноўка зялёнага колеру для тэкставых паведамленняў на экране. Дыяпазон дапушчальных значэнняў ад 0 да 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
    "Колер апавяшчэнняў (сіні)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   "Ўстаноўка сіняга колеру для тэкставых паведамленняў на экране. Дыяпазон дапушчальных значэнняў ад 0 да 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    "Фон апавяшчэнняў"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   "Уключае каляровы фон для паведамленняў на экране."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
    "Колер фону апавяшчэнняў (чырвоны)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   "Ўстаноўка чырвонага колеру для фону паведамленняў. Дыяпазон дапушчальных значэнняў ад 0 да 255."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
    "Колер фону апавяшчэнняў (зялёны)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   "Ўстаноўка зялёнага колеру для фону паведамленняў. Дыяпазон дапушчальных значэнняў ад 0 да 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    "Колер фону апавяшчэнняў (сіні)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   "Ўстаноўка сіняга колеру для фону паведамленняў. Дыяпазон дапушчальных значэнняў ад 0 да 255."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
    "Непразрыстасць фону апавяшчэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   "Ўстаноўка празрыстасці фону тэкставых паведамленняў. Дыяпазон дапушчальных значэнняў ад 0.0 да 1.0."
    )
 
 /* Settings > User Interface */
@@ -4615,18 +5419,94 @@ MSG_HASH(
    "Змяніць значок праграмы."
    )
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+   "Адлюстраванне ніжняга экрана 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+   "Налады знешняга выгляду ніжняга экрана."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
    "Паказ пашыраных налад"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+   "Адлюстраванне пашыраных налад для дасведчаных карыстальнікаў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    "Рэжым кіёска"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+   "Абараняе наладу, хаваючы доступ да ўсіх параметраў канфігурацыі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+   "Пароль для адмены рэжыму кіёска"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+   "Калі рэжым кіёска ўключаны, усталёўка пароля дазваляе адключыць яго з меню. Для гэтага абярыце ў галоўным меню 'Адключыць рэжым кіёска' і ўвядзіце пароль."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   "Цыклічная пракрутка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   "Пераходзіць у пачатак/канец спісу, калі дасягнута гарызантальная ці вертыкальная мяжа."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   "Паўза пры выкліку меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   "Прыпыняць запушчаны кантэнт пры выкліку меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   "Аднаўляць кантэнт пасля захавання"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   "Аўтаматычна зачыняць меню і аднаўляць кантэнт пасля захавання або загрузкі стану. Адключэнне налады павялічвае хуткасць захавання для слабых прылад."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   "Аднаўляць кантэнт пры змене дыска"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   "Аўтаматычна зачыняць меню і аднаўляць кантэнт, калі быў устаўлены ці загружаны новы дыск."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
    "Выхад падчас закрыцця змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   "Аўтаматычна зачыняць RetroArch пры прыпыненні кантэнту. Інтэрфейс каманднага радка будзе зачынены толькі калі кантэнт быў запушчаны праз яго."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   "Тайм-аўт застаўкі меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   "Пры выкліку меню запускаць захавальнік экрана пасля зададзенага перыяду бяздзейнасці."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   "Анімацыя застаўкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   "Паказваць анімацыю пры запуску застаўкі. Нязначна ўплывае на прадукцыйнасць."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
@@ -4641,16 +5521,44 @@ MSG_HASH(
    "Вір"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Хуткасць анімацыі застаўкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   "Настройка хуткасці эфекту анімацыі застаўкі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    "Падтрымка мышы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   "Уключае навігацыю ў меню з дапамогай мышы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    "Падтрымка дотыкаў"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   "Уключае навігацыю ў меню з дапамогай тачскрына."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
    "Задачы асобным патокам"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   "Выконваць задачы ў асобным патоку."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   "Паўза пры страце фокусу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   "Прыпыняць кантэнт пры страце фокусу акна RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
@@ -7318,12 +8226,32 @@ MSG_HASH(
    "Прыбраць () ды []"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
+   "Прадвызначаны сістэмай"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   "Бокс-арт"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
    "Здымак экрана"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   "Тытульны экран"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
    "Лагатып змесціва"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
+   "Звычайна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   "Хутка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ON,
@@ -7342,12 +8270,24 @@ MSG_HASH(
    "Не"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TRUE,
+   "Праўда"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FALSE,
+   "Хлусня"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
    "Уключана"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISABLED,
    "Адключана"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE,
+   "Н/Д"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
@@ -7374,8 +8314,32 @@ MSG_HASH(
    "Нядаўна раскрытыя"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   "Амаль гатова"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
    "Актыўныя выпрабаванні"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
+   "Толькі трэкеры"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
+   "Толькі апавяшчэнні"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DONT_CARE,
+   "Прадвызначана"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LINEAR,
+   "Лінейны"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NEAREST,
+   "Бліжэйшы"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MAIN,
@@ -7390,8 +8354,32 @@ MSG_HASH(
    "<Каталог змесціва>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM,
+   "<Ручны ўвод>"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
    "<Нявызначанае>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   "Левы аналагавы стык"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   "Правы аналагавы стык"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   "Левы аналагавы стык (прымусова)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   "Правы аналагавы стык (прымусова)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+   "Клавіша %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
@@ -7428,6 +8416,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
    "Колца мышы ўправа"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
+   "Ранні"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_NORMAL,
+   "Звычайна"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
+   "Позні"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS,
@@ -7541,40 +8541,148 @@ MSG_HASH(
 /* RGUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "Шчыльнасць фону"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   "Павялічвае зярністасць клятчастага фону меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Арнамент меню"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "Шчыльнасць арнаменту"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   "Павялічвае зярністасць клятчастага арнаменту меню."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+   "Адлюстроўваць арнамент меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   "Макет па шырыні акна"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   "Змяняць памер і становішча элементаў меню для аптымальнага выкарыстання месца. Адключыце, каб выкарыстоўваць стандартны макет у два слупка фіксаванай шырыні."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+   "Лінейны фільтр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+   "Дадае невялікае размыццё ў меню для згладжвання пікселяў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
    "Унутраны апскейлінг"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   "Маштабаваць інтэрфейс меню да вывадана экран. Пры выкарыстанні з опцыяй 'Лінейнае фільтраванне меню' прадухіляе артэфакты маштабавання (няроўныя пікселі), захоўвае выразнасць малюнка. Павелічэнне параметру істотна ўплывае на прадукцыйнасць."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
    "Суадносіны бакоў"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+   "Выбар суадносін бакоў меню. Шырокаэкранныя фарматы павялічваюць гарызантальнае раздзяленне інтэрфейсу. (Можа спатрэбіцца перазагрузка, калі ўключана 'Забарона змены фармату меню')"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Зафіксаваць прапорцыі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "Забяспечвае адлюстраванне меню з правільнымі суадносінамі бакоў. Калі выключана, хуткае меню будзе расцягнута ў адпаведнасці з загружаным кантэнтам."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
    "Колеравая тэма"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   "Выбар каляровай тэмы. Значэнне 'Карыстальніцкі' дазваляе загружаць прэсэты афармлення меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "Кастомны шаблон меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   "Выбар тэмы меню ў браўзеры файлаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "Празрыстасць"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Адлюстроўваць у фоне запушчаны кантэнт пры выкліку хуткага меню. Адключэнне празрыстасці можа змяніць колеры тэмы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Эфекты ценю"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+   "Уключае адкідванне ценяў для тэксту, рамак і мініяцюр. Умерана ўплывае на прадукцыйнасць."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
    "Анімацыя фону"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+   "Уключыць эфект анімаваных часціц для фону. Істотна ўплывае на прадукцыйнасць."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
    "Хуткасць анімацыі фону"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   "Настройка хуткасці анімацыі эфекту часціц."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Фонавая анімацыя застаўкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   "Паказваць аніміраваны эфект часціц пры запуску застаўкі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
    "Паказваць мініяцюры плэй-лістоў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   "Уключае адлюстраванне сціснутых эскізаў пры праглядзе плэйлістоў. Пераключэнне ажыццяўляецца кнопкай RetroPad Select. Калі выкл., прагляд мініяцюр усё роўна даступны кнопкай RetroPad Start."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
    "Верхняя мініяцюра"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   "Тып мініяцюры, якая адлюстроўваецца ў правай верхняй частцы плэйліста. Для цыклічнага пераключэння мініяцюры націсніце RetroPad Y."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Ніжняя мініяцюра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
+   "Тып мініяцюры, якая адлюстроўваецца ў правым ніжнім куце плэйліста."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
@@ -8946,6 +10054,10 @@ MSG_HASH(
    "Загружана захаванне стану. Для бягучага сеанса дасягненняў рэжым хардкору адключаны."
    )
 MSG_HASH(
+   MSG_RESAMPLER_QUALITY_NORMAL,
+   "Звычайна"
+   )
+MSG_HASH(
    MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
    "Набор налад шэйдара паспяхова прыбраны."
    )
@@ -8980,21 +10092,337 @@ MSG_HASH(
    "Перазапуск RetroArch"
    )
 #ifdef HAVE_LIBNX
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Разгон працэсара Switch."
+   )
 #endif
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+   "Вызначае стан Bluetooth."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
+   "Службы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+   "Упраўленне службамі аперацыйнай сістэмы."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+   "Адкрыць доступ да сеткавых тэчак праз пратакол SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SSH_ENABLE,
+   "Выкарыстоўваць SSH для выдаленага доступу да каманднага радка."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+   "Кропка доступу Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+   "Уключыць/адключыць кропку доступу Wi-Fi."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMEZONE,
+   "Часавы пояс"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_TIMEZONE,
+   "Абярыце часавы пояс для падладкі даты і часу пад ваша месцазнаходжанне."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "Адлюстроўвае спіс даступных часавых паясоў. Пасля выбару часавога пояса час і дата карэктуюцца ў адпаведнасці з абраным часавым поясам. Мяркуецца, што сістэмныя/апаратныя гадзіны ўсталёўваюцца па UTC."
+   )
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Налады Nintendo Switch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Кіраванне наладамі для Nintendo Switch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+   "Разгон СPU"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "Уключыць разгон частот CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "Падтрымка CEC"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "Уключае CEC для сувязі з ТБ пры падключанай док-станцыі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Адключыць Bluetooth ERTM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Адключае Bluetooth ERTM для выпраўлення спалучэння на некаторых прыладах"
+   )
 #endif
+MSG_HASH(
+   MSG_LOCALAP_SWITCHING_OFF,
+   "Адключэнне кропкі доступу Wi-Fi."
+   )
+MSG_HASH(
+   MSG_WIFI_DISCONNECT_FROM,
+   "Адключэнне ад Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Падключэнне да Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Няма SSID]"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ALREADY_RUNNING,
+   "Кропка доступу Wi-Fi ужо ўключана"
+   )
+MSG_HASH(
+   MSG_LOCALAP_NOT_RUNNING,
+   "Кропка доступу Wi-Fi не ўключана"
+   )
+MSG_HASH(
+   MSG_LOCALAP_STARTING,
+   "Запуск кропкі доступу Wi-Fi з SSID=%s і паролем=%s"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   "Не атрымалася стварыць файл канфігурацыі кропкі доступу Wi-Fi."
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   "Няправільны файл канфігурацыі - адсутнічае APNAME або PASSWORD у %s"
+   )
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+   "Крок мышы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+   "Ўстаноўка маштабу па x/y для змены хуткасці Wiimote."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   "Маштаб тачскрыну"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   "Падладка x/y каардынат тачскрыну для адпаведнасці маштабу дысплэя ў сістэме."
+   )
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "Touch VMouse у рэжыме ўказальніка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Уключыце для перадачы падзей дотыку пры ўводзе з сэнсарнага экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Touch VMouse у рэжыме мышы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Уключае эмуляцыю віртуальнай мышкі з дапамогай падзей дотыку пры ўводзе з сэнсарнага экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Touch VMouse у рэжыме тачпада"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Уключыце сумесна з рэжымам мышы, каб выкарыстоўваць сэнсарны экран у якасці тачпада."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Touch VMouse у рэжыме трэкбола"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Уключыце сумесна з рэжымам мышы, каб выкарыстоўваць сэнсарны экран у якасці трэкбола з інэрцыяй паказальніка."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Жэсты сэнсарнай VMouse"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Уключае сэнсарныя жэсты, такія як дотык адным пальцам, перацягванне і гартанне."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
+   "RGA-маштабаванне"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
+   "RGA-маштабаванне і бікубічная фільтрацыя. Можа скажаць віджэты."
+   )
 #else
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+   "Маштабаванне па тыпе кантэксту"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+   "Апаратнае маштабаванне кантэксту (калі даступна)."
+   )
 #endif
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+   "Уключыць частату / L2 кэш New 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+   "Ніжні экран 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
+   "Уключае вывад на ніжнім экране інфармацыі аб статусе. Адключыце для эканоміі зарада назапашвальніка і павышэння прадукцыйнасці."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
+   "Рэжым экрана 3DS"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
+   "Выбар паміж 3D ці 2D рэжымам экрана. У рэжыме '3D' пікселі квадратныя і прымяняецца эфект глыбіні пры праглядзе хуткага меню. Рэжым '2D' забяспечвае лепшую прадукцыйнасць."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
+   "2D (эфект піксельнай сеткі)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+   "2D (высокая раздзяляльнасць)"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_DEFAULT,
+   "Дакраніцеся да тачскрына, каб перайсці\nу меню RetroArch"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   "Рэсурс(ы) не знойдзены"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   "Няма\nДадзеных"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   "Няма\nСкрыншота"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_RESUME,
+   "Працягнуць гульню"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+   "Стварыць кропку\nаднаўлення"
+   )
+MSG_HASH(
+   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   "Загрузіць\nкропку\nаднаўлення"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   "Каталог рэсурсаў ніжняга экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
+   "Каталог рэсурсаў для ніжняга экрана. Мае змяшчаць \"bottom_menu.png\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+   "Уключыць шрыфт"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Паказвае шрыфт ніжняга меню. Уключыце для адлюстравання апісання кнопак на ніжнім экране. Не ўключае даты захаванняў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   "Чырвоны колер шрыфта"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   "Рэгулюе чырвоны колер шрыфта ніжняга экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   "Зялёны колер шрыфта"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   "Рэгулюе зялёны колер шрыфта ніжняга экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   "Сіні колер шрыфта"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   "Рэгулюе сіні колер шрыфта ніжняга экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   "Празрыстасць колеру шрыфта"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   "Рэгулюе празрыстасць шрыфта ніжняга экрана."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+   "Памер шрыфта"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+   "Змяняе памер шрыфта ніжняга экрана."
+   )
 #endif
 #ifdef HAVE_QT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+   "Сканіраванне завершана.<br><br>\nДля карэктнага сканавання кантэнту неабходна:\n<ul><li>загрузіць сумяшчальнае ядро</li>\n<li>абнавіць інфармацыйныя файлы ядраў</li>\n<li>абнавіць базы дадзеных</li>\n<li>перазапусціце RetroArch, калі быў выкананы любы з пералічаных пунктаў</li></ul>\nКантэнт павінен адпавядаць запісам існуючых баз дадзеных <a href=\"https://docs.libretro. com/guides/roms-playlists-thumbnails/#sources\">па спасылцы</a>. Калі сканаванне па-ранейшаму не працуе <a href=\"https://www.github.com/libretro/RetroArch/issues\">адпраўце справаздачу пра памылку</a>."
+   )
 #endif
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_ENABLED,
+   "Уключана кіраванне мышшу з тачскрыну"
+   )
+MSG_HASH(
+   MSG_IOS_TOUCH_MOUSE_DISABLED,
+   "Адключана кіраванне мышшу з тачскрыну"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Уключаны адмысловыя магчымасці RetroArch. Галоўнае меню загрузіць ядро."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "спынены."
+   )
