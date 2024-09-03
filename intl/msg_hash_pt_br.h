@@ -1341,6 +1341,14 @@ MSG_HASH(
    "Imagem. Selecione para abrir este arquivo com o visualizador de imagem."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Núcleo Libretro. Selecionar isto irá associar este núcleo ao jogo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Núcleo Libretro. Selecione este arquivo para que o RetroArch carregue este núcleo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
    "Diretório. Seleccione-o para abrir este diretório."
    )
