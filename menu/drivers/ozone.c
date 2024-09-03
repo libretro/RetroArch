@@ -766,6 +766,13 @@ static float ozone_sidebar_gradient_bottom_dracula[16]                = {
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
 };
 
+static float ozone_sidebar_gradient_top_selenium[16]            = {
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+};
+
 static float ozone_sidebar_gradient_top_solarized_dark[16]            = {
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
@@ -773,6 +780,12 @@ static float ozone_sidebar_gradient_top_solarized_dark[16]            = {
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
 };
 
+static float ozone_sidebar_gradient_bottom_selenium[16]         = {
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+};
 static float ozone_sidebar_gradient_bottom_solarized_dark[16]         = {
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
@@ -856,6 +869,12 @@ static float ozone_sidebar_background_dracula[16]                     = {
    0.2666666f, 0.2784314f, 0.3529412f, 1.0f,
 };
 
+static float ozone_sidebar_background_selenium[16]              = {
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+   0.1019608f, 0.1019608f, 0.1019608f, 1.0f,
+};
 static float ozone_sidebar_background_solarized_dark[16]              = {
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
    0.0000000f, 0.1294118f, 0.1725490f, 1.0f,
@@ -939,6 +958,12 @@ static float ozone_background_libretro_running_dracula[16]            = {
    0.1568627f, 0.1647058f, 0.2117647f, 1.0f,
 };
 
+static float ozone_background_libretro_running_selenium[16]     = {
+   0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
+   0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
+   0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
+   0.1647059f, 0.1647059f, 0.1647059f, 1.0f,
+};
 static float ozone_background_libretro_running_solarized_dark[16]     = {
    0.0000000f, 0.1294118f, 0.1725490f, .85f,
    0.0000000f, 0.1294118f, 0.1725490f, .85f,
@@ -985,6 +1010,9 @@ static float ozone_border_1_twilight_zone[16]      = COLOR_HEX_TO_FLOAT(0x9B61CC
 
 static float ozone_border_0_dracula[16]            = COLOR_HEX_TO_FLOAT(0xC3A0E0, 1.0f);
 static float ozone_border_1_dracula[16]            = COLOR_HEX_TO_FLOAT(0x9B61CC, 1.0f);
+
+static float ozone_border_0_selenium[16]           = COLOR_HEX_TO_FLOAT(0x91a666, 1.0f);
+static float ozone_border_1_selenium[16]           = COLOR_HEX_TO_FLOAT(0x566646, 1.0f);
 
 static float ozone_border_0_solarized_dark[16]     = COLOR_HEX_TO_FLOAT(0x67ECE2, 1.0f);
 static float ozone_border_1_solarized_dark[16]     = COLOR_HEX_TO_FLOAT(0x2AA198, 1.0f);
@@ -1289,6 +1317,44 @@ static ozone_theme_t ozone_theme_dracula = {
    "dracula"                                             /* name */
 };
 
+static ozone_theme_t ozone_theme_selenium = {
+   /* Background color */
+   COLOR_HEX_TO_FLOAT(0x2a2a2a, 1.0f),                   /* background */
+   ozone_background_libretro_running_selenium,     /* background_libretro_running */
+
+   /* Float colors for quads and icons */
+   COLOR_HEX_TO_FLOAT(0x6c6c6c, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xa6a6a6, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x566646, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x91a666, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x666666, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xa6a6a6, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x91a666, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x1a1a1a, 1.0f),                   /* message_background */
+
+   /* RGBA colors for text */
+   0xA6A6A6FF,                                           /* text_rgba */
+   0xA6A6A6FF,                                           /* text_sidebar_rgba */
+   0x91a666FF,                                           /* text_selected_rgba */
+   0x666666FF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0x1a1a1a,                                             /* screensaver_tint */
+
+   /* Sidebar color */
+   ozone_sidebar_background_selenium,              /* sidebar_background */
+   ozone_sidebar_gradient_top_selenium,            /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_selenium,         /* sidebar_bottom_gradient */
+
+   /* Fancy cursor colors */
+   ozone_border_0_selenium,                        /* cursor_border_0 */
+   ozone_border_1_selenium,                        /* cursor_border_1 */
+
+   {0},                                                  /* textures */
+
+   "selenium"                                            /* name */
+};
+
 static ozone_theme_t ozone_theme_solarized_dark = {
    /* Background color */
    COLOR_HEX_TO_FLOAT(0x002B36, 1.0f),                   /* background */
@@ -1491,6 +1557,7 @@ static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_hacking_the_kernel,
    &ozone_theme_twilight_zone,
    &ozone_theme_dracula,
+   &ozone_theme_selenium,
    &ozone_theme_solarized_dark,
    &ozone_theme_solarized_light,
    &ozone_theme_gray_dark,
@@ -1615,6 +1682,9 @@ static void ozone_set_color_theme(
       case OZONE_COLOR_THEME_DRACULA:
          theme = &ozone_theme_dracula;
          break;
+      case OZONE_COLOR_THEME_SELENIUM:
+         theme = &ozone_theme_selenium;
+		break;
       case OZONE_COLOR_THEME_SOLARIZED_DARK:
          theme = &ozone_theme_solarized_dark;
          break;
