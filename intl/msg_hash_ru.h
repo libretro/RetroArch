@@ -4035,11 +4035,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
-   "Кадры упреждения (переключение)"
+   "Упреждающие кадры (переключение)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
-   "Включает/выключает кадры упреждения."
+   "Включает/выключает упреждающие кадры."
    )
 
 MSG_HASH(
@@ -4420,7 +4420,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Кадры упреждения недоступны]"
+   "[Упреждающие кадры недоступны]"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
@@ -11673,15 +11673,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Оптимизировать меню в ландшафте"
+   "Оптимизировать альбомный макет"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Автоматически подгонять макет меню для лучшего отображения в ландшафтной ориентации экрана."
+   "Автоматически подстраивать макет меню для оптимального отображения в альбомной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
-   "Панель навигации"
+   "Показывать панель навигации"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
@@ -11693,7 +11693,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "Автоматически перемещать панель навигации в правую часть экрана при использовании ландшафтной ориентации."
+   "Автоматически перемещать панель навигации вправо при использовании ландшафтной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
@@ -11709,23 +11709,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Включить эффекты сглаживания анимации переходов по уровням меню."
+   "Включает эффект плавной анимации при переходе между разными уровнями меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-   "Вид эскизов в портрет. режиме"
+   "Тип эскизов в портретном режиме"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-   "Выбор режима миниатюр плейлиста в портретной ориентации."
+   "Выбор отображения эскизов плейлиста в портретной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Вид эскизов в ландш. режиме"
+   "Тип эскизов в альбомном режиме"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Выбор режима отображения эскизов плейлиста в альбомной ориентации."
+   "Выбор отображения эскизов плейлиста в альбомной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
@@ -11733,7 +11733,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Показывает дополнительный эскиз в режиме плейлиста типа 'Список'. Настройка работает только если ширины экрана достаточно для отображения двух эскизов."
+   "Включает дополнительный эскиз при просмотре плейлиста в режиме 'Список'. Настройка применяется только если ширины экрана достаточно для отображения двух эскизов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -11741,7 +11741,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Включает заполнение пустого места вокруг миниатюр сплошным фоном. Обеспечивает единую размерность для всех изображений, улучшая внешний вид меню при просмотре эскизов разных размеров."
+   "Включает заполнение свободного пространства вокруг миниатюр сплошным фоном. Обеспечивает единую размерность для всех изображений, улучшая отображение меню при просмотре эскизов разного размера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -14607,19 +14607,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_ENABLED,
-   "Кадры упреждения включены. Удалено кадров задержки: %u."
+   "Упреждающие кадры включены. Кадров задержки убрано: %u."
    )
 MSG_HASH(
    MSG_PREEMPT_DISABLED,
-   "Кадры упреждения выключены."
+   "Упреждающие кадры выключены."
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Кадры упреждения отключены, т.к. ядро не поддерживает быстрые сохранения."
+   "Упреждающие кадры выключены, т.к. текущее ядро не поддерживает быстрые сохранения."
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
-   "Кадры упреждения недоступны из-за отсутствия в ядре детерминированной поддержки быстрых сохранений."
+   "Упреждающие кадры недоступны из-за отсутствия в ядре детерминированной поддержки быстрых сохранений."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_ALLOCATE,
@@ -14627,11 +14627,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_SAVE_STATE,
-   "Не удалось создать сохранение. Кадры упреждения отключены."
+   "Не удалось создать сохранение. Упреждающие кадры выключены."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_LOAD_STATE,
-   "Не удалось загрузить сохранение. Кадры упреждения отключены."
+   "Не удалось загрузить сохранение. Упреждающие кадры выключены."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
