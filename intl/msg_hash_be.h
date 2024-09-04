@@ -3129,6 +3129,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    "Дапамагае згладжваць адхіленні ад таймінгу пры сінхранізацыі гуку і выявы. Калі выключана, дасягненне дакладнай сінхранізацыі практычна немагчыма."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   "Ўстаноўка на 0 адключае кіраванне частатой. Іншыя значэнні ўплываюць на адхіленне частаты гуку.\nВызначае межы змены зыходнай частаты пры дынамічнай падладцы. Разлічваецца наступным чынам:\\зыходная частата * (1.0 +/- (адхіленне кіравання частатой))"
+   )
 
 /* Settings > Audio > MIDI */
 
@@ -3286,6 +3290,14 @@ MSG_HASH(
    "Рэжым апытання (патрабуецца перазапуск)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   "Уплывае на тое, як у RetroArch праводзіцца апытанне ўводу. У залежнасці ад бягучай канфігурацыі, усталёўка 'Ранні' ці 'Позні' можа паменшыць затрымку ўводу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   "Уплывае на тое, як RetroArch праводзіць апытанне ўводу.\nРанні - перад апрацоўкай кадра.\nЗвычайны - пры фактычным запыце на апытанне ўводу.\nПозні - пры першым запыце стану ўводу для кожнага кадра.\nУ залежнасці ад канфігурацыі, рэжымы \"Ранні\" або \"Позні\" могуць зніжаць затрымку ў[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "Пераназначыць элементы кіравання для гэтага ядра"
    )
@@ -3306,6 +3318,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
    "Адключыць гарачыя клавішы Windows (патрабуецца перазапуск)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+   "Калі ўключана, забараняе ў праграме спалучэнні з клавішай Windows."
+   )
 #endif
 #ifdef ANDROID
 MSG_HASH(
@@ -3316,10 +3332,18 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
    "Выкарыстоўваць гэтую прыладу як фізічную клавіятуру, а не як геймпад."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+   "Калі RetroArch вызначае фізічную клавіятуру як геймпад, дадзеная настройка дазваляе RetroArch прымусова апазнаваць такую ​​прыладу як клавіятуру.\nМожа быць карысна ў тых выпадках, калі вы спрабуеце эмуляваць кампутар на прыладзе з Android TV і выкарыстоўваеце фізічную клавіятуру, я[...]"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    "Увод праз дадатковыя адчувальных элементаў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   "Пры падтрымцы прыладай уключае ўвод з акселерометра, гіраскопа і датчыка асветленасці. Можа ўплываць на прадукцыйнасць і энергаспажыванне на шэрагу платформ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
@@ -3332,6 +3356,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    "Аўтаматычнае ўключэнне рэжыму 'Гульнявы фокус'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   "Заўсёды ўключаць рэжым 'Гульнявога фокусу' пры запуску і аднаўленні кантэнту. Пры выбары значэння 'Вызначаць' настройка будзе ўключана толькі калі ў бягучым ядры рэалізавана падтрымка зваротнага выкліку клавіятуры франтэндам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
@@ -3354,12 +3382,28 @@ MSG_HASH(
    "Прыпыняць змесціва пры адключэнні любога кантролера. Узнаўляць пры націсканні на Start."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Зрушэнне восі для націску кнопкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   "Значэнне адхілення восі пры якім будзе фіксавацца націск кнопкі, калі выкарыстоўваецца 'Аналага-лічбавы' рэжым."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    "Мёртвая зона аналагавага ўвода"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   "Ігнараваць адхіленні аналагавага стыку ніжэй значэння мёртвай зоны."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
    "Чуласць аналагавага ўвода"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   "Настройка адчувальнасці аналагавых стыкаў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
@@ -3398,12 +3442,24 @@ MSG_HASH(
    "Перыяд турба"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Працягласць націску турба-кнопак (у кадрах)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
    "Цыкл працы турба"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   "Колькасць кадраў у перыядзе турбарэжыму, у якія кнопкі будуць націснутыя. Калі дадзенае значэнне больш ці роўна перыяду турбарэжыму, кнопкі будуць націснутыя ўвесь час."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
    "Рэжым турба"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   "Выбар паводзін турбарэжыму."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -3422,8 +3478,28 @@ MSG_HASH(
    "Адна кнопка (Утрымліванне)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Класічны рэжым, дзве кнопкі для спрацоўвання. Утрымлівайце кнопку дзеяння і аднаразова націсніце кнопку Турба, каб актываваць цыкл націснуць-адпусціць.\nКнопку Турба можна прызначыць у Налады/Увод/Прывязкі порта 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Класічны рэжым пераключэння з дзвюма кнопкамі. Для ўключэння турбарэжыму аднаразова націсніце кнопку Турба пад час утрымання кнопкі дзеяння. Для адключэння турба: зноў націсніце кнопку Турба і ўтрымлівайце кнопку дзеяння.\nКнопку Турба можна прызначыць у Налады/Увод/Пры[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Рэжым пераключэння. Аднаразова націсніце кнопку Турба, каб актываваць цыкл націснуць-адпусціць для абранай кнопкі. Націсніце паўторна для адключэння.\nКнопку Турба можна прызначыць у Налады/Увод/Прывязкі порта 1."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Рэжым з утрымліваннем. Цыкл націснуць-адпусціць для зададзенай кнопкі дзейнічае пакуль заціснутая кнопка Турба.\nКнопку Турба можна прызначыць у Налады/Увод/Прывязкі порта.\nДля эмуляцыі аўтаматычнага агню ў стылі эпохі хатніх кампутараў, прызначце кнопкі Турба і дзеянне[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
    "Прадвызначаная кнопка турба"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
+   "Кнопка дзеяння, якая выкарыстоўваецца ў турбарэжымах 'Адна кнопка'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
@@ -3432,6 +3508,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
    "Калі ўключана, уводы лічбавых кірункаў (таксама вядомыя як d-pad ці 'hatswitch') могуць быць турба."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   "Турба-кнопкі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Налады турба-кнопак.\nНататка: для працы функцыі патрабуецца прывязаць турба-кнопку да прылады ўводу ў адпаведным меню 'Прывязкі порта X'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Тактыльная аддача/вібрацыя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   "Налады тактыльнай аддачы і вібрацыі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
@@ -3454,12 +3546,32 @@ MSG_HASH(
    "Прызначэнні RetroPad"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   "Налада прывязак віртуальнага RetroPad да фізічнай прылады ўводу. Калі прылада ўводу карэктна распазнана і наладжана, выкарыстанне дадзенага меню не патрабуецца.\nДля змены прывязак уводу асобных ядраў выкарыстоўвайце пункт 'Кіраванне' у хуткім меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   "Для сувязі ядраў і франтэндаў (напр. RetroArch) Libretro выкарыстоўвае віртуальную абстракцыю геймпада 'RetroPad'. Дадзенае меню дазваляе наладзіць прывязкі RetroPad да фізічных прылад уводу і супаставіць ім віртуальныя парты ўводу.\nКалі прылада ўводу карэктна распазнана і папярэдне нал[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    "Кантроль порта %u"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "Налада прывязак віртуальнага RetroPad да фізічнай прылады ўводу для дадзенага парта."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   "Змена прывязак уводу для бягучага ядра."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    "Абыходны спосаб адключэння Android"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Рашэнне праблемы з адключэннем і перападключэннем кантролераў. Перашкаджае прызначэнню аднолькавых кантролераў для абодвух гульцоў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -3483,6 +3595,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    "Інтэнсіўнасць вібрацыі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   "Настройка велічыні эфекту тактыльнай аддачы."
    )
 
 /* Settings > Input > Menu Controls */
@@ -3516,8 +3632,16 @@ MSG_HASH(
    "Замена кнопак кіравання меню Згода ды Скасаванне"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   "Змяняе месцамі кнопкі OK/Адмена. Пры адключэнні дзейнічае японская раскладка, пры ўключэнні - заходняя."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
    "Замена кнопак прагорткі меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   "Змяняе месцамі кнопкі скроллінга. L/R для пераходу па алфавіце, L2/R2 для пракруткі па 10 элементаў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
@@ -3535,12 +3659,28 @@ MSG_HASH(
    "Уключальнік гарачых клавіш"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   "Утрымлівайце дадзеную кнопку для актывацыі гарачых клавіш. Дазваляе прызначаць дадатковыя дзеянні, не ўплываючы на ​​стандартныя. Прывязка мадыфікатара толькі да геймпада не закранае спалучэнні клавіятуры і наадварот, у той час як абодва мадыфікатара працуюць для абед[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   "Калі дадзеная гарачая клавіша прывязана да клавіятуры, кнопкам ці восям кантролера, усе іншыя гарачыя клавішы спрацоўваюць толькі пры яе націску.\nКарысна для арыентаваных на RETRO_KEYBOARD ядраў, якія шырока выкарыстоўваюць клавіятуру, дзе непажаданыя спрацоўванні гарачых кла[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
    "Затрымка ўключэння гарачых клавіш (у кадрах)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   "Дадае затрымку ў кадрах перад блакіроўкай стандартнага ўводу пасля націску кнопкі 'Актыватар гарачых клавіш'. Дазваляе перахапляць стандартны ўвод з кнопкі 'Актыватар гарачых клавіш', калі на яе прызначанае іншае дзеянне (напрыклад RetroPad 'Select')."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    "Аб'яднанне тыпаў прылад гарачых клавіш"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "Блакуе ўсе гарачыя клавішы клавіятуры і кантролера, калі для кожнага тыпу прылад уключаны 'Актыватар гарачых клавіш'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -3627,8 +3767,24 @@ MSG_HASH(
    "Перамотка назад"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_REWIND_HOTKEY,
+   "Зваротная перамотка кантэнту пры ўтрыманні кнопкі. Павінна быць уключана 'Падтрымка перамоткі'."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Паўза"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   "Прыпыняе ці аднаўляе бягучы кантэнт."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+   "Пакадравы запуск"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
+   "Запускае кантэнт па адным кадры на паўзе."
    )
 
 MSG_HASH(
@@ -3692,6 +3848,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
    "Выняць дыск (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   "Калі віртуальны латок прывада зачынены, адчыняе яго і вымае загружаны дыск. У адваротным выпадку, устаўляе абраны дыск і закрывае латок."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
@@ -3837,6 +3997,10 @@ MSG_HASH(
    "Гульнявы фокус (пераключэнне)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   "Пераключае рэжым 'Гульнявы ​​фокус'. Пры атрыманні кантэнтам фокусу адключаюцца гарачыя клавішы (увод з клавіятуры перадаецца ядру) і адбываецца захоп мышы."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
    "На ўвесь экран (пераключэнне)"
    )
@@ -3847,6 +4011,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
    "Меню працоўнага стала (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
+   "Выклікае дапаможны інтэрфейс WIMP (Windows, Icons, Menus, Pointer)."
    )
 
 MSG_HASH(
@@ -3864,6 +4032,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    "Уключае/выключае забяганне."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   "Папярэджальныя кадры (пераключэнне)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   "Уключае/выключае папярэджальныя кадры."
    )
 
 MSG_HASH(
@@ -3895,8 +4071,16 @@ MSG_HASH(
    "Наступная накладка"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
+   "Пераход да наступнага даступнага ўвазе бягучага аверлэя."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    "Сэрвіс ШІ"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   "Захапляе выяву бягучага кантэнту для перакладу і/або агучвае любы тэкст на экране. 'AI-сэрвіс' павінен быць уключаны і наладжаны."
    )
 
 MSG_HASH(
@@ -4246,6 +4430,26 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
    "Апрацоўка кадраў апярэджання"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
+   "Паўторная апрацоўка логікі ядра з апошнімі падзеямі ўводу пры змене стану кантролера. Працуе хутчэй забегання, але можа выклікаць праблемы з гукам у ядраў пры загрузцы хуткіх захаванняў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   "Колькасць папярэджальных кадраў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   "Колькасць кадраў для паўторнай апрацоўкі. Выклікае няроўнасць геймплэя, калі перавышана колькасць кадраў унутрагульнявой затрымкі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
+   "Хаваць паведамленні аб папярэджальных кадрах"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
+   "Не паказваць папярэджанне пры несумяшчальнасці ядра з папярэджальнымі кадрамі."
+   )
 
 /* Settings > Core */
 
@@ -4254,12 +4458,24 @@ MSG_HASH(
    "Абагулены апаратны кантэкст"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   "Даваць прыватны кантэкст для ядраў з апаратнай адмалёўкай. Здымае неабходнасць прадбачыць змены стану прылады паміж кадрамі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
    "Дазвол ядрам пераключаць драйвер відэа"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
    "Дазволіць ядрам пераключацца да іншага драйвера відэа замест бягучага загружанага."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
+   "Загружаць заглушку пры прыпыненні ядра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   "Пры прыпыненні ядра загружаць пустое ядро ​​для прадухілення выхаду з RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
@@ -5130,18 +5346,146 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
    "Затрымка курка (у кадрах)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "Выбар падзеі ўводу пры дотыку экрана трыма пальцамі. Для слушнага спрацоўвання іншых дзеянняў затрымка курка не павінна раўняцца нулю."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Увод пры дотыку чатырма пальцамі"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "Выбар падзеі ўводу пры дотыку экрана чатырма пальцамі. Для слушнага спрацоўвання іншых дзеянняў затрымка курка не павінна раўняцца нулю."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Дазволіць прыцэл па-за экранам"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "Дазваляе выхад прыцэла за экран. Адключыце, каб прыцэльванне абмяжоўвалася ўнутранымі межамі."
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Хуткасць мышы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "Налада хуткасці перамяшчэння курсора."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Перацягваць доўгім націскам"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Зрабіце доўгі націск па экране для ўтрымлівання кнопкі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Затрымка доўгага націску (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Час утрымлівання, неабходны для доўгага націску."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Перацягваць падвойным націскам"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Двойчы краніце экран для ўтрымлівання кнопкі пасля другога націску. Дадае затрымку да клікаў мышшу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Затрымка падвойнага націску (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Дапушчальная затрымка паміж дотыкамі для апрацоўкі падвойнага націску."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Допуск націску"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Дапушчальнае адхіленне пры вызначэнні доўгага ці адзіночнага націску. Выяўляецца ў адсотках меншага памеру экрана."
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_ENABLE,
+   "Уключыць макеты экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_ENABLE,
+   "Макеты выкарыстоўваюцца для адлюстравання рамак і іншых элементаў афармлення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_PATH,
+   "Шлях да макета экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
+   "Выбар макета экрана ў браўзеры файлаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
+   "Абраны выгляд"
+   )
+MSG_HASH( /* FIXME Unused */
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_SELECTED_VIEW,
+   "Абярыце выгляд у загружаным макеце."
+   )
 
 /* Settings > On-Screen Display > On-Screen Notifications */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    "Экранныя апавяшчэнні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+   "Вывад паведамленняў на экран."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+   "Графічныя віджэты"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+   "Уключыць палепшаныя анімацыі, апавяшчэнні, паказальнікі і элементы кіравання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+   "Аўтамаштабаванне віджэтаў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+   "Аўтаматычна змяняць памеры апавяшчэнняў, індыкатараў і элементаў кіравання паводле зададзенага маштабу меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "Маштаб віджэтаў (поўнаэкранны рэжым)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   "Ручная ўстаноўка каэфіцыента маштабавання для віджэтаў у поўнаэкранным рэжыме. Улічваецца толькі калі выключана 'Аўтамаштабаванне віджэтаў'. Дазваляе змяняць памер апавяшчэнняў, індыкатараў і элементаў кіравання незалежна ад зададзенага маштабу меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "Маштаб віджэтаў (аконны рэжым)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   "Ручная ўстаноўка каэфіцыента маштабавання для віджэтаў у аконным рэжыме. Улічваецца толькі калі выключана 'Аўтамаштабаванне віджэтаў'. Дазваляе змяняць памер апавяшчэнняў, індыкатараў і элементаў кіравання незалежна ад зададзенага маштабу меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FPS_SHOW,
@@ -5192,8 +5536,64 @@ MSG_HASH(
    "Адлюстраванне выкарыстання памяці будзе абнаўляцца з зададзеным інтэрвалам у кадрах."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   "Паказваць пінг netplay"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   "Адлюстроўваць пінг для бягучага пакоя netplay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Апавяшчэнне аб запуску кантэнту"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   "Паказваць кароткую анімацыю пры загрузцы кантэнту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   "Апавяшчэнне аб падключэнні прылады ўводу"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Апавяшчэнні пра чыт-коды"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   "Адлюстроўваць паведамленне пры загрузцы чыт-кодаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Апавяшчэнне аб патчы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   "Адлюстроўваць паведамленне, калі да ROM ужыты софт-патч."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   "Адлюстроўваць паведамленне пры падключэнні/адключэнні прылад уводу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
+   "Апавяшчэнне аб загрузцы раскладак кіравання"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   "Адлюстроўваць паведамленне пры загрузцы файлаў раскладак кіравання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Апавяшчэнне аб загрузцы перавызначэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   "Паказваць паведамленне пры загрузцы перавызначэння канфігурацыі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   "Апавяшчэнне аб загрузцы абранага дыска"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
@@ -5561,8 +5961,24 @@ MSG_HASH(
    "Прыпыняць кантэнт пры страце фокусу акна RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   "Адключыць кампазіцыю працоўнага стала"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+   "Кампазіцыя выкарыстоўваецца сродкамі Windows для адлюстравання візуальных эфектаў, вызначэння неактыўных вокнаў і г. д."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
+   "Прымусовае адключэнне кампазіцыі. У наш час працуе толькі ў Windows Vista/7."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
    "Паскарэнне прагорткі меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   "Максімальная хуткасць курсора пры ўтрыманні пракруткі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
@@ -6949,6 +7365,10 @@ MSG_HASH(
    "Звесткі ядраў"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
+   "Каталог захоўвання інфармацыйных файлаў ядраў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
    "Базы даных"
    )
@@ -6957,16 +7377,36 @@ MSG_HASH(
    "Базы даных захоўваюцца ў гэтым каталозе."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
+   "Файлы чыт-кодаў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
+   "Каталог захоўвання файлаў з чыт-кодамі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
    "Відэафільтры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+   "Каталог захоўвання графічных CPU-фільтраў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
    "Аўдыяфільтры"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+   "Каталог захоўвання гукавых DSP-фільтраў."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "Графічныя шэйдары"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+   "Каталог захоўвання GPU-шэйдараў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
@@ -7001,12 +7441,36 @@ MSG_HASH(
    "Накладкі клавіятур захоўваюцца ў гэтым каталозе."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   "Макеты экрана"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
+   "Каталог захоўвання макетаў экрана."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
    "Здымкі экрана"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    "Здымкі экрана захоўваюцца ў гэтым каталозе."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
+   "Профілі кантролераў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+   "Каталог захоўвання профіляў для аўтаматычнай наладкі прылад уводу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
+   "Прывязкі ўводу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+   "Каталог захоўвання перавызначэнняў прывязак уводу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
@@ -7057,18 +7521,70 @@ MSG_HASH(
    "Захоўваць плэй-ліст відэа ў гэты каталог."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+   "Логі запуску"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   "Каталог захоўвання логаў запуску."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
+   "Файлы захаванняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+   "Каталог захоўвання ўнутрагульнявых захаванняў. Калі не зададзена, для стварэння захаванняў будзе выкарыстоўвацца працоўны каталог кантэнту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   "Ствараць усе файлы захаванняў (*.srm) у дадзеным каталогу, уключаючы злучаныя файлы .rt, .psrm і інш. Можа быць перавызначана аргументамі каманднага радка."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
    "Захаванні станаў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   "Каталог захоўвання запісаў паўтораў і хуткіх захаванняў. Калі не зададзена, файлы будуць захоўвацца ў каталогу з кантэнтам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    "Кэш"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+   "Каталог часовага захоўвання кантэнту, вынятага з архіваў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_DIR,
+   "Логі сістэмных падзей"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_DIR,
+   "Каталог захоўвання логаў сістэмных падзей."
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+   "Уключыць Rich Presence"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
+   "Дзяліцеся вашым бягучым статусам RetroArch у Steam."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
+   "Фармат кантэнту Rich Presence"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
+   "Выбраць якая інфармацыя аб запушчаным кантэнце будзе перададзена."
+   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
@@ -7100,6 +7616,22 @@ MSG_HASH(
 
 /* Music > Quick Menu */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
+   "Дадаць у мікшар"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+   "Дадаць гукавую дарожку ў даступны аўдыё-струменевы слот.\nНе ўлічваецца, калі няма даступных слатоў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
+   "Дадаць у мікшар і прайграць"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+   "Дадаць гукавую дарожку ў даступны аўдыё-струменевы слот і прайграць.\nНе ўлічваецца, калі няма даступных слатоў."
+   )
 
 /* Netplay */
 
@@ -7108,15 +7640,83 @@ MSG_HASH(
    "Вядоўца"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+   "Падключыцца да Netplay-хаста"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+   "Увесці адрас сервера і падключыцца да сеткавай гульні ў рэжыме кліента."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+   "Адключыцца ад Netplay-хаста"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+   "Адключыць актыўнае злучэнне Netplay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "Фільтраванне лобі"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   "Толькі даступныя для падключэння"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
    "Толькі ўсталяваныя ядры"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   "Пакоі пад паролем"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   "Абнавіць спіс сеткавых хастоў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   "Пошук хастоў сеткавай гульні."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Абнавіць спіс лакальных хастоў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Пошук лакальных хастоў сеткавай гульні."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+   "Запусціць Netplay-хост"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+   "Запуск Netplay у рэжыме хаста (сервера)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+   "Спыніць Netplay-хост"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
    "Прагнаць кліента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Адключыць кліента ад бягучага пакоя."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   "Забаніць кліента"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Адключыць кліента ад бягучага пакоя."
    )
 
 /* Import Content */
@@ -7126,12 +7726,28 @@ MSG_HASH(
    "Сканаваць каталог"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   "Сканіраванне каталога для пошуку сумяшчальнага кантэнту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
    "<Сканаваць гэты каталог>"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
+   "Абярыце, каб запусціць пошук кантэнту ў дадзеным каталогу."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_FILE,
    "Сканаваць файл"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_FILE,
+   "Сканіраванне файла для пошуку сумяшчальнага кантэнту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST,
+   "Ручное сканіраванне"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
@@ -7140,6 +7756,14 @@ MSG_HASH(
 
 /* Import Content > Scan File */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
+   "Дадаць у мікшар"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+   "Дадаць у мікшар і прайграць"
+   )
 
 /* Import Content > Manual Scan */
 
@@ -7609,18 +8233,166 @@ MSG_HASH(
 
 /* Quick Menu > Cheats */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+   "Ужываць пры пераключэнні"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+   "Ужываць чыт-коды адразу пасля ўключэння."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+   "Ужыць змены"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   "Неадкладна прымяніць змены чыт-кодаў."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT,
+   "Чыт-код"
+   )
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "Пачаць або перазапусціць пошук чыт-кода"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   "Націсніце налева або направа, каб змяніць значэнне."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   "Націсніце налева або направа, каб змяніць значэнне."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+   "Роўных %u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+   "Менш чым да"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+   "Менш чым ці роўных да"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+   "Больш чым да"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+   "Больш чым ці роўных да"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+   "Роўных да"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+   "Ня роўных да"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   "Націсніце налева або направа, каб змяніць значэнне."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+   "Роўных да +%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+   "Пошук у памяці значэнняў"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   "Націсніце налева або направа, каб змяніць значэнне."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+   "Роўных да -%u (%X)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "Дадаць %u супадзенняў у спіс"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+   "Выдаліць супадзенне #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+   "Стварыць код супадзення #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+   "Адрас супадзення: %08X Маска: %02X"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
+   "Загрузіць чыт-коды (замяніць)"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Append) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+   "Файл чыт-кодаў (дадаць)"
+   )
 
 /* Quick Menu > Cheats > Cheat Details */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+   "Дэталі чыт-кода"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_IDX,
+   "Індэкс"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_IDX,
+   "Нумар пазіцыі ў спісе."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
    "Уключана"
@@ -7634,12 +8406,56 @@ MSG_HASH(
    "Апрацоўнік"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
+   "Памер значэння ў памяці"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
    "Тып"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
    "Значэнне"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+   "Адрас у памяці"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+   "Прагляд адраса: %08X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+   "Адрасная маска памяці"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   "Адрас бітавай маскі, калі памер значэння ў памяці < 8-біт."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+   "Колькасць ітэрацый"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+   "Вызначае, колькі разоў будзе ўжыты чыт-код. Выкарыстоўвайце разам з іншымі параметрамі 'ітэрацый' для ахопу вялікіх абласцей памяці."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "Падвышаць адрас з кожнай ітэрацыяй"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   "З кожнай ітэрацыяй 'Адрас у памяці' будзе падвышацца на 'Памер значэння ў памяці'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Падвышаць значэнне з кожнай ітэрацыяй"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+   "Пасля кожнай ітэрацыі 'Значэнне' будзе павялічвацца на паказаны лік."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
@@ -7706,6 +8522,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE,
    "Прыбраць аўтаматычны набор налад шэйдара."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
+   "Ужыць змены"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHADER,
@@ -9626,6 +10446,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
    "Дасягненні (хардкор)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
+   "Дэталі чыт-кода"
    )
 
 /* Unused (Needs Confirmation) */
