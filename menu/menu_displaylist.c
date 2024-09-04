@@ -5625,7 +5625,7 @@ static int menu_displaylist_parse_input_select_reserved_device_list(
             {
                 /* Add checkmark if input is currently
                  * mapped to this entry */
-                if (string_is_equal(device_label, reserved_device_name))
+                if (string_is_equal(device_label, &reserved_device_name[10]))
                 {
                     menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
                     if (cbs)
