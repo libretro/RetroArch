@@ -2780,7 +2780,9 @@ static int setting_action_ok_select_reserved_device(
     char enum_idx[16];
     if (!setting)
         return -1;
+
     snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
     generic_action_ok_displaylist_push(
             enum_idx, /* we will pass the enumeration index of the string as a path */
             NULL, NULL, 0, idx, 0,
@@ -7790,6 +7792,8 @@ static int setting_action_start_input_device_reserved_device_name(rarch_setting_
    configuration_set_string(settings,
          settings->arrays.input_reserved_devices[setting->index_offset],
          "");
+
+   command_event(CMD_EVENT_REINIT, NULL);
    return 0;
 }
 
@@ -8194,17 +8198,11 @@ static void get_string_representation_input_device_reservation_type(
    map = settings->uints.input_device_reservation_type[setting->index_offset];
 
    if (map == INPUT_DEVICE_RESERVATION_NONE)
-   {
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE), len);
-   }
    else if (map == INPUT_DEVICE_RESERVATION_PREFERRED)
-   {
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED), len);
-   }
    else if (map == INPUT_DEVICE_RESERVATION_RESERVED)
-   {
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED), len);
-   }
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
@@ -8219,7 +8217,9 @@ static void setting_get_string_representation_input_device_reserved_device_name(
     if (!setting)
         return;
 
-    if (sscanf(setting->value.target.string, "%04x:%04x ", &dev_vendor_id, &dev_product_id) != 2)
+    if (string_is_empty(setting->value.target.string))
+        strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+    else if (sscanf(setting->value.target.string, "%04x:%04x ", &dev_vendor_id, &dev_product_id) != 2)
         strlcpy(s, setting->value.target.string, len);
     else
         strlcpy(s, &setting->value.target.string[10], len);
@@ -9736,7 +9736,6 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].get_string_representation =
             &setting_get_string_representation_input_device_reserved_device_name;
       (*list)[list_info->index - 1].action_start  = &setting_action_start_input_device_reserved_device_name;
-
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME + user));
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info,
