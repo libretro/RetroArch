@@ -1708,9 +1708,9 @@ void playlist_write_runtime_file(playlist_t *playlist)
    rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_free(writer);
 
-   playlist->flags          &= ~CNT_PLAYLIST_FLG_MOD;
-   playlist->flags          &= ~CNT_PLAYLIST_FLG_OLD_FMT;
-   playlist->flags          &= ~CNT_PLAYLIST_FLG_COMPRESSED;
+   playlist->flags          &= ~(CNT_PLAYLIST_FLG_MOD
+                               | CNT_PLAYLIST_FLG_OLD_FMT
+                               | CNT_PLAYLIST_FLG_COMPRESSED);
 
    RARCH_LOG("[Playlist]: Written to playlist file: \"%s\".\n", playlist->config.path);
 end:
