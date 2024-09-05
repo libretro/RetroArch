@@ -11549,6 +11549,10 @@ MSG_HASH(
    "Quatrième dimension (Twilight Zone)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "Sélénium"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "Solarisé sombre"
    )
