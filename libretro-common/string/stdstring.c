@@ -48,18 +48,6 @@ const uint8_t lr_char_props[256] = {
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, /* Fx                  */
 };
 
-char *string_init(const char *src)
-{
-   return src ? strdup(src) : NULL;
-}
-
-void string_set(char **string, const char *src)
-{
-   free(*string);
-   *string = string_init(src);
-}
-
-
 char *string_to_upper(char *s)
 {
    char *cs = (char *)s;

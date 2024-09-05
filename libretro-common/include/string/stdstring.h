@@ -314,10 +314,6 @@ unsigned string_to_unsigned(const char *str);
  **/
 unsigned string_hex_to_unsigned(const char *str);
 
-char *string_init(const char *src);
-
-void string_set(char **string, const char *src);
-
 /**
  * string_count_occurrences_single_character:
  *
