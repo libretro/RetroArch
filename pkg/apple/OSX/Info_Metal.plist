@@ -66,6 +66,8 @@
 	<string>Copyright © 2024 RetroArch. All rights reserved.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu_Metal</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Some cores are able to provide microphone input to games.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>RAPortableInstall</key>
