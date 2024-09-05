@@ -5103,8 +5103,9 @@ static void rgui_render(
 
    /* Handle pointer input
     * Note: This is ignored when showing a fullscreen thumbnail */
-   if ((rgui->pointer.type != MENU_POINTER_DISABLED) &&
-       rgui->pointer.active && !show_fs_thumbnail)
+   if (   (rgui->pointer.type != MENU_POINTER_DISABLED)
+       && (rgui->pointer.flags & MENU_INP_PTR_FLG_ACTIVE)
+       && !show_fs_thumbnail)
    {
       /* Update currently 'highlighted' item */
       if (rgui->pointer.y > (int)rgui->term_layout.start_y)
@@ -5116,7 +5117,8 @@ static void rgui_render(
       }
 
       /* Allow drag-scrolling if items are currently off-screen */
-      if (rgui->pointer.dragged && (bottom > 0))
+      if (     (rgui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
+            && (bottom > 0))
       {
          int16_t scroll_y_max   = bottom * rgui->font_height_stride;
          rgui->scroll_y        += -1 * rgui->pointer.dy;
@@ -7784,7 +7786,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       menu_input_get_pointer_state(&rgui->pointer);
 
       /* Screen must be redrawn whenever pointer is active */
-      if ((rgui->pointer.type != MENU_POINTER_DISABLED) && rgui->pointer.active)
+      if (     (rgui->pointer.type != MENU_POINTER_DISABLED)
+            && (rgui->pointer.flags & MENU_INP_PTR_FLG_ACTIVE))
          rgui->flags    |= RGUI_FLAG_FORCE_REDRAW;
    }
    else

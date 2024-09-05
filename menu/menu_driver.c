@@ -1883,6 +1883,8 @@ static void menu_input_get_mouse_hw_state(
    rarch_joypad_info_t joypad_info;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
+   bool is_select_pressed          = false;
+   bool is_cancel_pressed          = false;
    static bool last_select_pressed = false;
    static bool last_cancel_pressed = false;
    bool menu_has_fb                =
@@ -1899,15 +1901,9 @@ static void menu_input_get_mouse_hw_state(
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->active                = false;
    hw_state->x                     = 0;
    hw_state->y                     = 0;
-   hw_state->select_pressed        = false;
-   hw_state->cancel_pressed        = false;
-   hw_state->up_pressed            = false;
-   hw_state->down_pressed          = false;
-   hw_state->left_pressed          = false;
-   hw_state->right_pressed         = false;
+   hw_state->flags                 = 0;
 
    if (!menu_mouse_enable)
       return;
@@ -1930,7 +1926,7 @@ static void menu_input_get_mouse_hw_state(
                   RARCH_DEVICE_MOUSE_SCREEN,
                   0,
                   RETRO_DEVICE_ID_MOUSE_X)) != last_x)
-         hw_state->active          = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       if ((hw_state->y = current_input->input_state(
                   input_st->current_data,
                   joypad,
@@ -1942,7 +1938,7 @@ static void menu_input_get_mouse_hw_state(
                   RARCH_DEVICE_MOUSE_SCREEN,
                   0,
                   RETRO_DEVICE_ID_MOUSE_Y)) != last_y)
-         hw_state->active          = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
    }
 
    last_x                          = hw_state->x;
@@ -1980,8 +1976,7 @@ static void menu_input_get_mouse_hw_state(
    {
       /* Select (LMB)
        * Note that releasing select also counts as activity */
-      hw_state->select_pressed = (bool)
-         current_input->input_state(
+      if (current_input->input_state(
                input_st->current_data,
                joypad,
                sec_joypad,
@@ -1991,11 +1986,12 @@ static void menu_input_get_mouse_hw_state(
                0,
                RETRO_DEVICE_MOUSE,
                0,
-               RETRO_DEVICE_ID_MOUSE_LEFT);
+               RETRO_DEVICE_ID_MOUSE_LEFT))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
+
       /* Cancel (RMB)
        * Note that releasing cancel also counts as activity */
-      hw_state->cancel_pressed = (bool)
-         current_input->input_state(
+      if (current_input->input_state(
                input_st->current_data,
                joypad,
                sec_joypad,
@@ -2005,10 +2001,11 @@ static void menu_input_get_mouse_hw_state(
                0,
                RETRO_DEVICE_MOUSE,
                0,
-               RETRO_DEVICE_ID_MOUSE_RIGHT);
+               RETRO_DEVICE_ID_MOUSE_RIGHT))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
+
       /* Up (mouse wheel up) */
-      if ((hw_state->up_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -2018,11 +2015,13 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_WHEELUP)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_WHEELUP))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_UP
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
+
       /* Down (mouse wheel down) */
-      if ((hw_state->down_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -2032,11 +2031,13 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_WHEELDOWN)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_DOWN
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
+
       /* Left (mouse wheel horizontal left) */
-      if ((hw_state->left_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -2046,11 +2047,13 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_LEFT
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
+
       /* Right (mouse wheel horizontal right) */
-      if ((hw_state->right_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -2060,16 +2063,20 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_RIGHT
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
    }
 
-   if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
-      hw_state->active             = true;
-   if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
-      hw_state->active             = true;
-   last_select_pressed             = hw_state->select_pressed;
-   last_cancel_pressed             = hw_state->cancel_pressed;
+   is_select_pressed    = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0);
+   is_cancel_pressed    = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0);
+   if (is_select_pressed || (is_select_pressed != last_select_pressed))
+      hw_state->flags  |= MENU_INP_PTR_FLG_ACTIVE;
+   if (is_cancel_pressed || (is_cancel_pressed != last_cancel_pressed))
+      hw_state->flags  |= MENU_INP_PTR_FLG_ACTIVE;
+   last_select_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0;
+   last_cancel_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0;
 }
 
 static void menu_input_get_touchscreen_hw_state(
@@ -2104,37 +2111,36 @@ static void menu_input_get_touchscreen_hw_state(
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->active                             = false;
-
-   /* Touch screens don't have mouse wheels, so these
-    * are always disabled */
-   hw_state->up_pressed                         = false;
-   hw_state->down_pressed                       = false;
-   hw_state->left_pressed                       = false;
-   hw_state->right_pressed                      = false;
+   /* Touch screens don't have mouse wheels,
+    * so up/down/left/right are always disabled */
+   hw_state->flags  &= ~(MENU_INP_PTR_FLG_ACTIVE
+                       | MENU_INP_PTR_FLG_PRESS_UP
+                       | MENU_INP_PTR_FLG_PRESS_DOWN
+                       | MENU_INP_PTR_FLG_PRESS_LEFT
+                       | MENU_INP_PTR_FLG_PRESS_RIGHT
+                        );
 
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
    if (overlay_active)
-      pointer_enabled                           = false;
+      pointer_enabled   = false;
 #endif
 
    /* If touchscreen is disabled, ignore all input */
    if (!pointer_enabled)
    {
-      hw_state->x                               = 0;
-      hw_state->y                               = 0;
-      hw_state->select_pressed                  = false;
-      hw_state->cancel_pressed                  = false;
+      hw_state->x       = 0;
+      hw_state->y       = 0;
+      hw_state->flags  &= ~(MENU_INP_PTR_FLG_PRESS_SELECT
+                          | MENU_INP_PTR_FLG_PRESS_CANCEL);
       return;
    }
 
    /* TODO/FIXME - this should only be used for framebuffer-based
     * menu drivers like RGUI. Touchscreen input as a whole should
-    * NOT be dependent on this
-    */
-   fb_width                                     = p_disp->framebuf_width;
-   fb_height                                    = p_disp->framebuf_height;
+    * NOT be dependent on this */
+   fb_width             = p_disp->framebuf_width;
+   fb_height            = p_disp->framebuf_height;
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
@@ -2161,13 +2167,13 @@ static void menu_input_get_touchscreen_hw_state(
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
    {
       if (hw_state->x != last_x)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_x = hw_state->x;
    }
    else
    {
       if (pointer_x != last_x)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_x = pointer_x;
    }
 
@@ -2187,45 +2193,63 @@ static void menu_input_get_touchscreen_hw_state(
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
    {
       if (hw_state->y != last_y)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_y = hw_state->y;
    }
    else
    {
       if (pointer_y != last_y)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_y = pointer_y;
    }
 
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
    if (current_input->input_state)
-      hw_state->select_pressed = (bool)current_input->input_state(
+   {
+      if (current_input->input_state(
             input_st->current_data,
             joypad,
             sec_joypad,
             &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
-            0, RETRO_DEVICE_ID_POINTER_PRESSED);
-   if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
-      hw_state->active = true;
-   last_select_pressed = hw_state->select_pressed;
+            0, RETRO_DEVICE_ID_POINTER_PRESSED))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
+      else
+         hw_state->flags &= ~MENU_INP_PTR_FLG_PRESS_SELECT;
+   }
+
+   {
+      bool select_pressed = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0);
+      if (select_pressed || (select_pressed != last_select_pressed))
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
+      last_select_pressed = select_pressed;
+   }
 
    /* Cancel (touch screen 'back' - don't know what is this, but whatever...)
     * Note that releasing cancel also counts as activity */
    if (current_input->input_state)
-      hw_state->cancel_pressed = (bool)current_input->input_state(
+   {
+      if (current_input->input_state(
             input_st->current_data,
             joypad,
             sec_joypad,
             &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
-            0, RARCH_DEVICE_ID_POINTER_BACK);
-   if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
-      hw_state->active = true;
-   last_cancel_pressed = hw_state->cancel_pressed;
+            0, RARCH_DEVICE_ID_POINTER_BACK))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
+      else
+         hw_state->flags &= ~MENU_INP_PTR_FLG_PRESS_CANCEL;
+   }
+
+   {
+      bool cancel_pressed = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0);
+      if (cancel_pressed || (cancel_pressed != last_cancel_pressed))
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
+      last_cancel_pressed = cancel_pressed;
+   }
 }
 
 static void menu_entries_settings_deinit(struct menu_state *menu_st)
@@ -3808,8 +3832,8 @@ static void menu_input_set_pointer_visibility(
    struct menu_state       *menu_st  = &menu_driver_state;
 
    /* Ensure that mouse cursor is hidden when not in use */
-   if ((menu_input->pointer.type == MENU_POINTER_MOUSE)
-         && pointer_hw_state->active)
+   if (     (menu_input->pointer.type == MENU_POINTER_MOUSE)
+         && ((pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE) > 0))
    {
       /* Show cursor */
       if ((current_time > end_time) && !cursor_shown)
@@ -5306,9 +5330,9 @@ unsigned menu_event(
                &touchscreen_hw_state);
 
       /* Mouse takes precedence */
-      if (mouse_hw_state.active)
+      if (mouse_hw_state.flags & MENU_INP_PTR_FLG_ACTIVE)
          menu_input->pointer.type = MENU_POINTER_MOUSE;
-      else if (touchscreen_hw_state.active)
+      else if (touchscreen_hw_state.flags & MENU_INP_PTR_FLG_ACTIVE)
          menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
 
       /* Copy input from the current device */
@@ -5317,7 +5341,7 @@ unsigned menu_event(
       else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
          memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
 
-      if (pointer_hw_state->active)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
          menu_st->input_last_time_us = menu_st->current_time_us;
    }
 
@@ -5326,14 +5350,19 @@ unsigned menu_event(
    menu_input->pointer.x          = pointer_hw_state->x;
    menu_input->pointer.y          = pointer_hw_state->y;
    if (menu_input->select_inhibit || menu_input->cancel_inhibit)
-   {
-      menu_input->pointer.active  = false;
-      menu_input->pointer.pressed = false;
-   }
+      menu_input->pointer.flags &= ~(MENU_INP_PTR_FLG_ACTIVE
+                                   | MENU_INP_PTR_FLG_PRESS_SELECT);
    else
    {
-      menu_input->pointer.active  = pointer_hw_state->active;
-      menu_input->pointer.pressed = pointer_hw_state->select_pressed;
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
+         menu_input->pointer.flags |=  (MENU_INP_PTR_FLG_ACTIVE);
+      else
+         menu_input->pointer.flags &= ~(MENU_INP_PTR_FLG_ACTIVE);
+
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT)
+         menu_input->pointer.flags |=  (MENU_INP_PTR_FLG_PRESSED);
+      else
+         menu_input->pointer.flags &= ~(MENU_INP_PTR_FLG_PRESSED);
    }
 
    /* If menu screensaver is active, any input
@@ -5341,8 +5370,8 @@ unsigned menu_event(
    if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
       /* Check pointer input */
-      bool input_active = (menu_input->pointer.type != MENU_POINTER_DISABLED) &&
-            menu_input->pointer.active;
+      bool input_active = ( (menu_input->pointer.type != MENU_POINTER_DISABLED)
+                       &&  ((menu_input->pointer.flags & MENU_INP_PTR_FLG_ACTIVE) > 0));
 
       /* Check regular input */
       if (!input_active)
@@ -5362,14 +5391,14 @@ unsigned menu_event(
       }
 
       /* Annul received input */
-      menu_input->pointer.active      = false;
-      menu_input->pointer.pressed     = false;
+      menu_input->pointer.flags      &= ~(MENU_INP_PTR_FLG_ACTIVE
+                                        | MENU_INP_PTR_FLG_PRESSED);
+      pointer_hw_state->flags        &= ~(MENU_INP_PTR_FLG_PRESS_UP
+                                        | MENU_INP_PTR_FLG_PRESS_DOWN
+                                        | MENU_INP_PTR_FLG_PRESS_LEFT
+                                        | MENU_INP_PTR_FLG_PRESS_RIGHT);
       menu_input->select_inhibit      = true;
       menu_input->cancel_inhibit      = true;
-      pointer_hw_state->up_pressed    = false;
-      pointer_hw_state->down_pressed  = false;
-      pointer_hw_state->left_pressed  = false;
-      pointer_hw_state->right_pressed = false;
       return MENU_ACTION_NOOP;
    }
 
@@ -5707,7 +5736,7 @@ static int menu_input_post_iterate(
     * active mouse input, highlight key under mouse cursor */
    if (    osk_active
        && (menu_input->pointer.type == MENU_POINTER_MOUSE)
-       && pointer_hw_state->active)
+       && ((pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE) > 0))
    {
       menu_ctx_pointer_t point;
 
@@ -5728,7 +5757,7 @@ static int menu_input_post_iterate(
    /* Select + X/Y position */
    if (!menu_input->select_inhibit)
    {
-      if (pointer_hw_state->select_pressed)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT)
       {
          int16_t x           = pointer_hw_state->x;
          int16_t y           = pointer_hw_state->y;
@@ -5804,13 +5833,13 @@ static int menu_input_post_iterate(
                         (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_TANGENT) + 0.5f);
 
                   enum menu_input_pointer_press_direction
-                        press_direction                          = MENU_INPUT_PRESS_DIRECTION_NONE;
-                  float press_direction_amplitude                = 0.0f;
-                  retro_time_t press_direction_delay             = MENU_INPUT_PRESS_DIRECTION_DELAY_MAX;
+                        press_direction                  = MENU_INPUT_PRESS_DIRECTION_NONE;
+                  float press_direction_amplitude        = 0.0f;
+                  retro_time_t press_direction_delay     = MENU_INPUT_PRESS_DIRECTION_DELAY_MAX;
 
                   /* Pointer has moved a sufficient distance to
                    * trigger a 'dragged' state */
-                  menu_input->pointer.dragged                    = true;
+                  menu_input->pointer.flags             |= MENU_INP_PTR_FLG_DRAGGED;
 
                   /* Here we diverge:
                    * > If onscreen keyboard or a message box is
@@ -5938,7 +5967,7 @@ static int menu_input_post_iterate(
                    * NOTE: Of course, we must also 'reset' y acceleration
                    * whenever the onscreen keyboard or a message box is
                    * shown */
-                  if (  (!menu_input->pointer.dragged
+                  if (  (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
                       && (menu_input->pointer.press_duration > MENU_INPUT_Y_ACCEL_RESET_DELAY))
                       || (osk_active || messagebox_active))
                   {
@@ -5974,7 +6003,7 @@ static int menu_input_post_iterate(
          int16_t y;
          menu_ctx_pointer_t point;
 
-         if (menu_input->pointer.dragged)
+         if (menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
          {
             /* Pointer has moved.
              * When using a touchscreen, releasing a press
@@ -6012,7 +6041,7 @@ static int menu_input_post_iterate(
             /* If pointer has been 'dragged', then it counts as
              * a miss. Only register 'release' event if pointer
              * has remained stationary */
-            if (!menu_input->pointer.dragged)
+            if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
@@ -6044,7 +6073,7 @@ static int menu_input_post_iterate(
          else
          {
             /* Detect gesture type */
-            if (!menu_input->pointer.dragged)
+            if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                /* Pointer hasn't moved - check press duration */
                if (menu_input->pointer.press_duration
@@ -6142,7 +6171,7 @@ static int menu_input_post_iterate(
          menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
          menu_input->pointer.dx              = 0;
          menu_input->pointer.dy              = 0;
-         menu_input->pointer.dragged         = false;
+         menu_input->pointer.flags          &= ~(MENU_INP_PTR_FLG_DRAGGED);
       }
    }
 
@@ -6154,12 +6183,12 @@ static int menu_input_post_iterate(
 
    /* If select has been released, disable any existing
     * select inhibit */
-   if (!pointer_hw_state->select_pressed)
+   if (!(pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT))
       menu_input->select_inhibit   = false;
 
    /* Cancel */
    if (   !menu_input->cancel_inhibit
-       &&  pointer_hw_state->cancel_pressed
+       && (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL)
        && !last_cancel_pressed)
    {
       /* If currently showing a message box, close it */
@@ -6180,7 +6209,7 @@ static int menu_input_post_iterate(
 
    /* If cancel has been released, disable any existing
     * cancel inhibit */
-   if (!pointer_hw_state->cancel_pressed)
+   if (!(pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL))
       menu_input->cancel_inhibit = false;
 
    if (!messagebox_active)
@@ -6193,7 +6222,7 @@ static int menu_input_post_iterate(
        *   inhibit input */
 
       /* > Up */
-      if (pointer_hw_state->up_pressed)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_UP)
       {
          size_t selection = menu_st->selection_ptr;
          ret              = menu_entry_action(
@@ -6201,7 +6230,7 @@ static int menu_input_post_iterate(
       }
 
       /* > Down */
-      if (pointer_hw_state->down_pressed)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_DOWN)
       {
          size_t selection = menu_st->selection_ptr;
          ret              = menu_entry_action(
@@ -6220,7 +6249,7 @@ static int menu_input_post_iterate(
        *   inhibit input */
 
       /* > Left */
-      if (      pointer_hw_state->left_pressed
+      if (     (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_LEFT)
             && !last_left_pressed)
       {
          if (current_time - last_left_action_time
@@ -6235,7 +6264,7 @@ static int menu_input_post_iterate(
 
       /* > Right */
       if (
-                pointer_hw_state->right_pressed
+               (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_RIGHT)
             && !last_right_pressed)
       {
          if (current_time - last_right_action_time
@@ -6249,10 +6278,10 @@ static int menu_input_post_iterate(
       }
    }
 
-   last_select_pressed = pointer_hw_state->select_pressed;
-   last_cancel_pressed = pointer_hw_state->cancel_pressed;
-   last_left_pressed   = pointer_hw_state->left_pressed;
-   last_right_pressed  = pointer_hw_state->right_pressed;
+   last_select_pressed = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0);
+   last_cancel_pressed = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0);
+   last_left_pressed   = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_LEFT)   > 0);
+   last_right_pressed  = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_RIGHT)  > 0);
 
    return ret;
 }
