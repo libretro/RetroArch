@@ -104,6 +104,12 @@ void cocoa_file_load_with_detect_core(const char *filename);
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
+#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+-(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
+{
+}
+#endif
+
 + (CocoaView*)get
 {
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
@@ -111,6 +117,21 @@ void cocoa_file_load_with_detect_core(const char *filename);
    {
       view = [CocoaView new];
       nsview_set_ptr(view);
+#if defined(IOS)
+      view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+      if (@available(iOS 15.0, tvOS 15.0, *))
+         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
+#endif
+      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+      if (@available(macOS 14.0, *))
+      {
+         view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
+         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
+         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+      }
+#endif
    }
    return view;
 }
