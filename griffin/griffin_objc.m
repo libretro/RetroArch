@@ -27,6 +27,8 @@
 #define HAVE_COMPRESSION 1
 #endif
 
+#include "../gfx/display_servers/dispserv_apple.m"
+
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
