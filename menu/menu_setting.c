@@ -351,7 +351,6 @@ struct bool_entry
    enum msg_hash_enums SHORT_enum_idx;
    enum msg_hash_enums off_enum_idx;
    enum msg_hash_enums on_enum_idx;
-   bool default_value;
 };
 
 struct string_options_entry
@@ -11191,79 +11190,89 @@ static bool setting_append_list(
             bool_entries[listing].target         = &settings->bools.video_shared_context;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT;
-            bool_entries[listing].default_value  = DEFAULT_VIDEO_SHARED_CONTEXT;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_VIDEO_SHARED_CONTEXT)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.driver_switch_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_DRIVER_SWITCH_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_DRIVER_SWITCH_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_DRIVER_SWITCH_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.load_dummy_on_core_shutdown;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN;
-            bool_entries[listing].default_value  = DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_LOAD_DUMMY_ON_CORE_SHUTDOWN)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.set_supports_no_game_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE;
-            bool_entries[listing].default_value  = true;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            bool_entries[listing].flags         |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.check_firmware_before_loading;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CHECK_FOR_MISSING_FIRMWARE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE;
-            bool_entries[listing].default_value  = DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_CHECK_FIRMWARE_BEFORE_LOADING)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.systemfiles_in_content_dir;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SYSTEMFILES_IN_CONTENT_DIR;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SYSTEMFILES_IN_CONTENT_DIR)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.video_allow_rotate;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE;
-            bool_entries[listing].default_value  = DEFAULT_ALLOW_ROTATE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_ALLOW_ROTATE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.core_option_category_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_OPTION_CATEGORY_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_CORE_OPTION_CATEGORY_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_CORE_OPTION_CATEGORY_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.core_info_cache_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_CORE_INFO_CACHE_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_CORE_INFO_CACHE_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.core_info_savestate_bypass;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CORE_INFO_SAVESTATE_BYPASS;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS;
-            bool_entries[listing].default_value  = DEFAULT_CORE_INFO_SAVESTATE_BYPASS;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_CORE_INFO_SAVESTATE_BYPASS)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
 #ifndef HAVE_DYNAMIC
             bool_entries[listing].target         = &settings->bools.always_reload_core_on_run_content;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
-            bool_entries[listing].default_value  = DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 #endif
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
@@ -11278,7 +11287,7 @@ static bool setting_append_list(
                      bool_entries[i].target,
                      bool_entries[i].name_enum_idx,
                      bool_entries[i].SHORT_enum_idx,
-                     bool_entries[i].default_value,
+                     (bool_entries[i].flags & SD_FLAG_DEFAULT_VALUE) ? true : false,
                      MENU_ENUM_LABEL_VALUE_OFF,
                      MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
@@ -11308,64 +11317,73 @@ static bool setting_append_list(
             bool_entries[listing].target         = &settings->bools.config_save_on_exit;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT;
-            bool_entries[listing].default_value  = DEFAULT_CONFIG_SAVE_ON_EXIT;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_CONFIG_SAVE_ON_EXIT)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.show_hidden_files;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SHOW_HIDDEN_FILES;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES;
-            bool_entries[listing].default_value  = DEFAULT_SHOW_HIDDEN_FILES;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_SHOW_HIDDEN_FILES)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.game_specific_options;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS;
-            bool_entries[listing].default_value  = DEFAULT_GAME_SPECIFIC_OPTIONS;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_GAME_SPECIFIC_OPTIONS)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.auto_overrides_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_AUTO_OVERRIDES_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_AUTO_OVERRIDES_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.auto_remaps_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_AUTO_REMAPS_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_AUTO_REMAPS_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.initial_disk_change_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_INITIAL_DISK_CHANGE_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_INITIAL_DISK_CHANGE_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.auto_shaders_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_AUTO_SHADERS_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_AUTO_SHADERS_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_AUTO_SHADERS_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.global_core_options;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS;
-            bool_entries[listing].default_value  = DEFAULT_GLOBAL_CORE_OPTIONS;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_GLOBAL_CORE_OPTIONS)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.remap_save_on_exit;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT;
-            bool_entries[listing].default_value  = DEFAULT_REMAP_SAVE_ON_EXIT;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_REMAP_SAVE_ON_EXIT)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
@@ -11375,7 +11393,7 @@ static bool setting_append_list(
                      bool_entries[i].target,
                      bool_entries[i].name_enum_idx,
                      bool_entries[i].SHORT_enum_idx,
-                     bool_entries[i].default_value,
+                     (bool_entries[i].flags & SD_FLAG_DEFAULT_VALUE) ? true : false,
                      MENU_ENUM_LABEL_VALUE_OFF,
                      MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
@@ -11556,85 +11574,98 @@ static bool setting_append_list(
             bool_entries[listing].target         = &settings->bools.sort_savefiles_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SORT_SAVEFILES_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SORT_SAVEFILES_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.sort_savestates_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SORT_SAVESTATES_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SORT_SAVESTATES_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.sort_savefiles_by_content_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.sort_savestates_by_content_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SORT_SAVESTATES_BY_CONTENT_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SORT_SAVESTATES_BY_CONTENT_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.sort_screenshots_by_content_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SORT_SCREENSHOTS_BY_CONTENT_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SORT_SCREENSHOTS_BY_CONTENT_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.block_sram_overwrite;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE;
-            bool_entries[listing].default_value  = DEFAULT_BLOCK_SRAM_OVERWRITE;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_BLOCK_SRAM_OVERWRITE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
+
             listing++;
 
             bool_entries[listing].target         = &settings->bools.savestate_auto_save;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE;
-            bool_entries[listing].default_value  = DEFAULT_SAVESTATE_AUTO_SAVE;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_SAVESTATE_AUTO_SAVE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.savestate_auto_load;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD;
-            bool_entries[listing].default_value  = DEFAULT_SAVESTATE_AUTO_LOAD;
             bool_entries[listing].flags          = SD_FLAG_NONE;
+            if (DEFAULT_SAVESTATE_AUTO_LOAD)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.savestate_thumbnail_enable;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SAVESTATE_THUMBNAIL_ENABLE;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SAVESTATE_THUMBNAIL_ENABLE)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.savefiles_in_content_dir;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SAVEFILES_IN_CONTENT_DIR;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SAVEFILES_IN_CONTENT_DIR)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.savestates_in_content_dir;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SAVESTATES_IN_CONTENT_DIR;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SAVESTATES_IN_CONTENT_DIR)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             bool_entries[listing].target         = &settings->bools.screenshots_in_content_dir;
             bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
             bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE;
-            bool_entries[listing].default_value  = DEFAULT_SCREENSHOTS_IN_CONTENT_DIR;
             bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+            if (DEFAULT_SCREENSHOTS_IN_CONTENT_DIR)
+               bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
             listing++;
 
             for (i = 0; i < ARRAY_SIZE(bool_entries); i++)
@@ -11644,7 +11675,7 @@ static bool setting_append_list(
                      bool_entries[i].target,
                      bool_entries[i].name_enum_idx,
                      bool_entries[i].SHORT_enum_idx,
-                     bool_entries[i].default_value,
+                     (bool_entries[i].flags & SD_FLAG_DEFAULT_VALUE) ? true : false,
                      MENU_ENUM_LABEL_VALUE_OFF,
                      MENU_ENUM_LABEL_VALUE_ON,
                      &group_info,
