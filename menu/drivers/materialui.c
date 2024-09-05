@@ -3801,7 +3801,8 @@ static void materialui_render(void *data,
                menu_input->ptr = (unsigned)i;
 
                /* If pointer is pressed and stationary... */
-               if (mui->pointer.pressed && !mui->pointer.dragged)
+               if (       (mui->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+                     && (!(mui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)))
                {
                   /* ...check whether feedback selection updates
                    * are enabled... */
@@ -5581,10 +5582,10 @@ static void materialui_render_entry_touch_feedback(
    /* Check whether pointer is currently
     * held and stationary */
    bool pointer_active =
-         (   (!mui->scrollbar.dragged)
+         (    (!mui->scrollbar.dragged)
           && (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
-          && (mui->pointer.pressed)
-          && (!mui->pointer.dragged));
+          &&   (mui->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+          && (!(mui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)));
 
    /* If pointer is held and stationary, need to check
     * that current pointer selection is valid

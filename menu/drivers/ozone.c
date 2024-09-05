@@ -10035,8 +10035,8 @@ static void ozone_render(void *data,
          ozone->flags2 |=  OZONE_FLAG2_LAST_POINTER_IN_SIDEBAR;
       else
          ozone->flags2 &= ~OZONE_FLAG2_LAST_POINTER_IN_SIDEBAR;
-      if ((ozone->pointer.type == MENU_POINTER_MOUSE) ||
-           ozone->pointer.pressed)
+      if (    (ozone->pointer.type == MENU_POINTER_MOUSE)
+           || (ozone->pointer.flags & MENU_INP_PTR_FLG_PRESSED))
       {
          if ((ozone->flags & OZONE_FLAG_DRAW_SIDEBAR)
                && (ozone->pointer.x < ozone->dimensions_sidebar_width + ozone->sidebar_offset))
@@ -10220,8 +10220,8 @@ static void ozone_render(void *data,
                 * if pointer has been held for at least
                 * MENU_INPUT_PRESS_TIME_SHORT ms, automatically
                 * select current entry */
-               if (      ozone->pointer.pressed
-                     && !ozone->pointer.dragged
+               if (       (ozone->pointer.flags & MENU_INP_PTR_FLG_PRESSED)
+                     && (!(ozone->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
                      && (ozone->pointer.press_duration >= MENU_INPUT_PRESS_TIME_SHORT)
                      && (i != ozone->selection))
                {
