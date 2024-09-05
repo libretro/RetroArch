@@ -747,15 +747,19 @@ static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 #endif
 
 /* All config related settings go here. */
+enum config_bool_flags
+{
+   CFG_BOOL_FLG_DEF_ENABLE = (1 << 0),
+   CFG_BOOL_FLG_HANDLE     = (1 << 1)
+};
 
 struct config_bool_setting
 {
    const char *ident;
    bool *ptr;
    enum rarch_override_setting override;
-   bool def_enable;
+   uint8_t flags;
    bool def;
-   bool handle;
 };
 
 struct config_int_setting
@@ -764,8 +768,7 @@ struct config_int_setting
    int *ptr;
    int def;
    enum rarch_override_setting override;
-   bool def_enable;
-   bool handle;
+   uint8_t flags;
 };
 
 struct config_uint_setting
@@ -774,8 +777,7 @@ struct config_uint_setting
    unsigned *ptr;
    unsigned def;
    enum rarch_override_setting override;
-   bool def_enable;
-   bool handle;
+   uint8_t flags;
 };
 
 struct config_size_setting
@@ -784,8 +786,7 @@ struct config_size_setting
    size_t *ptr;
    size_t def;
    enum rarch_override_setting override;
-   bool def_enable;
-   bool handle;
+   uint8_t flags;
 };
 
 struct config_float_setting
@@ -794,8 +795,7 @@ struct config_float_setting
    float *ptr;
    float def;
    enum rarch_override_setting override;
-   bool def_enable;
-   bool handle;
+   uint8_t flags;
 };
 
 struct config_array_setting
@@ -804,8 +804,7 @@ struct config_array_setting
    const char *def;
    char *ptr;
    enum rarch_override_setting override;
-   bool def_enable;
-   bool handle;
+   uint8_t flags;
 };
 
 struct config_path_setting
@@ -813,19 +812,20 @@ struct config_path_setting
    const char *ident;
    char *ptr;
    char *def;
-   bool def_enable;
-   bool handle;
+   uint8_t flags;
 };
-
 
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \
 { \
    tmp[count].ident      = key; \
    tmp[count].ptr        = configval; \
-   tmp[count].def_enable = default_enable; \
    if (default_enable) \
-      tmp[count].def     = default_setting; \
-   tmp[count].handle   = handle_setting; \
+   { \
+      tmp[count].flags |= CFG_BOOL_FLG_DEF_ENABLE; \
+      tmp[count].def    = default_setting; \
+   } \
+   if (handle_setting) \
+      tmp[count].flags |= CFG_BOOL_FLG_HANDLE; \
    count++; \
 }
 
@@ -2739,7 +2739,7 @@ void config_set_defaults(void *data)
    {
       for (i = 0; i < (unsigned)bool_settings_size; i++)
       {
-         if (bool_settings[i].def_enable)
+         if (bool_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *bool_settings[i].ptr = bool_settings[i].def;
       }
 
@@ -2750,7 +2750,7 @@ void config_set_defaults(void *data)
    {
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
-         if (int_settings[i].def_enable)
+         if (int_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *int_settings[i].ptr = int_settings[i].def;
       }
 
@@ -2761,7 +2761,7 @@ void config_set_defaults(void *data)
    {
       for (i = 0; i < (unsigned)uint_settings_size; i++)
       {
-         if (uint_settings[i].def_enable)
+         if (uint_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *uint_settings[i].ptr = uint_settings[i].def;
       }
 
@@ -2772,7 +2772,7 @@ void config_set_defaults(void *data)
    {
       for (i = 0; i < (unsigned)size_settings_size; i++)
       {
-         if (size_settings[i].def_enable)
+         if (size_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *size_settings[i].ptr = size_settings[i].def;
       }
 
@@ -2783,7 +2783,7 @@ void config_set_defaults(void *data)
    {
       for (i = 0; i < (unsigned)float_settings_size; i++)
       {
-         if (float_settings[i].def_enable)
+         if (float_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
             *float_settings[i].ptr = float_settings[i].def;
       }
 
@@ -3824,16 +3824,15 @@ static bool config_load_file(global_t *global,
    /* Array settings  */
    for (i = 0; i < (unsigned)array_settings_size; i++)
    {
-      if (!array_settings[i].handle)
-         continue;
-      config_get_array(conf, array_settings[i].ident,
-            array_settings[i].ptr, PATH_MAX_LENGTH);
+      if (array_settings[i].flags & CFG_BOOL_FLG_HANDLE)
+         config_get_array(conf, array_settings[i].ident,
+               array_settings[i].ptr, PATH_MAX_LENGTH);
    }
 
    /* Path settings  */
    for (i = 0; i < (unsigned)path_settings_size; i++)
    {
-      if (!path_settings[i].handle)
+      if (!(path_settings[i].flags & CFG_BOOL_FLG_HANDLE))
          continue;
       if (config_get_path(conf, path_settings[i].ident, tmp_str, sizeof(tmp_str)))
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
@@ -5236,8 +5235,9 @@ bool config_save_file(const char *path)
       {
          const char *value = path_settings[i].ptr;
 
-         if (path_settings[i].def_enable && string_is_empty(path_settings[i].ptr))
-            value = "default";
+         if (path_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
+            if (string_is_empty(path_settings[i].ptr))
+               value = "default";
 
          config_set_path(conf, path_settings[i].ident, value);
       }
