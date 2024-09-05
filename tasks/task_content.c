@@ -2701,7 +2701,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 
-   global->launched_from_cli = false;
+   global->flags &= ~GLOB_FLG_LAUNCHED_FROM_CLI;
 
    if (label)
       strlcpy(runloop_st->name.label, label, sizeof(runloop_st->name.label));

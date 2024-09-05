@@ -5791,7 +5791,7 @@ void main_exit(void *args)
 
    p_rarch->flags                  &= ~RARCH_FLAGS_HAS_SET_USERNAME;
    runloop_st->flags               &= ~RUNLOOP_FLAG_IS_INITED;
-   global_get_ptr()->error_on_init  = false;
+   global_get_ptr()->flags         &= ~GLOB_FLG_ERR_ON_INIT;
 #ifdef HAVE_CONFIGFILE
    p_rarch->flags                  &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
 #endif
@@ -6773,7 +6773,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_CONFIGFILE
    runloop_st->flags              &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 #endif
-   global->cli_load_menu_on_error  = false;
+   global->flags                  &= ~GLOB_FLG_CLI_LOAD_MENU_ON_ERR;
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind                          = 0;
@@ -7272,7 +7272,7 @@ static bool retroarch_parse_input_and_config(
 #endif
                break;
             case RA_OPT_LOAD_MENU_ON_ERROR:
-               global->cli_load_menu_on_error = true;
+               global->flags |= GLOB_FLG_CLI_LOAD_MENU_ON_ERR;
                break;
             case 'e':
                {
@@ -7391,7 +7391,10 @@ static bool retroarch_parse_input_and_config(
 
    /* Update global 'content launched from command
     * line' status flag */
-   global->launched_from_cli = cli_active && (cli_core_set || cli_content_set);
+   if (cli_active && (cli_core_set || cli_content_set))
+      global->flags |=  (GLOB_FLG_LAUNCHED_FROM_CLI);
+   else
+      global->flags &= ~(GLOB_FLG_LAUNCHED_FROM_CLI);
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -7482,7 +7485,7 @@ bool retroarch_main_init(int argc, char *argv[])
       goto error;
    }
 
-   global->error_on_init = true;
+   global->flags |= GLOB_FLG_ERR_ON_INIT;
 
    /* Have to initialise non-file logging once at the start... */
    retro_main_log_file_init(NULL, false);
@@ -7681,8 +7684,8 @@ bool retroarch_main_init(int argc, char *argv[])
    {
 #ifdef HAVE_DYNAMIC
       /* Check if menu was active prior to core initialization */
-      if (   !global->launched_from_cli
-          ||  global->cli_load_menu_on_error
+      if (   (!(global->flags & GLOB_FLG_LAUNCHED_FROM_CLI))
+          ||   (global->flags & GLOB_FLG_CLI_LOAD_MENU_ON_ERR)
 #ifdef HAVE_MENU
           ||  (menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
@@ -7765,8 +7768,8 @@ bool retroarch_main_init(int argc, char *argv[])
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
-   global->error_on_init            = false;
-   runloop_st->flags               |= RUNLOOP_FLAG_IS_INITED;
+   global->flags                   &= ~GLOB_FLG_ERR_ON_INIT;
+   runloop_st->flags               |=  RUNLOOP_FLAG_IS_INITED;
 
 #ifdef HAVE_DISCORD
    {
@@ -8224,7 +8227,7 @@ bool should_quit_on_close(void)
    global_t   *global     = global_get_ptr();
    if (       ((settings->uints.quit_on_close_content ==
                QUIT_ON_CLOSE_CONTENT_CLI)
-            && global->launched_from_cli)
+            && (global->flags & GLOB_FLG_LAUNCHED_FROM_CLI))
             || (settings->uints.quit_on_close_content ==
                QUIT_ON_CLOSE_CONTENT_ENABLED)
       )

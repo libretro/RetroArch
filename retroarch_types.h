@@ -249,11 +249,16 @@ struct rarch_main_wrap
 };
 
 /* All run-time- / command line flag-related globals go here. */
+enum global_flags
+{
+   GLOB_FLG_ERR_ON_INIT          = (1 << 0),
+   GLOB_FLG_LAUNCHED_FROM_CLI    = (1 << 1),
+   GLOB_FLG_CLI_LOAD_MENU_ON_ERR = (1 << 2)
+};
 
 typedef struct global
 {
-   jmp_buf error_sjlj_context;              /* 4-byte alignment,
-                                               put it right before long */
+   jmp_buf error_sjlj_context; /* 4-byte alignment, put it right before long */
 
    /* Settings and/or global state that is specific to
     * a console-style implementation. */
@@ -290,9 +295,7 @@ typedef struct global
    } console;
 
    char error_string[255];
-   bool launched_from_cli;
-   bool cli_load_menu_on_error;
-   bool error_on_init;
+   uint8_t flags;
 } global_t;
 
 typedef struct content_file_override

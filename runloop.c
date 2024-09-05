@@ -6943,7 +6943,7 @@ int runloop_iterate(void)
    }
 
    switch ((enum runloop_state_enum)runloop_check_state(
-            global_get_ptr()->error_on_init,
+            ((global_get_ptr()->flags & GLOB_FLG_ERR_ON_INIT) > 0),
             settings, current_time))
    {
       case RUNLOOP_STATE_QUIT:
