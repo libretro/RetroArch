@@ -340,6 +340,7 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, mountPoint);
 
    /* Reload IOP drivers for saving IOP ram */
+   deinit_drivers(true, true);
    reset_IOP();
    common_init_drivers(false);
    waitUntilDeviceIsReady(path);
