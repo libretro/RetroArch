@@ -11732,30 +11732,47 @@ static unsigned menu_displaylist_build_shader_parameter(
    current_value               = min;
    original_value              = param->current;
 
-   for (i = 0; current_value < (max + 0.0001f); i++)
-   {
+   if (half_step <= 0.0) { /* safety check */
       char val_s[16], val_d[16];
       snprintf(val_s, sizeof(val_s), "%.2f", current_value);
-      snprintf(val_d, sizeof(val_d), "%d", i);
-
-      if (menu_entries_append(list,
+      snprintf(val_d, sizeof(val_d), "%d", 0);
+      menu_entries_append(list,
                val_s,
                val_d,
                MENU_ENUM_LABEL_NO_ITEMS,
                setting_type,
-               i, entry_type, NULL))
+               i, entry_type, NULL);   
+      count = 1;
+      checked = 1.0;
+      checked_found = true;
+   } 
+   else 
+   {
+      for (i = 0; current_value < (max + 0.0001f); i++)
       {
-         if (!checked_found &&
-             (fabs(current_value - original_value) < half_step))
+         char val_s[16], val_d[16];
+         snprintf(val_s, sizeof(val_s), "%.2f", current_value);
+         snprintf(val_d, sizeof(val_d), "%d", i);
+
+         if (menu_entries_append(list,
+                  val_s,
+                  val_d,
+                  MENU_ENUM_LABEL_NO_ITEMS,
+                  setting_type,
+                  i, entry_type, NULL))
          {
-            checked       = count;
-            checked_found = true;
+            if (!checked_found &&
+               (fabs(current_value - original_value) < half_step))
+            {
+               checked       = count;
+               checked_found = true;
+            }
+
+            count++;
          }
 
-         count++;
+         current_value += param->step;
       }
-
-      current_value += param->step;
    }
 
    if (checked_found)
