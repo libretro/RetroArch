@@ -8094,8 +8094,8 @@ static enum menu_action ozone_parse_menu_entry_action(
                   0,
                   ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS);
 
-            ozone->flags  &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
-            ozone->flags  &= ~OZONE_FLAG_WANT_THUMBNAIL_BAR;
+            ozone->flags  &= ~(OZONE_FLAG_CURSOR_IN_SIDEBAR
+                             | OZONE_FLAG_WANT_THUMBNAIL_BAR);
             ozone->flags2 |=  OZONE_FLAG2_PENDING_CURSOR_IN_SIDEBAR;
 
             ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
