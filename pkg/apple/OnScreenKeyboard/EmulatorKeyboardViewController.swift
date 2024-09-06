@@ -6,6 +6,7 @@
 //  Copyright © 2022 RetroArch. All rights reserved.
 //
 
+@available(iOS 13, *)
 @objc class EmulatorKeyboardController: UIViewController {
 
    class EmulatorKeyboardPassthroughView: UIView {
@@ -118,6 +119,7 @@
     }
 }
 
+@available(iOS 13, *)
 extension EmulatorKeyboardController: EmulatorKeyboardViewDelegate {
     func toggleAlternateKeys() {
         for keyboard in [leftKeyboardView, rightKeyboardView] {

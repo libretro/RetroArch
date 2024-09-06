@@ -16,6 +16,7 @@ protocol HelperBarActionDelegate: AnyObject {
    var isOrientationLocked: Bool { get }
 }
 
+@available(iOS 13, *)
 extension CocoaView {
    @objc func setupHelperBar() {
       let helperVC = HelperBarViewController()
@@ -34,6 +35,7 @@ extension CocoaView {
    }
 }
 
+@available(iOS 13, *)
 extension CocoaView: HelperBarActionDelegate {
    func keyboardButtonTapped() {
       toggleCustomKeyboard()

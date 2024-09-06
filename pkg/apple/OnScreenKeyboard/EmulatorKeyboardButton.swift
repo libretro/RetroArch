@@ -8,6 +8,7 @@
 
 import UIKit
 
+@available(iOS 13, *)
 class EmulatorKeyboardButton: UIButton {
     let key: KeyCoded
     var toggleState = false
