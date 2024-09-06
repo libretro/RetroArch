@@ -6,11 +6,13 @@
 //  Copyright © 2022 RetroArch. All rights reserved.
 //
 
+@available(iOS 13, *)
 @objc enum KeySize: Int {
     case standard = 1, wide, wider
 }
 
 // represents a key that has an underlying code that gets sent to the emulator
+@available(iOS 13, *)
 @objc protocol KeyCoded: AnyObject {
     var keyLabel: String { get }
     var keyImageName: String? { get }
@@ -20,10 +22,12 @@
     var isModifier: Bool { get }
 }
 
+@available(iOS 13, *)
 protocol KeyRowsDataSource {
     func keyForPositionAt(_ position: KeyPosition) -> KeyCoded?
 }
 
+@available(iOS 13, *)
 @objc class EmulatorKeyboardKey: NSObject, KeyCoded {
     let keyLabel: String
     var keyImageName: String?
@@ -45,6 +49,7 @@ protocol KeyRowsDataSource {
     }
 }
 
+@available(iOS 13, *)
 class SpacerKey: KeyCoded {
     let keyLabel = ""
     let keyCode = 0
@@ -57,6 +62,7 @@ class SpacerKey: KeyCoded {
     }
 }
 
+@available(iOS 13, *)
 class SliderKey: KeyCoded {
    let keyLabel = ""
    let keyCode = 0
