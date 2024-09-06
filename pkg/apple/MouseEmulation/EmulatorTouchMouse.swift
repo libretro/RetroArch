@@ -19,11 +19,13 @@
 import Combine
 import UIKit
 
+@available(iOS 13, *)
 @objc public protocol EmulatorTouchMouseHandlerDelegate: AnyObject {
    func handleMouseClick(isLeftClick: Bool, isPressed: Bool)
    func handleMouseMove(x: CGFloat, y: CGFloat)
 }
 
+@available(iOS 13, *)
 @objcMembers public class EmulatorTouchMouseHandler: NSObject, UIPointerInteractionDelegate {
    enum MouseHoldState {
       case notHeld, wait, held

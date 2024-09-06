@@ -6,6 +6,7 @@
 //  Copyright © 2022 RetroArch. All rights reserved.
 //
 
+@available(iOS 13, *)
 protocol HelperBarItem {
    var image: UIImage? { get }
    var selectedImage: UIImage? { get }
@@ -16,10 +17,12 @@ protocol HelperBarItem {
    func action()
 }
 
+@available(iOS 13, *)
 extension HelperBarItem {
    var tintColorOnSelection: UIColor? { nil }
 }
 
+@available(iOS 13, *)
 struct KeyboardBarItem: HelperBarItem {
    let image = UIImage(systemName: "keyboard")
    let selectedImage = UIImage(systemName: "keyboard.fill")
@@ -42,6 +45,7 @@ struct KeyboardBarItem: HelperBarItem {
    }
 }
 
+@available(iOS 13, *)
 struct MouseBarItem: HelperBarItem {
    let image = UIImage(systemName: "computermouse")
    let selectedImage = UIImage(systemName: "computermouse.fill")
@@ -59,6 +63,7 @@ struct MouseBarItem: HelperBarItem {
    }
 }
 
+@available(iOS 13, *)
 struct LockOrientationBarItem: HelperBarItem {
    let image = UIImage(systemName: "lock.rotation")
    let selectedImage = UIImage(systemName: "lock.rotation")

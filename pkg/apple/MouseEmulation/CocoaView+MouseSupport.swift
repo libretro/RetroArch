@@ -7,6 +7,7 @@
 //
 
 extension CocoaView {
+   @available(iOS 13, *)
    @objc func setupMouseSupport() {
       mouseHandler = EmulatorTouchMouseHandler(view: view, delegate: self as? EmulatorTouchMouseHandlerDelegate)
    }
