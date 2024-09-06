@@ -2958,7 +2958,7 @@ static void xmb_populate_entries(void *data,
 
    xmb_set_title(xmb);
 
-   if(xmb->is_playlist)
+   if(xmb->is_playlist && settings->uints.menu_icon_thumbnails)
    {
       xmb_populate_dynamic_icons(xmb);
    }
