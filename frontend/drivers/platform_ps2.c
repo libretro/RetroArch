@@ -50,9 +50,6 @@
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
 #endif
 
-// Disable pthread functionality
-PS2_DISABLE_AUTOSTART_PTHREAD();
-
 static enum frontend_fork ps2_fork_mode      = FRONTEND_FORK_NONE;
 static char cwd[FILENAME_MAX]                = {0};
 static char mountString[10]                  = {0};
