@@ -850,7 +850,7 @@ bool gfx_thumbnail_update_path(
       for( i=1 ;
            settings->bools.playlist_allow_non_png &&
            !thumbnail_found && 
-           thumbnail_path[0]!='\0' &&
+           !string_is_empty(thumbnail_path) &&
            i<MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
          strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
