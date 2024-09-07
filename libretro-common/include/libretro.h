@@ -7426,7 +7426,7 @@ typedef void (RETRO_CALLCONV *retro_audio_sample_t)(int16_t left, int16_t right)
  *     is defined as a sample of left and right channels, interleaved.
  *     For example: <tt>int16_t buf[4] = { l, r, l, r };</tt> would be 2 frames.
  *
- * @return The number of samples that were processed.
+ * @return The number of frames that were processed.
  *
  * @see retro_set_audio_sample_batch()
  * @see retro_set_audio_sample()
