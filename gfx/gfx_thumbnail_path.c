@@ -840,7 +840,7 @@ bool gfx_thumbnail_update_path(
 
       thumbnail_path[0] = '\0';
       /* >> Add content image - first try with full file name */
-      if(string_is_empty(path_data->content_img_full)) {
+      if(path_data->content_img_full[0] != '\0') {
          fill_pathname_join_special(thumbnail_path, tmp_buf,
                path_data->content_img_full, PATH_MAX_LENGTH * sizeof(char));
       }
@@ -850,7 +850,7 @@ bool gfx_thumbnail_update_path(
       for( i=1 ;
            settings->bools.playlist_allow_non_png &&
            !thumbnail_found && 
-           thumbnail_path[0]!='\0' &&
+           string_is_empty(thumbnail_path) &&
            i<MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
          strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
@@ -867,6 +867,7 @@ bool gfx_thumbnail_update_path(
       for( i=1 ;
            settings->bools.playlist_allow_non_png &&
            !thumbnail_found && 
+           string_is_empty(thumbnail_path) &&
            i<MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
          strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
