@@ -367,7 +367,7 @@ static bool input_autoconfigure_scan_config_files_internal(
  *      (not even the assignment to first free player port)
  */
 static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
-      int product_id, const char *device_name)
+      int product_id, const char *device_name, const char *device_display_name)
 {
    settings_t *settings = config_get_ptr();
 
@@ -429,7 +429,9 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
          {
             strlcpy(settings_value_device_name, settings_value, 
                     sizeof(settings_value_device_name));
-            device_has_reserved_slot = string_is_equal(device_name, settings_value_device_name);
+            device_has_reserved_slot = 
+               string_is_equal(device_name, settings_value_device_name) || 
+               string_is_equal(device_display_name, settings_value_device_name);
          }
          else
             device_has_reserved_slot = (vendor_id == settings_value_vendor_id &&
@@ -590,7 +592,9 @@ static void cb_input_autoconfigure_connect(
       input_config_set_autoconfig_binds(port,
             autoconfig_handle->autoconfig_file);
 
-   reallocate_port_if_needed(port,autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,autoconfig_handle->device_info.name);
+   reallocate_port_if_needed(port,autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
+      autoconfig_handle->device_info.name,
+      autoconfig_handle->device_info.display_name);
 
 }
 
