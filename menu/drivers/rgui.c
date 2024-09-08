@@ -273,7 +273,8 @@ enum rgui_flags
    RGUI_FLAG_ENTRY_HAS_THUMBNAIL       = (1 << 21),
    RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL  = (1 << 22),
    RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL = (1 << 23),
-   RGUI_FLAG_IS_PLAYLISTS_TAB          = (1 << 24)
+   RGUI_FLAG_IS_PLAYLISTS_TAB          = (1 << 24),
+   RGUI_FLAG_IS_QUICK_MENU             = (1 << 25)
 };
 
 typedef struct
@@ -356,8 +357,6 @@ typedef struct
    char last_theme_dynamic_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
    char menu_title[255];                          /* Must be a fixed length array... */
    char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH];  /* Must be a fixed length array... */
-
-   bool is_quick_menu;
 } rgui_t;
 
 static const rgui_theme_t rgui_theme_classic_red = {
@@ -4977,7 +4976,7 @@ static void rgui_render(
    rgui_t *rgui                   = (rgui_t*)data;
    enum gfx_animation_ticker_type
          menu_ticker_type         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   bool rgui_inline_thumbnails    = settings->bools.menu_rgui_inline_thumbnails || rgui->is_quick_menu;
+   bool rgui_inline_thumbnails    = settings->bools.menu_rgui_inline_thumbnails || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU);
    bool menu_battery_level_enable = settings->bools.menu_battery_level_enable;
    bool use_smooth_ticker         = settings->bools.menu_ticker_smooth;
    bool rgui_swap_thumbnails      = settings->bools.menu_rgui_swap_thumbnails;
@@ -5210,7 +5209,7 @@ static void rgui_render(
             size_t _len = strlcpy(thumbnail_title_buf,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
                   sizeof(thumbnail_title_buf));
-            if (rgui->is_quick_menu)
+            if (rgui->flags & RGUI_FLAG_IS_QUICK_MENU)
             {
                snprintf(thumbnail_title_buf      + _len,
                      sizeof(thumbnail_title_buf) - _len,
@@ -5290,12 +5289,12 @@ static void rgui_render(
             && rgui->playlist_index >= 0
             && (   (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
                ||  (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-               || ((rgui->is_quick_menu) && !menu_is_running_quick_menu()));
+               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu()));
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
       bool show_savestate_thumbnail  = (!string_is_empty(rgui->savestate_thumbnail_file_path)
             && (   (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)
-               || ((rgui->is_quick_menu) && menu_is_running_quick_menu())));
+               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && menu_is_running_quick_menu())));
       unsigned thumbnail_panel_width = 0;
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
@@ -6873,7 +6872,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
-   if (!(   (rgui->is_quick_menu && menu_is_running_quick_menu())
+   if (!(   (rgui->flags & RGUI_FLAG_IS_QUICK_MENU && menu_is_running_quick_menu())
          || (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)))
       return;
 
@@ -6985,7 +6984,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    /* Update thumbnail content/path */
    if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
          || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-         || (rgui->is_quick_menu))
+         || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
    {
       bool playlist_valid        = false;
       size_t playlist_index      = selection;
@@ -7006,7 +7005,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
          gfx_thumbnail_set_content_playlist(menu_st->thumbnail_path_data,
                playlist_valid ? playlist_get_cached() : NULL, playlist_index);
       }
-      else if (rgui->is_quick_menu)
+      else if (rgui->flags & RGUI_FLAG_IS_QUICK_MENU)
       {
          if (string_is_empty(rgui->savestate_thumbnail_file_path))
             playlist_valid = true;
@@ -7123,7 +7122,7 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
    if (!rgui || !settings)
       return;
    rgui_inline_thumbnails      = settings->bools.menu_rgui_inline_thumbnails
-         || rgui->is_quick_menu;
+         || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU);
 
    /* Only refresh thumbnails if thumbnails are enabled */
    if (     ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) || rgui_inline_thumbnails)
@@ -7151,7 +7150,7 @@ static void rgui_refresh_thumbnail_image(void *userdata, unsigned i)
        * immediately, for an optimal user experience) */
       if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
             || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-            || (rgui->is_quick_menu))
+            || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
          rgui_scan_selected_entry_thumbnail(rgui, true);
    }
 }
@@ -7319,9 +7318,9 @@ static void rgui_populate_entries(
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SAVESTATE_LIST)))
-      rgui->is_quick_menu = true;
+      rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
    else
-      rgui->is_quick_menu = false;
+      rgui->flags &= ~RGUI_FLAG_IS_QUICK_MENU;
 
    if (string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT)
       rgui->flags |=  RGUI_FLAG_IS_STATE_SLOT;
@@ -7331,8 +7330,9 @@ static void rgui_populate_entries(
    /* Quick Menu under Explore list must also be Quick Menu */
    if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
    {
-      rgui->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
-      if (rgui->is_quick_menu)
+      if (menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu())
+         rgui->flags |= RGUI_FLAG_IS_QUICK_MENU;
+      if (rgui->flags & RGUI_FLAG_IS_QUICK_MENU)
          rgui->flags &= ~RGUI_FLAG_IS_EXPLORE_LIST;
    }
 
@@ -7815,7 +7815,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
     * 'save state' option */
-   if (rgui->is_quick_menu)
+   if (rgui->flags & RGUI_FLAG_IS_QUICK_MENU)
    {
       rgui_reset_savestate_thumbnail(rgui);
 
@@ -7973,7 +7973,7 @@ static enum menu_action rgui_parse_menu_entry_action(
       case MENU_ACTION_CANCEL:
          if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          {
-            if (     ((rgui->flags & RGUI_FLAG_IS_STATE_SLOT) || (rgui->is_quick_menu))
+            if (     ((rgui->flags & RGUI_FLAG_IS_STATE_SLOT) || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
                   && !string_is_empty(rgui->savestate_thumbnail_file_path))
             {
                rgui_toggle_fs_thumbnail(rgui, true);
@@ -7999,7 +7999,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          /* Playlist thumbnail fullscreen toggle */
          if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
                || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-               || (rgui->is_quick_menu && !menu_is_running_quick_menu()))
+               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu()))
          {
             settings_t *settings = config_get_ptr();
 
@@ -8044,7 +8044,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          break;
       case MENU_ACTION_SCAN:
          /* Save state slot fullscreen toggle */
-         if (     ((rgui->flags & RGUI_FLAG_IS_STATE_SLOT) || (rgui->is_quick_menu))
+         if (     ((rgui->flags & RGUI_FLAG_IS_STATE_SLOT) || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
                && !string_is_empty(rgui->savestate_thumbnail_file_path))
          {
             rgui_toggle_fs_thumbnail(rgui, true);
@@ -8053,7 +8053,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          /* Playlist thumbnail cycle */
          else if ((rgui->flags & RGUI_FLAG_IS_PLAYLIST)
                || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-               || (rgui->is_quick_menu))
+               || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
          {
             settings_t *settings = config_get_ptr();
 
@@ -8123,13 +8123,13 @@ static enum menu_action rgui_parse_menu_entry_action(
       case MENU_ACTION_SCROLL_UP:
       case MENU_ACTION_SCROLL_DOWN:
          if (     (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
-               && (rgui->is_quick_menu))
+               && (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
             new_action = MENU_ACTION_NOOP;
          break;
       case MENU_ACTION_LEFT:
       case MENU_ACTION_RIGHT:
-         if (     (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
-               && ((rgui->is_quick_menu) && !menu_is_running_quick_menu()))
+         if (      (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+               && ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu()))
             new_action = MENU_ACTION_NOOP;
          break;
       default:
