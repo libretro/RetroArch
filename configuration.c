@@ -4563,7 +4563,7 @@ bool config_unload_override(void)
        * Might be useful for other devices as well? */
       if (      settings->bools.video_window_save_positions
             && !settings->bools.video_fullscreen)
-         settings->skip_window_positions = true;
+         settings->flags |= SETTINGS_FLG_SKIP_WINDOW_POSITIONS;
 
       if (flags & RUNLOOP_FLAG_CORE_RUNNING)
          command_event(CMD_EVENT_REINIT, NULL);
