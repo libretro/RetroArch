@@ -652,7 +652,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
 #endif
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+#if defined(HAVE_IOS_TOUCHMOUSE) || defined(HAVE_IOS_CUSTOMKEYBOARDS)
     if (@available(iOS 13, *))
         [self setupHelperBar];
 #endif
