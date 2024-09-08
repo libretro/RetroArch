@@ -5534,7 +5534,7 @@ int8_t config_save_overrides(enum override_type type,
    tmp_i               = sizeof(settings->paths) / sizeof(settings->paths.placeholder);
    path_overrides      = populate_settings_path(overrides,  &tmp_i);
 
-   if (conf->modified)
+   if (conf->flags & CONF_FILE_FLG_MODIFIED)
       RARCH_LOG("[Overrides]: Looking for changed settings..\n");
 
    if (conf)
@@ -5748,12 +5748,12 @@ int8_t config_save_overrides(enum override_type type,
             break;
       }
 
-      if (!conf->modified && !remove)
+      if (!(conf->flags & CONF_FILE_FLG_MODIFIED) && !remove)
          ret = -1;
 
       if (!string_is_empty(override_path))
       {
-         if (!conf->modified && !remove)
+         if (!(conf->flags & CONF_FILE_FLG_MODIFIED) && !remove)
             if (path_is_valid(override_path))
                remove = true;
 
@@ -5767,7 +5767,7 @@ int8_t config_save_overrides(enum override_type type,
                      "Deleted", override_path);
             }
          }
-         else if (conf->modified)
+         else if (conf->flags & CONF_FILE_FLG_MODIFIED)
          {
             ret = config_file_write(conf, override_path, true);
 

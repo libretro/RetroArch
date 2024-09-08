@@ -183,7 +183,7 @@ bool cheat_manager_save(
       if (!(conf = config_file_new_alloc()))
          return false;
 
-   conf->guaranteed_no_duplicates = true;
+   conf->flags |= CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
 
    config_set_int(conf, "cheats", cheat_st->size);
 

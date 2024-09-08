@@ -1601,9 +1601,9 @@ static bool video_shader_write_referenced_preset(
    /* Add the reference path to the config */
    config_file_add_reference(conf, path_to_ref);
 
-   /* Set modified to true so when you run config_file_write
-    * it will save a file */
-   conf->modified = true;
+   /* Set modified flag to true so when
+    * you run config_file_write it will save a file */
+   conf->flags |= CONF_FILE_FLG_MODIFIED;
 
    /*
       Compare the shader to a shader created from the referenced
