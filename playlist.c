@@ -1144,6 +1144,7 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 {
 #ifdef HAVE_COCOATOUCH
    char tmp[PATH_MAX_LENGTH];
+   int _len = 0;
 
    if (mode == PLAYLIST_LOAD)
    {
@@ -1159,8 +1160,8 @@ void playlist_resolve_path(enum playlist_file_mode mode,
          path[string_index_last_occurance(path, '.')] = '\0';
          if (string_ends_with(path, "_ios"))
             path[string_index_last_occurance(path, '_')] = '\0';
-         strlcpy(tmp, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
-         strlcpy(tmp + STRLEN_CONST(":/Frameworks/"), path + STRLEN_CONST(":/modules/"), sizeof(tmp) - STRLEN_CONST(":/Frameworks/"));
+         _len += strlcpy(tmp + _len, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
+         _len += strlcpy(tmp + _len, path + STRLEN_CONST(":/modules/"), sizeof(tmp) - _len);
          /* iOS framework names, to quote Apple:
           * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
           *
@@ -1168,7 +1169,7 @@ void playlist_resolve_path(enum playlist_file_mode mode,
           * which is, we change underscore to dot.
           */
          string_replace_all_chars(tmp, '_', '.');
-         strlcat(tmp, ".framework", sizeof(tmp));
+         strlcpy(tmp + _len, ".framework", sizeof(tmp));
          fill_pathname_expand_special(path, tmp, len);
       }
       else
