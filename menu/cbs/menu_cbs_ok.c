@@ -7343,7 +7343,8 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
           }
        }
     }
-    settings->modified = true;
+
+    settings->flags |= SETTINGS_FLG_MODIFIED;
 
     command_event(CMD_EVENT_REINIT, NULL);
 
@@ -7401,7 +7402,7 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
         * now or already working as the physical keyboard.
         */
     }
-    settings->modified = true;
+    settings->flags |= SETTINGS_FLG_MODIFIED;
 
     command_event(CMD_EVENT_REINIT, NULL);
 

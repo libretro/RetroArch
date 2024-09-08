@@ -40,31 +40,31 @@
 
 #define configuration_set_float(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_bool(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_uint(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_int(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_string(settings, var, newvar) \
 { \
-   settings->modified = true; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
    strlcpy(var, newvar, sizeof(var)); \
 }
 
@@ -86,6 +86,12 @@ enum override_type
    OVERRIDE_CORE,
    OVERRIDE_CONTENT_DIR,
    OVERRIDE_GAME
+};
+
+enum settings_glob_flags
+{
+   SETTINGS_FLG_MODIFIED              = (1 << 0),
+   SETTINGS_FLG_SKIP_WINDOW_POSITIONS = (1 << 1)
 };
 
 typedef struct settings
@@ -590,8 +596,6 @@ typedef struct settings
       char app_icon[PATH_MAX_LENGTH];
    } paths;
 
-   bool modified;
-   bool skip_window_positions;
 
    struct
    {
@@ -1088,6 +1092,8 @@ typedef struct settings
       bool gcdwebserver_alert;
 #endif
    } bools;
+
+   uint8_t flags;
 
 } settings_t;
 

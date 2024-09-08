@@ -1050,8 +1050,8 @@ static int setting_generic_action_ok_default(
 
 void setting_generic_handle_change(rarch_setting_t *setting)
 {
-   settings_t *settings = config_get_ptr();
-   settings->modified   = true;
+   settings_t *settings  = config_get_ptr();
+   settings->flags      |= SETTINGS_FLG_MODIFIED;
 
    if (setting->change_handler)
       setting->change_handler(setting);
@@ -5766,7 +5766,7 @@ static int setting_action_left_input_device_index(
    else
       *p = MAX_INPUT_DEVICES - 1;
 
-   settings->modified = true;
+   settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
 
@@ -5786,7 +5786,7 @@ static int setting_action_left_input_device_reservation_type(
    else
       *p = INPUT_DEVICE_RESERVATION_LAST - 1;
 
-   settings->modified = true;
+   settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
 
@@ -5807,7 +5807,7 @@ static int setting_action_left_input_mouse_index(
    else
       *p = MAX_INPUT_DEVICES - 1;
 
-   settings->modified = true;
+   settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
 
@@ -7962,7 +7962,7 @@ static int setting_action_right_analog_dpad_mode(
 
    port = setting->index_offset;
 
-   settings->modified                     = true;
+   settings->flags |= SETTINGS_FLG_MODIFIED;
    settings->uints.input_analog_dpad_mode[port] =
       (settings->uints.input_analog_dpad_mode[port] + 1)
       % ANALOG_DPAD_LAST;
@@ -8056,7 +8056,7 @@ static int setting_action_right_input_device_index(
    else
       *p = 0;
 
-   settings->modified = true;
+   settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
 
@@ -8076,7 +8076,7 @@ static int setting_action_right_input_device_reservation_type(
    else
       *p = 0;
 
-   settings->modified = true;
+   settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
 
@@ -8096,7 +8096,7 @@ static int setting_action_right_input_mouse_index(
    else
       *p = 0;
 
-   settings->modified = true;
+   settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
 
@@ -8644,23 +8644,23 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
 #endif
       case MENU_ENUM_LABEL_VIDEO_SCALE:
-         settings->modified           = true;
-         settings->uints.video_scale  = *setting->value.target.unsigned_integer;
+         settings->flags                  |= SETTINGS_FLG_MODIFIED;
+         settings->uints.video_scale       = *setting->value.target.unsigned_integer;
 
          if (!settings->bools.video_fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_ENABLE:
-         settings->modified               = true;
-         settings->bools.video_hdr_enable = *setting->value.target.boolean;
+         settings->flags                  |= SETTINGS_FLG_MODIFIED;
+         settings->bools.video_hdr_enable  = *setting->value.target.boolean;
 
          rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS:
          {
-            video_driver_state_t *video_st      = video_state_get_ptr();
-            settings->modified                  = true;
-            settings->floats.video_hdr_max_nits = roundf(*setting->value.target.fraction);
+            video_driver_state_t *video_st       = video_state_get_ptr();
+            settings->flags                     |= SETTINGS_FLG_MODIFIED;
+            settings->floats.video_hdr_max_nits  = roundf(*setting->value.target.fraction);
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_max_nits)
                video_st->poke->set_hdr_max_nits(video_st->data, settings->floats.video_hdr_max_nits);
@@ -8668,10 +8668,10 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
          {
-            settings_t *settings                         = config_get_ptr();
-            video_driver_state_t *video_st               = video_state_get_ptr();
-            settings->modified                           = true;
-            settings->floats.video_hdr_paper_white_nits  = roundf(*setting->value.target.fraction);
+            settings_t *settings                          = config_get_ptr();
+            video_driver_state_t *video_st                = video_state_get_ptr();
+            settings->flags                              |= SETTINGS_FLG_MODIFIED;
+            settings->floats.video_hdr_paper_white_nits   = roundf(*setting->value.target.fraction);
 
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_paper_white_nits)
@@ -8680,9 +8680,9 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
          {
-            video_driver_state_t *video_st      = video_state_get_ptr();
-            settings->modified                  = true;
-            settings->floats.video_hdr_display_contrast = *setting->value.target.fraction;
+            video_driver_state_t *video_st                = video_state_get_ptr();
+            settings->flags                              |= SETTINGS_FLG_MODIFIED;
+            settings->floats.video_hdr_display_contrast   = *setting->value.target.fraction;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_contrast)
                video_st->poke->set_hdr_contrast(video_st->data, VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast);
@@ -8690,9 +8690,9 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
          {
-            video_driver_state_t *video_st         = video_state_get_ptr();
-            settings->modified                     = true;
-            settings->bools.video_hdr_expand_gamut = *setting->value.target.boolean;
+            video_driver_state_t *video_st                = video_state_get_ptr();
+            settings->flags                              |= SETTINGS_FLG_MODIFIED;
+            settings->bools.video_hdr_expand_gamut        = *setting->value.target.boolean;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_expand_gamut)
                video_st->poke->set_hdr_expand_gamut(video_st->data, settings->bools.video_hdr_expand_gamut);
@@ -8703,7 +8703,7 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
-           settings->modified           = true;
+           settings->flags |= SETTINGS_FLG_MODIFIED;
            strlcpy(settings->arrays.input_android_physical_keyboard, setting->value.target.string, sizeof(settings->arrays.input_android_physical_keyboard));
            break;
 #endif
