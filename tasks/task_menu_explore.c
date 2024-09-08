@@ -156,12 +156,9 @@ static void task_menu_explore_init_handler(retro_task_t *task)
    }
 }
 
-static bool task_menu_explore_init_finder(
-      retro_task_t *task, void *user_data)
+static bool task_menu_explore_init_finder(retro_task_t *task, void *user_data)
 {
-   if (task && task->handler == task_menu_explore_init_handler)
-      return true;
-   return false;
+   return (task && task->handler == task_menu_explore_init_handler);
 }
 
 bool task_push_menu_explore_init(const char *directory_playlist,

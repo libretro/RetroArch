@@ -5239,7 +5239,7 @@ void core_options_flush(void)
           * exist (e.g. if it gets deleted manually while
           * a core is running) */
          if (!path_is_valid(path_core_options))
-            runloop_st->core_options->conf->modified = true;
+            runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
 
          success = config_file_write(runloop_st->core_options->conf,
                path_core_options, true);
