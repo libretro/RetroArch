@@ -32,12 +32,9 @@
 		0753AD1A2C86144200874A42 /* BaseConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */; };
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
 		0789FC302A07847E00D042B7 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0789FC2F2A07847E00D042B7 /* AltKit */; };
+		077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9292D6E428F549D000E47A75 /* SwiftUI.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
-		07FA26C82BD8B2FB00E1AF91 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; };
-		07FA26C92BD8B2FB00E1AF91 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		07FA26CA2BD8B74900E1AF91 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; };
-		07FA26CB2BD8B74900E1AF91 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -161,28 +158,6 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		07FA26C52BD8B01400E1AF91 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				07FA26C92BD8B2FB00E1AF91 /* MoltenVK.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		07FA26CC2BD8B74900E1AF91 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				07FA26CB2BD8B74900E1AF91 /* MoltenVK.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9292D6F528F549D500E47A75 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -211,9 +186,7 @@
 		077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = AppStore.xcconfig; path = iOS/AppStore.xcconfig; sourceTree = "<group>"; };
 		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
-		07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MoltenVK.framework; path = tvOS/Frameworks/MoltenVK.framework; sourceTree = "<group>"; };
 		07F7FB012A2DA8B800037C04 /* filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = filters; path = iOS/filters; sourceTree = SOURCE_ROOT; };
-		07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -517,12 +490,12 @@
 				92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */,
 				9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */,
 				9204BE131D319EF300BD49DB /* QuartzCore.framework in Frameworks */,
+				077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */,
 				9204BE141D319EF300BD49DB /* GameController.framework in Frameworks */,
 				9204BE151D319EF300BD49DB /* CoreText.framework in Frameworks */,
 				9204BE161D319EF300BD49DB /* CoreLocation.framework in Frameworks */,
 				9204BE171D319EF300BD49DB /* CoreMedia.framework in Frameworks */,
 				9204BE181D319EF300BD49DB /* AVFoundation.framework in Frameworks */,
-				07FA26C82BD8B2FB00E1AF91 /* MoltenVK.xcframework in Frameworks */,
 				9204BE191D319EF300BD49DB /* CoreVideo.framework in Frameworks */,
 				070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */,
 				9204BE1A1D319EF300BD49DB /* AudioToolbox.framework in Frameworks */,
@@ -543,7 +516,6 @@
 				076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */,
 				926C77F121FD26E800103EDE /* GameController.framework in Frameworks */,
 				926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */,
-				07FA26CA2BD8B74900E1AF91 /* MoltenVK.xcframework in Frameworks */,
 				073734A62A093ACA00BF7397 /* AltKit in Frameworks */,
 				0718BC632ABBAFB6001F2CBE /* Network.framework in Frameworks */,
 			);
@@ -1256,12 +1228,10 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */,
 				076CA50C2B695C2C00840EA5 /* libz.tbd */,
 				0718BC5F2ABBA807001F2CBE /* Network.framework */,
 				070A88422A4E7AA9003161C0 /* OpenAL.framework */,
 				9210C2F124B3A19100E6FE7C /* Metal.framework */,
-				07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */,
 				9210C2F024B3A19100E6FE7C /* MetalKit.framework */,
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
 				92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */,
@@ -1348,7 +1318,6 @@
 				9204BE271D319EF300BD49DB /* ShellScript */,
 				9204BE211D319EF300BD49DB /* Resources */,
 				9292D6F528F549D500E47A75 /* Embed Foundation Extensions */,
-				07FA26C52BD8B01400E1AF91 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1373,7 +1342,6 @@
 				92CC057521FE2D4900FF79F0 /* ShellScript */,
 				926C77D521FD1E6500103EDE /* Resources */,
 				0712A77B2B807AE400C9765F /* Embed Foundation Extensions */,
-				07FA26CC2BD8B74900E1AF91 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
