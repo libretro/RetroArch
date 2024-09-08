@@ -150,9 +150,9 @@ bool glslang_read_shader_file(const char *path,
    if (lines.size < 1)
       goto error;
 
-   /* If this is the 'parent' shader file, ensure that first
-    * line is a 'VERSION' string */
-   if (root_file)
+    /* If this is the 'parent' shader file and a slang file,
+    * ensure that first line is a 'VERSION' string */
+   if (root_file && string_is_equal(path_get_extension(path), "slang"))
    {
       const char *line = lines.elems[0].data;
 
@@ -166,9 +166,9 @@ bool glslang_read_shader_file(const char *path,
       if (!string_list_append(output, line, attr))
          goto error;
 
-      /* Allows us to use #line to make dealing with shader 
+      /* Allows us to use #line to make dealing with shader
        * errors easier.
-       * This is supported by glslang, but since we always 
+       * This is supported by glslang, but since we always
        * use glslang statically, this is fine. */
       if (!string_list_append(output,
                "#extension GL_GOOGLE_cpp_style_line_directive : require",

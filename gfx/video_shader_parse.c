@@ -870,28 +870,15 @@ void video_shader_resolve_parameters(struct video_shader *shader)
       uint8_t *buf              = NULL;
       int64_t buf_len           = 0;
 
-      if (string_is_empty(path))
+      if (string_is_empty(path) || !path_is_valid(path))
          continue;
-
-      if (!path_is_valid(path))
-         continue;
-
-      /* First try to use the more robust slang implementation
-       * to support #includes. */
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-      /* FIXME: The check for slang can be removed
-       * if it's sufficiently tested for GLSL/Cg as well,
-       * it should be the same implementation.
-       * The problem with switching currently is that it looks
-       * for a #version string in the first line of the file
-       * which glsl doesn't have */
-
-      if (     string_is_equal(path_get_extension(path), "slang")
-            && slang_preprocess_parse_parameters(path, shader))
-         continue;
-#endif
-
+      /* Now uses the same slang parsing for parameters since
+       * it should be the same implementation, but supporting
+       * #include directives */
+      slang_preprocess_parse_parameters(path, shader);
+#else
       /* Read file contents */
       if (filestream_read_file(path, (void**)&buf, &buf_len))
       {
@@ -956,6 +943,7 @@ void video_shader_resolve_parameters(struct video_shader *shader)
 
          string_list_deinitialize(&lines);
       }
+#endif
    }
 }
 
