@@ -89,7 +89,7 @@ typedef struct
    unsigned char cur_track;
    char drive_letter[2];
    char cdrom_path[64];
-   char title[512];
+   char title[NAME_MAX_LENGTH];
    bool next;
 } task_cdrom_dump_state_t;
 
@@ -143,7 +143,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
             settings_t              *settings = config_get_ptr();
-            const char *directory_core_assets = settings 
+            const char *directory_core_assets = settings
                ? settings->paths.directory_core_assets : NULL;
             /* write cuesheet to a file */
             int64_t cue_size     = filestream_get_size(state->file);
@@ -257,7 +257,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                char output_path[PATH_MAX_LENGTH];
                char track_filename[PATH_MAX_LENGTH];
                settings_t              *settings = config_get_ptr();
-               const char *directory_core_assets = settings 
+               const char *directory_core_assets = settings
                   ? settings->paths.directory_core_assets : NULL;
 
                track_filename[0] = '\0';

@@ -2165,7 +2165,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
       bool show_hidden_files)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   char ext_shaders[256];
+   char ext_shaders[NAME_MAX_LENGTH];
 #endif
    char ext_name[16];
    const char *exts    = NULL;
@@ -3240,7 +3240,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (settings->bools.run_ahead_enabled)
             {
-               char msg[256];
+               char msg[128];
                if (settings->bools.run_ahead_secondary_instance)
                   snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
@@ -3284,8 +3284,7 @@ bool command_event(enum event_command cmd, void *data)
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             else if (runloop_st->preempt_data)
             {
-               char msg[256];
-
+               char msg[128];
                snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_PREEMPT_ENABLED),
                         settings->uints.run_ahead_frames);
                runloop_msg_queue_push(
