@@ -30,7 +30,6 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
-#include <retro_miscellanous.h>
 
 #include "../../config.def.h"
 #include "../../verbosity.h"
@@ -67,7 +66,7 @@ typedef struct
    unsigned frame;
    unsigned action;
    unsigned param_num;
-   char param_str[NAME_MAX_LENGTH];
+   char param_str[256];
    bool handled;
 } input_test_step_t;
 
