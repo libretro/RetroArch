@@ -6446,8 +6446,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
    unsigned i;
+   char title_msg[128];
    char msg[1024];
-   char title_msg[NAME_MAX_LENGTH];
    char title_truncated[NAME_MAX_LENGTH];
    gfx_thumbnail_shadow_t thumbnail_shadow;
    size_t selection                    = 0;

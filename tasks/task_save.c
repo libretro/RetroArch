@@ -537,7 +537,7 @@ static void task_save_handler(retro_task_t *task)
 
    if (task_get_cancelled(task) || written != remaining)
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       if (state->flags & SAVE_TASK_FLAG_UNDO_SAVE)
       {

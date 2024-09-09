@@ -267,7 +267,7 @@ steam_core_dlc_t* steam_get_core_dlc_by_name(
 
 void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 {
-   char msg[PATH_MAX_LENGTH] = { 0 };
+   char msg[128] = { 0 };
    bool downloading          = false;
    bool installed            = false;
    uint64_t bytes_downloaded = 0;
@@ -309,7 +309,7 @@ error:
 
 void steam_uninstall_core_dlc(steam_core_dlc_t *core_dlc)
 {
-   char msg[PATH_MAX_LENGTH] = { 0 };
+   char msg[128] = { 0 };
 
    MistResult result = mist_steam_apps_uninstall_dlc(core_dlc->app_id);
 
