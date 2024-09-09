@@ -51,9 +51,9 @@ static bool core_backup_get_backup_dir(
       const char *core_filename,
       char *backup_dir, size_t len)
 {
-   char *last_underscore = NULL;
-   char core_file_id[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
+   char core_file_id[NAME_MAX_LENGTH];
+   char *last_underscore = NULL;
 
    /* Extract core file 'ID' (name without extension + suffix)
     * from core path */
