@@ -94,8 +94,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
    if (state->alpha > 0.0f)
    {
-      char msg[NAME_MAX_LENGTH];
-      char percentage_msg[NAME_MAX_LENGTH];
+      char msg[128];
+      char percentage_msg[128];
       video_frame_info_t *video_info       = (video_frame_info_t*)data;
       dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;

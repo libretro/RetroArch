@@ -528,7 +528,7 @@ static int menu_displaylist_parse_core_info(
 {
    char tmp[PATH_MAX_LENGTH];
 #if IOS
-   char shortened_path[PATH_MAX_LENGTH] = {0};
+   char shortened_path[NAME_MAX_LENGTH] = {0};
 #endif
    unsigned i, count             = 0;
    core_info_t *core_info        = NULL;

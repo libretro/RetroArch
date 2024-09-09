@@ -50,8 +50,8 @@ typedef struct logiqx_dat logiqx_dat_t;
  * if required) */
 typedef struct
 {
-   char name[PATH_MAX_LENGTH];
-   char description[PATH_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
+   char description[NAME_MAX_LENGTH];
    char year[8];
    char manufacturer[128];
    bool is_bios;
@@ -66,7 +66,7 @@ typedef struct
  * Also provides access to file size (DAT files can
  * be very large, so it is useful to have this information
  * on hand - i.e. so we can check that the system has
- * enough free memory to load the file). */ 
+ * enough free memory to load the file). */
 bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size);
 
 /* File initialisation/de-initialisation */
