@@ -134,16 +134,16 @@ static unsigned input_autoconfigure_get_config_file_affinity(
 #endif
 
    /* Check for matching VID+PID */
-   pid_match = (autoconfig_handle->device_info.vid == config_vid) &&
-               (autoconfig_handle->device_info.pid == config_pid) &&
-               (autoconfig_handle->device_info.vid != 0)          &&
-               (autoconfig_handle->device_info.pid != 0);
+   pid_match =    (autoconfig_handle->device_info.vid == config_vid)
+               && (autoconfig_handle->device_info.pid == config_pid)
+               && (autoconfig_handle->device_info.vid != 0)
+               && (autoconfig_handle->device_info.pid != 0);
 
    /* > More Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
-   pid_match = pid_match &&
-               (autoconfig_handle->device_info.vid != BLISSBOX_VID) &&
-               (autoconfig_handle->device_info.pid != BLISSBOX_PID);
+   pid_match =     pid_match
+               && (autoconfig_handle->device_info.vid != BLISSBOX_VID)
+               && (autoconfig_handle->device_info.pid != BLISSBOX_PID);
 #endif
 
    if (pid_match)
@@ -369,24 +369,25 @@ static bool input_autoconfigure_scan_config_files_internal(
 static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
       int product_id, const char *device_name, const char *device_display_name)
 {
-   settings_t *settings = config_get_ptr();
 
    unsigned player;
-   unsigned first_free_player_slot = MAX_USERS + 1;
+   char settings_value[NAME_MAX_LENGTH];
+   char settings_value_device_name[NAME_MAX_LENGTH];
    unsigned prev_assigned_player_slots[MAX_USERS];
-   bool device_has_reserved_slot = false;
-   bool no_reservation_at_all = true;
-   char settings_value[256] = {0};
    int  settings_value_vendor_id;
    int  settings_value_product_id;
-   char settings_value_device_name[256];
+   unsigned first_free_player_slot = MAX_USERS + 1;
+   bool device_has_reserved_slot   = false;
+   bool no_reservation_at_all      = true;
+   settings_t *settings            = config_get_ptr();
 
    for (player = 0; player < MAX_USERS; player++)
    {
       if (first_free_player_slot > MAX_USERS &&
-            ( detected_port == settings->uints.input_joypad_index[player] ||
-              !input_config_get_device_name(settings->uints.input_joypad_index[player])) &&
-          settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_RESERVED )
+            (   detected_port == settings->uints.input_joypad_index[player]
+            || !input_config_get_device_name(settings->uints.input_joypad_index[player]))
+            && settings->uints.input_device_reservation_type[player]
+            != INPUT_DEVICE_RESERVATION_RESERVED )
       {
          first_free_player_slot = player;
          RARCH_DBG("[Autoconf]: First unconfigured / unreserved player is %d\n",
@@ -600,10 +601,10 @@ static void cb_input_autoconfigure_connect(
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
+   char task_title[NAME_MAX_LENGTH + 16];
    autoconfig_handle_t *autoconfig_handle = NULL;
    bool match_found                       = false;
    const char *device_display_name        = NULL;
-   char task_title[NAME_MAX_LENGTH + 16];
 
    task_title[0] = '\0';
 
@@ -943,9 +944,9 @@ static void cb_input_autoconfigure_disconnect(
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
+   char task_title[NAME_MAX_LENGTH + 16];
    autoconfig_handle_t *autoconfig_handle = NULL;
    const char *device_display_name        = NULL;
-   char task_title[NAME_MAX_LENGTH + 16];
 
    task_title[0] = '\0';
 

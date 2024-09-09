@@ -249,7 +249,7 @@ error:
 static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 {
    size_t _len;
-   char msg[8192]; /* TODO/FIXME - check size */
+   char msg[128];
    bsv_movie_t *state                       = NULL;
    const char *movie_rec_str                = NULL;
 
@@ -446,7 +446,7 @@ error:
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
    size_t _len;
-   char msg[8192]; /* TODO/FIXME - check size */
+   char msg[128];
    const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
