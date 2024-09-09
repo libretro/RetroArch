@@ -787,7 +787,7 @@ static bool content_file_extract_from_archive(
                NULL : content_ctx->directory_cache,
          tmp_path, sizeof(tmp_path)))
    {
-      char msg[1024];
+      char msg[128];
       snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
             *content_path);
@@ -991,7 +991,7 @@ static bool content_file_load(
                   content_compressed, i, first_content_type,
                   &content_data, &content_size))
             {
-               char msg[1024];
+               char msg[128];
                snprintf(msg, sizeof(msg), "%s \"%s\"\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      content_path);
@@ -1071,7 +1071,7 @@ static bool content_file_load(
                    * (This disclaimer is out dated but I don't want to remove it)*/
                   if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
                   {
-                     char msg[1024];
+                     char msg[128];
                      /* TODO/FIXME - localize */
                      snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
@@ -1173,7 +1173,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
    if (!special)
    {
-      char msg[1024];
+      char msg[128];
       /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
@@ -1192,7 +1192,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
       if (special->num_roms != subsystem->size)
       {
-         char msg[1024];
+         char msg[128];
          /* TODO/FIXME - localize */
          snprintf(msg, sizeof(msg),
                "Libretro core requires %u content files for "
@@ -1205,7 +1205,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
    }
    else if (subsystem && subsystem->size)
    {
-      char msg[1024];
+      char msg[128];
       /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Libretro core takes no content for subsystem \"%s\", "

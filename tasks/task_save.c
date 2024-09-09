@@ -755,16 +755,11 @@ static void task_load_handler(retro_task_t *task)
    {
       if (state->flags & SAVE_TASK_FLAG_AUTOLOAD)
       {
-         char *msg = (char*)malloc(8192 * sizeof(char));
-
-         msg[0] = '\0';
-
-         snprintf(msg,
-               8192 * sizeof(char),
+         char msg[128];
+         snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FAILED),
                path_basename(state->path));
          task_set_error(task, strdup(msg));
-         free(msg);
       }
       else
          task_set_error(task, strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)));
@@ -781,32 +776,25 @@ static void task_load_handler(retro_task_t *task)
 
       if (!task_get_mute(task))
       {
-         size_t msg_size   = 8192 * sizeof(char);
-         char *msg         = (char*)malloc(msg_size);
-
-         msg[0]            = '\0';
+         char msg[128];
 
          if (state->flags & SAVE_TASK_FLAG_AUTOLOAD)
-         {
-            snprintf(msg,
-                  msg_size - 1,
+            snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_SUCCEEDED),
                   path_basename(state->path));
-         }
          else
          {
             if (state->state_slot < 0)
                strlcpy(msg,
                      msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
-                     msg_size - 1);
+                     sizeof(msg));
             else
-               snprintf(msg, msg_size - 1,
+               snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                      state->state_slot);
          }
 
          task_set_title(task, strdup(msg));
-         free(msg);
       }
 
       goto end;
@@ -816,19 +804,11 @@ static void task_load_handler(retro_task_t *task)
 
 not_found:
    {
-      size_t msg_size   = 8192 * sizeof(char);
-      char *msg         = (char*)malloc(msg_size);
-
-      msg[0] = '\0';
-
-      snprintf(msg,
-            msg_size - 1,
-            "%s \"%s\".",
+      char msg[128];
+      snprintf(msg, sizeof(msg), "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
             path_basename(state->path));
-
       task_set_title(task, strdup(msg));
-      free(msg);
    }
 
 end:

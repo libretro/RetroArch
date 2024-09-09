@@ -391,7 +391,7 @@ void* task_push_webdav_put(const char *url,
       const char *headers, retro_task_callback_t cb, void *user_data)
 {
    struct http_connection_t *conn;
-   char                      expect[1024];
+   char                      expect[1024]; /* TODO/FIXME - check size */
    size_t                    _len;
 
    if (string_is_empty(url))

@@ -1051,7 +1051,7 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
-      char title[512];
+      char title[128];
       size_t len = strlcpy(title, "Cloud Sync finished", sizeof(title));
       if (sync_state->failures || sync_state->conflicts)
          len += strlcpy(title + len, " with ", sizeof(title) - len);

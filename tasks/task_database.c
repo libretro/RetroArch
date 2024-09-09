@@ -758,16 +758,16 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
+   char entry_lbl[128];
+   char db_playlist_base_str[NAME_MAX_LENGTH];
    /* TODO/FIXME - heap allocations are done here to avoid
     * running out of stack space on systems with a limited stack size.
     * We should use less fullsize paths in the future so that we don't
     * need to have all these big char arrays here */
    size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
    char* db_crc                   = (char*)malloc(str_len);
-   char* db_playlist_base_str     = (char*)malloc(str_len);
    char* db_playlist_path         = (char*)malloc(str_len);
    char* entry_path_str           = (char*)malloc(str_len);
-   char* entry_label              = (char*)malloc(str_len);
    char *hash                     = NULL;
    playlist_t   *playlist         = NULL;
    const char         *db_path    =
@@ -810,16 +810,16 @@ static int database_info_list_iterate_found_match(
    /* Use database name for label if found,
     * otherwise use filename without extension */
    if (!string_is_empty(db_info_entry->name))
-      strlcpy(entry_label, db_info_entry->name, str_len);
+      strlcpy(entry_lbl, db_info_entry->name, str_len);
    else if (!string_is_empty(entry_path))
    {
       char *delim = (char*)strchr(entry_path, '#');
 
       if (delim)
          *delim = '\0';
-      fill_pathname(entry_label,
+      fill_pathname(entry_lbl,
             path_basename_nocompression(entry_path), "", str_len);
-      path_remove_extension(entry_label);
+      path_remove_extension(entry_lbl);
 
       RARCH_LOG("[Scanner]: No match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
    }
@@ -852,7 +852,7 @@ static int database_info_list_iterate_found_match(
       /* the push function reads our entry as const,
        * so these casts are safe */
       entry.path              = entry_path_str;
-      entry.label             = entry_label;
+      entry.label             = entry_lbl;
       entry.core_path         = (char*)"DETECT";
       entry.core_name         = (char*)"DETECT";
       entry.db_name           = db_playlist_base_str;
@@ -872,12 +872,12 @@ static int database_info_list_iterate_found_match(
       entry.last_played_second= 0;
 
       playlist_push(playlist, &entry);
-      RARCH_LOG("[Scanner]: Add \"%s\" to \"%s\"\n", entry_label, entry.db_name);
+      RARCH_LOG("[Scanner]: Add \"%s\" to \"%s\"\n", entry_lbl, entry.db_name);
       if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-         task_database_scan_console_output(entry_label, path_remove_extension(db_playlist_base_str), true);
+         task_database_scan_console_output(entry_lbl, path_remove_extension(db_playlist_base_str), true);
    }
    else if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-      task_database_scan_console_output(entry_label, path_remove_extension(db_playlist_base_str), false);
+      task_database_scan_console_output(entry_lbl, path_remove_extension(db_playlist_base_str), false);
 
    playlist_write_file(playlist);
    playlist_free(playlist);
@@ -902,10 +902,8 @@ static int database_info_list_iterate_found_match(
    }
 
    free(db_crc);
-   free(db_playlist_base_str);
    free(db_playlist_path);
    free(entry_path_str);
-   free(entry_label);
    return 0;
 }
 
@@ -932,8 +930,8 @@ static int task_database_iterate_crc_lookup(
       const char *archive_entry,
       bool path_contains_compressed_file)
 {
-   if (!db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
+   if (   !db_state->list
+       || (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db, db_state, name,
             path_contains_compressed_file);
 
