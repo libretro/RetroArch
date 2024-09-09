@@ -1060,14 +1060,14 @@ size_t fill_pathname_expand_special(char *out_path,
    char *app_dir = NULL;
    if (in_path[0] == '~')
    {
-      app_dir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      fill_pathname_home_dir(app_dir, PATH_MAX_LENGTH * sizeof(char));
+      app_dir    = (char*)malloc(DIR_MAX_LENGTH * sizeof(char));
+      fill_pathname_home_dir(app_dir, DIR_MAX_LENGTH * sizeof(char));
    }
    else if (in_path[0] == ':')
    {
-      app_dir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      app_dir    = (char*)malloc(DIR_MAX_LENGTH * sizeof(char));
       app_dir[0] = '\0';
-      fill_pathname_application_dir(app_dir, PATH_MAX_LENGTH * sizeof(char));
+      fill_pathname_application_dir(app_dir, DIR_MAX_LENGTH * sizeof(char));
    }
 
    if (app_dir)
@@ -1103,8 +1103,8 @@ size_t fill_pathname_abbreviate_special(char *out_path,
    unsigned i;
    const char *candidates[3];
    const char *notations[3];
-   char application_dir[PATH_MAX_LENGTH];
-   char home_dir[PATH_MAX_LENGTH];
+   char application_dir[DIR_MAX_LENGTH];
+   char home_dir[DIR_MAX_LENGTH];
 
    application_dir[0] = '\0';
 
@@ -1353,7 +1353,7 @@ void fill_pathname_application_path(char *s, size_t len)
          /* This needs to be done so that the path becomes
           * /private/var/... and this
           * is used consistently throughout for the iOS bundle path */
-         char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+         char resolved_bundle_dir_buf[DIR_MAX_LENGTH] = {0};
          if (realpath(s, resolved_bundle_dir_buf))
          {
             size_t _len = strlcpy(s, resolved_bundle_dir_buf, len - 1);

@@ -516,8 +516,8 @@ typedef struct
    float delay_timer;
    float alpha;
    char str[MENU_SUBLABEL_MAX_LENGTH];
-   char runtime_fallback_str[255];
-   char last_played_fallback_str[255];
+   char runtime_fallback_str[NAME_MAX_LENGTH];
+   char last_played_fallback_str[NAME_MAX_LENGTH];
 } materialui_status_bar_t;
 
 /* Contains the file path(s) and texture pointer
@@ -683,8 +683,8 @@ typedef struct materialui_handle
    char sysicons_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
    char msgbox[1024];
-   char menu_title[255];
-   char fullscreen_thumbnail_label[255];
+   char menu_title[NAME_MAX_LENGTH];
+   char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 } materialui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -4257,7 +4257,7 @@ static void materialui_render_menu_entry_default(
             int value_x_offset             = 0;
             uint32_t entry_value_color     = 0;
             unsigned entry_value_width_max = (usable_width / 2) - mui->margin;
-            char value_buf[255];
+            char value_buf[NAME_MAX_LENGTH];
 
             value_buf[0] = '\0';
 
@@ -4378,7 +4378,7 @@ static void materialui_render_menu_entry_default(
    if (!string_is_empty(entry_label))
    {
       int label_width = usable_width;
-      char label_buf[255];
+      char label_buf[NAME_MAX_LENGTH];
 
       label_buf[0] = '\0';
 
@@ -4603,7 +4603,7 @@ static void materialui_render_menu_entry_playlist_list(
    /* Draw entry label */
    if (!string_is_empty(entry_label))
    {
-      char label_buf[255];
+      char label_buf[NAME_MAX_LENGTH];
 
       label_buf[0] = '\0';
 
@@ -4780,7 +4780,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
             (float)mui->font_data.list.line_centre_offset;
 
       bool draw_text_outside = (x_offset != 0);
-      char label_buf[255];
+      char label_buf[NAME_MAX_LENGTH];
 
       label_buf[0] = '\0';
 
@@ -4891,7 +4891,7 @@ static void materialui_render_menu_entry_playlist_desktop(
    /* Draw entry label */
    if (!string_is_empty(entry_label))
    {
-      char label_buf[255];
+      char label_buf[NAME_MAX_LENGTH];
 
       label_buf[0] = '\0';
 
@@ -5684,7 +5684,7 @@ static void materialui_render_header(
       unsigned video_width, unsigned video_height,
       math_matrix_4x4 *mymat)
 {
-   char menu_title_buf[255];
+   char menu_title_buf[NAME_MAX_LENGTH];
    size_t menu_title_margin              = 0;
    int usable_sys_bar_width              = (int)video_width - (int)mui->nav_bar_layout_width;
    int usable_title_bar_width            = usable_sys_bar_width;
@@ -5919,8 +5919,8 @@ static void materialui_render_header(
    /* > Draw core name, if required */
    if (menu_core_enable)
    {
-      char core_title[255];
-      char core_title_buf[255];
+      char core_title[NAME_MAX_LENGTH];
+      char core_title_buf[NAME_MAX_LENGTH];
 
       core_title[0]     = '\0';
       core_title_buf[0] = '\0';
@@ -7199,7 +7199,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (menu_input_dialog_get_display_kb())
    {
       size_t _len;
-      char msg[255];
+      char msg[NAME_MAX_LENGTH];
       struct menu_state *menu_st  = menu_state_get_ptr();
       const char *str             = menu_input_dialog_get_buffer();
       const char *label           = menu_st->input_dialog_kb_label;
@@ -11046,7 +11046,7 @@ static void materialui_list_insert(
 
                for (i = 0; i < MAX_USERS; i++)
                {
-                  char val[255];
+                  char val[NAME_MAX_LENGTH];
                   unsigned user_value = i + 1;
                   size_t _len = snprintf(val, sizeof(val), "%d", user_value);
                   strlcpy(val       + _len,

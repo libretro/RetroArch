@@ -6,6 +6,7 @@
 #include <retro_timers.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../input/input_driver.h"
 #include "../menu/menu_driver.h"
@@ -145,7 +146,7 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
 
    for (i = 0; core_info_list->count > i; i++)
    {
-      char core_info_name[256];
+      char core_info_name[NAME_MAX_LENGTH];
       core_info_t *core_info   = core_info_get(core_info_list, i);
       /* Find the opening parenthesis for the core name */
       char *start              = strchr(core_info->display_name, '(');

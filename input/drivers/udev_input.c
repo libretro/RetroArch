@@ -540,7 +540,7 @@ typedef struct udev_input_device
 #endif
    enum udev_input_dev_type type; /* Type of this device */
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
-   char ident[255]; /* Identifier of the device */
+   char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
 
 typedef void (*device_handle_cb)(void *data,

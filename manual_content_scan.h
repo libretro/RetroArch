@@ -83,7 +83,7 @@ enum manual_content_scan_playlist_refresh_status
 typedef struct
 {
    char playlist_file[PATH_MAX_LENGTH];
-   char content_dir[PATH_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
    char system_name[PATH_MAX_LENGTH];
    char database_name[PATH_MAX_LENGTH];
    char core_name[PATH_MAX_LENGTH];

@@ -337,7 +337,7 @@ typedef struct
    ssize_t playlist_index;
    uint8_t settings_selection_ptr;
    size_t playlist_selection_ptr;
-   size_t playlist_selection[255];
+   size_t playlist_selection[NAME_MAX_LENGTH];
    int16_t scroll_y;
    rgui_colors_t colors;   /* int16_t alignment */
 
@@ -351,11 +351,11 @@ typedef struct
    char savestate_thumbnail_file_path[8204];
    char prev_savestate_thumbnail_file_path[8204];
 
+   char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
    char msgbox[1024];
    char theme_preset_path[PATH_MAX_LENGTH];       /* Must be a fixed length array... */
    char theme_dynamic_path[PATH_MAX_LENGTH];      /* Must be a fixed length array... */
    char last_theme_dynamic_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
-   char menu_title[255];                          /* Must be a fixed length array... */
    char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH];  /* Must be a fixed length array... */
 } rgui_t;
 
@@ -4666,7 +4666,7 @@ static void rgui_render_osk(
       /* This can never happen, but have to make sure...
        * If OSK cannot physically fit on the screen,
        * fallback to old style 'message box' implementation */
-      char msg[255];
+      char msg[NAME_MAX_LENGTH];
       size_t _len = strlcpy(msg, input_label, sizeof(msg));
       msg[  _len] = '\n';
       msg[++_len] = '\0';
@@ -4731,7 +4731,7 @@ static void rgui_render_osk(
    /* Draw input label text */
    if (!string_is_empty(input_label))
    {
-      char input_label_buf[255];
+      char input_label_buf[NAME_MAX_LENGTH];
       unsigned input_label_length;
       int input_label_x, input_label_y;
       unsigned ticker_x_offset = 0;
@@ -5189,7 +5189,7 @@ static void rgui_render(
        * this is better than switching back to the text playlist
        * view, which causes ugly flickering when scrolling quickly
        * through a list...) */
-      char thumbnail_title_buf[255];
+      char thumbnail_title_buf[NAME_MAX_LENGTH];
       unsigned title_x, title_width;
       const char *thumbnail_title = NULL;
       struct menu_state *menu_st  = menu_state_get_ptr();
@@ -5275,10 +5275,10 @@ static void rgui_render(
    {
       /* Render usual text */
       size_t selection               = menu_st->selection_ptr;
-      char title_buf[255];
       size_t title_max_len;
       size_t title_len;
       unsigned title_x;
+      char title_buf[NAME_MAX_LENGTH];
       unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
       unsigned timedate_x            = term_end_x - (5 * rgui->font_width_stride);
@@ -5446,8 +5446,8 @@ static void rgui_render(
 
       for (i = new_start; i < end; i++, y += rgui->font_height_stride)
       {
-         char entry_title_buf[255];
-         char type_str_buf[255];
+         char entry_title_buf[NAME_MAX_LENGTH];
+         char type_str_buf[NAME_MAX_LENGTH];
          menu_entry_t entry;
          const char *entry_value                     = NULL;
          size_t entry_title_max_len                  = 0;

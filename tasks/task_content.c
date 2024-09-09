@@ -531,7 +531,7 @@ static bool content_file_list_set_info(
     *   extended path info to cores */
    if (!string_is_empty(path))
    {
-      char dir [PATH_MAX_LENGTH];
+      char dir [DIR_MAX_LENGTH];
       char name[NAME_MAX_LENGTH];
       const char *archive_delim = NULL;
       const char *ext           = NULL;
@@ -1032,7 +1032,7 @@ static bool content_file_load(
                {
                   wchar_t wnew_path[MAX_PATH];
                   /* Fallback to a file copy into an accessible directory */
-                  char new_basedir[PATH_MAX_LENGTH];
+                  char new_basedir[DIR_MAX_LENGTH];
                   char new_path[PATH_MAX_LENGTH];
 
                   RARCH_LOG("[Content]: Core does not support VFS"

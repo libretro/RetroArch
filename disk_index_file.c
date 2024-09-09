@@ -207,7 +207,7 @@ bool disk_index_file_init(
    size_t len;
    const char *content_file = NULL;
    char content_name[256];
-   char disk_index_file_dir[PATH_MAX_LENGTH];
+   char disk_index_file_dir[DIR_MAX_LENGTH];
 
    /* Sanity check */
    if (!disk_index_file)

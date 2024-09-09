@@ -28,6 +28,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -431,10 +432,9 @@ typedef struct
       enum rarch_shader_type preset_type;
       enum rarch_shader_type pass_type;
 
-      char preset_dir[PATH_MAX_LENGTH];
+      char pass_dir[DIR_MAX_LENGTH];
+      char preset_dir[DIR_MAX_LENGTH];
       char preset_file_name[PATH_MAX_LENGTH];
-
-      char pass_dir[PATH_MAX_LENGTH];
       char pass_file_name[PATH_MAX_LENGTH];
    } last_shader_selection;
 #endif
@@ -443,7 +443,7 @@ typedef struct
     * loaded via the menu file browser */
    struct
    {
-      char directory[PATH_MAX_LENGTH];
+      char directory[DIR_MAX_LENGTH];
       char file_name[PATH_MAX_LENGTH];
    } last_start_content;
 
@@ -523,7 +523,7 @@ struct menu_state
    char pending_selection[PATH_MAX_LENGTH];
    /* Storage container for current menu datetime
     * representation string */
-   char datetime_cache[255];
+   char datetime_cache[NAME_MAX_LENGTH];
    /* Filled with current content path when a core calls
     * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
     * generic_menu_entry_action(), and must be cached

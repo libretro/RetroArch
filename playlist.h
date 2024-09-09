@@ -151,9 +151,9 @@ typedef struct
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
-   bool autofix_paths;   
+   bool autofix_paths;
    char path[PATH_MAX_LENGTH];
-   char base_content_directory[PATH_MAX_LENGTH];
+   char base_content_directory[DIR_MAX_LENGTH];
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist
@@ -303,7 +303,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry,
       bool register_update);
 
-void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx, 
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
      enum playlist_thumbnail_name_flags thumbnail_flags);
 enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx);
 enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx);

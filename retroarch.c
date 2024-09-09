@@ -320,9 +320,9 @@ struct rarch_state
    char path_config_append_file[PATH_MAX_LENGTH];
    char path_config_override_file[PATH_MAX_LENGTH];
    char path_core_options_file[PATH_MAX_LENGTH];
-   char dir_system[PATH_MAX_LENGTH];
-   char dir_savefile[PATH_MAX_LENGTH];
-   char dir_savestate[PATH_MAX_LENGTH];
+   char dir_system[DIR_MAX_LENGTH];
+   char dir_savefile[DIR_MAX_LENGTH];
+   char dir_savestate[DIR_MAX_LENGTH];
 };
 
 /* Forward declarations */
@@ -2165,7 +2165,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
       bool show_hidden_files)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   char ext_shaders[255];
+   char ext_shaders[256];
 #endif
    char ext_name[16];
    const char *exts    = NULL;
@@ -6162,7 +6162,7 @@ static void retroarch_print_features(void)
 
 static void retroarch_print_version(void)
 {
-   char str[255];
+   char str[256];
    str[0] = '\0';
 
    frontend_driver_attach_console();

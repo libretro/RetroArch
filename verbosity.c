@@ -112,7 +112,7 @@ typedef struct verbosity_state
 
 /* TODO/FIXME - static public global variables */
 static verbosity_state_t main_verbosity_st;
-static unsigned verbosity_log_level           = 
+static unsigned verbosity_log_level           =
 DEFAULT_FRONTEND_LOG_LEVEL;
 
 #ifdef HAVE_LIBNX
@@ -454,7 +454,7 @@ void rarch_log_file_init(
       const char *log_dir
       )
 {
-   char log_directory[PATH_MAX_LENGTH];
+   char log_directory[DIR_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    verbosity_state_t *g_verbosity            = &main_verbosity_st;
    static bool log_file_created              = false;

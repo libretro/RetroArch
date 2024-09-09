@@ -123,7 +123,7 @@ static void salamander_init(char *s, size_t len)
    const char *rarch_config_path = g_defaults.path_config;
    bool config_valid             = false;
    char config_path[PATH_MAX_LENGTH];
-   char config_dir[PATH_MAX_LENGTH];
+   char config_dir[DIR_MAX_LENGTH];
 
    config_dir[0]  = '\0';
 

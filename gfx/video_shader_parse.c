@@ -228,7 +228,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
          {
             case RARCH_WILDCARD_CONTENT_DIR:
                {
-                  char content_dir_name[PATH_MAX_LENGTH] = "";
+                  char content_dir_name[DIR_MAX_LENGTH] = "";
                   const char* rarch_path_basename = path_get(RARCH_PATH_BASENAME);
                   if (rarch_path_basename)
                      fill_pathname_parent_dir_name(content_dir_name,
@@ -335,7 +335,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
                break;
             case RARCH_WILDCARD_PRESET_DIR:
                {
-                  char preset_dir_name[PATH_MAX_LENGTH];
+                  char preset_dir_name[DIR_MAX_LENGTH];
                   fill_pathname_parent_dir_name(preset_dir_name, in_preset_path, sizeof(preset_dir_name));
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
                      strlcpy(preset_dir_name, path_basename_nocompression(preset_dir_name), sizeof(preset_dir_name));
@@ -1406,7 +1406,7 @@ static bool video_shader_write_referenced_preset(
    bool ret                               = false;
    bool continue_saving_ref               = true;
    char *new_preset_basedir               = strdup(path_to_save);
-   char *config_dir                       = (char*)malloc(PATH_MAX_LENGTH);
+   char *config_dir                       = (char*)malloc(DIR_MAX_LENGTH);
    char *relative_tmp_ref_path            = (char*)malloc(PATH_MAX_LENGTH);
    char *abs_tmp_ref_path                 = (char*)malloc(PATH_MAX_LENGTH);
    char *path_to_ref                      = (char*)malloc(PATH_MAX_LENGTH);
@@ -1426,7 +1426,7 @@ static bool video_shader_write_referenced_preset(
     * loaded presets are located
     * and where Save Game Preset, Save Core Preset,
     * Save Global Preset save to */
-   fill_pathname_application_special(config_dir, PATH_MAX_LENGTH,
+   fill_pathname_application_special(config_dir, DIR_MAX_LENGTH,
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* If there is no initial preset path loaded */
@@ -2831,9 +2831,9 @@ static bool video_shader_load_auto_shader_preset(settings_t *settings, const cha
    size_t i                           = 0;
 
    char shader_path[PATH_MAX_LENGTH];
-   char content_dir_name[PATH_MAX_LENGTH];
-   char config_file_directory[PATH_MAX_LENGTH];
-   char old_presets_directory[PATH_MAX_LENGTH];
+   char content_dir_name[DIR_MAX_LENGTH];
+   char config_file_directory[DIR_MAX_LENGTH];
+   char old_presets_directory[DIR_MAX_LENGTH];
 
    shader_path[0]                     = '\0';
    content_dir_name[0]                = '\0';

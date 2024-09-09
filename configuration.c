@@ -3425,7 +3425,7 @@ static config_file_t *open_default_config_file(void)
    if (!conf && has_application_data)
    {
       bool dir_created = false;
-      char basedir[PATH_MAX_LENGTH];
+      char basedir[DIR_MAX_LENGTH];
       /* Try to create a new config file. */
       fill_pathname_basedir(basedir, application_data, sizeof(basedir));
       fill_pathname_join_special(conf_path, application_data,
@@ -4294,8 +4294,8 @@ bool config_load_override(void *data)
    char core_path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
-   char content_dir_name[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
+   char content_dir_name[DIR_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    bool should_append                     = false;
    bool show_notification                 = true;
    rarch_system_info_t *sys_info          = (rarch_system_info_t*)data;
@@ -4478,7 +4478,7 @@ bool config_load_override(void *data)
 
 bool config_load_override_file(const char *config_path)
 {
-   char config_directory[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    bool should_append                     = false;
    bool show_notification                 = true;
    settings_t *settings                   = config_st;
@@ -4594,7 +4594,7 @@ bool config_unload_override(void)
 bool config_load_remap(const char *directory_input_remapping,
       void *data)
 {
-   char content_dir_name[PATH_MAX_LENGTH];
+   char content_dir_name[DIR_MAX_LENGTH];
    /* final path for core-specific configuration (prefix+suffix) */
    char core_path[PATH_MAX_LENGTH];
    /* final path for game-specific configuration (prefix+suffix) */
@@ -5455,9 +5455,9 @@ int8_t config_save_overrides(enum override_type type,
    struct config_array_setting *array_overrides= NULL;
    struct config_path_setting *path_settings   = NULL;
    struct config_path_setting *path_overrides  = NULL;
-   char config_directory[PATH_MAX_LENGTH];
-   char override_directory[PATH_MAX_LENGTH];
-   char content_dir_name[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
+   char override_directory[DIR_MAX_LENGTH];
+   char content_dir_name[DIR_MAX_LENGTH];
    char override_path[PATH_MAX_LENGTH];
    settings_t *overrides                       = config_st;
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
@@ -5994,7 +5994,7 @@ bool input_remapping_save_file(const char *path)
    size_t _len;
    bool ret;
    unsigned i, j;
-   char remap_file_dir[PATH_MAX_LENGTH];
+   char remap_file_dir[DIR_MAX_LENGTH];
    char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
    {
       "b",      "y",      "select", "start",

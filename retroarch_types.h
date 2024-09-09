@@ -5,6 +5,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -183,7 +184,7 @@ typedef struct rarch_system_info
    unsigned rotation;
    unsigned core_requested_rotation;
    unsigned performance_level;
-   char valid_extensions[255];
+   char valid_extensions[256];
    bool load_no_content;
    bool supports_vfs;
 } rarch_system_info_t;
@@ -294,7 +295,7 @@ typedef struct global
 
    } console;
 
-   char error_string[255];
+   char error_string[NAME_MAX_LENGTH];
    uint8_t flags;
 } global_t;
 
@@ -343,7 +344,7 @@ typedef struct content_state
    uint8_t flags;
 
    char companion_ui_crc32[32];
-   char pending_subsystem_ident[255];
+   char pending_subsystem_ident[NAME_MAX_LENGTH];
    char pending_rom_crc_path[PATH_MAX_LENGTH];
    char companion_ui_db_name[PATH_MAX_LENGTH];
 } content_state_t;

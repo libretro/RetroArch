@@ -625,7 +625,7 @@ int generic_action_ok_displaylist_push(
 {
    menu_displaylist_info_t info;
    char tmp[PATH_MAX_LENGTH];
-   char parent_dir[PATH_MAX_LENGTH];
+   char parent_dir[DIR_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
    const char           *menu_label        = NULL;
    const char            *menu_path        = NULL;
@@ -1357,7 +1357,7 @@ int generic_action_ok_displaylist_push(
          break;
       case ACTION_OK_DL_RGUI_MENU_THEME_PRESET:
          {
-            char rgui_assets_dir[PATH_MAX_LENGTH];
+            char rgui_assets_dir[DIR_MAX_LENGTH];
 
             filebrowser_clear_type();
             info.type          = type;
@@ -1970,6 +1970,9 @@ static int file_load_with_detect_core_wrapper(
 
    {
       menu_content_ctx_defer_info_t def_info;
+#if IOS
+      char tmp_path[PATH_MAX_LENGTH];
+#endif
       char menu_path_new[PATH_MAX_LENGTH];
       char new_core_path[PATH_MAX_LENGTH];
       const char *menu_path                  = NULL;
@@ -1980,7 +1983,6 @@ static int file_load_with_detect_core_wrapper(
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
 #if IOS
-      char tmp_path[PATH_MAX_LENGTH];
       if (menu_path)
       {
          fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
@@ -3644,7 +3646,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       unsigned action_type)
 {
 #ifdef HAVE_CONFIGFILE
-   char content_dir_name[PATH_MAX_LENGTH];
+   char content_dir_name[DIR_MAX_LENGTH];
    char remap_file_path[PATH_MAX_LENGTH];
    struct menu_state *menu_st            = menu_state_get_ptr();
    rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
@@ -4019,7 +4021,7 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char content_dir[PATH_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
    const char *flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST);
    unsigned flush_type    = 0;
    const char *menu_path  = NULL;
@@ -4042,7 +4044,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
        * can start with /private and this ensures the path starts with it.
        * This will allow the path to be properly substituted when
        * fill_pathname_expand_special() is called. */
-      char tmp_dir[PATH_MAX_LENGTH];
+      char tmp_dir[DIR_MAX_LENGTH];
       tmp_dir[0] = '\0';
       fill_pathname_expand_special(tmp_dir, content_dir, sizeof(content_dir));
       realpath(tmp_dir, content_dir);
@@ -4537,8 +4539,8 @@ static int action_ok_cheat_copy_after(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
-   struct item_cheat tmp;
    char msg[256];
+   struct item_cheat tmp;
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned int new_size      = cheat_manager_get_size() + 1;
 
@@ -4940,8 +4942,8 @@ finish:
             STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
             ))
    {
-      char parent_dir[PATH_MAX_LENGTH];
-      char parent_dir_encoded[PATH_MAX_LENGTH];
+      char parent_dir[DIR_MAX_LENGTH];
+      char parent_dir_encoded[DIR_MAX_LENGTH];
       file_transfer_t *transf     = NULL;
 
       parent_dir_encoded[0]       = '\0';
@@ -5150,7 +5152,7 @@ void cb_generic_download(retro_task_t *task,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            static char shaderdir[PATH_MAX_LENGTH] = {0};
+            static char shaderdir[DIR_MAX_LENGTH] = {0};
             const char *dirname                    = NULL;
             const char *dir_video_shader           = settings->paths.directory_video_shader;
 
@@ -5695,16 +5697,15 @@ static int action_ok_add_to_favorites(const char *path,
     * > If content path is empty, cannot do anything... */
    if (!string_is_empty(content_path))
    {
+      union string_list_elem_attr attr;
+      char core_path[PATH_MAX_LENGTH];
+      char core_name[PATH_MAX_LENGTH];
+      char content_label[PATH_MAX_LENGTH];
       runloop_state_t *runloop_st       = runloop_state_get_ptr();
       struct retro_system_info *sysinfo = &runloop_st->system.info;
       struct string_list *str_list      = NULL;
       const char *crc32                 = NULL;
       const char *db_name               = NULL;
-
-      union string_list_elem_attr attr;
-      char content_label[PATH_MAX_LENGTH];
-      char core_path[PATH_MAX_LENGTH];
-      char core_name[PATH_MAX_LENGTH];
 
       core_path[0]     = '\0';
       core_name[0]     = '\0';

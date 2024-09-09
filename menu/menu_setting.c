@@ -9517,7 +9517,7 @@ static bool setting_append_list_input_player_options(
     * 2 is the length of '99'; we don't need more users than that.
     */
    static char buffer[MAX_USERS][13+2+1];
-   static char group_label[MAX_USERS][255];
+   static char group_label[MAX_USERS][NAME_MAX_LENGTH];
    unsigned i, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
@@ -15976,8 +15976,8 @@ static bool setting_append_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS);
                for (user = 0; user < MAX_USERS; user++)
                {
-                  static char binds_list[MAX_USERS][255];
-                  static char binds_label[MAX_USERS][255];
+                  static char binds_list[MAX_USERS][NAME_MAX_LENGTH];
+                  static char binds_label[MAX_USERS][NAME_MAX_LENGTH];
                   unsigned user_value = user + 1;
                   size_t _len = snprintf(binds_list[user],  sizeof(binds_list[user]), "%d", user_value);
                   strlcpy(binds_list[user] + _len, "_input_binds_list", sizeof(binds_list[user]) - _len);

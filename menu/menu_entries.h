@@ -21,6 +21,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 #include <lists/file_list.h>
 
@@ -113,11 +114,11 @@ typedef struct menu_entry
    uint8_t setting_type;
    uint8_t flags;
    char sublabel[MENU_SUBLABEL_MAX_LENGTH];
-   char path[255];
-   char label[255];
-   char rich_label[255];
-   char value[255];
-   char password_value[255];
+   char path[NAME_MAX_LENGTH];
+   char label[NAME_MAX_LENGTH];
+   char rich_label[NAME_MAX_LENGTH];
+   char value[NAME_MAX_LENGTH];
+   char password_value[NAME_MAX_LENGTH];
 } menu_entry_t;
 
 typedef struct menu_file_list_cbs
