@@ -4148,7 +4148,7 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
          {
             char ext[32];
             union string_list_elem_attr attr;
-            char savename[PATH_MAX_LENGTH];
+            char savename[NAME_MAX_LENGTH];
             char path[PATH_MAX_LENGTH];
             size_t _len = 0;
             const struct retro_subsystem_memory_info *mem =

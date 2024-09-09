@@ -1257,7 +1257,7 @@ static void menu_action_setting_disp_set_label_menu_file_directory(
       char *s2, size_t len2)
 {
 #if IOS
-   char tmp[PATH_MAX_LENGTH] = {0};
+   char tmp[PATH_MAX_LENGTH];
    fill_pathname_abbreviate_special(tmp, path, sizeof(tmp));
    MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
          tmp, "(DIR)", STRLEN_CONST("(DIR)"), s2, len2);

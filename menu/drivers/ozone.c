@@ -617,14 +617,18 @@ struct ozone_handle
    uint8_t sidebar_index_list[SCROLL_INDEX_SIZE];
    uint8_t sidebar_index_size;
 
-   char title[PATH_MAX_LENGTH];
+   char title[NAME_MAX_LENGTH];
+   char selection_core_name[NAME_MAX_LENGTH];
+   char selection_playtime[NAME_MAX_LENGTH];
+   char selection_lastplayed[NAME_MAX_LENGTH];
+   char selection_entry_enumeration[NAME_MAX_LENGTH];
+   char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    char assets_path[PATH_MAX_LENGTH];
    char png_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
    char icons_path_default[PATH_MAX_LENGTH];
    char tab_path[PATH_MAX_LENGTH];
-   char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    /* These have to be huge, because runloop_st->name.savestate
     * has a hard-coded size of 8192...
@@ -632,11 +636,6 @@ struct ozone_handle
     * warnings...) */
    char savestate_thumbnail_file_path[8204];      /* TODO/FIXME - check size */
    char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
-
-   char selection_core_name[NAME_MAX_LENGTH];
-   char selection_playtime[NAME_MAX_LENGTH];
-   char selection_lastplayed[NAME_MAX_LENGTH];
-   char selection_entry_enumeration[NAME_MAX_LENGTH];
 
    char thumbnails_left_status_prev;
    char thumbnails_right_status_prev;

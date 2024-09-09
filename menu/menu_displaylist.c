@@ -2552,7 +2552,7 @@ static int create_string_list_rdb_entry_int(
    size_t _len;
    char str[16];
    char tmp[128];
-   char out_lbl[PATH_MAX_LENGTH];
+   char out_lbl[NAME_MAX_LENGTH];
    str[0]          = '\0';
    out_lbl[0]      = '\0';
 
@@ -4516,7 +4516,7 @@ static unsigned menu_displaylist_parse_cores(
 #ifndef HAVE_DYNAMIC
       if (frontend_driver_has_fork())
       {
-         char salamander_name[PATH_MAX_LENGTH];
+         char salamander_name[NAME_MAX_LENGTH];
 
          salamander_name[0] = '\0';
 
@@ -4587,10 +4587,10 @@ static unsigned menu_displaylist_parse_cores(
 static unsigned menu_displaylist_parse_add_to_playlist_list(
       file_list_t *list, settings_t *settings)
 {
+   char playlist_display_name[NAME_MAX_LENGTH];
    unsigned count               = 0;
    const char *dir_playlist     = settings->paths.directory_playlist;
    bool show_hidden_files       = settings->bools.show_hidden_files;
-   char playlist_display_name[PATH_MAX_LENGTH];
    struct string_list *str_list = dir_list_new_special(
          dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
 
@@ -5048,7 +5048,7 @@ static unsigned menu_displaylist_parse_content_information(
    if (!string_is_empty(db_name))
    {
       char *db_name_no_ext = NULL;
-      char db_name_no_ext_buff[PATH_MAX_LENGTH];
+      char db_name_no_ext_buff[NAME_MAX_LENGTH];
       /* Remove .lpl extension
       * > path_remove_extension() requires a char * (not const)
       *   so have to use a temporary buffer... */
@@ -12312,7 +12312,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         if (!string_is_empty(cd_info.title))
                         {
                            /* TODO/FIXME - localize */
-                           char title[sizeof("Title: ") + sizeof(cd_info.title)]; /* TODO/FIXME - C89 compliance */
+                           char title[NAME_MAX_LENGTH];
                            size_t _len = strlcpy(title, "Title: ", sizeof(title));
                            strlcpy(title + _len, cd_info.title, sizeof(title) - _len);
 
@@ -12687,7 +12687,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                for (i = 0; i < profiles_count; i++)
                {
-                  char title[PATH_MAX_LENGTH];
+                  char title[NAME_MAX_LENGTH];
                   char* profile               = SWITCH_CPU_PROFILES[i];
                   char* speed                 = SWITCH_CPU_SPEEDS[i];
                   size_t _len                 = strlcpy(title, profile, sizeof(title));
@@ -13133,7 +13133,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR:
             {
 #ifdef HAVE_NETWORKING
-               char new_label[PATH_MAX_LENGTH];
+               char new_label[NAME_MAX_LENGTH];
                char *save                  = NULL;
                char *info_path_cpy         = strdup(info->path);
                const char *con             = strtok_r(info_path_cpy, ";", &save);
@@ -13169,7 +13169,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
             {
 #ifdef HAVE_NETWORKING
-               char new_label[PATH_MAX_LENGTH];
+               char new_label[NAME_MAX_LENGTH];
                const char *
                   network_buildbot_assets_url = settings->paths.network_buildbot_assets_url;
 
@@ -14988,7 +14988,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_USER_BINDS_LIST:
             menu_entries_clear(info->list);
             {
-               char lbl[PATH_MAX_LENGTH];
+               char lbl[NAME_MAX_LENGTH];
                unsigned val              = atoi(info->path);
                const char *temp_val      = msg_hash_to_str(
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));

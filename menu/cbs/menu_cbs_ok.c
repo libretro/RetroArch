@@ -1512,7 +1512,7 @@ int generic_action_ok_displaylist_push(
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
-            char lpl_basename[PATH_MAX_LENGTH];
+            char lpl_basename[NAME_MAX_LENGTH];
             struct menu_state *menu_st = menu_state_get_ptr();
             filebrowser_clear_type();
             fill_pathname_join_special(tmp,
@@ -2633,7 +2633,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    playlist_config_t playlist_config;
    char content_path[PATH_MAX_LENGTH];
-   char content_label[PATH_MAX_LENGTH];
+   char content_label[NAME_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                   = entry_idx;
    bool playlist_initialized              = false;
@@ -5693,9 +5693,9 @@ static int action_ok_add_to_favorites(const char *path,
    if (!string_is_empty(content_path))
    {
       union string_list_elem_attr attr;
+      char core_name[NAME_MAX_LENGTH];
+      char content_label[NAME_MAX_LENGTH];
       char core_path[PATH_MAX_LENGTH];
-      char core_name[PATH_MAX_LENGTH];
-      char content_label[PATH_MAX_LENGTH];
       runloop_state_t *runloop_st       = runloop_state_get_ptr();
       struct retro_system_info *sysinfo = &runloop_st->system.info;
       struct string_list *str_list      = NULL;
@@ -5832,11 +5832,10 @@ static int action_ok_add_entry_to_playlist(const char *path,
    if (!string_is_empty(entry->path))
    {
       union string_list_elem_attr attr;
-      char core_display_name[PATH_MAX_LENGTH];
+      char core_display_name[NAME_MAX_LENGTH];
+      char core_name[NAME_MAX_LENGTH];
       char core_path[PATH_MAX_LENGTH];
-      char core_name[PATH_MAX_LENGTH];
-      struct string_list
-         *str_list         = NULL;
+      struct string_list *str_list         = NULL;
 
       core_display_name[0] = '\0';
       core_path[0]         = '\0';
@@ -5999,11 +5998,10 @@ static int action_ok_add_to_favorites_playlist(const char *path,
    if (!string_is_empty(entry->path))
    {
       union string_list_elem_attr attr;
-      char core_display_name[PATH_MAX_LENGTH];
+      char core_display_name[NAME_MAX_LENGTH];
+      char core_name[NAME_MAX_LENGTH];
       char core_path[PATH_MAX_LENGTH];
-      char core_name[PATH_MAX_LENGTH];
-      struct string_list
-         *str_list         = NULL;
+      struct string_list *str_list         = NULL;
 
       core_display_name[0] = '\0';
       core_path[0]         = '\0';

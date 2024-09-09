@@ -42,11 +42,11 @@ typedef struct
    enum manual_content_scan_system_name_type system_name_type;
    enum manual_content_scan_core_type core_type;
 
+   char core_name[NAME_MAX_LENGTH];
+   char system_name_database[NAME_MAX_LENGTH];
+   char system_name_custom[NAME_MAX_LENGTH];
    char content_dir[DIR_MAX_LENGTH];
    char system_name_content_dir[DIR_MAX_LENGTH];
-   char system_name_database[PATH_MAX_LENGTH];
-   char system_name_custom[PATH_MAX_LENGTH];
-   char core_name[NAME_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char file_exts_core[PATH_MAX_LENGTH];
    char file_exts_custom[PATH_MAX_LENGTH];
@@ -1356,7 +1356,7 @@ void manual_content_scan_add_content_to_playlist(
    if (!playlist_entry_exists(playlist, playlist_content_path))
    {
       struct playlist_entry entry = {0};
-      char label[PATH_MAX_LENGTH];
+      char label[NAME_MAX_LENGTH];
 
       label[0] = '\0';
 
