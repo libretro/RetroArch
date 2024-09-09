@@ -31,7 +31,7 @@
 
 RETRO_BEGIN_DECLS
 
-#define MENU_SUBLABEL_MAX_LENGTH 1024
+#define MENU_LABEL_MAX_LENGTH 1024
 
 #define MENU_SEARCH_FILTER_MAX_TERMS  8
 #define MENU_SEARCH_FILTER_MAX_LENGTH 64
@@ -113,10 +113,10 @@ typedef struct menu_entry
    enum msg_hash_enums enum_idx;
    uint8_t setting_type;
    uint8_t flags;
-   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
+   char sublabel[MENU_LABEL_MAX_LENGTH];
    char path[NAME_MAX_LENGTH];
-   char label[NAME_MAX_LENGTH];
-   char rich_label[NAME_MAX_LENGTH];
+   char label[MENU_LABEL_MAX_LENGTH];
+   char rich_label[MENU_LABEL_MAX_LENGTH];
    char value[NAME_MAX_LENGTH];
    char password_value[NAME_MAX_LENGTH];
 } menu_entry_t;
@@ -156,7 +156,7 @@ typedef struct menu_file_list_cbs
          char *path_buf, size_t path_buf_size);
    menu_search_terms_t search;
    enum msg_hash_enums enum_idx;
-   char action_sublabel_cache[MENU_SUBLABEL_MAX_LENGTH];
+   char action_sublabel_cache[MENU_LABEL_MAX_LENGTH];
    char action_title_cache   [512];
    bool checked;
 } menu_file_list_cbs_t;

@@ -348,15 +348,15 @@ typedef struct
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
     * warnings...) */
-   char savestate_thumbnail_file_path[8204];
-   char prev_savestate_thumbnail_file_path[8204];
+   char savestate_thumbnail_file_path[8204];      /* TODO/FIXME - check size */
+   char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
 
    char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
    char msgbox[1024];
    char theme_preset_path[PATH_MAX_LENGTH];       /* Must be a fixed length array... */
    char theme_dynamic_path[PATH_MAX_LENGTH];      /* Must be a fixed length array... */
    char last_theme_dynamic_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
-   char menu_sublabel[MENU_SUBLABEL_MAX_LENGTH];  /* Must be a fixed length array... */
+   char menu_sublabel[MENU_LABEL_MAX_LENGTH];     /* Must be a fixed length array... */
 } rgui_t;
 
 static const rgui_theme_t rgui_theme_classic_red = {
@@ -4440,7 +4440,7 @@ static void rgui_render_messagebox(
 {
    int x, y;
    size_t i;
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   char wrapped_message[MENU_LABEL_MAX_LENGTH];
    unsigned width           = 0;
    unsigned glyphs_width    = 0;
    unsigned height          = 0;
@@ -5714,7 +5714,7 @@ static void rgui_render(
       /* Print menu sublabel/core name (if required) */
       if (menu_show_sublabels && !string_is_empty(rgui->menu_sublabel))
       {
-         char sublabel_buf[MENU_SUBLABEL_MAX_LENGTH];
+         char sublabel_buf[MENU_LABEL_MAX_LENGTH];
          sublabel_buf[0] = '\0';
 
          if (use_smooth_ticker)
@@ -6886,13 +6886,13 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT ||
-             string_is_equal(entry.label, "state_slot") ||
-             string_is_equal(entry.label, "loadstate") ||
-             string_is_equal(entry.label, "savestate"))
+         if (   string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
+             || string_is_equal(entry.label, "state_slot")
+             || string_is_equal(entry.label, "loadstate")
+             || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204];
+            char path[8204]; /* TODO/FIXME - check size */
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */

@@ -3711,13 +3711,13 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT ||
-             string_is_equal(entry.label, "state_slot") ||
-             string_is_equal(entry.label, "loadstate") ||
-             string_is_equal(entry.label, "savestate"))
+         if (   string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
+             || string_is_equal(entry.label, "state_slot")
+             || string_is_equal(entry.label, "loadstate")
+             || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204];
+            char path[8204]; /* TODO/FIXME - check size */
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */
@@ -4973,7 +4973,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       {
          size_t len, syslen;
          struct texture_image ti;
-         char sysname[PATH_MAX_LENGTH];
+         char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
 
@@ -5507,7 +5507,7 @@ static void ozone_compute_entries_position(
       {
          if (!string_is_empty(entry.sublabel))
          {
-            char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
+            char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
 
             wrapped_sublabel_str[0] = '\0';
 
@@ -5746,7 +5746,7 @@ border_iterate:
    {
       char rich_label[NAME_MAX_LENGTH];
       char entry_value_ticker[NAME_MAX_LENGTH];
-      char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
+      char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
       uintptr_t texture;
       menu_entry_t entry;
       gfx_animation_ctx_ticker_t ticker;
@@ -6953,7 +6953,7 @@ static void ozone_draw_messagebox(
       math_matrix_4x4 *mymat)
 {
    size_t x, y;
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   char wrapped_message[MENU_LABEL_MAX_LENGTH];
    int longest_width        = 0;
    int usable_width         = 0;
    struct string_list list  = {0};
@@ -9162,7 +9162,7 @@ static void ozone_set_layout(
       bool ozone_collapse_sidebar,
       bool is_threaded)
 {
-   char s1[PATH_MAX_LENGTH];
+   char tmp_dir[DIR_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
    settings_t *settings                             = config_get_ptr();
    bool font_inited                                 = false;
@@ -9225,17 +9225,17 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
          fill_pathname_join_special(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
@@ -9251,17 +9251,17 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
          fill_pathname_join_special(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));

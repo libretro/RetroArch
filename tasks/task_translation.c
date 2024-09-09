@@ -141,7 +141,7 @@ static void handle_translation_cb(
       void *user_data, const char *error)
 {
    uint8_t* raw_output_data          = NULL;
-   char* raw_image_file_data         = NULL;
+   char *raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    int new_image_size                = 0;
@@ -153,10 +153,10 @@ static void handle_translation_cb(
    void* raw_sound_data              = NULL;
    rjson_t *json                     = NULL;
    int json_current_key              = 0;
-   char* err_str                     = NULL;
-   char* txt_str                     = NULL;
-   char* auto_str                    = NULL;
-   char* key_str                     = NULL;
+   char *err_str                     = NULL;
+   char *txt_str                     = NULL;
+   char *auto_str                    = NULL;
+   char *key_str                     = NULL;
    settings_t* settings              = config_get_ptr();
    uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
@@ -198,8 +198,7 @@ static void handle_translation_cb(
    /* Parse JSON body for the image and sound data */
    for (;;)
    {
-      static const char* keys[] = { "image", "sound", "text", "error", "auto", "press" };
-
+      static const char *keys[] = { "image", "sound", "text", "error", "auto", "press" };
       const char *str           = NULL;
       size_t str_len            = 0;
       enum rjson_type json_type = rjson_next(json);

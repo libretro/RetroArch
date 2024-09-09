@@ -437,8 +437,8 @@ typedef struct xmb_handle
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
     * warnings...) */
-   char savestate_thumbnail_file_path[8204];
-   char prev_savestate_thumbnail_file_path[8204];
+   char savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
+   char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    bool allow_horizontal_animation;
@@ -1045,7 +1045,7 @@ static void xmb_render_messagebox_internal(
    int usable_width                  = 0;
    struct string_list list           = {0};
    bool input_dialog_display_kb      = false;
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   char wrapped_message[MENU_LABEL_MAX_LENGTH];
 
    wrapped_message[0]                = '\0';
 
@@ -1264,7 +1264,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
              || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204];
+            char path[8204]; /* TODO/FIXME - check size */
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */
@@ -2604,7 +2604,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
       {
          size_t len, syslen;
          struct texture_image ti;
-         char sysname[PATH_MAX_LENGTH];
+         char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
          const char *console_name = NULL;
@@ -4635,9 +4635,9 @@ static int xmb_draw_item(
             && width > 320 && height > 240
             && !string_is_empty(entry.sublabel))
       {
-         char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
-         char entry_sublabel_top_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
-         char entry_sublabel_bottom_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
+         char entry_sublabel[MENU_LABEL_MAX_LENGTH];
+         char entry_sublabel_top_fade[MENU_LABEL_MAX_LENGTH >> 2];
+         char entry_sublabel_bottom_fade[MENU_LABEL_MAX_LENGTH >> 2];
          gfx_animation_ctx_line_ticker_t line_ticker;
          gfx_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
          float ticker_y_offset             = 0.0f;

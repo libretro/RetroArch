@@ -2949,8 +2949,7 @@ static bool menu_shader_manager_save_preset_internal(
       size_t num_target_dirs)
 {
    size_t _len;
-   char fullname[PATH_MAX_LENGTH];
-   char buffer[PATH_MAX_LENGTH];
+   char fullname[NAME_MAX_LENGTH];
    const char *preset_ext         = NULL;
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
@@ -2980,6 +2979,7 @@ static bool menu_shader_manager_save_preset_internal(
    else
    {
       char basedir[DIR_MAX_LENGTH];
+      char buffer[DIR_MAX_LENGTH];
 
       for (i = 0; i < num_target_dirs; i++)
       {
@@ -3074,10 +3074,9 @@ static bool menu_shader_manager_operate_auto_preset(
       const char *dir_menu_config,
       enum auto_shader_type type, bool apply)
 {
+   char file[PATH_MAX_LENGTH];
    char old_presets_directory[DIR_MAX_LENGTH];
    char config_directory[DIR_MAX_LENGTH];
-   char tmp[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
    settings_t *settings                           = config_get_ptr();
    bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
    struct retro_system_info *sysinfo              = &runloop_state_get_ptr()->system.info;
@@ -3090,7 +3089,7 @@ static bool menu_shader_manager_operate_auto_preset(
    const char *auto_preset_dirs[3]  = {0};
    bool has_content                 = !string_is_empty(rarch_path_basename);
 
-   old_presets_directory[0] = config_directory[0] = tmp[0] = file[0] = '\0';
+   old_presets_directory[0] = config_directory[0] = file[0] = '\0';
 
    if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
       return false;
@@ -3130,9 +3129,12 @@ static bool menu_shader_manager_operate_auto_preset(
          fill_pathname_join_special(file, core_name, core_name, sizeof(file));
          break;
       case SHADER_PRESET_PARENT:
-         fill_pathname_parent_dir_name(tmp,
-               rarch_path_basename, sizeof(tmp));
-         fill_pathname_join_special(file, core_name, tmp, sizeof(file));
+         {
+            char tmp_dir[DIR_MAX_LENGTH];
+            fill_pathname_parent_dir_name(tmp_dir,
+                  rarch_path_basename, sizeof(tmp_dir));
+            fill_pathname_join_special(file, core_name, tmp_dir, sizeof(file));
+         }
          break;
       case SHADER_PRESET_GAME:
          {
@@ -3313,22 +3315,22 @@ static enum action_iterate_type action_iterate_type(const char *label)
       return ITERATE_TYPE_INFO;
    if (string_starts_with_size(label, "help", STRLEN_CONST("help")))
       if (
-            string_is_equal(label, "help") ||
-            string_is_equal(label, "help_controls") ||
-            string_is_equal(label, "help_what_is_a_core") ||
-            string_is_equal(label, "help_loading_content") ||
-            string_is_equal(label, "help_scanning_content") ||
-            string_is_equal(label, "help_change_virtual_gamepad") ||
-            string_is_equal(label, "help_audio_video_troubleshooting")
+               string_is_equal(label, "help")
+            || string_is_equal(label, "help_controls")
+            || string_is_equal(label, "help_what_is_a_core")
+            || string_is_equal(label, "help_loading_content")
+            || string_is_equal(label, "help_scanning_content")
+            || string_is_equal(label, "help_change_virtual_gamepad")
+            || string_is_equal(label, "help_audio_video_troubleshooting")
          )
          return ITERATE_TYPE_HELP;
    if (string_is_equal(label, "cheevos_description"))
          return ITERATE_TYPE_HELP;
    if (string_starts_with_size(label, "custom_bind", STRLEN_CONST("custom_bind")))
       if (
-            string_is_equal(label, "custom_bind") ||
-            string_is_equal(label, "custom_bind_all") ||
-            string_is_equal(label, "custom_bind_defaults")
+               string_is_equal(label, "custom_bind")
+            || string_is_equal(label, "custom_bind_all")
+            || string_is_equal(label, "custom_bind_defaults")
          )
          return ITERATE_TYPE_BIND;
 
@@ -3342,38 +3344,38 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
    bool filter_enabled = false;
 
    /* > Check for playlists */
-   filter_enabled = (type == MENU_SETTING_HORIZONTAL_MENU) ||
-                    (type == MENU_HISTORY_TAB) ||
-                    (type == MENU_FAVORITES_TAB) ||
-                    (type == MENU_IMAGES_TAB) ||
-                    (type == MENU_MUSIC_TAB) ||
-                    (type == MENU_VIDEO_TAB) ||
-                    (type == FILE_TYPE_PLAYLIST_COLLECTION);
+   filter_enabled =    (type == MENU_SETTING_HORIZONTAL_MENU)
+                    || (type == MENU_HISTORY_TAB)
+                    || (type == MENU_FAVORITES_TAB)
+                    || (type == MENU_IMAGES_TAB)
+                    || (type == MENU_MUSIC_TAB)
+                    || (type == MENU_VIDEO_TAB)
+                    || (type == FILE_TYPE_PLAYLIST_COLLECTION);
 
    if (!filter_enabled && !string_is_empty(label))
-      filter_enabled = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST)) ||
+      filter_enabled =    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST))
                        /* > Core updater */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST))
                        /* > File browser (Load Content) */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
                        /* > Shader presets/passes */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS))
                        /* > Cheat files */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND))
                        /* > Cheats */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS))
                        /* > Overlays */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY))
                        /* > Manage Cores */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST));
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST));
 
    return filter_enabled;
 }

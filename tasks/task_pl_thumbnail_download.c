@@ -139,7 +139,7 @@ static bool get_thumbnail_paths(
 {
    char content_dir[DIR_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
-   size_t raw_url_len      = sizeof(char) * 8192;
+   size_t raw_url_len      = sizeof(char) * 8192; /* TODO/FIXME - check size */
    char *raw_url           = NULL;
    const char *system      = NULL;
    const char *db_name     = NULL;
@@ -196,7 +196,7 @@ static bool get_thumbnail_paths(
 
    if (string_is_empty(path))
       return false;
-   if (!(raw_url = (char*)malloc(8192 * sizeof(char))))
+   if (!(raw_url = (char*)malloc(8192 * sizeof(char)))) /* TODO/FIXME - check size */
       return false;
    raw_url[0]     = '\0';
 
