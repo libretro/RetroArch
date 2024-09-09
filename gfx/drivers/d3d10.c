@@ -2127,7 +2127,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          d3d10_release_texture(&d3d10->pass[i].rt);
          d3d10_init_texture(d3d10->device, &d3d10->pass[i].rt);
 
-         if (pass->feedback)
+         if ((pass->flags & SHDR_PASS_FLG_FEEDBACK) > 0)
          {
             d3d10->pass[i].feedback.desc = d3d10->pass[i].rt.desc;
             d3d10_release_texture(&d3d10->pass[i].feedback);
@@ -2302,7 +2302,7 @@ static bool d3d10_gfx_frame(
    {
       for (i = 0; i < d3d10->shader_preset->passes; i++)
       {
-         if (d3d10->shader_preset->pass[i].feedback)
+         if ((d3d10->shader_preset->pass[i].flags & SHDR_PASS_FLG_FEEDBACK) > 0)
          {
             d3d10_texture_t tmp     = d3d10->pass[i].feedback;
             d3d10->pass[i].feedback = d3d10->pass[i].rt;

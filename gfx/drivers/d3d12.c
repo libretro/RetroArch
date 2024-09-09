@@ -3169,7 +3169,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          d3d12_release_texture(&d3d12->pass[i].rt);
          d3d12_init_texture(d3d12->device, &d3d12->pass[i].rt);
 
-         if (pass->feedback)
+         if ((pass->flags & SHDR_PASS_FLG_FEEDBACK) > 0)
          {
             d3d12->pass[i].feedback.desc     = d3d12->pass[i].rt.desc;
             d3d12->pass[i].feedback.srv_heap = &d3d12->desc.srv_heap;
@@ -3566,7 +3566,7 @@ static bool d3d12_gfx_frame(
 
       for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
-         if (d3d12->shader_preset->pass[i].feedback)
+         if ((d3d12->shader_preset->pass[i].flags & SHDR_PASS_FLG_FEEDBACK) > 0)
          {
             d3d12_texture_t tmp     = d3d12->pass[i].feedback;
             d3d12->pass[i].feedback = d3d12->pass[i].rt;
