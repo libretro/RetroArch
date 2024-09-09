@@ -121,7 +121,7 @@ static void contentless_cores_init_info_entries(
       if (   core_info
           && core_info->supports_no_game)
       {
-         char licenses_str[MENU_SUBLABEL_MAX_LENGTH];
+         char licenses_str[MENU_LABEL_MAX_LENGTH];
          contentless_core_info_entry_t *entry =
                (contentless_core_info_entry_t*)malloc(sizeof(*entry));
          size_t _len          = strlcpy(licenses_str,
@@ -134,7 +134,7 @@ static void contentless_cores_init_info_entries(
          /* Populate licences string */
          if (core_info->licenses_list)
          {
-            char tmp_str[MENU_SUBLABEL_MAX_LENGTH - 2];
+            char tmp_str[MENU_LABEL_MAX_LENGTH - 2];
             tmp_str[0] = '\0';
             string_list_join_concat(tmp_str, sizeof(tmp_str),
                   core_info->licenses_list, ", ");

@@ -23133,7 +23133,7 @@ static bool setting_append_list(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE);
                for (user = 0; user < max_users; user++)
                {
-                  char s1[64], s2[64];
+                  char s1[32], s2[64];
                   size_t _len = strlcpy(s1, lbl_network_remote_enable, sizeof(s1));
                   snprintf(s1 + _len, sizeof(s1) - _len, "_user_p%d", user + 1);
                   snprintf(s2, sizeof(s2), val_network_remote_enable, user + 1);

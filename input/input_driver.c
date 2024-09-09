@@ -541,7 +541,7 @@ float input_driver_get_sensor(
          void *current_data = input_driver_st.current_data;
          return current_driver->get_sensor_input(current_data, port, id);
       }
-      else if (sensors_enable && input_driver_st.primary_joypad && 
+      else if (sensors_enable && input_driver_st.primary_joypad &&
                input_driver_st.primary_joypad->get_sensor_input)
       {
          return input_driver_st.primary_joypad->get_sensor_input(NULL,
@@ -3742,6 +3742,7 @@ size_t input_config_get_bind_string_joykey(
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
                bind->joykey_label, suffix, ' ', len);
+      /* TODO/FIXME - localize */
       _len  = snprintf(s, len,
             "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
       switch (GET_HAT_DIR(bind->joykey))
@@ -3770,6 +3771,7 @@ size_t input_config_get_bind_string_joykey(
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
                bind->joykey_label, suffix, ' ', len);
+      /* TODO/FIXME - localize */
       _len  = strlcpy(s, "Button ", len);
       _len += snprintf(s + _len, len - _len, "%u",
             (unsigned)bind->joykey);
@@ -3788,6 +3790,7 @@ size_t input_config_get_bind_string_joyaxis(
          && input_descriptor_label_show)
       return fill_pathname_join_delim(s,
             bind->joyaxis_label, suffix, ' ', len);
+   /* TODO/FIXME - localize */
    _len = strlcpy(s, "Axis ", len);
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
       _len += snprintf(s + _len, len - _len, "-%u",

@@ -515,7 +515,7 @@ typedef struct
    unsigned height;
    float delay_timer;
    float alpha;
-   char str[MENU_SUBLABEL_MAX_LENGTH];
+   char str[MENU_LABEL_MAX_LENGTH];
    char runtime_fallback_str[NAME_MAX_LENGTH];
    char last_played_fallback_str[NAME_MAX_LENGTH];
 } materialui_status_bar_t;
@@ -2596,7 +2596,7 @@ static void materialui_render_messagebox(
    int usable_width         = 0;
    int longest_width        = 0;
    struct string_list list  = {0};
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   char wrapped_message[MENU_LABEL_MAX_LENGTH];
 
    wrapped_message[0] = '\0';
 
@@ -2752,7 +2752,7 @@ static uint8_t materialui_count_sublabel_lines(
       size_t entry_idx, bool has_icon)
 {
    menu_entry_t entry;
-   char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
+   char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
    int sublabel_width_max   = 0;
    settings_t *settings     = config_get_ptr();
 
@@ -4204,7 +4204,7 @@ static void materialui_render_menu_entry_default(
        *   (rounded up) */
       int vertical_margin = ((node->entry_height - node->text_height) / 2.0f) - (float)mui->sublabel_gap + 1.0f;
       int sublabel_y;
-      char wrapped_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+      char wrapped_sublabel[MENU_LABEL_MAX_LENGTH];
 
       wrapped_sublabel[0] = '\0';
 
@@ -4564,7 +4564,7 @@ static void materialui_render_menu_entry_playlist_list(
        *   (rounded up) */
       int vertical_margin = ((node->entry_height - node->text_height) / 2.0f) - (float)mui->sublabel_gap + 1.0f;
       int sublabel_y;
-      char wrapped_sublabel[MENU_SUBLABEL_MAX_LENGTH];
+      char wrapped_sublabel[MENU_LABEL_MAX_LENGTH];
 
       wrapped_sublabel[0] = '\0';
 
@@ -5169,13 +5169,13 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
          bool draw_text_outside = (x_offset != 0);
          uint32_t text_color    = mui->colors.status_bar_text;
          float text_x           = 0.0f;
-         char metadata_buf[MENU_SUBLABEL_MAX_LENGTH];
+         char metadata_buf[MENU_LABEL_MAX_LENGTH];
 
          metadata_buf[0] = '\0';
 
          /* Set text opacity */
-         text_color = (text_color & 0xFFFFFF00) |
-               (unsigned)((255.0f * mui->transition_alpha * mui->status_bar.alpha) + 0.5f);
+         text_color = (text_color & 0xFFFFFF00)
+                    | (unsigned)((255.0f * mui->transition_alpha * mui->status_bar.alpha) + 0.5f);
 
          /* Apply ticker */
          if (mui->flags & MUI_FLAG_USE_SMOOTH_TICKER)
@@ -7910,7 +7910,7 @@ static void materialui_init_font(
    const char *str_latin
    )
 {
-   char s1[PATH_MAX_LENGTH];
+   char tmp_dir[DIR_MAX_LENGTH];
    char fontpath[PATH_MAX_LENGTH];
    const char *wideglyph_str = msg_hash_get_wideglyph_str();
    settings_t *settings      = config_get_ptr();
@@ -7930,27 +7930,27 @@ static void materialui_init_font(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(s1,
-               settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(fontpath, s1, "fallback-font.ttf",
+         fill_pathname_join_special(tmp_dir,
+               settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(fontpath, tmp_dir, "fallback-font.ttf",
                sizeof(fontpath));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(s1,
-               settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(fontpath, s1, "chinese-fallback-font.ttf",
+         fill_pathname_join_special(tmp_dir,
+               settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(fontpath, tmp_dir, "chinese-fallback-font.ttf",
                sizeof(fontpath));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(s1,
-               settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(fontpath, s1, "korean-fallback-font.ttf",
+         fill_pathname_join_special(tmp_dir,
+               settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(fontpath, tmp_dir, "korean-fallback-font.ttf",
                sizeof(fontpath));
          break;
       default:
-         fill_pathname_join_special(s1, dir_assets, "glui", sizeof(s1));
-         fill_pathname_join_special(fontpath, s1, FILE_PATH_TTF_FONT,
+         fill_pathname_join_special(tmp_dir, dir_assets, "glui", sizeof(tmp_dir));
+         fill_pathname_join_special(fontpath, tmp_dir, FILE_PATH_TTF_FONT,
                sizeof(fontpath));
          break;
    }

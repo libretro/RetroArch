@@ -2032,8 +2032,7 @@ static core_info_list_t *core_info_list_new(const char *path,
    /* Read core info cache, if enabled */
    if (enable_cache)
    {
-      core_info_cache_list = core_info_cache_read(info_dir);
-      if (!core_info_cache_list)
+      if (!(core_info_cache_list = core_info_cache_read(info_dir)))
          goto error;
    }
 #endif

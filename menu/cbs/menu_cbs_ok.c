@@ -2158,6 +2158,9 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
 {
+#if IOS
+   char tmp_path[PATH_MAX_LENGTH];
+#endif
    char action_path[PATH_MAX_LENGTH];
    unsigned flush_type               = 0;
    int ret                           = 0;
@@ -2182,7 +2185,6 @@ static int generic_action_ok(const char *path,
          &menu_label, NULL, &enum_idx, NULL);
 
 #if IOS
-   char tmp_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;
 #endif
@@ -2313,13 +2315,13 @@ static int generic_action_ok(const char *path,
 #ifdef HAVE_CONFIGFILE
          {
             char conf_key[64];
-            config_file_t     *conf = config_file_new_from_path_to_string(
-                  action_path);
             retro_ctx_controller_info_t pad;
             unsigned current_device = 0;
             unsigned port           = 0;
             int conf_val            = 0;
             flush_char              = msg_hash_to_str(flush_id);
+            config_file_t     *conf = config_file_new_from_path_to_string(
+                  action_path);
 
             conf_key[0]             = '\0';
 
@@ -2605,9 +2607,7 @@ static bool playlist_entry_path_is_valid(const char *entry_path)
     *   path_get_archive_delim() returns a const char *
     *   (this cast is safe, though, and is done in many
     *   places throughout the codebase...) */
-   archive_delim = (char *)path_get_archive_delim(file_path);
-
-   if (archive_delim)
+   if ((archive_delim = (char *)path_get_archive_delim(file_path)))
    {
       *archive_delim = '\0';
       if (string_is_empty(file_path))
@@ -2670,30 +2670,28 @@ static int action_ok_playlist_entry_collection(const char *path,
    /* Get playlist */
    if (!(tmp_playlist = playlist_get_cached()))
    {
+      enum playlist_sort_mode current_sort_mode;
       /* If playlist is not cached, have to load
        * it here
        * > Since the menu will always sort playlists
        *   based on current user config, have to do
        *   the same here - otherwise entry_idx may
        *   go out of sync... */
-      bool is_content_history = string_is_equal(menu->db_playlist_file, path_content_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_image_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_music_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_video_history);
-
-      enum playlist_sort_mode current_sort_mode;
+      bool is_content_history =    string_is_equal(menu->db_playlist_file, path_content_history)
+                                || string_is_equal(menu->db_playlist_file, path_content_image_history)
+                                || string_is_equal(menu->db_playlist_file, path_content_music_history)
+                                || string_is_equal(menu->db_playlist_file, path_content_video_history);
 
       playlist_config_set_path(&playlist_config, menu->db_playlist_file);
-      tmp_playlist = playlist_init(&playlist_config);
 
-      if (!tmp_playlist)
+      if (!(tmp_playlist = playlist_init(&playlist_config)))
          goto error;
 
       current_sort_mode = playlist_get_sort_mode(tmp_playlist);
 
-      if (!is_content_history &&
-          ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
-           (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL)))
+      if (     !is_content_history
+          && ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
+          ||  (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL)))
          playlist_qsort(tmp_playlist);
 
       playlist_initialized = true;

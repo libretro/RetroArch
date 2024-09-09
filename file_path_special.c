@@ -210,13 +210,13 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
-            char temp_path[PATH_MAX_LENGTH];
-            char temp_dir[DIR_MAX_LENGTH];
+            char tmp_path[PATH_MAX_LENGTH];
+            char tmp_dir[DIR_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-            fill_pathname_join_special(temp_dir, dir_assets, "xmb", sizeof(temp_dir));
-            fill_pathname_join_special(temp_path, temp_dir, xmb_theme_ident(), sizeof(temp_path));
-            fill_pathname_join_special(s, temp_path, "png", len);
+            fill_pathname_join_special(tmp_dir, dir_assets, "xmb", sizeof(tmp_dir));
+            fill_pathname_join_special(tmp_path, tmp_dir, xmb_theme_ident(), sizeof(tmp_path));
+            fill_pathname_join_special(s, tmp_path, "png", len);
          }
 #endif
          break;
@@ -231,13 +231,13 @@ void fill_pathname_application_special(char *s,
             else
             {
                char tmp_dir[DIR_MAX_LENGTH];
+               char tmp_dir2[DIR_MAX_LENGTH];
                char tmp_path[PATH_MAX_LENGTH];
-               char tmp_path2[PATH_MAX_LENGTH];
                const char *dir_assets   = settings->paths.directory_assets;
                fill_pathname_join_special(tmp_dir, dir_assets, "xmb", sizeof(tmp_dir));
-               fill_pathname_join_special(tmp_path,  tmp_dir, xmb_theme_ident(), sizeof(tmp_path));
-               fill_pathname_join_special(tmp_path2, tmp_path, "png", sizeof(tmp_path2));
-               fill_pathname_join_special(s, tmp_path2, FILE_PATH_BACKGROUND_IMAGE, len);
+               fill_pathname_join_special(tmp_dir2,  tmp_dir, xmb_theme_ident(), sizeof(tmp_dir2));
+               fill_pathname_join_special(tmp_path, tmp_dir2, "png", sizeof(tmp_path));
+               fill_pathname_join_special(s, tmp_path, FILE_PATH_BACKGROUND_IMAGE, len);
             }
          }
 #endif

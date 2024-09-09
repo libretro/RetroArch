@@ -354,8 +354,8 @@ bool gfx_widget_start_load_content_animation(void)
                   entry->core_path);
 
             /* Check whether core matches... */
-            if (string_is_empty(entry_core_file) ||
-                !string_starts_with(entry_core_file,
+            if (    string_is_empty(entry_core_file)
+                || !string_starts_with(entry_core_file,
                      core_info->core_file_id.str))
                entry = NULL;
          }
@@ -404,9 +404,9 @@ bool gfx_widget_start_load_content_animation(void)
                   state->system_name, new_system_name,
                   sizeof(state->system_name));
             /* Exclude history and favourites playlists */
-            if (string_ends_with_size(state->system_name, "_history",
-                     state->system_name_len, STRLEN_CONST("_history")) ||
-                string_ends_with_size(state->system_name, "_favorites",
+            if (   string_ends_with_size(state->system_name, "_history",
+                     state->system_name_len, STRLEN_CONST("_history"))
+                || string_ends_with_size(state->system_name, "_favorites",
                      state->system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 

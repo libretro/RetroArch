@@ -269,7 +269,7 @@ struct runloop
    uint32_t flags;
    int8_t run_frames_and_pause;
 
-   char runtime_content_path_basename[8192];
+   char runtime_content_path_basename[8192]; /* TODO/FIXME - check size */
    char current_library_name[NAME_MAX_LENGTH];
    char current_library_version[256];
    char current_valid_extensions[256];
@@ -288,15 +288,15 @@ struct runloop
    struct
    {
       char *remapfile;
-      char savefile[8192];
-      char savestate[8192];
-      char replay[8192];
-      char cheatfile[8192];
-      char ups[8192];
-      char bps[8192];
-      char ips[8192];
-      char xdelta[8192];
-      char label[8192];
+      char savefile[8192];  /* TODO/FIXME - check size */
+      char savestate[8192]; /* TODO/FIXME - check size */
+      char replay[8192];    /* TODO/FIXME - check size */
+      char cheatfile[8192]; /* TODO/FIXME - check size */
+      char ups[8192];       /* TODO/FIXME - check size */
+      char bps[8192];       /* TODO/FIXME - check size */
+      char ips[8192];       /* TODO/FIXME - check size */
+      char xdelta[8192];    /* TODO/FIXME - check size */
+      char label[8192];     /* TODO/FIXME - check size */
    } name;
 
    bool missing_bios;
