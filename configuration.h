@@ -505,8 +505,7 @@ typedef struct settings
       char webdav_password[NAME_MAX_LENGTH];
 
       char crt_switch_timings[NAME_MAX_LENGTH];
-
-      char translation_service_url[2048];
+      char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
@@ -514,7 +513,7 @@ typedef struct settings
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
 
-      char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
+      char translation_service_url[2048]; /* TODO/FIXME - check size */
    } arrays;
 
    struct
@@ -526,12 +525,14 @@ typedef struct settings
       char netplay_password[128];
       char netplay_spectate_password[128];
 
+      char streaming_title[512]; /* TODO/FIXME - check size */
+
       char netplay_server[NAME_MAX_LENGTH];
       char netplay_custom_mitm_server[NAME_MAX_LENGTH];
       char network_buildbot_url[NAME_MAX_LENGTH];
       char network_buildbot_assets_url[NAME_MAX_LENGTH];
-
-      char streaming_title[512];
+      char menu_content_show_settings_password[NAME_MAX_LENGTH];
+      char kiosk_mode_password[NAME_MAX_LENGTH];
 
       char bundle_assets_dst_subdir[DIR_MAX_LENGTH];
       char directory_audio_filter[DIR_MAX_LENGTH];
@@ -561,17 +562,15 @@ typedef struct settings
 #ifdef _3DS
       char directory_bottom_assets[DIR_MAX_LENGTH];
 #endif
+      char log_dir[DIR_MAX_LENGTH];
+
 #ifdef HAVE_TEST_DRIVERS
       char test_input_file_joypad[PATH_MAX_LENGTH];
       char test_input_file_general[PATH_MAX_LENGTH];
 #endif
-      char log_dir[DIR_MAX_LENGTH];
-
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
       char path_menu_xmb_font[PATH_MAX_LENGTH];
-      char menu_content_show_settings_password[PATH_MAX_LENGTH];
-      char kiosk_mode_password[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
@@ -591,12 +590,10 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
       char path_rgui_theme_preset[PATH_MAX_LENGTH];
-
       char app_icon[PATH_MAX_LENGTH];
 
-      char browse_url[4096];
-
-      char path_stream_url[8192];
+      char browse_url[4096];      /* TODO/FIXME - check size */
+      char path_stream_url[8192]; /* TODO/FIXME - check size */
    } paths;
 
 
