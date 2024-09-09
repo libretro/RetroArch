@@ -5022,7 +5022,7 @@ static bool menu_input_key_bind_iterate(
                settings->uints.input_max_users,
                &new_binds, &new_binds.buffer))
          {
-            char hold_label[256];
+            char hold_label[NAME_MAX_LENGTH];
 
             hold_label[0]                       = '\0';
 
