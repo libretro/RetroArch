@@ -5184,7 +5184,7 @@ void core_options_reset(void)
 void core_options_flush(void)
 {
    size_t _len;
-   char msg[256];
+   char msg[128];
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
