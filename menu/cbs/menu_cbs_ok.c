@@ -2314,24 +2314,21 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_REMAPPING_FILE:
 #ifdef HAVE_CONFIGFILE
          {
-            char conf_key[64];
             retro_ctx_controller_info_t pad;
-            unsigned current_device = 0;
-            unsigned port           = 0;
-            int conf_val            = 0;
+            config_file_t *conf     = NULL;
             flush_char              = msg_hash_to_str(flush_id);
-            config_file_t     *conf = config_file_new_from_path_to_string(
-                  action_path);
 
-            conf_key[0]             = '\0';
-
-            if (conf)
+            if ((conf = config_file_new_from_path_to_string(action_path)))
             {
+               char conf_key[64];
                if (input_remapping_load_file(conf, action_path))
                {
+                  unsigned port;
                   size_t _len = strlcpy(conf_key, "input_libretro_device_p", sizeof(conf_key));
                   for (port = 0; port < MAX_USERS; port++)
                   {
+                     unsigned current_device;
+                     int conf_val = 0;
                      snprintf(conf_key + _len, sizeof(conf_key) - _len, "%u", port + 1);
                      if (!config_get_int(conf, conf_key, &conf_val))
                         continue;
