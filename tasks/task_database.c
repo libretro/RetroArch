@@ -53,8 +53,8 @@ typedef struct database_state_handle
    size_t entry_index;
    uint32_t crc;
    uint32_t archive_crc;
-   char archive_name[511];
-   char serial[4096];
+   char archive_name[512]; /* TODO/FIXME - check size */
+   char serial[4096];      /* TODO/FIXME - check size */
 } database_state_handle_t;
 
 enum db_flags_enum
@@ -108,9 +108,9 @@ static const char *database_info_get_current_element_name(
 
 static void task_database_scan_console_output(const char *label, const char *db_name, bool add)
 {
+   char string[32];
    const char *prefix   = (add) ? "++" : (db_name) ? "==" : "??";
    const char *no_color = getenv("NO_COLOR");
-   char string[32];
    bool color           = (no_color && no_color[0] != '0') ? false : true;
 
    /* Colorize prefix (add = green, dupe = yellow, not found = red) */
@@ -166,7 +166,7 @@ static int task_database_iterate_start(retro_task_t *task,
       database_info_handle_t *db,
       const char *name)
 {
-   char msg[256];
+   char msg[128];
    const char *basename_path = !string_is_empty(name)
          ? path_basename_nocompression(name) : "";
 

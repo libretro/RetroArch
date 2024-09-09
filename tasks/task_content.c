@@ -771,12 +771,10 @@ static bool content_file_extract_from_archive(
       const char **content_path,
       char **error_string)
 {
-   char msg[1024];
    const char *tmp_path_ptr = NULL;
    char tmp_path[PATH_MAX_LENGTH];
 
    tmp_path[0]  = '\0';
-   msg[0]       = '\0';
 
    /* TODO/FIXME - localize */
    RARCH_LOG("[Content]: Core requires uncompressed content - "
@@ -789,6 +787,7 @@ static bool content_file_extract_from_archive(
                NULL : content_ctx->directory_cache,
          tmp_path, sizeof(tmp_path)))
    {
+      char msg[1024];
       snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
             *content_path);
@@ -940,15 +939,12 @@ static bool content_file_load(
       const struct retro_subsystem_info *special)
 {
    size_t i;
-   char msg[1024];
    retro_ctx_load_content_info_t load_info;
    bool used_vfs_fallback_copy                = false;
 #ifdef __WINRT__
    rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
 #endif
    enum rarch_content_type first_content_type = RARCH_CONTENT_NONE;
-
-   msg[0] = '\0';
 
    for (i = 0; i < content->size; i++)
    {
@@ -995,6 +991,7 @@ static bool content_file_load(
                   content_compressed, i, first_content_type,
                   &content_data, &content_size))
             {
+               char msg[1024];
                snprintf(msg, sizeof(msg), "%s \"%s\"\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      content_path);
@@ -1074,6 +1071,7 @@ static bool content_file_load(
                    * (This disclaimer is out dated but I don't want to remove it)*/
                   if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
                   {
+                     char msg[1024];
                      /* TODO/FIXME - localize */
                      snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
@@ -1168,16 +1166,14 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
       char **error_string,
       bool *ret)
 {
-   char msg[1024];
    struct string_list *subsystem              = path_get_subsystem_list();
    const struct retro_subsystem_info *special = libretro_find_subsystem_info(
             subsystem_data, (unsigned)subsystem_current_count,
             path_get(RARCH_PATH_SUBSYSTEM));
 
-   msg[0] = '\0';
-
    if (!special)
    {
+      char msg[1024];
       /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
@@ -1196,6 +1192,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
 
       if (special->num_roms != subsystem->size)
       {
+         char msg[1024];
          /* TODO/FIXME - localize */
          snprintf(msg, sizeof(msg),
                "Libretro core requires %u content files for "
@@ -1208,6 +1205,7 @@ static const struct retro_subsystem_info *content_file_init_subsystem(
    }
    else if (subsystem && subsystem->size)
    {
+      char msg[1024];
       /* TODO/FIXME - localize */
       snprintf(msg, sizeof(msg),
             "Libretro core takes no content for subsystem \"%s\", "
