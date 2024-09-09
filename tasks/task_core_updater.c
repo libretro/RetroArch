@@ -150,8 +150,8 @@ typedef struct update_single_core_handle
    size_t auto_backup_history_size;
    enum update_single_core_status status;
    char path_core[PATH_MAX_LENGTH];
-   char path_dir_libretro[PATH_MAX_LENGTH];
-   char path_dir_core_assets[PATH_MAX_LENGTH];
+   char path_dir_libretro[DIR_MAX_LENGTH];
+   char path_dir_core_assets[DIR_MAX_LENGTH];
    bool auto_backup;
 } update_single_core_handle_t;
 #endif
@@ -304,7 +304,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             settings_t *settings         = config_get_ptr();
             file_transfer_t *transf      = NULL;
             char *tmp_url                = NULL;
-            const char *net_buildbot_url = 
+            const char *net_buildbot_url =
                settings->paths.network_buildbot_url;
 
             /* Reset core updater list */
@@ -572,7 +572,7 @@ void cb_http_task_core_updater_download(
    http_transfer_data_t *data                      = (http_transfer_data_t*)task_data;
    file_transfer_t *transf                         = (file_transfer_t*)user_data;
    core_updater_download_handle_t *download_handle = NULL;
-   char output_dir[PATH_MAX_LENGTH];
+   char output_dir[DIR_MAX_LENGTH];
 
    if (!data || !transf)
       goto finish;
@@ -700,13 +700,13 @@ static void task_core_updater_download_handler(retro_task_t *task)
             /* Get CRC of existing core, if required */
             if (download_handle->local_crc == 0)
             {
-               const char *local_core_path = 
+               const char *local_core_path =
                   download_handle->local_core_path;
                if (
                        !string_is_empty(local_core_path)
                      && path_is_valid  (local_core_path)
                   )
-                  download_handle->local_crc = 
+                  download_handle->local_crc =
                      task_core_updater_get_core_crc(local_core_path);
             }
 

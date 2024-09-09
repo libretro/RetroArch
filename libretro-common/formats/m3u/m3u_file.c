@@ -57,7 +57,7 @@ struct content_m3u_file
 /* File Initialisation / De-Initialisation */
 
 /* Reads M3U file contents from disk
- * - Does nothing if file does not exist 
+ * - Does nothing if file does not exist
  * - Returns false in the event of an error */
 static bool m3u_file_load(m3u_file_t *m3u_file)
 {
@@ -473,7 +473,7 @@ bool m3u_file_save(
 {
    RFILE *file = NULL;
    size_t i;
-   char base_dir[PATH_MAX_LENGTH];
+   char base_dir[DIR_MAX_LENGTH];
 
    base_dir[0] = '\0';
 

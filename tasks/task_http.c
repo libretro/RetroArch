@@ -21,6 +21,7 @@
 #include <file/file_path.h>
 #include <net/net_compat.h>
 #include <retro_timers.h>
+#include <retro_miscellaneous.h>
 
 #ifdef RARCH_INTERNAL
 #include "../gfx/video_display_server.h"
@@ -40,7 +41,7 @@ enum http_status_enum
 struct http_transfer_info
 {
    int progress;
-   char url[255];
+   char url[NAME_MAX_LENGTH];
 };
 
 struct http_handle
@@ -54,8 +55,8 @@ struct http_handle
    } connection;
    unsigned status;
    bool error;
-   char connection_elem[255];
-   char connection_url[255];
+   char connection_elem[NAME_MAX_LENGTH];
+   char connection_url[NAME_MAX_LENGTH];
 };
 
 typedef struct http_transfer_info http_transfer_info_t;
@@ -461,9 +462,9 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       retro_task_callback_t cb, file_transfer_t* transfer_data)
 {
    size_t len;
-   const char *s   = NULL;
-   char tmp[255]   = "";
-   retro_task_t *t = NULL;
+   const char *s               = NULL;
+   char tmp[NAME_MAX_LENGTH]   = "";
+   retro_task_t *t             = NULL;
 
    if (string_is_empty(url))
       return NULL;

@@ -39,14 +39,15 @@
  * content_label field (for internal use only) */
 static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src, bool shorten)
 {
-   const char* cut = " (";
+   const char *cut      = " (";
    char *scrub_char_ptr = NULL;
    /* Copy source label string */
    size_t _len          = strlcpy(s, src, len);
    int bracketpos       = -1;
-   
+
    /* Shortening logic: up to first space + bracket */
-   if (shorten) {
+   if (shorten)
+   {
       bracketpos = string_find_index_substring_string(src, cut);
       if (bracketpos > 0)
          _len = bracketpos;
@@ -491,13 +492,13 @@ bool gfx_thumbnail_set_content_playlist(
       content_name_no_ext = path_remove_extension(tmp_buf);
       if (!content_name_no_ext)
          content_name_no_ext = tmp_buf;
-      
+
       gfx_thumbnail_fill_content_img(path_data->content_img_full,
          sizeof(path_data->content_img_full), content_name_no_ext,false);
       gfx_thumbnail_fill_content_img(path_data->content_img,
          sizeof(path_data->content_img), path_data->content_label,false);
       /* Explicit zero if full name is same as standard name - saves some queries later. */
-      if(strcmp(path_data->content_img, path_data->content_img_full) == 0) 
+      if(strcmp(path_data->content_img, path_data->content_img_full) == 0)
       {
          path_data->content_img_full[0] = '\0';
       }
@@ -532,9 +533,9 @@ bool gfx_thumbnail_set_content_playlist(
          char *db_name_no_ext = NULL;
          char tmp_buf[PATH_MAX_LENGTH];
          const char* pos = strchr(db_name, '|');
-         
+
          if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf)) {
-            /* If db_name comes from core info, and there are multiple 
+            /* If db_name comes from core info, and there are multiple
              * databases mentioned separated by |, use only first one */
             strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
          }
@@ -569,14 +570,14 @@ bool gfx_thumbnail_set_content_playlist(
 bool gfx_thumbnail_set_icon_playlist(
       gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx)
 {
+   char content_dir[DIR_MAX_LENGTH];
    const char *content_path           = NULL;
    const char *content_label          = NULL;
    const char *core_name              = NULL;
    const char *db_name                = NULL;
    const struct playlist_entry *entry = NULL;
-   char content_dir[PATH_MAX_LENGTH];
-   const char *dir_thumbnails = NULL;
-   settings_t *settings       = config_get_ptr();
+   const char *dir_thumbnails         = NULL;
+   settings_t *settings               = config_get_ptr();
 
    if (!path_data)
       return false;
@@ -642,13 +643,12 @@ bool gfx_thumbnail_set_icon_playlist(
 
    /* Determine content image name */
    {
-      char* content_name_no_ext = NULL;
       char tmp_buf[PATH_MAX_LENGTH];
+      char* content_name_no_ext = NULL;
       /* Remove rom file extension
        * > path_remove_extension() requires a char * (not const)
        *   so have to use a temporary buffer... */
-
-      const char* base_name = path_basename(path_data->content_path);
+      const char* base_name     = path_basename(path_data->content_path);
       strlcpy(tmp_buf, base_name, sizeof(tmp_buf));
       content_name_no_ext = path_remove_extension(tmp_buf);
       if (!content_name_no_ext)
@@ -659,7 +659,7 @@ bool gfx_thumbnail_set_icon_playlist(
       gfx_thumbnail_fill_content_img(path_data->content_img,
          sizeof(path_data->content_img), path_data->content_label,false);
       /* Explicit zero if full name is same as standard name - saves some queries later. */
-      if(strcmp(path_data->content_img, path_data->content_img_full) == 0) 
+      if(strcmp(path_data->content_img, path_data->content_img_full) == 0)
       {
          path_data->content_img_full[0] = '\0';
       }
@@ -696,11 +696,11 @@ bool gfx_thumbnail_set_icon_playlist(
          const char* pos = strchr(db_name, '|');
 
          if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf)) {
-            /* If db_name comes from core info, and there are multiple 
+            /* If db_name comes from core info, and there are multiple
              * databases mentioned separated by |, use only first one */
             strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
          }
-         else 
+         else
          {
             /* Remove .lpl extension
              * > path_remove_extension() requires a char * (not const)
@@ -741,7 +741,7 @@ bool gfx_thumbnail_update_path(
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id)
 {
-   char content_dir[PATH_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
    settings_t *settings       = config_get_ptr();
    const char *system_name    = NULL;
    char *thumbnail_path       = NULL;
@@ -849,7 +849,7 @@ bool gfx_thumbnail_update_path(
       /* Try alternative file extensions in turn, if wanted */
       for( i=1 ;
            settings->bools.playlist_allow_non_png &&
-           !thumbnail_found && 
+           !thumbnail_found &&
            thumbnail_path[0]!='\0' &&
            i<MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
@@ -866,7 +866,7 @@ bool gfx_thumbnail_update_path(
       }
       for( i=1 ;
            settings->bools.playlist_allow_non_png &&
-           !thumbnail_found && 
+           !thumbnail_found &&
            i<MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
          strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
@@ -882,13 +882,13 @@ bool gfx_thumbnail_update_path(
       }
       for( i=1 ;
            settings->bools.playlist_allow_non_png &&
-           !thumbnail_found && 
+           !thumbnail_found &&
            i<MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
          strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
          thumbnail_found = path_is_valid(thumbnail_path);
       }
-      /* This logic is valid for locally stored thumbnails. For optional downloads, 
+      /* This logic is valid for locally stored thumbnails. For optional downloads,
        * gfx_thumbnail_get_img_name() is used */
    }
 

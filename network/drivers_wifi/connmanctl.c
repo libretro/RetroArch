@@ -295,7 +295,7 @@ static bool connmanctl_connection_info(void *data, wifi_network_info_t *netinfo)
          return true;
       }
    }
-      
+
    return false;
 }
 
@@ -311,7 +311,7 @@ static bool connmanctl_disconnect_ssid(void *data,
          netinfo->netid);
 
    pclose(popen(connman->command, "r"));
-   
+
    /* Refresh the state since it has definitely changed */
    connmanctl_refresh_services(connman);
 
@@ -323,18 +323,18 @@ static bool connmanctl_connect_ssid(
 {
    unsigned i;
    char netid[160];
-   char settings_dir[PATH_MAX_LENGTH];
+   char settings_dir[DIR_MAX_LENGTH];
    char settings_path[PATH_MAX_LENGTH];
    bool success                        = false;
    connman_t *connman                  = (connman_t*)data;
    settings_t *settings                = config_get_ptr();
    static struct string_list* list     = NULL;
 #ifdef HAVE_GFX_WIDGETS
-   bool widgets_active                 = 
+   bool widgets_active                 =
       connman->connmanctl_widgets_supported;
 #endif
    strlcpy(netid, netinfo->netid, sizeof(netid));
-   fill_pathname_join_special(settings_dir, LAKKA_CONNMAN_DIR, 
+   fill_pathname_join_special(settings_dir, LAKKA_CONNMAN_DIR,
          netid, sizeof(settings_dir));
 
    path_mkdir(settings_dir);
@@ -394,7 +394,7 @@ static bool connmanctl_connect_ssid(
 
    /* Refresh status to reflect the updated state */
    connmanctl_refresh_services(connman);
-   
+
    /* connman is a PITA, return code is not meaningful at all :( */
    for (i = 0; i < RBUF_LEN(connman->scan.net_list); i++)
    {

@@ -542,7 +542,7 @@ static void NETRETROPAD_CORE_PREFIX(update_keyboard_cb)(bool down, unsigned keyc
                                uint32_t character, uint16_t key_modifiers)
 {
    struct retro_message message;
-   char buf[255];
+   char buf[NAME_MAX_LENGTH];
 
    if (keycode < RETROK_LAST)
    {

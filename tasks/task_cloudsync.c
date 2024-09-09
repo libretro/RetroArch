@@ -320,7 +320,7 @@ static struct string_list *task_cloud_sync_directory_map(void)
    if (!list)
    {
       union string_list_elem_attr attr = {0};
-      char  dir[PATH_MAX_LENGTH];
+      char  dir[DIR_MAX_LENGTH];
       list = string_list_new();
 
       if (settings->bools.cloud_sync_sync_configs)
@@ -478,9 +478,9 @@ static void task_cloud_sync_backup_file(struct item_file *file)
 {
    struct tm   tm_;
    size_t      len;
-   char        backup_dir[PATH_MAX_LENGTH];
+   char        new_dir[DIR_MAX_LENGTH];
+   char        backup_dir[DIR_MAX_LENGTH];
    char        new_path[PATH_MAX_LENGTH];
-   char        new_dir[PATH_MAX_LENGTH];
    settings_t *settings             = config_get_ptr();
    const char *path_dir_core_assets = settings->paths.directory_core_assets;
    time_t      cur_time             = time(NULL);
@@ -533,14 +533,14 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
 
 static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_state)
 {
+   size_t              i;
+   char                filename[PATH_MAX_LENGTH];
+   char                directory[DIR_MAX_LENGTH];
    struct string_list *dirlist     = task_cloud_sync_directory_map();
    struct item_file   *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char         *key         = CS_FILE_KEY(server_file);
    const char         *path        = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
-   char                directory[PATH_MAX_LENGTH];
-   char                filename[PATH_MAX_LENGTH];
    settings_t         *settings = config_get_ptr();
-   size_t              i;
 
    /* we're just fetching a file the server has, we can update this now */
    task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);

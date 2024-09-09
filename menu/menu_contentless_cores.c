@@ -167,7 +167,7 @@ void menu_contentless_cores_set_runtime(const char *core_id,
 
    if (   !contentless_cores_state
        || !contentless_cores_state->info_entries
-       || !runtime_info 
+       || !runtime_info
        || string_is_empty(core_id))
       return;
 
@@ -264,7 +264,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 {
    size_t i;
    char icon_path[PATH_MAX_LENGTH];
-   char icon_directory[PATH_MAX_LENGTH];
+   char icon_directory[DIR_MAX_LENGTH];
    bool rgba_supported              = video_driver_supports_rgba();
    core_info_list_t *core_info_list = NULL;
 

@@ -282,8 +282,8 @@ struct runloop
 #endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
-   char savefile_dir[PATH_MAX_LENGTH];
-   char savestate_dir[PATH_MAX_LENGTH];
+   char savefile_dir[DIR_MAX_LENGTH];
+   char savestate_dir[DIR_MAX_LENGTH];
 
    struct
    {
@@ -450,7 +450,7 @@ void runloop_path_deinit_subsystem(void);
  *                                load dummy symbols.
  *
  * Setup libretro callback symbols.
- * 
+ *
  * @return true on success, or false if symbols could not be loaded.
  **/
 bool runloop_init_libretro_symbols(

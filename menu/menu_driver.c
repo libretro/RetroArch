@@ -367,7 +367,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
 {
    bool path_enabled;
-   char newpath[255];
+   char newpath[NAME_MAX_LENGTH];
    const char *path            = NULL;
    const char *entry_label     = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
@@ -2979,7 +2979,7 @@ static bool menu_shader_manager_save_preset_internal(
    }
    else
    {
-      char basedir[PATH_MAX_LENGTH];
+      char basedir[DIR_MAX_LENGTH];
 
       for (i = 0; i < num_target_dirs; i++)
       {
@@ -3040,7 +3040,7 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
       const char *dir_menu_config,
       bool apply)
 {
-   char config_directory[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    const char *preset_dirs[3]  = {0};
    settings_t *settings        = config_get_ptr();
 
@@ -3074,8 +3074,8 @@ static bool menu_shader_manager_operate_auto_preset(
       const char *dir_menu_config,
       enum auto_shader_type type, bool apply)
 {
-   char old_presets_directory[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
+   char old_presets_directory[DIR_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
    settings_t *settings                           = config_get_ptr();
@@ -7177,7 +7177,7 @@ static int generic_menu_iterate(
                            msg_hash_to_str(
                               MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
-                     char current_sublabel[255];
+                     char current_sublabel[NAME_MAX_LENGTH];
                      menu_driver_get_current_menu_sublabel(
                            menu_st,
                            current_sublabel, sizeof(current_sublabel));
@@ -7718,7 +7718,7 @@ int generic_menu_entry_action(
    {
       char current_label[128];
       char current_value[128];
-      char title_name[255];
+      char title_name[NAME_MAX_LENGTH];
       char speak_string[512];
 
       speak_string[0]  = '\0';

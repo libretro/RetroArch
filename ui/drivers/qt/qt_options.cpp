@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../../../gfx/video_display_server.h"
 #include "../../../input/input_driver.h"
@@ -1316,7 +1317,7 @@ QWidget *VideoPage::widget()
    {
       for (i = 0; i < size; i++)
       {
-         char val_d[256], str[256];
+         char val_d[NAME_MAX_LENGTH], str[NAME_MAX_LENGTH];
          snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
          snprintf(val_d, sizeof(val_d), "%d", i);
 

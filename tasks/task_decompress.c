@@ -43,7 +43,7 @@ static int file_decompressed_subdir(const char *name,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    size_t _len;
-   char path_dir[PATH_MAX_LENGTH];
+   char path_dir[DIR_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
    size_t name_len            = strlen(name);
    char last_char             = name[name_len - 1];

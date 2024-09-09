@@ -363,7 +363,7 @@ static bool input_autoconfigure_scan_config_files_internal(
  *      input_joypad_index, as it can
  *      get quite messy if reservations are done, due to the swaps above)
  * - do not consider "reserved" ports free
- * - if there is no reservation, do not change anything 
+ * - if there is no reservation, do not change anything
  *      (not even the assignment to first free player port)
  */
 static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
@@ -383,7 +383,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
 
    for (player = 0; player < MAX_USERS; player++)
    {
-      if (first_free_player_slot > MAX_USERS && 
+      if (first_free_player_slot > MAX_USERS &&
             ( detected_port == settings->uints.input_joypad_index[player] ||
               !input_config_get_device_name(settings->uints.input_joypad_index[player])) &&
           settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_RESERVED )
@@ -399,10 +399,10 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    if (first_free_player_slot > settings->uints.input_max_users) {
       RARCH_ERR( "[Autoconf]: No free and unreserved player slots found for adding new device"
                  " \"%s\"! Detected port %d, max_users: %d, first free slot %d\n",
-                 device_name, detected_port, 
-                 settings->uints.input_max_users, 
+                 device_name, detected_port,
+                 settings->uints.input_max_users,
                  first_free_player_slot+1);
-      RARCH_WARN("[Autoconf]: Leaving detected player slot in place: %d\n", 
+      RARCH_WARN("[Autoconf]: Leaving detected player slot in place: %d\n",
                  prev_assigned_player_slots[detected_port]);
       return;
    }
@@ -410,7 +410,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    for (player = 0; player < MAX_USERS; player++)
    {
       if (settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_NONE)
-         strlcpy(settings_value, settings->arrays.input_reserved_devices[player], 
+         strlcpy(settings_value, settings->arrays.input_reserved_devices[player],
                  sizeof(settings_value));
       else
          settings_value[0] = '\0';
@@ -419,18 +419,18 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
       {
          RARCH_DBG("[Autoconf]: Examining reserved device for player %d "
                    "type %d: %s against %04x:%04x\n",
-                   player+1, 
-                   settings->uints.input_device_reservation_type[player], 
+                   player+1,
+                   settings->uints.input_device_reservation_type[player],
                    settings_value, vendor_id, product_id);
-         
+
          if (sscanf(settings_value, "%04x:%04x ",
              &settings_value_vendor_id,
              &settings_value_product_id) != 2)
          {
-            strlcpy(settings_value_device_name, settings_value, 
+            strlcpy(settings_value_device_name, settings_value,
                     sizeof(settings_value_device_name));
-            device_has_reserved_slot = 
-               string_is_equal(device_name, settings_value_device_name) || 
+            device_has_reserved_slot =
+               string_is_equal(device_name, settings_value_device_name) ||
                string_is_equal(device_display_name, settings_value_device_name);
          }
          else
@@ -440,7 +440,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
          if (device_has_reserved_slot)
          {
             unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
-            if ( detected_port != prev_assigned_port && 
+            if ( detected_port != prev_assigned_port &&
                  !string_is_empty(input_config_get_device_name(prev_assigned_port)) &&
                  (( settings_value_vendor_id  == input_config_get_device_vid(prev_assigned_port) &&
                     settings_value_product_id == input_config_get_device_pid(prev_assigned_port)) ||
@@ -472,7 +472,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
 
          RARCH_LOG("[Autoconf]: Preferred slot was taken earlier by "
                    "\"%s\", reassigning that to %d\n",
-                    input_config_get_device_name(prev_assigned_port), 
+                    input_config_get_device_name(prev_assigned_port),
                     prev_assigned_player_slots[detected_port]+1);
          settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port;
          if (input_config_get_device_name(prev_assigned_port))
@@ -486,7 +486,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
             settings->uints.input_joypad_index[first_free_player_slot]                    = prev_assigned_port;
          }
       }
-      else 
+      else
       {
          RARCH_DBG("[Autoconf]: Device \"%s\" (%x:%x) is reserved for "
                    "player %d, same as default assignment.\n",
@@ -500,7 +500,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
                 "any player slot.\n",
                 device_name, vendor_id, product_id);
       /* Fallback in case no reservation is set up at all - to preserve any previous setup where input_joypad_index may have been customized. */
-      if (no_reservation_at_all || 
+      if (no_reservation_at_all ||
           prev_assigned_player_slots[detected_port] == first_free_player_slot)
       {
          return;
@@ -508,7 +508,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
       else
       {
          unsigned prev_assigned_port = settings->uints.input_joypad_index[first_free_player_slot];
-         settings->uints.input_joypad_index[first_free_player_slot] = detected_port;      
+         settings->uints.input_joypad_index[first_free_player_slot] = detected_port;
          settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port;
          RARCH_DBG("[Autoconf]: Earlier free player slot found, "
                    "reassigning to player %d.\n",
@@ -834,7 +834,7 @@ bool input_autoconfigure_connect(
 
       if (driver_valid)
       {
-         char dir_driver_autoconfig[PATH_MAX_LENGTH];
+         char dir_driver_autoconfig[DIR_MAX_LENGTH];
          /* Generate driver-specific autoconfig directory */
          fill_pathname_join_special(dir_driver_autoconfig,
                dir_autoconfig,

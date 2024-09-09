@@ -281,7 +281,7 @@ static bool screenshot_dump(
       }
       else
       {
-         char new_screenshot_dir[PATH_MAX_LENGTH];
+         char new_screenshot_dir[DIR_MAX_LENGTH];
 
          if (!string_is_empty(screenshot_dir))
          {
@@ -292,7 +292,7 @@ static bool screenshot_dump(
             if (settings->bools.sort_screenshots_by_content_enable &&
                 !string_is_empty(content_dir))
             {
-               char content_dir_name[PATH_MAX_LENGTH];
+               char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
                      content_dir, sizeof(content_dir_name));
                fill_pathname_join_special(

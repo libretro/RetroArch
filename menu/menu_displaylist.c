@@ -491,7 +491,7 @@ static int filebrowser_parse(
       dir_list_append(str_list, "/private/var", NULL, true, false, false, false);
       if (str_list->size <= 0)
       {
-         char dir[PATH_MAX_LENGTH];
+         char dir[DIR_MAX_LENGTH];
          fill_pathname_application_dir(dir, sizeof(dir));
          if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
             strlcat(dir, "/", sizeof(dir));
@@ -1679,7 +1679,7 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
        * to the displaylist */
       if (core_is_pending)
       {
-         char entry_alt_text[256];
+         char entry_alt_text[NAME_MAX_LENGTH];
          size_t _len = strlcpy(entry_alt_text, detect_core_str,
                sizeof(entry_alt_text));
          entry_alt_text[  _len] = ' ';
@@ -1784,8 +1784,8 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
 
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
-   char entry[256];
    char tmp[128];
+   char entry[NAME_MAX_LENGTH];
    unsigned count = 0;
 
    /* RetroArch Version */
@@ -2369,7 +2369,7 @@ static int menu_displaylist_parse_playlist(
       }
       else if (!string_is_empty(info_path))
       {
-         char lpl_basename[256];
+         char lpl_basename[NAME_MAX_LENGTH];
          fill_pathname_base(lpl_basename, info_path, sizeof(lpl_basename));
          path_remove_extension(lpl_basename);
          menu_driver_set_thumbnail_system(
@@ -2406,7 +2406,7 @@ static int menu_displaylist_parse_playlist(
 
    for (i = 0; i < list_size; i++)
    {
-      char menu_entry_label[256];
+      char menu_entry_label[NAME_MAX_LENGTH];
       const struct playlist_entry *entry = NULL;
       const char *entry_path             = NULL;
       bool entry_valid                   = true;
@@ -3483,7 +3483,7 @@ static int menu_displaylist_parse_horizontal_list(
       playlist_t *playlist         = NULL;
       if (!string_is_empty(item->path))
       {
-         char lpl_basename[256];
+         char lpl_basename[NAME_MAX_LENGTH];
          char path_playlist[PATH_MAX_LENGTH];
          const char *dir_playlist  = settings->paths.directory_playlist;
 
@@ -4404,7 +4404,7 @@ static unsigned menu_displaylist_parse_cores(
       menu_displaylist_info_t *info)
 {
    size_t i, list_size;
-   char out_dir[PATH_MAX_LENGTH];
+   char out_dir[DIR_MAX_LENGTH];
    struct string_list *str_list = NULL;
    unsigned count               = 0;
    const char *path             = info->path;
@@ -4568,7 +4568,7 @@ static unsigned menu_displaylist_parse_cores(
          if (type == FILE_TYPE_CORE)
          {
             char core_path[PATH_MAX_LENGTH];
-            char display_name[256];
+            char display_name[NAME_MAX_LENGTH];
             display_name[0]    = '\0';
 
             fill_pathname_join_special(core_path, dir, path, sizeof(core_path));
@@ -4878,7 +4878,7 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
 
       for (i = 0; i < str_list->size; i++)
       {
-         char path_base[PATH_MAX_LENGTH];
+         char path_base[NAME_MAX_LENGTH];
          const char *path;
 
          if (str_list->elems[i].attr.i == FILE_TYPE_DIRECTORY)
@@ -4913,8 +4913,8 @@ static unsigned menu_displaylist_parse_content_information(
       menu_handle_t *menu, settings_t *settings, file_list_t *info_list)
 {
    char tmp[8192];
-   char core_name[256];
-   char content_label[256];
+   char core_name[NAME_MAX_LENGTH];
+   char content_label[NAME_MAX_LENGTH];
    playlist_t *playlist                = playlist_get_cached();
    unsigned idx                        = menu->rpl_entry_selection_ptr;
    const struct playlist_entry *entry  = NULL;
@@ -5549,7 +5549,7 @@ static int menu_displaylist_parse_input_select_reserved_device_list(
       file_list_t *info_list, const char *info_path,
       settings_t *settings)
 {
-    char device_label[256];
+    char device_label[NAME_MAX_LENGTH];
     const char *val_disabled      = NULL;
     enum msg_hash_enums enum_idx  = (enum msg_hash_enums)atoi(info_path);
     struct menu_state *menu_st    = menu_state_get_ptr();
@@ -5823,7 +5823,7 @@ static int menu_displaylist_parse_input_description_list(
        * this button */
       if (!string_is_empty(input_desc_btn))
       {
-         char input_description[256];
+         char input_description[NAME_MAX_LENGTH];
          /* > Up to RARCH_FIRST_CUSTOM_BIND, inputs
           *   are buttons - description can be used
           *   directly
@@ -5974,7 +5974,7 @@ static int menu_displaylist_parse_input_description_kbd_list(
    /* Loop over keyboard keys */
    for (i = 0; i < RARCH_MAX_KEYS; i++)
    {
-      char input_description[256];
+      char input_description[NAME_MAX_LENGTH];
       unsigned key_id       = key_descriptors[i].key;
       const char *key_label = key_descriptors[i].desc;
 
@@ -6445,7 +6445,7 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
    for (i = 0; list && i < list->size; i++)
    {
       char drive[2];
-      char drive_string[256] = {0};
+      char drive_string[NAME_MAX_LENGTH] = {0};
       size_t pos             = snprintf(drive_string, sizeof(drive_string),
             msg_drive_number, i + 1);
       pos                   += snprintf(drive_string + pos,
@@ -6822,8 +6822,8 @@ unsigned menu_displaylist_build_list(
    {
       case DISPLAYLIST_OPTIONS_OVERRIDES:
          {
-            char config_directory[PATH_MAX_LENGTH];
-            char content_dir_name[PATH_MAX_LENGTH];
+            char config_directory[DIR_MAX_LENGTH];
+            char content_dir_name[DIR_MAX_LENGTH];
             char override_path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st      = runloop_state_get_ptr();
             rarch_system_info_t *sys_info    = &runloop_st->system;
@@ -7797,7 +7797,7 @@ unsigned menu_displaylist_build_list(
 
             for (p = 0; p < max_users; p++)
             {
-               char val_s[256], val_d[16];
+               char val_s[NAME_MAX_LENGTH], val_d[16];
                snprintf(val_s, sizeof(val_s),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS),
                      p+1);
@@ -8143,7 +8143,7 @@ unsigned menu_displaylist_build_list(
             if (net_ifinfo_new(&interfaces))
             {
                size_t i;
-               char buf[768];
+               char buf[1024];
                const char *msg_intf = msg_hash_to_str(MSG_INTERFACE);
                size_t _len          = strlcpy(buf, msg_intf, sizeof(buf));
 
@@ -8351,7 +8351,7 @@ unsigned menu_displaylist_build_list(
             {
                for (i = 0; i < size; i++)
                {
-                  char val_d[256], str[256];
+                  char val_d[NAME_MAX_LENGTH], str[NAME_MAX_LENGTH];
                   /* If there is exact refresh rate available, use it */
                   if (video_list[i].refreshrate_float > 0.0f)
                      snprintf(str, sizeof(str), "%dx%d (%.3f Hz)%s%s",
@@ -11742,12 +11742,12 @@ static unsigned menu_displaylist_build_shader_parameter(
                val_d,
                MENU_ENUM_LABEL_NO_ITEMS,
                setting_type,
-               i, entry_type, NULL);   
+               i, entry_type, NULL);
       count = 1;
       checked = 1.0;
       checked_found = true;
-   } 
-   else 
+   }
+   else
    {
       for (i = 0; current_value < (max + 0.0001f); i++)
       {
@@ -12326,7 +12326,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (!string_is_empty(cd_info.system))
                         {
-                           char system[256];
+                           char system[NAME_MAX_LENGTH];
                            /* TODO/FIXME - Localize */
                            size_t _len = strlcpy(system, "System: ", sizeof(system));
                            strlcpy(system + _len, cd_info.system, sizeof(system) - _len);
@@ -12341,7 +12341,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (!string_is_empty(cd_info.serial))
                         {
-                           char serial[256];
+                           char serial[NAME_MAX_LENGTH];
                            size_t _len = strlcpy(serial,
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
                                  sizeof(serial));
@@ -12358,7 +12358,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (!string_is_empty(cd_info.version))
                         {
-                           char version[256];
+                           char version[NAME_MAX_LENGTH];
                            /* TODO/FIXME - localize */
                            size_t _len = strlcpy(version, "Version: ", sizeof(version));
                            strlcpy(version + _len, cd_info.version, sizeof(version) - _len);
@@ -12373,7 +12373,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (!string_is_empty(cd_info.release_date))
                         {
-                           char release_date[256];
+                           char release_date[NAME_MAX_LENGTH];
                            /* TODO/FIXME - Localize */
                            size_t _len = strlcpy(release_date, "Release Date: ",
                                  sizeof(release_date));
@@ -15413,7 +15413,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               {
                                     if (setting->get_string_representation)
                                     {
-                                       char val_s[256];
+                                       char val_s[NAME_MAX_LENGTH];
                                        strlcpy(setting->value.target.string, tok, setting->size);
                                        setting->get_string_representation(setting,
                                              val_s, sizeof(val_s));
@@ -15479,7 +15479,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               {
                                  for (i = min; i <= max; i += step)
                                  {
-                                    char val_s[256];
+                                    char val_s[NAME_MAX_LENGTH];
                                     int val = (int)i;
                                     *setting->value.target.integer = val;
                                     setting->get_string_representation(setting,
@@ -15557,7 +15557,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               {
                                  for (i = min; i <= max + half_step; i += step)
                                  {
-                                    char val_s[256];
+                                    char val_s[NAME_MAX_LENGTH];
                                     *setting->value.target.fraction = i;
                                     setting->get_string_representation(setting,
                                           val_s, sizeof(val_s));
@@ -15632,7 +15632,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                               {
                                  for (i = min; i <= max; i += step)
                                  {
-                                    char val_s[256];
+                                    char val_s[NAME_MAX_LENGTH];
                                     int val = (int)i;
                                     *setting->value.target.unsigned_integer = val;
                                     setting->get_string_representation(setting,
@@ -15809,7 +15809,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256];
+                                 char val_s[NAME_MAX_LENGTH];
                                  int val = (int)i;
                                  *setting->value.target.integer = val;
                                  setting->get_string_representation(setting,
@@ -15886,7 +15886,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256];
+                                 char val_s[NAME_MAX_LENGTH];
                                  *setting->value.target.fraction = i;
                                  setting->get_string_representation(setting,
                                        val_s, sizeof(val_s));
@@ -15960,7 +15960,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            {
                               for (i = min; i <= max; i += step)
                               {
-                                 char val_s[256];
+                                 char val_s[NAME_MAX_LENGTH];
                                  int val = (int)i;
                                  *setting->value.target.unsigned_integer = val;
                                  setting->get_string_representation(setting,
