@@ -2751,7 +2751,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11_release_texture(&d3d11->pass[i].rt);
          d3d11_init_texture(d3d11->device, &d3d11->pass[i].rt);
 
-         if (pass->feedback)
+         if ((pass->flags & SHDR_PASS_FLG_FEEDBACK) > 0)
          {
             d3d11->pass[i].feedback.desc = d3d11->pass[i].rt.desc;
             d3d11_release_texture(&d3d11->pass[i].feedback);
@@ -3060,7 +3060,7 @@ static bool d3d11_gfx_frame(
    {
       for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
-         if (d3d11->shader_preset->pass[i].feedback)
+         if ((d3d11->shader_preset->pass[i].flags & SHDR_PASS_FLG_FEEDBACK) > 0)
          {
             d3d11_texture_t tmp     = d3d11->pass[i].feedback;
             d3d11->pass[i].feedback = d3d11->pass[i].rt;

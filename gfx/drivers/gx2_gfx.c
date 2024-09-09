@@ -1777,7 +1777,7 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
          continue;
       }
 
-      /* feedback not supported yet */
+      /* FEEDBACK not supported yet */
       if (!strncmp(id, "PassFeedbackSize", STRLEN_CONST("PassFeedbackSize")))
       {
          GX2Surface *output;
