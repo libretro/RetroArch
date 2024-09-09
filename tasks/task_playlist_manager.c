@@ -388,7 +388,7 @@ static void pl_manager_validate_core_association(
       goto reset_core;
    else
    {
-      char core_display_name[PATH_MAX_LENGTH];
+      char core_display_name[NAME_MAX_LENGTH];
       core_info_t *core_info = NULL;
 
       /* Search core info */
@@ -706,7 +706,7 @@ bool task_push_pl_manager_clean_playlist(
    size_t _len;
    task_finder_data_t find_data;
    char task_title[128];
-   char playlist_name[PATH_MAX_LENGTH];
+   char playlist_name[NAME_MAX_LENGTH];
    retro_task_t *task              = task_init();
    pl_manager_handle_t *pl_manager = (pl_manager_handle_t*)
       calloc(1, sizeof(pl_manager_handle_t));

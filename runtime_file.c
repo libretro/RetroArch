@@ -230,8 +230,8 @@ runtime_log_t *runtime_log_init(
       bool log_per_core)
 {
    char log_file_dir[DIR_MAX_LENGTH];
-   char content_name[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
+   char content_name[NAME_MAX_LENGTH];
+   char core_name[nAME_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
    bool supports_no_game      = false;

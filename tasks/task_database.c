@@ -1040,7 +1040,7 @@ static int task_database_iterate_playlist_lutro(
    if (!playlist_entry_exists(playlist, path))
    {
       struct playlist_entry entry;
-      char game_title[PATH_MAX_LENGTH];
+      char game_title[NAME_MAX_LENGTH];
       fill_pathname(game_title,
             path_basename(path), "", sizeof(game_title));
       path_remove_extension(game_title);

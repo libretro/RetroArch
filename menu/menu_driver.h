@@ -434,8 +434,8 @@ typedef struct
 
       char pass_dir[DIR_MAX_LENGTH];
       char preset_dir[DIR_MAX_LENGTH];
-      char preset_file_name[PATH_MAX_LENGTH];
-      char pass_file_name[PATH_MAX_LENGTH];
+      char preset_file_name[NAME_MAX_LENGTH];
+      char pass_file_name[NAME_MAX_LENGTH];
    } last_shader_selection;
 #endif
 
@@ -444,7 +444,7 @@ typedef struct
    struct
    {
       char directory[DIR_MAX_LENGTH];
-      char file_name[PATH_MAX_LENGTH];
+      char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
    char menu_state_msg[8192];
@@ -456,7 +456,7 @@ typedef struct
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
    char db_playlist_file[PATH_MAX_LENGTH];
-   char filebrowser_label[PATH_MAX_LENGTH];
+   char filebrowser_label[NAME_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
 } menu_handle_t;
 

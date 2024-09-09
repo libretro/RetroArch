@@ -412,7 +412,7 @@ static void frontend_gx_exitspawn(char *s, size_t len, char *args)
    if (!string_is_empty(gx_rom_path))
       should_load_game = true;
 #elif defined(HW_RVL)
-   char salamander_basename[PATH_MAX_LENGTH];
+   char salamander_basename[NAME_MAX_LENGTH];
 
    if (gx_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -426,8 +426,8 @@ static void frontend_gx_exitspawn(char *s, size_t len, char *args)
          /* fall-through */
       case FRONTEND_FORK_RESTART:
          {
+            char salamander_name[NAME_MAX_LENGTH];
             char new_path[PATH_MAX_LENGTH];
-            char salamander_name[PATH_MAX_LENGTH];
 
             if (frontend_driver_get_salamander_basename(salamander_name,
                      sizeof(salamander_name)))

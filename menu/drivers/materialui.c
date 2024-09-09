@@ -680,11 +680,12 @@ typedef struct materialui_handle
    enum materialui_landscape_layout_optimization_type
          last_landscape_layout_optimization;
    enum materialui_list_view_type list_view_type;
-   char sysicons_path[PATH_MAX_LENGTH];
-   char icons_path[PATH_MAX_LENGTH];
+
    char msgbox[1024];
    char menu_title[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
+   char sysicons_path[PATH_MAX_LENGTH];
+   char icons_path[PATH_MAX_LENGTH];
 } materialui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
