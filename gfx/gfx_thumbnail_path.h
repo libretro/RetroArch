@@ -27,6 +27,7 @@
 #include <libretro.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include "../playlist.h"
 
@@ -60,6 +61,10 @@ struct gfx_thumbnail_path_data
    enum playlist_thumbnail_mode playlist_left_mode;
    enum playlist_thumbnail_mode playlist_icon_mode;
    size_t playlist_index;
+   char content_label[NAME_MAX_LENGTH];
+   char content_core_name[NAME_MAX_LENGTH];
+   char system[NAME_MAX_LENGTH];
+   char content_db_name[NAME_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
    char content_img[PATH_MAX_LENGTH];
    char content_img_short[PATH_MAX_LENGTH];
@@ -67,10 +72,6 @@ struct gfx_thumbnail_path_data
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
    char icon_path[PATH_MAX_LENGTH];
-   char content_label[256];
-   char content_core_name[256];
-   char system[256];
-   char content_db_name[256];
 };
 
 /* Initialisation */

@@ -246,6 +246,7 @@ typedef struct dispgfx_widget
 
    uint8_t flags;
 
+   char gfx_widgets_status_text[NAME_MAX_LENGTH];
    char assets_pkg_dir[DIR_MAX_LENGTH];
    char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
    char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */
@@ -254,7 +255,6 @@ typedef struct dispgfx_widget
 
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
-   char gfx_widgets_status_text[NAME_MAX_LENGTH];
 
    bool active;
 } dispgfx_widget_t;

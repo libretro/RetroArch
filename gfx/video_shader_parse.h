@@ -60,8 +60,8 @@ RETRO_BEGIN_DECLS
 enum wildcard_type
 {
    RARCH_WILDCARD_CONTENT_DIR = 0,
-   RARCH_WILDCARD_CORE, 
-   RARCH_WILDCARD_GAME, 
+   RARCH_WILDCARD_CORE,
+   RARCH_WILDCARD_GAME,
    RARCH_WILDCARD_VIDEO_DRIVER,
    RARCH_WILDCARD_VIDEO_USER_ROTATION,
    RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,
@@ -104,7 +104,7 @@ enum
 enum video_shader_flags
 {
    SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
-   /* Indicative of whether shader was modified - 
+   /* Indicative of whether shader was modified -
     * for instance from the menus */
    SHDR_FLAG_MODIFIED  = (1 << 1),
    SHDR_FLAG_DISABLED  = (1 << 2)
@@ -213,8 +213,8 @@ struct video_shader
    /* Path to the root preset */
    char path[PATH_MAX_LENGTH];
 
-   /* Path to the original preset loaded, if this is a preset 
-    * with the #reference directive, then this will be different 
+   /* Path to the original preset loaded, if this is a preset
+    * with the #reference directive, then this will be different
     * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
 };
@@ -266,7 +266,7 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
  * Writes a preset to disk. Can be written as a simple preset (With the #reference directive in it) or a full preset.
  **/
 bool video_shader_write_preset(const char *path,
-      const struct video_shader *shader, 
+      const struct video_shader *shader,
       bool reference);
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext, bool *is_preset);
