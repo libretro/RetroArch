@@ -2958,9 +2958,14 @@ static void xmb_populate_entries(void *data,
 
    xmb_set_title(xmb);
 
-   if(xmb->is_playlist && settings->uints.menu_icon_thumbnails)
+   if(xmb->is_playlist)
    {
-      xmb_populate_dynamic_icons(xmb);
+      if(settings->uints.menu_icon_thumbnails)
+         xmb_populate_dynamic_icons(xmb);
+   } 
+   else if(xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE )
+   {
+      xmb_unload_icon_thumbnail_textures(xmb);
    }
 
    if (xmb->allow_dynamic_wallpaper)
