@@ -135,7 +135,9 @@ static void task_menu_explore_init_handler(retro_task_t *task)
       menu_explore_init_handle_t *menu_explore = NULL;
       if ((menu_explore = (menu_explore_init_handle_t*)task->state))
       {
-         if (!task_get_cancelled(task))
+         uint8_t flg = task_get_flags(task);
+
+         if (!((flg & RETRO_TASK_FLG_CANCELLED) > 0))
          {
             /* TODO/FIXME: It could be beneficial to
              * initialise the explore menu iteratively,
@@ -152,7 +154,7 @@ static void task_menu_explore_init_handler(retro_task_t *task)
          }
       }
 
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
 }
 
@@ -197,11 +199,11 @@ bool task_push_menu_explore_init(const char *directory_playlist,
     *   and no user notification messages */
    task->handler  = task_menu_explore_init_handler;
    task->state    = menu_explore;
-   task->mute     = true;
    task->title    = NULL;
    task->progress = 0;
    task->callback = cb_task_menu_explore_init;
    task->cleanup  = task_menu_explore_init_free;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
 
    task_queue_push(task);
 

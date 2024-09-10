@@ -2854,7 +2854,7 @@ static void rcheevos_start_session_async(retro_task_t* task)
    else if (rcheevos_locals.hardcore_active)
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (rcheevos_end_load_state() == 0)
       rcheevos_fetch_badges();
@@ -3585,7 +3585,7 @@ static void rcheevos_validate_initial_disc_handler(retro_task_t* task)
    }
 
    free(new_disc_path);
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 void rcheevos_change_disc(const char* new_disc_path, bool initial_disc)

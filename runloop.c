@@ -7318,7 +7318,7 @@ void runloop_task_msg_queue_push(
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
 
-   if (widgets_active && task->title && !task->mute)
+   if (widgets_active && task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
    {
       RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
       ui_companion_driver_msg_queue_push(msg,

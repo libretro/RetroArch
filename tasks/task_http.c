@@ -143,8 +143,9 @@ static void task_http_transfer_handler(retro_task_t *task)
 {
    http_transfer_data_t *data = NULL;
    http_handle_t        *http = (http_handle_t*)task->state;
+   uint8_t flg                = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (http->status)
@@ -172,7 +173,7 @@ static void task_http_transfer_handler(retro_task_t *task)
 
    return;
 task_finished:
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (http->handle)
    {
@@ -186,7 +187,7 @@ task_finished:
       if (!tmp)
          tmp = (char*)net_http_data(http->handle, &len, true);
 
-      if (task_get_cancelled(task))
+      if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       {
          if (tmp)
             free(tmp);
@@ -197,6 +198,7 @@ task_finished:
       }
       else
       {
+         bool mute;
          data          = (http_transfer_data_t*)malloc(sizeof(*data));
          data->data    = tmp;
          data->headers = headers;
@@ -205,7 +207,9 @@ task_finished:
 
          task_set_data(task, data);
 
-         if (!task->mute && net_http_error(http->handle))
+         mute          = ((task->flags & RETRO_TASK_FLG_MUTE) > 0);
+
+         if (!mute && net_http_error(http->handle))
             task_set_error(task, strldup("Download failed.",
                sizeof("Download failed.")));
       }
@@ -257,7 +261,8 @@ static void http_transfer_progress_cb(retro_task_t *task)
 {
 #ifdef RARCH_INTERNAL
    if (task)
-      video_display_server_set_window_progress(task->progress, task->finished);
+      video_display_server_set_window_progress(task->progress,
+            ((task->flags & RETRO_TASK_FLG_FINISHED) > 0));
 #endif
 }
 
@@ -320,12 +325,15 @@ static void *task_push_http_transfer_generic(
 
    t->handler              = task_http_transfer_handler;
    t->state                = http;
-   t->mute                 = mute;
    t->callback             = cb;
    t->progress_cb          = http_transfer_progress_cb;
    t->cleanup              = task_http_transfer_cleanup;
    t->user_data            = user_data;
    t->progress             = -1;
+   if (mute)
+      t->flags            |=  RETRO_TASK_FLG_MUTE;
+   else
+      t->flags            &= ~RETRO_TASK_FLG_MUTE;
 
    task_queue_push(t);
 

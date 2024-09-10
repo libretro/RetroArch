@@ -106,7 +106,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
       state->file        = NULL;
       state->output_file = NULL;
 
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
       RARCH_LOG("[CDROM]: Dump finished.\n");
 
