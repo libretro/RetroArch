@@ -41,6 +41,10 @@ for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*
     fwDir="${OUTDIR}/${fwName}.framework"
     mkdir -p "$fwDir"
     lipo -create "$dylib" -output "$fwDir/$fwName"
+    if [ "$PLATFORM_FAMILY_NAME" = "iOS" ] ; then
+        build_sdk=$(vtool -show-build "$dylib" | grep sdk | awk '{print $2}')
+        vtool -set-version-min ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${build_sdk}" -replace -output "$fwDir/$fwName" "$fwDir/$fwName"
+    fi
     sed -e "s,%CORE%,$fwName," -e "s,%BUNDLE%,$fwName," -e "s,%IDENTIFIER%,$fwName," iOS/fw.tmpl > "$fwDir/Info.plist"
     echo "signing $fwName"
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
@@ -59,4 +63,12 @@ if [ -d "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" ] ; 
     echo copying moltenvk from "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework"
     cp -r "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" "${OUTDIR}"
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK.framework"
+fi
+
+# iOS 12 needs an older version of MoltenVK
+if [ -n "$MOLTENVK_LEGACY_XCFRAMEWORK_PATH" -a -d "${MOLTENVK_LEGACY_XCFRAMEWORK_PATH}/${MVK_PLATFORM_SUBDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework" ] ; then
+    echo copying legacy moltenvk from "${MOLTENVK_LEGACY_XCFRAMEWORK_PATH}/${MVK_PLATFORM_SUBDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework"
+    cp -r "${MOLTENVK_LEGACY_XCFRAMEWORK_PATH}/${MVK_PLATFORM_SUBDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework" "${OUTDIR}"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework/MoltenVK-${MOLTENVK_LEGACY_VERSION}"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework"
 fi
