@@ -179,17 +179,15 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
          size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
          if (!write_avail)
          {
-            size_t _size;
             UINT32 frame_count;
             BYTE *dest         = NULL;
             if (WaitForSingleObject(w->write_event, 0) != WAIT_OBJECT_0)
                return 0;
-            _size              = w->engine_buffer_size;
-            frame_count        = _size / w->frame_size;
+            frame_count        = w->engine_buffer_size / w->frame_size;
             if (FAILED(_IAudioRenderClient_GetBuffer(
                         w->renderer, frame_count, &dest)))
                return -1;
-            fifo_read(w->buffer, dest, _size);
+            fifo_read(w->buffer, dest, w->engine_buffer_size);
             if (FAILED(_IAudioRenderClient_ReleaseBuffer(
                         w->renderer, frame_count, 0)))
                return -1;
@@ -208,19 +206,16 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             if (!write_avail)
             {
-               size_t _size;
-               UINT32 frame_count;
                BYTE *dest         = NULL;
                if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
                   ir = 1;
                else
                {
-                  _size       = w->engine_buffer_size;
-                  frame_count = _size / w->frame_size;
+                  UINT32 frame_count = w->engine_buffer_size / w->frame_size;
                   if (FAILED(_IAudioRenderClient_GetBuffer(
                               w->renderer, frame_count, &dest)))
                      return -1;
-                  fifo_read(w->buffer, dest, _size);
+                  fifo_read(w->buffer, dest, w->engine_buffer_size);
                   if (FAILED(_IAudioRenderClient_ReleaseBuffer(
                               w->renderer, frame_count, 0)))
                      return -1;
