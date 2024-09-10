@@ -139,6 +139,14 @@ static INLINE bool bits_any_different(uint32_t *a, uint32_t *b, uint32_t count)
 #define DIR_MAX_LENGTH 256
 #endif
 
+/**
+ * An upper limit for the length of a file or directory (excluding parent directories).
+ * If a path has a component longer than this, it may not work properly.
+ */
+#ifndef NAME_MAX_LENGTH
+#define NAME_MAX_LENGTH 128
+#endif
+
 #else
 
 #ifndef PATH_MAX_LENGTH
@@ -149,8 +157,6 @@ static INLINE bool bits_any_different(uint32_t *a, uint32_t *b, uint32_t count)
 #define DIR_MAX_LENGTH 1024
 #endif
 
-#endif
-
 /**
  * An upper limit for the length of a file or directory (excluding parent directories).
  * If a path has a component longer than this, it may not work properly.
@@ -158,6 +164,9 @@ static INLINE bool bits_any_different(uint32_t *a, uint32_t *b, uint32_t count)
 #ifndef NAME_MAX_LENGTH
 #define NAME_MAX_LENGTH 256
 #endif
+
+#endif
+
 
 #ifndef MAX
 /**

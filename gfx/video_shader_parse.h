@@ -178,7 +178,7 @@ struct video_shader_pass
          char *vertex; /* Dynamically allocated. Must be free'd. */
          char *fragment; /* Dynamically allocated. Must be free'd. */
       } string;
-      char path[PATH_MAX_LENGTH];
+      char path[NAME_MAX_LENGTH*2];
    } source;
    char alias[64];
    uint8_t flags;
@@ -189,7 +189,7 @@ struct video_shader_lut
    unsigned filter;
    enum gfx_wrap_type wrap;
    char id[64];
-   char path[PATH_MAX_LENGTH];
+   char path[NAME_MAX_LENGTH*2];
    bool mipmap;
 };
 
