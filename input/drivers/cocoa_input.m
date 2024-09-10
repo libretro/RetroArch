@@ -637,7 +637,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
       return false;
 
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, *))
+   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
    {
       for (GCController *controller in [GCController controllers])
       {
