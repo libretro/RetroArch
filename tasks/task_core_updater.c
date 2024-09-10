@@ -1791,6 +1791,7 @@ static void task_play_feature_delivery_core_install_handler(
 
    pfd_install_handle =
       (play_feature_delivery_install_handle_t*)task->state;
+   flg                = task_get_flags(task);
 
    if (!pfd_install_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
@@ -2055,11 +2056,14 @@ void *task_push_play_feature_delivery_core_install(
 
    task->handler          = task_play_feature_delivery_core_install_handler;
    task->state            = pfd_install_handle;
-   task->mute             = mute;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
    task->callback         = cb_task_core_updater_download;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    /* Install process may involve the *deletion*
     * of an existing core file. If core is
@@ -2424,8 +2428,8 @@ void task_push_play_feature_delivery_switch_installed_cores(
    task->handler          = task_play_feature_delivery_switch_cores_handler;
    task->state            = pfd_switch_cores_handle;
    task->title            = strdup(msg_hash_to_str(MSG_SCANNING_CORES));
-   task->alternative_look = true;
    task->progress         = 0;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
    task_queue_push(task);
