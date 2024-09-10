@@ -1943,7 +1943,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/iOS/modules",
 					"@executable_path/Frameworks",
@@ -2005,7 +2005,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/iOS/modules",
 					"@executable_path/Frameworks",
