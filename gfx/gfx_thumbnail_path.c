@@ -1025,16 +1025,21 @@ bool gfx_thumbnail_get_content_dir(
       gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
 {
    size_t path_length;
+   char *last_slash;
+   const char *slash;
+   const char *backslash;
    char tmp_buf[NAME_MAX_LENGTH];
-   const char *last_slash        = NULL;
 
    if (!path_data || string_is_empty(path_data->content_path))
       return false;
 
-   if (!(last_slash = find_last_slash(path_data->content_path)))
+   slash                   = strrchr(path_data->content_path, '/');
+   backslash               = strrchr(path_data->content_path, '\\');
+   last_slash              = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   if (!last_slash)
       return false;
 
-   path_length = last_slash + 1 - path_data->content_path;
+   path_length             = last_slash + 1 - path_data->content_path;
 
    if (!((path_length > 1) && (path_length < PATH_MAX_LENGTH)))
       return false;

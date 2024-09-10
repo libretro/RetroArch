@@ -326,7 +326,9 @@ runtime_log_t *runtime_log_init(
     * content has the same name... */
    else if (string_is_equal(core_name, "TyrQuake"))
    {
-      const char *last_slash = find_last_slash(content_path);
+      const char *slash      = strrchr(content_path, '/');
+      const char *backslash  = strrchr(content_path, '\\');
+      const char *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
       if (last_slash)
       {
          size_t path_length = last_slash + 1 - content_path;

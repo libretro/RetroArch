@@ -501,7 +501,9 @@ void rarch_log_file_init(
    {
       /* Get log directory */
       const char *override_path        = g_verbosity->override_path;
-      const char *last_slash           = find_last_slash(override_path);
+      const char *slash                = strrchr(override_path, '/');
+      const char *backslash            = strrchr(override_path, '\\');
+      const char *last_slash           = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
 
       if (last_slash)
       {

@@ -6534,10 +6534,12 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
    else
    {
       size_t _len;
+      const char *slash     = strrchr(path, '/');
+      const char *backslash = strrchr(path, '\\');
       /* If path has no extension and contains no path
        * delimiters, check if it is a core 'name', matching
        * an existing file in the cores directory */
-      if (find_last_slash(path))
+      if (((!slash || (backslash > slash)) ? (char*)backslash : (char*)slash))
          goto end;
 
       /* First check for built-in cores */
