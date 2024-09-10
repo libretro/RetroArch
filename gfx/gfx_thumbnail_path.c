@@ -567,14 +567,11 @@ bool gfx_thumbnail_set_content_playlist(
 bool gfx_thumbnail_set_icon_playlist(
       gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx)
 {
-   char content_dir[DIR_MAX_LENGTH];
    const char *content_path           = NULL;
    const char *content_label          = NULL;
    const char *core_name              = NULL;
    const char *db_name                = NULL;
    const struct playlist_entry *entry = NULL;
-   const char *dir_thumbnails         = NULL;
-   settings_t *settings               = config_get_ptr();
 
    if (!path_data)
       return false;
