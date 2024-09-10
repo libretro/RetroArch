@@ -1218,6 +1218,7 @@ static void task_database_cleanup_state(
 
 static void task_database_handler(retro_task_t *task)
 {
+   uint8_t flg;
    const char *name                 = NULL;
    database_info_handle_t  *dbinfo  = NULL;
    database_state_handle_t *dbstate = NULL;
@@ -1253,8 +1254,9 @@ static void task_database_handler(retro_task_t *task)
 
    dbinfo  = db->handle;
    dbstate = &db->state;
+   flg     = task_get_flags(task);
 
-   if (!dbinfo || task_get_cancelled(task))
+   if (!dbinfo || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (dbinfo->status)
@@ -1382,7 +1384,7 @@ static void task_database_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (dbstate)
    {
@@ -1415,7 +1417,7 @@ static void task_database_progress_cb(retro_task_t *task)
 {
    if (task)
       video_display_server_set_window_progress(task->progress,
-            task->finished);
+            ((task->flags & RETRO_TASK_FLG_FINISHED) > 0));
 }
 #endif
 
@@ -1441,8 +1443,7 @@ bool task_push_dbscan(
    t->callback                             = cb;
    t->title                                = strdup(msg_hash_to_str(
             MSG_PREPARING_FOR_CONTENT_SCAN));
-   t->alternative_look                     = true;
-
+   t->flags                               |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 #ifdef RARCH_INTERNAL
    t->progress_cb                          = task_database_progress_cb;
    if (settings->bools.scan_without_core_match)

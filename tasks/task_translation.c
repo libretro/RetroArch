@@ -58,8 +58,9 @@ static void task_auto_translate_handler(retro_task_t *task)
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
 #endif
+   uint8_t flg                 = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (*mode_ptr)
@@ -87,7 +88,7 @@ task_finished:
    if (access_st->ai_service_auto == 1)
       access_st->ai_service_auto = 2;
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
    {
@@ -124,7 +125,7 @@ static void call_auto_translate_task(
 
       t->user_data                       = NULL;
       t->handler                         = task_auto_translate_handler;
-      t->mute                            = true;
+      t->flags                          |= RETRO_TASK_FLG_MUTE;
 
       if (mode)
       {

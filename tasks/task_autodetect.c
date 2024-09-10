@@ -735,7 +735,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool autoconfigure_connect_finder(retro_task_t *task, void *user_data)
@@ -889,10 +889,10 @@ bool input_autoconfigure_connect(
 
    task->handler  = input_autoconfigure_connect_handler;
    task->state    = autoconfig_handle;
-   task->mute     = false;
    task->title    = NULL;
    task->callback = cb_input_autoconfigure_connect;
    task->cleanup  = input_autoconfigure_free;
+   task->flags   &= ~RETRO_TASK_FLG_MUTE;
 
    task_queue_push(task);
 
@@ -981,7 +981,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool autoconfigure_disconnect_finder(retro_task_t *task, void *user_data)

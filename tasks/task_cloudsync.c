@@ -94,7 +94,7 @@ static void task_cloud_sync_begin_handler(void *user_data, const char *path, boo
    {
       RARCH_WARN(CSPFX "begin failed\n");
       task_set_title(task, strdup("Cloud Sync failed"));
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
    slock_lock(tcs_running_lock);
    sync_state->waiting = 0;
@@ -1070,7 +1070,7 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
          (end_time - sync_state->start_time) % (1000 * 1000),
          sync_state->uploads, sync_state->downloads);
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_cloud_sync_task_handler(retro_task_t *task)
@@ -1134,7 +1134,7 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_cloud_sync_cb(retro_task_t *task, void *task_data,

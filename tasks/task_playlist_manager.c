@@ -149,6 +149,7 @@ static void task_pl_manager_free(retro_task_t *task)
 
 static void task_pl_manager_reset_cores_handler(retro_task_t *task)
 {
+   uint8_t flg;
    pl_manager_handle_t *pl_manager = NULL;
 
    if (!task)
@@ -159,7 +160,9 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
    if (!pl_manager)
       goto task_finished;
 
-   if (task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (pl_manager->status)
@@ -254,9 +257,8 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool task_pl_manager_reset_cores_finder(
@@ -328,10 +330,11 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    task->handler                 = task_pl_manager_reset_cores_handler;
    task->state                   = pl_manager;
    task->title                   = strdup(task_title);
-   task->alternative_look        = true;
    task->progress                = 0;
    task->callback                = cb_task_pl_manager;
    task->cleanup                 = task_pl_manager_free;
+
+   task->flags                  |= (RETRO_TASK_FLG_ALTERNATIVE_LOOK);
 
    task_queue_push(task);
 
@@ -426,6 +429,7 @@ reset_core:
 
 static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
 {
+   uint8_t flg;
    pl_manager_handle_t *pl_manager = NULL;
 
    if (!task)
@@ -436,7 +440,9 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
    if (!pl_manager)
       goto task_finished;
 
-   if (task_get_cancelled(task))
+   flg        = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (pl_manager->status)
@@ -676,9 +682,8 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool task_pl_manager_clean_playlist_finder(
@@ -755,10 +760,11 @@ bool task_push_pl_manager_clean_playlist(
    task->handler                 = task_pl_manager_clean_playlist_handler;
    task->state                   = pl_manager;
    task->title                   = strdup(task_title);
-   task->alternative_look        = true;
    task->progress                = 0;
    task->callback                = cb_task_pl_manager;
    task->cleanup                 = task_pl_manager_free;
+
+   task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    task_queue_push(task);
 

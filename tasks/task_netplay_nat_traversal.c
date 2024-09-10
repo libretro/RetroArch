@@ -293,7 +293,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
 
 finished:
    task_set_progress(task, 100);
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_netplay_nat_traversal_callback(retro_task_t *task,

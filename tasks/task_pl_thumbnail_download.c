@@ -367,6 +367,7 @@ static void free_pl_thumb_handle(pl_thumb_handle_t *pl_thumb)
 
 static void task_pl_thumbnail_download_handler(retro_task_t *task)
 {
+   uint8_t flg;
    pl_thumb_handle_t *pl_thumb = NULL;
    enum playlist_thumbnail_name_flags next_flag = PLAYLIST_THUMBNAIL_FLAG_INVALID;
 
@@ -376,7 +377,9 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
    if (!(pl_thumb = (pl_thumb_handle_t*)task->state))
       goto task_finished;
 
-   if (task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (pl_thumb->status)
@@ -493,7 +496,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    if (pl_thumb)
       free_pl_thumb_handle(pl_thumb);
 }
@@ -573,8 +576,8 @@ bool task_push_pl_thumbnail_download(
    task->handler                 = task_pl_thumbnail_download_handler;
    task->state                   = pl_thumb;
    task->title                   = strdup(system);
-   task->alternative_look        = true;
    task->progress                = 0;
+   task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    task_queue_push(task);
 
@@ -692,6 +695,7 @@ static void task_pl_entry_thumbnail_free(retro_task_t *task)
 
 static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
 {
+   uint8_t flg;
    pl_thumb_handle_t *pl_thumb = NULL;
 
    if (!task)
@@ -700,7 +704,9 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
    if (!(pl_thumb = (pl_thumb_handle_t*)task->state))
       goto task_finished;
 
-   if (task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (pl_thumb->status)
@@ -797,9 +803,8 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool task_pl_entry_thumbnail_finder(retro_task_t *task, void *user_data)
@@ -924,11 +929,14 @@ bool task_push_pl_entry_thumbnail_download(
    task->handler                 = task_pl_entry_thumbnail_download_handler;
    task->state                   = pl_thumb;
    task->title                   = strdup(system);
-   task->alternative_look        = true;
-   task->mute                    = mute;
    task->progress                = 0;
    task->callback                = cb_task_pl_entry_thumbnail_refresh_menu;
    task->cleanup                 = task_pl_entry_thumbnail_free;
+   task->flags                  |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags               |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
    task_queue_push(task);
 
