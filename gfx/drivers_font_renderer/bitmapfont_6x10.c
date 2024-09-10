@@ -4,7 +4,7 @@
  *  Copyright (C) 2019-2020 - James Leaver
  *  Copyright (C) 2020-2022 - trngaje
  *  Copyright (C)      2022 - Michael Burgardt
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -50,7 +50,7 @@
  * font file is missing */
 bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language)
 {
-   char font_dir[PATH_MAX_LENGTH];
+   char font_dir[DIR_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
    const char *font_file      = NULL;
    void *bitmap_raw           = NULL;

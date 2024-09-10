@@ -114,7 +114,7 @@ enum platform_android_flags
 };
 
 static pthread_key_t thread_key;
-static char app_dir[PATH_MAX_LENGTH];
+static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
@@ -1482,7 +1482,7 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char apk_dir[PATH_MAX_LENGTH];
+      static char apk_dir[DIR_MAX_LENGTH];
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *apk_dir = '\0';

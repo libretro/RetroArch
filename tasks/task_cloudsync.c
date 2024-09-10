@@ -94,7 +94,7 @@ static void task_cloud_sync_begin_handler(void *user_data, const char *path, boo
    {
       RARCH_WARN(CSPFX "begin failed\n");
       task_set_title(task, strdup("Cloud Sync failed"));
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
    slock_lock(tcs_running_lock);
    sync_state->waiting = 0;
@@ -320,7 +320,7 @@ static struct string_list *task_cloud_sync_directory_map(void)
    if (!list)
    {
       union string_list_elem_attr attr = {0};
-      char  dir[PATH_MAX_LENGTH];
+      char  dir[DIR_MAX_LENGTH];
       list = string_list_new();
 
       if (settings->bools.cloud_sync_sync_configs)
@@ -478,9 +478,9 @@ static void task_cloud_sync_backup_file(struct item_file *file)
 {
    struct tm   tm_;
    size_t      len;
-   char        backup_dir[PATH_MAX_LENGTH];
+   char        new_dir[DIR_MAX_LENGTH];
+   char        backup_dir[DIR_MAX_LENGTH];
    char        new_path[PATH_MAX_LENGTH];
-   char        new_dir[PATH_MAX_LENGTH];
    settings_t *settings             = config_get_ptr();
    const char *path_dir_core_assets = settings->paths.directory_core_assets;
    time_t      cur_time             = time(NULL);
@@ -533,14 +533,14 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
 
 static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_state)
 {
+   size_t              i;
+   char                filename[PATH_MAX_LENGTH];
+   char                directory[DIR_MAX_LENGTH];
    struct string_list *dirlist     = task_cloud_sync_directory_map();
    struct item_file   *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char         *key         = CS_FILE_KEY(server_file);
    const char         *path        = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
-   char                directory[PATH_MAX_LENGTH];
-   char                filename[PATH_MAX_LENGTH];
    settings_t         *settings = config_get_ptr();
-   size_t              i;
 
    /* we're just fetching a file the server has, we can update this now */
    task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
@@ -1051,7 +1051,7 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
-      char title[512];
+      char title[128];
       size_t len = strlcpy(title, "Cloud Sync finished", sizeof(title));
       if (sync_state->failures || sync_state->conflicts)
          len += strlcpy(title + len, " with ", sizeof(title) - len);
@@ -1070,7 +1070,7 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
          (end_time - sync_state->start_time) % (1000 * 1000),
          sync_state->uploads, sync_state->downloads);
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_cloud_sync_task_handler(retro_task_t *task)
@@ -1134,7 +1134,7 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_cloud_sync_cb(retro_task_t *task, void *task_data,

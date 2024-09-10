@@ -1530,7 +1530,7 @@ typedef struct MTLALIGN(16)
 
    for (i = 0; i < _shader->passes; i++)
    {
-      if (_shader->pass[i].feedback)
+      if (_shader->pass[i].flags & SHDR_PASS_FLG_FEEDBACK)
       {
          texture_t tmp            = _engine.pass[i].feedback;
          _engine.pass[i].feedback = _engine.pass[i].rt;
@@ -1733,7 +1733,7 @@ typedef struct MTLALIGN(16)
 
          [self _initTexture:&_engine.pass[i].rt withDescriptor:td];
 
-         if (shader_pass->feedback)
+         if ((shader_pass->flags & SHDR_PASS_FLG_FEEDBACK) > 0)
             [self _initTexture:&_engine.pass[i].feedback withDescriptor:td];
       }
       else

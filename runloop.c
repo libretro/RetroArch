@@ -460,9 +460,9 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
                 * the pointers are const char *
                 * (if we don't free them, we get a memory leak) */
                if (!string_is_empty(subsys_info->desc))
-                  free((char *)subsys_info->desc);
+                  free((char*)subsys_info->desc);
                if (!string_is_empty(subsys_info->ident))
-                  free((char *)subsys_info->ident);
+                  free((char*)subsys_info->ident);
                subsys_info->desc     = strdup(info[i].desc);
                subsys_info->ident    = strdup(info[i].ident);
                subsys_info->id       = info[i].id;
@@ -478,11 +478,11 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
                    * the pointers are const char *
                    * (if we don't free them, we get a memory leak) */
                   if (!string_is_empty(subsys_rom_info[j].desc))
-                     free((char *)
+                     free((char*)
                            subsys_rom_info[j].desc);
                   if (!string_is_empty(
                            subsys_rom_info[j].valid_extensions))
-                     free((char *)
+                     free((char*)
                            subsys_rom_info[j].valid_extensions);
                   subsys_rom_info[j].desc             =
                      strdup(info[i].roms[j].desc);
@@ -1080,7 +1080,7 @@ static bool validate_per_core_options(char *s,
       size_t len, bool mkdir,
       const char *core_name, const char *game_name)
 {
-   char config_directory[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    config_directory[0] = '\0';
 
    if (   (!s)
@@ -1147,7 +1147,7 @@ static bool validate_game_specific_options(char **output)
 static bool validate_folder_options(
       char *s, size_t len, bool mkdir)
 {
-   char folder_name[PATH_MAX_LENGTH];
+   char folder_name[DIR_MAX_LENGTH];
    runloop_state_t *runloop_st = &runloop_state;
    const char *core_name       = runloop_st->system.info.library_name;
    const char *game_path       = path_get(RARCH_PATH_BASENAME);
@@ -4148,7 +4148,7 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
          {
             char ext[32];
             union string_list_elem_attr attr;
-            char savename[PATH_MAX_LENGTH];
+            char savename[NAME_MAX_LENGTH];
             char path[PATH_MAX_LENGTH];
             size_t _len = 0;
             const struct retro_subsystem_memory_info *mem =
@@ -5184,12 +5184,12 @@ void core_options_reset(void)
 void core_options_flush(void)
 {
    size_t _len;
+   char msg[128];
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
    const char *core_options_file   = NULL;
    bool success                    = false;
-   char msg[256];
 
    msg[0] = '\0';
 
@@ -5239,7 +5239,7 @@ void core_options_flush(void)
           * exist (e.g. if it gets deleted manually while
           * a core is running) */
          if (!path_is_valid(path_core_options))
-            runloop_st->core_options->conf->modified = true;
+            runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
 
          success = config_file_write(runloop_st->core_options->conf,
                path_core_options, true);
@@ -7318,7 +7318,7 @@ void runloop_task_msg_queue_push(
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
 
-   if (widgets_active && task->title && !task->mute)
+   if (widgets_active && task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
    {
       RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
       ui_companion_driver_msg_queue_push(msg,
@@ -7921,11 +7921,11 @@ void runloop_path_set_redirect(settings_t *settings,
                                const char *old_savefile_dir,
                                const char *old_savestate_dir)
 {
-   char content_dir_name[PATH_MAX_LENGTH];
-   char new_savefile_dir[PATH_MAX_LENGTH];
-   char new_savestate_dir[PATH_MAX_LENGTH];
-   char intermediate_savefile_dir[PATH_MAX_LENGTH];
-   char intermediate_savestate_dir[PATH_MAX_LENGTH];
+   char content_dir_name[DIR_MAX_LENGTH];
+   char new_savefile_dir[DIR_MAX_LENGTH];
+   char new_savestate_dir[DIR_MAX_LENGTH];
+   char intermediate_savefile_dir[DIR_MAX_LENGTH];
+   char intermediate_savestate_dir[DIR_MAX_LENGTH];
    runloop_state_t *runloop_st            = &runloop_state;
    struct retro_system_info *sysinfo      = &runloop_st->system.info;
    bool sort_savefiles_enable             = settings->bools.sort_savefiles_enable;

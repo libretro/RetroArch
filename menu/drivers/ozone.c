@@ -617,26 +617,25 @@ struct ozone_handle
    uint8_t sidebar_index_list[SCROLL_INDEX_SIZE];
    uint8_t sidebar_index_size;
 
-   char title[PATH_MAX_LENGTH];
+   char title[NAME_MAX_LENGTH];
+   char selection_core_name[NAME_MAX_LENGTH];
+   char selection_playtime[NAME_MAX_LENGTH];
+   char selection_lastplayed[NAME_MAX_LENGTH];
+   char selection_entry_enumeration[NAME_MAX_LENGTH];
+   char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    char assets_path[PATH_MAX_LENGTH];
    char png_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
    char icons_path_default[PATH_MAX_LENGTH];
    char tab_path[PATH_MAX_LENGTH];
-   char fullscreen_thumbnail_label[255];
 
    /* These have to be huge, because runloop_st->name.savestate
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
     * warnings...) */
-   char savestate_thumbnail_file_path[8204];
-   char prev_savestate_thumbnail_file_path[8204];
-
-   char selection_core_name[255];
-   char selection_playtime[255];
-   char selection_lastplayed[255];
-   char selection_entry_enumeration[255];
+   char savestate_thumbnail_file_path[8204];      /* TODO/FIXME - check size */
+   char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
 
    char thumbnails_left_status_prev;
    char thumbnails_right_status_prev;
@@ -2822,7 +2821,7 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
       "cursor_static.png"
    };
    unsigned i, j;
-   char theme_path[255];
+   char theme_path[NAME_MAX_LENGTH];
    bool result = true;
 
    for (j = 0; j < ARRAY_SIZE(ozone_themes); j++)
@@ -3283,7 +3282,7 @@ static void ozone_draw_sidebar(
    };
    size_t y;
    int entry_width;
-   char console_title[255];
+   char console_title[NAME_MAX_LENGTH];
    unsigned i, sidebar_height;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
@@ -3711,13 +3710,13 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT ||
-             string_is_equal(entry.label, "state_slot") ||
-             string_is_equal(entry.label, "loadstate") ||
-             string_is_equal(entry.label, "savestate"))
+         if (   string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
+             || string_is_equal(entry.label, "state_slot")
+             || string_is_equal(entry.label, "loadstate")
+             || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204];
+            char path[8204]; /* TODO/FIXME - check size */
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */
@@ -4085,7 +4084,7 @@ static void ozone_go_to_sidebar(
 #endif
 }
 
-static void linebreak_after_colon(char (*str)[255])
+static void linebreak_after_colon(char (*str)[NAME_MAX_LENGTH])
 {
    char *delim = (char*)strchr(*str, ':');
    if (delim)
@@ -4852,7 +4851,7 @@ static void ozone_init_horizontal_list(
 
    for (i = 0; i < list_size; i++)
    {
-      char playlist_file_noext[255];
+      char playlist_file_noext[NAME_MAX_LENGTH];
       char *console_name        = NULL;
       const char *playlist_file = ozone->horizontal_list.list[i].path;
 
@@ -4973,7 +4972,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       {
          size_t len, syslen;
          struct texture_image ti;
-         char sysname[PATH_MAX_LENGTH];
+         char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
 
@@ -5507,7 +5506,7 @@ static void ozone_compute_entries_position(
       {
          if (!string_is_empty(entry.sublabel))
          {
-            char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
+            char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
 
             wrapped_sublabel_str[0] = '\0';
 
@@ -5744,9 +5743,9 @@ border_iterate:
 
    for (i = 0; i < entries_end; i++)
    {
-      char rich_label[255];
-      char entry_value_ticker[255];
-      char wrapped_sublabel_str[MENU_SUBLABEL_MAX_LENGTH];
+      char rich_label[NAME_MAX_LENGTH];
+      char entry_value_ticker[NAME_MAX_LENGTH];
+      char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
       uintptr_t texture;
       menu_entry_t entry;
       gfx_animation_ctx_ticker_t ticker;
@@ -5900,7 +5899,7 @@ border_iterate:
                /* Ignore Explore Views */
                for (offset = 0; offset < ozone->horizontal_list.size; offset++)
                {
-                  char playlist_file_noext[255];
+                  char playlist_file_noext[NAME_MAX_LENGTH];
                   strlcpy(playlist_file_noext, ozone->horizontal_list.list[offset].path, sizeof(playlist_file_noext));
                   path_remove_extension(playlist_file_noext);
                   if (string_is_equal(playlist_file_noext, entry.rich_label))
@@ -6415,7 +6414,7 @@ static void ozone_draw_thumbnail_bar(
    if (   (!(ozone->flags2 & OZONE_FLAG2_SELECTION_CORE_IS_VIEWER))
        && (!show_left_thumbnail || !show_right_thumbnail || (ozone->animations.left_thumbnail_alpha < 1.0f)))
    {
-      char ticker_buf[255];
+      char ticker_buf[NAME_MAX_LENGTH];
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
       static const char* const ticker_spacer = OZONE_TICKER_SPACER;
@@ -6953,7 +6952,7 @@ static void ozone_draw_messagebox(
       math_matrix_4x4 *mymat)
 {
    size_t x, y;
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   char wrapped_message[MENU_LABEL_MAX_LENGTH];
    int longest_width        = 0;
    int usable_width         = 0;
    struct string_list list  = {0};
@@ -7766,7 +7765,7 @@ static bool INLINE ozone_fullscreen_thumbnails_available(ozone_handle_t *ozone,
 static bool ozone_help_available(ozone_handle_t *ozone, size_t current_selection, bool menu_show_sublabels)
 {
    menu_entry_t last_entry;
-   char help_msg[255];
+   char help_msg[NAME_MAX_LENGTH];
    help_msg[0] = '\0';
 
    MENU_ENTRY_INITIALIZE(last_entry);
@@ -9162,7 +9161,7 @@ static void ozone_set_layout(
       bool ozone_collapse_sidebar,
       bool is_threaded)
 {
-   char s1[PATH_MAX_LENGTH];
+   char tmp_dir[DIR_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
    settings_t *settings                             = config_get_ptr();
    bool font_inited                                 = false;
@@ -9225,17 +9224,17 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
          fill_pathname_join_special(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
@@ -9251,17 +9250,17 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "chinese-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(s1, settings->paths.directory_assets, "pkg", sizeof(s1));
-         fill_pathname_join_special(font_path, s1, "korean-fallback-font.ttf", sizeof(font_path));
+         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
          fill_pathname_join_special(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
@@ -10393,7 +10392,7 @@ static void ozone_draw_header(
       bool timedate_enable,
       math_matrix_4x4 *mymat)
 {
-   char title[255];
+   char title[NAME_MAX_LENGTH];
    static const char* const ticker_spacer   = OZONE_TICKER_SPACER;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
@@ -11183,8 +11182,8 @@ static void ozone_draw_footer(
    {
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-      char core_title[255];
-      char core_title_buf[255];
+      char core_title[NAME_MAX_LENGTH];
+      char core_title_buf[NAME_MAX_LENGTH];
       static const char* const ticker_spacer          = OZONE_TICKER_SPACER;
       int usable_width;
       unsigned ticker_x_offset                        = 0;

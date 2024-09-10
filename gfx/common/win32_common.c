@@ -877,12 +877,12 @@ static void win32_save_position(void)
    placement.rcNormalPosition.right  = 0;
    placement.rcNormalPosition.bottom = 0;
 
-   /* If 'skip_window_positions' is true it means we've
+   /* If SETTINGS_FLG_SKIP_WINDOW_POSITIONS is set, it means we've
     * just unloaded an override that had fullscreen mode
     * enabled while we have windowed mode set globally,
     * in this case we skip the following blocks to not
     * end up with fullscreen size and position. */
-   if (!settings->skip_window_positions)
+   if (!(settings->flags & SETTINGS_FLG_SKIP_WINDOW_POSITIONS))
    {
       if (GetWindowPlacement(main_window.hwnd, &placement))
       {
@@ -897,7 +897,7 @@ static void win32_save_position(void)
       }
    }
    else
-      settings->skip_window_positions = false;
+      settings->flags &= ~SETTINGS_FLG_SKIP_WINDOW_POSITIONS;
 
    if (window_save_positions)
    {

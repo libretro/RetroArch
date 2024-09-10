@@ -57,18 +57,18 @@ struct content_m3u_file
 /* File Initialisation / De-Initialisation */
 
 /* Reads M3U file contents from disk
- * - Does nothing if file does not exist 
+ * - Does nothing if file does not exist
  * - Returns false in the event of an error */
 static bool m3u_file_load(m3u_file_t *m3u_file)
 {
+   size_t i;
+   char entry_label[NAME_MAX_LENGTH];
+   char entry_path[PATH_MAX_LENGTH];
    const char *file_ext      = NULL;
    int64_t file_len          = 0;
    uint8_t *file_buf         = NULL;
    struct string_list *lines = NULL;
    bool success              = false;
-   size_t i;
-   char entry_path[PATH_MAX_LENGTH];
-   char entry_label[PATH_MAX_LENGTH];
 
    entry_path[0]  = '\0';
    entry_label[0] = '\0';
@@ -85,8 +85,8 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
    /* > File must have the correct extension */
    file_ext = path_get_extension(m3u_file->path);
 
-   if (string_is_empty(file_ext) ||
-       !string_is_equal_noncase(file_ext, M3U_FILE_EXT))
+   if (    string_is_empty(file_ext)
+       || !string_is_equal_noncase(file_ext, M3U_FILE_EXT))
       goto end;
 
    /* > If file does not exist, no action
@@ -473,7 +473,7 @@ bool m3u_file_save(
 {
    RFILE *file = NULL;
    size_t i;
-   char base_dir[PATH_MAX_LENGTH];
+   char base_dir[DIR_MAX_LENGTH];
 
    base_dir[0] = '\0';
 

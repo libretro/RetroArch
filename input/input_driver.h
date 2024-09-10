@@ -204,7 +204,7 @@ struct bsv_movie
    size_t frame_ptr;
    size_t min_file_pos;
    size_t state_size;
-   bsv_key_data_t key_events[255]; /* uint32_t alignment */
+   bsv_key_data_t key_events[NAME_MAX_LENGTH]; /* uint32_t alignment */
 
    /* Staging variables for keyboard events */
    uint8_t key_event_count;
@@ -257,7 +257,7 @@ typedef struct
    char joypad_driver[32];
    char name[128];
    char display_name[128];
-   char config_name[256]; /* Base name of the RetroArch config file */
+   char config_name[NAME_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
 
@@ -280,7 +280,7 @@ struct input_remote
 
 typedef struct
 {
-   char display_name[256];
+   char display_name[NAME_MAX_LENGTH];
 } input_mouse_info_t;
 
 typedef struct input_remote input_remote_t;

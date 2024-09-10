@@ -117,6 +117,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
  **/
 static void task_screenshot_handler(retro_task_t *task)
 {
+   uint8_t flg;
    screenshot_task_state_t *state = NULL;
    bool ret                       = false;
 
@@ -125,7 +126,10 @@ static void task_screenshot_handler(retro_task_t *task)
 
    if (!(state = (screenshot_task_state_t*)task->state))
       goto task_finished;
-   if (task_get_cancelled(task))
+
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
    if (task_get_progress(task) == 100)
       goto task_finished;
@@ -167,8 +171,8 @@ static void task_screenshot_handler(retro_task_t *task)
    return;
 
 task_finished:
-
-   task_set_finished(task, true);
+   if (task)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (task->title)
       task_free_title(task);
@@ -281,7 +285,7 @@ static bool screenshot_dump(
       }
       else
       {
-         char new_screenshot_dir[PATH_MAX_LENGTH];
+         char new_screenshot_dir[DIR_MAX_LENGTH];
 
          if (!string_is_empty(screenshot_dir))
          {
@@ -292,7 +296,7 @@ static bool screenshot_dump(
             if (settings->bools.sort_screenshots_by_content_enable &&
                 !string_is_empty(content_dir))
             {
-               char content_dir_name[PATH_MAX_LENGTH];
+               char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
                      content_dir, sizeof(content_dir_name));
                fill_pathname_join_special(
@@ -371,12 +375,15 @@ static bool screenshot_dump(
       task->type         = TASK_TYPE_BLOCKING;
       task->state        = state;
       task->handler      = task_screenshot_handler;
-      task->mute         = savestate;
+      if (savestate)
+         task->flags    |=  RETRO_TASK_FLG_MUTE;
+      else
+         task->flags    &= ~RETRO_TASK_FLG_MUTE;
 #if defined(HAVE_GFX_WIDGETS)
       /* This callback is only required when
        * widgets are enabled */
       if (state->flags & SS_TASK_FLAG_WIDGETS_READY)
-         task->callback    = task_screenshot_callback;
+         task->callback  = task_screenshot_callback;
 
       if ((state->flags & SS_TASK_FLAG_WIDGETS_READY) && !savestate)
          task_free_title(task);

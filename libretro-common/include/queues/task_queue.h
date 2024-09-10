@@ -93,6 +93,36 @@ typedef struct
    char *source_file;
 } decompress_task_data_t;
 
+enum retro_task_flags
+{
+   /**
+    * If \c true, the frontend should use some alternative means
+    * of displaying this task's progress or messages.
+    * Not used within cores.
+    */
+   RETRO_TASK_FLG_ALTERNATIVE_LOOK = (1 << 0),
+   /**
+    * Set to \c true by \c handler to indicate that this task has finished.
+    * At this point the task queue will call \c callback and \c cleanup,
+    * then deallocate the task.
+    */
+   RETRO_TASK_FLG_FINISHED         = (1 << 1),
+   /**
+    * Set to true by the task queue to signal that this task \em must end.
+    * \c handler should check to see if this is set,
+    * aborting or completing its work as soon as possible afterward.
+    * \c callback and \c cleanup will still be called as normal.
+    *
+    * @see task_queue_reset
+    */
+   RETRO_TASK_FLG_CANCELLED        = (1 << 2),
+   /**
+    * If set, the task queue will not call \c progress_cb
+    * and will not display any messages from this task.
+    */
+   RETRO_TASK_FLG_MUTE             = (1 << 3)
+};
+
 /**
  * A unit of work executed by the task system,
  * spread across one or more frames.
@@ -245,35 +275,7 @@ struct retro_task
    enum task_type type;
    enum task_style style;
 
-   /**
-    * If \c true, the frontend should use some alternative means
-    * of displaying this task's progress or messages.
-    * Not used within cores.
-    */
-   bool alternative_look;
-
-   /**
-    * Set to \c true by \c handler to indicate that this task has finished.
-    * At this point the task queue will call \c callback and \c cleanup,
-    * then deallocate the task.
-    */
-   bool finished;
-
-   /**
-    * Set to true by the task queue to signal that this task \em must end.
-    * \c handler should check to see if this is set,
-    * aborting or completing its work as soon as possible afterward.
-    * \c callback and \c cleanup will still be called as normal.
-    *
-    * @see task_queue_reset
-    */
-   bool cancelled;
-
-   /**
-    * If set, the task queue will not call \c progress_cb
-    * and will not display any messages from this task.
-    */
-   bool mute;
+   uint8_t flags;
 };
 
 /**
@@ -405,27 +407,7 @@ void task_queue_retriever_info_free(task_retriever_info_t *list);
  */
 void task_queue_cancel_task(void *task);
 
-/**
- * Sets \c task::finished to the given value.
- * Thread-safe if the task queue is threaded.
- *
- * @param task The task to modify.
- * Behavior is undefined if \c NULL.
- * @param finished Whether the task should be considered finished.
- * @see retro_task::finished
- */
-void task_set_finished(retro_task_t *task, bool finished);
-
-/**
- * Sets \c task::mute to the given value.
- * Thread-safe if the task queue is threaded.
- *
- * @param task The task to modify.
- * Behavior is undefined if \c NULL.
- * @param mute Whether the task should be considered muted.
- * @see retro_task::mute
- */
-void task_set_mute(retro_task_t *task, bool mute);
+void task_set_flags(retro_task_t *task, uint8_t flags, bool set);
 
 /**
  * Sets \c task::error to the given value.
@@ -477,17 +459,6 @@ void task_set_title(retro_task_t *task, char *title);
 void task_set_data(retro_task_t *task, void *data);
 
 /**
- * Sets \c task::cancelled to the given value.
- * Thread-safe if the task queue is threaded.
- *
- * @param task The task to modify.
- * Behavior is undefined if \c NULL.
- * @param cancelled Whether the task should be considered cancelled.
- * @see retro_task::cancelled
- */
-void task_set_cancelled(retro_task_t *task, bool cancelled);
-
-/**
  * Frees the \c task's title, if any.
  * Thread-safe if the task queue is threaded.
  *
@@ -495,39 +466,6 @@ void task_set_cancelled(retro_task_t *task, bool cancelled);
  * @see task_set_title
  */
 void task_free_title(retro_task_t *task);
-
-/**
- * Returns \c task::cancelled.
- * Thread-safe if the task queue is threaded.
- *
- * @param task The task to query.
- * Behavior is undefined if \c NULL.
- * @return The value of \c task::cancelled.
- * @see retro_task::cancelled
- */
-bool task_get_cancelled(retro_task_t *task);
-
-/**
- * Returns \c task::finished.
- * Thread-safe if the task queue is threaded.
- *
- * @param task The task to query.
- * Behavior is undefined if \c NULL.
- * @return The value of \c task::finished.
- * @see retro_task::finished
- */
-bool task_get_finished(retro_task_t *task);
-
-/**
- * Returns \c task::mute.
- * Thread-safe if the task queue is threaded.
- *
- * @param task The task to query.
- * Behavior is undefined if \c NULL.
- * @return The value of \c task::mute.
- * @see retro_task::mute
- */
-bool task_get_mute(retro_task_t *task);
 
 /**
  * Returns \c task::error.
@@ -643,6 +581,8 @@ void task_queue_retrieve(task_retriever_data_t *data);
   * @warning This must only be called from the main thread.
   */
 void task_queue_check(void);
+
+uint8_t task_get_flags(retro_task_t *task);
 
 /**
  * Schedules a task to start running.

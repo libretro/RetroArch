@@ -66,7 +66,7 @@ typedef struct
    unsigned frame;
    unsigned action;
    unsigned param_num;
-   char param_str[255];
+   char param_str[256];
    bool handled;
 } input_test_step_t;
 
@@ -107,7 +107,7 @@ static bool JTifJSONObjectEndHandler(void* context)
       input_test_steps[current_test_step].frame  = input_test_steps[current_test_step-1].frame + 60;
    else
       input_test_steps[current_test_step].frame  = pCtx->frame;
-   
+
    input_test_steps[current_test_step].action    = pCtx->action;
    input_test_steps[current_test_step].param_num = pCtx->param_num;
    input_test_steps[current_test_step].handled   = false;
@@ -118,7 +118,7 @@ static bool JTifJSONObjectEndHandler(void* context)
             sizeof(input_test_steps[current_test_step].param_str));
    else
       input_test_steps[current_test_step].param_str[0] = '\0';
-   
+
    current_test_step++;
    last_test_step = current_test_step;
    pCtx->frame = 0xffff;
@@ -197,7 +197,7 @@ static bool input_test_file_read(const char* file_path)
       RARCH_DBG("[Test joypad driver]: No test input file supplied.\n");
       return false;
    }
-      
+
    /* Attempt to open test input file */
    file = filestream_open(
          file_path,
@@ -322,7 +322,7 @@ static void *test_joypad_init(void *data)
 {
    settings_t *settings = config_get_ptr();
    unsigned i;
-   
+
    input_test_file_read(settings->paths.test_input_file_joypad);
    if (last_test_step > MAX_TEST_STEPS)
       last_test_step = 0;
@@ -353,7 +353,7 @@ static int32_t test_joypad_button(unsigned port_num, uint16_t joykey)
    return 0;
 }
 
-static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis) 
+static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    /*RARCH_DBG("test_joypad_axis %d / %u\n",port_num, joyaxis);*/
    if (port_num >= DEFAULT_MAX_PADS)
@@ -372,7 +372,7 @@ static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis)
          return val;
    }
    return 0;
-   
+
 }
 
 static int16_t test_joypad_state(
@@ -399,7 +399,7 @@ static int16_t test_joypad_state(
          }
 	   }
    }
-   
+
    return ret;
 }
 
@@ -410,7 +410,7 @@ static void test_joypad_poll(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    uint64_t curr_frame            = video_st->frame_count;
    unsigned i;
-   
+
    for (i=0; i<last_test_step; i++)
    {
       if (!input_test_steps[i].handled && curr_frame > input_test_steps[i].frame)

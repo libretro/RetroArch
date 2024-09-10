@@ -2512,7 +2512,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
        * CGP format is a bit awkward in that it uses mipmap_input,
        * so we much check if next pass needs the mipmapping.
        */
-      if (next_pass && next_pass->mipmap)
+      if (next_pass && ((next_pass->flags & SHDR_PASS_FLG_MIPMAP) > 0))
          pass_info.max_levels = ~0u;
 
       pass_info.mip_filter    = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1

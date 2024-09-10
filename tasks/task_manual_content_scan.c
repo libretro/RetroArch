@@ -188,6 +188,7 @@ static void task_manual_content_scan_free(retro_task_t *task)
 
 static void task_manual_content_scan_handler(retro_task_t *task)
 {
+   uint8_t flg;
    manual_scan_handle_t *manual_scan = NULL;
 
    if (!task)
@@ -196,7 +197,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
    if (!(manual_scan = (manual_scan_handle_t*)task->state))
       goto task_finished;
 
-   if (task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (manual_scan->status)
@@ -508,9 +511,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
@@ -611,10 +613,10 @@ bool task_push_manual_content_scan(
    task->handler                 = task_manual_content_scan_handler;
    task->state                   = manual_scan;
    task->title                   = strdup(task_title);
-   task->alternative_look        = true;
    task->progress                = 0;
    task->callback                = cb_task_manual_content_scan;
    task->cleanup                 = task_manual_content_scan_free;
+   task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* > Push task */
    task_queue_push(task);

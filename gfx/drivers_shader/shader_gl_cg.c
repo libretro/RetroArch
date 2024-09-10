@@ -365,7 +365,7 @@ static void gl_cg_set_params(void *dat, void *shader_data)
    set_param_2f(cg->prg[cg->active_idx].tex_size_v, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_v, out_width, out_height);
 
-   if (  cg->prg[cg->active_idx].frame_cnt_f || 
+   if (  cg->prg[cg->active_idx].frame_cnt_f ||
          cg->prg[cg->active_idx].frame_cnt_v)
    {
       unsigned modulo = cg->shader->pass[cg->active_idx - 1].frame_count_mod;
@@ -1056,14 +1056,11 @@ static unsigned gl_cg_num(void *data)
 static bool gl_cg_filter_type(void *data, unsigned idx, bool *smooth)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
-   if (cg && idx &&
-         (cg->shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC)
-      )
+   if (cg && idx && (cg->shader->pass[idx - 1].filter != RARCH_FILTER_UNSPEC))
    {
       *smooth = (cg->shader->pass[idx - 1].filter == RARCH_FILTER_LINEAR);
       return true;
    }
-
    return false;
 }
 
@@ -1114,8 +1111,8 @@ static bool gl_cg_get_feedback_pass(void *data, unsigned *pass)
 static bool gl_cg_mipmap_input(void *data, unsigned idx)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
-   if (cg && idx)
-      return cg->shader->pass[idx - 1].mipmap;
+   if (cg && idx && ((cg->shader->pass[idx - 1].flags & SHDR_PASS_FLG_MIPMAP) > 0))
+      return true;
    return false;
 }
 

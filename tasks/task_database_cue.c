@@ -1157,7 +1157,7 @@ int cue_find_track(const char *cue_path, bool first,
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
    char last_file[PATH_MAX_LENGTH];
-   char cue_dir[PATH_MAX_LENGTH];
+   char cue_dir[DIR_MAX_LENGTH];
    intfstream_t *fd           = NULL;
    int64_t last_index         = -1;
    int64_t cand_index         = -1;
@@ -1291,7 +1291,7 @@ bool cue_next_file(intfstream_t *fd,
       const char *cue_path, char *s, uint64_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
-   char cue_dir[PATH_MAX_LENGTH];
+   char cue_dir[DIR_MAX_LENGTH];
    cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
@@ -1373,7 +1373,7 @@ int gdi_find_track(const char *gdi_path, bool first,
       if (!(mode == 0 && size == 2352))
       {
          char last_file[PATH_MAX_LENGTH];
-         char gdi_dir[PATH_MAX_LENGTH];
+         char gdi_dir[DIR_MAX_LENGTH];
 
          fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
          fill_pathname_join_special(last_file,
@@ -1432,7 +1432,7 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
    /* File name */
    if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
-      char gdi_dir[PATH_MAX_LENGTH];
+      char gdi_dir[DIR_MAX_LENGTH];
 
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
       fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);

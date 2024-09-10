@@ -635,10 +635,12 @@ void cocoa_file_load_with_detect_core(const char *filename);
     swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #ifdef HAVE_IOS_TOUCHMOUSE
-    [self setupMouseSupport];
+    if (@available(iOS 13, *))
+        [self setupMouseSupport];
 #endif
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self setupEmulatorKeyboard];
+    if (@available(iOS 13, *))
+        [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired   = 3;
     showKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionUp;
@@ -650,8 +652,9 @@ void cocoa_file_load_with_detect_core(const char *filename);
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
 #endif
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
-    [self setupHelperBar];
+#if defined(HAVE_IOS_TOUCHMOUSE) || defined(HAVE_IOS_CUSTOMKEYBOARDS)
+    if (@available(iOS 13, *))
+        [self setupHelperBar];
 #endif
 #elif TARGET_OS_TV
     UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];

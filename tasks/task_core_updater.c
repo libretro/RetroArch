@@ -150,8 +150,8 @@ typedef struct update_single_core_handle
    size_t auto_backup_history_size;
    enum update_single_core_status status;
    char path_core[PATH_MAX_LENGTH];
-   char path_dir_libretro[PATH_MAX_LENGTH];
-   char path_dir_core_assets[PATH_MAX_LENGTH];
+   char path_dir_libretro[DIR_MAX_LENGTH];
+   char path_dir_core_assets[DIR_MAX_LENGTH];
    bool auto_backup;
 } update_single_core_handle_t;
 #endif
@@ -285,15 +285,16 @@ static void free_core_updater_list_handle(
 
 static void task_core_updater_get_list_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_updater_list_handle_t *list_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(list_handle = (core_updater_list_handle_t*)task->state))
-      goto task_finished;
+   list_handle = (core_updater_list_handle_t*)task->state;
+   flg         = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!list_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (list_handle->status)
@@ -304,7 +305,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             settings_t *settings         = config_get_ptr();
             file_transfer_t *transf      = NULL;
             char *tmp_url                = NULL;
-            const char *net_buildbot_url = 
+            const char *net_buildbot_url =
                settings->paths.network_buildbot_url;
 
             /* Reset core updater list */
@@ -363,10 +364,16 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             /* Otherwise, check if HTTP task is still running */
             else if (!list_handle->http_task_finished)
             {
+               uint8_t _flg = task_get_flags(list_handle->http_task);
+
+               if ((_flg & (RETRO_TASK_FLG_FINISHED)) > 0)
+                  list_handle->http_task_finished = true;
+               else
+                  list_handle->http_task_finished = false;
+
                /* If HTTP task is running, copy current
                 * progress value to *this* task */
-               if (!(list_handle->http_task_finished =
-                     task_get_finished(list_handle->http_task)))
+               if (!list_handle->http_task_finished)
                   task_set_progress(
                      task, task_get_progress(list_handle->http_task));
             }
@@ -423,7 +430,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (list_handle)
       free_core_updater_list_handle(list_handle);
@@ -490,10 +497,13 @@ void *task_push_get_core_updater_list(
    /* Configure task */
    task->handler          = task_core_updater_get_list_handler;
    task->state            = list_handle;
-   task->mute             = mute;
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
-   task->alternative_look = true;
    task->progress         = 0;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    /* Push task */
    task_queue_push(task);
@@ -572,7 +582,7 @@ void cb_http_task_core_updater_download(
    http_transfer_data_t *data                      = (http_transfer_data_t*)task_data;
    file_transfer_t *transf                         = (file_transfer_t*)user_data;
    core_updater_download_handle_t *download_handle = NULL;
-   char output_dir[PATH_MAX_LENGTH];
+   char output_dir[DIR_MAX_LENGTH];
 
    if (!data || !transf)
       goto finish;
@@ -682,15 +692,16 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
 
 static void task_core_updater_download_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_updater_download_handle_t *download_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(download_handle = (core_updater_download_handle_t*)task->state))
-      goto task_finished;
+   download_handle = (core_updater_download_handle_t*)task->state;
+   flg             = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!download_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (download_handle->status)
@@ -700,13 +711,13 @@ static void task_core_updater_download_handler(retro_task_t *task)
             /* Get CRC of existing core, if required */
             if (download_handle->local_crc == 0)
             {
-               const char *local_core_path = 
+               const char *local_core_path =
                   download_handle->local_core_path;
                if (
                        !string_is_empty(local_core_path)
                      && path_is_valid  (local_core_path)
                   )
-                  download_handle->local_crc = 
+                  download_handle->local_crc =
                      task_core_updater_get_core_crc(local_core_path);
             }
 
@@ -783,7 +794,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
              *   by definition */
             if (download_handle->backup_task)
             {
-               backup_complete = task_get_finished(download_handle->backup_task);
+               uint8_t _flg    = task_get_flags(download_handle->backup_task);
+
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  backup_complete = true;
+               else
+                  backup_complete = false;
 
                /* If backup task is running, copy current
                 * progress value to *this* task */
@@ -853,8 +869,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
             /* Otherwise, check if HTTP task is still running */
             else if (!download_handle->http_task_finished)
             {
-               download_handle->http_task_finished =
-                     task_get_finished(download_handle->http_task);
+               uint8_t _flg = task_get_flags(download_handle->http_task);
+
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  download_handle->http_task_finished = true;
+               else
+                  download_handle->http_task_finished = false;
 
                /* If HTTP task is running, copy current
                 * progress value to *this* task */
@@ -907,8 +927,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
             if (download_handle->decompress_task &&
                !download_handle->decompress_task_finished)
             {
-               download_handle->decompress_task_finished =
-                     task_get_finished(download_handle->decompress_task);
+               uint8_t _flg = task_get_flags(download_handle->decompress_task);
+
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  download_handle->decompress_task_finished = true;
+               else
+                  download_handle->decompress_task_finished = false;
 
                /* If decompression task is running, copy
                 * current progress value to *this* task */
@@ -981,7 +1005,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (download_handle)
       free_core_updater_download_handle(download_handle);
@@ -1117,11 +1141,14 @@ void *task_push_core_updater_download(
 
    task->handler          = task_core_updater_download_handler;
    task->state            = download_handle;
-   task->mute             = mute;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
    task->callback         = cb_task_core_updater_download;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    /* Push task */
    task_queue_push(task);
@@ -1165,17 +1192,16 @@ static void free_update_installed_cores_handle(
 
 static void task_update_installed_cores_handler(retro_task_t *task)
 {
+   uint8_t flg;
    update_installed_cores_handle_t *update_installed_handle = NULL;
 
    if (!task)
       goto task_finished;
 
    update_installed_handle = (update_installed_cores_handle_t*)task->state;
+   flg                     = task_get_flags(task);
 
-   if (!update_installed_handle)
-      goto task_finished;
-
-   if (task_get_cancelled(task))
+   if (!update_installed_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (update_installed_handle->status)
@@ -1204,9 +1230,15 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              * > If task is NULL, then it is finished
              *   by definition */
             if (update_installed_handle->list_task)
-               list_available = task_get_finished(update_installed_handle->list_task);
+            {
+               uint8_t _flg      = task_get_flags(update_installed_handle->list_task);
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  list_available = true;
+               else
+                  list_available = false;
+            }
             else
-               list_available = true;
+               list_available    = true;
 
             /* If list is available, make sure it isn't empty
              * (error will message will be displayed when
@@ -1382,7 +1414,13 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              * > If task is NULL, then it is finished
              *   by definition */
             if (update_installed_handle->download_task)
-               download_complete = task_get_finished(update_installed_handle->download_task);
+            {
+               uint8_t _flg      = task_get_flags(update_installed_handle->download_task);
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  download_complete = true;
+               else
+                  download_complete = false;
+            }
             else
                download_complete = true;
 
@@ -1453,7 +1491,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (update_installed_handle)
       free_update_installed_cores_handle(update_installed_handle);
@@ -1549,7 +1587,7 @@ static void task_update_single_core_handler(retro_task_t *task)
       case UPDATE_SINGLE_CORE_END:
       default:
          task_set_progress(task, 100);
-         task_set_finished(task, true);
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
          break;
    }
 }
@@ -1633,8 +1671,8 @@ void task_push_update_installed_cores(
    task->handler          = task_update_installed_cores_handler;
    task->state            = update_installed_handle;
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
-   task->alternative_look = true;
    task->progress         = 0;
+   task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
    task_queue_push(task);
@@ -1745,16 +1783,17 @@ static void free_play_feature_delivery_install_handle(
 static void task_play_feature_delivery_core_install_handler(
       retro_task_t *task)
 {
+   uint8_t flg;
    play_feature_delivery_install_handle_t *pfd_install_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(pfd_install_handle =
-            (play_feature_delivery_install_handle_t*)task->state))
-      goto task_finished;
+   pfd_install_handle =
+      (play_feature_delivery_install_handle_t*)task->state;
+   flg                = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!pfd_install_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (pfd_install_handle->status)
@@ -1886,6 +1925,7 @@ static void task_play_feature_delivery_core_install_handler(
       case PLAY_FEATURE_DELIVERY_INSTALL_END:
          {
             size_t _len;
+            uint8_t _flg;
             char task_title[128];
             const char *msg_str = msg_hash_to_str(MSG_CORE_INSTALL_FAILED);
 
@@ -1928,8 +1968,10 @@ static void task_play_feature_delivery_core_install_handler(
             /* If task is muted and install failed, set
              * error string (allows status to be checked
              * externally) */
-            if (!pfd_install_handle->success &&
-                task_get_mute(task))
+            _flg = task_get_flags(task);
+
+            if (     !pfd_install_handle->success
+                && ((_flg & RETRO_TASK_FLG_MUTE) > 0))
                task_set_error(task, strdup(task_title));
          }
          /* fall-through */
@@ -1943,7 +1985,7 @@ static void task_play_feature_delivery_core_install_handler(
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (pfd_install_handle)
       free_play_feature_delivery_install_handle(pfd_install_handle);
@@ -2014,11 +2056,14 @@ void *task_push_play_feature_delivery_core_install(
 
    task->handler          = task_play_feature_delivery_core_install_handler;
    task->state            = pfd_install_handle;
-   task->mute             = mute;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
    task->callback         = cb_task_core_updater_download;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    /* Install process may involve the *deletion*
     * of an existing core file. If core is
@@ -2073,16 +2118,17 @@ static void free_play_feature_delivery_switch_cores_handle(
 static void task_play_feature_delivery_switch_cores_handler(
       retro_task_t *task)
 {
+   uint8_t flg;
    play_feature_delivery_switch_cores_handle_t *pfd_switch_cores_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(pfd_switch_cores_handle =
-            (play_feature_delivery_switch_cores_handle_t*)task->state))
-      goto task_finished;
+   pfd_switch_cores_handle =
+      (play_feature_delivery_switch_cores_handle_t*)task->state;
+   flg                     = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!pfd_switch_cores_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (pfd_switch_cores_handle->status)
@@ -2260,10 +2306,12 @@ static void task_play_feature_delivery_switch_cores_handler(
              *   definition */
             if (pfd_switch_cores_handle->install_task)
             {
+               uint8_t _flg     = task_get_flags(pfd_switch_cores_handle->install_task);
+
                error_msg        = task_get_error(
                      pfd_switch_cores_handle->install_task);
-               install_complete = task_get_finished(
-                     pfd_switch_cores_handle->install_task);
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  install_complete = true;
             }
             else
                install_complete = true;
@@ -2321,7 +2369,7 @@ static void task_play_feature_delivery_switch_cores_handler(
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (pfd_switch_cores_handle)
       free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);
@@ -2380,8 +2428,8 @@ void task_push_play_feature_delivery_switch_installed_cores(
    task->handler          = task_play_feature_delivery_switch_cores_handler;
    task->state            = pfd_switch_cores_handle;
    task->title            = strdup(msg_hash_to_str(MSG_SCANNING_CORES));
-   task->alternative_look = true;
    task->progress         = 0;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
    task_queue_push(task);

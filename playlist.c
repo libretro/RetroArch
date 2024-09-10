@@ -1144,6 +1144,7 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 {
 #ifdef HAVE_COCOATOUCH
    char tmp[PATH_MAX_LENGTH];
+   int _len = 0;
 
    if (mode == PLAYLIST_LOAD)
    {
@@ -1159,8 +1160,8 @@ void playlist_resolve_path(enum playlist_file_mode mode,
          path[string_index_last_occurance(path, '.')] = '\0';
          if (string_ends_with(path, "_ios"))
             path[string_index_last_occurance(path, '_')] = '\0';
-         strlcpy(tmp, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
-         strlcpy(tmp + STRLEN_CONST(":/Frameworks/"), path + STRLEN_CONST(":/modules/"), sizeof(tmp) - STRLEN_CONST(":/Frameworks/"));
+         _len += strlcpy(tmp + _len, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
+         _len += strlcpy(tmp + _len, path + STRLEN_CONST(":/modules/"), sizeof(tmp) - _len);
          /* iOS framework names, to quote Apple:
           * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
           *
@@ -1168,7 +1169,7 @@ void playlist_resolve_path(enum playlist_file_mode mode,
           * which is, we change underscore to dot.
           */
          string_replace_all_chars(tmp, '_', '.');
-         strlcat(tmp, ".framework", sizeof(tmp));
+         strlcpy(tmp + _len, ".framework", sizeof(tmp));
          fill_pathname_expand_special(path, tmp, len);
       }
       else
@@ -1333,7 +1334,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (string_is_empty(core_name))
    {
-      static char base_path[255] = {0};
+      static char base_path[NAME_MAX_LENGTH] = {0};
       fill_pathname_base(base_path, real_core_path, sizeof(base_path));
       path_remove_extension(base_path);
 
@@ -2759,7 +2760,7 @@ static bool playlist_read_file(playlist_t *playlist)
          else
          {
             char default_core_path[PATH_MAX_LENGTH];
-            char default_core_name[PATH_MAX_LENGTH];
+            char default_core_name[NAME_MAX_LENGTH];
 
             default_core_path[0] = '\0';
             default_core_name[0] = '\0';
@@ -3088,19 +3089,19 @@ static int playlist_qsort_func(const struct playlist_entry *a,
     * have no other option...) */
    if (string_is_empty(a_str))
    {
-      if (!(a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char))))
+      if (!(a_fallback_label = (char*)calloc(NAME_MAX_LENGTH, sizeof(char))))
          goto end;
 
       if (!string_is_empty(a->path))
          fill_pathname(a_fallback_label,
                path_basename_nocompression(a->path),
                "",
-               PATH_MAX_LENGTH * sizeof(char));
+               NAME_MAX_LENGTH * sizeof(char));
       /* If filename is also empty, use core name
        * instead -> this matches the behaviour of
        * menu_displaylist_parse_playlist() */
       else if (!string_is_empty(a->core_name))
-         strlcpy(a_fallback_label, a->core_name, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(a_fallback_label, a->core_name, NAME_MAX_LENGTH * sizeof(char));
 
       /* If both filename and core name are empty,
        * then have to compare an empty string
@@ -3112,16 +3113,16 @@ static int playlist_qsort_func(const struct playlist_entry *a,
 
    if (string_is_empty(b_str))
    {
-      if (!(b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char))))
+      if (!(b_fallback_label = (char*)calloc(NAME_MAX_LENGTH, sizeof(char))))
          goto end;
 
       if (!string_is_empty(b->path))
          fill_pathname(b_fallback_label,
                path_basename_nocompression(b->path),
                "",
-               PATH_MAX_LENGTH * sizeof(char));
+               NAME_MAX_LENGTH * sizeof(char));
       else if (!string_is_empty(b->core_name))
-         strlcpy(b_fallback_label, b->core_name, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(b_fallback_label, b->core_name, NAME_MAX_LENGTH * sizeof(char));
 
       b_str = b_fallback_label;
    }

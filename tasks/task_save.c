@@ -306,14 +306,17 @@ static void undo_save_state_cb(retro_task_t *task,
 static void task_save_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
+   uint8_t flg;
    save_task_state_t *task_data = NULL;
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    intfstream_close(state->file);
    free(state->file);
 
-   if (!task_get_error(task) && task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
    task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
@@ -499,6 +502,7 @@ static void *content_get_serialized_data(size_t* serial_size)
  **/
 static void task_save_handler(retro_task_t *task)
 {
+   uint8_t flg;
    ssize_t remaining;
    int written              = 0;
    save_task_state_t *state = (save_task_state_t*)task->state;
@@ -535,9 +539,11 @@ static void task_save_handler(retro_task_t *task)
 
    task_set_progress(task, (state->written / (float)state->size) * 100);
 
-   if (task_get_cancelled(task) || written != remaining)
+   flg = task_get_flags(task);
+
+   if (((flg & RETRO_TASK_FLG_CANCELLED) > 0) || written != remaining)
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       if (state->flags & SAVE_TASK_FLAG_UNDO_SAVE)
       {
@@ -583,7 +589,7 @@ static void task_save_handler(retro_task_t *task)
          msg = strdup(new_msg);
       }
 
-      if (!task_get_mute(task) && msg)
+      if (!((flg & RETRO_TASK_FLG_MUTE) > 0) && msg)
       {
          task_set_title(task, msg);
          msg = NULL;
@@ -636,7 +642,11 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
    task->handler                 = task_save_handler;
    task->callback                = undo_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_UNDOING_SAVE_STATE));
-   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
+
+   if (state->flags & SAVE_TASK_FLAG_MUTE)
+      task->flags               |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
    task_queue_push(task);
 
@@ -681,9 +691,10 @@ bool content_undo_save_state(void)
 static void task_load_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
+   uint8_t flg;
    load_task_data_t *task_data = NULL;
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (state->file)
    {
@@ -691,7 +702,9 @@ static void task_load_handler_finished(retro_task_t *task,
       free(state->file);
    }
 
-   if (!task_get_error(task) && task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
    if (!(task_data = (load_task_data_t*)calloc(1, sizeof(*task_data))))
@@ -712,6 +725,7 @@ static void task_load_handler_finished(retro_task_t *task,
  **/
 static void task_load_handler(retro_task_t *task)
 {
+   uint8_t flg;
    ssize_t remaining, bytes_read;
    save_task_state_t *state = (save_task_state_t*)task->state;
 
@@ -740,7 +754,7 @@ static void task_load_handler(retro_task_t *task)
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
-      task_set_cancelled(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
 #endif
 
    remaining          = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
@@ -751,20 +765,17 @@ static void task_load_handler(retro_task_t *task)
    if (state->size > 0)
       task_set_progress(task, (state->bytes_read / (float)state->size) * 100);
 
-   if (task_get_cancelled(task) || bytes_read != remaining)
+   flg = task_get_flags(task);
+
+   if (((flg & RETRO_TASK_FLG_CANCELLED) > 0) || bytes_read != remaining)
    {
       if (state->flags & SAVE_TASK_FLAG_AUTOLOAD)
       {
-         char *msg = (char*)malloc(8192 * sizeof(char));
-
-         msg[0] = '\0';
-
-         snprintf(msg,
-               8192 * sizeof(char),
+         char msg[128];
+         snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_FAILED),
                path_basename(state->path));
          task_set_error(task, strdup(msg));
-         free(msg);
       }
       else
          task_set_error(task, strdup(msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE)));
@@ -779,34 +790,27 @@ static void task_load_handler(retro_task_t *task)
    {
       task_free_title(task);
 
-      if (!task_get_mute(task))
+      if (!((flg & RETRO_TASK_FLG_MUTE) > 0))
       {
-         size_t msg_size   = 8192 * sizeof(char);
-         char *msg         = (char*)malloc(msg_size);
-
-         msg[0]            = '\0';
+         char msg[128];
 
          if (state->flags & SAVE_TASK_FLAG_AUTOLOAD)
-         {
-            snprintf(msg,
-                  msg_size - 1,
+            snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_AUTOLOADING_SAVESTATE_SUCCEEDED),
                   path_basename(state->path));
-         }
          else
          {
             if (state->state_slot < 0)
                strlcpy(msg,
                      msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT_AUTO),
-                     msg_size - 1);
+                     sizeof(msg));
             else
-               snprintf(msg, msg_size - 1,
+               snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
                      state->state_slot);
          }
 
          task_set_title(task, strdup(msg));
-         free(msg);
       }
 
       goto end;
@@ -816,19 +820,11 @@ static void task_load_handler(retro_task_t *task)
 
 not_found:
    {
-      size_t msg_size   = 8192 * sizeof(char);
-      char *msg         = (char*)malloc(msg_size);
-
-      msg[0] = '\0';
-
-      snprintf(msg,
-            msg_size - 1,
-            "%s \"%s\".",
+      char msg[128];
+      snprintf(msg, sizeof(msg), "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
             path_basename(state->path));
-
       task_set_title(task, strdup(msg));
-      free(msg);
    }
 
 end:
@@ -1204,7 +1200,11 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
    task->handler                 = task_save_handler;
    task->callback                = save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_SAVING_STATE));
-   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
+
+   if (state->flags & SAVE_TASK_FLAG_MUTE)
+      task->flags               |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
    if (!task_queue_push(task))
    {
@@ -1310,7 +1310,11 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->handler                 = task_load_handler;
    task->callback                = content_load_and_save_state_cb;
    task->title                   = strdup(msg_hash_to_str(MSG_LOADING_STATE));
-   task->mute                    = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
+
+   if (state->flags & SAVE_TASK_FLAG_MUTE)
+      task->flags               |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
    if (!task_queue_push(task))
    {
@@ -1595,7 +1599,11 @@ bool content_load_state(const char *path,
    task->handler                = task_load_handler;
    task->callback               = content_load_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
-   task->mute                   = (state->flags & SAVE_TASK_FLAG_MUTE) ? true : false;
+
+   if (state->flags & SAVE_TASK_FLAG_MUTE)
+      task->flags               |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
    task_queue_push(task);
 
