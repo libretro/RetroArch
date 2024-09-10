@@ -163,89 +163,6 @@ error:
    return NULL;
 }
 
-static ssize_t wasapi_write_sh_nonblock(wasapi_t *w, const void *data, size_t size)
-{
-   ssize_t written    = -1;
-   size_t write_avail = 0;
-   UINT32 padding     = 0;
-   if (w->buffer)
-   {
-      if (!(write_avail = FIFO_WRITE_AVAIL(w->buffer)))
-      {
-         size_t read_avail = 0;
-         if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-            return -1;
-         read_avail  = FIFO_READ_AVAIL(w->buffer);
-         write_avail = w->engine_buffer_size - padding * w->frame_size;
-         written     = read_avail < write_avail ? read_avail : write_avail;
-         if (written)
-         {
-            BYTE *dest         = NULL;
-            UINT32 frame_count = written / w->frame_size;
-            if (FAILED(_IAudioRenderClient_GetBuffer(
-                        w->renderer, frame_count, &dest)))
-               return -1;
-            fifo_read(w->buffer, dest, written);
-            if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                        w->renderer, frame_count, 0)))
-               return -1;
-         }
-      }
-      write_avail = FIFO_WRITE_AVAIL(w->buffer);
-      written     = size < write_avail ? size : write_avail;
-      if (written)
-         fifo_write(w->buffer, data, written);
-   }
-   else
-   {
-      if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-         return -1;
-      if (!(write_avail = w->engine_buffer_size - padding * w->frame_size))
-         return 0;
-      written = size < write_avail ? size : write_avail;
-      if (written)
-      {
-         BYTE *dest         = NULL;
-         UINT32 frame_count = written / w->frame_size;
-         if (FAILED(_IAudioRenderClient_GetBuffer(
-                     w->renderer, frame_count, &dest)))
-            return -1;
-         memcpy(dest, data, written);
-         if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                     w->renderer, frame_count, 0)))
-            return -1;
-      }
-   }
-   return written;
-}
-
-static ssize_t wasapi_write_ex(wasapi_t *w, const void *data, size_t size, DWORD ms)
-{
-   ssize_t written    = 0;
-   size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
-   if (!write_avail)
-   {
-      size_t _size;
-      UINT32 frame_count;
-      BYTE *dest         = NULL;
-      if (WaitForSingleObject(w->write_event, ms) != WAIT_OBJECT_0)
-         return 0;
-      _size       = w->engine_buffer_size;
-      frame_count = _size / w->frame_size;
-      if (FAILED(_IAudioRenderClient_GetBuffer(
-                  w->renderer, frame_count, &dest)))
-         return -1;
-      fifo_read(w->buffer, dest, _size);
-      if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                  w->renderer, frame_count, 0)))
-         return -1;
-      write_avail = w->engine_buffer_size;
-   }
-   written = (size < write_avail) ? size : write_avail;
-   fifo_write(w->buffer, data, written);
-   return written;
-}
-
 static ssize_t wasapi_write(void *wh, const void *data, size_t size)
 {
    size_t written = 0;
@@ -286,17 +203,91 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
          ssize_t ir;
          for (ir = -1; written < size; written += ir)
          {
-            ir = wasapi_write_ex(w, (char*)data + written, size - written, WASAPI_TIMEOUT);
-            if (ir == -1)
-               return -1;
+            const void *_data  = (char*)data + written;
+            size_t __size      = size - written;
+            size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
+            if (!write_avail)
+            {
+               size_t _size;
+               UINT32 frame_count;
+               BYTE *dest         = NULL;
+               if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
+                  ir = 1;
+               else
+               {
+                  _size       = w->engine_buffer_size;
+                  frame_count = _size / w->frame_size;
+                  if (FAILED(_IAudioRenderClient_GetBuffer(
+                              w->renderer, frame_count, &dest)))
+                     return -1;
+                  fifo_read(w->buffer, dest, _size);
+                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
+                              w->renderer, frame_count, 0)))
+                     return -1;
+                  write_avail = w->engine_buffer_size;
+               }
+            }
+            ir = (__size < write_avail) ? __size : write_avail;
+            fifo_write(w->buffer, _data, ir);
          }
       }
    }
    else
    {
       if ((flg & WASAPI_FLG_NONBLOCK) > 0)
-         return wasapi_write_sh_nonblock(w, data, size);
-      if (w->buffer)
+      {
+         size_t write_avail = 0;
+         UINT32 padding     = 0;
+         if (w->buffer)
+         {
+            if (!(write_avail = FIFO_WRITE_AVAIL(w->buffer)))
+            {
+               size_t read_avail = 0;
+               if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
+                  return -1;
+               read_avail  = FIFO_READ_AVAIL(w->buffer);
+               write_avail = w->engine_buffer_size - padding * w->frame_size;
+               written     = read_avail < write_avail ? read_avail : write_avail;
+               if (written)
+               {
+                  BYTE *dest         = NULL;
+                  UINT32 frame_count = written / w->frame_size;
+                  if (FAILED(_IAudioRenderClient_GetBuffer(
+                              w->renderer, frame_count, &dest)))
+                     return -1;
+                  fifo_read(w->buffer, dest, written);
+                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
+                              w->renderer, frame_count, 0)))
+                     return -1;
+               }
+            }
+            write_avail = FIFO_WRITE_AVAIL(w->buffer);
+            written     = size < write_avail ? size : write_avail;
+            if (written)
+               fifo_write(w->buffer, data, written);
+         }
+         else
+         {
+            if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
+               return -1;
+            if (!(write_avail = w->engine_buffer_size - padding * w->frame_size))
+               return 0;
+            written = size < write_avail ? size : write_avail;
+            if (written)
+            {
+               BYTE *dest         = NULL;
+               UINT32 frame_count = written / w->frame_size;
+               if (FAILED(_IAudioRenderClient_GetBuffer(
+                           w->renderer, frame_count, &dest)))
+                  return -1;
+               memcpy(dest, data, written);
+               if (FAILED(_IAudioRenderClient_ReleaseBuffer(
+                           w->renderer, frame_count, 0)))
+                  return -1;
+            }
+         }
+      }
+      else if (w->buffer)
       {
          ssize_t ir;
          for (ir = -1; written < size; written += ir)
