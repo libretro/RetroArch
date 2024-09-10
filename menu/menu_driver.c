@@ -3044,7 +3044,6 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    const char *preset_dirs[3]  = {0};
    settings_t *settings        = config_get_ptr();
 
-   config_directory[0]         = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
    {
@@ -3053,6 +3052,8 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
             sizeof(config_directory));
       path_basedir(config_directory);
    }
+   else
+      config_directory[0]      = '\0';
 
    preset_dirs[0] = dir_video_shader;
    preset_dirs[1] = dir_menu_config;
@@ -3084,12 +3085,10 @@ static bool menu_shader_manager_operate_auto_preset(
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
-   const char *core_name            = sysinfo ? sysinfo->library_name : NULL;
-   const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
-   const char *auto_preset_dirs[3]  = {0};
-   bool has_content                 = !string_is_empty(rarch_path_basename);
-
-   old_presets_directory[0] = config_directory[0] = file[0] = '\0';
+   const char *core_name              = sysinfo ? sysinfo->library_name : NULL;
+   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
+   const char *auto_preset_dirs[3]    = {0};
+   bool has_content                   = !string_is_empty(rarch_path_basename);
 
    if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
       return false;
@@ -3106,6 +3105,8 @@ static bool menu_shader_manager_operate_auto_preset(
             sizeof(config_directory));
       path_basedir(config_directory);
    }
+   else
+      config_directory[0]      = '\0';
 
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */
@@ -3115,6 +3116,8 @@ static bool menu_shader_manager_operate_auto_preset(
             dir_video_shader,
             "presets",
             sizeof(old_presets_directory));
+   else
+      old_presets_directory[0] = '\0';
 
    auto_preset_dirs[0] = dir_menu_config;
    auto_preset_dirs[1] = config_directory;
