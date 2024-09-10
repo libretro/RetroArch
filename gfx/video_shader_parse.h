@@ -57,25 +57,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum wildcard_type
-{
-   RARCH_WILDCARD_CONTENT_DIR = 0,
-   RARCH_WILDCARD_CORE,
-   RARCH_WILDCARD_GAME,
-   RARCH_WILDCARD_VIDEO_DRIVER,
-   RARCH_WILDCARD_VIDEO_USER_ROTATION,
-   RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,
-   RARCH_WILDCARD_CORE_REQUESTED_ROTATION,
-   RARCH_WILDCARD_VIDEO_FINAL_ROTATION,
-   RARCH_WILDCARD_SCREEN_ORIENTATION,
-   RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION,
-   RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,
-   RARCH_WILDCARD_PRESET_DIR,
-   RARCH_WILDCARD_PRESET,
-   RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,
-   RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT
-};
-
 enum rarch_shader_type
 {
    RARCH_SHADER_NONE = 0,
@@ -221,12 +202,6 @@ struct video_shader
     * with the #reference directive, then this will be different
     * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
-};
-
-struct wildcard_token
-{
-   enum wildcard_type token_id;
-   char token_name[64];
 };
 
 /**
