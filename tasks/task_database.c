@@ -209,17 +209,20 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       size_t system_len = strlen(system_name);
       if (string_starts_with_size(system_name, "Sony", STRLEN_CONST("Sony")))
       {
-         if (string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
+         if (STRLEN_CONST("Sony - PlayStation Portable") == system_len &&
+             string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
          {
             if (detect_psp_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
+         else if (STRLEN_CONST("Sony - PlayStation") == system_len &&
+                  string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
          {
             if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
+         else if (STRLEN_CONST("Sony - PlayStation 2") == system_len &&
+                  string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
          {
             if (detect_ps2_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -227,12 +230,14 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       }
       else if (string_starts_with_size(system_name, "Nintendo", STRLEN_CONST("Nintendo")))
       {
-         if (string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
+         if (STRLEN_CONST("Nintendo - GameCube") == system_len &&
+             string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
          {
             if (detect_gc_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
+         else if (STRLEN_CONST("Nintendo - Wii") == system_len &&
+                  string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
          {
             if (detect_wii_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -240,17 +245,20 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       }
       else if (string_starts_with_size(system_name, "Sega", STRLEN_CONST("Sega")))
       {
-         if (string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
+         if (STRLEN_CONST("Sega - Mega-CD - Sega CD") == system_len &&
+             string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
          {
             if (detect_scd_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sega - Saturn", system_len))
+         else if (STRLEN_CONST("Sega - Saturn") == system_len &&
+                  string_is_equal_fast(system_name, "Sega - Saturn", system_len))
          {
             if (detect_sat_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
+         else if (STRLEN_CONST("Sega - Dreamcast") == system_len &&
+                  string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
          {
             if (detect_dc_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -785,7 +793,7 @@ static int database_info_list_iterate_found_match(
          path_basename_nocompression(db_path), "", str_len);
    path_remove_extension(db_playlist_base_str);
 
-   strlcat(db_playlist_base_str, ".lpl", str_len);
+   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
 
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join_special(db_playlist_path, _db->playlist_directory,
@@ -810,7 +818,7 @@ static int database_info_list_iterate_found_match(
    /* Use database name for label if found,
     * otherwise use filename without extension */
    if (!string_is_empty(db_info_entry->name))
-      strlcpy(entry_lbl, db_info_entry->name, str_len);
+      strlcpy(entry_lbl, db_info_entry->name, sizeof(entry_lbl));
    else if (!string_is_empty(entry_path))
    {
       char *delim = (char*)strchr(entry_path, '#');
