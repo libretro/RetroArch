@@ -14,7 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/vulkan/vk_sdk_platform.h"
 #include "shader_vulkan.h"
 #include "glslang_util.h"
 #include "glslang_util_cxx.h"

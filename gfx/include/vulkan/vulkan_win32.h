@@ -2,19 +2,9 @@
 #define VULKAN_WIN32_H_ 1
 
 /*
-** Copyright (c) 2015-2019 The Khronos Group Inc.
+** Copyright 2015-2023 The Khronos Group Inc.
 **
-** Licensed under the Apache License, Version 2.0 (the "License");
-** you may not use this file except in compliance with the License.
-** You may obtain a copy of the License at
-**
-**     http://www.apache.org/licenses/LICENSE-2.0
-**
-** Unless required by applicable law or agreed to in writing, software
-** distributed under the License is distributed on an "AS IS" BASIS,
-** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-** See the License for the specific language governing permissions and
-** limitations under the License.
+** SPDX-License-Identifier: Apache-2.0
 */
 
 /*
@@ -29,6 +19,7 @@ extern "C" {
 
 
 
+// VK_KHR_win32_surface is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_win32_surface 1
 #define VK_KHR_WIN32_SURFACE_SPEC_VERSION 6
 #define VK_KHR_WIN32_SURFACE_EXTENSION_NAME "VK_KHR_win32_surface"
@@ -57,6 +48,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceWin32PresentationSupportKHR(
 #endif
 
 
+// VK_KHR_external_memory_win32 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_memory_win32 1
 #define VK_KHR_EXTERNAL_MEMORY_WIN32_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME "VK_KHR_external_memory_win32"
@@ -106,6 +98,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryWin32HandlePropertiesKHR(
 #endif
 
 
+// VK_KHR_win32_keyed_mutex is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_win32_keyed_mutex 1
 #define VK_KHR_WIN32_KEYED_MUTEX_SPEC_VERSION 1
 #define VK_KHR_WIN32_KEYED_MUTEX_EXTENSION_NAME "VK_KHR_win32_keyed_mutex"
@@ -123,6 +116,7 @@ typedef struct VkWin32KeyedMutexAcquireReleaseInfoKHR {
 
 
 
+// VK_KHR_external_semaphore_win32 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_semaphore_win32 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_WIN32_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME "VK_KHR_external_semaphore_win32"
@@ -175,6 +169,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetSemaphoreWin32HandleKHR(
 #endif
 
 
+// VK_KHR_external_fence_win32 is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_external_fence_win32 1
 #define VK_KHR_EXTERNAL_FENCE_WIN32_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME "VK_KHR_external_fence_win32"
@@ -218,6 +213,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetFenceWin32HandleKHR(
 #endif
 
 
+// VK_NV_external_memory_win32 is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_external_memory_win32 1
 #define VK_NV_EXTERNAL_MEMORY_WIN32_SPEC_VERSION 1
 #define VK_NV_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME "VK_NV_external_memory_win32"
@@ -246,6 +242,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryWin32HandleNV(
 #endif
 
 
+// VK_NV_win32_keyed_mutex is a preprocessor guard. Do not pass it to API calls.
 #define VK_NV_win32_keyed_mutex 1
 #define VK_NV_WIN32_KEYED_MUTEX_SPEC_VERSION 2
 #define VK_NV_WIN32_KEYED_MUTEX_EXTENSION_NAME "VK_NV_win32_keyed_mutex"
@@ -263,6 +260,7 @@ typedef struct VkWin32KeyedMutexAcquireReleaseInfoNV {
 
 
 
+// VK_EXT_full_screen_exclusive is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_full_screen_exclusive 1
 #define VK_EXT_FULL_SCREEN_EXCLUSIVE_SPEC_VERSION 4
 #define VK_EXT_FULL_SCREEN_EXCLUSIVE_EXTENSION_NAME "VK_EXT_full_screen_exclusive"
@@ -272,9 +270,6 @@ typedef enum VkFullScreenExclusiveEXT {
     VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT = 1,
     VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT = 2,
     VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT = 3,
-    VK_FULL_SCREEN_EXCLUSIVE_BEGIN_RANGE_EXT = VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT,
-    VK_FULL_SCREEN_EXCLUSIVE_END_RANGE_EXT = VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT,
-    VK_FULL_SCREEN_EXCLUSIVE_RANGE_SIZE_EXT = (VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT - VK_FULL_SCREEN_EXCLUSIVE_DEFAULT_EXT + 1),
     VK_FULL_SCREEN_EXCLUSIVE_MAX_ENUM_EXT = 0x7FFFFFFF
 } VkFullScreenExclusiveEXT;
 typedef struct VkSurfaceFullScreenExclusiveInfoEXT {
@@ -319,6 +314,25 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetDeviceGroupSurfacePresentModes2EXT(
     VkDevice                                    device,
     const VkPhysicalDeviceSurfaceInfo2KHR*      pSurfaceInfo,
     VkDeviceGroupPresentModeFlagsKHR*           pModes);
+#endif
+
+
+// VK_NV_acquire_winrt_display is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_acquire_winrt_display 1
+#define VK_NV_ACQUIRE_WINRT_DISPLAY_SPEC_VERSION 1
+#define VK_NV_ACQUIRE_WINRT_DISPLAY_EXTENSION_NAME "VK_NV_acquire_winrt_display"
+typedef VkResult (VKAPI_PTR *PFN_vkAcquireWinrtDisplayNV)(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
+typedef VkResult (VKAPI_PTR *PFN_vkGetWinrtDisplayNV)(VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkAcquireWinrtDisplayNV(
+    VkPhysicalDevice                            physicalDevice,
+    VkDisplayKHR                                display);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkGetWinrtDisplayNV(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t                                    deviceRelativeId,
+    VkDisplayKHR*                               pDisplay);
 #endif
 
 #ifdef __cplusplus
