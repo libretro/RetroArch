@@ -105,16 +105,13 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
 {
    HWND wnd;
    WNDCLASSA wc     = {0};
-
    if (!(wc.hInstance = GetModuleHandleA(NULL)))
       return NULL;
-
    wc.lpfnWndProc   = wnd_proc;
    wc.lpszClassName = "winraw-input";
    if (     !RegisterClassA(&wc)
          &&  GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
       return NULL;
-
    if (!(wnd = CreateWindowExA(0, wc.lpszClassName,
                NULL, 0, 0, 0, 0, 0,
                HWND_MESSAGE, NULL, NULL, NULL)))
@@ -122,42 +119,13 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
       UnregisterClassA(wc.lpszClassName, NULL);
       return NULL;
    }
-
    return wnd;
-}
-
-static void winraw_destroy_window(HWND wnd)
-{
-   if (!wnd)
-      return;
-
-   DestroyWindow(wnd);
-   UnregisterClassA("winraw-input", NULL);
-}
-
-static BOOL winraw_set_keyboard_input(HWND window)
-{
-   RAWINPUTDEVICE rid;
-   settings_t *settings;
-
-   settings        = config_get_ptr();
-
-   rid.dwFlags     = window ? 0 : RIDEV_REMOVE;
-   rid.hwndTarget  = window;
-   rid.usUsagePage = 0x01; /* Generic desktop */
-   rid.usUsage     = 0x06; /* Keyboard */
-   if (settings->bools.input_nowinkey_enable)
-      rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
-
-   return RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
 }
 
 static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 {
    unsigned i;
    char name[256];
-   char prod_name[128];
-   wchar_t prod_buf[128];
    UINT name_size = sizeof(name);
 
    name[0]        = '\0';
@@ -169,9 +137,6 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
       if (r == (UINT)-1 || r == 0)
          name[0]   = '\0';
 
-      prod_name[0] = '\0';
-      prod_buf[0]  = '\0';
-
       if (name[0])
       {
          HANDLE hhid = CreateFile(name,
@@ -180,13 +145,13 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
          if (hhid != INVALID_HANDLE_VALUE)
          {
-            if (HidD_GetProductString (hhid, prod_buf, sizeof(prod_buf)))
-               wcstombs(prod_name, prod_buf, sizeof(prod_name));
+            wchar_t prod_buf[128];
+            prod_buf[0]  = '\0';
+            if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
+               wcstombs(name, prod_buf, sizeof(name));
          }
          CloseHandle(hhid);
       }
-      if (prod_name[0])
-         strlcpy(name, prod_name, sizeof(name));
 
       if (!name[0])
          strlcpy(name, "<name not found>", sizeof(name));
@@ -261,25 +226,11 @@ error:
    return false;
 }
 
-static BOOL winraw_set_mouse_input(HWND window)
-{
-   RAWINPUTDEVICE rid;
-
-   rid.dwFlags     = (window) ? 0 : RIDEV_REMOVE;
-   rid.hwndTarget  = window;
-   rid.usUsagePage = 0x01; /* generic desktop */
-   rid.usUsage     = 0x02; /* mouse */
-
-   return RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
-}
-
 static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
       winraw_mouse_t *mouse,
       unsigned port, unsigned id)
 {
    struct video_viewport vp;
-   const int edge_detect = 32700;
-   bool inside           = false;
    int16_t res_x         = 0;
    int16_t res_y         = 0;
    int16_t res_screen_x  = 0;
@@ -292,30 +243,31 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
    vp.full_width         = 0;
    vp.full_height        = 0;
 
-   if (!(video_driver_translate_coord_viewport_wrap(
+   if ((video_driver_translate_coord_viewport_wrap(
                &vp, mouse->x, mouse->y,
                &res_x, &res_y, &res_screen_x, &res_screen_y)))
-      return 0;
-
-   inside =    (res_x >= -edge_detect)
-            && (res_y >= -edge_detect)
-            && (res_x <=  edge_detect)
-            && (res_y <=  edge_detect);
-
-   switch (id)
    {
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-         if (inside)
-            return res_x;
-         break;
-      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         if (inside)
-            return res_y;
-         break;
-      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return !inside;
-      default:
-         break;
+      const int edge_detect = 32700;
+      bool inside =    (res_x >= -edge_detect)
+         && (res_y >= -edge_detect)
+         && (res_x <=  edge_detect)
+         && (res_y <=  edge_detect);
+
+      switch (id)
+      {
+         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+            if (inside)
+               return res_x;
+            break;
+         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+            if (inside)
+               return res_y;
+            break;
+         case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+            return !inside;
+         default:
+            break;
+      }
    }
 
    return 0;
@@ -524,94 +476,92 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 static LRESULT CALLBACK winraw_callback(
       HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
-   unsigned i;
-   unsigned mcode, flags, down, mod;
    static uint8_t data[1024];
    RAWINPUT       *ri = (RAWINPUT*)data;
    UINT size          = sizeof(data);
-   winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)
-      GetWindowLongPtr(wnd, GWLP_USERDATA);
 
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
 
-   if (
+   if (!(
           GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT  /* app is in the background */
        || GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
-         data, &size, sizeof(RAWINPUTHEADER)) == (UINT)-1)
+         data, &size, sizeof(RAWINPUTHEADER)) == (UINT)-1))
    {
-      DefWindowProcA(wnd, msg, wpar, lpar);
-      return 0;
-   }
+      unsigned i;
+      unsigned mcode, flags, down, mod;
+      winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)
+         GetWindowLongPtr(wnd, GWLP_USERDATA);
 
-   switch (ri->header.dwType)
-   {
-      case RIM_TYPEKEYBOARD:
-         mcode = ri->data.keyboard.MakeCode;
-         flags = ri->data.keyboard.Flags;
-         down  = (flags & RI_KEY_BREAK) ? 0 : 1;
-         mod   = 0;
+      switch (ri->header.dwType)
+      {
+         case RIM_TYPEKEYBOARD:
+            mcode = ri->data.keyboard.MakeCode;
+            flags = ri->data.keyboard.Flags;
+            down  = (flags & RI_KEY_BREAK) ? 0 : 1;
+            mod   = 0;
 
-         /* Extended scancodes */
-         if (flags & RI_KEY_E0)
-            mcode |= 0xE000;
-         else if (flags & RI_KEY_E1)
-            mcode |= 0xE100;
+            /* Extended scancodes */
+            if (flags & RI_KEY_E0)
+               mcode |= 0xE000;
+            else if (flags & RI_KEY_E1)
+               mcode |= 0xE100;
 
-         /* Special pause-key handling due to
-          * scancode 0xE11D45 incoming separately */
-         if ((wr->flags & WRAW_INP_FLG_KB_PAUSE) > 0)
-         {
-            wr->flags &= ~(WRAW_INP_FLG_KB_PAUSE);
-            if (mcode == SC_NUMLOCK)
-               mcode = SC_PAUSE;
-         }
-         else if (mcode == 0xE11D)
-            wr->flags |=  (WRAW_INP_FLG_KB_PAUSE);
-
-         /* Ignored scancodes */
-         switch (mcode)
-         {
-            case RETROK_UNKNOWN:
-            case 0xE11D:
-            case 0xE02A:
-            case 0xE036:
-            case 0xE0AA:
-            case 0xE0B6:
-               return 0;
-         }
-
-         if (GetKeyState(VK_SHIFT)   & 0x80)
-            mod |= RETROKMOD_SHIFT;
-         if (GetKeyState(VK_CONTROL) & 0x80)
-            mod |= RETROKMOD_CTRL;
-         if (GetKeyState(VK_MENU)    & 0x80)
-            mod |= RETROKMOD_ALT;
-         if (GetKeyState(VK_CAPITAL) & 0x81)
-            mod |= RETROKMOD_CAPSLOCK;
-         if (GetKeyState(VK_SCROLL)  & 0x81)
-            mod |= RETROKMOD_SCROLLOCK;
-         if (GetKeyState(VK_NUMLOCK) & 0x81)
-            mod |= RETROKMOD_NUMLOCK;
-         if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-            mod |= RETROKMOD_META;
-
-         wr->kb_keys[mcode] = down;
-         input_keyboard_event(down,
-               input_keymaps_translate_keysym_to_rk(mcode),
-               0, mod, RETRO_DEVICE_KEYBOARD);
-         break;
-      case RIM_TYPEMOUSE:
-         for (i = 0; i < wr->mouse_cnt; ++i)
-         {
-            if (g_mice[i].hnd == ri->header.hDevice)
+            /* Special pause-key handling due to
+             * scancode 0xE11D45 incoming separately */
+            if ((wr->flags & WRAW_INP_FLG_KB_PAUSE) > 0)
             {
-               winraw_update_mouse_state(wr,
-                     &g_mice[i], &ri->data.mouse);
-               break;
+               wr->flags &= ~(WRAW_INP_FLG_KB_PAUSE);
+               if (mcode == SC_NUMLOCK)
+                  mcode = SC_PAUSE;
             }
-         }
-         break;
+            else if (mcode == 0xE11D)
+               wr->flags |=  (WRAW_INP_FLG_KB_PAUSE);
+
+            /* Ignored scancodes */
+            switch (mcode)
+            {
+               case RETROK_UNKNOWN:
+               case 0xE11D:
+               case 0xE02A:
+               case 0xE036:
+               case 0xE0AA:
+               case 0xE0B6:
+                  return 0;
+            }
+
+            if (GetKeyState(VK_SHIFT)   & 0x80)
+               mod |= RETROKMOD_SHIFT;
+            if (GetKeyState(VK_CONTROL) & 0x80)
+               mod |= RETROKMOD_CTRL;
+            if (GetKeyState(VK_MENU)    & 0x80)
+               mod |= RETROKMOD_ALT;
+            if (GetKeyState(VK_CAPITAL) & 0x81)
+               mod |= RETROKMOD_CAPSLOCK;
+            if (GetKeyState(VK_SCROLL)  & 0x81)
+               mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
+            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
+               mod |= RETROKMOD_META;
+
+            wr->kb_keys[mcode] = down;
+            input_keyboard_event(down,
+                  input_keymaps_translate_keysym_to_rk(mcode),
+                  0, mod, RETRO_DEVICE_KEYBOARD);
+            break;
+         case RIM_TYPEMOUSE:
+            for (i = 0; i < wr->mouse_cnt; ++i)
+            {
+               if (g_mice[i].hnd == ri->header.hDevice)
+               {
+                  winraw_update_mouse_state(wr,
+                        &g_mice[i], &ri->data.mouse);
+                  break;
+               }
+            }
+            break;
+      }
    }
 
    DefWindowProcA(wnd, msg, wpar, lpar);
@@ -620,7 +570,9 @@ static LRESULT CALLBACK winraw_callback(
 
 static void *winraw_init(const char *joypad_driver)
 {
-   winraw_input_t *wr = (winraw_input_t *)
+   RAWINPUTDEVICE rid;
+   settings_t *settings = config_get_ptr();
+   winraw_input_t *wr   = (winraw_input_t *)
       calloc(1, sizeof(winraw_input_t));
 
    if (!wr)
@@ -642,10 +594,22 @@ static void *winraw_init(const char *joypad_driver)
       memcpy(wr->mice, g_mice, wr->mouse_cnt * sizeof(winraw_mouse_t));
    }
 
-   if (!winraw_set_keyboard_input(wr->window))
+   rid.dwFlags     = (wr->window) ? 0 : RIDEV_REMOVE;
+   rid.hwndTarget  = wr->window;
+   rid.usUsagePage = 0x01; /* Generic desktop */
+   rid.usUsage     = 0x06; /* Keyboard */
+   if (settings->bools.input_nowinkey_enable)
+      rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
+
+   if (!RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
       goto error;
 
-   if (!winraw_set_mouse_input(wr->window))
+   rid.dwFlags     = wr->window ? 0 : RIDEV_REMOVE;
+   rid.hwndTarget  = wr->window;
+   rid.usUsagePage = 0x01; /* generic desktop */
+   rid.usUsage     = 0x02; /* mouse */
+
+   if (!RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
       goto error;
 
    SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
@@ -655,9 +619,23 @@ static void *winraw_init(const char *joypad_driver)
 error:
    if (wr && wr->window)
    {
-      winraw_set_mouse_input(NULL);
-      winraw_set_keyboard_input(NULL);
-      winraw_destroy_window(wr->window);
+      rid.dwFlags     = RIDEV_REMOVE;
+      rid.hwndTarget  = NULL;
+      rid.usUsagePage = 0x01; /* generic desktop */
+      rid.usUsage     = 0x02; /* mouse */
+
+      RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+
+      rid.dwFlags     = RIDEV_REMOVE;
+      rid.hwndTarget  = NULL;
+      rid.usUsagePage = 0x01; /* Generic desktop */
+      rid.usUsage     = 0x06; /* Keyboard */
+      if (settings->bools.input_nowinkey_enable)
+         rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
+
+      RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+      DestroyWindow(wr->window);
+      UnregisterClassA("winraw-input", NULL);
    }
    free(g_mice);
    if (wr)
@@ -744,13 +722,12 @@ static int16_t winraw_input_state(
       unsigned idx,
       unsigned id)
 {
-   int16_t ret           = 0;
-   settings_t *settings  = NULL;
    winraw_mouse_t *mouse = NULL;
-   winraw_input_t *wr    = (winraw_input_t*)data;
 
    if (port < MAX_USERS)
    {
+      int16_t ret           = 0;
+      winraw_input_t *wr    = (winraw_input_t*)data;
       bool process_mouse    =
          (device == RETRO_DEVICE_JOYPAD)
          || (device == RETRO_DEVICE_MOUSE)
@@ -762,7 +739,7 @@ static int16_t winraw_input_state(
       if (process_mouse)
       {
          unsigned i;
-         settings        = config_get_ptr();
+         settings_t *settings = config_get_ptr();
          for (i = 0; i < wr->mouse_cnt; ++i)
          {
             if (i == settings->uints.input_mouse_index[port])
@@ -1071,12 +1048,32 @@ bool winraw_handle_message(UINT msg,
 
 static void winraw_free(void *data)
 {
-   winraw_input_t *wr = (winraw_input_t*)data;
+   RAWINPUTDEVICE rid;
+   settings_t *settings = config_get_ptr();
+   winraw_input_t *wr   = (winraw_input_t*)data;
 
-   winraw_set_mouse_input(NULL);
-   winraw_set_keyboard_input(NULL);
+   rid.dwFlags          = RIDEV_REMOVE;
+   rid.hwndTarget       = NULL;
+   rid.usUsagePage      = 0x01; /* generic desktop */
+   rid.usUsage          = 0x02; /* mouse */
+
+   RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+
+   rid.dwFlags          = RIDEV_REMOVE;
+   rid.hwndTarget       = NULL;
+   rid.usUsagePage      = 0x01; /* Generic desktop */
+   rid.usUsage          = 0x06; /* Keyboard */
+   if (settings->bools.input_nowinkey_enable)
+      rid.dwFlags      |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
+
+   RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
+
    SetWindowLongPtr(wr->window, GWLP_USERDATA, 0);
-   winraw_destroy_window(wr->window);
+   if (wr->window)
+   {
+      DestroyWindow(wr->window);
+      UnregisterClassA("winraw-input", NULL);
+   }
    free(g_mice);
    free(wr->mice);
 
@@ -1095,23 +1092,28 @@ static uint64_t winraw_get_capabilities(void *u)
 
 static void winraw_grab_mouse(void *d, bool state)
 {
+   RAWINPUTDEVICE rid;
    winraw_input_t *wr = (winraw_input_t*)d;
    bool curr_state    = (wr->flags & WRAW_INP_FLG_MOUSE_GRAB) > 0;
 
    if (curr_state == state)
       return;
 
-   if (!winraw_set_mouse_input(wr->window))
-      return;
+   rid.dwFlags        = (wr->window) ? 0 : RIDEV_REMOVE;
+   rid.hwndTarget     = wr->window;
+   rid.usUsagePage    = 0x01; /* generic desktop */
+   rid.usUsage        = 0x02; /* mouse */
 
-   if (state)
-      wr->flags |=  WRAW_INP_FLG_MOUSE_GRAB;
-   else
-      wr->flags &= ~WRAW_INP_FLG_MOUSE_GRAB;
-
+   if (RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
+   {
+      if (state)
+         wr->flags |=  WRAW_INP_FLG_MOUSE_GRAB;
+      else
+         wr->flags &= ~WRAW_INP_FLG_MOUSE_GRAB;
 #ifndef _XBOX
-   win32_clip_window(state);
+      win32_clip_window(state);
 #endif
+   }
 }
 
 input_driver_t input_winraw = {
