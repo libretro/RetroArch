@@ -1283,12 +1283,20 @@ static void task_database_handler(retro_task_t *task)
                char *dirname = NULL;
 
                if (!string_is_empty(db->fullpath))
-                  dirname    = find_last_slash(db->fullpath) + 1;
+               {
+                  const char *slash     = strrchr(db->fullpath, '/');
+                  const char *backslash = strrchr(db->fullpath, '\\');
+                  char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+                  dirname               = last_slash + 1;
+               }
 
                if (!string_is_empty(dirname))
                {
                   for (i = 0; i < dbstate->list->size; i++)
                   {
+                     char *last_slash;
+                     const char *slash;
+                     const char *backslash;
                      const char *data = dbstate->list->elems[i].data;
                      char *dbname     = NULL;
                      bool strmatch    = false;
@@ -1296,7 +1304,10 @@ static void task_database_handler(retro_task_t *task)
 
                      path_remove_extension(dbpath);
 
-                     dbname           = find_last_slash(dbpath) + 1;
+                     slash            = strrchr(dbpath, '/');
+                     backslash        = strrchr(dbpath, '\\');
+                     last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+                     dbname           = last_slash + 1;
                      strmatch         = strcasecmp(dbname, dirname) == 0;
 
                      free(dbpath);
@@ -1304,8 +1315,7 @@ static void task_database_handler(retro_task_t *task)
                      if (strmatch)
                      {
                         struct string_list *single_list = string_list_new();
-                        string_list_append(single_list,
-                              data,
+                        string_list_append(single_list, data,
                               dbstate->list->elems[i].attr);
                         dir_list_free(dbstate->list);
                         dbstate->list = single_list;

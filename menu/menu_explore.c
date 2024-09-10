@@ -420,8 +420,7 @@ static void explore_load_icons(explore_state_t *state)
    if (string_is_empty(path))
       return;
 
-   fill_pathname_slash(path, sizeof(path));
-   pathlen = strlen(path);
+   pathlen = fill_pathname_slash(path, sizeof(path));
 
    for (i = 0; i != system_count; i++)
    {

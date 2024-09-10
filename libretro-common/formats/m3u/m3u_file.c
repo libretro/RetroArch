@@ -471,11 +471,12 @@ void m3u_file_clear(m3u_file_t *m3u_file)
 bool m3u_file_save(
       m3u_file_t *m3u_file, enum m3u_file_label_type label_type)
 {
-   RFILE *file = NULL;
    size_t i;
+   const char *slash;
+   const char *backslash;
    char base_dir[DIR_MAX_LENGTH];
-
-   base_dir[0] = '\0';
+   char *last_slash = NULL;
+   RFILE *file      = NULL;
 
    if (!m3u_file || !m3u_file->entries)
       return false;
@@ -484,20 +485,23 @@ bool m3u_file_save(
    if (string_is_empty(m3u_file->path))
       return false;
 
+   slash            = strrchr(m3u_file->path, '/');
+   backslash        = strrchr(m3u_file->path, '\\');
+   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+
    /* Get M3U file base directory */
-   if (find_last_slash(m3u_file->path))
+   if (last_slash)
    {
       strlcpy(base_dir, m3u_file->path, sizeof(base_dir));
       path_basedir(base_dir);
    }
+   else
+      base_dir[0]   = '\0';
 
    /* Open file for writing */
-   file = filestream_open(
-         m3u_file->path,
+   if (!(file = filestream_open(m3u_file->path,
          RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
 
    /* Loop over entries */
@@ -605,29 +609,19 @@ void m3u_file_qsort(m3u_file_t *m3u_file)
 bool m3u_file_is_m3u(const char *path)
 {
    const char *file_ext = NULL;
-   int32_t file_size;
-
    if (string_is_empty(path))
       return false;
-
    /* Check file extension */
    file_ext = path_get_extension(path);
-
    if (string_is_empty(file_ext))
       return false;
-
    if (!string_is_equal_noncase(file_ext, M3U_FILE_EXT))
       return false;
-
    /* Ensure file exists */
    if (!path_is_valid(path))
       return false;
-
    /* Ensure we have non-zero file size */
-   file_size = path_get_size(path);
-
-   if (file_size <= 0)
+   if (path_get_size(path) <= 0)
       return false;
-
    return true;
 }
