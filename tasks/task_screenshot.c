@@ -57,6 +57,36 @@
 
 #include "tasks_internal.h"
 
+enum screenshot_task_flags
+{
+   SS_TASK_FLAG_BGR24               = (1 << 0),
+   SS_TASK_FLAG_SILENCE             = (1 << 1),
+   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
+   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
+   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
+   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
+};
+
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
+{
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
+
+   int pitch;
+   unsigned width;
+   unsigned height;
+   unsigned pixel_format_type;
+
+   uint8_t flags;
+
+   char filename[PATH_MAX_LENGTH];
+   char shotname[NAME_MAX_LENGTH];
+};
+
 static bool screenshot_dump_direct(screenshot_task_state_t *state)
 {
    struct scaler_ctx *scaler     = (struct scaler_ctx*)&state->scaler;
