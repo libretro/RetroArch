@@ -243,8 +243,6 @@ void gfx_widgets_msg_queue_push(
 
          if (task)
          {
-            uint8_t flg                         = task_get_flags(task);
-
             title = msg_widget->msg             = strdup(task->title);
             msg_widget->msg_new                 = strdup(title);
             title_length                        = strlen(title);
@@ -252,9 +250,9 @@ void gfx_widgets_msg_queue_push(
 
             if (!string_is_empty(task->error))
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-            if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+            if ((task->flags & RETRO_TASK_FLG_CANCELLED) > 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
-            if ((flg & RETRO_TASK_FLG_FINISHED) > 0)
+            if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
             msg_widget->task_progress           = task->progress;
             msg_widget->task_ident              = task->ident;
