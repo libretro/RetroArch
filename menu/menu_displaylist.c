@@ -4314,9 +4314,9 @@ static unsigned menu_displaylist_parse_playlists(
 #if defined(HAVE_LIBRETRODB)
    if (settings->bools.menu_content_show_explore)
    {
-      char label[512];
-      size_t _len = strlcpy(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW),
-            sizeof(label));
+      char lbl[NAME_MAX_LENGTH];
+      size_t _len = strlcpy(lbl, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW),
+            sizeof(lbl));
 
       /* List any custom explore views above playlists */
       for (i = 0; i < list_size; i++)
@@ -4327,9 +4327,9 @@ static unsigned menu_displaylist_parse_playlists(
          if (!string_is_equal_noncase(fext, "lvw"))
             continue;
 
-         snprintf(label + _len, sizeof(label) - _len, ": %.*s",
+         snprintf(lbl + _len, sizeof(lbl) - _len, ": %.*s",
                (int)(fext - 1 - fname), fname);
-         if (menu_entries_append(info_list, label, path,
+         if (menu_entries_append(info_list, lbl, path,
                MENU_ENUM_LABEL_GOTO_EXPLORE,
                MENU_EXPLORE_TAB, 0, (count - content_count), NULL))
          {
@@ -4912,7 +4912,7 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
 static unsigned menu_displaylist_parse_content_information(
       menu_handle_t *menu, settings_t *settings, file_list_t *info_list)
 {
-   char tmp[8192];
+   char tmp[PATH_MAX_LENGTH];
    char core_name[NAME_MAX_LENGTH];
    char content_label[NAME_MAX_LENGTH];
    playlist_t *playlist                = playlist_get_cached();
@@ -8143,7 +8143,7 @@ unsigned menu_displaylist_build_list(
             if (net_ifinfo_new(&interfaces))
             {
                size_t i;
-               char buf[1024];
+               char buf[NAME_MAX_LENGTH];
                const char *msg_intf = msg_hash_to_str(MSG_INTERFACE);
                size_t _len          = strlcpy(buf, msg_intf, sizeof(buf));
 
