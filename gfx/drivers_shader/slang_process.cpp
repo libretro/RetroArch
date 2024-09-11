@@ -254,9 +254,7 @@ static bool slang_process_reflection(
             textures.push_back(texture);
 
             if (semantic == SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK)
-               shader_info->pass[index].flags |=  SHDR_PASS_FLG_FEEDBACK;
-            else
-               shader_info->pass[index].flags &= ~SHDR_PASS_FLG_FEEDBACK;
+               shader_info->pass[index].feedback = true;
 
             if (semantic == SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY &&
                 (unsigned)shader_info->history_size < index)

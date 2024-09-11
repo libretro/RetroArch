@@ -2930,7 +2930,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
        * Preset format is a bit awkward in that it uses mipmap_input,
        * so we must check if next pass needs the mipmapping.
        */
-      if (next_pass && ((next_pass->flags & SHDR_PASS_FLG_MIPMAP) > 0))
+      if (next_pass && next_pass->mipmap)
          pass_info.max_levels = ~0u;
 
       pass_info.mip_filter =

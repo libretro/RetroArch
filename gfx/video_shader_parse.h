@@ -85,8 +85,9 @@ enum
 enum video_shader_flags
 {
    SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
-   SHDR_FLAG_MODIFIED  = (1 << 1), /* Indicative of whether shader was modified -
-                                    * for instance from the menus */
+   /* Indicative of whether shader was modified -
+    * for instance from the menus */
+   SHDR_FLAG_MODIFIED  = (1 << 1),
    SHDR_FLAG_DISABLED  = (1 << 2)
 };
 
@@ -140,12 +141,6 @@ struct rarch_dir_shader_list
    bool remember_last_preset_dir;
 };
 
-enum video_shader_pass_flags
-{
-   SHDR_PASS_FLG_MIPMAP   = (1 << 0),
-   SHDR_PASS_FLG_FEEDBACK = (1 << 1)
-};
-
 struct video_shader_pass
 {
    struct gfx_fbo_scale fbo; /* unsigned alignment */
@@ -162,7 +157,8 @@ struct video_shader_pass
       char path[NAME_MAX_LENGTH*2];
    } source;
    char alias[64];
-   uint8_t flags;
+   bool mipmap;
+   bool feedback;
 };
 
 struct video_shader_lut
