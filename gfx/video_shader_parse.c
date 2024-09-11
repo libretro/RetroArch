@@ -910,7 +910,6 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
 void video_shader_resolve_parameters(struct video_shader *shader)
 {
    size_t i;
-   struct video_shader_parameter *param = &shader->parameters[0];
 
    shader->num_parameters = 0;
 
@@ -919,87 +918,96 @@ void video_shader_resolve_parameters(struct video_shader *shader)
    RARCH_DBG("[Shaders]: Finding parameters in shader passes (#pragma parameter)..\n");
 #endif
 
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    for (i = 0; i < shader->passes; i++)
    {
       const char *path          = shader->pass[i].source.path;
-      uint8_t *buf              = NULL;
-      int64_t buf_len           = 0;
-
       if (string_is_empty(path) || !path_is_valid(path))
          continue;
-
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
       /* Now uses the same slang parsing for parameters since
        * it should be the same implementation, but supporting
        * #include directives */
       slang_preprocess_parse_parameters(path, shader);
+   }
 #else
-      /* Read file contents */
-      if (filestream_read_file(path, (void**)&buf, &buf_len))
+   {
+      struct video_shader_parameter *param = &shader->parameters[0];
+      for (i = 0; i < shader->passes; i++)
       {
-         size_t line_index         = 0;
-         struct string_list lines  = {0};
-         bool lines_inited         = false;
+         const char *path             = shader->pass[i].source.path;
+         uint8_t *buf                 = NULL;
+         int64_t buf_len              = 0;
 
-         /* Split into lines */
-         if (buf_len > 0)
-         {
-            string_list_initialize(&lines);
-            lines_inited = string_split_noalloc(&lines, (const char*)buf, "\n");
-         }
-
-         /* Buffer is no longer required - clean up */
-         if ((void*)buf)
-            free((void*)buf);
-
-         if (!lines_inited)
+         if (string_is_empty(path) || !path_is_valid(path))
             continue;
 
-         /* Even though the pass is set in the loop too,
-          * not all passes have parameters */
-         param->pass = (int)i;
-
-         while ((shader->num_parameters < ARRAY_SIZE(shader->parameters))
-               && (line_index < lines.size))
+         /* Read file contents */
+         if (filestream_read_file(path, (void**)&buf, &buf_len))
          {
-            int ret;
-            const char *line = lines.elems[line_index].data;
-            line_index++;
+            size_t line_index         = 0;
+            struct string_list lines  = {0};
+            bool lines_inited         = false;
 
-            /* Check if this is a '#pragma parameter' line */
-            if (strncmp("#pragma parameter", line,
-                     STRLEN_CONST("#pragma parameter")))
+            /* Split into lines */
+            if (buf_len > 0)
+            {
+               string_list_initialize(&lines);
+               lines_inited = string_split_noalloc(&lines, (const char*)buf, "\n");
+            }
+
+            /* Buffer is no longer required - clean up */
+            if ((void*)buf)
+               free((void*)buf);
+
+            if (!lines_inited)
                continue;
 
-            /* Parse line */
-            if ((ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
-                  param->id,        param->desc,    &param->initial,
-                  &param->minimum, &param->maximum, &param->step)) < 5)
-               continue;
+            /* Even though the pass is set in the loop too,
+             * not all passes have parameters */
+            param->pass = (int)i;
 
-            param->id[63]   = '\0';
-            param->desc[63] = '\0';
+            while ((shader->num_parameters < ARRAY_SIZE(shader->parameters))
+                  && (line_index < lines.size))
+            {
+               int ret;
+               const char *line = lines.elems[line_index].data;
+               line_index++;
 
-            if (ret == 5)
-               param->step  = 0.1f * (param->maximum - param->minimum);
+               /* Check if this is a '#pragma parameter' line */
+               if (strncmp("#pragma parameter", line,
+                        STRLEN_CONST("#pragma parameter")))
+                  continue;
 
-            param->pass     = (int)i;
+               /* Parse line */
+               if ((ret = sscanf(line, "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
+                           param->id,        param->desc,    &param->initial,
+                           &param->minimum, &param->maximum, &param->step)) < 5)
+                  continue;
+
+               param->id[63]   = '\0';
+               param->desc[63] = '\0';
+
+               if (ret == 5)
+                  param->step  = 0.1f * (param->maximum - param->minimum);
+
+               param->pass     = (int)i;
 
 #ifdef DEBUG
-            RARCH_DBG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
-                  param->desc,    param->id,      param->initial,
-                  param->minimum, param->maximum, param->step, param->pass);
+               RARCH_DBG("[Shaders]: Found #pragma parameter %s (%s) %f %f %f %f in pass %d.\n",
+                     param->desc,    param->id,      param->initial,
+                     param->minimum, param->maximum, param->step, param->pass);
 #endif
-            param->current  = param->initial;
+               param->current  = param->initial;
 
-            shader->num_parameters++;
-            param++;
+               shader->num_parameters++;
+               param++;
+            }
+
+            string_list_deinitialize(&lines);
          }
-
-         string_list_deinitialize(&lines);
       }
-#endif
    }
+#endif
 }
 
 
@@ -1127,9 +1135,9 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
    char *tmp            = (char*)malloc(3 * PATH_MAX_LENGTH);
    char *tmp_rel        = tmp +     PATH_MAX_LENGTH;
    char *tmp_base       = tmp + 2 * PATH_MAX_LENGTH;
-   config_file_t *conf  = NULL;
+   config_file_t *conf  = config_file_new_alloc();
 
-   if (!(conf = config_file_new_alloc()))
+   if (!conf)
       return false;
 
    if (!tmp)
@@ -1454,12 +1462,12 @@ static bool video_shader_write_referenced_preset(
       const char *path_to_save)
 {
    size_t i;
+   char config_dir[DIR_MAX_LENGTH];
    config_file_t *conf                    = NULL;
    config_file_t *ref_conf                = NULL;
    struct video_shader *ref_shader        = (struct video_shader*)
       calloc(1, sizeof(*ref_shader));
    bool ret                               = false;
-   char *config_dir                       = (char*)malloc(DIR_MAX_LENGTH);
    char *path_to_ref                      = (char*)malloc(PATH_MAX_LENGTH);
    char* path_to_save_conformed           = (char*)malloc(PATH_MAX_LENGTH);
 
@@ -1880,7 +1888,6 @@ end:
    config_file_free(conf);
    config_file_free(ref_conf);
    free(ref_shader);
-   free(config_dir);
    free(path_to_ref);
    free(path_to_save_conformed);
 
@@ -1929,8 +1936,7 @@ static bool video_shader_load_root_config_into_shader(
     * the root preset and it is the path to the
     * simple preset originally loaded, but that is set inside
     * video_shader_load_preset_into_shader*/
-   strlcpy(shader->loaded_preset_path,
-         conf->path,
+   strlcpy(shader->loaded_preset_path, conf->path,
          sizeof(shader->loaded_preset_path));
 
    if (settings->bools.video_shader_watch_files)

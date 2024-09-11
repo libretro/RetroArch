@@ -2321,13 +2321,12 @@ static void rc_hash_reset_cdreader_hooks(void)
 
 static void rcheevos_show_game_placard(void)
 {
+   size_t len;
    char msg[256];
-   int len;
-   const settings_t* settings = config_get_ptr();
    rc_client_user_game_summary_t summary;
-
+   const settings_t* settings   = config_get_ptr();
    const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals.client);
-   if (!game) /* make sure there's actually a game loaded */
+   if (!game) /* Make sure there's actually a game loaded */
       return;
 
    rc_client_get_user_game_summary(rcheevos_locals.client, &summary);
@@ -2342,18 +2341,14 @@ static void rcheevos_show_game_placard(void)
                         (int)summary.num_unofficial_achievements);
    }
    else if (rc_client_get_encore_mode_enabled(rcheevos_locals.client))
-   {
       len = snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED),
                      (int)summary.num_core_achievements);
-   }
    else
-   {
       len = snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED),
                      (int)summary.num_unlocked_achievements,
                      (int)summary.num_core_achievements);
-   }
 
    if (summary.num_unsupported_achievements)
    {
@@ -2362,14 +2357,14 @@ static void rcheevos_show_game_placard(void)
          msg[len++] = ' ';
          msg[len++] = '(';
 
-         len += snprintf(&msg[len], sizeof(msg) - len,
-                         msg_hash_to_str(MSG_CHEEVOS_UNSUPPORTED_COUNT),
-                         (int)summary.num_unsupported_achievements);
+         len       += snprintf(&msg[len], sizeof(msg) - len,
+               msg_hash_to_str(MSG_CHEEVOS_UNSUPPORTED_COUNT),
+               (int)summary.num_unsupported_achievements);
 
          if (len < sizeof(msg) - 1)
          {
             msg[len++] = ')';
-            msg[len] = '\0';
+            msg[len]   = '\0';
          }
       }
    }
@@ -2377,21 +2372,23 @@ static void rcheevos_show_game_placard(void)
    msg[sizeof(msg) - 1] = 0;
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
 
-   if (settings->uints.cheevos_visibility_summary == RCHEEVOS_SUMMARY_ALLGAMES ||
-      (settings->uints.cheevos_visibility_summary == RCHEEVOS_SUMMARY_HASCHEEVOS &&
-         (summary.num_core_achievements || summary.num_unofficial_achievements)))
+   if (   settings->uints.cheevos_visibility_summary == RCHEEVOS_SUMMARY_ALLGAMES
+      || (settings->uints.cheevos_visibility_summary == RCHEEVOS_SUMMARY_HASCHEEVOS
+      && (summary.num_core_achievements || summary.num_unofficial_achievements)))
    {
 #if defined (HAVE_GFX_WIDGETS)
       if (gfx_widgets_ready())
       {
          char badge_name[32];
          size_t _len = strlcpy(badge_name, "i", sizeof(badge_name));
-         _len += strlcpy(badge_name + _len, game->badge_name, sizeof(badge_name) - _len);
+         _len       += strlcpy(badge_name + _len, game->badge_name,
+               sizeof(badge_name) - _len);
          gfx_widgets_push_achievement(game->title, msg, badge_name);
       }
       else
 #endif
-         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
 
