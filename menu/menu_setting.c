@@ -9549,7 +9549,7 @@ static bool setting_append_list_input_player_options(
     */
    static char buffer[MAX_USERS][13+2+1];
 
-   static char group_label[MAX_USERS][NAME_MAX_LENGTH]
+   static char group_label[MAX_USERS][NAME_MAX_LENGTH];
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
