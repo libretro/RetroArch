@@ -15673,6 +15673,22 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
+                  &settings->bools.input_remap_sort_by_controller_enable,
+                  MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+                  MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+                  false,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_ADVANCED
+                  );
+
+            CONFIG_BOOL(
+                  list, list_info,
                   &settings->bools.input_autodetect_enable,
                   MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
                   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
