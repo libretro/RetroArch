@@ -83,6 +83,8 @@
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_altserver._tcp</string>
