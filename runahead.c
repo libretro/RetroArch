@@ -335,7 +335,7 @@ static char *copy_core_to_temp_file(
    int64_t  dll_file_size      = 0;
    const char  *core_base_name = path_basename_nocompression(core_path);
 
-   if (strlen(core_base_name) == 0)
+   if (string_is_empty(core_base_name))
       return NULL;
 
    if (!(tmpdir = get_tmpdir_alloc(dir_libretro)))
