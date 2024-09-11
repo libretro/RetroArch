@@ -515,7 +515,7 @@ static INLINE int map_size_v5(chd_header* header)
 /*-------------------------------------------------
     crc16 - calculate CRC16 (from hashing.cpp)
 -------------------------------------------------*/
-uint16_t crc16(const void *data, uint32_t length)
+static uint16_t crc16(const void *data, uint32_t length)
 {
 	uint16_t crc = 0xffff;
 
