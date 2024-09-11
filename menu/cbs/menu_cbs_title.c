@@ -945,13 +945,12 @@ static int action_get_title_group_settings(const char *path, const char *label,
    }
 
    {
-      size_t _len;
       char *tok, *save;
       char *label_cpy = strdup(label);
 
       if ((tok = strtok_r(label_cpy, "|", &save)))
       {
-         _len = strlcpy(s, tok, len);
+         size_t _len = strlcpy(s, tok, len);
          if ((tok = strtok_r(NULL, "|", &save)))
          {
             s[  _len] = ' ';
