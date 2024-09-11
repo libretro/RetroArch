@@ -2335,7 +2335,7 @@ static void rcheevos_show_game_placard(void)
    if (summary.num_core_achievements == 0)
    {
       if (summary.num_unofficial_achievements == 0)
-         len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS));
+         len = snprintf(msg, sizeof(msg), "%s", msg_hash_to_str(MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS));
       else
          len = snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED),
@@ -2527,7 +2527,7 @@ static void rcheevos_client_load_game_callback(int result,
          if (!settings->bools.cheevos_verbose_enable)
             return;
 
-         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_GAME_NOT_IDENTIFIED));
+         snprintf(msg, sizeof(msg), "%s", msg_hash_to_str(MSG_CHEEVOS_GAME_NOT_IDENTIFIED));
       }
       else
       {
