@@ -736,7 +736,7 @@ bool video_driver_translate_coord_viewport(
    return true;
 }
 
-void video_monitor_compute_fps_statistics(uint64_t
+static void video_monitor_compute_fps_statistics(uint64_t
       frame_time_count)
 {
    double        avg_fps       = 0.0;
@@ -1217,7 +1217,7 @@ bool video_display_server_has_refresh_rate(float hz)
       {
          /* Float difference added to enable 49.95Hz modelines for PAL. *
           * Actual mode selection will be done in context driver,       *
-          * with some logic in video_switch_refresh_rate_maybe          *   
+          * with some logic in video_switch_refresh_rate_maybe          *
           * and in action_cb_push_dropdown_item_resolution              */
          if (   (video_list[i].width        == video_driver_width)
              && (video_list[i].height       == video_driver_height)
@@ -2056,7 +2056,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewp
    settings_t *settings     = config_get_ptr();
    int x                    = 0;
    int y                    = 0;
-   
+
    float viewport_bias_x    = settings->floats.video_viewport_bias_x;
    float viewport_bias_y    = settings->floats.video_viewport_bias_y;
 #if defined(RARCH_MOBILE)

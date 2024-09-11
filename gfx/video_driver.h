@@ -1043,14 +1043,6 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 void video_monitor_set_refresh_rate(float hz);
 
 /**
- * video_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-void video_monitor_compute_fps_statistics(uint64_t
-      frame_time_count);
-
-/**
  * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.
