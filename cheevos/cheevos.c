@@ -756,11 +756,8 @@ int rcheevos_get_richpresence(char* s, size_t len)
       if (!rcheevos_is_game_loaded())
          return 0;
 
-      /* TODO/FIXME - localize */
-      {
-         size_t _len = strlcpy(s, "Spectating ", len);
-         return (int)strlcpy(s + _len, rc_client_get_game_info(rcheevos_locals.client)->title, len - _len);
-      }
+      return snprintf(s, len, msg_hash_to_str(MSG_CHEEVOS_RICH_PRESENCE_SPECTATING),
+                      rc_client_get_game_info(rcheevos_locals.client)->title);
    }
 
    return (int)rc_client_get_rich_presence_message(rcheevos_locals.client, s, (size_t)len);
@@ -1750,8 +1747,8 @@ void rcheevos_validate_config_settings(void)
     * auto setting should achieve the most accurate frame rate anyway, so
     * disallow any manual values */
    if (!settings->bools.video_frame_delay_auto && settings->uints.video_frame_delay != 0) {
-      const char* error = "Hardcore paused. Manual video frame delay setting not allowed.";
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY);
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY));
       rcheevos_pause_hardcore();
 
       runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
@@ -1768,8 +1765,8 @@ void rcheevos_validate_config_settings(void)
     * running at less than 60Hz because 1 is the default value - many users
     * wouldn't know how to change it to auto. */
    if (settings->uints.video_swap_interval > 1) {
-      const char* error = "Hardcore paused. vsync swap interval above 1 not allowed.";
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL);
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL));
       rcheevos_pause_hardcore();
 
       runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
@@ -1780,8 +1777,8 @@ void rcheevos_validate_config_settings(void)
    /* this causes N blank frames to be rendered between real frames, thus
     * can slow down the actual number of rendered frames per second. */
    if (settings->uints.video_black_frame_insertion > 0) {
-      const char* error = "Hardcore paused. Black frame insertion not allowed.";
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION);
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION));
       rcheevos_pause_hardcore();
 
       runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
@@ -1793,8 +1790,8 @@ void rcheevos_validate_config_settings(void)
       the purposes of shaders that update faster than content. Thus
     * can slow down the actual number of rendered frames per second. */
    if (settings->uints.video_shader_subframes > 1) {
-      const char* error = "Hardcore paused. Shader subframes not allowed.";
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", error);
+      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES);
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES));
       rcheevos_pause_hardcore();
 
       runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
@@ -1815,9 +1812,11 @@ void rcheevos_validate_config_settings(void)
          if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
          {
             char buffer[128];
-            /* TODO/FIXME - localize */
-            snprintf(buffer, sizeof(buffer), "Hardcore paused. Setting not allowed: %s=%s", key, val);
+            snprintf(buffer, sizeof(buffer),
+                     msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED), key, val);
             CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
+            snprintf(buffer, sizeof(buffer),
+                     msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED), key, val);
             rcheevos_pause_hardcore();
 
             runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
@@ -1839,10 +1838,8 @@ void rcheevos_validate_config_settings(void)
    if (console_id && !rc_libretro_is_system_allowed(sysinfo->library_name, console_id))
    {
       char buffer[256];
-      buffer[0] = '\0';
-      /* TODO/FIXME - localize */
       snprintf(buffer, sizeof(buffer),
-            "Hardcore paused. You cannot earn hardcore achievements for %s using %s",
+            msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE),
             rc_console_name(console_id), sysinfo->library_name);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
       rcheevos_pause_hardcore();
@@ -2324,7 +2321,8 @@ static void rc_hash_reset_cdreader_hooks(void)
 
 static void rcheevos_show_game_placard(void)
 {
-   char msg[256], unsupported_clause[64] = "";
+   char msg[256];
+   int len;
    const settings_t* settings = config_get_ptr();
    rc_client_user_game_summary_t summary;
 
@@ -2334,37 +2332,46 @@ static void rcheevos_show_game_placard(void)
 
    rc_client_get_user_game_summary(rcheevos_locals.client, &summary);
 
-   if (summary.num_unsupported_achievements)
-   {
-      snprintf(unsupported_clause, sizeof(unsupported_clause), " (%d unsupported)",
-         (int)summary.num_unsupported_achievements);
-   }
-
-   /* TODO/FIXME - localize strings */
    if (summary.num_core_achievements == 0)
    {
       if (summary.num_unofficial_achievements == 0)
-         strlcpy(msg, "This game has no achievements.", sizeof(msg));
+         len = snprintf(msg, sizeof(msg), "%s", msg_hash_to_str(MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS));
       else
-         snprintf(msg, sizeof(msg),
-            "Activated %d unofficial achievements%s.",
-            (int)summary.num_unofficial_achievements,
-            unsupported_clause);
+         len = snprintf(msg, sizeof(msg),
+                        msg_hash_to_str(MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED),
+                        (int)summary.num_unofficial_achievements);
    }
    else if (rc_client_get_encore_mode_enabled(rcheevos_locals.client))
    {
-      snprintf(msg, sizeof(msg),
-         "All %d achievements activated for this session%s.",
-         (int)summary.num_core_achievements,
-         unsupported_clause);
+      len = snprintf(msg, sizeof(msg),
+                     msg_hash_to_str(MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED),
+                     (int)summary.num_core_achievements);
    }
    else
    {
-      snprintf(msg, sizeof(msg),
-         "You have %d of %d achievements unlocked%s.",
-         (int)summary.num_unlocked_achievements,
-         (int)summary.num_core_achievements,
-         unsupported_clause);
+      len = snprintf(msg, sizeof(msg),
+                     msg_hash_to_str(MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED),
+                     (int)summary.num_unlocked_achievements,
+                     (int)summary.num_core_achievements);
+   }
+
+   if (summary.num_unsupported_achievements)
+   {
+      if (len < sizeof(msg) - 4)
+      {
+         msg[len++] = ' ';
+         msg[len++] = '(';
+
+         len += snprintf(&msg[len], sizeof(msg) - len,
+                         msg_hash_to_str(MSG_CHEEVOS_UNSUPPORTED_COUNT),
+                         (int)summary.num_unsupported_achievements);
+
+         if (len < sizeof(msg) - 1)
+         {
+            msg[len++] = ')';
+            msg[len] = '\0';
+         }
+      }
    }
 
    msg[sizeof(msg) - 1] = 0;
@@ -2479,10 +2486,8 @@ static void rcheevos_client_login_callback(int result,
       /* show notification (if enabled) */
       if (settings->bools.cheevos_visibility_account)
       {
-         /* TODO/FIXME - localize */
-         char msg[256];
-         snprintf(msg, sizeof(msg),
-            "RetroAchievements: Logged in as \"%s\".",
+         char msg[128];
+         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_LOGGED_IN_AS_USER),
             user->display_name);
          runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -2522,14 +2527,15 @@ static void rcheevos_client_load_game_callback(int result,
          if (!settings->bools.cheevos_verbose_enable)
             return;
 
-         snprintf(msg, sizeof(msg), "RetroAchievements: Game could not be identified.");
+         snprintf(msg, sizeof(msg), "%s", msg_hash_to_str(MSG_CHEEVOS_GAME_NOT_IDENTIFIED));
       }
       else
       {
-         snprintf(msg, sizeof(msg), "RetroAchievements game load failed: %s",
-            error_message ? error_message : "Unknown error");
+         if (!error_message)
+            error_message = "Unknown error";
 
-         CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
+         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_GAME_LOAD_FAILED), error_message);
+         CHEEVOS_LOG(RCHEEVOS_TAG "Game load failed: %s\n", error_message);
       }
 
       runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
@@ -3453,9 +3459,8 @@ static void rcheevos_client_change_media_callback(int result,
       if (!error_message)
          error_message = "Unknown error";
 
-      snprintf(msg, sizeof(msg), "RetroAchievements change media failed: %s",
-         error_message);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
+      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_CHANGE_MEDIA_FAILED), error_message);
+      CHEEVOS_LOG(RCHEEVOS_TAG "Change media failed: %s\n", error_message);
    }
 
    runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
