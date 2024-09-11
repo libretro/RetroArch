@@ -827,6 +827,8 @@ typedef struct settings
       bool menu_unified_controls;
       bool menu_disable_info_button;
       bool menu_disable_search_button;
+      bool menu_disable_left_analog;
+      bool menu_disable_right_analog;
       bool menu_ticker_smooth;
       bool settings_show_drivers;
       bool settings_show_video;
