@@ -40,11 +40,11 @@ for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*
 
     fwDir="${OUTDIR}/${fwName}.framework"
     mkdir -p "$fwDir"
-    lipo -create "$dylib" -output "$fwDir/$fwName"
     if [ "$PLATFORM_FAMILY_NAME" = "iOS" ] ; then
         build_sdk=$(vtool -show-build "$dylib" | grep sdk | awk '{print $2}')
-        vtool -set-version-min ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${build_sdk}" -replace -output "$fwDir/$fwName" "$fwDir/$fwName"
+        vtool -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${build_sdk}" -set-source-version 0.0 -replace -output "$dylib" "$dylib"
     fi
+    lipo -create "$dylib" -output "$fwDir/$fwName"
     sed -e "s,%CORE%,$fwName," -e "s,%BUNDLE%,$fwName," -e "s,%IDENTIFIER%,$fwName," iOS/fw.tmpl > "$fwDir/Info.plist"
     echo "signing $fwName"
     codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
