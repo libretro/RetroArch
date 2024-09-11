@@ -399,6 +399,10 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    elif [ "$OS" = 'Win32' ]; then
       check_header '' OPENGL "GL/gl.h"
       check_lib '' OPENGL -lopengl32
+   elif [ "$HAVE_GLX" = 'no' ]; then
+      # Use vendor-neutral OpenGL implementation instead of GLX
+      check_header '' OPENGL "GL/gl.h"
+      check_lib '' OPENGL -lOpenGL
    else
       check_header '' OPENGL "GL/gl.h"
       check_lib '' OPENGL -lGL
