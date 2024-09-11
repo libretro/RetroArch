@@ -413,7 +413,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
       /* Handle collection playlists */
       else
       {
-         char playlist_name[PATH_MAX_LENGTH];
+         char playlist_name[NAME_MAX_LENGTH];
          strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
          path_remove_extension(playlist_name);
 
@@ -534,7 +534,7 @@ static int action_get_title_dropdown_input_description_common(
 {
    size_t _len;
    const char *input_label_ptr = input_name;
-   char input_label[256];
+   char input_label[NAME_MAX_LENGTH];
 
    if (!string_is_empty(input_label_ptr))
    {
@@ -831,7 +831,7 @@ static int action_get_title_generic(char *s, size_t len,
       if ((tok = strtok_r(path_cpy, "|", &save)))
       {
          size_t _len;
-         char elem0_path[256];
+         char elem0_path[NAME_MAX_LENGTH];
          strlcpy(elem0_path, tok, sizeof(elem0_path));
          _len      = strlcpy(s, text, len);
          path_remove_extension(elem0_path);
@@ -945,13 +945,12 @@ static int action_get_title_group_settings(const char *path, const char *label,
    }
 
    {
-      size_t _len;
       char *tok, *save;
       char *label_cpy = strdup(label);
 
       if ((tok = strtok_r(label_cpy, "|", &save)))
       {
-         _len = strlcpy(s, tok, len);
+         size_t _len = strlcpy(s, tok, len);
          if ((tok = strtok_r(NULL, "|", &save)))
          {
             s[  _len] = ' ';

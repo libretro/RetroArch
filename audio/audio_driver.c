@@ -23,6 +23,7 @@
 
 #include <string/stdstring.h>
 #include <encodings/utf.h>
+#include <retro_miscellaneous.h>
 #include <clamping.h>
 #include <memalign.h>
 #include <audio/conversion/float_to_s16.h>
@@ -950,7 +951,7 @@ bool audio_driver_dsp_filter_init(const char *device)
    struct string_list *plugs            = NULL;
 #if defined(HAVE_DYLIB) && !defined(HAVE_FILTERS_BUILTIN)
    char ext_name[16];
-   char basedir[256];
+   char basedir[NAME_MAX_LENGTH];
    fill_pathname_basedir(basedir, device, sizeof(basedir));
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
       return false;
@@ -1329,7 +1330,7 @@ static void audio_driver_load_menu_bgm_callback(retro_task_t *task,
 
 void audio_driver_load_system_sounds(void)
 {
-   char basename_noext[256];
+   char basename_noext[NAME_MAX_LENGTH];
    char sounds_path[PATH_MAX_LENGTH];
    char sounds_fallback_path[PATH_MAX_LENGTH];
    settings_t *settings                  = config_get_ptr();

@@ -7,22 +7,26 @@
 // TODO: shift key should change the label of the keys to uppercase (need callback mechanism?)
 // pan gesture to outer edges of keyboard view for better dragging
 
+@available(iOS 13, *)
 @objc protocol EmulatorKeyboardKeyPressedDelegate: AnyObject {
     func keyDown(_ key: KeyCoded)
     func keyUp(_ key: KeyCoded)
 }
 
+@available(iOS 13, *)
 @objc protocol EmulatorKeyboardModifierPressedDelegate: AnyObject {
     func modifierPressedWithKey(_ key: KeyCoded, enable: Bool)
     func isModifierEnabled(key: KeyCoded) -> Bool
 }
 
+@available(iOS 13, *)
 protocol EmulatorKeyboardViewDelegate: AnyObject {
     func toggleAlternateKeys()
     func refreshModifierStates()
     func updateTransparency(toAlpha alpha: Float)
 }
 
+@available(iOS 13, *)
 class EmulatorKeyboardView: UIView {
    
    static var keyboardBackgroundColor = UIColor.systemGray6.withAlphaComponent(0.5)
@@ -273,6 +277,7 @@ class EmulatorKeyboardView: UIView {
     }
 }
 
+@available(iOS 13, *)
 extension UIImage {
     static func dot(size:CGSize, color:UIColor) -> UIImage {
         return UIGraphicsImageRenderer(size: size).image { context in

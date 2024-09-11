@@ -2225,6 +2225,10 @@ MSG_HASH(
    "input_remap_binds_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "input_remap_sort_by_controller_enable"
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SETTINGS,
    "input_settings"
    )
@@ -4479,10 +4483,6 @@ MSG_HASH(
    "video_frame_delay_auto"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_FRAME_REST,
-   "video_frame_rest"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
    "video_shader_delay"
    )
@@ -5093,6 +5093,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "disable_search_button"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "disable_left_analog_in_menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "disable_right_analog_in_menu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUIT_PRESS_TWICE,

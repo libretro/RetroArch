@@ -580,7 +580,7 @@ static void task_overlay_resolve_iterate(retro_task_t *task)
             loader->resolve_pos, loader->size))
    {
       RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
-      task_set_cancelled(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
       loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
       return;
    }
@@ -647,7 +647,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
                {
                   RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
                         (unsigned)overlay->pos);
-                  task_set_cancelled(task, true);
+                  task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
                   loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
                   break;
                }
@@ -668,7 +668,7 @@ static void task_overlay_deferred_loading(retro_task_t *task)
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_ERROR:
-         task_set_cancelled(task, true);
+         task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
          loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
          break;
    }
@@ -942,7 +942,8 @@ static void task_overlay_deferred_load(retro_task_t *task)
    return;
 
 error:
-   task_set_cancelled(task, true);
+   if (task)
+      task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
    loader->pos     = 0;
    loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
 }
@@ -952,8 +953,9 @@ static void task_overlay_free(retro_task_t *task)
    unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
    struct overlay *overlay   = &loader->overlays[loader->pos];
+   uint8_t flg               = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
    {
       if (loader->overlay_path)
          free(loader->overlay_path);
@@ -978,6 +980,7 @@ static void task_overlay_free(retro_task_t *task)
 
 static void task_overlay_handler(retro_task_t *task)
 {
+   uint8_t flg;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
 
    switch (loader->state)
@@ -992,16 +995,19 @@ static void task_overlay_handler(retro_task_t *task)
          task_overlay_resolve_iterate(task);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         task_set_cancelled(task, true);
+         task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
       default:
       case OVERLAY_STATUS_NONE:
-         task_set_finished(task, true);
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
          break;
    }
 
-   if (task_get_finished(task) && !task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if (       ((flg & RETRO_TASK_FLG_FINISHED)  > 0)
+         && (!((flg & RETRO_TASK_FLG_CANCELLED) > 0)))
    {
       overlay_task_data_t *data = (overlay_task_data_t*)
          calloc(1, sizeof(*data));
@@ -1020,17 +1026,10 @@ static void task_overlay_handler(retro_task_t *task)
 static bool task_overlay_finder(retro_task_t *task, void *user_data)
 {
    overlay_loader_t *loader = NULL;
-
-   if (!task || (task->handler != task_overlay_handler))
+   if (!task || (task->handler != task_overlay_handler) || !user_data)
       return false;
-
-   if (!user_data)
+   if (!(loader = (overlay_loader_t*)task->state))
       return false;
-
-   loader = (overlay_loader_t*)task->state;
-   if (!loader)
-      return false;
-
    return string_is_equal(loader->overlay_path, (const char*)user_data);
 }
 

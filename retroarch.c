@@ -320,9 +320,9 @@ struct rarch_state
    char path_config_append_file[PATH_MAX_LENGTH];
    char path_config_override_file[PATH_MAX_LENGTH];
    char path_core_options_file[PATH_MAX_LENGTH];
-   char dir_system[PATH_MAX_LENGTH];
-   char dir_savefile[PATH_MAX_LENGTH];
-   char dir_savestate[PATH_MAX_LENGTH];
+   char dir_system[DIR_MAX_LENGTH];
+   char dir_savefile[DIR_MAX_LENGTH];
+   char dir_savestate[DIR_MAX_LENGTH];
 };
 
 /* Forward declarations */
@@ -2165,7 +2165,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
       bool show_hidden_files)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   char ext_shaders[255];
+   char ext_shaders[NAME_MAX_LENGTH];
 #endif
    char ext_name[16];
    const char *exts    = NULL;
@@ -3240,7 +3240,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (settings->bools.run_ahead_enabled)
             {
-               char msg[256];
+               char msg[128];
                if (settings->bools.run_ahead_secondary_instance)
                   snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
@@ -3284,8 +3284,7 @@ bool command_event(enum event_command cmd, void *data)
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             else if (runloop_st->preempt_data)
             {
-               char msg[256];
-
+               char msg[128];
                snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_PREEMPT_ENABLED),
                         settings->uints.run_ahead_frames);
                runloop_msg_queue_push(
@@ -3558,12 +3557,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_STATE:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
-            int state_slot            = settings->ints.state_slot;
-
             if (settings->bools.savestate_auto_index)
             {
-               int new_state_slot = state_slot + 1;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
+               configuration_set_int(settings, settings->ints.state_slot,
+                  command_event_get_next_savestate_auto_index(settings));
             }
          }
          if (!command_event_main_state(cmd))
@@ -3764,8 +3761,8 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_AUDIO_REINIT, NULL);
 #endif
 
-         /* Recalibrate frame delay target */
-         if (settings->bools.video_frame_delay_auto)
+         /* Recalibrate frame delay target if not pausing */
+         if (settings->bools.video_frame_delay_auto && !video_st->frame_delay_pause)
             video_st->frame_delay_target = 0;
 
          break;
@@ -5793,7 +5790,7 @@ void main_exit(void *args)
 
    p_rarch->flags                  &= ~RARCH_FLAGS_HAS_SET_USERNAME;
    runloop_st->flags               &= ~RUNLOOP_FLAG_IS_INITED;
-   global_get_ptr()->error_on_init  = false;
+   global_get_ptr()->flags         &= ~GLOB_FLG_ERR_ON_INIT;
 #ifdef HAVE_CONFIGFILE
    p_rarch->flags                  &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
 #endif
@@ -6164,7 +6161,7 @@ static void retroarch_print_features(void)
 
 static void retroarch_print_version(void)
 {
-   char str[255];
+   char str[256];
    str[0] = '\0';
 
    frontend_driver_attach_console();
@@ -6537,10 +6534,12 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
    else
    {
       size_t _len;
+      const char *slash     = strrchr(path, '/');
+      const char *backslash = strrchr(path, '\\');
       /* If path has no extension and contains no path
        * delimiters, check if it is a core 'name', matching
        * an existing file in the cores directory */
-      if (find_last_slash(path))
+      if (((!slash || (backslash > slash)) ? (char*)backslash : (char*)slash))
          goto end;
 
       /* First check for built-in cores */
@@ -6775,7 +6774,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_CONFIGFILE
    runloop_st->flags              &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 #endif
-   global->cli_load_menu_on_error  = false;
+   global->flags                  &= ~GLOB_FLG_CLI_LOAD_MENU_ON_ERR;
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind                          = 0;
@@ -7274,7 +7273,7 @@ static bool retroarch_parse_input_and_config(
 #endif
                break;
             case RA_OPT_LOAD_MENU_ON_ERROR:
-               global->cli_load_menu_on_error = true;
+               global->flags |= GLOB_FLG_CLI_LOAD_MENU_ON_ERR;
                break;
             case 'e':
                {
@@ -7393,7 +7392,10 @@ static bool retroarch_parse_input_and_config(
 
    /* Update global 'content launched from command
     * line' status flag */
-   global->launched_from_cli = cli_active && (cli_core_set || cli_content_set);
+   if (cli_active && (cli_core_set || cli_content_set))
+      global->flags |=  (GLOB_FLG_LAUNCHED_FROM_CLI);
+   else
+      global->flags &= ~(GLOB_FLG_LAUNCHED_FROM_CLI);
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -7484,7 +7486,7 @@ bool retroarch_main_init(int argc, char *argv[])
       goto error;
    }
 
-   global->error_on_init = true;
+   global->flags |= GLOB_FLG_ERR_ON_INIT;
 
    /* Have to initialise non-file logging once at the start... */
    retro_main_log_file_init(NULL, false);
@@ -7683,8 +7685,8 @@ bool retroarch_main_init(int argc, char *argv[])
    {
 #ifdef HAVE_DYNAMIC
       /* Check if menu was active prior to core initialization */
-      if (   !global->launched_from_cli
-          ||  global->cli_load_menu_on_error
+      if (   (!(global->flags & GLOB_FLG_LAUNCHED_FROM_CLI))
+          ||   (global->flags & GLOB_FLG_CLI_LOAD_MENU_ON_ERR)
 #ifdef HAVE_MENU
           ||  (menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
@@ -7767,8 +7769,8 @@ bool retroarch_main_init(int argc, char *argv[])
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
-   global->error_on_init            = false;
-   runloop_st->flags               |= RUNLOOP_FLAG_IS_INITED;
+   global->flags                   &= ~GLOB_FLG_ERR_ON_INIT;
+   runloop_st->flags               |=  RUNLOOP_FLAG_IS_INITED;
 
 #ifdef HAVE_DISCORD
    {
@@ -8226,7 +8228,7 @@ bool should_quit_on_close(void)
    global_t   *global     = global_get_ptr();
    if (       ((settings->uints.quit_on_close_content ==
                QUIT_ON_CLOSE_CONTENT_CLI)
-            && global->launched_from_cli)
+            && (global->flags & GLOB_FLG_LAUNCHED_FROM_CLI))
             || (settings->uints.quit_on_close_content ==
                QUIT_ON_CLOSE_CONTENT_ENABLED)
       )

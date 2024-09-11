@@ -47,6 +47,10 @@
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
 
+#ifdef HAVE_MFI
+#import <GameController/GCMouse.h>
+#endif
+
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 #import "JITSupport.h"
 id<ApplePlatform> apple_platform;
@@ -383,10 +387,15 @@ enum
 #else
 - (void)handleUIPress:(UIPress *)press withEvent:(UIPressesEvent *)event down:(BOOL)down
 {
-   NSString       *ch = (NSString*)press.key.characters;
+   NSString       *ch;
    uint32_t character = 0;
    uint32_t mod       = 0;
-   NSUInteger mods    = event.modifierFlags;
+   NSUInteger mods    = 0;
+   if (@available(iOS 13.4, tvOS 13.4, *))
+   {
+      ch = (NSString*)press.key.characters;
+      mods = event.modifierFlags;
+   }
 
    if (mods & UIKeyModifierAlphaShift)
       mod |= RETROKMOD_CAPSLOCK;
@@ -416,9 +425,10 @@ enum
                                     RETRO_DEVICE_KEYBOARD);
    }
 
-   apple_input_keyboard_event(down,
-                              (uint32_t)press.key.keyCode, character, mod,
-                              RETRO_DEVICE_KEYBOARD);
+   if (@available(iOS 13.4, tvOS 13.4, *))
+      apple_input_keyboard_event(down,
+                                 (uint32_t)press.key.keyCode, character, mod,
+                                 RETRO_DEVICE_KEYBOARD);
 }
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
@@ -480,6 +490,42 @@ enum
 
 @end
 
+#ifdef HAVE_COCOA_METAL
+@implementation MetalLayerView
+
++ (Class)layerClass {
+    return [CAMetalLayer class];
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        [self setupMetalLayer];
+    }
+    return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self setupMetalLayer];
+    }
+    return self;
+}
+
+- (CAMetalLayer *)metalLayer {
+    return (CAMetalLayer *)self.layer;
+}
+
+- (void)setupMetalLayer {
+    self.metalLayer.device = MTLCreateSystemDefaultDevice();
+    self.metalLayer.contentsScale = [UIScreen mainScreen].scale;
+    self.metalLayer.opaque = YES;
+}
+
+@end
+#endif
+
 #if TARGET_OS_IOS
 @interface RetroArch_iOS () <MXMetricManagerSubscriber, UIPointerInteractionDelegate>
 @end
@@ -510,6 +556,8 @@ enum
    {
 #ifdef HAVE_COCOA_METAL
        case APPLE_VIEW_TYPE_VULKAN:
+         _renderView = [MetalLayerView new];
+         break;
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
@@ -670,6 +718,26 @@ enum
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
+   if (@available(macOS 11, iOS 14, tvOS 14, *))
+   {
+      [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidConnectNotification
+                                                        object:nil
+                                                         queue:[NSOperationQueue mainQueue]
+                                                    usingBlock:^(NSNotification *note)
+       {
+         GCMouse *mouse = note.object;
+         mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float delta_x, float delta_y)
+         {
+            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+            if (!apple || !apple->mouse_grabbed)
+               return;
+            apple->mouse_rel_x       += (int16_t)delta_x;
+            apple->mouse_rel_y       -= (int16_t)delta_y;
+            apple->window_pos_x      += (int16_t)delta_x;
+            apple->window_pos_y      -= (int16_t)delta_y;
+         };
+      }];
+   }
 #endif
 }
 
@@ -854,7 +922,7 @@ enum
                           defaultRegion:(UIPointerRegion *)defaultRegion API_AVAILABLE(ios(13.4))
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple)
+   if (!apple || apple->mouse_grabbed)
       return nil;
    CGPoint location = [apple_platform.renderView convertPoint:[request location] fromView:nil];
    apple->touches[0].screen_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);

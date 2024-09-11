@@ -533,7 +533,9 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
-    [apple_platform updateWindowedMode];
+   settings_t *settings             = config_get_ptr();
+   video_display_server_set_window_opacity(settings->uints.video_window_opacity);
+   video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
 }
 
 - (void)windowDidMove:(NSNotification *)notification
@@ -665,6 +667,16 @@ static ui_application_t ui_application_cocoa = {
    switch (vt)
    {
       case APPLE_VIEW_TYPE_VULKAN:
+         {
+            _renderView                 = [CocoaView get];
+            CAMetalLayer *metal_layer   = [[CAMetalLayer alloc] init];
+            metal_layer.device          = MTLCreateSystemDefaultDevice();
+            metal_layer.framebufferOnly = YES;
+            metal_layer.contentsScale   = [[NSScreen mainScreen] backingScaleFactor];
+            _renderView.layer           = metal_layer;
+            [_renderView setWantsLayer:YES];
+         }
+         break;
       case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v            = [MetalView new];
@@ -710,7 +722,6 @@ static ui_application_t ui_application_cocoa = {
       if (is_fullscreen)
          [self.window toggleFullScreen:self];
       [self updateWindowedSize:mode];
-      [self updateWindowedMode];
    }
 
    /* HACK(sgc): ensure MTKView posts a drawable resize event */
@@ -742,24 +753,6 @@ static ui_application_t ui_application_cocoa = {
    }
    else
       [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
-}
-
-- (void)updateWindowedMode
-{
-   settings_t *settings      = config_get_ptr();
-   bool windowed_full        = settings->bools.video_windowed_fullscreen;
-   bool show_decorations     = settings->bools.video_window_show_decorations;
-   CGFloat opacity           = (CGFloat)settings->uints.video_window_opacity / (CGFloat)100.0;
-
-   if (windowed_full || !self.window.keyWindow)
-       return;
-
-   if (show_decorations)
-       self.window.styleMask |= NSWindowStyleMaskTitled;
-   else
-       self.window.styleMask &= ~NSWindowStyleMaskTitled;
-
-   self.window.alphaValue = opacity;
 }
 
 - (void)setCursorVisible:(bool)v

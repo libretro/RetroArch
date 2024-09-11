@@ -112,7 +112,7 @@ typedef struct verbosity_state
 
 /* TODO/FIXME - static public global variables */
 static verbosity_state_t main_verbosity_st;
-static unsigned verbosity_log_level           = 
+static unsigned verbosity_log_level           =
 DEFAULT_FRONTEND_LOG_LEVEL;
 
 #ifdef HAVE_LIBNX
@@ -256,10 +256,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    FILE                       *fp = (FILE*)g_verbosity->fp;
    const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 #if defined(HAVE_QT) || defined(__WINRT__)
-   char buffer[2048];
+   char buffer[1024];
    buffer[0]         = '\0';
-
-   /* Ensure null termination and line break in error case */
+   /* Ensure NULL termination and line break in error case */
    if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
    {
       size_t end;
@@ -293,7 +292,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    vprintf(fmt, ap);
 #elif __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
    int sz = vsnprintf(NULL, 0, fmt, ap) + 1;
-   char buffer[sz];
+   char buffer[sz]; /* TODO/FIXME - VLA - C89 backwards compatibility */
    vsnprintf(buffer, sz, fmt, ap);
    os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
@@ -454,7 +453,7 @@ void rarch_log_file_init(
       const char *log_dir
       )
 {
-   char log_directory[PATH_MAX_LENGTH];
+   char log_directory[DIR_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    verbosity_state_t *g_verbosity            = &main_verbosity_st;
    static bool log_file_created              = false;
@@ -502,7 +501,9 @@ void rarch_log_file_init(
    {
       /* Get log directory */
       const char *override_path        = g_verbosity->override_path;
-      const char *last_slash           = find_last_slash(override_path);
+      const char *slash                = strrchr(override_path, '/');
+      const char *backslash            = strrchr(override_path, '\\');
+      const char *last_slash           = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
 
       if (last_slash)
       {

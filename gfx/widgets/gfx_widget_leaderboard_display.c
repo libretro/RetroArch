@@ -15,11 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <features/features_cpu.h>
+
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
 #include "../../cheevos/cheevos.h"
-#include <features/features_cpu.h>
 
 #define CHEEVO_LBOARD_ARRAY_SIZE 4
 #define CHEEVO_CHALLENGE_ARRAY_SIZE 8
@@ -79,7 +80,7 @@ static bool gfx_widget_leaderboard_display_init(
       gfx_animation_t *p_anim,
       bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_leaderboard_display_state_t *state = 
+   gfx_widget_leaderboard_display_state_t *state =
       &p_w_leaderboard_display_st;
    memset(state, 0, sizeof(*state));
    state->dispwidget_ptr   = (const dispgfx_widget_t*)

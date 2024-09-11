@@ -75,7 +75,9 @@ size_t strftime_am_pm(char *s, size_t len, const char* format,
       const void *ptr)
 {
    size_t _len              = 0;
+#if !(defined(__linux__) && !defined(ANDROID))
    char *local              = NULL;
+#endif
    const struct tm *timeptr = (const struct tm*)ptr;
    /* Ensure correct locale is set
     * > Required for localised AM/PM strings */
@@ -356,11 +358,7 @@ char *find_last_slash(const char *str)
 {
    const char *slash     = strrchr(str, '/');
    const char *backslash = strrchr(str, '\\');
-
-   if (!slash || (backslash > slash))
-      return (char*)backslash;
-   else
-      return (char*)slash;
+   return (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
 }
 
 /**
@@ -374,7 +372,9 @@ char *find_last_slash(const char *str)
 size_t fill_pathname_slash(char *path, size_t size)
 {
    size_t path_len;
-   const char *last_slash = find_last_slash(path);
+   const char *slash      = strrchr(path, '/');
+   const char *backslash  = strrchr(path, '\\');
+   const char *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (!last_slash)
       return strlcat(path, PATH_DEFAULT_SLASH(), size);
    path_len            = strlen(path);
@@ -464,25 +464,32 @@ void fill_pathname_basedir(char *out_dir,
 bool fill_pathname_parent_dir_name(char *out_dir,
       const char *in_dir, size_t size)
 {
-   char *temp   = strdup(in_dir);
-   char *last   = find_last_slash(temp);
+   char *tmp             = strdup(in_dir);
+   const char *slash     = strrchr(tmp, '/');
+   const char *backslash = strrchr(tmp, '\\');
+   char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
 
-   if (last && last[1] == 0)
+   if (last_slash && last_slash[1] == 0)
    {
-      *last     = '\0';
-      last      = find_last_slash(temp);
+      *last_slash        = '\0';
+      slash              = strrchr(tmp, '/');
+      backslash          = strrchr(tmp, '\\');
+      last_slash         = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    }
 
    /* Cut the last part of the string (the filename) after the slash,
       leaving the directory name (or nested directory names) only. */
-   if (last)
-      *last     = '\0';
+   if (last_slash)
+      *last_slash        = '\0';
 
-   /* Point in_dir to the address of the last slash. */
-   /* If find_last_slash returns NULL, it means there was no slash in temp,
-      so use temp as-is. */
-   if (!(in_dir = find_last_slash(temp)))
-       in_dir   = temp;
+   /* Point in_dir to the address of the last slash.
+    * If in_dir is NULL, it means there was no slash in tmp,
+    * so use tmp as-is. */
+   slash                 = strrchr(tmp, '/');
+   backslash             = strrchr(tmp, '\\');
+   in_dir                = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   if (!in_dir)
+       in_dir            = tmp;
 
    if (in_dir && in_dir[1])
    {
@@ -491,11 +498,11 @@ bool fill_pathname_parent_dir_name(char *out_dir,
            strlcpy(out_dir, in_dir + 1, size);
        else
            strlcpy(out_dir, in_dir, size);
-       free(temp);
+       free(tmp);
        return true;
    }
 
-   free(temp);
+   free(tmp);
    return false;
 }
 
@@ -593,17 +600,21 @@ size_t fill_str_dated_filename(char *out_filename,
  **/
 void path_basedir(char *path)
 {
-   char *last = NULL;
+   const char *slash;
+   const char *backslash;
+   char *last_slash = NULL;
    if (!path || path[0] == '\0' || path[1] == '\0')
       return;
-
-   if ((last = find_last_slash(path)))
-      last[1] = '\0';
+   slash             = strrchr(path, '/');
+   backslash         = strrchr(path, '\\');
+   last_slash        = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   if (last_slash)
+      last_slash[1]  = '\0';
    else
    {
-      path[0] = '.';
-      path[1] = PATH_DEFAULT_SLASH_C();
-      path[2] = '\0';
+      path[0]        = '.';
+      path[1]        = PATH_DEFAULT_SLASH_C();
+      path[2]        = '\0';
    }
 }
 
@@ -623,11 +634,18 @@ void path_parent_dir(char *path, size_t len)
 
    if (len && PATH_CHAR_IS_SLASH(path[len - 1]))
    {
-      bool path_was_absolute = path_is_absolute(path);
+      char *last_slash;
+      const char *slash;
+      const char *backslash;
+      bool was_absolute = path_is_absolute(path);
 
-      path[len - 1] = '\0';
+      path[len - 1]     = '\0';
 
-      if (path_was_absolute && !find_last_slash(path))
+      slash             = strrchr(path, '/');
+      backslash         = strrchr(path, '\\');
+      last_slash        = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+
+      if (was_absolute && !last_slash)
       {
          /* We removed the only slash from what used to be an absolute path.
           * On Linux, this goes from "/" to an empty string and everything works fine,
@@ -653,9 +671,12 @@ const char *path_basename(const char *path)
 {
    /* We cut either at the first compression-related hash,
     * or we cut at the last slash */
-   const char *ptr = NULL;
+   const char *ptr       = NULL;
+   const char *slash     = strrchr(path, '/');
+   const char *backslash = strrchr(path, '\\');
+   char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (     (ptr = path_get_archive_delim(path))
-         || (ptr = find_last_slash(path)))
+         || (ptr = last_slash))
       return ptr + 1;
    return path;
 }
@@ -673,10 +694,10 @@ const char *path_basename(const char *path)
 const char *path_basename_nocompression(const char *path)
 {
    /* We cut at the last slash */
-   const char *last  = find_last_slash(path);
-   if (last)
-      return last + 1;
-   return path;
+   const char *slash     = strrchr(path, '/');
+   const char *backslash = strrchr(path, '\\');
+   char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   return (last_slash) ? (last_slash + 1) : path;
 }
 
 /**
@@ -988,7 +1009,9 @@ size_t fill_pathname_join_special(char *out_path,
 
    if (*out_path)
    {
-      const char *last_slash = find_last_slash(out_path);
+      const char *slash      = strrchr(out_path, '/');
+      const char *backslash  = strrchr(out_path, '\\');
+      char *last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
       if (last_slash)
       {
          /* Try to preserve slash type. */
@@ -1058,14 +1081,14 @@ size_t fill_pathname_expand_special(char *out_path,
    char *app_dir = NULL;
    if (in_path[0] == '~')
    {
-      app_dir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
-      fill_pathname_home_dir(app_dir, PATH_MAX_LENGTH * sizeof(char));
+      app_dir    = (char*)malloc(DIR_MAX_LENGTH * sizeof(char));
+      fill_pathname_home_dir(app_dir, DIR_MAX_LENGTH * sizeof(char));
    }
    else if (in_path[0] == ':')
    {
-      app_dir    = (char*)malloc(PATH_MAX_LENGTH * sizeof(char));
+      app_dir    = (char*)malloc(DIR_MAX_LENGTH * sizeof(char));
       app_dir[0] = '\0';
-      fill_pathname_application_dir(app_dir, PATH_MAX_LENGTH * sizeof(char));
+      fill_pathname_application_dir(app_dir, DIR_MAX_LENGTH * sizeof(char));
    }
 
    if (app_dir)
@@ -1101,8 +1124,8 @@ size_t fill_pathname_abbreviate_special(char *out_path,
    unsigned i;
    const char *candidates[3];
    const char *notations[3];
-   char application_dir[PATH_MAX_LENGTH];
-   char home_dir[PATH_MAX_LENGTH];
+   char application_dir[DIR_MAX_LENGTH];
+   char home_dir[DIR_MAX_LENGTH];
 
    application_dir[0] = '\0';
 
@@ -1147,6 +1170,45 @@ size_t fill_pathname_abbreviate_special(char *out_path,
    }
 #endif
    return strlcpy(out_path, in_path, size);
+}
+
+/**
+ * sanitize_path_part:
+ *
+ * @path_part               : directory or filename
+ *
+ * Takes single part of a path eg. single filename
+ * or directory, and removes any special chars that are
+ * unavailable.
+ *
+ * @returns new string that has been sanitized
+ **/
+const char *sanitize_path_part(const char *path_part, size_t size)
+{
+   int i;
+   int j = 0;
+   char *tmp = NULL;
+   const char *special_chars = "<>:\"/\\|?*";
+
+   if (string_is_empty(path_part))
+      return NULL;
+
+   tmp = (char *)malloc((size + 1) * sizeof(char));
+
+   for (i = 0; path_part[i] != '\0'; i++)
+   {
+      /* Check if the current character is
+       * one of the special characters */
+
+      /*  If not, copy it to the temporary array */
+      if (!strchr(special_chars, path_part[i]))
+         tmp[j++] = path_part[i];
+   }
+
+   tmp[j] = '\0';
+
+   /* Return the new string */
+   return tmp;
 }
 
 /**
@@ -1282,23 +1344,26 @@ size_t fill_pathname_abbreviated_or_relative(char *out_path,
  **/
 void path_basedir_wrapper(char *path)
 {
-   char *last = NULL;
+   const char *slash;
+   const char *backslash;
+   char *last_slash = NULL;
    if (!path || path[0] == '\0' || path[1] == '\0')
       return;
-
 #ifdef HAVE_COMPRESSION
    /* We want to find the directory with the archive in basedir. */
-   if ((last = (char*)path_get_archive_delim(path)))
-      *last = '\0';
+   if ((last_slash  = (char*)path_get_archive_delim(path)))
+      *last_slash   = '\0';
 #endif
-
-   if ((last = find_last_slash(path)))
-      last[1] = '\0';
+   slash            = strrchr(path, '/');
+   backslash        = strrchr(path, '\\');
+   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   if (last_slash)
+      last_slash[1] = '\0';
    else
    {
-      path[0] = '.';
-      path[1] = PATH_DEFAULT_SLASH_C();
-      path[2] = '\0';
+      path[0]       = '.';
+      path[1]       = PATH_DEFAULT_SLASH_C();
+      path[2]       = '\0';
    }
 }
 
@@ -1351,7 +1416,7 @@ void fill_pathname_application_path(char *s, size_t len)
          /* This needs to be done so that the path becomes
           * /private/var/... and this
           * is used consistently throughout for the iOS bundle path */
-         char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
+         char resolved_bundle_dir_buf[DIR_MAX_LENGTH] = {0};
          if (realpath(s, resolved_bundle_dir_buf))
          {
             size_t _len = strlcpy(s, resolved_bundle_dir_buf, len - 1);

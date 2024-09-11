@@ -2665,27 +2665,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Opóźnienie ramki (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Zmniejsza opóźnienie kosztem wyższego ryzyka przycinania się wideo. Dodaje opóźnienie w milisekundach po prezentacji wideo i przed główną klatką."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Ustawia liczbę milisekund opóźnienia po prezentacji wideo przed uruchomieniem rdzenia. Może zmniejszyć opóźnienie kosztem wyższego ryzyka przycinania się. Maksymalnie %d."
+   "Opóźnienie ramki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatyczne opóźnienie ramki"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Tymczasowo zmniejsz efektywne \"Opóźnienie klatek\", aby zapobiec potencjalnym spadkom klatek. Punktem początkowym jest połowa czasu ramki, gdy \"Opóźnienie klatek\" wynosi 0."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Tymczasowo zmniejsz efektywne \"Opóźnienie klatek\", aż docelowa częstotliwość odświeżania będzie stabilna. Pomiar rozpoczyna się od połowy czasu klatki, gdy \"Opóźnienie klatek\" wynosi 0. Np. 8 dla NTSC i 10 dla PAL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,

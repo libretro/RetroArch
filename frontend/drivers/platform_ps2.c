@@ -50,9 +50,6 @@
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
 #endif
 
-// Disable pthread functionality
-PS2_DISABLE_AUTOSTART_PTHREAD();
-
 static enum frontend_fork ps2_fork_mode      = FRONTEND_FORK_NONE;
 static char cwd[FILENAME_MAX]                = {0};
 static char mountString[10]                  = {0};
@@ -343,6 +340,7 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, mountPoint);
 
    /* Reload IOP drivers for saving IOP ram */
+   deinit_drivers(true, true);
    reset_IOP();
    common_init_drivers(false);
    waitUntilDeviceIsReady(path);

@@ -284,7 +284,7 @@ enum xmb_pending_thumbnail_type
    XMB_PENDING_THUMBNAIL_ICONS
 };
 
-typedef struct 
+typedef struct
 {
    gfx_thumbnail_path_data_t thumbnail_path_data;
    gfx_thumbnail_t icon;
@@ -426,8 +426,8 @@ typedef struct xmb_handle
    uint8_t system_tab_end;
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
 
-   char title_name[255];
-   char title_name_alt[255];
+   char title_name[NAME_MAX_LENGTH];
+   char title_name_alt[NAME_MAX_LENGTH];
 
    /* Cached texts showing current entry index / current list size */
    char entry_index_str[32];
@@ -437,9 +437,9 @@ typedef struct xmb_handle
     * has a hard-coded size of 8192...
     * (the extra space here is required to silence compiler
     * warnings...) */
-   char savestate_thumbnail_file_path[8204];
-   char prev_savestate_thumbnail_file_path[8204];
-   char fullscreen_thumbnail_label[255];
+   char savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
+   char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
+   char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    bool allow_horizontal_animation;
    bool allow_dynamic_wallpaper;
@@ -1045,7 +1045,7 @@ static void xmb_render_messagebox_internal(
    int usable_width                  = 0;
    struct string_list list           = {0};
    bool input_dialog_display_kb      = false;
-   char wrapped_message[MENU_SUBLABEL_MAX_LENGTH];
+   char wrapped_message[MENU_LABEL_MAX_LENGTH];
 
    wrapped_message[0]                = '\0';
 
@@ -1264,7 +1264,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
              || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204];
+            char path[8204]; /* TODO/FIXME - check size */
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */
@@ -1532,9 +1532,9 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
 }
 
 static void xmb_set_dynamic_icon_content(
-   void *xmb_handle_ptr, 
-   const char *s, 
-   size_t selection, 
+   void *xmb_handle_ptr,
+   const char *s,
+   size_t selection,
    xmb_icons_t *thumbnail_icon)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)xmb_handle_ptr;
@@ -2309,7 +2309,7 @@ static void xmb_populate_dynamic_icons(xmb_handle_t *xmb)
             xmb_set_dynamic_icon_content(xmb, NULL, i, thumbnail_icon);
             gfx_thumbnail_cancel_pending_requests();
          }
-      } 
+      }
    }
 }
 
@@ -2482,7 +2482,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
       /* Loop through list and set console names */
       for (i = 0; i < xmb->horizontal_list.size; i++)
       {
-         char playlist_file_noext[255];
+         char playlist_file_noext[NAME_MAX_LENGTH];
          char *console_name        = NULL;
          const char *playlist_file = xmb->horizontal_list.list[i].path;
 
@@ -2604,7 +2604,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
       {
          size_t len, syslen;
          struct texture_image ti;
-         char sysname[PATH_MAX_LENGTH];
+         char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
          char content_texturepath[PATH_MAX_LENGTH];
          const char *console_name = NULL;
@@ -2960,7 +2960,12 @@ static void xmb_populate_entries(void *data,
 
    if(xmb->is_playlist)
    {
-      xmb_populate_dynamic_icons(xmb);
+      if(settings->uints.menu_icon_thumbnails)
+         xmb_populate_dynamic_icons(xmb);
+   } 
+   else if(xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE )
+   {
+      xmb_unload_icon_thumbnail_textures(xmb);
    }
 
    if (xmb->allow_dynamic_wallpaper)
@@ -3313,7 +3318,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY:
       case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
-      case MENU_ENUM_LABEL_VIDEO_FRAME_REST:
          return xmb->textures.list[XMB_TEXTURE_LATENCY];
       case MENU_ENUM_LABEL_SAVING_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING:
@@ -4375,7 +4379,7 @@ static int xmb_draw_item(
    float icon_x, icon_y, label_offset, gfx_icon_x, gfx_icon_y, gfx_icon_height, gfx_icon_width;
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-   char tmp[255];
+   char tmp[NAME_MAX_LENGTH];
    unsigned ticker_x_offset            = 0;
    const char *ticker_str              = NULL;
    unsigned entry_type                 = 0;
@@ -4636,9 +4640,9 @@ static int xmb_draw_item(
             && width > 320 && height > 240
             && !string_is_empty(entry.sublabel))
       {
-         char entry_sublabel[MENU_SUBLABEL_MAX_LENGTH];
-         char entry_sublabel_top_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
-         char entry_sublabel_bottom_fade[MENU_SUBLABEL_MAX_LENGTH >> 2];
+         char entry_sublabel[MENU_LABEL_MAX_LENGTH];
+         char entry_sublabel_top_fade[MENU_LABEL_MAX_LENGTH >> 2];
+         char entry_sublabel_bottom_fade[MENU_LABEL_MAX_LENGTH >> 2];
          gfx_animation_ctx_line_ticker_t line_ticker;
          gfx_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
          float ticker_y_offset             = 0.0f;
@@ -4853,7 +4857,7 @@ static int xmb_draw_item(
             /* Ignore Explore Views */
             for (offset = 0; offset < xmb->horizontal_list.size; offset++)
             {
-               char playlist_file_noext[255];
+               char playlist_file_noext[NAME_MAX_LENGTH];
                strlcpy(playlist_file_noext, xmb->horizontal_list.list[offset].path, sizeof(playlist_file_noext));
                path_remove_extension(playlist_file_noext);
                if (string_is_equal(playlist_file_noext, entry.rich_label))
@@ -4881,7 +4885,7 @@ static int xmb_draw_item(
             case XMB_SYSTEM_TAB_MAIN:
                {
                   /* Special fall-through for "Load Content" > Playlists > Favorites */
-                  char title[255];
+                  char title[NAME_MAX_LENGTH];
                   menu_entries_get_title(title, sizeof(title));
                   if (string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)))
                      ; /* no-op */
@@ -4948,14 +4952,14 @@ static int xmb_draw_item(
       gfx_icon_height = gfx_icon_width  = xmb->icon_size;
 
       show_icon_thumbnail          =
-            (xmb->is_playlist 
+            (xmb->is_playlist
             && gfx_thumbnail_is_enabled(&node->thumbnail_icon.thumbnail_path_data, GFX_THUMBNAIL_ICON)
             && (node->thumbnail_icon.icon.status == GFX_THUMBNAIL_STATUS_AVAILABLE));
 
       if (show_icon_thumbnail)
       {
          texture = node->thumbnail_icon.icon.texture;
-         gfx_icon_width = gfx_icon_height = (xmb->icon_size * 1.8); 
+         gfx_icon_width = gfx_icon_height = (xmb->icon_size * 1.8);
 
          gfx_thumbnail_get_draw_dimensions(
             &node->thumbnail_icon.icon,
@@ -5522,9 +5526,9 @@ static bool xmb_load_dynamic_icon(const char *icon_path,
 
    if(gfx_display_reset_icon_texture(
          icon_path,
-         &icon->texture, 
-         TEXTURE_FILTER_MIPMAP_LINEAR, 
-         &width, 
+         &icon->texture,
+         TEXTURE_FILTER_MIPMAP_LINEAR,
+         &width,
          &height))
    {
       icon->width          = width;
@@ -5748,7 +5752,7 @@ static void xmb_render(void *data,
          }
       }
    }
-   
+
    /* Handle any pending icon thumbnail load requests */
    if (xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE)
    {
@@ -6287,7 +6291,7 @@ static void xmb_draw_fullscreen_thumbnails(
          /* Title text */
          if (menu_ticker_smooth)
          {
-            char title_buf[255];
+            char title_buf[NAME_MAX_LENGTH];
             gfx_animation_ctx_ticker_smooth_t ticker_smooth;
             int title_x                 = 0;
             unsigned ticker_x_offset    = 0;
@@ -6447,9 +6451,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
    unsigned i;
+   char title_msg[128];
    char msg[1024];
-   char title_msg[255];
-   char title_truncated[255];
+   char title_truncated[NAME_MAX_LENGTH];
    gfx_thumbnail_shadow_t thumbnail_shadow;
    size_t selection                    = 0;
    size_t percent_width                = 0;
@@ -6899,7 +6903,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   video_height,
                   shadows_enable,
                   xmb->icon_size,
-                  xmb->icon_size,   
+                  xmb->icon_size,
                   xmb->textures.list[
                   powerstate.charging? XMB_TEXTURE_BATTERY_CHARGING   :
                   (powerstate.percent > 80)? XMB_TEXTURE_BATTERY_FULL :
@@ -7138,7 +7142,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
-      char tmp[255];
+      char tmp[NAME_MAX_LENGTH];
       size_t tmp_len                      = (video_width - xmb->margins_title_left - xmb->icon_size - title_header_max_width);
       unsigned ticker_x_offset            = 0;
       bool use_smooth_ticker              = settings->bools.menu_ticker_smooth;

@@ -53,8 +53,8 @@ typedef struct database_state_handle
    size_t entry_index;
    uint32_t crc;
    uint32_t archive_crc;
-   char archive_name[511];
-   char serial[4096];
+   char archive_name[512]; /* TODO/FIXME - check size */
+   char serial[4096];      /* TODO/FIXME - check size */
 } database_state_handle_t;
 
 enum db_flags_enum
@@ -108,9 +108,9 @@ static const char *database_info_get_current_element_name(
 
 static void task_database_scan_console_output(const char *label, const char *db_name, bool add)
 {
+   char string[32];
    const char *prefix   = (add) ? "++" : (db_name) ? "==" : "??";
    const char *no_color = getenv("NO_COLOR");
-   char string[32];
    bool color           = (no_color && no_color[0] != '0') ? false : true;
 
    /* Colorize prefix (add = green, dupe = yellow, not found = red) */
@@ -166,7 +166,7 @@ static int task_database_iterate_start(retro_task_t *task,
       database_info_handle_t *db,
       const char *name)
 {
-   char msg[256];
+   char msg[128];
    const char *basename_path = !string_is_empty(name)
          ? path_basename_nocompression(name) : "";
 
@@ -209,17 +209,20 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       size_t system_len = strlen(system_name);
       if (string_starts_with_size(system_name, "Sony", STRLEN_CONST("Sony")))
       {
-         if (string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
+         if (STRLEN_CONST("Sony - PlayStation Portable") == system_len &&
+             string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
          {
             if (detect_psp_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
+         else if (STRLEN_CONST("Sony - PlayStation") == system_len &&
+                  string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
          {
             if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
+         else if (STRLEN_CONST("Sony - PlayStation 2") == system_len &&
+                  string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
          {
             if (detect_ps2_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -227,12 +230,14 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       }
       else if (string_starts_with_size(system_name, "Nintendo", STRLEN_CONST("Nintendo")))
       {
-         if (string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
+         if (STRLEN_CONST("Nintendo - GameCube") == system_len &&
+             string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
          {
             if (detect_gc_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
+         else if (STRLEN_CONST("Nintendo - Wii") == system_len &&
+                  string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
          {
             if (detect_wii_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -240,17 +245,20 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
       }
       else if (string_starts_with_size(system_name, "Sega", STRLEN_CONST("Sega")))
       {
-         if (string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
+         if (STRLEN_CONST("Sega - Mega-CD - Sega CD") == system_len &&
+             string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
          {
             if (detect_scd_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sega - Saturn", system_len))
+         else if (STRLEN_CONST("Sega - Saturn") == system_len &&
+                  string_is_equal_fast(system_name, "Sega - Saturn", system_len))
          {
             if (detect_sat_game(fd, serial, serial_len, filename) != 0)
                return 1;
          }
-         else if (string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
+         else if (STRLEN_CONST("Sega - Dreamcast") == system_len &&
+                  string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
          {
             if (detect_dc_game(fd, serial, serial_len, filename) != 0)
                return 1;
@@ -758,16 +766,16 @@ static int database_info_list_iterate_found_match(
       const char *archive_name
       )
 {
+   char entry_lbl[128];
+   char db_playlist_base_str[NAME_MAX_LENGTH];
    /* TODO/FIXME - heap allocations are done here to avoid
     * running out of stack space on systems with a limited stack size.
     * We should use less fullsize paths in the future so that we don't
     * need to have all these big char arrays here */
    size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
    char* db_crc                   = (char*)malloc(str_len);
-   char* db_playlist_base_str     = (char*)malloc(str_len);
    char* db_playlist_path         = (char*)malloc(str_len);
    char* entry_path_str           = (char*)malloc(str_len);
-   char* entry_label              = (char*)malloc(str_len);
    char *hash                     = NULL;
    playlist_t   *playlist         = NULL;
    const char         *db_path    =
@@ -785,7 +793,7 @@ static int database_info_list_iterate_found_match(
          path_basename_nocompression(db_path), "", str_len);
    path_remove_extension(db_playlist_base_str);
 
-   strlcat(db_playlist_base_str, ".lpl", str_len);
+   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
 
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join_special(db_playlist_path, _db->playlist_directory,
@@ -810,16 +818,16 @@ static int database_info_list_iterate_found_match(
    /* Use database name for label if found,
     * otherwise use filename without extension */
    if (!string_is_empty(db_info_entry->name))
-      strlcpy(entry_label, db_info_entry->name, str_len);
+      strlcpy(entry_lbl, db_info_entry->name, sizeof(entry_lbl));
    else if (!string_is_empty(entry_path))
    {
       char *delim = (char*)strchr(entry_path, '#');
 
       if (delim)
          *delim = '\0';
-      fill_pathname(entry_label,
+      fill_pathname(entry_lbl,
             path_basename_nocompression(entry_path), "", str_len);
-      path_remove_extension(entry_label);
+      path_remove_extension(entry_lbl);
 
       RARCH_LOG("[Scanner]: No match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
    }
@@ -852,7 +860,7 @@ static int database_info_list_iterate_found_match(
       /* the push function reads our entry as const,
        * so these casts are safe */
       entry.path              = entry_path_str;
-      entry.label             = entry_label;
+      entry.label             = entry_lbl;
       entry.core_path         = (char*)"DETECT";
       entry.core_name         = (char*)"DETECT";
       entry.db_name           = db_playlist_base_str;
@@ -872,12 +880,12 @@ static int database_info_list_iterate_found_match(
       entry.last_played_second= 0;
 
       playlist_push(playlist, &entry);
-      RARCH_LOG("[Scanner]: Add \"%s\" to \"%s\"\n", entry_label, entry.db_name);
+      RARCH_LOG("[Scanner]: Add \"%s\" to \"%s\"\n", entry_lbl, entry.db_name);
       if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-         task_database_scan_console_output(entry_label, path_remove_extension(db_playlist_base_str), true);
+         task_database_scan_console_output(entry_lbl, path_remove_extension(db_playlist_base_str), true);
    }
    else if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-      task_database_scan_console_output(entry_label, path_remove_extension(db_playlist_base_str), false);
+      task_database_scan_console_output(entry_lbl, path_remove_extension(db_playlist_base_str), false);
 
    playlist_write_file(playlist);
    playlist_free(playlist);
@@ -902,10 +910,8 @@ static int database_info_list_iterate_found_match(
    }
 
    free(db_crc);
-   free(db_playlist_base_str);
    free(db_playlist_path);
    free(entry_path_str);
-   free(entry_label);
    return 0;
 }
 
@@ -932,8 +938,8 @@ static int task_database_iterate_crc_lookup(
       const char *archive_entry,
       bool path_contains_compressed_file)
 {
-   if (!db_state->list ||
-         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
+   if (   !db_state->list
+       || (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db, db_state, name,
             path_contains_compressed_file);
 
@@ -1040,7 +1046,7 @@ static int task_database_iterate_playlist_lutro(
    if (!playlist_entry_exists(playlist, path))
    {
       struct playlist_entry entry;
-      char game_title[PATH_MAX_LENGTH];
+      char game_title[NAME_MAX_LENGTH];
       fill_pathname(game_title,
             path_basename(path), "", sizeof(game_title));
       path_remove_extension(game_title);
@@ -1220,6 +1226,7 @@ static void task_database_cleanup_state(
 
 static void task_database_handler(retro_task_t *task)
 {
+   uint8_t flg;
    const char *name                 = NULL;
    database_info_handle_t  *dbinfo  = NULL;
    database_state_handle_t *dbstate = NULL;
@@ -1255,8 +1262,9 @@ static void task_database_handler(retro_task_t *task)
 
    dbinfo  = db->handle;
    dbstate = &db->state;
+   flg     = task_get_flags(task);
 
-   if (!dbinfo || task_get_cancelled(task))
+   if (!dbinfo || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (dbinfo->status)
@@ -1283,12 +1291,20 @@ static void task_database_handler(retro_task_t *task)
                char *dirname = NULL;
 
                if (!string_is_empty(db->fullpath))
-                  dirname    = find_last_slash(db->fullpath) + 1;
+               {
+                  const char *slash     = strrchr(db->fullpath, '/');
+                  const char *backslash = strrchr(db->fullpath, '\\');
+                  char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+                  dirname               = last_slash + 1;
+               }
 
                if (!string_is_empty(dirname))
                {
                   for (i = 0; i < dbstate->list->size; i++)
                   {
+                     char *last_slash;
+                     const char *slash;
+                     const char *backslash;
                      const char *data = dbstate->list->elems[i].data;
                      char *dbname     = NULL;
                      bool strmatch    = false;
@@ -1296,7 +1312,10 @@ static void task_database_handler(retro_task_t *task)
 
                      path_remove_extension(dbpath);
 
-                     dbname           = find_last_slash(dbpath) + 1;
+                     slash            = strrchr(dbpath, '/');
+                     backslash        = strrchr(dbpath, '\\');
+                     last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+                     dbname           = last_slash + 1;
                      strmatch         = strcasecmp(dbname, dirname) == 0;
 
                      free(dbpath);
@@ -1304,8 +1323,7 @@ static void task_database_handler(retro_task_t *task)
                      if (strmatch)
                      {
                         struct string_list *single_list = string_list_new();
-                        string_list_append(single_list,
-                              data,
+                        string_list_append(single_list, data,
                               dbstate->list->elems[i].attr);
                         dir_list_free(dbstate->list);
                         dbstate->list = single_list;
@@ -1384,7 +1402,7 @@ static void task_database_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (dbstate)
    {
@@ -1417,7 +1435,7 @@ static void task_database_progress_cb(retro_task_t *task)
 {
    if (task)
       video_display_server_set_window_progress(task->progress,
-            task->finished);
+            ((task->flags & RETRO_TASK_FLG_FINISHED) > 0));
 }
 #endif
 
@@ -1443,8 +1461,7 @@ bool task_push_dbscan(
    t->callback                             = cb;
    t->title                                = strdup(msg_hash_to_str(
             MSG_PREPARING_FOR_CONTENT_SCAN));
-   t->alternative_look                     = true;
-
+   t->flags                               |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 #ifdef RARCH_INTERNAL
    t->progress_cb                          = task_database_progress_cb;
    if (settings->bools.scan_without_core_match)

@@ -98,9 +98,9 @@ static void task_queue_push_progress(retro_task_t *task)
    slock_lock(property_lock);
 #endif
 
-   if (task->title && !task->mute)
+   if (task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
    {
-      if (task->finished)
+      if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
       {
          if (task->error)
             task_queue_msg_push(task, 1, 60, true, "%s: %s",
@@ -205,7 +205,7 @@ static void retro_task_regular_push_running(retro_task_t *task)
 static void retro_task_regular_cancel(void *task)
 {
    retro_task_t *t = (retro_task_t*)task;
-   t->cancelled    = true;
+   t->flags       |= RETRO_TASK_FLG_CANCELLED;
 }
 
 static void retro_task_regular_gather(void)
@@ -231,7 +231,7 @@ static void retro_task_regular_gather(void)
          task_queue_push_progress(task);
       }
 
-      if (task->finished)
+      if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
          task_queue_put(&tasks_finished, task);
       else
          task_queue_put(&tasks_running, task);
@@ -251,7 +251,7 @@ static void retro_task_regular_reset(void)
    retro_task_t *task = tasks_running.front;
 
    for (; task; task = task->next)
-      task->cancelled = true;
+      task->flags |= RETRO_TASK_FLG_CANCELLED;
 }
 
 static void retro_task_regular_init(void) { }
@@ -391,7 +391,7 @@ static void retro_task_threaded_cancel(void *task)
    {
       if (t == task)
       {
-        t->cancelled = true;
+        t->flags |= RETRO_TASK_FLG_CANCELLED;
         break;
       }
    }
@@ -440,7 +440,7 @@ static void retro_task_threaded_reset(void)
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
-      task->cancelled = true;
+      task->flags |= RETRO_TASK_FLG_CANCELLED;
    slock_unlock(running_lock);
 }
 
@@ -511,7 +511,7 @@ static void threaded_worker(void *userdata)
       task->handler(task);
 
       slock_lock(property_lock);
-      finished = task->finished;
+      finished = ((task->flags & RETRO_TASK_FLG_FINISHED) > 0) ? true : false;
       slock_unlock(property_lock);
 
       /* Update queue */
@@ -762,28 +762,6 @@ bool task_is_on_main_thread(void)
 #endif
 }
 
-void task_set_finished(retro_task_t *task, bool finished)
-{
-#ifdef HAVE_THREADS
-   slock_lock(property_lock);
-#endif
-   task->finished = finished;
-#ifdef HAVE_THREADS
-   slock_unlock(property_lock);
-#endif
-}
-
-void task_set_mute(retro_task_t *task, bool mute)
-{
-#ifdef HAVE_THREADS
-   slock_lock(property_lock);
-#endif
-   task->mute = mute;
-#ifdef HAVE_THREADS
-   slock_unlock(property_lock);
-#endif
-}
-
 void task_set_error(retro_task_t *task, char *error)
 {
 #ifdef HAVE_THREADS
@@ -828,17 +806,6 @@ void task_set_data(retro_task_t *task, void *data)
 #endif
 }
 
-void task_set_cancelled(retro_task_t *task, bool cancelled)
-{
-#ifdef HAVE_THREADS
-   slock_lock(running_lock);
-#endif
-   task->cancelled = cancelled;
-#ifdef HAVE_THREADS
-   slock_unlock(running_lock);
-#endif
-}
-
 void task_free_title(retro_task_t *task)
 {
 #ifdef HAVE_THREADS
@@ -867,49 +834,31 @@ void* task_get_data(retro_task_t *task)
    return data;
 }
 
-bool task_get_cancelled(retro_task_t *task)
+void task_set_flags(retro_task_t *task, uint8_t flags, bool set)
 {
-   bool cancelled = false;
-
-#ifdef HAVE_THREADS
-   slock_lock(running_lock);
-#endif
-   cancelled = task->cancelled;
-#ifdef HAVE_THREADS
-   slock_unlock(running_lock);
-#endif
-
-   return cancelled;
-}
-
-bool task_get_finished(retro_task_t *task)
-{
-   bool finished = false;
-
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
-   finished = task->finished;
+   if (set)
+      task->flags |=  (flags);
+   else
+      task->flags &= ~(flags);
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif
-
-   return finished;
 }
 
-bool task_get_mute(retro_task_t *task)
+uint8_t task_get_flags(retro_task_t *task)
 {
-   bool mute = false;
-
+   uint8_t _flags = 0;
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
-   mute = task->mute;
+   _flags = task->flags;
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif
-
-   return mute;
+   return _flags;
 }
 
 char* task_get_error(retro_task_t *task)
@@ -969,9 +918,7 @@ retro_task_t *task_init(void)
    task->handler           = NULL;
    task->callback          = NULL;
    task->cleanup           = NULL;
-   task->finished          = false;
-   task->cancelled         = false;
-   task->mute              = false;
+   task->flags             = 0;
    task->task_data         = NULL;
    task->user_data         = NULL;
    task->state             = NULL;
@@ -983,7 +930,6 @@ retro_task_t *task_init(void)
    task->style             = TASK_STYLE_NONE;
    task->ident             = task_count++;
    task->frontend_userdata = NULL;
-   task->alternative_look  = false;
    task->next              = NULL;
    task->when              = 0;
 

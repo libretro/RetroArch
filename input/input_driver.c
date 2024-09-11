@@ -541,7 +541,7 @@ float input_driver_get_sensor(
          void *current_data = input_driver_st.current_data;
          return current_driver->get_sensor_input(current_data, port, id);
       }
-      else if (sensors_enable && input_driver_st.primary_joypad && 
+      else if (sensors_enable && input_driver_st.primary_joypad &&
                input_driver_st.primary_joypad->get_sensor_input)
       {
          return input_driver_st.primary_joypad->get_sensor_input(NULL,
@@ -3742,6 +3742,7 @@ size_t input_config_get_bind_string_joykey(
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
                bind->joykey_label, suffix, ' ', len);
+      /* TODO/FIXME - localize */
       _len  = snprintf(s, len,
             "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
       switch (GET_HAT_DIR(bind->joykey))
@@ -3770,6 +3771,7 @@ size_t input_config_get_bind_string_joykey(
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
                bind->joykey_label, suffix, ' ', len);
+      /* TODO/FIXME - localize */
       _len  = strlcpy(s, "Button ", len);
       _len += snprintf(s + _len, len - _len, "%u",
             (unsigned)bind->joykey);
@@ -3788,6 +3790,7 @@ size_t input_config_get_bind_string_joyaxis(
          && input_descriptor_label_show)
       return fill_pathname_join_delim(s,
             bind->joyaxis_label, suffix, ' ', len);
+   /* TODO/FIXME - localize */
    _len = strlcpy(s, "Axis ", len);
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
       _len += snprintf(s + _len, len - _len, "-%u",
@@ -6850,7 +6853,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
          }
 
-         /* Read input from both analog sticks. */
+         /* Read input from analog sticks according to settings. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
          {
             unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
@@ -6858,6 +6861,9 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
             unsigned y_minus = RARCH_ANALOG_LEFT_Y_MINUS;
 
+            if ((settings->bools.menu_disable_left_analog  && s == RETRO_DEVICE_INDEX_ANALOG_LEFT ) ||
+                (settings->bools.menu_disable_right_analog && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+                continue;
             if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
             {
                x_plus  = RARCH_ANALOG_RIGHT_X_PLUS;

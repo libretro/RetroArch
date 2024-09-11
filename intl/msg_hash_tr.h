@@ -2721,15 +2721,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Kare Gecikmesi (ms)"
+   "Kare Gecikmesi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Daha yüksek video kekemeliği riski pahasına gecikmeyi azaltır. Video sunumundan sonra ve çekirdek kare öncesine milisaniye cinsinden bir gecikme ekler."
+   "Gecikmeyi azaltır ancak videonun donma riskini artırır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Çekirdeği çalıştırmadan önce video sunumundan sonra kaç milisaniye gecikme yapılacağını ayarlar. Daha yüksek kekemelik riski pahasına gecikmeyi azaltabilir. Azami %d."
+   "Video sunumundan sonra çekirdeği çalıştırmadan önce kaç milisaniye bekleyeceğini ayarlar. Daha yüksek takılma riski pahasına gecikmeyi azaltır.\n20 ve üzeri değerler kare süresi yüzdeleri olarak değerlendirilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2737,11 +2737,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Gelecekteki kare düşüşlerini önlemek için etkin 'Kare Gecikmesini' geçici olarak azaltın. 'Kare Gecikmesi' 0 olduğunda başlangıç ​​noktası yarım kare süresidir."
+   "Etkili 'Kare Gecikmesini' dinamik olarak ayarla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Hedef yenileme hızı sabit olana kadar etkin 'Kare Gecikmesi' geçici olarak azaltılır. Ölçüm, 'Kare Gecikmesi' 0 olduğunda yarım kare süresinden başlar. NTSC için 8 ve PAL için 10."
+   "İstenilen 'Kare Gecikmesi' hedefini tutmaya çalışın ve kare düşüşlerini en aza indirin. 'Kare Gecikmesi' 0 (Otomatik) olduğunda başlangıç ​​noktası 3/4 kare süresidir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -11649,6 +11649,10 @@ MSG_HASH(
    "Drakula"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "Selenyum"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "Solar Koyu"
    )
@@ -15290,14 +15294,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    "Linux GameMode etkinleştirilmesi, en iyi performans için CPU ve GPU'nuzu otomatik olarak yapılandırarak gecikmeyi iyileştirebilir, ses cızırtı sorunlarını düzeltebilir ve genel performansı en üst düzeye çıkarabilir.\nBunun çalışması için GameMode yazılımının yüklenmesi gerekir. GameMode nasıl kurulacağı hakkında bilgi için https://github.com/FeralInteractive/gamemode adresine bakın."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Kare Desteği"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Kare sunumundan sonra mümkün olduğunca uyuyarak vsync CPU kullanımını azaltmaya çalışın. Öncelikle üçüncü taraf tarama hattı eşitlenmesi için tasarlandı."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,

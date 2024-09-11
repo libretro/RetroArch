@@ -206,14 +206,16 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
       mailbox->result          = vkAcquireNextImageKHR(
             mailbox->device, mailbox->swapchain, UINT64_MAX,
             VK_NULL_HANDLE, fence, &mailbox->index);
-#ifdef ANDROID
+
       /* VK_SUBOPTIMAL_KHR can be returned on Android 10
        * when prerotate is not dealt with.
+       * It can also be returned by WSI when the surface
+       * is _temorarily_ suboptimal.
        * This is not an error we need to care about,
        * and we'll treat it as SUCCESS. */
       if (mailbox->result == VK_SUBOPTIMAL_KHR)
          mailbox->result = VK_SUCCESS;
-#endif
+
       if (mailbox->result == VK_SUCCESS)
       {
          vkWaitForFences(mailbox->device, 1, &fence, true, UINT64_MAX);
@@ -897,10 +899,8 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
          required_extensions[required_extension_count++] = "VK_KHR_display";
          break;
       case VULKAN_WSI_MVK_MACOS:
-         required_extensions[required_extension_count++] = "VK_MVK_macos_surface";
-         break;
       case VULKAN_WSI_MVK_IOS:
-         required_extensions[required_extension_count++] = "VK_MVK_ios_surface";
+         required_extensions[required_extension_count++] = "VK_EXT_metal_surface";
          break;
       case VULKAN_WSI_NONE:
       default:
@@ -1675,36 +1675,18 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             return false;
          break;
       case VULKAN_WSI_MVK_MACOS:
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
-         {
-            VkMacOSSurfaceCreateInfoMVK surf_info;
-            PFN_vkCreateMacOSSurfaceMVK create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMacOSSurfaceMVK", create))
-               return false;
-
-            surf_info.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
-            surf_info.pNext = NULL;
-            surf_info.flags = 0;
-            surf_info.pView = surface;
-
-            if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
-                != VK_SUCCESS)
-               return false;
-         }
-#endif
-         break;
       case VULKAN_WSI_MVK_IOS:
-#ifdef HAVE_COCOATOUCH
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
          {
-            VkIOSSurfaceCreateInfoMVK surf_info;
-            PFN_vkCreateIOSSurfaceMVK create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateIOSSurfaceMVK", create))
+            VkMetalSurfaceCreateInfoEXT surf_info;
+            PFN_vkCreateMetalSurfaceEXT create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMetalSurfaceEXT", create))
                return false;
 
-            surf_info.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
-            surf_info.pNext = NULL;
-            surf_info.flags = 0;
-            surf_info.pView = surface;
+            surf_info.sType  = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+            surf_info.pNext  = NULL;
+            surf_info.flags  = 0;
+            surf_info.pLayer = surface;
 
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
@@ -1835,14 +1817,6 @@ retry:
       err = vkAcquireNextImageKHR(vk->context.device,
             vk->swapchain, UINT64_MAX,
             semaphore, fence, &vk->context.current_swapchain_index);
-#ifdef ANDROID
-      /* VK_SUBOPTIMAL_KHR can be returned on Android 10
-       * when prerotate is not dealt with.
-       * This is not an error we need to care about, and
-       * we'll treat it as SUCCESS. */
-      if (err == VK_SUBOPTIMAL_KHR)
-         err = VK_SUCCESS;
-#endif
    }
 
    if (err == VK_SUCCESS || err == VK_SUBOPTIMAL_KHR)
@@ -1887,10 +1861,10 @@ retry:
    {
       case VK_NOT_READY:
       case VK_TIMEOUT:
+      case VK_SUBOPTIMAL_KHR:
          /* Do nothing. */
          break;
       case VK_ERROR_OUT_OF_DATE_KHR:
-      case VK_SUBOPTIMAL_KHR:
          /* Throw away the old swapchain and try again. */
          vulkan_destroy_swapchain(vk);
          /* Swapchain out of date, trying to create new one ... */
@@ -2355,7 +2329,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #ifdef _WIN32
       vulkan_library = dylib_load("vulkan-1.dll");
 #elif __APPLE__
-      vulkan_library = dylib_load("MoltenVK");
+      if (__builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
+         vulkan_library = dylib_load("MoltenVK");
+      if (!vulkan_library)
+         vulkan_library = dylib_load("MoltenVK-v1.2.7.framework");
 #else
       vulkan_library = dylib_load("libvulkan.so.1");
       if (!vulkan_library)
@@ -2604,16 +2581,16 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 #endif
    err = vkQueuePresentKHR(vk->context.queue, &present);
 
-#ifdef ANDROID
    /* VK_SUBOPTIMAL_KHR can be returned on
     * Android 10 when prerotate is not dealt with.
+    * It can also be returned by WSI when the surface
+    * is _temorarily_ suboptimal.
     * This is not an error we need to care about,
     * and we'll treat it as SUCCESS. */
    if (result == VK_SUBOPTIMAL_KHR)
       result = VK_SUCCESS;
    if (err == VK_SUBOPTIMAL_KHR)
       err = VK_SUCCESS;
-#endif
 
 #ifdef WSI_HARDENING_TEST
    trigger_spurious_error_vkresult(&err);

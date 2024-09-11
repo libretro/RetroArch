@@ -28,6 +28,7 @@ typedef struct steam_core_dlc_install_state
 
 static void task_steam_core_dlc_install_handler(retro_task_t *task)
 {
+   uint8_t flg;
    int8_t progress;
    steam_core_dlc_install_state_t *state = NULL;
    MistResult result                     = MistResult_Success;
@@ -41,7 +42,9 @@ static void task_steam_core_dlc_install_handler(retro_task_t *task)
    if (!(state = (steam_core_dlc_install_state_t*)task->state))
       goto task_finished;
 
-   if (task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    result = mist_steam_apps_get_dlc_download_progress(state->app_id, &downloading, &bytes_downloaded, &bytes_total);
@@ -70,7 +73,7 @@ static void task_steam_core_dlc_install_handler(retro_task_t *task)
    return;
 task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    /* If finished successfully */
    if (MIST_IS_SUCCESS(result))

@@ -131,7 +131,7 @@ static void CFSearchPathForDirectoriesInDomains(
             NSUserDomainMask, YES) firstObject];
 #else
    CFStringRef array_val     = nil;
-   NSArray *arr              = 
+   NSArray *arr              =
       NSSearchPathForDirectoriesInDomains(dir,
             NSUserDomainMask, YES);
    if ([arr count] != 0)
@@ -160,7 +160,7 @@ void get_ios_version(int *major, int *minor);
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
 
-/* Note that AC power sources also include a 
+/* Note that AC power sources also include a
  * laptop battery it is charging. */
 static void darwin_check_power_source(
       CFDictionaryRef dict,
@@ -341,9 +341,9 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    char assets_zip_path[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
    CFStringRef bundle_path;
-   char temp_dir[PATH_MAX_LENGTH]          = {0};
+   char temp_dir[DIR_MAX_LENGTH]           = {0};
    char bundle_path_buf[PATH_MAX_LENGTH]   = {0};
-   char documents_dir_buf[PATH_MAX_LENGTH] = {0};
+   char documents_dir_buf[DIR_MAX_LENGTH]  = {0};
    char application_data[PATH_MAX_LENGTH]  = {0};
    CFBundleRef bundle                      = CFBundleGetMainBundle();
 
@@ -682,7 +682,7 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
 
     if (uname(&buffer) != 0)
        return FRONTEND_ARCH_NONE;
-    
+
    if (string_is_equal(buffer.machine, "x86_64"))
       return FRONTEND_ARCH_X86_64;
    if (string_is_equal(buffer.machine, "x86"))
@@ -696,7 +696,7 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
    size_t size = sizeof(type);
 
    sysctlbyname("hw.cputype", &type, &size, NULL, 0);
-    
+
    if (type == CPU_TYPE_X86_64)
       return FRONTEND_ARCH_X86_64;
    else if (type == CPU_TYPE_X86)
@@ -846,7 +846,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "Ioana";
    else if (string_is_equal(language,"pt_pt"))
       return "Joana";
-   else if (string_is_equal(language,"pt_bt") 
+   else if (string_is_equal(language,"pt_bt")
          || string_is_equal(language,"pt"))
       return "Luciana";
    else if (string_is_equal(language,"th"))
@@ -861,7 +861,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "Maged";
    else if (string_is_equal(language,"hu"))
       return "Mariska";
-   else if (string_is_equal(language,"zh_tw") 
+   else if (string_is_equal(language,"zh_tw")
          || string_is_equal(language,"zh"))
       return "Mei-Jia";
    else if (string_is_equal(language,"el"))
@@ -884,7 +884,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "Yuna";
    else if (string_is_equal(language,"pl"))
       return "Zosia";
-   else if (string_is_equal(language,"cs")) 
+   else if (string_is_equal(language,"cs"))
       return "Zuzana";
    return "";
 }
@@ -925,16 +925,16 @@ static bool accessibility_speak_macos(int speed,
       /* parent process */
       speak_pid = pid;
 
-      /* Tell the system that we'll ignore the exit status of the child 
+      /* Tell the system that we'll ignore the exit status of the child
        * process.  This prevents zombie processes. */
       signal(SIGCHLD,SIG_IGN);
    }
    else
-   { 
-      /* child process: replace process with the say command */ 
+   {
+      /* child process: replace process with the say command */
       if (language_speaker && language_speaker[0] != '\0')
       {
-         char* cmd[] = {"say", "-v", NULL, 
+         char* cmd[] = {"say", "-v", NULL,
                         NULL, "-r", NULL, NULL};
          cmd[2]      = language_speaker;
          cmd[3]      = (char *) speak_text;

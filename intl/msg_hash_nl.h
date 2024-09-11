@@ -2160,28 +2160,8 @@ MSG_HASH(
    "V-Sync is ingeschakeld totdat de prestaties onder de doelvernieuwingsfrequentie komen. Kan stotteren minimaliseren wanneer de prestaties onder realtime vallen en kan energiezuiniger zijn."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Frame-vertraging (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Vermindert de vertraging ten koste van een hoger risico dat video zal stotteren. Voegt een vertraging in milliseconden toe na de video-presentatie en voor de kern frame."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Stelt in hoeveel milliseconden na video-presentatie moeten worden uitgesteld voordat de core wordt uitgevoerd. Kan latentie verminderen ten koste van een hoger risico om te stotteren. Maximum is %d."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatisch Frame-vertraging"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Verlaag de effectieve 'Frame-vertraging' tijdelijk om toekomstige framedalen te voorkomen. Beginpunt is half-framesneltijd wanneer 'Frame-vertraging' 0 is."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Tijdelijk verlaagt de effectieve 'Frame vertraging' totdat de doelververssnelheid stabiel is. Het meten begint vanaf halve frame tijd wanneer 'Frame Delay' 0 is. Bijvoorbeeld 8 voor NTSC en 10 voor PAL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,

@@ -249,7 +249,7 @@ error:
 static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 {
    size_t _len;
-   char msg[8192];
+   char msg[128];
    bsv_movie_t *state                       = NULL;
    const char *movie_rec_str                = NULL;
 
@@ -315,14 +315,16 @@ typedef struct bsv_state moviectl_task_state_t;
 
 static void task_moviectl_playback_handler(retro_task_t *task)
 {
-  /* trivial handler */
-  task_set_finished(task, true);
-  if (!task_get_error(task) && task_get_cancelled(task))
-    task_set_error(task, strdup("Task canceled"));
+   uint8_t flg;
+   /* trivial handler */
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   flg = task_get_flags(task);
+   if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
+      task_set_error(task, strdup("Task canceled"));
 
-  task_set_data(task, task->state);
-  task->state = NULL;
-  /* no need to free state here since I'm recycling it as data */
+   task_set_data(task, task->state);
+   task->state = NULL;
+   /* no need to free state here since I'm recycling it as data */
 }
 
 static void moviectl_start_playback_cb(retro_task_t *task,
@@ -338,13 +340,15 @@ static void moviectl_start_playback_cb(retro_task_t *task,
 
 static void task_moviectl_record_handler(retro_task_t *task)
 {
+   uint8_t flg;
    /* Hang on until the state is loaded */
    if (content_load_state_in_progress(NULL))
       return;
 
    /* trivial handler */
-   task_set_finished(task, true);
-   if (!task_get_error(task) && task_get_cancelled(task))
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   flg = task_get_flags(task);
+   if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
    task_set_data(task, task->state);
@@ -446,7 +450,7 @@ error:
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
    size_t _len;
-   char msg[8192];
+   char msg[128];
    const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));

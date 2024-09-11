@@ -182,26 +182,33 @@ struct menu_bind_state
    bool skip;
 };
 
+enum menu_inp_ptr_hwst_flags
+{
+   MENU_INP_PTR_FLG_ACTIVE       = (1 << 0),
+   MENU_INP_PTR_FLG_PRESS_SELECT = (1 << 1),
+   MENU_INP_PTR_FLG_PRESS_CANCEL = (1 << 2),
+   MENU_INP_PTR_FLG_PRESS_UP     = (1 << 3),
+   MENU_INP_PTR_FLG_PRESS_DOWN   = (1 << 4),
+   MENU_INP_PTR_FLG_PRESS_LEFT   = (1 << 5),
+   MENU_INP_PTR_FLG_PRESS_RIGHT  = (1 << 6),
+   MENU_INP_PTR_FLG_PRESSED      = (1 << 7),
+   MENU_INP_PTR_FLG_DRAGGED      = (1 << 8)
+};
+
 /* Defines set of (abstracted) inputs/states
  * common to mouse + touchscreen hardware */
 typedef struct menu_input_pointer_hw_state
 {
    int16_t x;
    int16_t y;
-   bool active;
-   bool select_pressed;
-   bool cancel_pressed;
-   bool up_pressed;
-   bool down_pressed;
-   bool left_pressed;
-   bool right_pressed;
+   uint16_t flags;
 } menu_input_pointer_hw_state_t;
 
 typedef struct menu_input_pointer
 {
    retro_time_t press_duration;  /* int64_t alignment */
    /**
-    * NOTE: menu drivers typically set y_accel to zero 
+    * NOTE: menu drivers typically set y_accel to zero
     * manually when populating entries.
     **/
    float y_accel;
@@ -211,9 +218,7 @@ typedef struct menu_input_pointer
    int16_t y;
    int16_t dx;
    int16_t dy;
-   bool active;
-   bool pressed;
-   bool dragged;
+   uint16_t flags;
 } menu_input_pointer_t;
 
 typedef struct menu_input
@@ -245,7 +250,7 @@ typedef struct menu_input_ctx_line
 /**
  * Copy parameters from the global menu_input_state to a menu_input_pointer_t
  * in order to provide access to all pointer device parameters.
- * 
+ *
  * @param copy_target  menu_input_pointer_t struct where values will be copied
  **/
 void menu_input_get_pointer_state(menu_input_pointer_t *copy_target);

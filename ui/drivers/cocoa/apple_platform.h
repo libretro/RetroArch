@@ -16,6 +16,8 @@ extern void ios_show_file_sheet(void);
 
 #ifdef __OBJC__
 
+#import <Foundation/Foundation.h>
+
 #ifdef HAVE_METAL
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -53,9 +55,6 @@ typedef enum apple_view_type
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
-#if defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)
-- (void)updateWindowedMode;
-#endif
 @end
 
 #endif
@@ -69,6 +68,14 @@ extern id apple_platform;
 #if defined(HAVE_COCOATOUCH)
 void rarch_start_draw_observer(void);
 void rarch_stop_draw_observer(void);
+
+#if defined(HAVE_COCOA_METAL)
+@interface MetalLayerView : UIView
+@property (nonatomic, readonly) CAMetalLayer *metalLayer;
+@end
+#endif
+
+#import <UIKit/UIKit.h>
 
 @interface RetroArch_iOS : UINavigationController<ApplePlatform, UIApplicationDelegate,
 UINavigationControllerDelegate> {
@@ -88,7 +95,11 @@ UINavigationControllerDelegate> {
 
 - (void)refreshSystemConfig;
 @end
+
 #else
+
+#import <AppKit/AppKit.h>
+
 #if defined(HAVE_COCOA_METAL)
 @interface RetroArch_OSX : NSObject<ApplePlatform, NSApplicationDelegate> {
 #elif (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))

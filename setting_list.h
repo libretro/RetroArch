@@ -84,7 +84,8 @@ enum setting_flags
    SD_FLAG_ENFORCE_MINRANGE = (1 << 11),
    SD_FLAG_ENFORCE_MAXRANGE = (1 << 12),
    SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION = (1 << 13),
-   SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED      = (1 << 14)
+   SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED      = (1 << 14),
+   SD_FLAG_DEFAULT_VALUE    = (1 << 15)
 };
 
 enum settings_free_flags

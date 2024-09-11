@@ -232,6 +232,19 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 }
 #endif
 
+static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
+{
+#ifdef OSX
+    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
+    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
+    float currentRate = CGDisplayModeGetRefreshRate(currentMode);
+    CFRelease(currentMode);
+    return currentRate;
+#else
+    return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
+}
+
 static gfx_ctx_proc_t cocoa_gl_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(
@@ -532,7 +545,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
 #else
    cocoa_gl_gfx_ctx_get_video_size,
 #endif
-   NULL, /* get_refresh_rate */
+   cocoa_gl_gfx_ctx_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

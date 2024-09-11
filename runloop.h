@@ -168,6 +168,7 @@ struct runloop
 #endif
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
+   retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;                /* int64_t alignment */
@@ -268,7 +269,7 @@ struct runloop
    uint32_t flags;
    int8_t run_frames_and_pause;
 
-   char runtime_content_path_basename[8192];
+   char runtime_content_path_basename[8192]; /* TODO/FIXME - check size */
    char current_library_name[NAME_MAX_LENGTH];
    char current_library_version[256];
    char current_valid_extensions[256];
@@ -281,21 +282,21 @@ struct runloop
 #endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
-   char savefile_dir[PATH_MAX_LENGTH];
-   char savestate_dir[PATH_MAX_LENGTH];
+   char savefile_dir[DIR_MAX_LENGTH];
+   char savestate_dir[DIR_MAX_LENGTH];
 
    struct
    {
       char *remapfile;
-      char savefile[8192];
-      char savestate[8192];
-      char replay[8192];
-      char cheatfile[8192];
-      char ups[8192];
-      char bps[8192];
-      char ips[8192];
-      char xdelta[8192];
-      char label[8192];
+      char savefile[8192];  /* TODO/FIXME - check size */
+      char savestate[8192]; /* TODO/FIXME - check size */
+      char replay[8192];    /* TODO/FIXME - check size */
+      char cheatfile[8192]; /* TODO/FIXME - check size */
+      char ups[8192];       /* TODO/FIXME - check size */
+      char bps[8192];       /* TODO/FIXME - check size */
+      char ips[8192];       /* TODO/FIXME - check size */
+      char xdelta[8192];    /* TODO/FIXME - check size */
+      char label[8192];     /* TODO/FIXME - check size */
    } name;
 
    bool missing_bios;
@@ -449,7 +450,7 @@ void runloop_path_deinit_subsystem(void);
  *                                load dummy symbols.
  *
  * Setup libretro callback symbols.
- * 
+ *
  * @return true on success, or false if symbols could not be loaded.
  **/
 bool runloop_init_libretro_symbols(

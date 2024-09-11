@@ -150,7 +150,7 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
    {
       if ((retval = task_image_process(image, &width, &height)) != IMAGE_PROCESS_NEXT)
          break;
-   }while (cpu_features_get_time_usec() - start_time 
+   }while (cpu_features_get_time_usec() - start_time
          < image->frame_duration);
 
    if (retval == IMAGE_PROCESS_NEXT)
@@ -279,6 +279,7 @@ static bool upscale_image(
 
 bool task_image_load_handler(retro_task_t *task)
 {
+   uint8_t flg;
    nbio_handle_t            *nbio  = (nbio_handle_t*)task->state;
    struct nbio_image_handle *image = (struct nbio_image_handle*)nbio->data;
 
@@ -303,7 +304,7 @@ bool task_image_load_handler(retro_task_t *task)
                image->status = IMAGE_STATUS_PROCESS_TRANSFER;
             break;
          case IMAGE_STATUS_TRANSFER:
-            if (     !(image->flags & IMAGE_FLAG_IS_BLOCKING) 
+            if (     !(image->flags & IMAGE_FLAG_IS_BLOCKING)
                   && !(image->flags & IMAGE_FLAG_IS_FINISHED))
             {
                retro_time_t start_time = cpu_features_get_time_usec();
@@ -314,7 +315,7 @@ bool task_image_load_handler(retro_task_t *task)
                      image->status = IMAGE_STATUS_TRANSFER_PARSE;
                      break;
                   }
-               }while (cpu_features_get_time_usec() - start_time 
+               }while (cpu_features_get_time_usec() - start_time
                      < image->frame_duration);
             }
             break;
@@ -330,9 +331,11 @@ bool task_image_load_handler(retro_task_t *task)
       }
    }
 
+   flg = task_get_flags(task);
+
    if (     nbio->is_finished
          && (image && (image->flags & IMAGE_FLAG_IS_FINISHED))
-         && (!task_get_cancelled(task)))
+         && ((!((flg & RETRO_TASK_FLG_CANCELLED) > 0))))
    {
       struct texture_image *img = (struct texture_image*)malloc(sizeof(struct texture_image));
 
@@ -386,7 +389,7 @@ bool task_image_load_handler(retro_task_t *task)
    return true;
 }
 
-bool task_push_image_load(const char *fullpath, 
+bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       retro_task_callback_t cb, void *user_data)
 {
