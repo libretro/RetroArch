@@ -14326,6 +14326,38 @@ MSG_HASH(
    "Achievements Hardcore Mode Enabled, save state & rewind were disabled."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_INVALID_CORE,
+   "Hardcore paused. You cannot earn hardcore achievements for %s using %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Logged in as \"%s\"."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "This game has no achievements."
+   )
+MSG_HASH(
+    MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+    "All %d achievements activated for this session"
+)
+MSG_HASH(
+    MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+    "You have %d of %d achievements unlocked"
+)
+MSG_HASH(
+    MSG_CHEEVOS_UNSUPPORTED_COUNT,
+    "%d unsupported"
+)
+MSG_HASH(
+    MSG_CHEEVOS_RICH_PRESENCE_PLAYING,
+    "Playing %s"
+)
+MSG_HASH(
+    MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+    "Spectating %s"
+)
+MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "Comparing with known magic numbers..."
    )
