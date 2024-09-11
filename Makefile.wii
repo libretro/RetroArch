@@ -1,6 +1,7 @@
 ROOT_DIR                  := .
 DEPS_DIR                  := $(ROOT_DIR)/deps
 DEBUG                     ?= 0
+LOAD_WITHOUT_CORE_INFO    ?= 0
 HAVE_LOGGER                = 0
 HAVE_FILE_LOGGER           = 0
 HAVE_CC_RESAMPLER          = 1
@@ -137,6 +138,7 @@ HAVE_ZLIB                := 1
 HAVE_7ZIP                := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
+HAVE_XDELTA              := 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 HAVE_CHEATS              := 1
 HAVE_SCREENSHOTS         := 1
 HAVE_REWIND              := 1
@@ -160,8 +162,9 @@ HAVE_XMB                 := 0
 HAVE_OZONE               := 0
 HAVE_RGUI                := 1
 HAVE_MATERIALUI          := 0
+HAVE_CHEEVOS             := 1
 
-CFLAGS      += -DHAVE_SOCKET_LEGACY
+CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 
 APP_BOOTER_DIR = wii/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
@@ -172,6 +175,7 @@ endif
 
 INCLUDE += -I./libretro-common/include \
            -Ideps \
+	   -Ideps/rcheevos/include \
            -Ideps/stb
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
@@ -255,6 +259,10 @@ ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG
 else
    CFLAGS += -O3
+endif
+
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+   CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
 OBJOUT   = -o

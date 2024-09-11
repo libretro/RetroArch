@@ -51,6 +51,7 @@
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/kd.h>
+#include <linux/version.h>
 #elif defined(__FreeBSD__)
 #include <dev/evdev/input.h>
 #endif
@@ -119,12 +120,11 @@
 /* UDEV_TOUCH_PRINTF_DEBUG */
 
 #ifdef UDEV_TOUCH_DEEP_DEBUG
-#define RARCH_DDBG(msg, ...) do{ \
-    RARCH_DBG(msg, __VA_ARGS__); \
+#define RARCH_DDBG(...) do{ \
+    RARCH_DBG(__VA_ARGS__); \
 } while (0)
 #else
-/* TODO - Since C89 doesn't allow variadic macros, we have an empty function instead... */
-void RARCH_DDBG(const char *fmt, ...) { }
+#define RARCH_DDBG(msg, ...)
 #endif
 /* UDEV_TOUCH_DEEP_DEBUG */
 
@@ -540,7 +540,7 @@ typedef struct udev_input_device
 #endif
    enum udev_input_dev_type type; /* Type of this device */
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
-   char ident[255]; /* Identifier of the device */
+   char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
 
 typedef void (*device_handle_cb)(void *data,
@@ -884,25 +884,21 @@ static void udev_handle_mouse(void *data,
             case BTN_LEFT:
                mouse->l = event->value;
                break;
-
             case BTN_RIGHT:
                mouse->r = event->value;
                break;
-
             case BTN_MIDDLE:
                mouse->m = event->value;
                break;
             case BTN_TOUCH:
                mouse->pp = event->value;
                break;
-#if 0
-            case BTN_??:
+            case BTN_SIDE:
                mouse->b4 = event->value;
                break;
-            case BTN_??:
+            case BTN_EXTRA:
                mouse->b5 = event->value;
                break;
-#endif
             default:
                break;
          }
@@ -956,8 +952,13 @@ static void udev_handle_mouse(void *data,
  */
 static void udev_touch_event_ts_copy(const struct input_event *event, udev_touch_ts_t *ts)
 {
-   ts->s  = event->input_event_sec;
-   ts->us = event->input_event_usec;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,16,0)
+  ts->s  = event->input_event_sec;
+  ts->us = event->input_event_usec;
+#else
+  ts->s  = event->time.tv_sec;
+  ts->us = event->time.tv_usec;
+#endif
 }
 
 /**
@@ -3286,13 +3287,13 @@ static int udev_input_add_device(udev_input_t *udev,
          device->mouse.y_max = absinfo.maximum;
       }
 
-#ifdef UDEV_TOUCH_SUPPORT
       if (touch)
       {
+#ifdef UDEV_TOUCH_SUPPORT
           udev_init_touch_dev(device);
           udev_sync_touch(device);
-      }
 #endif
+      }
 
       if (!mouse)
          goto end;
@@ -3687,7 +3688,7 @@ static int16_t udev_mouse_state(udev_input_t *udev,
 static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
 {
    int bit = rarch_keysym_lut[key];
-   return BIT_GET(udev->state, bit);
+   return (key) ? BIT_GET(udev->state, bit) : false;
 }
 
 static bool udev_mouse_button_pressed(
@@ -3815,14 +3816,15 @@ static int16_t udev_input_state(
                      ret |= (1 << i);
                }
             }
+
             if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
                   {
-                     if ((binds[port][i].key < RETROK_LAST) &&
-                           udev_keyboard_pressed(udev, binds[port][i].key))
+                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                           && udev_keyboard_pressed(udev, binds[port][i].key))
                         ret |= (1 << i);
                   }
                }
@@ -3835,21 +3837,12 @@ static int16_t udev_input_state(
          {
             if (binds[port][id].valid)
             {
-               if (
-                     (binds[port][id].key < RETROK_LAST) &&
-                     udev_keyboard_pressed(udev, binds[port][id].key)
-                     && ((    id != RARCH_GAME_FOCUS_TOGGLE)
-                        && !keyboard_mapping_blocked)
-                     )
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && udev_keyboard_pressed(udev, binds[port][id].key)
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
                   return 1;
-               else if (
-                     (binds[port][id].key < RETROK_LAST) &&
-                     udev_keyboard_pressed(udev, binds[port][id].key)
-                     && (    id == RARCH_GAME_FOCUS_TOGGLE)
-                     )
-                  return 1;
-               else if (udev_mouse_button_pressed(udev, port,
-                        binds[port][id].mbutton))
+               else if (udev_mouse_button_pressed(udev, port, binds[port][id].mbutton))
                   return 1;
             }
          }
@@ -3872,13 +3865,13 @@ static int16_t udev_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
                if BIT_GET(udev->state, sym)
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
                if (BIT_GET(udev->state, sym))
@@ -3889,8 +3882,7 @@ static int16_t udev_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
-
+         return (id && id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
@@ -3946,17 +3938,13 @@ static int16_t udev_input_state(
                   const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
                   const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
                   const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-                  uint16_t joyport                  = joypad_info->joy_idx;
+                  uint16_t joyport               = joypad_info->joy_idx;
                   float axis_threshold           = joypad_info->axis_threshold;
                   const uint64_t joykey          = (bind_joykey != NO_BTN)
                      ? bind_joykey  : autobind_joykey;
                   const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                      ? bind_joyaxis : autobind_joyaxis;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST)
-                           && udev_keyboard_pressed(udev, binds[port]
-                              [new_id].key))
-                        return 1;
+
                   if (binds[port][new_id].valid)
                   {
                      if ((uint16_t)joykey != NO_BTN && joypad->button(
@@ -3966,8 +3954,12 @@ static int16_t udev_input_state(
                            ((float)abs(joypad->axis(joyport, joyaxis))
                             / 0x8000) > axis_threshold)
                         return 1;
-                     if (udev_mouse_button_pressed(udev, port,
-                              binds[port][new_id].mbutton))
+                     else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                           && !keyboard_mapping_blocked
+                           && udev_keyboard_pressed(udev, binds[port][new_id].key)
+                        )
+                        return 1;
+                     else if (udev_mouse_button_pressed(udev, port, binds[port][new_id].mbutton))
                         return 1;
                   }
                }

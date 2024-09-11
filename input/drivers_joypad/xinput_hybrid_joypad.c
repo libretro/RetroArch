@@ -242,6 +242,11 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
+   while (!g_xinput_states[g_last_xinput_pad_idx].connected && g_last_xinput_pad_idx < 3) 
+   {
+      g_last_xinput_pad_idx++;
+   }
+
    pad = &g_pads[g_joypad_cnt].joypad;
 
 #ifdef __cplusplus
@@ -694,7 +699,9 @@ input_device_driver_t xinput_joypad = {
    xinput_joypad_axis,
    xinput_joypad_poll,
    xinput_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    xinput_joypad_name,
    "xinput",
 };

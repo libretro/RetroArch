@@ -19,9 +19,9 @@
 
 #include <alsa/asoundlib.h>
 #include <boolean.h>
-#include "queues/fifo_queue.h"
-#include "rthreads/rthreads.h"
-#include "./alsa.h"
+#include <queues/fifo_queue.h>
+#include <rthreads/rthreads.h>
+#include "alsa.h"
 
 typedef struct alsa_thread_info
 {

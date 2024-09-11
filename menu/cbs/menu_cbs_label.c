@@ -78,7 +78,7 @@ static int action_bind_label_playlist_collection_entry(
       /* Handle collection playlists */
       else
       {
-         char playlist_name[PATH_MAX_LENGTH];
+         char playlist_name[NAME_MAX_LENGTH];
          strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
          path_remove_extension(playlist_name);
 
@@ -121,6 +121,9 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
             BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
+            BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
+            break;
+         case MENU_ENUM_LABEL_CONTENT_SETTINGS:
             BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
             break;
          case MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY:

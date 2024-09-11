@@ -79,12 +79,10 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 
    if (home)
    {
-      base_path[0]          = '\0';
-      user_path[0]          = '\0';
-      snprintf(base_path, sizeof(base_path),
-            "%s/retroarch", home);
-      snprintf(user_path, sizeof(user_path),
-            "%s/retroarch/userdata", home);
+      size_t _len = strlcpy(base_path, home, sizeof(base_path));
+      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
+      _len = strlcpy(user_path, home, sizeof(user_path));
+      strlcpy(user_path + _len, "/retroarch/userdata", sizeof(user_path) - _len);
    }
    else
    {
@@ -160,8 +158,12 @@ int main(int argc, char *argv[])
 {
    dummyErrnoCodes();
 
-   emscripten_set_canvas_element_size("#canvas", 800, 600);
-   emscripten_set_element_css_size("#canvas", 800.0, 600.0);
+   EM_ASM({
+      specialHTMLTargets["!canvas"] = Module.canvas;
+   });
+
+   emscripten_set_canvas_element_size("!canvas", 800, 600);
+   emscripten_set_element_css_size("!canvas", 800.0, 600.0);
    emscripten_set_main_loop(emscripten_mainloop, 0, 0);
    rarch_main(argc, argv, NULL);
 

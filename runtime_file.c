@@ -229,9 +229,9 @@ runtime_log_t *runtime_log_init(
       const char *dir_playlist,
       bool log_per_core)
 {
-   char content_name[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
-   char log_file_dir[PATH_MAX_LENGTH];
+   char log_file_dir[DIR_MAX_LENGTH];
+   char content_name[NAME_MAX_LENGTH];
+   char core_name[NAME_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
    bool supports_no_game      = false;
@@ -326,7 +326,9 @@ runtime_log_t *runtime_log_init(
     * content has the same name... */
    else if (string_is_equal(core_name, "TyrQuake"))
    {
-      const char *last_slash = find_last_slash(content_path);
+      const char *slash      = strrchr(content_path, '/');
+      const char *backslash  = strrchr(content_path, '\\');
+      const char *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
       if (last_slash)
       {
          size_t path_length = last_slash + 1 - content_path;
@@ -1020,7 +1022,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_AGO:
             str[  _len] = ' ';
-            str[++_len] = '\0';               
+            str[++_len] = '\0';
             if (!(runtime_last_played_human(runtime_log, str + _len, len - _len - 2)))
                strlcat(str + _len,
                      msg_hash_to_str(
@@ -1118,7 +1120,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
          LOG_FILE_RUNTIME_FORMAT_STR,
          runtime_log->runtime.hours, runtime_log->runtime.minutes,
          runtime_log->runtime.seconds);
-    
+
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "runtime");
    rjsonwriter_raw(writer, ":", 1);

@@ -1,4 +1,4 @@
-# What is Switchres 2.0
+# What is Switchres
 Switchres is a modeline generation engine for emulation.
 
 Its purpose is on-the-fly creation of fully customized video modes that accurately reproduce those of the emulated systems. Based on a monitor profile, it will provide the best video mode for a given width, height, and refresh rate.
@@ -7,7 +7,7 @@ Switchres features the most versatile modeline generation ever, ranging from 15-
 
 Switchres can be integrated into open-source emulators either as a library, or used as a standalone emulator launcher. It's written in C++ and a C wrapper is also available.
 
-Switchres 2.0 is a rewrite of the original Switchres code used in GroovyMAME. It currently supports mode switching on the following platforms, with their respective backends:
+Switchres is a rewrite of the original Switchres code used in GroovyMAME. It currently supports mode switching on the following platforms, with their respective backends:
   - **Windows**:
     - AMD ADL (AMD Radeon HD 5000+)
     - ATI legacy (ATI Radeon pre-HD 5000)
@@ -37,12 +37,17 @@ Options:
   -l, --launch <command>            Launch <command>
   -m, --monitor <preset>            Monitor preset (generic_15, arcade_15, pal, ntsc, etc.)
   -a  --aspect <num:den>            Monitor aspect ratio
-  -r  --rotated                     Original mode's native orientation is rotated
-  -d, --display <OS_display_name>   Use target display (Windows: \\\\.\\DISPLAY1, ... Linux: VGA-0, ...)
+  -r  --rotated                     Rotate axes, preserving aspect ratio
+  -d, --display <display_index>     Use target display (index = 0, 1, 2...)
   -f, --force <w>x<h>@<r>           Force a specific video mode from display mode list
   -i, --ini <file.ini>              Specify an ini file
-  -b, --backend <api_name>          Specify the api name
   -k, --keep                        Keep changes on exit (warning: this disables cleanup)
+  -g, --geometry <adjustment>       Adjust geometry of generated modeline
+                                    adjustment = <h_size>:<h_shift>:<v_shift>
+                                    e.g. switchres 640 480 60 -c -g 1.1:-1:2
+
+For more options, refer to switchres.ini. All options in switchres.ini can be applied in
+command line as long options, e.g.: switchres 256 224 57.55 -c --dotclock_min 8.0
 ```
 
 A default `switchres.ini` file will be searched in the current working directory, then in `.\ini` on Windows, `./ini` then `/etc` on Linux. The repo has a switchres.ini example.

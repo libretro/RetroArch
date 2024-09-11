@@ -51,6 +51,12 @@ RETRO_BEGIN_DECLS
       base->var = tmp; \
 } while(0)
 
+enum config_file_flags
+{
+   CONF_FILE_FLG_MODIFIED                 = (1 << 0),
+   CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES = (1 << 1)
+};
+
 struct config_file
 {
    char *path;
@@ -61,8 +67,7 @@ struct config_file
    struct config_include_list *includes;
    struct path_linked_list *references;
    unsigned include_depth;
-   bool guaranteed_no_duplicates;
-   bool modified;
+   uint8_t flags;
 };
 
 typedef struct config_file config_file_t;
@@ -277,7 +282,7 @@ bool config_get_path(config_file_t *conf, const char *entry, char *s, size_t len
 
 /**
  * config_get_bool:
- * 
+ *
  * Extracts a boolean from config.
  * Valid boolean true are "true" and "1". Valid false are "false" and "0".
  * Other values will be treated as an error.

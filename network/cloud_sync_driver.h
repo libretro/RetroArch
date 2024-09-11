@@ -38,7 +38,7 @@ typedef struct cloud_sync_driver
 
    bool (*read)(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data);
    bool (*update)(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data);
-   bool (*delete)(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
+   bool (*free)(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
 
    const char *ident;
 } cloud_sync_driver_t;
@@ -51,6 +51,9 @@ typedef struct
 cloud_sync_driver_state_t *cloud_sync_state_get_ptr(void);
 
 extern cloud_sync_driver_t cloud_sync_webdav;
+#ifdef HAVE_ICLOUD
+extern cloud_sync_driver_t cloud_sync_icloud;
+#endif
 
 extern const cloud_sync_driver_t *cloud_sync_drivers[];
 
@@ -70,7 +73,7 @@ bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data);
 
 bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data);
 bool cloud_sync_update(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data);
-bool cloud_sync_delete(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
+bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
 
 RETRO_END_DECLS
 

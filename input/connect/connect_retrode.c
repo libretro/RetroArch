@@ -118,9 +118,9 @@ static int16_t hidpad_retrode_get_axis(void *pad_data, unsigned axis)
       return 0;
 
    if (pad->datatype == RETRODE_TYPE_PAD)
-      val = pad->data[2 + axis];
+      val = pad->data[1 + axis];
    else
-      val = device->pad_data[0].data[2 + axis];
+      val = device->pad_data[0].data[1 + axis];
 
    /* map Retrode values to a known gamepad (VID=0x0079, PID=0x0011) */
    if (val == 0x9C)

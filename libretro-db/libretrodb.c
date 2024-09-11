@@ -290,7 +290,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       return -1;
 
    bufflen        = idx.next;
-   if (!(buff = malloc(bufflen)))
+   if (!(buff = (uint8_t*)malloc(bufflen)))
       return -1;
 
    while (nread < bufflen)
@@ -457,13 +457,9 @@ int libretrodb_create_index(libretrodb_t *db,
    int rval                         = -1;
 
    if (libretrodb_find_index(db, name, &idx) >= 0)
-   {
      return 1;
-   }
    if (!db->can_write)
-   {
      return -1;
-   }
 
    tree = bintree_new(node_compare, &field_size);
 

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-static int rc_test_condition_compare(unsigned value1, unsigned value2, char oper) {
+static int rc_test_condition_compare(uint32_t value1, uint32_t value2, uint8_t oper) {
   switch (oper) {
     case RC_OPERATOR_EQ: return value1 == value2;
     case RC_OPERATOR_NE: return value1 != value2;
@@ -139,6 +139,18 @@ static int rc_parse_operator(const char** memaddr) {
       ++(*memaddr);
       return RC_OPERATOR_XOR;
 
+    case '%':
+      ++(*memaddr);
+      return RC_OPERATOR_MOD;
+
+    case '+':
+      ++(*memaddr);
+      return RC_OPERATOR_ADD;
+
+    case '-':
+      ++(*memaddr);
+      return RC_OPERATOR_SUB;
+
     case '\0':/* end of string */
     case '_': /* next condition */
     case 'S': /* next condset */
@@ -149,7 +161,7 @@ static int rc_parse_operator(const char** memaddr) {
   }
 }
 
-rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse, int is_indirect) {
+rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse, uint8_t is_indirect) {
   rc_condition_t* self;
   const char* aux;
   int result;
@@ -176,12 +188,13 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
       case 'q': case 'Q': self->type = RC_CONDITION_MEASURED_IF; break;
       case 'i': case 'I': self->type = RC_CONDITION_ADD_ADDRESS; can_modify = 1; break;
       case 't': case 'T': self->type = RC_CONDITION_TRIGGER; break;
+      case 'k': case 'K': self->type = RC_CONDITION_REMEMBER; can_modify = 1; break;
       case 'z': case 'Z': self->type = RC_CONDITION_RESET_NEXT_IF; break;
       case 'g': case 'G':
           parse->measured_as_percent = 1;
           self->type = RC_CONDITION_MEASURED;
           break;
-      /* e f h j k l s u v w x y */
+      /* e f h j l s u v w x y */
       default: parse->offset = RC_INVALID_CONDITION_TYPE; return 0;
     }
 
@@ -226,6 +239,9 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
     case RC_OPERATOR_DIV:
     case RC_OPERATOR_AND:
     case RC_OPERATOR_XOR:
+    case RC_OPERATOR_MOD:
+    case RC_OPERATOR_ADD:
+    case RC_OPERATOR_SUB:
       /* modifying operators are only valid on modifying statements */
       if (can_modify)
         break;
@@ -238,6 +254,7 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
           case RC_CONDITION_ADD_SOURCE:
           case RC_CONDITION_SUB_SOURCE:
           case RC_CONDITION_ADD_ADDRESS:
+          case RC_CONDITION_REMEMBER:
             /* prevent parse errors on legacy achievements where a condition was present before changing the type */
             self->oper = RC_OPERATOR_NONE;
             break;
@@ -323,23 +340,23 @@ int rc_condition_is_combining(const rc_condition_t* self) {
 }
 
 static int rc_test_condition_compare_memref_to_const(rc_condition_t* self) {
-  const unsigned value1 = self->operand1.value.memref->value.value;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value1 = self->operand1.value.memref->value.value;
+  const uint32_t value2 = self->operand2.value.num;
   assert(self->operand1.size == self->operand1.value.memref->value.size);
   return rc_test_condition_compare(value1, value2, self->oper);
 }
 
 static int rc_test_condition_compare_delta_to_const(rc_condition_t* self) {
   const rc_memref_value_t* memref1 = &self->operand1.value.memref->value;
-  const unsigned value1 = (memref1->changed) ? memref1->prior : memref1->value;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value1 = (memref1->changed) ? memref1->prior : memref1->value;
+  const uint32_t value2 = self->operand2.value.num;
   assert(self->operand1.size == self->operand1.value.memref->value.size);
   return rc_test_condition_compare(value1, value2, self->oper);
 }
 
 static int rc_test_condition_compare_memref_to_memref(rc_condition_t* self) {
-  const unsigned value1 = self->operand1.value.memref->value.value;
-  const unsigned value2 = self->operand2.value.memref->value.value;
+  const uint32_t value1 = self->operand1.value.memref->value.value;
+  const uint32_t value2 = self->operand2.value.memref->value.value;
   assert(self->operand1.size == self->operand1.value.memref->value.size);
   assert(self->operand2.size == self->operand2.value.memref->value.size);
   return rc_test_condition_compare(value1, value2, self->oper);
@@ -387,7 +404,7 @@ static int rc_test_condition_compare_delta_to_memref(rc_condition_t* self) {
 
 static int rc_test_condition_compare_memref_to_const_transformed(rc_condition_t* self) {
   rc_typed_value_t value1;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value2 = self->operand2.value.num;
 
   value1.type = RC_VALUE_TYPE_UNSIGNED;
   value1.value.u32 = self->operand1.value.memref->value.value;
@@ -399,7 +416,7 @@ static int rc_test_condition_compare_memref_to_const_transformed(rc_condition_t*
 static int rc_test_condition_compare_delta_to_const_transformed(rc_condition_t* self) {
   rc_typed_value_t value1;
   const rc_memref_value_t* memref1 = &self->operand1.value.memref->value;
-  const unsigned value2 = self->operand2.value.num;
+  const uint32_t value2 = self->operand2.value.num;
 
   value1.type = RC_VALUE_TYPE_UNSIGNED;
   value1.value.u32 = (memref1->changed) ? memref1->prior : memref1->value;
@@ -550,6 +567,19 @@ void rc_evaluate_condition_value(rc_typed_value_t* value, rc_condition_t* self, 
       rc_typed_value_convert(value, RC_VALUE_TYPE_UNSIGNED);
       rc_typed_value_convert(&amount, RC_VALUE_TYPE_UNSIGNED);
       value->value.u32 ^= amount.value.u32;
+      break;
+
+    case RC_OPERATOR_MOD:
+      rc_typed_value_modulus(value, &amount);
+      break;
+
+    case RC_OPERATOR_ADD:
+      rc_typed_value_add(value, &amount);
+      break;
+
+    case RC_OPERATOR_SUB:
+      rc_typed_value_negate(&amount);
+      rc_typed_value_add(value, &amount);
       break;
   }
 }

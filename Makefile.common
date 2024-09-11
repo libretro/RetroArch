@@ -240,20 +240,37 @@ OBJ += frontend/frontend_driver.o \
        ui/ui_companion_driver.o \
        camera/camera_driver.o \
        record/record_driver.o \
+       record/drivers/record_wav.o \
        command.o \
        msg_hash.o \
-       midi_driver.o \
-       location_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o
 
 ifeq ($(HAVE_PATCH), 1)
    DEFINES += -DHAVE_PATCH
-	OBJ += tasks/task_patch.o
+   OBJ     += tasks/task_patch.o
+   ifeq ($(HAVE_XDELTA), 1)
+      DEFINES      += -DHAVE_XDELTA -DSECONDARY_DJW -DSECONDARY_LZMA -DSECONDARY_FGK
+      INCLUDE_DIRS += -I$(DEPS_DIR)/xdelta3 -I$(LIBRETRO_COMM_DIR)
+      LIBS         += -llzma
+      OBJ          += $(DEPS_DIR)/xdelta3/xdelta3.o
+      HEADERS      += xdelta3.h \
+                      xdelta3-cfgs.h \
+                      xdelta3-fgk.h \
+                      xdelta3-hash.h \
+                      xdelta3-internal.h \
+                      xdelta3-list.h \
+                      xdelta3-lzma.h \
+                      xdelta3-second.h
+      # These headers are added to the makefile because xdelta3 does weird things
+      # with its #includes, which affects dependency tracking and project analysis
+      # (e.g. for IDEs).
+   endif
 endif
 
 OBJ += \
+       save.o \
        tasks/task_save.o \
        tasks/task_movie.o \
        tasks/task_file_transfer.o \
@@ -737,7 +754,8 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
    OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
 else ifeq ($(HAVE_SSL), 1)
    DEFINES += -DHAVE_SSL
-   LIBS += $(SYSTEMMBEDTLS_LIBS)
+   LIBS += $(SYSTEMMBEDTLS_LIBS) $(SYSTEMMBEDX509_LIBS) $(SYSTEMMBEDCRYPTO_LIBS)
+   DEF_FLAGS += $(SYSTEMMBEDTLS_CFLAGS) $(SYSTEMMBEDX509_CFLAGS) $(SYSTEMMBEDCRYPTO_CFLAGS)
 endif
 
 # Miscellaneous
@@ -1040,14 +1058,20 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
+   ifneq ($(HAVE_LAKKA_PROJECT),)
+      DEFINES += -DHAVE_LAKKA_PROJECT=\"${HAVE_LAKKA_PROJECT}\"
+   else
+      $(error You asked for Lakka, but you did not specify a target device name in HAVE_LAKKA_PROJECT)
+   endif
+   ifneq ($(HAVE_LAKKA_SERVER),)
+      DEFINES += -DHAVE_LAKKA_SERVER=\"${HAVE_LAKKA_SERVER}\"
+   else
+      $(error You asked for Lakka, but you did not specify update server in HAVE_LAKKA_SERVER)
+   endif
 endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
-endif
-
-ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
-   DEFINES += -DHAVE_LAKKA_NIGHTLY
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
@@ -1219,6 +1243,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland_common.o \
+        gfx/common/wayland/fractional-scale-v1.o \
         gfx/common/wayland/viewporter.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
@@ -1281,6 +1306,9 @@ ifeq ($(HAVE_X11), 1)
    DEF_FLAGS += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
+   endif
+   ifeq ($(HAVE_XSCRNSAVER),1)
+      LIBS += -lXss
    endif
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
@@ -1818,10 +1846,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DENABLE_HLSL
-      GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
-   endif
 else ifeq ($(HAVE_GLSLANG),1)
    HAVE_GLSLANG_COMMON = 1
    GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
@@ -1832,7 +1856,6 @@ else ifeq ($(HAVE_GLSLANG),1)
            $(GLSLANG_GENERICCODEGEN_LIBS) \
            $(GLSLANG_OSDEPENDENT_LIBS) \
            $(GLSLANG_OGLCOMPILER_LIBS) \
-           $(GLSLANG_HLSL_LIBS) \
            $(GLSLANG_SPIRV_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_OPT_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_LIBS)
@@ -2066,6 +2089,17 @@ ifeq ($(HAVE_NETWORKING), 1)
       OBJ += tasks/task_core_updater.o
    endif
 
+   ifneq ($(findstring Linux,$(OS)),)
+      HAVE_CLOUDSYNC = 1
+   endif
+
+   ifeq ($(HAVE_CLOUDSYNC), 1)
+      DEFINES += -DHAVE_CLOUDSYNC
+      OBJ += tasks/task_cloudsync.o \
+             network/cloud_sync/webdav.o \
+             network/cloud_sync_driver.o
+   endif
+
    ifeq ($(HAVE_BUILTINBEARSSL), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_bear.o
    else ifeq ($(HAVE_SSL), 1)
@@ -2094,15 +2128,27 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS
+      DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
+
+      ifneq ($(HAVE_THREADS), 1)
+         DEFINES += -DRC_NO_THREADS
+      else ifneq (,$(filter GEKKO,$(CFLAGS)))
+         # Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c)
+         DEFINES += -DRC_NO_THREADS
+      else ifneq (,$(filter _3DS,$(CFLAGS)))
+         DEFINES += -DRC_NO_THREADS
+      endif
 
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
+             deps/rcheevos/src/rc_client.o \
+             deps/rcheevos/src/rc_compat.o \
+             deps/rcheevos/src/rc_libretro.o \
+             deps/rcheevos/src/rc_util.o \
              deps/rcheevos/src/rcheevos/alloc.o \
-             deps/rcheevos/src/rcheevos/compat.o \
              deps/rcheevos/src/rcheevos/condition.o \
              deps/rcheevos/src/rcheevos/condset.o \
              deps/rcheevos/src/rcheevos/consoleinfo.o \
@@ -2110,15 +2156,16 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
              deps/rcheevos/src/rcheevos/operand.o \
-             deps/rcheevos/src/rcheevos/rc_libretro.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
              deps/rcheevos/src/rcheevos/runtime.o \
              deps/rcheevos/src/rcheevos/runtime_progress.o \
              deps/rcheevos/src/rcheevos/trigger.o \
              deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/aes.o \
              deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rapi/rc_api_common.o \
+             deps/rcheevos/src/rapi/rc_api_info.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
 
@@ -2396,6 +2443,13 @@ endif
 ifeq ($(HAVE_WEBOS), 1)
   DEFINES += -DWEBOS
 endif
+
+ifeq ($(HAVE_TEST_DRIVERS), 1)
+  DEFINES += -DHAVE_TEST_DRIVERS
+  OBJ += input/drivers_joypad/test_joypad.o
+  OBJ += input/drivers/test_input.o
+endif
+
 
 #####################################
 ### Android Play Feature Delivery ###

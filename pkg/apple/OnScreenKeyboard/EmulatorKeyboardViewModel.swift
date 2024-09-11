@@ -6,11 +6,13 @@
 //  Copyright © 2022 RetroArch. All rights reserved.
 //
 
+@available(iOS 13, *)
 struct KeyPosition {
     let row: Int
     let column: Int
 }
 
+@available(iOS 13, *)
 @objc class EmulatorKeyboardViewModel: NSObject, KeyRowsDataSource {
     var keys = [[KeyCoded]]()
     var alternateKeys: [[KeyCoded]]?

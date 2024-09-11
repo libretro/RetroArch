@@ -21,7 +21,6 @@
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
-
 char* mmdevice_name(IMMDevice *device)
 {
    HRESULT hr;

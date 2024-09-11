@@ -270,6 +270,7 @@ enumerate_audio_devices(char *buf, size_t buflen)
 
 RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
+   bool no_content = true;
    char video_devices[ENVVAR_BUFLEN];
    char audio_devices[ENVVAR_BUFLEN];
    struct retro_variable envvars[] = {
@@ -283,7 +284,6 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_set_environment)(retro_environment_t 
 
    VIDEOPROC_CORE_PREFIX(environment_cb) = cb;
 
-   bool no_content = true;
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
 
    /* Allows retroarch to seed the previous values */

@@ -88,6 +88,9 @@ int intfstream_getc(intfstream_internal_t *intf);
 int64_t intfstream_seek(intfstream_internal_t *intf,
       int64_t offset, int whence);
 
+int64_t intfstream_truncate(intfstream_internal_t *intf,
+      uint64_t len);
+
 void intfstream_rewind(intfstream_internal_t *intf);
 
 int64_t intfstream_tell(intfstream_internal_t *intf);

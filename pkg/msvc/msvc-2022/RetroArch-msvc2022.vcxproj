@@ -1,0 +1,1028 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug Cg|ARM">
+      <Configuration>Debug Cg</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug Cg|ARM64">
+      <Configuration>Debug Cg</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug Cg|Win32">
+      <Configuration>Debug Cg</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug Cg|x64">
+      <Configuration>Debug Cg</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT+CG|ARM">
+      <Configuration>Debug QT+CG</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT+CG|ARM64">
+      <Configuration>Debug QT+CG</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT+CG|Win32">
+      <Configuration>Debug QT+CG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT+CG|x64">
+      <Configuration>Debug QT+CG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT|ARM">
+      <Configuration>Debug QT</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT|ARM64">
+      <Configuration>Debug QT</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT|Win32">
+      <Configuration>Debug QT</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug QT|x64">
+      <Configuration>Debug QT</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Cg|ARM">
+      <Configuration>Release Cg</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Cg|ARM64">
+      <Configuration>Release Cg</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Cg|Win32">
+      <Configuration>Release Cg</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Cg|x64">
+      <Configuration>Release Cg</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT+CG|ARM">
+      <Configuration>Release QT+CG</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT+CG|ARM64">
+      <Configuration>Release QT+CG</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT+CG|Win32">
+      <Configuration>Release QT+CG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT+CG|x64">
+      <Configuration>Release QT+CG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT|ARM">
+      <Configuration>Release QT</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT|ARM64">
+      <Configuration>Release QT</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT|Win32">
+      <Configuration>Release QT</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release QT|x64">
+      <Configuration>Release QT</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ConfigurationType>Application</ConfigurationType>
+    <ProjectGuid>{27FF7CE1-4059-4AA1-8062-FD529560FA54}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>RetroArchmsvc2019</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules />
+    <CodeAnalysisRuleAssemblies />
+    <IncludePath>$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+    <ProjectName>RetroArch-msvc2022</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.Contains('Release'))">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <LinkIncremental>false</LinkIncremental>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='ARM'">
+    <WindowsSDKDesktopARMSupport>true</WindowsSDKDesktopARMSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='ARM64'">
+    <WindowsSDKDesktopARM64Support>true</WindowsSDKDesktopARM64Support>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Platform)'=='Win32'">
+    <LibraryPath>$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <LibraryPath>$(DXSDK_DIR)Lib\x64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.Contains('QT'))">
+    <QtVersion Condition="'$(QtVersion)' == ''">5.15.2</QtVersion>
+    <QtBuild Condition="'$(Platform)'=='Win32'">msvc2019</QtBuild>
+    <QtBuild Condition="'$(Platform)'=='x64'">msvc2019_64</QtBuild>
+    <QtDirectory Condition="'$(QtDirectory)' == ''">C:\Qt\$(QtVersion)\$(QtBuild)</QtDirectory>
+    <QtInclude>$(QtDirectory)\include</QtInclude>
+    <IncludePath>$(QtInclude);$(QtInclude)\QtCore;$(QtInclude)\QtWidgets;$(QtInclude)\QtGui;$(QtInclude)\QtConcurrent;$(QtInclude)\QtNetwork;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath);$(QtDirectory)\lib</LibraryPath>
+    <ExecutablePath>$(QtDirectory)\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.ToLower().Contains('cg'))">
+    <IncludePath>$(CG_INC_PATH);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.ToLower().Contains('cg')) And $(Platform.Contains('64'))">
+    <LibraryPath>$(CG_LIB64_PATH);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(Configuration.ToLower().Contains('cg')) And !$(Platform.Contains('64'))">
+    <LibraryPath>$(CG_LIB_PATH);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_DSOUND;HAVE_WASAPI;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XAUDIO;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;gdi32.lib;ole32.lib;shell32.lib;comdlg32.lib;winmm.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_DSOUND;HAVE_WASAPI;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/bigobj /utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;gdi32.lib;ole32.lib;shell32.lib;comdlg32.lib;winmm.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|ARM64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|ARM64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|ARM64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Cg|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug QT+CG|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;DEBUG;_DEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_DSOUND;HAVE_WASAPI;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_XINPUT;HAVE_XAUDIO;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;gdi32.lib;ole32.lib;shell32.lib;comdlg32.lib;winmm.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_DSOUND;HAVE_WASAPI;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;HAVE_OVERLAY;HAVE_RGUI;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;gdi32.lib;ole32.lib;shell32.lib;comdlg32.lib;winmm.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;_CRT_NONSTDC_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;__SSE__;__i686__;HAVE_OVERLAY;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_RGUI;HAVE_GL_SYNC;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ShowProgress>LinkVerboseLib</ShowProgress>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Cg|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release QT+CG|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;HAVE_XDELTA;RARCH_INTERNAL;HAVE_CC_RESAMPLER;WANT_GLSLANG;HAVE_SLANG;HAVE_GLSLANG;HAVE_BUILTINGLSLANG;HAVE_SPIRV_CROSS;HAVE_ONLINE_UPDATER;HAVE_UPDATE_ASSETS;HAVE_UPDATE_CORES;HAVE_UPDATE_CORE_INFO;HAVE_CORE_INFO_CACHE;HAVE_D3D;HAVE_D3D9;HAVE_D3D10;HAVE_D3D11;HAVE_D3D12;HAVE_MICROPHONE;HAVE_VULKAN;HAVE_HLSL;HAVE_D3DX;RC_DISABLE_LUA;HAVE_WASAPI;HAVE_CG;HAVE_GLSL;HAVE_CHEEVOS;HAVE_RUNAHEAD;HAVE_TRANSLATE;HAVE_CDROM;HAVE_GRIFFIN;HAVE_GDI;HAVE_LANGEXTRA;HAVE_ZLIB;HAVE_QT;QT_WIDGETS_LIB;QT_GUI_LIB;QT_CORE_LIB;HAVE_XMB;HAVE_OZONE;HAVE_SHADERPIPELINE;NDEBUG;_WINDOWS;%(PreprocessorDefinitions);HAVE_DINPUT;HAVE_XINPUT;HAVE_XAUDIO;HAVE_DSOUND;HAVE_OPENGL;HAVE_OPENGL_CORE;HAVE_DYLIB;HAVE_NETWORKING;HAVE_IFINFO;HAVE_NETWORK_CMD;HAVE_NETPLAYDISCOVERY;HAVE_COMMAND;HAVE_STDIN_CMD;HAVE_THREADS;HAVE_DYNAMIC;HAVE_RPNG;HAVE_RJPEG;HAVE_RBMP;HAVE_RTGA;HAVE_IMAGEVIEWER;_CRT_SECURE_NO_WARNINGS;__SSE__;__SSE2__;__x86_64__;HAVE_OVERLAY;HAVE_RGUI;HAVE_GL_SYNC;HAVE_MENU;HAVE_GFX_WIDGETS;HAVE_CONFIGFILE;HAVE_PATCH;HAVE_DSP_FILTER;HAVE_VIDEO_FILTER;HAVE_REWIND;HAVE_SCREENSHOTS;HAVE_CHEATS;HAVE_7ZIP;_7ZIP_ST;HAVE_MATERIALUI;HAVE_LIBRETRODB;HAVE_AUDIOMIXER;HAVE_RWAV;HAVE_STB_FONT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(MSBuildProjectDirectory)\..\..\..\;$(MSBuildProjectDirectory)\..\..\..\deps\rcheevos\include;$(MSBuildProjectDirectory)\..\..\..\libretro-common\include\compat\zlib;$(CG_INC_PATH);$(MSBuildProjectDirectory)\..\..\..\libretro-common\include;$(MSBuildProjectDirectory)\..\..\..\deps;$(MSBuildProjectDirectory)\..\..\..\deps\glslang;$(MSBuildProjectDirectory)\..\..\..\deps\SPIRV-Cross;$(MSBuildProjectDirectory)\..\..\..\deps\stb;$(MSBuildProjectDirectory)\..\..\..\gfx\include;$(MSBuildProjectDirectory)\..\..\..\gfx\include\d3d9;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <DisableSpecificWarnings>4566;4819</DisableSpecificWarnings>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>msimg32.lib;winmm.lib;Dinput8.lib;dxguid.lib;Iphlpapi.lib;qtmain.lib;Qt5Widgets.lib;Qt5Gui.lib;Qt5Core.lib;Qt5Network.lib;Qt5Concurrent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CG_LIB64_PATH)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\..\media\rarch.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\griffin\griffin.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
+      <AdditionalOptions Condition="$(Configuration.Contains('Debug')) And '$(Platform)'=='x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="..\..\..\griffin\griffin_glslang.cpp">
+      <AdditionalOptions Condition="$(Configuration.Contains('Debug')) And '$(Platform)'=='x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\ui\drivers\qt\*.h" Condition="$(Configuration.Contains('QT'))">
+      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>
+      <Delete>%(RootDir)%(Directory)moc_%(Filename).cpp</Delete>
+      <ExcludedFromBuild>false</ExcludedFromBuild>
+      <Command>moc.exe "%(FullPath)" -o "%(RootDir)%(Directory)moc_%(Filename).cpp"</Command>
+      <LinkObjects>false</LinkObjects>
+      <Message>QT: Generate %(RootDir)%(Directory)moc_%(Filename).cpp</Message>
+      <Outputs>%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

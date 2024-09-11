@@ -86,12 +86,8 @@ static bool x_mouse_button_pressed(
          return x11->mouse_r;
       case RETRO_DEVICE_ID_MOUSE_MIDDLE:
          return x11->mouse_m;
-#if 0
       case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return x11->mouse_b4;
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return x11->mouse_b5;
-#endif
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
@@ -169,20 +165,20 @@ static int16_t x_input_state(
                   {
                      if (binds[port][i].valid)
                      {
-                        if (x_mouse_button_pressed(x11, port,
-                                 binds[port][i].mbutton))
+                        if (x_mouse_button_pressed(x11, port, binds[port][i].mbutton))
                            ret |= (1 << i);
                      }
                   }
                }
+
                if (!keyboard_mapping_blocked)
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
                      if (binds[port][i].valid)
                      {
-                        if ((binds[port][i].key < RETROK_LAST) &&
-                              x_keyboard_pressed(x11, binds[port][i].key))
+                        if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                              && x_keyboard_pressed(x11, binds[port][i].key))
                            ret |= (1 << i);
                      }
                   }
@@ -195,17 +191,14 @@ static int16_t x_input_state(
             {
                if (binds[port][id].valid)
                {
-                  if (
-                        ((binds[port][id].key < RETROK_LAST) && 
-                         x_keyboard_pressed(x11, binds[port][id].key)) 
-                        && ((    id == RARCH_GAME_FOCUS_TOGGLE) 
-                           || !keyboard_mapping_blocked)
+                  if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                        && x_keyboard_pressed(x11, binds[port][id].key)
+                        && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
                   else if (settings->uints.input_mouse_index[port] == 0)
                   {
-                     if (x_mouse_button_pressed(x11, port,
-                              binds[port][id].mbutton))
+                     if (x_mouse_button_pressed(x11, port, binds[port][id].mbutton))
                         return 1;
                   }
                }
@@ -231,13 +224,13 @@ static int16_t x_input_state(
                id_minus_key          = binds[port][id_minus].key;
                id_plus_key           = binds[port][id_plus].key;
 
-               if (id_plus_valid && id_plus_key < RETROK_LAST)
+               if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
                   unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
                   if (x11->state[sym >> 3] & (1 << (sym & 7)))
                      ret = 0x7fff;
                }
-               if (id_minus_valid && id_minus_key < RETROK_LAST)
+               if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
                {
                   unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
                   if (x11->state[sym >> 3] & (1 << (sym & 7)))
@@ -248,7 +241,7 @@ static int16_t x_input_state(
             }
             break;
          case RETRO_DEVICE_KEYBOARD:
-            return (id < RETROK_LAST) && x_keyboard_pressed(x11, id);
+            return (id && id < RETROK_LAST) && x_keyboard_pressed(x11, id);
          case RETRO_DEVICE_MOUSE:
          case RARCH_DEVICE_MOUSE_SCREEN:
             switch (id)
@@ -269,6 +262,8 @@ static int16_t x_input_state(
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
                case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
                   return x_mouse_state_wheel(id);
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return x11->mouse_m;
@@ -395,11 +390,7 @@ static int16_t x_input_state(
                         ? bind_joykey  : autobind_joykey;
                      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
-                     if (!keyboard_mapping_blocked)
-                        if ((binds[port][new_id].key < RETROK_LAST) 
-                              && x_keyboard_pressed(x11, binds[port]
-                                 [new_id].key) )
-                           return 1;
+
                      if (binds[port][new_id].valid)
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
@@ -409,10 +400,14 @@ static int16_t x_input_state(
                               ((float)abs(joypad->axis(joyport, joyaxis)) 
                                / 0x8000) > axis_threshold)
                            return 1;
+                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST) 
+                              && !keyboard_mapping_blocked
+                              && x_keyboard_pressed(x11, binds[port][new_id].key)
+                           )
+                           return 1;
                         else if (settings->uints.input_mouse_index[port] == 0)
                         {
-                           if (x_mouse_button_pressed(x11, port,
-                                    binds[port][new_id].mbutton))
+                           if (x_mouse_button_pressed(x11, port, binds[port][new_id].mbutton))
                               return 1;
                         }
                      }
@@ -492,7 +487,8 @@ static void x_input_poll(void *data)
    x11->mouse_l             = mask & Button1Mask;
    x11->mouse_m             = mask & Button2Mask;
    x11->mouse_r             = mask & Button3Mask;
-
+   /* Buttons 4 and 5 are not returned here, so they are handled elsewhere. */
+   
    /* > Mouse pointer */
    if (!x11->mouse_grabbed)
    {

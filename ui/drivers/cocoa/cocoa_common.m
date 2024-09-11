@@ -20,6 +20,7 @@
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
+#include <compat/apple_compat.h>
 
 #ifdef HAVE_COCOATOUCH
 #import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
@@ -27,15 +28,49 @@
 #ifdef HAVE_IOS_SWIFT
 #import "RetroArch-Swift.h"
 #endif
+#if TARGET_OS_TV
+#import <TVServices/TVServices.h>
+#import "../../pkg/apple/RetroArchTopShelfExtension/ContentProvider.h"
+#endif
+#if TARGET_OS_IOS
+#import <MobileCoreServices/MobileCoreServices.h>
+#import "../../../menu/menu_cbs.h"
+#endif
 #endif
 
 #include "../../../configuration.h"
+#include "../../../content.h"
+#include "../../../core_info.h"
+#include "../../../defaults.h"
+#include "../../../file_path_special.h"
+#include "../../../menu/menu_cbs.h"
 #include "../../../paths.h"
 #include "../../../retroarch.h"
+#include "../../../tasks/task_content.h"
 #include "../../../verbosity.h"
 
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
+#if IOS
+#import <UIKit/UIAccessibility.h>
+extern bool RAIsVoiceOverRunning(void)
+{
+   return UIAccessibilityIsVoiceOverRunning();
+}
+#elif OSX
+#import <AppKit/AppKit.h>
+extern bool RAIsVoiceOverRunning(void)
+{
+   if (@available(macOS 10.13, *))
+      return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
+   return false;
+}
+#endif
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 id<ApplePlatform> apple_platform;
@@ -47,10 +82,14 @@ static CocoaView* g_instance;
 
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
+void cocoa_file_load_with_detect_core(const char *filename);
 
 @interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
 #ifdef HAVE_IOS_TOUCHMOUSE
 ,EmulatorTouchMouseHandlerDelegate
+#endif
+#if TARGET_OS_IOS
+,UIDocumentPickerDelegate
 #endif
 >
 @end
@@ -65,6 +104,12 @@ void *glkitview_init(void);
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
+#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+-(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
+{
+}
+#endif
+
 + (CocoaView*)get
 {
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
@@ -72,6 +117,21 @@ void *glkitview_init(void);
    {
       view = [CocoaView new];
       nsview_set_ptr(view);
+#if defined(IOS)
+      view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+      if (@available(iOS 15.0, tvOS 15.0, *))
+         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
+#endif
+      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+      if (@available(macOS 14.0, *))
+      {
+         view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
+         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
+         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+      }
+#endif
    }
    return view;
 }
@@ -131,65 +191,73 @@ void *glkitview_init(void);
     return true;
 }
 
+- (bool)isSiri:(GCController *)controller
+{
+    return (controller.microGamepad && !controller.extendedGamepad && [@"Remote" isEqualToString:controller.vendorName]);
+}
+
 - (bool)didMicroGamepadPress:(UIPressType)type
 {
-    NSArray<GCController*>* controllers = [GCController controllers];
-    if ([controllers count] == 1)
-        return !controllers[0].extendedGamepad;
-
     /* Are these presses that controllers send? */
     if (@available(tvOS 14.3, *))
         if (type == UIPressTypePageUp || type == UIPressTypePageDown)
             return true;
 
-    bool microPress = false;
-    bool extendedPress = false;
-    for (GCController *controller in [GCController controllers]) {
-        if (controller.extendedGamepad)
+    NSArray<GCController*>* controllers = [GCController controllers];
+
+    bool foundSiri = false;
+    bool nonSiriPress = false;
+    for (GCController *controller in controllers) {
+        if ([self isSiri:controller])
+        {
+            foundSiri = true;
+            if (type == UIPressTypeSelect)
+                return controller.microGamepad.buttonA.pressed;
+            else if (type == UIPressTypePlayPause)
+               return controller.microGamepad.buttonX.pressed;
+        }
+        else if (controller.extendedGamepad)
         {
             if (type == UIPressTypeUpArrow)
-                extendedPress |= controller.extendedGamepad.dpad.up.pressed
-                              || controller.extendedGamepad.leftThumbstick.up.pressed
-                              || controller.extendedGamepad.rightThumbstick.up.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.up.pressed
+                             || controller.extendedGamepad.leftThumbstick.up.pressed
+                             || controller.extendedGamepad.rightThumbstick.up.pressed;
             else if (type == UIPressTypeDownArrow)
-                extendedPress |= controller.extendedGamepad.dpad.down.pressed
-                              || controller.extendedGamepad.leftThumbstick.down.pressed
-                              || controller.extendedGamepad.rightThumbstick.down.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.down.pressed
+                             || controller.extendedGamepad.leftThumbstick.down.pressed
+                             || controller.extendedGamepad.rightThumbstick.down.pressed;
             else if (type == UIPressTypeLeftArrow)
-                extendedPress |= controller.extendedGamepad.dpad.left.pressed
-                              || controller.extendedGamepad.leftShoulder.pressed
-                              || controller.extendedGamepad.leftTrigger.pressed
-                              || controller.extendedGamepad.leftThumbstick.left.pressed
-                              || controller.extendedGamepad.rightThumbstick.left.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.left.pressed
+                             || controller.extendedGamepad.leftShoulder.pressed
+                             || controller.extendedGamepad.leftTrigger.pressed
+                             || controller.extendedGamepad.leftThumbstick.left.pressed
+                             || controller.extendedGamepad.rightThumbstick.left.pressed;
             else if (type == UIPressTypeRightArrow)
-                extendedPress |= controller.extendedGamepad.dpad.right.pressed
-                              || controller.extendedGamepad.rightShoulder.pressed
-                              || controller.extendedGamepad.rightTrigger.pressed
-                              || controller.extendedGamepad.leftThumbstick.right.pressed
-                              || controller.extendedGamepad.rightThumbstick.right.pressed;
+                nonSiriPress |= controller.extendedGamepad.dpad.right.pressed
+                             || controller.extendedGamepad.rightShoulder.pressed
+                             || controller.extendedGamepad.rightTrigger.pressed
+                             || controller.extendedGamepad.leftThumbstick.right.pressed
+                            || controller.extendedGamepad.rightThumbstick.right.pressed;
             else if (type == UIPressTypeSelect)
-                extendedPress |= controller.extendedGamepad.buttonA.pressed;
+                nonSiriPress |= controller.extendedGamepad.buttonA.pressed;
             else if (type == UIPressTypeMenu)
-                extendedPress |= controller.extendedGamepad.buttonB.pressed;
+                nonSiriPress |= controller.extendedGamepad.buttonB.pressed;
             else if (type == UIPressTypePlayPause)
-                extendedPress |= controller.extendedGamepad.buttonX.pressed;
-
+                nonSiriPress |= controller.extendedGamepad.buttonX.pressed;
         }
-        else if (controller.microGamepad)
+        else
         {
-            if (type == UIPressTypeSelect)
-                microPress |= controller.microGamepad.buttonA.pressed;
-            else if (type == UIPressTypePlayPause)
-                microPress |= controller.microGamepad.buttonX.pressed;
-            else if (@available(tvOS 13, *)) {
-                if (type == UIPressTypeMenu)
-                    extendedPress |= controller.microGamepad.buttonMenu.pressed ||
-                    controller.microGamepad.buttonMenu.isPressed;
-            }
+            /* we have a remote that is not extended. some of these remotes send
+             * spurious presses. the only way to get them to work properly is to
+             * make the siri remote work improperly. */
+            nonSiriPress = true;
         }
     }
 
-    return microPress || !extendedPress;
+    if (!foundSiri || [controllers count] == 1)
+        return foundSiri;
+
+    return !nonSiriPress;
 }
 
 - (void)sendKeyForPress:(UIPressType)type down:(bool)down
@@ -197,7 +265,7 @@ void *glkitview_init(void);
     static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        map = @{
+        NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
             @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
             @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
             @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
@@ -206,10 +274,16 @@ void *glkitview_init(void);
             @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
             @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
             @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
+        }];
 
-            @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
-            @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
-        };
+        if (@available(tvOS 14.3, *))
+        {
+            [dict addEntriesFromDictionary:@{
+                @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
+                @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
+            }];
+        }
+        map = dict;
     });
     NSArray<NSNumber*>* keyvals = map[@(type)];
     if (!keyvals)
@@ -223,11 +297,16 @@ void *glkitview_init(void);
 {
     for (UIPress *press in presses)
     {
+        bool has_key = false;
+        if (@available(tvOS 14, *))
+            has_key = !![press key];
         /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
             [super pressesBegan:presses withEvent:event];
-        else if ([self didMicroGamepadPress:press.type])
+        else if (!has_key && [self didMicroGamepadPress:press.type])
             [self sendKeyForPress:press.type down:true];
+        else if (has_key)
+            [super pressesBegan:[NSSet setWithObject:press] withEvent:event];
     }
 }
 
@@ -279,6 +358,50 @@ void *glkitview_init(void);
       apple_direct_input_keyboard_event(false, code, 0, 0, RETRO_DEVICE_KEYBOARD);
    });
 }
+#endif
+
+#if TARGET_OS_IOS
+
+#pragma mark UIDocumentPickerViewController
+
+-(void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url
+{
+   NSFileManager *manager = [NSFileManager defaultManager];
+   NSString     *filename = (NSString*)url.path.lastPathComponent;
+   NSError         *error = nil;
+   settings_t *settings   = config_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join_special(fullpath, settings->paths.directory_core_assets, [filename UTF8String], sizeof(fullpath));
+   NSString  *destination = [NSString stringWithUTF8String:fullpath];
+   NSString *documentsDir = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+   /* Copy file to documents directory if it's not already
+    * inside Documents directory */
+   if (![[url path] containsString:documentsDir])
+      if (![manager fileExistsAtPath:destination])
+         [manager copyItemAtPath:[url path] toPath:destination error:&error];
+   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+      action_scan_file(fullpath, NULL, 0, 0);
+   else
+   {
+      cocoa_file_load_with_detect_core(fullpath);
+   }
+}
+
+-(void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller
+{
+}
+
+-(void)showDocumentPicker
+{
+   UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc]
+                                                     initWithDocumentTypes:@[(NSString *)kUTTypeDirectory,
+                                                                             (NSString *)kUTTypeItem]
+                                                     inMode:UIDocumentPickerModeImport];
+   documentPicker.delegate = self;
+   documentPicker.modalPresentationStyle = UIModalPresentationFormSheet;
+   [self presentViewController:documentPicker animated:YES completion:nil];
+}
+
 #endif
 
 #if defined(OSX)
@@ -379,10 +502,21 @@ void *glkitview_init(void);
     * the notch in iPhone X phones */
    if (@available(iOS 11, *))
    {
+      settings_t *settings               = config_get_ptr();
       RAScreen *screen                   = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
       CGRect screenSize                  = [screen bounds];
       UIEdgeInsets inset                 = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
       UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+
+      if (settings->bools.video_notch_write_over_enable)
+      {
+         self.view.frame = CGRectMake(screenSize.origin.x,
+                     screenSize.origin.y,
+                     screenSize.size.width,
+                     screenSize.size.height);
+         return;
+      }
+
       switch (orientation)
       {
          case UIInterfaceOrientationPortrait:
@@ -474,6 +608,14 @@ void *glkitview_init(void);
 
 #ifdef HAVE_COCOATOUCH
 
+-(BOOL) prefersPointerLocked API_AVAILABLE(ios(14.0))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return NO;
+   return apple->mouse_grabbed;
+}
+
 #pragma mark - UIViewController Lifecycle
 
 -(void)loadView {
@@ -493,10 +635,12 @@ void *glkitview_init(void);
     swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #ifdef HAVE_IOS_TOUCHMOUSE
-    [self setupMouseSupport];
+    if (@available(iOS 13, *))
+        [self setupMouseSupport];
 #endif
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self setupEmulatorKeyboard];
+    if (@available(iOS 13, *))
+        [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired   = 3;
     showKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionUp;
@@ -508,8 +652,9 @@ void *glkitview_init(void);
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
 #endif
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
-    [self setupHelperBar];
+#if defined(HAVE_IOS_TOUCHMOUSE) || defined(HAVE_IOS_CUSTOMKEYBOARDS)
+    if (@available(iOS 13, *))
+        [self setupHelperBar];
 #endif
 #elif TARGET_OS_TV
     UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
@@ -584,16 +729,6 @@ void *glkitview_init(void);
    }
 }
 
--(void)handlePointerMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)
-      input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->window_pos_x = (int16_t)x;
-   apple->window_pos_y = (int16_t)y;
-}
-
 #endif
 
 #pragma mark GCDWebServerDelegate
@@ -642,6 +777,13 @@ void *glkitview_init(void);
 
 @end
 
+#if TARGET_OS_IOS
+void ios_show_file_sheet(void)
+{
+   [[CocoaView get] showDocumentPicker];
+}
+#endif
+
 void *cocoa_screen_get_chosen(void)
 {
     unsigned monitor_index;
@@ -660,8 +802,8 @@ void *cocoa_screen_get_chosen(void)
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
-    return ([[UIApplication sharedApplication] applicationState]
-            == UIApplicationStateActive);
+    /* if we are running, we are foregrounded */
+    return true;
 #else
     return [NSApp isActive];
 #endif
@@ -735,6 +877,10 @@ float cocoa_screen_get_native_scale(void)
             ret              = screen.scale;
     }
 
+#if TARGET_OS_TV
+    if (ret < 1.0f)
+       ret = 1.0f;
+#endif
     return ret;
 }
 #endif
@@ -868,6 +1014,10 @@ config_file_t *open_userdefaults_config_file(void)
       char *str = strdup(backup.UTF8String);
       conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
       free(str);
+      /* If we are falling back to the NSUserDefaults backup of the config file,
+       * it's likely because the OS has deleted all of our cache, including our
+       * extracted assets. This will cause re-extraction */
+      config_set_int(conf, "bundle_assets_extract_last_version", 0);
    }
    return conf;
 }
@@ -879,4 +1029,118 @@ void write_userdefaults_config_file(void)
                                                  error:nil];
    if (conf)
       [NSUserDefaults.standardUserDefaults setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
+}
+
+#if TARGET_OS_TV
+static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gfx_thumbnail_path_data_t *path_data)
+{
+   NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
+      @"id": [NSString stringWithUTF8String:entry->path],
+      @"title": [NSString stringWithUTF8String:
+                             (string_is_empty(entry->label) ? path_basename(entry->path) : entry->label)],
+   }];
+   if (!string_is_empty(path_data->content_db_name))
+   {
+      const char *img_name = NULL;
+      if (gfx_thumbnail_get_img_name(path_data, &img_name, PLAYLIST_THUMBNAIL_FLAG_STD_NAME))
+         dict[@"img"] = [NSString stringWithFormat:@"https://thumbnails.libretro.com/%s/Named_Boxarts/%s",
+                         path_data->content_db_name, img_name];
+   }
+   NSURLComponents *play = [[NSURLComponents alloc] initWithString:@"retroarch://topshelf"];
+   [play setQueryItems:@[
+      [[NSURLQueryItem alloc] initWithName:@"path" value:[NSString stringWithUTF8String:entry->path]],
+      [[NSURLQueryItem alloc] initWithName:@"core_path" value:[NSString stringWithUTF8String:entry->core_path]],
+   ]];
+   dict[@"play"] = [play string];
+   return dict;
+}
+
+void update_topshelf(void)
+{
+   if (@available(tvOS 13.0, *))
+   {
+      NSUserDefaults *ud = [[NSUserDefaults alloc] initWithSuiteName:kRetroArchAppGroup];
+      if (!ud)
+         return;
+
+      NSMutableDictionary *contentDict = [NSMutableDictionary dictionaryWithCapacity:2];
+      const struct playlist_entry *entry;
+      gfx_thumbnail_path_data_t *thumbnail_path_data = gfx_thumbnail_path_init();
+
+      settings_t *settings     = config_get_ptr();
+      bool history_list_enable = settings->bools.history_list_enable;
+      if (history_list_enable && playlist_size(g_defaults.content_history) > 0)
+      {
+         NSMutableArray *array = [NSMutableArray arrayWithCapacity:playlist_size(g_defaults.content_history)];
+         NSString *key = [NSString stringWithUTF8String:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)];
+         for (size_t i = 0; i < 5 && i < playlist_size(g_defaults.content_history); i++)
+         {
+            gfx_thumbnail_path_reset(thumbnail_path_data);
+            gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_history, i);
+            playlist_get_index(g_defaults.content_history, i, &entry);
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data)];
+         }
+         contentDict[key] = array;
+      }
+
+      if (playlist_size(g_defaults.content_favorites) > 0)
+      {
+         NSMutableArray *array = [NSMutableArray arrayWithCapacity:playlist_size(g_defaults.content_favorites)];
+         NSString *key = [NSString stringWithUTF8String:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)];
+         for (size_t i = 0; i < 5 && i < playlist_size(g_defaults.content_favorites); i++)
+         {
+            gfx_thumbnail_path_reset(thumbnail_path_data);
+            gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_favorites, i);
+            playlist_get_index(g_defaults.content_favorites, i, &entry);
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data)];
+         }
+         contentDict[key] = array;
+      }
+
+      [ud setObject:contentDict forKey:@"topshelf"];
+      [TVTopShelfContentProvider topShelfContentDidChange];
+   }
+}
+#endif
+
+void cocoa_file_load_with_detect_core(const char *filename)
+{
+   /* largely copied from file_load_with_detect_core() in menu_cbs_ok.c */
+   core_info_list_t *list = NULL;
+   const core_info_t *info = NULL;
+   size_t supported = 0;
+
+   if (path_is_compressed_file(filename))
+   {
+      generic_action_ok_displaylist_push(filename, NULL,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+            FILE_TYPE_CARCHIVE, 0, 0, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE);
+      return;
+   }
+
+   core_info_get_list(&list);
+   core_info_list_get_supported_cores(list, filename, &info, &supported);
+   if (supported > 1)
+   {
+      struct menu_state *menu_st          = menu_state_get_ptr();
+      menu_handle_t *menu                 = menu_st->driver_data;
+      strlcpy(menu->deferred_path, filename, sizeof(menu->deferred_path));
+      strlcpy(menu->detect_content_path, filename, sizeof(menu->detect_content_path));
+      generic_action_ok_displaylist_push(filename, NULL, NULL, FILE_TYPE_NONE, 0, 0, ACTION_OK_DL_DEFERRED_CORE_LIST);
+   }
+   else if (supported == 1)
+   {
+      content_ctx_info_t content_info;
+
+      content_info.argc        = 0;
+      content_info.argv        = NULL;
+      content_info.args        = NULL;
+      content_info.environ_get = NULL;
+
+      task_push_load_content_with_new_core_from_menu(
+               info->path, filename,
+               &content_info,
+               CORE_TYPE_PLAIN,
+               NULL, NULL);
+   }
 }

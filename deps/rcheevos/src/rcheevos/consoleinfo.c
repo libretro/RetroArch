@@ -2,7 +2,7 @@
 
 #include <ctype.h>
 
-const char* rc_console_name(int console_id)
+const char* rc_console_name(uint32_t console_id)
 {
   switch (console_id)
   {
@@ -195,6 +195,9 @@ const char* rc_console_name(int console_id)
     case RC_CONSOLE_SHARPX1:
       return "Sharp X1";
 
+    case RC_CONSOLE_STANDALONE:
+      return "Standalone";
+
     case RC_CONSOLE_SUPER_NINTENDO:
       return "Super Nintendo Entertainment System";
 
@@ -365,9 +368,14 @@ static const rc_memory_regions_t rc_memory_regions_atari_lynx = { _rc_memory_reg
 
 /* ===== ColecoVision ===== */
 static const rc_memory_region_t _rc_memory_regions_colecovision[] = {
-    { 0x000000U, 0x0003FFU, 0x006000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    /* "System RAM" refers to the main RAM at 0x6000-0x63FF. However, this RAM might not always be visible.
+     * If the Super Game Module (SGM) is active, then it might overlay its own RAM at 0x0000-0x1FFF and 0x2000-0x7FFF.
+     * These positions overlap the BIOS and System RAM, therefore we use virtual addresses for these memory spaces. */
+    { 0x000000U, 0x0003FFU, 0x006000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x000400U, 0x0023FFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "SGM Low RAM" }, /* Normally situated at 0x0000-0x1FFF, which overlaps the BIOS */
+    { 0x002400U, 0x0083FFU, 0x012000U, RC_MEMORY_TYPE_SYSTEM_RAM, "SGM High RAM" } /* Normally situated at 0x2000-0x7FFF, which overlaps System RAM */
 };
-static const rc_memory_regions_t rc_memory_regions_colecovision = { _rc_memory_regions_colecovision, 1 };
+static const rc_memory_regions_t rc_memory_regions_colecovision = { _rc_memory_regions_colecovision, 3 };
 
 /* ===== Commodore 64 ===== */
 /* https://www.c64-wiki.com/wiki/Memory_Map */
@@ -415,7 +423,7 @@ static const rc_memory_region_t _rc_memory_regions_fairchild_channel_f[] = {
 };
 static const rc_memory_regions_t rc_memory_regions_fairchild_channel_f = { _rc_memory_regions_fairchild_channel_f, 4 };
 
-/* ===== GameBoy / GameBoy Color ===== */
+/* ===== GameBoy / MegaDuck ===== */
 static const rc_memory_region_t _rc_memory_regions_gameboy[] = {
     { 0x000000U, 0x0000FFU, 0x000000U, RC_MEMORY_TYPE_HARDWARE_CONTROLLER, "Interrupt vector" },
     { 0x000100U, 0x00014FU, 0x000100U, RC_MEMORY_TYPE_READONLY, "Cartridge header" },
@@ -424,8 +432,37 @@ static const rc_memory_region_t _rc_memory_regions_gameboy[] = {
     { 0x008000U, 0x0097FFU, 0x008000U, RC_MEMORY_TYPE_VIDEO_RAM, "Tile RAM" },
     { 0x009800U, 0x009BFFU, 0x009800U, RC_MEMORY_TYPE_VIDEO_RAM, "BG1 map data" },
     { 0x009C00U, 0x009FFFU, 0x009C00U, RC_MEMORY_TYPE_VIDEO_RAM, "BG2 map data" },
-    { 0x00A000U, 0x00BFFFU, 0x00A000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM"},
+    { 0x00A000U, 0x00BFFFU, 0x00A000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM (bank 0)"},
     { 0x00C000U, 0x00CFFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM (fixed)" },
+    { 0x00D000U, 0x00DFFFU, 0x00D000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM (fixed)" },
+    { 0x00E000U, 0x00FDFFU, 0x00C000U, RC_MEMORY_TYPE_VIRTUAL_RAM, "Echo RAM" },
+    { 0x00FE00U, 0x00FE9FU, 0x00FE00U, RC_MEMORY_TYPE_VIDEO_RAM, "Sprite RAM"},
+    { 0x00FEA0U, 0x00FEFFU, 0x00FEA0U, RC_MEMORY_TYPE_UNUSED, ""},
+    { 0x00FF00U, 0x00FF7FU, 0x00FF00U, RC_MEMORY_TYPE_HARDWARE_CONTROLLER, "Hardware I/O"},
+    { 0x00FF80U, 0x00FFFEU, 0x00FF80U, RC_MEMORY_TYPE_SYSTEM_RAM, "Quick RAM"},
+    { 0x00FFFFU, 0x00FFFFU, 0x00FFFFU, RC_MEMORY_TYPE_HARDWARE_CONTROLLER, "Interrupt enable"},
+
+    /* GameBoy's cartridge RAM may have a total of up to 16 banks that can be paged through $A000-$BFFF.
+     * It is desirable to always have access to these extra banks. We do this by expecting the extra banks
+     * to be addressable at addresses not supported by the native system. 0x10000-0x16000 is reserved
+     * for the extra banks of system memory that are exclusive to the GameBoy Color. */
+    { 0x010000U, 0x015FFFU, 0x010000U, RC_MEMORY_TYPE_UNUSED, "Unused (GameBoy Color exclusive)" },
+    { 0x016000U, 0x033FFFU, 0x016000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM (banks 1-15)" },
+};
+static const rc_memory_regions_t rc_memory_regions_megaduck = { _rc_memory_regions_gameboy, 16 };
+static const rc_memory_regions_t rc_memory_regions_gameboy = { _rc_memory_regions_gameboy, 18 };
+
+/* ===== GameBoy Color ===== */
+static const rc_memory_region_t _rc_memory_regions_gameboy_color[] = {
+    { 0x000000U, 0x0000FFU, 0x000000U, RC_MEMORY_TYPE_HARDWARE_CONTROLLER, "Interrupt vector" },
+    { 0x000100U, 0x00014FU, 0x000100U, RC_MEMORY_TYPE_READONLY, "Cartridge header" },
+    { 0x000150U, 0x003FFFU, 0x000150U, RC_MEMORY_TYPE_READONLY, "Cartridge ROM (fixed)" }, /* bank 0 */
+    { 0x004000U, 0x007FFFU, 0x004000U, RC_MEMORY_TYPE_READONLY, "Cartridge ROM (paged)" }, /* bank 1-XX (switchable) */
+    { 0x008000U, 0x0097FFU, 0x008000U, RC_MEMORY_TYPE_VIDEO_RAM, "Tile RAM" },
+    { 0x009800U, 0x009BFFU, 0x009800U, RC_MEMORY_TYPE_VIDEO_RAM, "BG1 map data" },
+    { 0x009C00U, 0x009FFFU, 0x009C00U, RC_MEMORY_TYPE_VIDEO_RAM, "BG2 map data" },
+    { 0x00A000U, 0x00BFFFU, 0x00A000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM (bank 0)"},
+    { 0x00C000U, 0x00CFFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM (bank 0)" },
     { 0x00D000U, 0x00DFFFU, 0x00D000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM (bank 1)" },
     { 0x00E000U, 0x00FDFFU, 0x00C000U, RC_MEMORY_TYPE_VIRTUAL_RAM, "Echo RAM" },
     { 0x00FE00U, 0x00FE9FU, 0x00FE00U, RC_MEMORY_TYPE_VIDEO_RAM, "Sprite RAM"},
@@ -434,21 +471,23 @@ static const rc_memory_region_t _rc_memory_regions_gameboy[] = {
     { 0x00FF80U, 0x00FFFEU, 0x00FF80U, RC_MEMORY_TYPE_SYSTEM_RAM, "Quick RAM"},
     { 0x00FFFFU, 0x00FFFFU, 0x00FFFFU, RC_MEMORY_TYPE_HARDWARE_CONTROLLER, "Interrupt enable"},
 
-    /* GameBoy Color provides six extra banks of memory that can be paged out through the $DXXX 
-     * memory space, but the timing of that does not correspond with blanks, which is when achievements 
-     * are processed. As such, it is desirable to always have access to these extra banks. We do this
-     * by expecting the extra banks to be addressable at addresses not supported by the native system. */
-    { 0x010000U, 0x015FFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM (banks 2-7, GBC only)" }
+    /* GameBoy Color provides 6 extra banks of system memory that can be paged out through the $D000-$DFFF,
+     * and the cartridge RAM may have a total of up to 16 banks page through $A000-$BFFF.
+     * It is desirable to always have access to these extra banks. We do this by expecting the extra banks
+     * to be addressable at addresses not supported by the native system. */
+    { 0x010000U, 0x015FFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM (banks 2-7)" },
+    { 0x016000U, 0x033FFFU, 0x016000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM (banks 1-15)" },
 };
-static const rc_memory_regions_t rc_memory_regions_gameboy = { _rc_memory_regions_gameboy, 16 };
-static const rc_memory_regions_t rc_memory_regions_gameboy_color = { _rc_memory_regions_gameboy, 17 };
+static const rc_memory_regions_t rc_memory_regions_gameboy_color = { _rc_memory_regions_gameboy_color, 18 };
 
 /* ===== GameBoy Advance ===== */
+/* http://problemkaputt.de/gbatek-gba-memory-map.htm */
 static const rc_memory_region_t _rc_memory_regions_gameboy_advance[] = {
-    { 0x000000U, 0x007FFFU, 0x03000000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM" },
-    { 0x008000U, 0x047FFFU, 0x02000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    { 0x000000U, 0x007FFFU, 0x03000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }, /* 32KB  Internal Work RAM */
+    { 0x008000U, 0x047FFFU, 0x02000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }, /* 256KB External Work RAM */
+    { 0x048000U, 0x057FFFU, 0x0E000000U, RC_MEMORY_TYPE_SAVE_RAM, "Save RAM" }      /* 64KB  Game Pak SRAM */
 };
-static const rc_memory_regions_t rc_memory_regions_gameboy_advance = { _rc_memory_regions_gameboy_advance, 2 };
+static const rc_memory_regions_t rc_memory_regions_gameboy_advance = { _rc_memory_regions_gameboy_advance, 3 };
 
 /* ===== GameCube ===== */
 /* https://wiibrew.org/wiki/Memory_map */
@@ -458,11 +497,19 @@ static const rc_memory_region_t _rc_memory_regions_gamecube[] = {
 static const rc_memory_regions_t rc_memory_regions_gamecube = { _rc_memory_regions_gamecube, 1 };
 
 /* ===== Game Gear ===== */
-/* http://www.smspower.org/Development/MemoryMap */
+/* https://www.smspower.org/Development/MemoryMap */
+/* https://www.smspower.org/Development/Mappers */
 static const rc_memory_region_t _rc_memory_regions_game_gear[] = {
-    { 0x000000U, 0x001FFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    { 0x000000U, 0x001FFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    /* GG/SMS have various possible mappings for cartridge memory depending on the mapper used.
+     * However, these ultimately do not map all of their memory at once, typically requiring banking.
+     * Thus, the "real address" used is just a virtual address mapping all cartridge memory in one contiguous block.
+     * Note that this may possibly refer to non-battery backed "extended RAM" so this isn't strictly RC_MEMORY_TYPE_SAVE_RAM.
+     * libretro cores expose "extended RAM" as RETRO_MEMORY_SAVE_RAM regardless however.
+     */
+    { 0x002000U, 0x009FFFU, 0x010000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM" }
 };
-static const rc_memory_regions_t rc_memory_regions_game_gear = { _rc_memory_regions_game_gear, 1 };
+static const rc_memory_regions_t rc_memory_regions_game_gear = { _rc_memory_regions_game_gear, 2 };
 
 /* ===== Intellivision ===== */
 /* http://wiki.intellivision.us/index.php/Memory_Map */
@@ -526,14 +573,22 @@ static const rc_memory_region_t _rc_memory_regions_magnavox_odyssey_2[] = {
 static const rc_memory_regions_t rc_memory_regions_magnavox_odyssey_2 = { _rc_memory_regions_magnavox_odyssey_2, 2 };
 
 /* ===== Master System ===== */
-/* http://www.smspower.org/Development/MemoryMap */
+/* https://www.smspower.org/Development/MemoryMap */
+/* https://www.smspower.org/Development/Mappers */
 static const rc_memory_region_t _rc_memory_regions_master_system[] = {
-    { 0x000000U, 0x001FFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    { 0x000000U, 0x001FFFU, 0x00C000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    /* GG/SMS have various possible mappings for cartridge memory depending on the mapper used.
+     * However, these ultimately do not map all of their memory at once, typically requiring banking.
+     * Thus, the "real address" used is just a virtual address mapping all cartridge memory in one contiguous block.
+     * Note that this may possibly refer to non-battery backed "extended RAM" so this isn't strictly RC_MEMORY_TYPE_SAVE_RAM.
+     * libretro cores expose "extended RAM" as RETRO_MEMORY_SAVE_RAM regardless however.
+     */
+    { 0x002000U, 0x009FFFU, 0x010000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM" }
 };
-static const rc_memory_regions_t rc_memory_regions_master_system = { _rc_memory_regions_master_system, 1 };
+static const rc_memory_regions_t rc_memory_regions_master_system = { _rc_memory_regions_master_system, 2 };
 
 /* ===== MegaDrive (Genesis) ===== */
-/* http://www.smspower.org/Development/MemoryMap */
+/* https://www.smspower.org/Development/MemoryMap */
 static const rc_memory_region_t _rc_memory_regions_megadrive[] = {
     { 0x000000U, 0x00FFFFU, 0xFF0000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
     { 0x010000U, 0x01FFFFU, 0x000000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM" }
@@ -541,11 +596,11 @@ static const rc_memory_region_t _rc_memory_regions_megadrive[] = {
 static const rc_memory_regions_t rc_memory_regions_megadrive = { _rc_memory_regions_megadrive, 2 };
 
 /* ===== MegaDrive 32X (Genesis 32X) ===== */
-/* https://en.wikibooks.org/wiki/Genesis_Programming/68K_Memory_map/ */
+/* http://devster.monkeeh.com/sega/32xguide1.txt */
 static const rc_memory_region_t _rc_memory_regions_megadrive_32x[] = {
-    { 0x000000U, 0x00FFFFU, 0xFF0000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
-    { 0x010000U, 0x04FFFFU, 0x200000U, RC_MEMORY_TYPE_SYSTEM_RAM, "32X RAM"},
-    { 0x050000U, 0x05FFFFU, 0x000000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM" }
+    { 0x000000U, 0x00FFFFU, 0x00FF0000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }, /* Main MegaDrive RAM */
+    { 0x010000U, 0x04FFFFU, 0x06000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "32X RAM"},     /* Additional 32X RAM */
+    { 0x050000U, 0x05FFFFU, 0x00000000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM" }
 };
 static const rc_memory_regions_t rc_memory_regions_megadrive_32x = { _rc_memory_regions_megadrive_32x, 3 };
 
@@ -561,6 +616,29 @@ static const rc_memory_region_t _rc_memory_regions_msx[] = {
     { 0x000000U, 0x07FFFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
 };
 static const rc_memory_regions_t rc_memory_regions_msx = { _rc_memory_regions_msx, 1 };
+
+/* ===== MS DOS ===== */
+static const rc_memory_region_t _rc_memory_regions_ms_dos[] = {
+    /* DOS emulators split the 640 KB conventional memory into two regions.
+     * First the part of the conventional memory given to the running game at $000000.
+     * The part of the conventional memory containing DOS and BIOS controlled memory
+     * is at $100000. The length of these can vary depending on the hardware
+     * and DOS version (or emulated DOS shell).
+     * These first two regions will only ever total to 640 KB but the regions map
+     * to 1 MB bounds to make resulting memory addresses more readable.
+     * When emulating a game not under DOS (so called 'PC Booter' games), the entirety
+     * of the 640 KB conventional memory block will be at $000000.
+     */
+    { 0x00000000U, 0x0009FFFFU, 0x00000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Game Conventional Memory" },
+    { 0x000A0000U, 0x000FFFFFU, 0x000A0000U, RC_MEMORY_TYPE_UNUSED, "Padding to align OS Conventional Memory" },
+    { 0x00100000U, 0x0019FFFFU, 0x00100000U, RC_MEMORY_TYPE_SYSTEM_RAM, "OS Conventional Memory" },
+    { 0x001A0000U, 0x001FFFFFU, 0x001A0000U, RC_MEMORY_TYPE_UNUSED, "Padding to align Expanded Memory" },
+    /* Last is all the expanded memory which for now we map up to 64 MB which should be
+     * enough for the games we want to cover. An emulator might emulate more than that.
+     */
+    { 0x00200000U, 0x041FFFFFU, 0x00200000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Expanded Memory" }
+};
+static const rc_memory_regions_t rc_memory_regions_ms_dos = { _rc_memory_regions_ms_dos, 5 };
 
 /* ===== Neo Geo Pocket ===== */
 /* http://neopocott.emuunlim.com/docs/tech-11.txt */
@@ -697,10 +775,11 @@ static const rc_memory_regions_t rc_memory_regions_pcfx = { _rc_memory_regions_p
 /* ===== PlayStation ===== */
 /* http://www.raphnet.net/electronique/psx_adaptor/Playstation.txt */
 static const rc_memory_region_t _rc_memory_regions_playstation[] = {
-    { 0x000000U, 0x00FFFFU, 0x000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
-    { 0x010000U, 0x1FFFFFU, 0x010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
+    { 0x000000U, 0x00FFFFU, 0x00000000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Kernel RAM" },
+    { 0x010000U, 0x1FFFFFU, 0x00010000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
+    { 0x200000U, 0x2003FFU, 0x1F800000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Scratchpad RAM" }
 };
-static const rc_memory_regions_t rc_memory_regions_playstation = { _rc_memory_regions_playstation, 2 };
+static const rc_memory_regions_t rc_memory_regions_playstation = { _rc_memory_regions_playstation, 3 };
 
 /* ===== PlayStation 2 ===== */
 /* https://psi-rockin.github.io/ps2tek/ */
@@ -744,7 +823,7 @@ static const rc_memory_region_t _rc_memory_regions_saturn[] = {
 static const rc_memory_regions_t rc_memory_regions_saturn = { _rc_memory_regions_saturn, 2 };
 
 /* ===== SG-1000 ===== */
-/* http://www.smspower.org/Development/MemoryMap */
+/* https://www.smspower.org/Development/MemoryMap */
 static const rc_memory_region_t _rc_memory_regions_sg1000[] = {
     { 0x000000U, 0x0003FFU, 0xC000U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" },
     /* https://github.com/libretro/FBNeo/blob/697801c6262be6ca91615cf905444d3e039bc06f/src/burn/drv/sg1000/d_sg1000.cpp#L210-L237 */
@@ -759,16 +838,19 @@ static const rc_memory_region_t _rc_memory_regions_sg1000[] = {
 static const rc_memory_regions_t rc_memory_regions_sg1000 = { _rc_memory_regions_sg1000, 4 };
 
 /* ===== Super Cassette Vision ===== */
+/* https://github.com/mamedev/mame/blob/f32bb79e8541ba96d3a8144b220c48fb7536ba4b/src/mame/epoch/scv.cpp#L78-L86 */
+/* SCV only has 128 bytes of system RAM, any additional memory is provided on the individual carts and is
+ * not backed up by battery. */
+/* http://www.videogameconsolelibrary.com/pg80-super_cass_vis.htm#page=specs */
 static const rc_memory_region_t _rc_memory_regions_scv[] = {
-    { 0x000000U, 0x000FFFU, 0x000000U, RC_MEMORY_TYPE_READONLY, "System ROM" },
+    { 0x000000U, 0x000FFFU, 0x000000U, RC_MEMORY_TYPE_READONLY, "System ROM" }, /* BIOS */
     { 0x001000U, 0x001FFFU, 0x001000U, RC_MEMORY_TYPE_UNUSED, "" },
-    { 0x002000U, 0x003FFFU, 0x002000U, RC_MEMORY_TYPE_VIDEO_RAM, "Video RAM" },
+    { 0x002000U, 0x003FFFU, 0x002000U, RC_MEMORY_TYPE_VIDEO_RAM, "Video RAM" }, /* only really goes to $33FF? */
     { 0x004000U, 0x007FFFU, 0x004000U, RC_MEMORY_TYPE_UNUSED, "" },
-    { 0x008000U, 0x00DFFFU, 0x008000U, RC_MEMORY_TYPE_READONLY, "Cartridge ROM" },
-    { 0x00E000U, 0x00FF7FU, 0x00E000U, RC_MEMORY_TYPE_SAVE_RAM, "Cartridge RAM" },
+    { 0x008000U, 0x00FF7FU, 0x008000U, RC_MEMORY_TYPE_SYSTEM_RAM, "Cartridge RAM" },
     { 0x00FF80U, 0x00FFFFU, 0x00FF80U, RC_MEMORY_TYPE_SYSTEM_RAM, "System RAM" }
 };
-static const rc_memory_regions_t rc_memory_regions_scv = { _rc_memory_regions_scv, 7 };
+static const rc_memory_regions_t rc_memory_regions_scv = { _rc_memory_regions_scv, 6 };
 
 /* ===== Super Nintendo ===== */
 /* https://en.wikibooks.org/wiki/Super_NES_Programming/SNES_memory_map#LoROM */
@@ -877,7 +959,7 @@ static const rc_memory_regions_t rc_memory_regions_wonderswan = { _rc_memory_reg
 /* ===== default ===== */
 static const rc_memory_regions_t rc_memory_regions_none = { 0, 0 };
 
-const rc_memory_regions_t* rc_console_memory_regions(int console_id)
+const rc_memory_regions_t* rc_console_memory_regions(uint32_t console_id)
 {
   switch (console_id)
   {
@@ -926,8 +1008,7 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
 
     case RC_CONSOLE_FAIRCHILD_CHANNEL_F:
       return &rc_memory_regions_fairchild_channel_f;
-
-    case RC_CONSOLE_MEGADUCK:
+  
     case RC_CONSOLE_GAMEBOY:
       return &rc_memory_regions_gameboy;
 
@@ -958,11 +1039,17 @@ const rc_memory_regions_t* rc_console_memory_regions(int console_id)
     case RC_CONSOLE_MEGA_DRIVE:
       return &rc_memory_regions_megadrive;
 
+    case RC_CONSOLE_MEGADUCK:
+      return &rc_memory_regions_megaduck;
+  
     case RC_CONSOLE_SEGA_32X:
       return &rc_memory_regions_megadrive_32x;
 
     case RC_CONSOLE_MSX:
       return &rc_memory_regions_msx;
+
+    case RC_CONSOLE_MS_DOS:
+      return &rc_memory_regions_ms_dos;
 
     case RC_CONSOLE_NEOGEO_POCKET:
       return &rc_memory_regions_neo_geo_pocket;

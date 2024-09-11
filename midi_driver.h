@@ -232,13 +232,7 @@ bool midi_driver_read(uint8_t *byte);
 
 bool midi_driver_write(uint8_t byte, uint32_t delta_time);
 
-bool midi_driver_init(void *data);
-
-void midi_driver_free(void);
-
 bool midi_driver_set_all_sounds_off(void);
-
-const void *midi_driver_find_handle(int index);
 
 extern midi_driver_t midi_winmm;
 extern midi_driver_t midi_alsa;

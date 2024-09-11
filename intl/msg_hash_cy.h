@@ -114,10 +114,6 @@ MSG_HASH(
    "Agor y dewislen bwrdd gwaith traddodiadol."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Analluogi mod Kiosk (Ailgychwyn yn angenrheidiol)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Dangoswch yr holl gosodiadau sy'n gysylltiedig â chyfluniad."
    )
@@ -170,20 +166,8 @@ MSG_HASH(
    "Dysgu mwy am sut mae'r rhaglen yn gweithio."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Ailgychwyn RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Ailgychwyn y rhaglen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Gadael RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Gadael’r rhaglen."
+   "Cau"
    )
 
 /* Main Menu > Load Core */
@@ -996,6 +980,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Mewnbwn"
    )
+
 #ifdef HAVE_MICROPHONE
 #endif
 MSG_HASH(
@@ -1029,6 +1014,8 @@ MSG_HASH(
 /* Settings > Video > Scaling */
 
 #if defined(DINGUX)
+#endif
+#if defined(RARCH_MOBILE)
 #endif
 
 /* Settings > Video > HDR */
@@ -1179,6 +1166,12 @@ MSG_HASH(
 #endif
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -1612,10 +1605,6 @@ MSG_HASH(
    "Hanes"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Rhedeg"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER,
    "Defnyddiwr"
    )
@@ -1734,12 +1723,13 @@ MSG_HASH(
    MSG_LOCAL,
    "Lleol"
    )
-
-#ifdef HAVE_LAKKA_SWITCH
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#ifdef HAVE_LIBNX
 #endif
 #ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+#endif
+#endif
+#ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
 #endif

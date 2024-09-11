@@ -96,7 +96,7 @@ int rc_trigger_state_active(int state)
   }
 }
 
-static int rc_condset_is_measured_from_hitcount(const rc_condset_t* condset, unsigned measured_value)
+static int rc_condset_is_measured_from_hitcount(const rc_condset_t* condset, uint32_t measured_value)
 {
   const rc_condition_t* condition;
   for (condition = condset->conditions; condition; condition = condition->next) {
@@ -280,6 +280,9 @@ int rc_test_trigger(rc_trigger_t* self, rc_peek_t peek, void* ud, lua_State* L) 
 }
 
 void rc_reset_trigger(rc_trigger_t* self) {
+  if (!self)
+    return;
+
   rc_reset_trigger_hitcounts(self);
 
   self->state = RC_TRIGGER_STATE_WAITING;

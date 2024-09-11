@@ -58,195 +58,80 @@ static void gl3_build_default_matrix(float *data)
    data[15] =  1.0f;
 }
 
-static void gl3_framebuffer_copy(
-      GLuint fb_id,
-      GLuint quad_program,
-      GLuint quad_vbo,
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image)
-{
-   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
+extern "C" {
 
-   glUseProgram(quad_program);
-   if (flat_ubo_vertex >= 0)
+   void gl3_framebuffer_copy(
+         GLuint fb_id,
+         GLuint quad_program,
+         GLuint quad_vbo,
+         GLint flat_ubo_vertex,
+         struct Size2D size,
+         GLuint image);
+
+   void gl3_framebuffer_copy_partial(
+         GLuint fb_id,
+         GLuint quad_program,
+         GLint flat_ubo_vertex,
+         struct Size2D size,
+         GLuint image,
+         float rx, float ry);
+
+   GLuint gl3_compile_shader(GLenum stage, const char *source);
+   uint32_t gl3_get_cross_compiler_target_version(void);
+
+   static GLenum address_to_gl(glslang_filter_chain_address type)
    {
-      static float mvp[16] = { 
-                                2.0f, 0.0f, 0.0f, 0.0f,
-                                0.0f, 2.0f, 0.0f, 0.0f,
-                                0.0f, 0.0f, 2.0f, 0.0f,
-                               -1.0f,-1.0f, 0.0f, 1.0f
-                             };
-      glUniform4fv(flat_ubo_vertex, 4, mvp);
-   }
-
-   /* Draw quad */
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-static void gl3_framebuffer_copy_partial(
-      GLuint fb_id,
-      GLuint quad_program, 
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image,
-      float rx, float ry)
-{
-   GLuint vbo;
-   const float quad_data[16] = {
-      0.0f, 0.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, rx,   0.0f,
-      0.0f, 1.0f, 0.0f, ry,
-      1.0f, 1.0f, rx,   ry,
-   };
-
-   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   glUseProgram(quad_program);
-   if (flat_ubo_vertex >= 0)
-   {
-      static float mvp[16] = { 
-                                2.0f, 0.0f, 0.0f, 0.0f,
-                                0.0f, 2.0f, 0.0f, 0.0f,
-                                0.0f, 0.0f, 2.0f, 0.0f,
-                               -1.0f,-1.0f, 0.0f, 1.0f
-                             };
-      glUniform4fv(flat_ubo_vertex, 4, mvp);
-   }
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-
-   /* A bit crude, but heeeey. */
-   glGenBuffers(1, &vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDeleteBuffers(1, &vbo);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-static GLuint gl3_compile_shader(GLenum stage, const char *source)
-{
-   GLint status;
-   GLuint shader   = glCreateShader(stage);
-   const char *ptr = source;
-
-   glShaderSource(shader, 1, &ptr, NULL);
-   glCompileShader(shader);
-
-   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-
-   if (!status)
-   {
-      GLint length;
-      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-      if (length > 0)
+      switch (type)
       {
-         char *info_log = (char*)malloc(length);
-
-         if (info_log)
-         {
-            glGetShaderInfoLog(shader, length, &length, info_log);
-            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
-            free(info_log);
-            glDeleteShader(shader);
-            return 0;
-         }
-      }
-   }
-
-   return shader;
-}
-
-static uint32_t gl3_get_cross_compiler_target_version(void)
-{
-   const char *version = (const char*)glGetString(GL_VERSION);
-   unsigned major      = 0;
-   unsigned minor      = 0;
-
 #ifdef HAVE_OPENGLES3
-   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-      return 300;
-   
-   if (major == 2 && minor == 0)
-      return 100;
-#else
-   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
-      return 150;
-
-   if (major == 3)
-   {
-      switch (minor)
-      {
-         case 2:
-            return 150;
-         case 1:
-            return 140;
-         case 0:
-            return 130;
-      }
-   }
-   else if (major == 2)
-   {
-      switch (minor)
-      {
-         case 1:
-            return 120;
-         case 0:
-            return 110;
-      }
-   }
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+#if 0
+            RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
 #endif
+            return GL_CLAMP_TO_EDGE;
+#else
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+            return GL_CLAMP_TO_BORDER;
+#endif
+         case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
+            return GL_REPEAT;
+         case GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
+            return GL_MIRRORED_REPEAT;
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
+         default:
+            break;
+      }
 
-   return 100 * major + 10 * minor;
+      return GL_CLAMP_TO_EDGE;
+   }
+
+   static GLenum convert_filter_to_mag_gl(glslang_filter_chain_filter filter)
+   {
+      switch (filter)
+      {
+         case GLSLANG_FILTER_CHAIN_LINEAR:
+            return GL_LINEAR;
+         case GLSLANG_FILTER_CHAIN_NEAREST:
+         default:
+            break;
+      }
+
+      return GL_NEAREST;
+   }
+
+   static GLenum convert_filter_to_min_gl(glslang_filter_chain_filter filter, glslang_filter_chain_filter mipfilter)
+   {
+      if (     (filter    == GLSLANG_FILTER_CHAIN_LINEAR)
+            && (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
+         )
+         return GL_LINEAR_MIPMAP_LINEAR;
+      else if (filter == GLSLANG_FILTER_CHAIN_LINEAR)
+         return GL_LINEAR_MIPMAP_NEAREST;
+      else if (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
+         return GL_NEAREST_MIPMAP_LINEAR;
+      return GL_NEAREST_MIPMAP_NEAREST;
+   }
 }
-
 
 GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
@@ -492,59 +377,6 @@ struct Texture
    glslang_filter_chain_filter mip_filter;
    glslang_filter_chain_address address;
 };
-
-static GLenum address_to_gl(glslang_filter_chain_address type)
-{
-   switch (type)
-   {
-#ifdef HAVE_OPENGLES3
-      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
-#if 0
-         RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
-#endif
-         return GL_CLAMP_TO_EDGE;
-#else
-      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
-         return GL_CLAMP_TO_BORDER;
-#endif
-      case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
-         return GL_REPEAT;
-      case GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
-         return GL_MIRRORED_REPEAT;
-      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
-      default:
-         break;
-   }
-
-   return GL_CLAMP_TO_EDGE;
-}
-
-static GLenum convert_filter_to_mag_gl(glslang_filter_chain_filter filter)
-{
-   switch (filter)
-   {
-      case GLSLANG_FILTER_CHAIN_LINEAR:
-         return GL_LINEAR;
-      case GLSLANG_FILTER_CHAIN_NEAREST:
-      default:
-         break;
-   }
-
-   return GL_NEAREST;
-}
-
-static GLenum convert_filter_to_min_gl(glslang_filter_chain_filter filter, glslang_filter_chain_filter mipfilter)
-{
-   if (     (filter    == GLSLANG_FILTER_CHAIN_LINEAR)
-         && (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
-      )
-      return GL_LINEAR_MIPMAP_LINEAR;
-   else if (filter == GLSLANG_FILTER_CHAIN_LINEAR)
-      return GL_LINEAR_MIPMAP_NEAREST;
-   else if (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
-      return GL_NEAREST_MIPMAP_LINEAR;
-   return GL_NEAREST_MIPMAP_NEAREST;
-}
 
 static GLenum convert_glslang_format(glslang_format fmt)
 {
@@ -925,6 +757,23 @@ public:
       rotation = rot;
    }
 
+   void set_shader_subframes(uint32_t tot_subframes)
+   {
+      total_subframes = tot_subframes;
+   }
+
+   void set_current_shader_subframe(uint32_t cur_subframe)
+   {
+      current_subframe = cur_subframe;
+   }
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+   void set_simulate_scanline(bool simulate)
+   {
+      simulate_scanline = simulate;
+   }
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
+
    void set_name(const char *name)
    {
       pass_name = name;
@@ -1024,6 +873,11 @@ private:
    int32_t frame_direction = 1;
    uint32_t rotation = 0;
    unsigned pass_number = 0;
+   uint32_t total_subframes = 1;
+   uint32_t current_subframe = 1;
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+   bool simulate_scanline = false;
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
    size_t ubo_offset = 0;
    std::string pass_name;
@@ -1148,7 +1002,8 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
    for (i = 0; i < meta.size(); i++)
    {
       char n[128];
-      snprintf(n, sizeof(n), "%s%u", name, (unsigned)i);
+      size_t _len = strlcpy(n, name, sizeof(n));
+      snprintf(n + _len, sizeof(n) - _len, "%u", (unsigned)i);
       slang_texture_semantic_meta *m = (slang_texture_semantic_meta*)&meta[i];
 
       if (m->uniform)
@@ -1156,13 +1011,15 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
          int vert, frag;
          char vert_n[256];
          char frag_n[256];
-         snprintf(vert_n, sizeof(vert_n), "RARCH_UBO_VERTEX_INSTANCE.%s", n);
-         snprintf(frag_n, sizeof(frag_n), "RARCH_UBO_FRAGMENT_INSTANCE.%s", n);
+         size_t _len  = strlcpy(vert_n, "RARCH_UBO_VERTEX_INSTANCE.",   sizeof(vert_n));
+         size_t _len2 = strlcpy(frag_n, "RARCH_UBO_FRAGMENT_INSTANCE.", sizeof(frag_n));
+         strlcpy(vert_n + _len,  n, sizeof(vert_n) - _len);
+         strlcpy(frag_n + _len2, n, sizeof(frag_n) - _len2);
          vert = glGetUniformLocation(pipeline, vert_n);
          frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
-            m->location.ubo_vertex = vert;
+            m->location.ubo_vertex   = vert;
          if (frag >= 0)
             m->location.ubo_fragment = frag;
       }
@@ -1172,8 +1029,10 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
          int vert, frag;
          char vert_n[256];
          char frag_n[256];
-         snprintf(vert_n, sizeof(vert_n), "RARCH_PUSH_VERTEX_INSTANCE.%s", n);
-         snprintf(frag_n, sizeof(frag_n), "RARCH_PUSH_FRAGMENT_INSTANCE.%s", n);
+         size_t _len  = strlcpy(vert_n, "RARCH_PUSH_VERTEX_INSTANCE.",   sizeof(vert_n));
+         size_t _len2 = strlcpy(frag_n, "RARCH_PUSH_FRAGMENT_INSTANCE.", sizeof(frag_n));
+         strlcpy(vert_n + _len,  n, sizeof(vert_n) - _len);
+         strlcpy(frag_n + _len2, n, sizeof(frag_n) - _len2);
          vert = glGetUniformLocation(pipeline, vert_n);
          frag = glGetUniformLocation(pipeline, frag_n);
 
@@ -1221,6 +1080,8 @@ bool Pass::init_pipeline()
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
+   reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
+   reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
 
    reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
    reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
@@ -1336,7 +1197,7 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
 
    if (refl->push_constant)
    {
-      if (  refl->location.push_vertex   >= 0 || 
+      if (  refl->location.push_vertex   >= 0 ||
             refl->location.push_fragment >= 0)
       {
          float v4[4];
@@ -1644,8 +1505,8 @@ void Pass::build_semantics(uint8_t *buffer,
                        unsigned(current_viewport.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
-                       frame_count_period 
-                       ? uint32_t(frame_count % frame_count_period) 
+                       frame_count_period
+                       ? uint32_t(frame_count % frame_count_period)
                        : uint32_t(frame_count));
 
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
@@ -1653,6 +1514,11 @@ void Pass::build_semantics(uint8_t *buffer,
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
+
+   build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
+                      total_subframes);
+   build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
+                      current_subframe);
 
    /* Standard inputs */
    build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -1736,7 +1602,7 @@ void Pass::build_commands(
                    GLsizei((reflection.push_constant_size + 15) / 16),
                    reinterpret_cast<const float *>(push_constant_buffer.data()));
 
-   if (!(      locations.buffer_index_ubo_vertex   == GL_INVALID_INDEX 
+   if (!(      locations.buffer_index_ubo_vertex   == GL_INVALID_INDEX
             && locations.buffer_index_ubo_fragment == GL_INVALID_INDEX))
    {
       /* UBO Ring - update and bind */
@@ -1771,11 +1637,54 @@ void Pass::build_commands(
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+   if (simulate_scanline)
+   {
+      glEnable(GL_SCISSOR_TEST);
+   }
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
+
    if (final_pass)
+   {
       glViewport(current_viewport.x, current_viewport.y,
                  current_viewport.width, current_viewport.height);
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+      if (simulate_scanline)
+      {
+         glScissor(  current_viewport.x,
+                     int32_t((float(current_viewport.height) / float(total_subframes))
+                              * float(current_subframe - 1)),
+                     current_viewport.width,
+                     uint32_t(float(current_viewport.height) / float(total_subframes))
+         );
+      }
+      else
+      {
+         glScissor(  current_viewport.x, current_viewport.y,
+                     current_viewport.width, current_viewport.height);
+      }
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
+   }
    else
+   {
       glViewport(0, 0, size.width, size.height);
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+      if (simulate_scanline)
+      {
+         glScissor(  0,
+                     int32_t((float(size.height) / float(total_subframes))
+                              * float(current_subframe - 1)),
+                     size.width,
+                     uint32_t(float(size.height) / float(total_subframes))
+         );
+      }
+      else
+      {
+         glScissor(0, 0, size.width, size.height);
+      }
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
+   }
 
 #if !defined(HAVE_OPENGLES)
    if (framebuffer && framebuffer->get_format() == GL_SRGB8_ALPHA8)
@@ -1799,6 +1708,12 @@ void Pass::build_commands(
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glDisableVertexAttribArray(0);
    glDisableVertexAttribArray(1);
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+   if (simulate_scanline)
+   {
+      glDisable(GL_SCISSOR_TEST);
+   }
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
 #if !defined(HAVE_OPENGLES)
    glDisable(GL_FRAMEBUFFER_SRGB);
@@ -1849,6 +1764,11 @@ public:
    void set_frame_count_period(unsigned pass, unsigned period);
    void set_frame_direction(int32_t direction);
    void set_rotation(uint32_t rot);
+   void set_shader_subframes(uint32_t tot_subframes);
+   void set_current_shader_subframe(uint32_t cur_subframe);
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+   void set_simulate_scanline(bool simulate);
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
    void set_pass_name(unsigned pass, const char *name);
 
    void add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture);
@@ -1925,7 +1845,7 @@ void gl3_filter_chain::build_offscreen_passes(const gl3_viewport &vp)
 {
    unsigned i;
 
-   /* First frame, make sure our history and feedback textures 
+   /* First frame, make sure our history and feedback textures
     * are in a clean state. */
    if (require_clear)
    {
@@ -1977,7 +1897,7 @@ void gl3_filter_chain::end_frame()
 
       if (input_texture.width      != tmp->get_size().width  ||
             input_texture.height     != tmp->get_size().height ||
-            (input_texture.format    != 0 
+            (input_texture.format    != 0
              && input_texture.format != tmp->get_format()))
          tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
 
@@ -2000,7 +1920,7 @@ void gl3_filter_chain::build_viewport_pass(
       const gl3_viewport &vp, const float *mvp)
 {
    unsigned i;
-   /* First frame, make sure our history and 
+   /* First frame, make sure our history and
     * feedback textures are in a clean state. */
    if (require_clear)
    {
@@ -2057,10 +1977,11 @@ bool gl3_filter_chain::init_history()
    common.original_history.clear();
 
    for (i = 0; i < passes.size(); i++)
-      required_images =
-            std::max(required_images,
-                passes[i]->get_reflection().semantic_textures[
-                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
+   {
+      size_t _y = passes[i]->get_reflection().semantic_textures[
+                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size();
+      required_images = MAX(required_images, _y);
+   }
 
    if (required_images < 2)
    {
@@ -2132,7 +2053,7 @@ bool gl3_filter_chain::init_feedback()
 bool gl3_filter_chain::init_alias()
 {
    int i;
-    
+
    common.texture_semantic_map.clear();
    common.texture_semantic_uniform_map.clear();
 
@@ -2299,9 +2220,9 @@ void gl3_filter_chain::set_input_texture(
                common.quad_loc.flat_ubo_vertex,
                copy_framebuffer->get_size(),
                input_texture.image,
-               float(input_texture.width) 
+               float(input_texture.width)
                / input_texture.padded_width,
-               float(input_texture.height) 
+               float(input_texture.height)
                / input_texture.padded_height);
       input_texture.image = copy_framebuffer->get_image();
    }
@@ -2337,6 +2258,29 @@ void gl3_filter_chain::set_rotation(uint32_t rot)
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_rotation(rot);
 }
+
+void gl3_filter_chain::set_shader_subframes(uint32_t tot_subframes)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_shader_subframes(tot_subframes);
+}
+
+void gl3_filter_chain::set_current_shader_subframe(uint32_t cur_subframe)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_current_shader_subframe(cur_subframe);
+}
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+void gl3_filter_chain::set_simulate_scanline(bool simulate_scanline)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_simulate_scanline(simulate_scanline);
+}
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
 void gl3_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
@@ -2458,7 +2402,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
    if (!chain)
       return nullptr;
 
-   if (      shader->luts 
+   if (      shader->luts
          && !gl3_filter_chain_load_luts(chain.get(), shader.get()))
       return nullptr;
 
@@ -2507,11 +2451,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          {
             /* Allow duplicate #pragma parameter, but
              * only if they are exactly the same. */
-            if (meta_param.desc    != itr->desc    ||
-                meta_param.initial != itr->initial ||
-                meta_param.minimum != itr->minimum ||
-                meta_param.maximum != itr->maximum ||
-                meta_param.step    != itr->step)
+            if (   meta_param.desc    != itr->desc
+                || meta_param.initial != itr->initial
+                || meta_param.minimum != itr->minimum
+                || meta_param.maximum != itr->maximum
+                || meta_param.step    != itr->step)
             {
                RARCH_ERR("[GLCore]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
@@ -2557,8 +2501,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       else
       {
          pass_info.source_filter =
-            pass->filter == RARCH_FILTER_LINEAR 
-            ? GLSLANG_FILTER_CHAIN_LINEAR 
+            pass->filter == RARCH_FILTER_LINEAR
+            ? GLSLANG_FILTER_CHAIN_LINEAR
             : GLSLANG_FILTER_CHAIN_NEAREST;
       }
       pass_info.address       = rarch_wrap_to_address(pass->wrap);
@@ -2568,11 +2512,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
        * CGP format is a bit awkward in that it uses mipmap_input,
        * so we much check if next pass needs the mipmapping.
        */
-      if (next_pass && next_pass->mipmap)
+      if (next_pass && ((next_pass->flags & SHDR_PASS_FLG_MIPMAP) > 0))
          pass_info.max_levels = ~0u;
 
       pass_info.mip_filter    = pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1
-         ? GLSLANG_FILTER_CHAIN_LINEAR 
+         ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
 
       bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
@@ -2757,6 +2701,29 @@ void gl3_filter_chain_set_rotation(
 {
    chain->set_rotation(rot);
 }
+
+void gl3_filter_chain_set_shader_subframes(
+      gl3_filter_chain_t *chain,
+      uint32_t tot_subframes)
+{
+   chain->set_shader_subframes(tot_subframes);
+}
+
+void gl3_filter_chain_set_current_shader_subframe(
+      gl3_filter_chain_t *chain,
+      uint32_t cur_subframe)
+{
+   chain->set_current_shader_subframe(cur_subframe);
+}
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+void gl3_filter_chain_set_simulate_scanline(
+      gl3_filter_chain_t *chain,
+      bool simulate_scanline)
+{
+   chain->set_simulate_scanline(simulate_scanline);
+}
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
 void gl3_filter_chain_set_frame_count_period(
       gl3_filter_chain_t *chain,

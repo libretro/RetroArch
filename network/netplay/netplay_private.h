@@ -165,9 +165,6 @@ enum netplay_cmd
    /* Send a network packet from the raw packet core interface */
    NETPLAY_CMD_NETPACKET      = 0x0048,
 
-   /* Used by clients to have the host also forward it to other clients */
-   NETPLAY_CMD_NETPACKET_BROADCAST = 0x0049,
-
    /* Misc. commands */
 
    /* Sends multiple config requests over,

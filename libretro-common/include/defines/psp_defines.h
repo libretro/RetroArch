@@ -51,7 +51,7 @@ int sceClibPrintf ( const char * format, ... );
 #define PSP_FB_HEIGHT       544
 #define PSP_PITCH_PIXELS 1024
 
- // Memory left to the system for threads and other internal stuffs
+/* Memory left to the system for threads and other internal stuffs */
 #ifdef SCE_LIBC_SIZE
 #define RAM_THRESHOLD 0x2000000 + SCE_LIBC_SIZE
 #else

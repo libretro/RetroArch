@@ -61,7 +61,15 @@ enum playlist_thumbnail_mode
    PLAYLIST_THUMBNAIL_MODE_OFF,
    PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS,
    PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS,
-   PLAYLIST_THUMBNAIL_MODE_BOXARTS
+   PLAYLIST_THUMBNAIL_MODE_BOXARTS,
+   PLAYLIST_THUMBNAIL_MODE_LOGO
+};
+
+enum playlist_thumbnail_match_mode
+{
+   PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT = 0,
+   PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_LABEL = PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT,
+   PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_FILENAME
 };
 
 enum playlist_sort_mode
@@ -77,7 +85,17 @@ enum playlist_sort_mode
 enum playlist_thumbnail_id
 {
    PLAYLIST_THUMBNAIL_RIGHT = 0,
-   PLAYLIST_THUMBNAIL_LEFT
+   PLAYLIST_THUMBNAIL_LEFT,
+   PLAYLIST_THUMBNAIL_ICON
+};
+
+enum playlist_thumbnail_name_flags
+{
+   PLAYLIST_THUMBNAIL_FLAG_INVALID          = 0,
+   PLAYLIST_THUMBNAIL_FLAG_FULL_NAME        = (1 << 0),
+   PLAYLIST_THUMBNAIL_FLAG_STD_NAME         = (1 << 1),
+   PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME       = (1 << 2),
+   PLAYLIST_THUMBNAIL_FLAG_NONE             = (1 << 3)
 };
 
 typedef struct content_playlist playlist_t;
@@ -122,6 +140,7 @@ struct playlist_entry
    unsigned last_played_minute;
    unsigned last_played_second;
    enum playlist_runtime_status runtime_status;
+   enum playlist_thumbnail_name_flags thumbnail_flags;
 };
 
 /* Holds all configuration parameters required
@@ -132,9 +151,9 @@ typedef struct
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
-   bool autofix_paths;   
+   bool autofix_paths;
    char path[PATH_MAX_LENGTH];
-   char base_content_directory[PATH_MAX_LENGTH];
+   char base_content_directory[DIR_MAX_LENGTH];
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist
@@ -284,6 +303,11 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry,
       bool register_update);
 
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
+     enum playlist_thumbnail_name_flags thumbnail_flags);
+enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx);
+enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx);
+
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
       const struct playlist_entry **entry);
@@ -354,6 +378,7 @@ const char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
 enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
+bool playlist_thumbnail_match_with_filename(playlist_t *playlist);
 enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist);
 const char *playlist_get_scan_content_dir(playlist_t *playlist);
 const char *playlist_get_scan_file_exts(playlist_t *playlist);

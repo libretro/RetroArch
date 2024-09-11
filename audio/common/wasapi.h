@@ -23,11 +23,13 @@
 #ifndef RETROARCH_COMMON_WASAPI_H
 #define RETROARCH_COMMON_WASAPI_H
 
-#include "../common/mmdevice_common_inline.h"
-#include "boolean.h"
+#include "mmdevice_common_inline.h"
+#include <boolean.h>
 
-/* Get automatic buffer size from client buffer instead of device period */
-#define USE_CLIENT_BUFFER
+/* Shared buffer size replacement placeholders */
+#define WASAPI_SH_BUFFER_AUDIO_LATENCY 0
+#define WASAPI_SH_BUFFER_DEVICE_PERIOD 32
+#define WASAPI_SH_BUFFER_CLIENT_BUFFER 64
 
 const char *hresult_name(HRESULT hr);
 const char* wasapi_error(DWORD error);

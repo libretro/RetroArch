@@ -31,6 +31,8 @@
 #include "../../driver.h"
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
+#include "../../ui/drivers/cocoa/cocoa_common.h"
+#include "../../ui/ui_companion_driver.h"
 
 #ifdef HAVE_COREMOTION
 #import <CoreMotion/CoreMotion.h>
@@ -82,6 +84,10 @@ void apple_direct_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
     int apple_key              = rarch_keysym_lut[code];
+
+    if (!apple_key)
+       return;
+
     apple_key_state[apple_key] = down;
     input_keyboard_event(down,
           code,
@@ -283,7 +289,7 @@ static bool apple_input_handle_icade_event(unsigned kb_type_idx, unsigned *code,
       initialized = true;
    }
 
-   if ((*code < 0x20) && (icade_maps[kb_type_idx][*code].key != RETROK_UNKNOWN))
+   if ((*code < MAX_ICADE_KEYS) && (icade_maps[kb_type_idx][*code].key != RETROK_UNKNOWN))
    {
       *keydown     = icade_maps[kb_type_idx][*code].up ? false : true;
       ret          = true;
@@ -383,30 +389,23 @@ static void cocoa_input_poll(void *data)
    cocoa_input_data_t *apple    = (cocoa_input_data_t*)data;
 #ifndef IOS
    float   backing_scale_factor = cocoa_screen_get_backing_scale_factor();
+#else
+   int     backing_scale_factor = 1;
 #endif
 
    if (!apple)
       return;
 
-   for (i = 0; i < apple->touch_count; i++)
+   for (i = 0; i < apple->touch_count || i == 0; i++)
    {
       struct video_viewport vp;
 
-      vp.x                        = 0;
-      vp.y                        = 0;
-      vp.width                    = 0;
-      vp.height                   = 0;
-      vp.full_width               = 0;
-      vp.full_height              = 0;
+      memset(&vp, 0, sizeof(vp));
 
-#ifndef IOS
-      apple->touches[i].screen_x *= backing_scale_factor;
-      apple->touches[i].screen_y *= backing_scale_factor;
-#endif
       video_driver_translate_coord_viewport_wrap(
             &vp,
-            apple->touches[i].screen_x,
-            apple->touches[i].screen_y,
+            apple->touches[i].screen_x * backing_scale_factor,
+            apple->touches[i].screen_y * backing_scale_factor,
             &apple->touches[i].fixed_x,
             &apple->touches[i].fixed_y,
             &apple->touches[i].full_x,
@@ -442,7 +441,7 @@ static int16_t cocoa_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if ((binds[port][i].key < RETROK_LAST) 
+                  if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
                         && apple_key_state[rarch_keysym_lut[binds[port][i].key]])
                      ret |= (1 << i);
                }
@@ -453,10 +452,13 @@ static int16_t cocoa_input_state(
          if (binds[port][id].valid)
          {
             if (id < RARCH_BIND_LIST_END)
-               if (!keyboard_mapping_blocked || (id == RARCH_GAME_FOCUS_TOGGLE))
-                  if (apple_key_state[rarch_keysym_lut[binds[port][id].key]])
-                     return 1;
-
+            {
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && apple_key_state[rarch_keysym_lut[binds[port][id].key]]
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
+                  return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -476,12 +478,12 @@ static int16_t cocoa_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_plus_key]])
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_minus_key]])
                   ret += -0x7fff;
@@ -491,7 +493,7 @@ static int16_t cocoa_input_state(
          break;
 
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
+         return (id && id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {
@@ -509,7 +511,7 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_x > 0)
+                  if (apple->window_pos_x > 0 || apple->mouse_grabbed)
                   {
                      val = apple->window_pos_x - apple->mouse_x_last;
                      apple->mouse_x_last = apple->window_pos_x;
@@ -535,7 +537,7 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_y > 0)
+                  if (apple->window_pos_y > 0 || apple->mouse_grabbed)
                   {
                      val = apple->window_pos_y - apple->mouse_y_last;
                      apple->mouse_y_last = apple->window_pos_y;
@@ -568,8 +570,9 @@ static int16_t cocoa_input_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          {
-
-            if (idx < apple->touch_count && (idx < MAX_TOUCHES))
+            // with a physical mouse that is hovering, the touch_count will be 0
+            // and apple->touches[0] will have the hover position
+            if ((idx == 0 || idx < apple->touch_count) && (idx < MAX_TOUCHES))
             {
                const cocoa_touch_data_t *touch = (const cocoa_touch_data_t *)
                   &apple->touches[idx];
@@ -579,6 +582,8 @@ static int16_t cocoa_input_state(
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
+                        if (!apple->touch_count)
+                           return 0;
                         if (device == RARCH_DEVICE_POINTER_SCREEN)
                            return (touch->full_x  != -0x8000) && (touch->full_y  != -0x8000); /* Inside? */
                         return    (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
@@ -632,7 +637,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
       return false;
 
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, *))
+   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
    {
       for (GCController *controller in [GCController controllers])
       {
@@ -642,7 +647,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
             break;
          if (controller.motion.sensorsRequireManualActivation)
          {
-            /* This is a bug, we assume if you turn on/off either 
+            /* This is a bug, we assume if you turn on/off either
              * you want both on/off */
             if (     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
                   || (action == RETRO_SENSOR_GYROSCOPE_ENABLE))
@@ -762,6 +767,16 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    cocoa_show_mouse(nil, !state);
    apple->mouse_grabbed = state;
 }
+#elif TARGET_OS_IOS
+static void cocoa_input_grab_mouse(void *data, bool state)
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+
+   apple->mouse_grabbed = state;
+
+   if (@available(iOS 14, *))
+      [[CocoaView get] setNeedsUpdateOfPrefersPointerLocked];
+}
 #endif
 
 input_driver_t input_cocoa = {
@@ -773,7 +788,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-#ifdef OSX
+#if defined(OSX) || TARGET_OS_IOS
    cocoa_input_grab_mouse,
 #else
    NULL,                         /* grab_mouse */

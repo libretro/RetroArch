@@ -57,6 +57,36 @@
 
 #include "tasks_internal.h"
 
+enum screenshot_task_flags
+{
+   SS_TASK_FLAG_BGR24               = (1 << 0),
+   SS_TASK_FLAG_SILENCE             = (1 << 1),
+   SS_TASK_FLAG_IS_IDLE             = (1 << 2),
+   SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
+   SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
+   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
+};
+
+typedef struct screenshot_task_state screenshot_task_state_t;
+
+struct screenshot_task_state
+{
+   struct scaler_ctx scaler;
+   uint8_t *out_buffer;
+   const void *frame;
+   void *userbuf;
+
+   int pitch;
+   unsigned width;
+   unsigned height;
+   unsigned pixel_format_type;
+
+   uint8_t flags;
+
+   char filename[PATH_MAX_LENGTH];
+   char shotname[NAME_MAX_LENGTH];
+};
+
 static bool screenshot_dump_direct(screenshot_task_state_t *state)
 {
    struct scaler_ctx *scaler     = (struct scaler_ctx*)&state->scaler;
@@ -117,6 +147,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
  **/
 static void task_screenshot_handler(retro_task_t *task)
 {
+   uint8_t flg;
    screenshot_task_state_t *state = NULL;
    bool ret                       = false;
 
@@ -125,7 +156,10 @@ static void task_screenshot_handler(retro_task_t *task)
 
    if (!(state = (screenshot_task_state_t*)task->state))
       goto task_finished;
-   if (task_get_cancelled(task))
+
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
    if (task_get_progress(task) == 100)
       goto task_finished;
@@ -167,8 +201,8 @@ static void task_screenshot_handler(retro_task_t *task)
    return;
 
 task_finished:
-
-   task_set_finished(task, true);
+   if (task)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (task->title)
       task_free_title(task);
@@ -239,7 +273,10 @@ static bool screenshot_dump(
    screenshot_task_state_t *state = (screenshot_task_state_t*)
          calloc(1, sizeof(*state));
 
-   /* If fullpath is true, name_base already contains a 
+   if (!state)
+      return false;
+
+   /* If fullpath is true, name_base already contains a
     * static path + filename to save the screenshot to. */
    if (fullpath)
       strlcpy(state->filename, name_base, sizeof(state->filename));
@@ -261,7 +298,7 @@ static bool screenshot_dump(
 #endif
    if (savestate)
       state->flags              |= SS_TASK_FLAG_SILENCE;
-   
+
    if (history_list_enable)
       state->flags              |= SS_TASK_FLAG_HISTORY_LIST_ENABLE;
    state->pixel_format_type      = pixel_format_type;
@@ -278,7 +315,7 @@ static bool screenshot_dump(
       }
       else
       {
-         char new_screenshot_dir[PATH_MAX_LENGTH];
+         char new_screenshot_dir[DIR_MAX_LENGTH];
 
          if (!string_is_empty(screenshot_dir))
          {
@@ -289,7 +326,7 @@ static bool screenshot_dump(
             if (settings->bools.sort_screenshots_by_content_enable &&
                 !string_is_empty(content_dir))
             {
-               char content_dir_name[PATH_MAX_LENGTH];
+               char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
                      content_dir, sizeof(content_dir_name));
                fill_pathname_join_special(
@@ -329,7 +366,7 @@ static bool screenshot_dump(
          }
          else
          {
-            size_t len = strlcpy(state->shotname, 
+            size_t len = strlcpy(state->shotname,
                   path_basename_nocompression(name_base),
                   sizeof(state->shotname));
             strlcpy(state->shotname       + len,
@@ -368,12 +405,15 @@ static bool screenshot_dump(
       task->type         = TASK_TYPE_BLOCKING;
       task->state        = state;
       task->handler      = task_screenshot_handler;
-      task->mute         = savestate;
+      if (savestate)
+         task->flags    |=  RETRO_TASK_FLG_MUTE;
+      else
+         task->flags    &= ~RETRO_TASK_FLG_MUTE;
 #if defined(HAVE_GFX_WIDGETS)
       /* This callback is only required when
        * widgets are enabled */
       if (state->flags & SS_TASK_FLAG_WIDGETS_READY)
-         task->callback    = task_screenshot_callback;
+         task->callback  = task_screenshot_callback;
 
       if ((state->flags & SS_TASK_FLAG_WIDGETS_READY) && !savestate)
          task_free_title(task);
@@ -548,7 +588,7 @@ bool take_screenshot(
    bool ret                       = false;
    uint32_t runloop_flags         = runloop_get_flags();
    settings_t *settings           = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr(); 
+   video_driver_state_t *video_st = video_state_get_ptr();
    bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
    bool supports_viewport_read    = video_st->current_video->read_viewport
          && (video_st->current_video->viewport_info);

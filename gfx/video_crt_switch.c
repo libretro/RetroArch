@@ -33,10 +33,8 @@
 #include "../paths.h"
 #include "gfx_display.h"
 
-#if !defined(HAVE_VIDEOCORE)
 #include "../deps/switchres/switchres_wrapper.h"
 static sr_mode srm;
-#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -48,7 +46,7 @@ static void crt_adjust_sr_ini(videocrt_switch_t *p_switch);
 /* Global local variables */
 static bool ini_overrides_loaded = false;
 static char core_name[NAME_MAX_LENGTH]; /* Same size as library_name on retroarch_data.h */
-static char content_dir[PATH_MAX_LENGTH];
+static char content_dir[DIR_MAX_LENGTH];
 
 #if defined(HAVE_VIDEOCORE) /* Need to add video core to SR2 */
 #include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
@@ -135,12 +133,14 @@ static void crt_switch_set_aspect(
       patched_height           = height;
    }
 
+#if !defined(HAVE_VIDEOCORE)
    sr_get_state(&state);
 
    if ((int)srm_width >= state.super_width && !srm_isstretched)
       RARCH_LOG("[CRT]: Super resolution detected. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
    else if (srm_isstretched && srm_width > 0 )
       RARCH_LOG("[CRT]: Resolution is stretched. Fractal scaling @ X:%f Y:%f \n", srm_xscale, srm_yscale);
+#endif
 
    scaled_width  = roundf(patched_width  * srm_xscale);
    scaled_height = roundf(patched_height * srm_yscale);
@@ -292,7 +292,7 @@ static void switch_res_crt(
       int monitor_index, int super_width)
 {
    char current_core_name[NAME_MAX_LENGTH];
-   char current_content_dir[PATH_MAX_LENGTH];
+   char current_content_dir[DIR_MAX_LENGTH];
    int flags = 0,   ret;
    const char *err_msg     = NULL;
    int w                   = native_width;
@@ -458,7 +458,7 @@ void crt_switch_res_core(
 
 void crt_adjust_sr_ini(videocrt_switch_t *p_switch)
 {
-   char config_directory[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    char switchres_ini_override_file[PATH_MAX_LENGTH];
 
    if (p_switch->sr2_active)

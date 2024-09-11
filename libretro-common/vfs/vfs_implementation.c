@@ -923,11 +923,14 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
          if (path_buf[len - 1] == '/')
             path_buf[len - 1] = '\0';
 
-      free(path_buf);
-
       if (stat(path_buf, &stat_buf) < 0)
+      {
+         free(path_buf);
          return 0;
+      }
 
+      free(path_buf);
+      
       if (size)
          *size = (int32_t)stat_buf.st_size;
 
@@ -1122,6 +1125,8 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       rdir->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
    else
       rdir->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+#else
+   (void)include_hidden;
 #endif
 
    if (rdir->directory && !dirent_check_error(rdir))

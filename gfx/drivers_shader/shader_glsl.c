@@ -94,10 +94,12 @@ struct shader_uniforms
    int input_size;
    int output_size;
    int texture_size;
+   int final_vp_size;
 
    int frame_count;
    int frame_direction;
-   unsigned rotation;
+   /* Use int for maximal compatibility despite other drivers using uint. */
+   int rotation;
 
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
@@ -285,7 +287,7 @@ static const XXH64_hash_t gl_glsl_hash_shader(
    {
       XXH64_update(state, source[n], strlen(source[n]));
    }
-   
+
    XXH64_hash_t const hash = XXH64_digest(state);
 
    XXH64_freeState(state);
@@ -364,13 +366,22 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
          strtoul(existing_version + 8, (char**)&program, 10);
 
 #ifdef HAVE_OPENGLES
-      if (version_no < 130)
-         version_no    = 100;
-      else
+      if (version_no >= 130 && version_no < 330)
       {
          version_extra = " es";
          version_no    = 300;
       }
+      else if (version_no == 330)
+      {
+         version_extra = " es";
+         version_no    = 310;
+      }
+      else if (version_no > 330)
+      {
+         version_extra = " es";
+         version_no    = 320;
+      }
+      else version_no  = 100;
 #endif
       snprintf(version,
             sizeof(version), "#version %u%s\n", version_no, version_extra);
@@ -406,10 +417,10 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    source[2] = glsl->alias_define;
    source[3] = program;
 
-#if defined(ORBIS) 
+#if defined(ORBIS)
    {
       char save_path[250];
-      XXH64_hash_t const hash = 
+      XXH64_hash_t const hash =
          gl_glsl_hash_shader(source, ARRAY_SIZE(source));
       snprintf(save_path, sizeof(save_path),
             "/data/retroarch/temp/%lx.sb", hash);
@@ -457,7 +468,7 @@ static bool gl_glsl_compile_program(
       struct shader_program_info *program_info)
 {
    glsl_shader_data_t                 *glsl = (glsl_shader_data_t*)data;
-   struct shader_program_glsl_data *program = 
+   struct shader_program_glsl_data *program =
       (struct shader_program_glsl_data*)program_data;
    GLuint prog                              = glCreateProgram();
 
@@ -734,6 +745,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->input_size      = gl_glsl_get_uniform(glsl, prog, "InputSize");
    uni->output_size     = gl_glsl_get_uniform(glsl, prog, "OutputSize");
    uni->texture_size    = gl_glsl_get_uniform(glsl, prog, "TextureSize");
+   uni->final_vp_size   = gl_glsl_get_uniform(glsl, prog, "FinalViewportSize");
 
    uni->frame_count     = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
@@ -1100,7 +1112,7 @@ static void *gl_glsl_init(void *data, const char *path)
       goto error;
    }
 #else
-   if (      glsl_core 
+   if (      glsl_core
          && (!(glsl->shader->flags & SHDR_FLAG_MODERN)))
    {
       RARCH_ERR("[GL]: GL core context is used, but shader is not core compatible. Cannot use it.\n");
@@ -1266,8 +1278,11 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    unsigned i;
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
-   float input_size[2], output_size[2], texture_size[2];
+   float input_size[2], output_size[2], texture_size[2], final_vp_size[2];
    video_shader_ctx_params_t          *params = (video_shader_ctx_params_t*)dat;
+   gl2_t                             *gl_data = (gl2_t*)params->data;
+   unsigned vp_width                          = gl_data->vp_out_width;
+   unsigned vp_height                         = gl_data->vp_out_height;
    unsigned width                             = params->width;
    unsigned height                            = params->height;
    unsigned tex_width                         = params->tex_width;
@@ -1299,12 +1314,14 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    if (glsl->prg[glsl->active_idx].id == 0)
       return;
 
-   input_size [0]  = (float)width;
-   input_size [1]  = (float)height;
-   output_size[0]  = (float)out_width;
-   output_size[1]  = (float)out_height;
-   texture_size[0] = (float)tex_width;
-   texture_size[1] = (float)tex_height;
+   input_size [0]   = (float)width;
+   input_size [1]   = (float)height;
+   output_size[0]   = (float)out_width;
+   output_size[1]   = (float)out_height;
+   texture_size[0]  = (float)tex_width;
+   texture_size[1]  = (float)tex_height;
+   final_vp_size[0] = (float)vp_width;
+   final_vp_size[1] = (float)vp_height;
 
    if (uni->input_size >= 0)
       glUniform2fv(uni->input_size, 1, input_size);
@@ -1314,6 +1331,9 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
 
    if (uni->texture_size >= 0)
       glUniform2fv(uni->texture_size, 1, texture_size);
+
+   if (uni->final_vp_size >= 0)
+      glUniform2fv(uni->final_vp_size, 1, final_vp_size);
 
    if (uni->frame_count >= 0 && glsl->active_idx)
    {
@@ -1525,7 +1545,7 @@ static bool gl_glsl_set_mvp(void *shader_data, const void *mat_data)
    int loc;
    glsl_shader_data_t *glsl   = (glsl_shader_data_t*)shader_data;
 
-   if (      !glsl 
+   if (      !glsl
          || (!(glsl->shader->flags & SHDR_FLAG_MODERN)))
       return false;
 
@@ -1569,7 +1589,7 @@ static bool gl_glsl_set_coords(void *shader_data,
    const struct shader_uniforms *uni = glsl
       ? &glsl->uniforms[glsl->active_idx] : NULL;
 
-   if (     !glsl 
+   if (     !glsl
          || (!(glsl->shader->flags & SHDR_FLAG_MODERN))
          || !coords)
    {
@@ -1724,8 +1744,8 @@ static unsigned gl_glsl_get_prev_textures(void *data)
 static bool gl_glsl_mipmap_input(void *data, unsigned idx)
 {
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
-   if (glsl && idx)
-      return glsl->shader->pass[idx - 1].mipmap;
+   if (glsl && idx && (glsl->shader->pass[idx - 1].flags & SHDR_PASS_FLG_MIPMAP) > 0)
+      return true;
    return false;
 }
 

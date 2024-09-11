@@ -63,6 +63,8 @@ enum gfx_widgets_icon
 
    MENU_WIDGETS_ICON_HOURGLASS,
    MENU_WIDGETS_ICON_CHECK,
+   MENU_WIDGETS_ICON_ADD,
+   MENU_WIDGETS_ICON_EXIT,
 
    MENU_WIDGETS_ICON_INFO,
 
@@ -111,10 +113,13 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
    /* Unfold animation */
    DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
-   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7)
+   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7),
+   /* Color style */
+   DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
+   DISPWIDG_FLAG_NEGATIVE                  = (1 << 9)
 };
 
-/* There can only be one message animation at a time to 
+/* There can only be one message animation at a time to
  * avoid confusing users */
 enum dispgfx_widget_flags
 {
@@ -212,6 +217,7 @@ typedef struct dispgfx_widget
    unsigned generic_message_height;
 
    unsigned msg_queue_height;
+   unsigned msg_queue_padding;
    unsigned msg_queue_spacing;
    unsigned msg_queue_rect_start_x;
    unsigned msg_queue_internal_icon_size;
@@ -240,7 +246,8 @@ typedef struct dispgfx_widget
 
    uint8_t flags;
 
-   char assets_pkg_dir[PATH_MAX_LENGTH];
+   char gfx_widgets_status_text[NAME_MAX_LENGTH];
+   char assets_pkg_dir[DIR_MAX_LENGTH];
    char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
    char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */
    char ozone_regular_font_path[PATH_MAX_LENGTH]; /* TODO/FIXME - decouple from Ozone */
@@ -248,7 +255,6 @@ typedef struct dispgfx_widget
 
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
-   char gfx_widgets_status_text[255];
 
    bool active;
 } dispgfx_widget_t;
@@ -378,8 +384,12 @@ void gfx_widgets_ai_service_overlay_unload(void);
 void gfx_widgets_update_cheevos_appearance(void);
 void gfx_widgets_push_achievement(const char *title, const char* subtitle, const char *badge);
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
+void gfx_widgets_clear_leaderboard_displays(void);
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
+void gfx_widgets_clear_challenge_displays(void);
 void gfx_widget_set_achievement_progress(const char* badge, const char* progress);
+void gfx_widget_set_cheevos_disconnect(bool visible);
+void gfx_widget_set_cheevos_set_loading(bool visible);
 #endif
 
 /* TODO/FIXME/WARNING: Not thread safe! */

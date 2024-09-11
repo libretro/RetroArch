@@ -189,10 +189,12 @@ static void wl_pointer_handle_enter(void *data,
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    wl->input.mouse.surface    = surface;
-   wl->input.mouse.last_x     = wl_fixed_to_int(
-         sx * (wl_fixed_t)wl->buffer_scale);
-   wl->input.mouse.last_y     = wl_fixed_to_int(
-         sy * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.last_x     = wl->fractional_scale ?
+         (int) FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sx), wl->fractional_scale_num) :
+         wl_fixed_to_int(sx * (wl_fixed_t)wl->buffer_scale);
+   wl->input.mouse.last_y     = wl->fractional_scale ?
+         (int) FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sy), wl->fractional_scale_num) :
+         wl_fixed_to_int(sy * (wl_fixed_t)wl->buffer_scale);
    wl->input.mouse.x          = wl->input.mouse.last_x;
    wl->input.mouse.y          = wl->input.mouse.last_y;
    wl->input.mouse.focus      = true;
@@ -211,6 +213,8 @@ static void wl_pointer_handle_leave(void *data,
    wl->input.mouse.left       = false;
    wl->input.mouse.right      = false;
    wl->input.mouse.middle     = false;
+   wl->input.mouse.side       = false;
+   wl->input.mouse.extra      = false;
 
    if (wl->input.mouse.surface == surface)
       wl->input.mouse.surface = NULL;
@@ -223,10 +227,12 @@ static void wl_pointer_handle_motion(void *data,
       wl_fixed_t sy)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   wl->input.mouse.x          = wl_fixed_to_int(
-         (wl_fixed_t)wl->buffer_scale * sx);
-   wl->input.mouse.y          = wl_fixed_to_int(
-         (wl_fixed_t)wl->buffer_scale * sy);
+   wl->input.mouse.x          = wl->fractional_scale ?
+         (int) FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sx), wl->fractional_scale_num) :
+         wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sx);
+   wl->input.mouse.y          = wl->fractional_scale ?
+         (int) FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sy), wl->fractional_scale_num) :
+         wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sy);
 }
 
 static void wl_pointer_handle_button(void *data,
@@ -266,6 +272,12 @@ static void wl_pointer_handle_button(void *data,
          case BTN_MIDDLE:
             wl->input.mouse.middle = true;
             break;
+         case BTN_SIDE:
+            wl->input.mouse.side = true;
+            break;
+         case BTN_EXTRA:
+            wl->input.mouse.extra = true;
+            break;
       }
    }
    else
@@ -280,6 +292,12 @@ static void wl_pointer_handle_button(void *data,
             break;
          case BTN_MIDDLE:
             wl->input.mouse.middle = false;
+            break;
+         case BTN_SIDE:
+            wl->input.mouse.side = false;
+            break;
+         case BTN_EXTRA:
+            wl->input.mouse.extra = false;
             break;
       }
    }
@@ -331,10 +349,12 @@ static void wl_touch_handle_down(void *data,
          {
             wl->active_touch_positions[wl->num_active_touches].active = true;
             wl->active_touch_positions[wl->num_active_touches].id     = id;
-            wl->active_touch_positions[wl->num_active_touches].x      = (unsigned)
-               wl_fixed_to_int(x * (wl_fixed_t)wl->buffer_scale);
-            wl->active_touch_positions[wl->num_active_touches].y      = (unsigned)
-               wl_fixed_to_int(y * (wl_fixed_t)wl->buffer_scale);
+            wl->active_touch_positions[wl->num_active_touches].x      = wl->fractional_scale ?
+               FRACTIONAL_SCALE_MULT(wl_fixed_to_int(x), wl->fractional_scale_num) :
+               (unsigned) wl_fixed_to_int(x * (wl_fixed_t)wl->buffer_scale);
+            wl->active_touch_positions[wl->num_active_touches].y      = wl->fractional_scale ?
+               FRACTIONAL_SCALE_MULT(wl_fixed_to_int(y), wl->fractional_scale_num) :
+               (unsigned) wl_fixed_to_int(y * (wl_fixed_t)wl->buffer_scale);
             wl->num_active_touches++;
             break;
          }
@@ -415,10 +435,12 @@ static void wl_touch_handle_motion(void *data,
       if (  wl->active_touch_positions[i].active &&
             wl->active_touch_positions[i].id == id)
       {
-         wl->active_touch_positions[i].x = (unsigned) wl_fixed_to_int(
-            x * (wl_fixed_t)wl->buffer_scale);
-         wl->active_touch_positions[i].y = (unsigned) wl_fixed_to_int(
-            y * (wl_fixed_t)wl->buffer_scale);
+         wl->active_touch_positions[i].x = wl->fractional_scale ?
+            FRACTIONAL_SCALE_MULT(wl_fixed_to_int(x), wl->fractional_scale_num) :
+            (unsigned) wl_fixed_to_int(x * (wl_fixed_t)wl->buffer_scale);
+         wl->active_touch_positions[i].y = wl->fractional_scale ?
+            FRACTIONAL_SCALE_MULT(wl_fixed_to_int(y), wl->fractional_scale_num) :
+            (unsigned) wl_fixed_to_int(y * (wl_fixed_t)wl->buffer_scale);
       }
    }
 }
@@ -431,8 +453,8 @@ static void handle_relative_motion(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   wl->input.mouse.delta_x = wl_fixed_to_int(dx);
-   wl->input.mouse.delta_y = wl_fixed_to_int(dy);
+   wl->input.mouse.delta_x = wl_fixed_to_int(dx_unaccel);
+   wl->input.mouse.delta_y = wl_fixed_to_int(dy_unaccel);
 
    if (wl->locked_pointer)
    {
@@ -592,6 +614,13 @@ static bool wl_current_outputs_remove(gfx_ctx_wayland_data_t *wl,
    return false;
 }
 
+static void wp_fractional_scale_v1_preferred_scale(void *data, struct wp_fractional_scale_v1 *fractional_scale,
+      uint32_t scale)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl->pending_fractional_scale_num = scale;
+}
+
 static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
       struct wl_output *output)
 {
@@ -697,6 +726,9 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, wp_viewporter_interface.name))
       wl->viewporter = (struct wp_viewporter*)wl_registry_bind(reg,
             id, &wp_viewporter_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_fractional_scale_manager_v1_interface.name))
+      wl->fractional_scale_manager = (struct wp_fractional_scale_manager_v1*)
+         wl_registry_bind(reg, id, &wp_fractional_scale_manager_v1_interface, MIN(version, 1));
    else if (string_is_equal(interface, wl_output_interface.name))
    {
       display_output_t *od = (display_output_t*)
@@ -1029,6 +1061,10 @@ const struct xdg_wm_base_listener xdg_shell_listener = {
 
 const struct xdg_surface_listener xdg_surface_listener = {
     xdg_surface_handle_configure,
+};
+
+const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener = {
+    wp_fractional_scale_v1_preferred_scale,
 };
 
 const struct wl_surface_listener wl_surface_listener = {

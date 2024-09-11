@@ -19,8 +19,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "configuration.h"
-
 RETRO_BEGIN_DECLS
 
 typedef struct location_driver
@@ -103,26 +101,10 @@ void driver_location_stop(void);
  **/
 bool driver_location_start(void);
 
-void destroy_location(void);
-
-void location_driver_find_driver(
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled);
-
-void uninit_location(void *data);
-
-bool init_location(
-      void *data,
-      settings_t *settings,
-      bool verbosity_enabled);
-
 location_driver_state_t *location_state_get_ptr(void);
 
 extern location_driver_t location_corelocation;
 extern location_driver_t location_android;
-
-extern const location_driver_t *location_drivers[];
 
 RETRO_END_DECLS
 

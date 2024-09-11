@@ -16,7 +16,6 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
-#include <lists/string_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -601,7 +600,6 @@ static void menu_action_setting_disp_set_label_contentless_core(
       strlcpy(s2, alt, len2);
 }
 
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
 static void menu_action_setting_disp_cpu_gov_mode(
       file_list_t* list,
@@ -756,7 +754,6 @@ static void menu_action_cpu_governor_label(
       MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR), len2);
    strlcpy(s, d->scaling_governor, len);
 }
-#endif
 #endif
 
 static void menu_action_setting_disp_set_label_core_lock(
@@ -928,7 +925,7 @@ static void menu_action_setting_disp_set_label_cheat(
 
    if (cheat_index < cheat_manager_get_buf_size())
    {
-      size_t _len = 
+      size_t _len =
          snprintf(s, len, "(%s) : ",
                  cheat_manager_get_code_state(cheat_index)
                ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)
@@ -937,8 +934,8 @@ static void menu_action_setting_disp_set_label_cheat(
       if (cheat_manager_state.cheats[cheat_index].handler == CHEAT_HANDLER_TYPE_EMU)
       {
          const char *code = cheat_manager_get_code(cheat_index);
-         strlcpy(s + _len, 
-                 code 
+         strlcpy(s + _len,
+                 code
                ? code
                : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                len - _len);
@@ -1186,10 +1183,10 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
 #endif
       {
          if (!string_is_empty(desc))
-            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_DESC), 
+            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_DESC),
                width, height, desc);
          else
-            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC), 
+            snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC),
                width, height);
       }
    }
@@ -1259,8 +1256,15 @@ static void menu_action_setting_disp_set_label_menu_file_directory(
       const char *path,
       char *s2, size_t len2)
 {
+#if IOS
+   char tmp[PATH_MAX_LENGTH];
+   fill_pathname_abbreviate_special(tmp, path, sizeof(tmp));
+   MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
+         tmp, "(DIR)", STRLEN_CONST("(DIR)"), s2, len2);
+#else
    MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
          path, "(DIR)", STRLEN_CONST("(DIR)"), s2, len2);
+#endif
 }
 
 static void menu_action_setting_disp_set_label_generic(
@@ -2056,7 +2060,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_core_option_override_info);
             break;
-         #ifndef HAVE_LAKKA_SWITCH
          #ifdef HAVE_LAKKA
          case MENU_ENUM_LABEL_CPU_PERF_MODE:
             BIND_ACTION_GET_VALUE(cbs,
@@ -2082,7 +2085,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_CPU_POLICY_GOVERNOR:
             BIND_ACTION_GET_VALUE(cbs, menu_action_cpu_governor_label);
             break;
-         #endif
          #endif
          default:
             return -1;
@@ -2112,7 +2114,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
    info_range_list_t info_list[] = {
 #ifdef HAVE_AUDIOMIXER
       {
-         MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN, 
+         MENU_SETTINGS_AUDIO_MIXER_STREAM_BEGIN,
          MENU_SETTINGS_AUDIO_MIXER_STREAM_END,
          menu_action_setting_audio_mixer_stream_name
       },

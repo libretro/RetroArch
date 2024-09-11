@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2019-2021 - Brian Weiss
+ *  Copyright (C) 2019-2023 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -46,8 +46,8 @@
  * THIS WILL DISCLOSE THE USER'S PASSWORD, TAKE CARE! */
 #undef CHEEVOS_LOG_PASSWORD
 
-/* Define this macro to load a JSON file from disk instead of downloading
- * from retroachievements.org. */
+ /* Define this macro with a string to load a JSON file from disk with
+  * that name instead of downloading the game data from retroachievements.org. */
 #undef CHEEVOS_JSON_OVERRIDE
 
 /* Define this macro with a string to save the JSON file to disk with
@@ -56,6 +56,8 @@
 
 /* Define this macro to log downloaded badge images. */
 #undef CHEEVOS_LOG_BADGES
+
+#ifndef HAVE_RC_CLIENT
 
 /* Number of usecs to wait between posting rich presence to the site. */
 /* Keep consistent with SERVER_PING_FREQUENCY from RAIntegration. */
@@ -99,11 +101,15 @@ typedef struct rcheevos_async_io_request
    char type;
 } rcheevos_async_io_request;
 
+#endif /* HAVE_RC_CLIENT */
+
 #ifdef HAVE_THREADS
 #define RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS 2
 #else
 #define RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS 1
 #endif
+
+#ifndef HAVE_RC_CLIENT
 
 typedef struct rcheevos_fetch_badge_state
 {
@@ -140,6 +146,8 @@ static void rcheevos_async_end_request(rcheevos_async_io_request* request);
 static void rcheevos_async_fetch_badge_callback(
    struct rcheevos_async_io_request* request,
    http_transfer_data_t* data, char buffer[], size_t buffer_size);
+
+#endif /* HAVE_RC_CLIENT */
 
 /****************************
  * user agent construction  *
@@ -218,6 +226,10 @@ void rcheevos_get_user_agent(rcheevos_locals_t *locals,
    *ptr = '\0';
 }
 
+/****************************
+ * server interaction       *
+ ****************************/
+
 #ifdef CHEEVOS_LOG_URLS
 #ifndef CHEEVOS_LOG_PASSWORD
 static void rcheevos_filter_url_param(char* url, char* param)
@@ -255,7 +267,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
 #endif
 #endif
 
-void rcheevos_log_url(const char* api, const char* url)
+void rcheevos_log_url(const char* url)
 {
 #ifdef CHEEVOS_LOG_URLS
  #ifdef CHEEVOS_LOG_PASSWORD
@@ -268,7 +280,6 @@ void rcheevos_log_url(const char* api, const char* url)
    CHEEVOS_LOG(RCHEEVOS_TAG "GET %s\n", copy);
  #endif
 #else
-   (void)api;
    (void)url;
 #endif
 }
@@ -305,10 +316,433 @@ static void rcheevos_log_post_url(const char* url, const char* post)
 #endif
 }
 
-
 /****************************
  * dispatch                 *
  ****************************/
+
+#ifdef HAVE_RC_CLIENT
+
+typedef struct rc_client_http_task_data_t
+{
+   rc_client_server_callback_t callback;
+   void* callback_data;
+} rc_client_http_task_data_t;
+
+static void rcheevos_client_http_task_callback(retro_task_t* task,
+   void* task_data, void* user_data, const char* error)
+{
+   rc_client_http_task_data_t* callback_data = (rc_client_http_task_data_t*)user_data;
+   http_transfer_data_t* http_data = (http_transfer_data_t*)task_data;
+   rc_api_server_response_t server_response;
+   memset(&server_response, 0, sizeof(server_response));
+
+   if (!http_data)
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "http_task returned null");
+      callback_data->callback(&server_response, callback_data->callback_data);
+   }
+   else if (http_data->status < 0)
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "http_task returned %d", http_data->status);
+      callback_data->callback(&server_response, callback_data->callback_data);
+   }
+   else
+   {
+      server_response.body = http_data->data;
+      server_response.body_length = http_data->len;
+      server_response.http_status_code = http_data->status;
+
+      callback_data->callback(&server_response, callback_data->callback_data);
+   }
+
+   free(callback_data);
+}
+
+#ifdef CHEEVOS_SAVE_JSON
+static void rcheevos_client_http_task_save_callback(retro_task_t* task,
+   void* task_data, void* user_data, const char* error)
+{
+   http_transfer_data_t* http_data = (http_transfer_data_t*)task_data;
+
+   if (http_data)
+   {
+      filestream_write_file(CHEEVOS_SAVE_JSON, http_data->data, http_data->len);
+      CHEEVOS_LOG(RCHEEVOS_TAG "Captured game info. Wrote %u bytes to %s\n", http_data->len, CHEEVOS_SAVE_JSON);
+   }
+
+   rcheevos_client_http_task_callback(task, task_data, user_data, error);
+}
+#endif
+
+#ifdef CHEEVOS_JSON_OVERRIDE
+void rcheevos_client_http_load_response(const rc_api_request_t* request,
+   rc_client_server_callback_t callback, void* callback_data)
+{
+   size_t size = 0;
+   char* contents;
+   FILE* file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
+
+   fseek(file, 0, SEEK_END);
+   size = ftell(file);
+   fseek(file, 0, SEEK_SET);
+
+   contents = (char*)malloc(size + 1);
+   fread((void*)contents, 1, size, file);
+   fclose(file);
+
+   contents[size] = 0;
+   CHEEVOS_LOG(RCHEEVOS_TAG "Loaded game info. Read %u bytes to %s\n", size, CHEEVOS_JSON_OVERRIDE);
+
+   callback(contents, 200, callback_data);
+}
+#endif
+
+void rcheevos_client_server_call(const rc_api_request_t* request,
+   rc_client_server_callback_t callback, void* callback_data, rc_client_t* client)
+{
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   rc_client_http_task_data_t* taskdata = malloc(sizeof(rc_client_http_task_data_t));
+   taskdata->callback = callback;
+   taskdata->callback_data = callback_data;
+
+   if (request->post_data)
+   {
+      rcheevos_log_post_url(request->url, request->post_data);
+
+#ifdef CHEEVOS_JSON_OVERRIDE
+      if (strstr(request->post_data, "r=patch"))
+      {
+         rcheevos_client_http_load_response(request, callback, callback_data);
+         return;
+      }
+#endif
+
+#ifdef CHEEVOS_SAVE_JSON
+      if (strstr(request->post_data, "r=patch"))
+      {
+         task_push_http_post_transfer_with_user_agent(request->url,
+            request->post_data, true, "POST", rcheevos_locals->user_agent_core,
+            rcheevos_client_http_task_save_callback, taskdata);
+         return;
+      }
+#endif
+
+      task_push_http_post_transfer_with_user_agent(request->url,
+         request->post_data, true, "POST", rcheevos_locals->user_agent_core,
+         rcheevos_client_http_task_callback, taskdata);
+
+#ifdef HAVE_PRESENCE
+      if (strstr(request->post_data, "r=ping"))
+         presence_update(PRESENCE_RETROACHIEVEMENTS);
+#endif
+   }
+   else
+   {
+      rcheevos_log_url(request->url);
+      task_push_http_transfer_with_user_agent(request->url,
+         true, "GET", rcheevos_locals->user_agent_core,
+         rcheevos_client_http_task_callback, taskdata);
+   }
+}
+
+/****************************
+ * downloading badges       *
+ ****************************/
+
+typedef struct rc_client_download_queue_t
+{
+   const rc_client_t* client;
+   const rc_client_game_t* game;
+
+#ifdef HAVE_THREADS
+   slock_t* lock;
+#endif
+
+   rc_client_achievement_list_t* list;
+   uint32_t pass;
+   uint32_t bucket_index;
+   uint32_t achievement_index;
+   uint32_t count;
+   uint32_t outstanding_requests;
+} rc_client_download_queue_t;
+
+static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue);
+
+typedef struct rc_client_download_task_data_t
+{
+   rc_client_download_queue_t* queue;
+   char badge_fullpath[PATH_MAX_LENGTH];
+   char badge_name[32];
+} rc_client_download_task_data_t;
+
+static void rcheevos_client_download_task_callback(retro_task_t* task,
+   void* task_data, void* user_data, const char* error)
+{
+   rc_client_download_task_data_t* callback_data = (rc_client_download_task_data_t*)user_data;
+   http_transfer_data_t* http_data = (http_transfer_data_t*)task_data;
+
+   if (!http_data)
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "No data received for badge %s\n", callback_data->badge_name);
+   }
+   else if (http_data->status != 200)
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "HTTP status code %d for badge %s\n", http_data->status, callback_data->badge_name);
+   }
+   else if (!filestream_write_file(callback_data->badge_fullpath, http_data->data, http_data->len))
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Error writing %s\n", callback_data->badge_fullpath);
+   }
+
+   if (callback_data->queue)
+   {
+#ifdef HAVE_THREADS
+      slock_lock(callback_data->queue->lock);
+#endif
+      callback_data->queue->count++;
+#ifdef HAVE_THREADS
+      slock_unlock(callback_data->queue->lock);
+#endif
+
+      rcheevos_client_fetch_next_badge(callback_data->queue);
+   }
+
+   free(callback_data);
+}
+
+static bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
+   const char* url, const char* badge_name)
+{
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   rc_client_download_task_data_t* taskdata;
+   char badge_fullpath[512] = "";
+   char* badge_fullname;
+   size_t badge_fullname_size;
+
+   /* make sure the directory exists */
+   fill_pathname_application_special(badge_fullpath, sizeof(badge_fullpath),
+      APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+
+   if (!path_is_directory(badge_fullpath))
+   {
+      CHEEVOS_LOG(RCHEEVOS_TAG "Creating %s\n", badge_fullpath);
+      path_mkdir(badge_fullpath);
+   }
+
+   fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
+   badge_fullname = badge_fullpath + strlen(badge_fullpath);
+   badge_fullname_size = sizeof(badge_fullpath) - (badge_fullname - badge_fullpath);
+   snprintf(badge_fullname, badge_fullname_size, "%s" FILE_PATH_PNG_EXTENSION, badge_name);
+
+   if (path_is_valid(badge_fullpath))
+      return false;
+
+#ifdef CHEEVOS_LOG_BADGES
+   CHEEVOS_LOG(RCHEEVOS_TAG "Downloading %s from %s\n", badge_name, url);
+#else
+   rcheevos_log_url(url);
+#endif
+
+   taskdata = (rc_client_download_task_data_t*)malloc(sizeof(*taskdata));
+   taskdata->queue = queue;
+   strlcpy(taskdata->badge_fullpath, badge_fullpath, sizeof(taskdata->badge_fullpath));
+   strlcpy(taskdata->badge_name, badge_name, sizeof(taskdata->badge_name));
+
+   task_push_http_transfer_with_user_agent(url,
+      true, "GET", rcheevos_locals->user_agent_core,
+      rcheevos_client_download_task_callback, taskdata);
+
+   return true;
+}
+
+void rcheevos_client_download_badge_from_url(const char* url, const char* badge_name)
+{
+   rcheevos_client_download_badge(NULL, url, badge_name);
+}
+
+static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
+{
+   rc_client_achievement_bucket_t* bucket;
+   rc_client_achievement_t* achievement;
+   const char* next_badge;
+   char badge_name[32];
+   char url[256];
+   bool done = false;
+
+   do
+   {
+      next_badge = NULL;
+
+#ifdef HAVE_THREADS
+      slock_lock(queue->lock);
+#endif
+      /* if the game is no longer loaded, stop processing the queue */
+      if (queue->game != rc_client_get_game_info(queue->client))
+         queue->pass = 2;
+
+      while (queue->pass < 2)
+      {
+         if (queue->bucket_index >= queue->list->num_buckets)
+         {
+            queue->bucket_index = 0;
+            queue->pass++;
+            continue;
+         }
+
+         bucket = &queue->list->buckets[queue->bucket_index];
+
+         if (queue->achievement_index >= bucket->num_achievements)
+         {
+            queue->achievement_index = 0;
+            queue->bucket_index++;
+            continue;
+         }
+
+         achievement = bucket->achievements[queue->achievement_index++];
+         if (!achievement->badge_name[0])
+            continue;
+
+         if (queue->pass == 0)
+         {
+            /* first pass - get all unlocked badges */
+            if (rc_client_achievement_get_image_url(achievement, RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED, url, sizeof(url)) != RC_OK)
+               continue;
+
+            next_badge = achievement->badge_name;
+         }
+         else if (achievement->unlock_time)
+         {
+            /* second pass - don't need locked badge for achievement player has already unlocked */
+            continue;
+         }
+         else
+         {
+            /* second pass - get locked badge */
+            if (rc_client_achievement_get_image_url(achievement, RC_CLIENT_ACHIEVEMENT_STATE_ACTIVE, url, sizeof(url)) != RC_OK)
+               continue;
+
+            snprintf(badge_name, sizeof(badge_name), "%s_lock", achievement->badge_name);
+            next_badge = badge_name;
+         }
+
+         break;
+      }
+
+      if (!next_badge)
+      {
+         if (--queue->outstanding_requests == 0)
+            done = true;
+      }
+
+#ifdef HAVE_THREADS
+      slock_unlock(queue->lock);
+#endif
+
+      if (next_badge)
+      {
+         /* if the badge already exists (download_badge returns false), continue
+          * looping to the next item. otherwise, a download was queued, so break
+          * out of the loop. */
+         if (rcheevos_client_download_badge(queue, url, next_badge))
+            break;
+      }
+   } while (next_badge);
+
+   if (done)
+   {
+      /* queue complete */
+      if (queue->count)
+      {
+         CHEEVOS_LOG(RCHEEVOS_TAG "Downloaded %u badges\n", queue->count);
+      }
+      rc_client_destroy_achievement_list(queue->list);
+
+#ifdef HAVE_THREADS
+      slock_free(queue->lock);
+#endif
+
+      free(queue);
+   }
+}
+
+void rcheevos_client_download_placeholder_badge(void)
+{
+   char url[256] = "";
+
+   if (rc_client_achievement_get_image_url(NULL, RC_CLIENT_ACHIEVEMENT_STATE_UNLOCKED, url, sizeof(url)) == RC_OK)
+      rcheevos_client_download_badge(NULL, url, "00000");
+}
+
+void rcheevos_client_download_game_badge(const rc_client_game_t* game)
+{
+   char url[256] = "";
+   char badge_name[16];
+
+   if (game && rc_client_game_get_image_url(game, url, sizeof(url)) == RC_OK)
+   {
+      snprintf(badge_name, sizeof(badge_name), "i%s", game->badge_name);
+      rcheevos_client_download_badge(NULL, url, badge_name);
+   }
+}
+
+void rcheevos_client_download_achievement_badges(rc_client_t* client)
+{
+   rc_client_download_queue_t* queue;
+   uint32_t i;
+
+#if !defined(HAVE_GFX_WIDGETS) /* we always want badges if widgets are enabled */
+   settings_t* settings = config_get_ptr();
+   /* User has explicitly disabled badges */
+   if (!settings->bools.cheevos_badges_enable)
+      return;
+
+   /* badges are only needed for xmb and ozone menus */
+   if (!string_is_equal(settings->arrays.menu_driver, "xmb") &&
+      !string_is_equal(settings->arrays.menu_driver, "ozone"))
+      return;
+#endif /* !defined(HAVE_GFX_WIDGETS) */
+
+   queue = (rc_client_download_queue_t*)calloc(1, sizeof(*queue));
+   queue->client = client;
+   queue->game = rc_client_get_game_info(client);
+   queue->list = rc_client_create_achievement_list(client,
+      RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
+      RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS);
+   queue->outstanding_requests = RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS;
+
+#ifdef HAVE_THREADS
+   queue->lock = slock_new();
+#endif
+
+   for (i = 0; i < RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS; i++)
+      rcheevos_client_fetch_next_badge(queue);
+}
+
+#undef RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS
+
+void rcheevos_client_download_achievement_badge(const char* badge_name, bool locked)
+{
+   rc_api_fetch_image_request_t image_request;
+   rc_api_request_t request;
+   char locked_badge_name[32];
+
+   memset(&image_request, 0, sizeof(image_request));
+   image_request.image_type = locked ? RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED : RC_IMAGE_TYPE_ACHIEVEMENT;
+   image_request.image_name = badge_name;
+
+   if (locked)
+   {
+      snprintf(locked_badge_name, sizeof(locked_badge_name), "%s_lock", badge_name);
+      badge_name = locked_badge_name;
+   }
+
+   if (rc_api_init_fetch_image_request(&request, &image_request) == RC_OK)
+      rcheevos_client_download_badge(NULL, request.url, badge_name);
+
+   rc_api_destroy_request(&request);
+}
+
+#else /* !HAVE_RC_CLIENT */
 
 static void rcheevos_async_begin_http_request(rcheevos_async_io_request* request)
 {
@@ -328,7 +762,7 @@ static void rcheevos_async_retry_request(retro_task_t* task)
       task->user_data;
 
    /* the timer task has done its job. let it dispose itself */
-   task_set_finished(task, 1);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    /* start a new task for the HTTP call */
    rcheevos_async_begin_http_request(request);
@@ -367,12 +801,12 @@ static bool rcheevos_async_request_failed(rcheevos_async_io_request* request, co
          /* timer will ping again */
          case CHEEVOS_ASYNC_RICHPRESENCE:
          /* fallback to the placeholder image */
-         case CHEEVOS_ASYNC_FETCH_BADGE:  
+         case CHEEVOS_ASYNC_FETCH_BADGE:
             return false;
 
          case CHEEVOS_ASYNC_RESOLVE_HASH:
          case CHEEVOS_ASYNC_LOGIN:
-            /* make a maximum of four attempts 
+            /* make a maximum of four attempts
                (0ms -> 250ms -> 500ms -> 1s) */
             if (request->attempt_count == 3)
                return false;
@@ -444,7 +878,7 @@ static void rcheevos_async_http_task_callback(
    else
    {
       /* indicate success unless handler provides error */
-      buffer[0] = '\0'; 
+      buffer[0] = '\0';
 
       /* Call appropriate handler to process the response */
       /* NOTE: data->data is not null-terminated. Most handlers assume the
@@ -579,7 +1013,7 @@ static void rcheevos_async_begin_request(
    rcheevos_async_begin_http_request(request);
 }
 
-static bool rcheevos_async_succeeded(int result, 
+static bool rcheevos_async_succeeded(int result,
      const rc_api_response_t* response, char buffer[],
      size_t buffer_size)
 {
@@ -778,7 +1212,7 @@ static void rcheevos_client_copy_achievements(
    rcheevos_racheevo_t *achievement;
    rcheevos_locals_t   *rcheevos_locals = get_rcheevos_locals();
    const settings_t    *settings        = config_get_ptr();
-   
+
    rcheevos_locals->game.achievements   = (rcheevos_racheevo_t*)
       calloc(runtime_data->game_data.num_achievements,
             sizeof(rcheevos_racheevo_t));
@@ -819,13 +1253,13 @@ static void rcheevos_client_copy_achievements(
          achievement->active =  RCHEEVOS_ACTIVE_SOFTCORE
                               | RCHEEVOS_ACTIVE_HARDCORE;
 
-         for (j = 0; j < 
+         for (j = 0; j <
                runtime_data->hardcore_unlocks.num_achievement_ids; ++j)
          {
-            if (runtime_data->hardcore_unlocks.achievement_ids[j] 
+            if (runtime_data->hardcore_unlocks.achievement_ids[j]
                   == definition->id)
             {
-               achievement->active &= ~(RCHEEVOS_ACTIVE_HARDCORE 
+               achievement->active &= ~(RCHEEVOS_ACTIVE_HARDCORE
                      | RCHEEVOS_ACTIVE_SOFTCORE);
                break;
             }
@@ -833,7 +1267,7 @@ static void rcheevos_client_copy_achievements(
 
          if ((achievement->active & RCHEEVOS_ACTIVE_SOFTCORE) != 0)
          {
-            for (j = 0; j < 
+            for (j = 0; j <
                   runtime_data->non_hardcore_unlocks.num_achievement_ids;
                   ++j)
             {
@@ -852,19 +1286,19 @@ static void rcheevos_client_copy_achievements(
       achievement->badge       = strdup(definition->badge_name);
       achievement->points      = definition->points;
 
-      /* If an achievement has been fully unlocked, 
+      /* If an achievement has been fully unlocked,
        * we don't need to keep the definition around
-       * as it won't be reactivated. Otherwise, 
+       * as it won't be reactivated. Otherwise,
        * we do have to keep a copy of it. */
       if ((achievement->active & (
-                    RCHEEVOS_ACTIVE_HARDCORE 
+                    RCHEEVOS_ACTIVE_HARDCORE
                   | RCHEEVOS_ACTIVE_SOFTCORE)) != 0)
          achievement->memaddr = strdup(definition->definition);
 
       ++achievement;
    }
 
-   rcheevos_locals->game.achievement_count = (unsigned)(achievement 
+   rcheevos_locals->game.achievement_count = (unsigned)(achievement
       - rcheevos_locals->game.achievements);
 }
 
@@ -879,7 +1313,7 @@ static void rcheevos_client_copy_leaderboards(
    rcheevos_locals->game.leaderboards = (rcheevos_ralboard_t*)
       calloc(runtime_data->game_data.num_leaderboards,
             sizeof(rcheevos_ralboard_t));
-   rcheevos_locals->game.leaderboard_count = 
+   rcheevos_locals->game.leaderboard_count =
       runtime_data->game_data.num_leaderboards;
 
    leaderboard = rcheevos_locals->game.leaderboards;
@@ -907,9 +1341,9 @@ static void rcheevos_client_initialize_runtime_rich_presence(
    {
       rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
 
-      /* Just activate the rich presence script now. 
+      /* Just activate the rich presence script now.
        * It can't be toggled on or off,
-       * so there's no reason to keep the unparsed version 
+       * so there's no reason to keep the unparsed version
        * around any longer than necessary, and we can avoid
        * making a copy in the process. */
       int result = rc_runtime_activate_richpresence(
@@ -1053,7 +1487,7 @@ static void rcheevos_async_fetch_user_unlocks_callback(
       struct rcheevos_async_io_request* request,
       http_transfer_data_t* data, char buffer[], size_t buffer_size)
 {
-   rcheevos_async_initialize_runtime_data_t* runtime_data = 
+   rcheevos_async_initialize_runtime_data_t* runtime_data =
       (rcheevos_async_initialize_runtime_data_t*)request->callback_data;
    int result;
 
@@ -1079,7 +1513,7 @@ static void rcheevos_async_fetch_game_data_callback(
       struct rcheevos_async_io_request* request,
    http_transfer_data_t* data, char buffer[], size_t buffer_size)
 {
-   rcheevos_async_initialize_runtime_data_t* runtime_data = 
+   rcheevos_async_initialize_runtime_data_t* runtime_data =
       (rcheevos_async_initialize_runtime_data_t*)request->callback_data;
 
 #ifdef CHEEVOS_SAVE_JSON
@@ -1093,7 +1527,7 @@ static void rcheevos_async_fetch_game_data_callback(
       rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
       rcheevos_locals->game.title        = strdup(
             runtime_data->game_data.title);
-      rcheevos_locals->game.console_id   = 
+      rcheevos_locals->game.console_id   =
          runtime_data->game_data.console_id;
 
       snprintf(rcheevos_locals->game.badge_name, sizeof(rcheevos_locals->game.badge_name),
@@ -1112,7 +1546,7 @@ void rcheevos_client_initialize_runtime(unsigned game_id,
    rcheevos_async_io_request* request;
    const settings_t               *settings       = config_get_ptr();
    const rcheevos_locals_t *rcheevos_locals       = get_rcheevos_locals();
-   rcheevos_async_initialize_runtime_data_t *data = 
+   rcheevos_async_initialize_runtime_data_t *data =
       (rcheevos_async_initialize_runtime_data_t*)
       malloc(sizeof(rcheevos_async_initialize_runtime_data_t));
 
@@ -1294,7 +1728,7 @@ static void rcheevos_async_ping_handler(retro_task_t* task)
          "Stopping periodic rich presence update task for game %u\n", request->id);
       /* game changed; stop the recurring task - a new one will
        * be scheduled if a new game is loaded */
-      task_set_finished(task, 1);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       /* request->request was destroyed
        * in rcheevos_async_http_task_callback */
       free(request);
@@ -1415,7 +1849,7 @@ static void rcheevos_end_fetch_badges(rcheevos_fetch_badge_state* state)
 
 static void rcheevos_async_download_next_badge(void* userdata)
 {
-   rcheevos_fetch_badge_data* badge_data = 
+   rcheevos_fetch_badge_data* badge_data =
       (rcheevos_fetch_badge_data*)userdata;
    rcheevos_fetch_next_badge(badge_data->state);
 
@@ -1462,7 +1896,7 @@ static void rcheevos_async_write_badge(retro_task_t* task)
    badge_data->data = NULL;
    badge_data->data_len = 0;
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    rcheevos_async_fetch_badge_complete(badge_data);
 }
@@ -1511,7 +1945,7 @@ static bool rcheevos_client_fetch_badge(
          state->badge_directory, sizeof(badge_fullpath));
    fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
    badge_fullname      = badge_fullpath + strlen(badge_fullpath);
-   badge_fullname_size = sizeof(badge_fullpath) - 
+   badge_fullname_size = sizeof(badge_fullpath) -
       (badge_fullname - badge_fullpath);
 
    snprintf(badge_fullname,
@@ -1544,8 +1978,8 @@ static bool rcheevos_client_fetch_badge(
 
       if (found_index == -1)
       {
-         /* unexpected - but if it happens, 
-          * the queue is full. Pretend we found 
+         /* unexpected - but if it happens,
+          * the queue is full. Pretend we found
           * a match to prevent an exception */
          if (request_index == -1)
             found_index = 0;
@@ -1584,8 +2018,8 @@ static bool rcheevos_client_fetch_badge(
 
          memset(&api_params, 0, sizeof(api_params));
          api_params.image_name = badge_name;
-         api_params.image_type = locked 
-            ? RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED 
+         api_params.image_type = locked
+            ? RC_IMAGE_TYPE_ACHIEVEMENT_LOCKED
             : RC_IMAGE_TYPE_ACHIEVEMENT;
 
          result = rc_api_init_fetch_image_request(&request->request, &api_params);
@@ -1625,7 +2059,7 @@ static bool rcheevos_fetch_next_badge(rcheevos_fetch_badge_state* state)
 #ifdef HAVE_THREADS
          slock_lock(rcheevos_locals->load_info.request_lock);
 #endif
-         if (    state->locked_badge_fetch_index 
+         if (    state->locked_badge_fetch_index
                < rcheevos_locals->game.achievement_count)
             cheevo = &rcheevos_locals->game.achievements[state->locked_badge_fetch_index++];
          else
@@ -1637,7 +2071,7 @@ static bool rcheevos_fetch_next_badge(rcheevos_fetch_badge_state* state)
          if (!cheevo)
             break;
 
-         active = (cheevo->active 
+         active = (cheevo->active
                & (RCHEEVOS_ACTIVE_HARDCORE | RCHEEVOS_ACTIVE_SOFTCORE));
          if (rcheevos_client_fetch_badge(cheevo->badge, active, state))
             return true;
@@ -1756,7 +2190,7 @@ static void rcheevos_async_award_achievement_callback(
    {
       if ((int)api_response.awarded_achievement_id != request->id)
          snprintf(buffer, buffer_size, "Achievement %u awarded instead",
-               api_response.awarded_achievement_id);
+               (unsigned)api_response.awarded_achievement_id);
       else if (api_response.response.error_message)
       {
          /* previously unlocked achievements are returned as a "successful" error */
@@ -1780,7 +2214,7 @@ void rcheevos_client_award_achievement(unsigned achievement_id)
       CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate unlock request for achievement %u\n",
             achievement_id);
    }
-   else 
+   else
    {
       const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
       rc_api_award_achievement_request_t api_params;
@@ -1797,7 +2231,7 @@ void rcheevos_client_award_achievement(unsigned achievement_id)
             &api_params);
 
       rcheevos_async_begin_request(request, result,
-            rcheevos_async_award_achievement_callback, 
+            rcheevos_async_award_achievement_callback,
             CHEEVOS_ASYNC_AWARD_ACHIEVEMENT, achievement_id,
             "Awarded achievement",
             "Error awarding achievement");
@@ -1835,7 +2269,7 @@ void rcheevos_client_submit_lboard_entry(unsigned leaderboard_id,
             "Failed to allocate request for lboard %u submit\n",
             leaderboard_id);
    }
-   else 
+   else
    {
       const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
       rc_api_submit_lboard_entry_request_t api_params;
@@ -1852,9 +2286,11 @@ void rcheevos_client_submit_lboard_entry(unsigned leaderboard_id,
             &api_params);
 
       rcheevos_async_begin_request(request, result,
-            rcheevos_async_submit_lboard_entry_callback, 
+            rcheevos_async_submit_lboard_entry_callback,
             CHEEVOS_ASYNC_SUBMIT_LBOARD, leaderboard_id,
             "Submitted leaderboard",
             "Error submitting leaderboard");
    }
 }
+
+#endif /* HAVE_RC_CLIENT */

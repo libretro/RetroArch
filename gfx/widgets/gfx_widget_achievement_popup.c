@@ -18,7 +18,7 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/cheevos.h"
+#include "../../cheevos/cheevos.h"
 
 #define CHEEVO_NOTIFICATION_DURATION      4000
 
@@ -28,7 +28,9 @@ typedef struct cheevo_popup
 {
    char* title;
    char* subtitle;
+   char* badge_name;
    uintptr_t badge;
+   retro_time_t badge_retry;
 } cheevo_popup;
 
 enum
@@ -169,8 +171,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* Calculate padding in screen space */
       if (state->padding_auto)
       {
-         screen_padding_x = p_dispwidget->msg_queue_rect_start_x -
-            p_dispwidget->msg_queue_icon_size_x;
+         screen_padding_x = p_dispwidget->msg_queue_rect_start_x;
          screen_padding_y = screen_padding_x;
       }
       else
@@ -210,6 +211,21 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
+
+      /* badge wasn't ready, periodically see if it's become available */
+      if (!state->queue[state->queue_read_index].badge &&
+         state->queue[state->queue_read_index].badge_name)
+      {
+         const retro_time_t next_try = state->queue[state->queue_read_index].badge_retry;
+         const retro_time_t now = cpu_features_get_time_usec();
+         if (next_try == 0 || now > next_try)
+         {
+            /* try again in 250ms */
+            state->queue[state->queue_read_index].badge_retry = now + 250000;
+            state->queue[state->queue_read_index].badge =
+               rcheevos_get_badge_texture(state->queue[state->queue_read_index].badge_name, false, false);
+         }
+      }
 
       /* Default Badge */
       if (!state->queue[state->queue_read_index].badge)
@@ -363,6 +379,12 @@ static void gfx_widget_achievement_popup_free_current(
    {
       free(state->queue[state->queue_read_index].subtitle);
       state->queue[state->queue_read_index].subtitle = NULL;
+   }
+
+   if (state->queue[state->queue_read_index].badge_name)
+   {
+      free(state->queue[state->queue_read_index].badge_name);
+      state->queue[state->queue_read_index].badge_name = NULL;
    }
 
    if (state->queue[state->queue_read_index].badge)
@@ -565,7 +587,7 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id = rcheevos_get_badge_texture(badge, 0);
+   uintptr_t badge_id = rcheevos_get_badge_texture(badge, false, true);
 
    if (state->queue_read_index < 0)
    {
@@ -601,6 +623,8 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
    state->queue[state->queue_write_index].badge = badge_id;
    state->queue[state->queue_write_index].title = strdup(title);
    state->queue[state->queue_write_index].subtitle = strdup(subtitle);
+   state->queue[state->queue_write_index].badge_name = badge_id ? NULL : strdup(badge);
+   state->queue[state->queue_write_index].badge_retry = 0;
 
    state->queue_write_index = (state->queue_write_index + 1) % ARRAY_SIZE(state->queue);
 

@@ -88,6 +88,8 @@ enum event_command
    CMD_EVENT_REWIND_DEINIT,
    /* Initializes rewind. */
    CMD_EVENT_REWIND_INIT,
+   /* Reinitializes rewind (primarily if the state size changes). */
+   CMD_EVENT_REWIND_REINIT,
    /* Toggles rewind. */
    CMD_EVENT_REWIND_TOGGLE,
    /* Initializes autosave. */
@@ -267,7 +269,9 @@ enum event_command
    CMD_EVENT_MICROPHONE_REINIT,
 #endif
    /* Deprecated */
-   CMD_EVENT_SEND_DEBUG_INFO
+   CMD_EVENT_SEND_DEBUG_INFO,
+   /* Add a playlist entry to another playlist. */
+   CMD_EVENT_ADD_TO_PLAYLIST
 };
 
 enum cmd_source_t
@@ -347,9 +351,7 @@ void command_event_set_mixer_volume(
 bool command_event_resize_windowed_scale(settings_t *settings,
       unsigned window_scale);
 
-bool command_event_save_auto_state(
-      bool savestate_auto_save,
-      const enum rarch_core_type current_core_type);
+bool command_event_save_auto_state(void);
 
 /**
  * event_set_volume:
@@ -379,10 +381,8 @@ void command_event_load_auto_state(void);
 void command_event_set_savestate_auto_index(
       settings_t *settings);
 
-void command_event_set_savestate_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      );
+int command_event_get_next_savestate_auto_index(
+      settings_t *settings);
 
 void command_event_set_replay_auto_index(
       settings_t *settings);

@@ -61,6 +61,14 @@ typedef struct
    bool overwrite_playlist;
 } playlist_manual_scan_record_t;
 
+enum content_playlist_flags
+{
+   CNT_PLAYLIST_FLG_MOD        = (1 << 0),
+   CNT_PLAYLIST_FLG_OLD_FMT    = (1 << 1),
+   CNT_PLAYLIST_FLG_COMPRESSED = (1 << 2),
+   CNT_PLAYLIST_FLG_CACHED_EXT = (1 << 3)
+};
+
 struct content_playlist
 {
    char *default_core_path;
@@ -75,12 +83,18 @@ struct content_playlist
    enum playlist_label_display_mode label_display_mode;
    enum playlist_thumbnail_mode right_thumbnail_mode;
    enum playlist_thumbnail_mode left_thumbnail_mode;
+   enum playlist_thumbnail_match_mode thumbnail_match_mode;
    enum playlist_sort_mode sort_mode;
 
-   bool modified;
-   bool old_format;
-   bool compressed;
-   bool cached_external;
+   uint8_t flags;
+};
+
+enum json_ctx_flags
+{
+   JSON_CTX_FLG_IN_ITEMS             = (1 << 0),
+   JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT = (1 << 1),
+   JSON_CTX_FLG_CAPACITY_EXCEEDED    = (1 << 2),
+   JSON_CTX_FLG_OOM                  = (1 << 3)
 };
 
 typedef struct
@@ -90,6 +104,7 @@ typedef struct
    unsigned *current_entry_uint_val;
    enum playlist_label_display_mode *current_meta_label_display_mode_val;
    enum playlist_thumbnail_mode *current_meta_thumbnail_mode_val;
+   enum playlist_thumbnail_match_mode *current_meta_thumbnail_match_mode_val;
    enum playlist_sort_mode *current_meta_sort_mode_val;
    bool *current_meta_bool_val;
    playlist_t *playlist;
@@ -97,10 +112,7 @@ typedef struct
    unsigned array_depth;
    unsigned object_depth;
 
-   bool in_items;
-   bool in_subsystem_roms;
-   bool capacity_exceeded;
-   bool out_of_memory;
+   uint8_t flags;
 } JSONContext;
 
 /* TODO/FIXME - global state - perhaps move outside this file */
@@ -110,7 +122,7 @@ typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
       const struct playlist_entry *b);
 
-/* TODO/FIXME - hack for allowing the explore view to switch 
+/* TODO/FIXME - hack for allowing the explore view to switch
  * over to a playlist item */
 void playlist_set_cached_external(playlist_t* pl)
 {
@@ -118,8 +130,8 @@ void playlist_set_cached_external(playlist_t* pl)
    if (!pl)
       return;
 
-   playlist_cached = pl;
-   playlist_cached->cached_external = true;
+   playlist_cached         = pl;
+   playlist_cached->flags |= CNT_PLAYLIST_FLG_CACHED_EXT;
 }
 
 /* Convenience function: copies specified playlist
@@ -137,7 +149,7 @@ void playlist_config_set_path(playlist_config_t *config, const char *path)
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object.
- * Also sets autofix_paths boolean, depending on base 
+ * Also sets autofix_paths boolean, depending on base
  * content directory value */
 void playlist_config_set_base_content_directory(
       playlist_config_t* config, const char* path)
@@ -207,7 +219,7 @@ static void path_replace_base_path_and_convert_to_local_file_system(
             strlen(in_path) - in_oldrefpath_length + 1);
 #ifdef _WIN32
       /* If we are running under a Windows filesystem,
-       * '/' characters are not allowed anywhere. 
+       * '/' characters are not allowed anywhere.
        * We replace with '\' and hope for the best... */
       string_replace_all_chars(out_path,
             POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
@@ -358,8 +370,8 @@ static bool playlist_path_equal(const char *real_path,
     * loads an archive file via the command line or some
     * external launcher (where the [delimiter][rom_file]
     * part is almost always omitted) */
-   real_path_is_compressed       = path_is_compressed_file(real_path);
-   entry_real_path_is_compressed = path_is_compressed_file(entry_real_path);
+   real_path_is_compressed           = path_is_compressed_file(real_path);
+   entry_real_path_is_compressed     = path_is_compressed_file(entry_real_path);
 
    if (   (real_path_is_compressed  && !entry_real_path_is_compressed)
        || (!real_path_is_compressed &&  entry_real_path_is_compressed))
@@ -428,8 +440,7 @@ static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
             entry->path_id->real_path))
          return true;
 #else
-      if (string_is_equal(path_id->real_path,
-            entry->path_id->real_path))
+      if (string_is_equal(path_id->real_path, entry->path_id->real_path))
          return true;
 #endif
    }
@@ -491,12 +502,13 @@ static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
  * (Taking into account relative paths, case insensitive
  * filesystems)
  **/
-static bool playlist_core_path_equal(const char *real_core_path, const char *entry_core_path, const playlist_config_t *config)
+static bool playlist_core_path_equal(const char *real_core_path,
+      const char *entry_core_path, const playlist_config_t *config)
 {
    char entry_real_core_path[PATH_MAX_LENGTH];
 
    /* Sanity check */
-   if (     string_is_empty(real_core_path) 
+   if (     string_is_empty(real_core_path)
          || string_is_empty(entry_core_path))
       return false;
 
@@ -507,21 +519,20 @@ static bool playlist_core_path_equal(const char *real_core_path, const char *ent
       playlist_resolve_path(PLAYLIST_SAVE, true, entry_real_core_path,
             sizeof(entry_real_core_path));
 
-   if (string_is_empty(entry_real_core_path))
-      return false;
-
+   if (!string_is_empty(entry_real_core_path))
+   {
 #ifdef _WIN32
-   /* Handle case-insensitive operating systems*/
-   if (string_is_equal_noncase(real_core_path, entry_real_core_path))
-      return true;
+      /* Handle case-insensitive operating systems*/
+      if (string_is_equal_noncase(real_core_path, entry_real_core_path))
+         return true;
 #else
-   if (string_is_equal(real_core_path, entry_real_core_path))
-      return true;
+      if (string_is_equal(real_core_path, entry_real_core_path))
+         return true;
 #endif
-
-   if (   config->autofix_paths
-       && core_info_core_file_id_is_equal(real_core_path, entry_core_path))
-      return true;
+      if (     config->autofix_paths
+            && core_info_core_file_id_is_equal(real_core_path, entry_core_path))
+         return true;
+   }
 
    return false;
 }
@@ -652,7 +663,7 @@ void playlist_delete_index(playlist_t *playlist,
 
    RBUF_RESIZE(playlist->entries, len - 1);
 
-   playlist->modified = true;
+   playlist->flags |= CNT_PLAYLIST_FLG_MOD;
 }
 
 /**
@@ -768,7 +779,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
          entry->path_id  = NULL;
       }
 
-      playlist->modified = true;
+      playlist->flags |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->label && (update_entry->label != entry->label))
@@ -776,16 +787,15 @@ void playlist_update(playlist_t *playlist, size_t idx,
       if (entry->label)
          free(entry->label);
       entry->label       = strdup(update_entry->label);
-      playlist->modified = true;
+      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
       if (entry->core_path)
          free(entry->core_path);
-      entry->core_path   = NULL;
       entry->core_path   = strdup(update_entry->core_path);
-      playlist->modified = true;
+      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->core_name && (update_entry->core_name != entry->core_name))
@@ -793,7 +803,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
       if (entry->core_name)
          free(entry->core_name);
       entry->core_name   = strdup(update_entry->core_name);
-      playlist->modified = true;
+      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->db_name && (update_entry->db_name != entry->db_name))
@@ -801,7 +811,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
       if (entry->db_name)
          free(entry->db_name);
       entry->db_name     = strdup(update_entry->db_name);
-      playlist->modified = true;
+      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->crc32 && (update_entry->crc32 != entry->crc32))
@@ -809,7 +819,7 @@ void playlist_update(playlist_t *playlist, size_t idx,
       if (entry->crc32)
          free(entry->crc32);
       entry->crc32       = strdup(update_entry->crc32);
-      playlist->modified = true;
+      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -836,85 +846,96 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
          entry->path_id  = NULL;
       }
 
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
       if (entry->core_path)
          free(entry->core_path);
-      entry->core_path   = NULL;
-      entry->core_path   = strdup(update_entry->core_path);
-      playlist->modified = playlist->modified || register_update;
+      entry->core_path      = strdup(update_entry->core_path);
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->runtime_status != entry->runtime_status)
    {
       entry->runtime_status = update_entry->runtime_status;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->runtime_hours != entry->runtime_hours)
    {
       entry->runtime_hours = update_entry->runtime_hours;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->runtime_minutes != entry->runtime_minutes)
    {
       entry->runtime_minutes = update_entry->runtime_minutes;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->runtime_seconds != entry->runtime_seconds)
    {
       entry->runtime_seconds = update_entry->runtime_seconds;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_year != entry->last_played_year)
    {
       entry->last_played_year = update_entry->last_played_year;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_month != entry->last_played_month)
    {
       entry->last_played_month = update_entry->last_played_month;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_day != entry->last_played_day)
    {
       entry->last_played_day = update_entry->last_played_day;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_hour != entry->last_played_hour)
    {
       entry->last_played_hour = update_entry->last_played_hour;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_minute != entry->last_played_minute)
    {
       entry->last_played_minute = update_entry->last_played_minute;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_second != entry->last_played_second)
    {
       entry->last_played_second = update_entry->last_played_second;
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->runtime_str && (update_entry->runtime_str != entry->runtime_str))
    {
       if (entry->runtime_str)
          free(entry->runtime_str);
-      entry->runtime_str = NULL;
-      entry->runtime_str = strdup(update_entry->runtime_str);
-      playlist->modified = playlist->modified || register_update;
+      entry->runtime_str    = strdup(update_entry->runtime_str);
+      if (register_update)
+         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_str && (update_entry->last_played_str != entry->last_played_str))
@@ -923,7 +944,8 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
          free(entry->last_played_str);
       entry->last_played_str = NULL;
       entry->last_played_str = strdup(update_entry->last_played_str);
-      playlist->modified = playlist->modified || register_update;
+      if (register_update)
+         playlist->flags    |= CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -1048,7 +1070,7 @@ bool playlist_push_runtime(playlist_t *playlist,
 success:
    if (path_id)
       playlist_path_id_free(path_id);
-   playlist->modified = true;
+   playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    return true;
 
 error:
@@ -1056,6 +1078,53 @@ error:
       playlist_path_id_free(path_id);
    return false;
 }
+
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
+      enum playlist_thumbnail_name_flags thumbnail_flags)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return;
+
+   entry                   = &playlist->entries[idx];
+   entry->thumbnail_flags |= thumbnail_flags;
+}
+
+enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return    PLAYLIST_THUMBNAIL_FLAG_NONE;
+
+   entry = &playlist->entries[idx];
+   return entry->thumbnail_flags;
+}
+
+
+enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx)
+{
+   struct playlist_entry *entry = NULL;
+
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+      return    PLAYLIST_THUMBNAIL_FLAG_NONE;
+   entry = &playlist->entries[idx];
+
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_NONE;
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_STD_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME;
+   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME)
+            return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
+   /* Special case: only one entry in playlist, only one query is possible
+    * as flag swapping relies on going back and forth among entries
+    * so just use the most likely version here */
+   if (idx == 0 && RBUF_LEN(playlist->entries) == 1)
+            return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
+   return PLAYLIST_THUMBNAIL_FLAG_FULL_NAME;
+}
+
 
 /**
  * playlist_resolve_path:
@@ -1075,11 +1144,39 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 {
 #ifdef HAVE_COCOATOUCH
    char tmp[PATH_MAX_LENGTH];
+   int _len = 0;
 
    if (mode == PLAYLIST_LOAD)
    {
-      fill_pathname_expand_special(tmp, path, sizeof(tmp));
-      strlcpy(path, tmp, len);
+      if (is_core &&
+          string_starts_with(path, ":/modules/") &&
+          string_ends_with(path, ".dylib"))
+      {
+         /* iOS cores used to be packaged as .dylib files in the modules
+          * directory; App Store rules require turning them into Frameworks and
+          * putting them in the Frameworks directory. Because some playlists
+          * include the old core path, we'll translate it here.
+          */
+         path[string_index_last_occurance(path, '.')] = '\0';
+         if (string_ends_with(path, "_ios"))
+            path[string_index_last_occurance(path, '_')] = '\0';
+         _len += strlcpy(tmp + _len, ":/Frameworks/", STRLEN_CONST(":/Frameworks/") + 1);
+         _len += strlcpy(tmp + _len, path + STRLEN_CONST(":/modules/"), sizeof(tmp) - _len);
+         /* iOS framework names, to quote Apple:
+          * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
+          *
+          * Since core names include underscore, which is not allowed, but not dot,
+          * which is, we change underscore to dot.
+          */
+         string_replace_all_chars(tmp, '_', '.');
+         strlcpy(tmp + _len, ".framework", sizeof(tmp));
+         fill_pathname_expand_special(path, tmp, len);
+      }
+      else
+      {
+         fill_pathname_expand_special(tmp, path, sizeof(tmp));
+         strlcpy(path, tmp, len);
+      }
    }
    else
    {
@@ -1237,7 +1334,7 @@ bool playlist_push(playlist_t *playlist,
 
    if (string_is_empty(core_name))
    {
-      static char base_path[255] = {0};
+      static char base_path[NAME_MAX_LENGTH] = {0};
       fill_pathname_base(base_path, real_core_path, sizeof(base_path));
       path_remove_extension(base_path);
 
@@ -1337,19 +1434,19 @@ bool playlist_push(playlist_t *playlist,
        * or command line, certain entry values will be missing.
        * If we are now loading the same content from a playlist,
        * fill in any blanks */
-      if (     !playlist->entries[i].label 
+      if (     !playlist->entries[i].label
             && !string_is_empty(entry->label))
       {
          playlist->entries[i].label       = strdup(entry->label);
          entry_updated                    = true;
       }
-      if (     !playlist->entries[i].crc32 
+      if (     !playlist->entries[i].crc32
             && !string_is_empty(entry->crc32))
       {
          playlist->entries[i].crc32       = strdup(entry->crc32);
          entry_updated                    = true;
       }
-      if (     !playlist->entries[i].db_name 
+      if (     !playlist->entries[i].db_name
             && !string_is_empty(entry->db_name))
       {
          playlist->entries[i].db_name     = strdup(entry->db_name);
@@ -1456,7 +1553,7 @@ bool playlist_push(playlist_t *playlist,
 success:
    if (path_id)
       playlist_path_id_free(path_id);
-   playlist->modified = true;
+   playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    return true;
 
 error:
@@ -1471,7 +1568,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
    intfstream_t *file  = NULL;
    rjsonwriter_t* writer;
 
-   if (!playlist || !playlist->modified)
+   if (!playlist || !(playlist->flags & CNT_PLAYLIST_FLG_MOD))
       return;
 
    if (!(file = intfstream_open_file(playlist->config.path,
@@ -1612,9 +1709,9 @@ void playlist_write_runtime_file(playlist_t *playlist)
    rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_free(writer);
 
-   playlist->modified        = false;
-   playlist->old_format      = false;
-   playlist->compressed      = false;
+   playlist->flags          &= ~(CNT_PLAYLIST_FLG_MOD
+                               | CNT_PLAYLIST_FLG_OLD_FMT
+                               | CNT_PLAYLIST_FLG_COMPRESSED);
 
    RARCH_LOG("[Playlist]: Written to playlist file: \"%s\".\n", playlist->config.path);
 end:
@@ -1635,12 +1732,15 @@ void playlist_write_file(playlist_t *playlist)
     *   match requested
     * > Current playlist compression status does
     *   not match requested */
-   if (!playlist ||
-       !(playlist->modified ||
+   bool pl_compressed   = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
+   bool pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
+
+   if (   !playlist
+       || !((playlist->flags & CNT_PLAYLIST_FLG_MOD) ||
 #if defined(HAVE_ZLIB)
-        (playlist->compressed != playlist->config.compress) ||
+        (pl_compressed != playlist->config.compress) ||
 #endif
-        (playlist->old_format != playlist->config.old_format)))
+        (pl_old_fmt    != playlist->config.old_format)))
       return;
 
 #if defined(HAVE_ZLIB)
@@ -1692,7 +1792,7 @@ void playlist_write_file(playlist_t *playlist)
             playlist->right_thumbnail_mode, playlist->left_thumbnail_mode,
             playlist->sort_mode);
 
-      playlist->old_format = true;
+      playlist->flags  |=  (CNT_PLAYLIST_FLG_OLD_FMT);
    }
    else
 #endif
@@ -1768,6 +1868,14 @@ void playlist_write_file(playlist_t *playlist)
       rjsonwriter_raw(writer, ":", 1);
       rjsonwriter_raw(writer, " ", 1);
       rjsonwriter_rawf(writer, "%d", (int)playlist->left_thumbnail_mode);
+      rjsonwriter_raw(writer, ",", 1);
+      rjsonwriter_raw(writer, "\n", 1);
+
+      rjsonwriter_add_spaces(writer, 2);
+      rjsonwriter_add_string(writer, "thumbnail_match_mode");
+      rjsonwriter_raw(writer, ":", 1);
+      rjsonwriter_raw(writer, " ", 1);
+      rjsonwriter_rawf(writer, "%d", (int)playlist->thumbnail_match_mode);
       rjsonwriter_raw(writer, ",", 1);
       rjsonwriter_raw(writer, "\n", 1);
 
@@ -1999,11 +2107,15 @@ void playlist_write_file(playlist_t *playlist)
          RARCH_ERR("Failed to write to playlist file: \"%s\".\n", playlist->config.path);
       }
 
-      playlist->old_format = false;
+      playlist->flags  &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
    }
 
-   playlist->modified   = false;
-   playlist->compressed = compressed;
+   playlist->flags     &= ~CNT_PLAYLIST_FLG_MOD;
+
+   if (compressed)
+      playlist->flags  |=  (CNT_PLAYLIST_FLG_COMPRESSED);
+   else
+      playlist->flags  &= ~(CNT_PLAYLIST_FLG_COMPRESSED);
 
    RARCH_LOG("[Playlist]: Written to playlist file: \"%s\".\n", playlist->config.path);
 end:
@@ -2129,14 +2241,14 @@ static bool JSONEndArrayHandler(void *context)
 
    pCtx->array_depth--;
 
-   if (     pCtx->in_items 
+   if (     (pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
          && (pCtx->array_depth  == 0)
          && (pCtx->object_depth <= 1))
-      pCtx->in_items = false;
-   else if (pCtx->in_subsystem_roms 
+      pCtx->flags &= (JSON_CTX_FLG_IN_ITEMS);
+   else if ((pCtx->flags & JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT)
          && (pCtx->array_depth  <= 1)
          && (pCtx->object_depth <= 2))
-      pCtx->in_subsystem_roms = false;
+      pCtx->flags &= (JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT);
 
    return true;
 }
@@ -2147,12 +2259,12 @@ static bool JSONStartObjectHandler(void *context)
 
    pCtx->object_depth++;
 
-   if (      pCtx->in_items 
+   if (     (pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
          && (pCtx->object_depth == 2))
    {
       if (
-            (pCtx->array_depth == 1) 
-         && !pCtx->capacity_exceeded)
+            (pCtx->array_depth == 1)
+         && !(pCtx->flags & JSON_CTX_FLG_CAPACITY_EXCEEDED))
       {
          size_t len = RBUF_LEN(pCtx->playlist->entries);
          if (len < pCtx->playlist->config.capacity)
@@ -2161,7 +2273,7 @@ static bool JSONStartObjectHandler(void *context)
              * buffer just yet, wait until JSONEndObjectHandler for that */
             if (!RBUF_TRYFIT(pCtx->playlist->entries, len + 1))
             {
-               pCtx->out_of_memory     = true;
+               pCtx->flags |= JSON_CTX_FLG_OOM;
                return false;
             }
             pCtx->current_entry = &pCtx->playlist->entries[len];
@@ -2173,13 +2285,13 @@ static bool JSONStartObjectHandler(void *context)
              * Note: We can't just abort here, since there may
              * be more metadata to read at the end of the file... */
             RARCH_WARN("JSON file contains more entries than current playlist capacity. Excess entries will be discarded.\n");
-            pCtx->capacity_exceeded  = true;
+            pCtx->flags             |= JSON_CTX_FLG_CAPACITY_EXCEEDED;
             pCtx->current_entry      = NULL;
             /* In addition, since we are discarding excess entries,
              * the playlist must be flagged as being modified
              * (i.e. the playlist is not the same as when it was
              * last saved to disk...) */
-            pCtx->playlist->modified = true;
+            pCtx->playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
          }
       }
    }
@@ -2191,11 +2303,11 @@ static bool JSONEndObjectHandler(void *context)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
-         && pCtx->object_depth == 2)
+   if (     (pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
+         && (pCtx->object_depth == 2))
    {
-      if (     (pCtx->array_depth == 1) 
-            && !pCtx->capacity_exceeded)
+      if (     (pCtx->array_depth == 1)
+            && !(pCtx->flags & JSON_CTX_FLG_CAPACITY_EXCEEDED))
          RBUF_RESIZE(pCtx->playlist->entries,
                RBUF_LEN(pCtx->playlist->entries) + 1);
    }
@@ -2209,8 +2321,8 @@ static bool JSONStringHandler(void *context, const char *pValue, size_t length)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
-         && pCtx->in_subsystem_roms 
+   if (     (pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
+         && (pCtx->flags & JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT)
          && (pCtx->object_depth == 2)
          && (pCtx->array_depth  == 2))
    {
@@ -2224,13 +2336,13 @@ static bool JSONStringHandler(void *context, const char *pValue, size_t length)
          string_list_append(pCtx->current_entry->subsystem_roms, pValue, attr);
       }
    }
-   else if ((pCtx->in_items)
+   else if ((pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
          && (pCtx->object_depth == 2))
    {
       if (pCtx->array_depth == 1)
       {
-         if (     pCtx->current_string_val 
-               && length 
+         if (     pCtx->current_string_val
+               && length
                && !string_is_empty(pValue))
          {
             if (*pCtx->current_string_val)
@@ -2243,8 +2355,8 @@ static bool JSONStringHandler(void *context, const char *pValue, size_t length)
    {
       if (pCtx->array_depth == 0)
       {
-         if (     pCtx->current_string_val 
-               && length 
+         if (     pCtx->current_string_val
+               && length
                && !string_is_empty(pValue))
          {
             /* handle any top-level playlist metadata here */
@@ -2264,11 +2376,11 @@ static bool JSONNumberHandler(void *context, const char *pValue, size_t length)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
+   if (     (pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
          && (pCtx->object_depth == 2))
    {
       if (    (pCtx->array_depth == 1)
-            && length 
+            && length
             && !string_is_empty(pValue))
       {
          if (pCtx->current_entry_uint_val)
@@ -2283,19 +2395,22 @@ static bool JSONNumberHandler(void *context, const char *pValue, size_t length)
          {
             /* handle any top-level playlist metadata here */
             if (pCtx->current_meta_label_display_mode_val)
-               *pCtx->current_meta_label_display_mode_val = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
+               *pCtx->current_meta_label_display_mode_val   = (enum playlist_label_display_mode)strtoul(pValue, NULL, 10);
             else if (pCtx->current_meta_thumbnail_mode_val)
-               *pCtx->current_meta_thumbnail_mode_val     = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
+               *pCtx->current_meta_thumbnail_mode_val       = (enum playlist_thumbnail_mode)strtoul(pValue, NULL, 10);
+            else if (pCtx->current_meta_thumbnail_match_mode_val)
+               *pCtx->current_meta_thumbnail_match_mode_val = (enum playlist_thumbnail_match_mode)strtoul(pValue, NULL, 10);
             else if (pCtx->current_meta_sort_mode_val)
-               *pCtx->current_meta_sort_mode_val          = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
+               *pCtx->current_meta_sort_mode_val            = (enum playlist_sort_mode)strtoul(pValue, NULL, 10);
          }
       }
    }
 
-   pCtx->current_entry_uint_val              = NULL;
-   pCtx->current_meta_label_display_mode_val = NULL;
-   pCtx->current_meta_thumbnail_mode_val     = NULL;
-   pCtx->current_meta_sort_mode_val          = NULL;
+   pCtx->current_entry_uint_val                = NULL;
+   pCtx->current_meta_label_display_mode_val   = NULL;
+   pCtx->current_meta_thumbnail_mode_val       = NULL;
+   pCtx->current_meta_thumbnail_match_mode_val = NULL;
+   pCtx->current_meta_sort_mode_val            = NULL;
 
    return true;
 }
@@ -2304,7 +2419,7 @@ static bool JSONBoolHandler(void *context, bool value)
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (   !pCtx->in_items
+   if (   (!(pCtx->flags & JSON_CTX_FLG_IN_ITEMS))
        && (pCtx->object_depth == 1)
        && (pCtx->array_depth  == 0)
        && pCtx->current_meta_bool_val)
@@ -2319,7 +2434,7 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
 {
    JSONContext *pCtx = (JSONContext *)context;
 
-   if (     pCtx->in_items 
+   if (     (pCtx->flags & JSON_CTX_FLG_IN_ITEMS)
          && (pCtx->object_depth == 2))
    {
       if (pCtx->array_depth == 1)
@@ -2328,11 +2443,11 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
          if (pCtx->current_string_val)
             return false;
 
-         if (length && !pCtx->capacity_exceeded)
+         if (length && (!(pCtx->flags & JSON_CTX_FLG_CAPACITY_EXCEEDED)))
          {
             pCtx->current_string_val     = NULL;
             pCtx->current_entry_uint_val = NULL;
-            pCtx->in_subsystem_roms      = false;
+            pCtx->flags                 &= ~(JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT);
             switch (pValue[0])
             {
                case 'c':
@@ -2385,7 +2500,7 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
                      else if (string_is_equal(pValue, "subsystem_name"))
                         pCtx->current_string_val = &pCtx->current_entry->subsystem_name;
                      else if (string_is_equal(pValue, "subsystem_roms"))
-                        pCtx->in_subsystem_roms = true;
+                        pCtx->flags |= (JSON_CTX_FLG_IN_SUBSYSTEM_CONTENT);
                      break;
             }
          }
@@ -2395,12 +2510,13 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
          && (pCtx->array_depth  == 0)
          && length)
    {
-      pCtx->current_string_val                  = NULL;
-      pCtx->current_meta_label_display_mode_val = NULL;
-      pCtx->current_meta_thumbnail_mode_val     = NULL;
-      pCtx->current_meta_sort_mode_val          = NULL;
-      pCtx->current_meta_bool_val               = NULL;
-      pCtx->in_items                            = false;
+      pCtx->current_string_val                    = NULL;
+      pCtx->current_meta_label_display_mode_val   = NULL;
+      pCtx->current_meta_thumbnail_mode_val       = NULL;
+      pCtx->current_meta_thumbnail_match_mode_val = NULL;
+      pCtx->current_meta_sort_mode_val            = NULL;
+      pCtx->current_meta_bool_val                 = NULL;
+      pCtx->flags                                &= ~(JSON_CTX_FLG_IN_ITEMS);
 
       switch (pValue[0])
       {
@@ -2416,7 +2532,7 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
             break;
          case 'i':
             if (string_is_equal(pValue, "items"))
-               pCtx->in_items = true;
+               pCtx->flags |= JSON_CTX_FLG_IN_ITEMS;
             break;
          case 'l':
             if (string_is_equal(pValue,      "label_display_mode"))
@@ -2446,6 +2562,10 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
             else if (string_is_equal(pValue, "sort_mode"))
                pCtx->current_meta_sort_mode_val = &pCtx->playlist->sort_mode;
             break;
+	  case 't':
+            if (string_is_equal(pValue, "thumbnail_match_mode"))
+               pCtx->current_meta_thumbnail_match_mode_val     = &pCtx->playlist->thumbnail_match_mode;
+	    break;
       }
    }
 
@@ -2462,9 +2582,7 @@ static void playlist_get_old_format_metadata_value(
       return;
 
    start++;
-   end         = strchr(start, '\"');
-
-   if (!end)
+   if (!(end = strchr(start, '\"')))
       return;
 
    *end        = '\0';
@@ -2495,7 +2613,10 @@ static bool playlist_read_file(playlist_t *playlist)
    if (!file)
       return true;
 
-   playlist->compressed = intfstream_is_compressed(file);
+   if (intfstream_is_compressed(file))
+      playlist->flags |=  CNT_PLAYLIST_FLG_COMPRESSED;
+   else
+      playlist->flags &= ~CNT_PLAYLIST_FLG_COMPRESSED;
 
    /* Detect format of playlist
     * > Read file until we find the first printable
@@ -2507,12 +2628,15 @@ static bool playlist_read_file(playlist_t *playlist)
          goto end;
    } while (!isgraph(test_char) || test_char > 0x7F);
 
-   playlist->old_format = (test_char != '{');
+   if (test_char != '{')
+      playlist->flags |=  (CNT_PLAYLIST_FLG_OLD_FMT);
+   else
+      playlist->flags &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
 
    /* Reset file to start */
    intfstream_rewind(file);
 
-   if (!playlist->old_format)
+   if (!(playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT))
    {
       rjson_t* parser;
       JSONContext context = {0};
@@ -2542,7 +2666,7 @@ static bool playlist_read_file(playlist_t *playlist)
             NULL) /* Unused null handler */
             != RJSON_DONE)
       {
-         if (context.out_of_memory)
+         if (context.flags & JSON_CTX_FLG_OOM)
          {
             RARCH_WARN("Ran out of memory while parsing JSON playlist\n");
             res = false;
@@ -2636,7 +2760,7 @@ static bool playlist_read_file(playlist_t *playlist)
          else
          {
             char default_core_path[PATH_MAX_LENGTH];
-            char default_core_name[PATH_MAX_LENGTH];
+            char default_core_name[NAME_MAX_LENGTH];
 
             default_core_path[0] = '\0';
             default_core_name[0] = '\0';
@@ -2698,32 +2822,32 @@ static bool playlist_read_file(playlist_t *playlist)
                      line_buf[3],
                      STRLEN_CONST("thumbnail_mode")) == 0)
             {
-               char thumbnail_mode_str[8]          = {0};
-               struct string_list thumbnail_modes  = {0};
+               char *tok, *save;
+               char thumbnail_mode_str[8]   = {0};
+               char *thumbnail_mode_str_cpy = strdup(thumbnail_mode_str);
 
                playlist_get_old_format_metadata_value(
                      line_buf[3], thumbnail_mode_str,
                      sizeof(thumbnail_mode_str));
-               string_list_initialize(&thumbnail_modes);
-               if (string_split_noalloc(&thumbnail_modes,
-                        thumbnail_mode_str, "|"))
+
+               if ((tok = strtok_r(thumbnail_mode_str_cpy, "|", &save)))
                {
-                  if (thumbnail_modes.size == 2)
+                  char *elem0 = strdup(tok);
+                  if ((tok = strtok_r(NULL, "|", &save)))
                   {
                      /* Right thumbnail mode */
-                     unsigned thumbnail_mode = string_to_unsigned(
-                           thumbnail_modes.elems[0].data);
+                     unsigned thumbnail_mode = string_to_unsigned(elem0);
                      if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
                         playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
 
                      /* Left thumbnail mode */
-                     thumbnail_mode = string_to_unsigned(
-                           thumbnail_modes.elems[1].data);
+                     thumbnail_mode = string_to_unsigned(tok);
                      if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
                         playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                   }
+                  free(elem0);
                }
-               string_list_deinitialize(&thumbnail_modes);
+               free(thumbnail_mode_str_cpy);
             }
 
             /* Get sort_mode */
@@ -2760,7 +2884,7 @@ end:
 
 void playlist_free_cached(void)
 {
-   if (playlist_cached && !playlist_cached->cached_external)
+   if (playlist_cached && !(playlist_cached->flags & CNT_PLAYLIST_FLG_CACHED_EXT))
       playlist_free(playlist_cached);
    playlist_cached = NULL;
 }
@@ -2774,18 +2898,21 @@ playlist_t *playlist_get_cached(void)
 
 bool playlist_init_cached(const playlist_config_t *config)
 {
+   bool pl_compressed, pl_old_fmt;
    playlist_t *playlist = playlist_init(config);
    if (!playlist)
       return false;
 
+   pl_compressed   = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
+   pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
    /* If playlist format/compression state
     * does not match requested settings, update
     * file on disk immediately */
    if (
 #if defined(HAVE_ZLIB)
-       (playlist->compressed != playlist->config.compress) ||
+       (pl_compressed != playlist->config.compress) ||
 #endif
-       (playlist->old_format != playlist->config.old_format))
+       (pl_old_fmt != playlist->config.old_format))
       playlist_write_file(playlist);
 
    playlist_cached      = playlist;
@@ -2804,21 +2931,19 @@ playlist_t *playlist_init(const playlist_config_t *config)
 {
    playlist_t           *playlist   = (playlist_t*)malloc(sizeof(*playlist));
    if (!playlist)
-      goto error;
+      return NULL;
 
    /* Set initial values */
-   playlist->modified               = false;
-   playlist->old_format             = false;
-   playlist->compressed             = false;
-   playlist->cached_external        = false;
-   playlist->default_core_name      = NULL;
-   playlist->default_core_path      = NULL;
-   playlist->base_content_directory = NULL;
-   playlist->entries                = NULL;
-   playlist->label_display_mode     = LABEL_DISPLAY_MODE_DEFAULT;
-   playlist->right_thumbnail_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   playlist->left_thumbnail_mode    = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   playlist->sort_mode              = PLAYLIST_SORT_MODE_DEFAULT;
+   playlist->flags                          = 0;
+   playlist->default_core_name              = NULL;
+   playlist->default_core_path              = NULL;
+   playlist->base_content_directory         = NULL;
+   playlist->entries                        = NULL;
+   playlist->label_display_mode             = LABEL_DISPLAY_MODE_DEFAULT;
+   playlist->right_thumbnail_mode           = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->left_thumbnail_mode            = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->thumbnail_match_mode           = PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT;
+   playlist->sort_mode                      = PLAYLIST_SORT_MODE_DEFAULT;
 
    playlist->scan_record.search_recursively = false;
    playlist->scan_record.search_archives    = false;
@@ -2932,7 +3057,7 @@ playlist_t *playlist_init(const playlist_config_t *config)
       playlist->base_content_directory = strdup(playlist->config.base_content_directory);
 
       /* Save playlist */
-      playlist->modified = true;
+      playlist->flags   |=  CNT_PLAYLIST_FLG_MOD;
       playlist_write_file(playlist);
    }
 
@@ -2964,19 +3089,19 @@ static int playlist_qsort_func(const struct playlist_entry *a,
     * have no other option...) */
    if (string_is_empty(a_str))
    {
-      if (!(a_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char))))
+      if (!(a_fallback_label = (char*)calloc(NAME_MAX_LENGTH, sizeof(char))))
          goto end;
 
       if (!string_is_empty(a->path))
          fill_pathname(a_fallback_label,
                path_basename_nocompression(a->path),
                "",
-               PATH_MAX_LENGTH * sizeof(char));
+               NAME_MAX_LENGTH * sizeof(char));
       /* If filename is also empty, use core name
        * instead -> this matches the behaviour of
        * menu_displaylist_parse_playlist() */
       else if (!string_is_empty(a->core_name))
-         strlcpy(a_fallback_label, a->core_name, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(a_fallback_label, a->core_name, NAME_MAX_LENGTH * sizeof(char));
 
       /* If both filename and core name are empty,
        * then have to compare an empty string
@@ -2988,16 +3113,16 @@ static int playlist_qsort_func(const struct playlist_entry *a,
 
    if (string_is_empty(b_str))
    {
-      if (!(b_fallback_label = (char*)calloc(PATH_MAX_LENGTH, sizeof(char))))
+      if (!(b_fallback_label = (char*)calloc(NAME_MAX_LENGTH, sizeof(char))))
          goto end;
 
       if (!string_is_empty(b->path))
          fill_pathname(b_fallback_label,
                path_basename_nocompression(b->path),
                "",
-               PATH_MAX_LENGTH * sizeof(char));
+               NAME_MAX_LENGTH * sizeof(char));
       else if (!string_is_empty(b->core_name))
-         strlcpy(b_fallback_label, b->core_name, PATH_MAX_LENGTH * sizeof(char));
+         strlcpy(b_fallback_label, b->core_name, NAME_MAX_LENGTH * sizeof(char));
 
       b_str = b_fallback_label;
    }
@@ -3067,12 +3192,8 @@ void command_playlist_update_write(
 bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
       const char *path, const char *core_path)
 {
-   if (!playlist)
+   if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return false;
-
-   if (idx >= RBUF_LEN(playlist->entries))
-      return false;
-
    return    playlist_path_equal(path, playlist->entries[idx].path, &playlist->config)
           && string_is_equal(path_basename_nocompression(playlist->entries[idx].core_path),
                 path_basename_nocompression(core_path));
@@ -3130,9 +3251,9 @@ bool playlist_entries_are_equal(
 bool playlist_index_entries_are_equal(
       playlist_t *playlist, size_t idx_a, size_t idx_b)
 {
+   size_t len;
    struct playlist_entry *entry_a = NULL;
    struct playlist_entry *entry_b = NULL;
-   size_t len;
 
    if (!playlist)
       return false;
@@ -3172,50 +3293,45 @@ void playlist_get_crc32(playlist_t *playlist, size_t idx,
 void playlist_get_db_name(playlist_t *playlist, size_t idx,
       const char **db_name)
 {
-   if (!playlist || idx >= RBUF_LEN(playlist->entries))
+   if (!playlist || !db_name || idx >= RBUF_LEN(playlist->entries))
       return;
 
-   if (db_name)
+   if (!string_is_empty(playlist->entries[idx].db_name))
+       *db_name = playlist->entries[idx].db_name;
+   else
    {
-      if (!string_is_empty(playlist->entries[idx].db_name))
-         *db_name = playlist->entries[idx].db_name;
-      else
-      {
-         const char *conf_path_basename = path_basename_nocompression(playlist->config.path);
+       const char *conf_path_basename = path_basename_nocompression(playlist->config.path);
 
-         /* Only use file basename if this is a 'collection' playlist
-          * (i.e. ignore history/favourites) */
-         if (
-                  !string_is_empty(conf_path_basename)
-               && !string_is_equal(conf_path_basename,
-                        FILE_PATH_CONTENT_HISTORY)
-               && !string_is_equal(conf_path_basename,
-                        FILE_PATH_CONTENT_FAVORITES)
-            )
-            *db_name = conf_path_basename;
-      }
+       /* Only use file basename if this is a 'collection' playlist
+        * (i.e. ignore history/favourites) */
+       if (
+              !string_is_empty(conf_path_basename)
+           && !string_is_equal(conf_path_basename, FILE_PATH_CONTENT_HISTORY)
+           && !string_is_equal(conf_path_basename, FILE_PATH_CONTENT_FAVORITES)
+           )
+           *db_name = conf_path_basename;
+       else
+       {
+          core_info_t *core_info = playlist_entry_get_core_info(&playlist->entries[idx]);
+          if (core_info && core_info->databases)
+             *db_name = core_info->databases;
+       }
    }
 }
 
 const char *playlist_get_default_core_path(playlist_t *playlist)
 {
-   if (!playlist)
-      return NULL;
-   return playlist->default_core_path;
+   return playlist ? playlist->default_core_path : NULL;
 }
 
 const char *playlist_get_default_core_name(playlist_t *playlist)
 {
-   if (!playlist)
-      return NULL;
-   return playlist->default_core_name;
+   return playlist ? playlist->default_core_name : NULL;
 }
 
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist)
 {
-   if (!playlist)
-      return LABEL_DISPLAY_MODE_DEFAULT;
-   return playlist->label_display_mode;
+   return playlist ? playlist->label_display_mode : LABEL_DISPLAY_MODE_DEFAULT;
 }
 
 enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
@@ -3230,6 +3346,13 @@ enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
    }
    /* Fallback */
    return PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+}
+
+bool playlist_thumbnail_match_with_filename(playlist_t *playlist)
+{
+   if (!playlist)
+      return false;
+   return playlist->thumbnail_match_mode == PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_FILENAME;
 }
 
 enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist)
@@ -3318,7 +3441,7 @@ void playlist_set_default_core_path(playlist_t *playlist,
       if (playlist->default_core_path)
          free(playlist->default_core_path);
       playlist->default_core_path  = strdup(real_core_path);
-      playlist->modified           = true;
+      playlist->flags             |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -3333,7 +3456,7 @@ void playlist_set_default_core_name(
       if (playlist->default_core_name)
          free(playlist->default_core_name);
       playlist->default_core_name  = strdup(core_name);
-      playlist->modified           = true;
+      playlist->flags             |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -3343,7 +3466,7 @@ void playlist_set_label_display_mode(playlist_t *playlist,
    if (playlist && playlist->label_display_mode != label_display_mode)
    {
       playlist->label_display_mode = label_display_mode;
-      playlist->modified           = true;
+      playlist->flags             |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -3358,12 +3481,16 @@ void playlist_set_thumbnail_mode(
    {
       case PLAYLIST_THUMBNAIL_RIGHT:
          playlist->right_thumbnail_mode = thumbnail_mode;
-         playlist->modified             = true;
+         playlist->flags               |=  CNT_PLAYLIST_FLG_MOD;
          break;
       case PLAYLIST_THUMBNAIL_LEFT:
-         playlist->left_thumbnail_mode = thumbnail_mode;
-         playlist->modified            = true;
+         playlist->left_thumbnail_mode  = thumbnail_mode;
+         playlist->flags               |=  CNT_PLAYLIST_FLG_MOD;
          break;
+      case PLAYLIST_THUMBNAIL_ICON:
+         /* should never be reached.  Do Nothing */
+         break;
+
    }
 }
 
@@ -3373,7 +3500,7 @@ void playlist_set_sort_mode(playlist_t *playlist,
    if (playlist && playlist->sort_mode != sort_mode)
    {
       playlist->sort_mode = sort_mode;
-      playlist->modified  = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -3394,7 +3521,7 @@ void playlist_set_scan_content_dir(playlist_t *playlist, const char *content_dir
    if (    (current_string_empty && !new_string_empty)
        || (!current_string_empty &&  new_string_empty)
        || !string_is_equal(playlist->scan_record.content_dir, content_dir))
-      playlist->modified = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    else
       return; /* Strings are identical; do nothing */
 
@@ -3425,7 +3552,7 @@ void playlist_set_scan_file_exts(playlist_t *playlist, const char *file_exts)
    if (   ( current_string_empty && !new_string_empty)
        || (!current_string_empty &&  new_string_empty)
        || !string_is_equal(playlist->scan_record.file_exts, file_exts))
-      playlist->modified = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    else
       return; /* Strings are identical; do nothing */
 
@@ -3456,7 +3583,7 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
    if (   ( current_string_empty && !new_string_empty)
        || (!current_string_empty &&  new_string_empty)
        || !string_is_equal(playlist->scan_record.dat_file_path, dat_file_path))
-      playlist->modified = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    else
       return; /* Strings are identical; do nothing */
 
@@ -3475,7 +3602,7 @@ void playlist_set_scan_search_recursively(playlist_t *playlist, bool search_recu
    if (playlist && playlist->scan_record.search_recursively != search_recursively)
    {
       playlist->scan_record.search_recursively = search_recursively;
-      playlist->modified = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -3484,7 +3611,7 @@ void playlist_set_scan_search_archives(playlist_t *playlist, bool search_archive
    if (playlist && playlist->scan_record.search_archives != search_archives)
    {
       playlist->scan_record.search_archives = search_archives;
-      playlist->modified = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -3493,7 +3620,7 @@ void playlist_set_scan_filter_dat_content(playlist_t *playlist, bool filter_dat_
    if (playlist && playlist->scan_record.filter_dat_content != filter_dat_content)
    {
       playlist->scan_record.filter_dat_content = filter_dat_content;
-      playlist->modified = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -3502,7 +3629,7 @@ void playlist_set_scan_overwrite_playlist(playlist_t *playlist, bool overwrite_p
    if (playlist && playlist->scan_record.overwrite_playlist != overwrite_playlist)
    {
       playlist->scan_record.overwrite_playlist = overwrite_playlist;
-      playlist->modified = true;
+      playlist->flags    |=  CNT_PLAYLIST_FLG_MOD;
    }
 }
 

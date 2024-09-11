@@ -11,6 +11,7 @@ extern "C" {
 #endif
 
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../../../gfx/video_display_server.h"
 #include "../../../input/input_driver.h"
@@ -1316,7 +1317,7 @@ QWidget *VideoPage::widget()
    {
       for (i = 0; i < size; i++)
       {
-         char val_d[256], str[256];
+         char val_d[NAME_MAX_LENGTH], str[NAME_MAX_LENGTH];
          snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
          snprintf(val_d, sizeof(val_d), "%d", i);
 
@@ -1374,6 +1375,8 @@ QWidget *VideoPage::widget()
    windowedGroup->add(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
 
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);

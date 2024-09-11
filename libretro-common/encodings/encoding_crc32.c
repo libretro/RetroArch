@@ -25,6 +25,45 @@
 #include <encodings/crc32.h>
 #include <stdlib.h>
 
+#if __ARM_FEATURE_CRC32
+
+#ifdef _M_ARM64
+# include <arm64_neon.h>
+#else
+# include <arm_acle.h>
+#endif
+
+uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
+{
+   crc = ~crc;
+
+   /* Align data if it is not aligned */
+   while (((uintptr_t)data & 7) && len > 0)
+   {
+      crc = __crc32b(crc, *(uint8_t *)data);
+      data++;
+      len--;
+   }
+
+   while (len >= 8)
+   {
+      crc = __crc32d(crc, *(uint64_t *)data);
+      data += 8;
+      len -= 8;
+   }
+
+   while (len > 0)
+   {
+      crc = __crc32b(crc, *(uint8_t *)data);
+      data++;
+      len--;
+   }
+
+   return ~crc;
+}
+
+#else
+
 static const uint32_t crc32_table[256] = {
   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
@@ -82,10 +121,12 @@ static const uint32_t crc32_table[256] = {
 
 uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len)
 {
-   crc = crc ^ 0xffffffff;
+   crc = ~crc;
 
    while (len--)
       crc = crc32_table[(crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
 
-   return crc ^ 0xffffffff;
+   return ~crc;
 }
+
+#endif

@@ -186,6 +186,16 @@ ACHIEVEMENTS
 #include "../libretro-common/net/net_http.c"
 #endif
 
+/* rcheevos doesn't actually spawn and manage threads, RC_NO_THREADS
+ * simply disables the mutexes that provide thread safety. */
+#if !defined(HAVE_THREADS)
+#define RC_NO_THREADS 1
+#elif defined(GEKKO) || defined(_3DS)
+ /* Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c) */
+#define RC_NO_THREADS 1
+#endif
+#define RC_CLIENT_SUPPORTS_HASH 1
+
 #include "../libretro-common/formats/cdfs/cdfs.c"
 #include "../network/net_http_special.c"
 
@@ -193,11 +203,15 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
 
+#include "../deps/rcheevos/src/rc_client.c"
+#include "../deps/rcheevos/src/rc_compat.c"
+#include "../deps/rcheevos/src/rc_libretro.c"
+#include "../deps/rcheevos/src/rc_util.c"
 #include "../deps/rcheevos/src/rapi/rc_api_common.c"
+#include "../deps/rcheevos/src/rapi/rc_api_info.c"
 #include "../deps/rcheevos/src/rapi/rc_api_runtime.c"
 #include "../deps/rcheevos/src/rapi/rc_api_user.c"
 #include "../deps/rcheevos/src/rcheevos/alloc.c"
-#include "../deps/rcheevos/src/rcheevos/compat.c"
 #include "../deps/rcheevos/src/rcheevos/condition.c"
 #include "../deps/rcheevos/src/rcheevos/condset.c"
 #include "../deps/rcheevos/src/rcheevos/consoleinfo.c"
@@ -205,12 +219,12 @@ ACHIEVEMENTS
 #include "../deps/rcheevos/src/rcheevos/lboard.c"
 #include "../deps/rcheevos/src/rcheevos/memref.c"
 #include "../deps/rcheevos/src/rcheevos/operand.c"
-#include "../deps/rcheevos/src/rcheevos/rc_libretro.c"
 #include "../deps/rcheevos/src/rcheevos/richpresence.c"
 #include "../deps/rcheevos/src/rcheevos/runtime.c"
 #include "../deps/rcheevos/src/rcheevos/runtime_progress.c"
 #include "../deps/rcheevos/src/rcheevos/trigger.c"
 #include "../deps/rcheevos/src/rcheevos/value.c"
+#include "../deps/rcheevos/src/rhash/aes.c"
 #include "../deps/rcheevos/src/rhash/cdreader.c"
 #include "../deps/rcheevos/src/rhash/hash.c"
 
@@ -246,16 +260,18 @@ VIDEO CONTEXT
 #include "../gfx/common/gl_common.c"
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(_WIN32) && !defined(_XBOX)
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_VULKAN) || defined(HAVE_OPENGLES)) && !defined(HAVE_ANGLE)
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/w_vk_ctx.c"
 #endif
 
+#if !defined(__WINRT__) 
 #include "../gfx/display_servers/dispserv_win32.c"
+#endif
 
 #if defined(HAVE_FFMPEG)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
@@ -715,6 +731,11 @@ INPUT
 #endif
 #endif
 
+#ifdef HAVE_TEST_DRIVERS
+#include "../input/drivers_joypad/test_joypad.c"
+#include "../input/drivers/test_input.c"
+#endif
+
 /*============================================================
 INPUT (HID)
 ============================================================ */
@@ -861,6 +882,9 @@ AUDIO
 
 #if defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
+#include "../input/drivers/sdl_input.c"
+#include "../input/drivers_joypad/sdl_joypad.c"
+#include "../gfx/drivers_context/sdl_gl_ctx.c"
 #ifdef HAVE_MICROPHONE
 #include "../audio/drivers_microphone/sdl_microphone.c"
 #endif
@@ -1158,8 +1182,6 @@ RETROARCH
 #include "../runahead.c"
 #endif
 #include "../command.c"
-#include "../midi_driver.c"
-#include "../location_driver.c"
 #include "../ui/ui_companion_driver.c"
 #include "../libretro-common/queues/task_queue.c"
 
@@ -1195,6 +1217,7 @@ WIFI
 RECORDING
 ============================================================ */
 #include "../record/record_driver.c"
+#include "../record/drivers/record_wav.c"
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif
@@ -1249,7 +1272,22 @@ DATA RUNLOOP
 #endif
 #ifdef HAVE_PATCH
 #include "../tasks/task_patch.c"
+#ifdef HAVE_XDELTA
+#define adler32(...) xdelta_adler32(__VA_ARGS__)
+#include "../deps/xdelta3/xdelta3.c"
+#undef adler32
+#ifdef Q
+#undef Q
 #endif
+#ifdef W
+#undef W
+#endif
+#ifdef Z
+#undef Z
+#endif
+#endif
+#endif
+#include "../save.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_movie.c"
 #include "../tasks/task_image.c"
@@ -1600,6 +1638,16 @@ ANDROID PLAY FEATURE DELIVERY
 ============================================================ */
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.c"
+#endif
+
+
+/*============================================================
+FFMPEG
+============================================================ */
+#ifdef HAVE_FFMPEG
+#include "../cores/libretro-ffmpeg/packet_buffer.c"
+#include "../cores/libretro-ffmpeg/video_buffer.c"
+#include "../libretro-common/rthreads/tpool.c"
 #endif
 
 /*============================================================

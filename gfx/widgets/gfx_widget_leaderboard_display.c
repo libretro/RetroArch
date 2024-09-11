@@ -15,11 +15,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <features/features_cpu.h>
+
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/cheevos.h"
-#include <features/features_cpu.h>
+#include "../../cheevos/cheevos.h"
 
 #define CHEEVO_LBOARD_ARRAY_SIZE 4
 #define CHEEVO_CHALLENGE_ARRAY_SIZE 8
@@ -51,6 +52,8 @@ struct progress_tracker_info
 
 #define CHEEVO_LBOARD_FIRST_FIXED_CHAR 0x2D /* -./0123456789: */
 #define CHEEVO_LBOARD_LAST_FIXED_CHAR 0x3A
+
+/* TODO: rename; this file handles all achievement tracker information, not just leaderboards */
 struct gfx_widget_leaderboard_display_state
 {
 #ifdef HAVE_THREADS
@@ -64,6 +67,8 @@ struct gfx_widget_leaderboard_display_state
    unsigned challenge_count;
    uint16_t char_width[CHEEVO_LBOARD_LAST_FIXED_CHAR - CHEEVO_LBOARD_FIRST_FIXED_CHAR + 1];
    uint16_t fixed_char_width;
+   uint16_t loading;
+   bool disconnected;
 };
 
 typedef struct gfx_widget_leaderboard_display_state gfx_widget_leaderboard_display_state_t;
@@ -75,7 +80,7 @@ static bool gfx_widget_leaderboard_display_init(
       gfx_animation_t *p_anim,
       bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_leaderboard_display_state_t *state = 
+   gfx_widget_leaderboard_display_state_t *state =
       &p_w_leaderboard_display_st;
    memset(state, 0, sizeof(*state));
    state->dispwidget_ptr   = (const dispgfx_widget_t*)
@@ -109,7 +114,11 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
    /* if there's nothing to display, just bail */
-   if (state->tracker_count == 0 && state->challenge_count == 0 && state->progress_tracker.show_until == 0)
+   if (state->tracker_count == 0 &&
+       state->challenge_count == 0 &&
+       state->progress_tracker.show_until == 0 &&
+       !state->loading &&
+       !state->disconnected)
       return;
 
 #ifdef HAVE_THREADS
@@ -335,7 +344,62 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                   TEXT_COLOR_INFO, TEXT_ALIGN_LEFT, true);
          }
       }
+
+      if (state->disconnected || state->loading)
+      {
+         char loading_buffer[8] = "RA ...";
+         const char* disconnected_text = state->disconnected ? "! RA !" : loading_buffer;
+         const unsigned disconnect_widget_width = font_driver_get_message_width(
+            state->dispwidget_ptr->gfx_widget_fonts.msg_queue.font,
+            disconnected_text, 0, 1) + CHEEVO_LBOARD_DISPLAY_PADDING * 2;
+         const unsigned disconnect_widget_height =
+            p_dispwidget->gfx_widget_fonts.msg_queue.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
+         x = video_width - disconnect_widget_width - spacing;
+         y -= disconnect_widget_height + spacing;
+
+         if (state->loading) {
+            const uint16_t loading_shift = 5;
+            loading_buffer[((state->loading - 1) >> loading_shift) + 3] = '\0';
+            state->loading &= (1 << (loading_shift + 2)) - 1;
+            ++state->loading;
+         }
+
+         /* Backdrop */
+         gfx_display_draw_quad(
+            p_disp,
+            video_info->userdata,
+            video_width, video_height,
+            (int)x, (int)y, disconnect_widget_width, disconnect_widget_height,
+            video_width, video_height,
+            p_dispwidget->backdrop_orig,
+            NULL);
+
+         /* Text */
+         char_x = (float)(x + CHEEVO_LBOARD_DISPLAY_PADDING);
+         char_y = (float)(y + disconnect_widget_height - (CHEEVO_LBOARD_DISPLAY_PADDING - 1)
+            - p_dispwidget->gfx_widget_fonts.msg_queue.line_descender);
+
+         gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
+            disconnected_text, char_x, char_y,
+            video_width, video_height,
+            TEXT_COLOR_INFO, TEXT_ALIGN_LEFT, true);
+      }
    }
+
+#ifdef HAVE_THREADS
+   slock_unlock(state->array_lock);
+#endif
+}
+
+void gfx_widgets_clear_leaderboard_displays(void)
+{
+   gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
+
+#ifdef HAVE_THREADS
+   slock_lock(state->array_lock);
+#endif
+
+   state->tracker_count = 0;
 
 #ifdef HAVE_THREADS
    slock_unlock(state->array_lock);
@@ -420,6 +484,21 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 #endif
 }
 
+void gfx_widgets_clear_challenge_displays(void)
+{
+   gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
+
+#ifdef HAVE_THREADS
+   slock_lock(state->array_lock);
+#endif
+
+   state->challenge_count = 0;
+
+#ifdef HAVE_THREADS
+   slock_unlock(state->array_lock);
+#endif
+}
+
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
 {
    unsigned i;
@@ -427,7 +506,7 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id     = badge ? rcheevos_get_badge_texture(badge, 0) : 0;
+   uintptr_t badge_id     = badge ? rcheevos_get_badge_texture(badge, false, true) : 0;
    uintptr_t old_badge_id = 0;
 
 #ifdef HAVE_THREADS
@@ -500,7 +579,7 @@ void gfx_widget_set_achievement_progress(const char* badge, const char* progress
    {
       /* show indicator */
       state->progress_tracker.show_until = cpu_features_get_time_usec() + CHEEVO_PROGRESS_TRACKER_DURATION * 1000;
-      state->progress_tracker.image = rcheevos_get_badge_texture(badge, 1);
+      state->progress_tracker.image = rcheevos_get_badge_texture(badge, true, true);
 
       snprintf(state->progress_tracker.display, sizeof(state->progress_tracker.display), "%s", progress);
       state->progress_tracker.width = (uint16_t)font_driver_get_message_width(
@@ -511,6 +590,19 @@ void gfx_widget_set_achievement_progress(const char* badge, const char* progress
    if (old_badge_id)
       video_driver_texture_unload(&old_badge_id);
 }
+
+void gfx_widget_set_cheevos_disconnect(bool value)
+{
+   gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
+   state->disconnected = value;
+}
+
+void gfx_widget_set_cheevos_set_loading(bool value)
+{
+   gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
+   state->loading = value ? 1 : 0;
+}
+
 
 const gfx_widget_t gfx_widget_leaderboard_display = {
    &gfx_widget_leaderboard_display_init,

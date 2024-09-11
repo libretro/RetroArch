@@ -18,6 +18,7 @@
 #define __COCOA_COMMON_SHARED_H
 
 #include <Foundation/Foundation.h>
+#include <QuartzCore/QuartzCore.h>
 
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
@@ -73,6 +74,8 @@
 @property(readwrite) UIInterfaceOrientation lockInterfaceOrientation;
 #endif
 
+@property(nonatomic,readwrite) CADisplayLink *displayLink;
+
 + (CocoaView*)get;
 @end
 
@@ -85,6 +88,10 @@ void get_ios_version(int *major, int *minor);
 + (CocoaView*)get;
 #if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
 - (void)display;
+#endif
+
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+@property(nonatomic,readwrite) CADisplayLink *displayLink API_AVAILABLE(macos(14.0));
 #endif
 
 @end
