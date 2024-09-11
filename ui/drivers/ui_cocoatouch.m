@@ -51,6 +51,11 @@
 #import <GameController/GCMouse.h>
 #endif
 
+#ifdef HAVE_SDL2
+#define SDL_MAIN_HANDLED
+#include "SDL.h"
+#endif
+
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 #import "JITSupport.h"
 id<ApplePlatform> apple_platform;
@@ -963,6 +968,9 @@ int main(int argc, char *argv[])
         RARCH_LOG("Ptrace hack complete, JIT support is enabled.\n");
     else
         RARCH_WARN("Ptrace hack NOT available; Please use an app like Jitterbug.\n");
+#endif
+#ifdef HAVE_SDL2
+    SDL_SetMainReady();
 #endif
    @autoreleasepool {
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));
