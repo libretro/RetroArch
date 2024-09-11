@@ -648,12 +648,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    _len  = strlcpy(shader_var, "mipmap_input", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
-   {
-      if (tmp_bool)
-         pass->flags |=  SHDR_PASS_FLG_MIPMAP;
-      else
-         pass->flags &= ~SHDR_PASS_FLG_MIPMAP;
-   }
+      pass->mipmap = tmp_bool;
 
    _len  = strlcpy(shader_var, "alias", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
@@ -1201,7 +1196,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       _len = strlcpy(key, "mipmap_input", sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
-      config_set_string(conf, key, ((pass->flags & SHDR_PASS_FLG_MIPMAP) > 0) ? "true" : "false");
+      config_set_string(conf, key, pass->mipmap ? "true" : "false");
 
       _len = strlcpy(key, "alias", sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
@@ -1729,16 +1724,12 @@ static bool video_shader_write_referenced_preset(
             continue_saving_ref = false;
          }
 
+         if (continue_saving_ref && pass->mipmap != root_pass->mipmap)
          {
-            bool pass_mipmap      = (pass->flags      & SHDR_PASS_FLG_MIPMAP) > 0;
-            bool root_pass_mipmap = (root_pass->flags & SHDR_PASS_FLG_MIPMAP) > 0;
-            if (continue_saving_ref && pass_mipmap != root_pass_mipmap)
-            {
 #ifdef DEBUG
-               RARCH_WARN("[Shaders]: Pass %u mipmap", i);
+            RARCH_WARN("[Shaders]: Pass %u mipmap", i);
 #endif
-               continue_saving_ref = false;
-            }
+            continue_saving_ref = false;
          }
 
          if (continue_saving_ref && !string_is_equal(pass->alias, root_pass->alias))
