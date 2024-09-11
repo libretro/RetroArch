@@ -899,6 +899,12 @@ bool task_push_pl_entry_thumbnail_download(
    /* Apply flexible thumbnail naming: ROM file name - database name - short name */
    next_flag = playlist_get_next_thumbnail_name_flag(playlist,idx);
    playlist_update_thumbnail_name_flag(playlist, idx, next_flag);
+   /* Skip over full name if not enabled. */
+   if (next_flag == PLAYLIST_THUMBNAIL_FLAG_FULL_NAME && !settings->bools.playlist_use_filename)
+   {
+      next_flag = playlist_get_next_thumbnail_name_flag(playlist,idx);
+      playlist_update_thumbnail_name_flag(playlist, idx, next_flag);
+   }
    if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE) {
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE),
