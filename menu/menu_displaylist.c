@@ -7958,6 +7958,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_MAX_USERS,                                                   PARSE_ONLY_UINT,  true  },
                {MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,                                           PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,                                          PARSE_ONLY_BOOL,  true  },
+               {MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,                             PARSE_ONLY_BOOL,  true  },               
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,                                          PARSE_ONLY_UINT,  true  },
                {MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,                                                PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,                                       PARSE_ONLY_BOOL,  true  },
