@@ -12,6 +12,7 @@ extern void update_topshelf(void);
 
 #if TARGET_OS_IOS
 extern void ios_show_file_sheet(void);
+extern bool ios_running_on_ipad(void);
 #endif
 
 #ifdef __OBJC__
