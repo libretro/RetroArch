@@ -436,6 +436,12 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
     if (!(desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS))
        desired_index     = 0;
 
+    if (mfi_controller_is_siri_remote(controller))
+    {
+        RARCH_WARN("[mfi] ignoring siri remote as a controller\n");
+        return;
+    }
+
     /* Prevent same controller getting set twice */
     if ([mfiControllers containsObject:controller])
     {
@@ -499,37 +505,6 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
     }
 
     [mfiControllers addObject:controller];
-
-    /* Move any non-game controllers (like the Siri remote) to the end */
-    if (mfiControllers.count > 1)
-    {
-        int newPlayerIndex                        = 0;
-        NSInteger connectedNonGameControllerIndex = NSNotFound;
-        NSUInteger index                          = 0;
-
-        for (GCController *connectedController in mfiControllers)
-        {
-            if (     connectedController.microGamepad    != nil
-                     && connectedController.extendedGamepad == nil )
-                connectedNonGameControllerIndex = index;
-            index++;
-        }
-
-        if (connectedNonGameControllerIndex != NSNotFound)
-        {
-            GCController *nonGameController = [mfiControllers objectAtIndex:connectedNonGameControllerIndex];
-            [mfiControllers removeObjectAtIndex:connectedNonGameControllerIndex];
-            [mfiControllers addObject:nonGameController];
-        }
-        for (GCController *gc in mfiControllers)
-            gc.playerIndex = newPlayerIndex++;
-    }
-
-    if (mfi_controller_is_siri_remote(controller))
-    {
-        RARCH_WARN("[mfi] ignoring siri remote as a controller\n");
-        return;
-    }
 
     RARCH_LOG("[mfi] controller connected, beginning setup and autodetect\n");
     apple_gamecontroller_joypad_register(controller);
