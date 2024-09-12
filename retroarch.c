@@ -4199,6 +4199,14 @@ bool command_event(enum event_command cmd, void *data)
                   settings->bools.content_runtime_log_aggregate,
                   settings->paths.directory_runtime_log,
                   settings->paths.directory_playlist);
+
+            if (     runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING
+                  && settings->bools.savestate_auto_save)
+            {
+               command_event_save_auto_state();
+               content_wait_for_save_state_task();
+            }
+
             content_reset_savestate_backups();
             hwr = VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
 #ifdef HAVE_CHEEVOS
