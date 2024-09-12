@@ -3234,6 +3234,14 @@ MSG_HASH(
    "Anular os enlaces de entrada cos enlaces reasignados definidos para o núcleo actual."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Auto configurar"
    )
@@ -13362,10 +13370,6 @@ MSG_HASH(
    "Non se pode inferir a nova ruta de configuración. Usa a hora actual."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Logros Modo Hardcore activado, estado de gardar e rebobinado desactiváronse."
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "Comparando cos números máxicos coñecidos..."
    )
@@ -14552,6 +14556,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Completado %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Logros Modo Hardcore activado, estado de gardar e rebobinado desactiváronse."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

@@ -3126,6 +3126,14 @@ MSG_HASH(
    "Přepsat vstupní vazby přemapovanými vazbami nastavenými pro aktuální jádro."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Autokonfigurace"
    )
@@ -13018,10 +13026,6 @@ MSG_HASH(
    "Nelze odvodit cestu k nové konfiguraci. Použijte aktuální čas."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Úspěchy hardcore módu povoleny, ukládání a přetáčení bylo zakázáno."
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "Porovnávám se známými magickými čísly..."
    )
@@ -14156,6 +14160,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Dokončeno %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Úspěchy hardcore módu povoleny, ukládání a přetáčení bylo zakázáno."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

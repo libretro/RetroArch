@@ -2286,6 +2286,14 @@ MSG_HASH(
    "Timpa input bind dengan bind yang telah diubah untuk 'core' saat ini."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Konfigurasi otomatis"
    )
@@ -4138,10 +4146,6 @@ MSG_HASH(
    "Profil stik kendali berhasil disimpan."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Mode Capaian Garis Keras Diaktifkan: save state & gerak mundur dinonaktifkan."
-   )
-MSG_HASH(
    MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    "Lepas pampat sudah berlangsung."
    )
@@ -4208,6 +4212,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_SCANNING_WIRELESS_NETWORKS,
    "Memindai jejaring nirkabel..."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Mode Capaian Garis Keras Diaktifkan: save state & gerak mundur dinonaktifkan."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,

@@ -2218,6 +2218,14 @@ MSG_HASH(
    "Número máximo de utilizadores suportados pelo RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Ativar auto-configuração de teclas"
    )
@@ -4886,10 +4894,6 @@ MSG_HASH(
    "Não é possível inferir o novo caminho de configuração. Use a hora atual."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Modo Hardcore ativado. A gravação de estado e função de retrocedimento no tempo estão desativadas."
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "Comparando com números mágicos conhecidos..."
    )
@@ -5660,6 +5664,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
    "Falha ao obter o cabeçalho do anfitrião."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Modo Hardcore ativado. A gravação de estado e função de retrocedimento no tempo estão desativadas."
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,

@@ -194,6 +194,10 @@ MSG_HASH(
    "重開"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "重新啟動RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "結束"
    )
@@ -2985,6 +2989,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "使用執行核心的重新映射覆寫按鍵輸入, 用於修正部分平台的按鍵映射錯誤。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "控制器隨插即用"
@@ -12718,10 +12730,6 @@ MSG_HASH(
    "無法推斷新的設定路徑, 使用當前時間。"
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "開啟硬核模式: 即時存檔和倒帶模式被禁用。"
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "與已知的魔術數字比較..."
    )
@@ -13824,6 +13832,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "已完成「%s」"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "開啟硬核模式: 即時存檔和倒帶模式被禁用。"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
