@@ -3278,6 +3278,14 @@ MSG_HASH(
    "入力割り当てを現在のコアに設定されているリマップ設定で上書きします。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "自動設定"
    )
@@ -13462,10 +13470,6 @@ MSG_HASH(
    "新しい設定パスを推測できません。現在の時刻を使用してください。"
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "実績ハードコアモードが有効になりました。ステートセーブと巻き戻しが無効になります。"
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "既知のマジックナンバーと比較しています..."
    )
@@ -14660,6 +14664,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "完了済み %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "実績ハードコアモードが有効になりました。ステートセーブと巻き戻しが無効になります。"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
