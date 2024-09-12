@@ -112,51 +112,77 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
 {
-   int tmp_int         = 0;
-   uint16_t config_vid = 0;
-   uint16_t config_pid = 0;
-   bool pid_match      = false;
-   unsigned affinity   = 0;
-   struct config_entry_list
-      *entry           = NULL;
+   int i, tmp_int;
+   uint16_t config_vid;
+   uint16_t config_pid;
+   bool pid_match                  = false;
+   unsigned affinity;
+   unsigned max_affinity           = 0;
+   struct config_entry_list *entry = NULL;
+   char config_key[30];
+   char config_key_postfix[7];
 
-   /* Parse config file */
-   if (config_get_int(config, "input_vendor_id", &tmp_int))
-      config_vid = (uint16_t)tmp_int;
+   /* One main entry and up to 9 alternatives */
+   for (i=0 ; i < 10; i++)
+   {
+      config_vid = 0;
+      config_pid = 0;
+      tmp_int    = 0;
+      affinity   = 0;
 
-   if (config_get_int(config, "input_product_id", &tmp_int))
-      config_pid = (uint16_t)tmp_int;
+      if (i == 0)
+         config_key_postfix[0] = '\0';
+      else
+         snprintf(config_key_postfix, sizeof(config_key_postfix),
+                  "_alt%d",i);
+      
+      /* Parse config file */
+      snprintf(config_key, sizeof(config_key),
+                  "input_vendor_id%s",config_key_postfix);
+      if (config_get_int(config, config_key, &tmp_int))
+         config_vid = (uint16_t)tmp_int;
+
+      snprintf(config_key, sizeof(config_key),
+                  "input_product_id%s",config_key_postfix);
+      if (config_get_int(config, config_key, &tmp_int))
+         config_pid = (uint16_t)tmp_int;
 
    /* > Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
-   if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
-      config_pid = BLISSBOX_PID;
+      if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
+         config_pid = BLISSBOX_PID;
 #endif
 
-   /* Check for matching VID+PID */
-   pid_match =    (autoconfig_handle->device_info.vid == config_vid)
-               && (autoconfig_handle->device_info.pid == config_pid)
-               && (autoconfig_handle->device_info.vid != 0)
-               && (autoconfig_handle->device_info.pid != 0);
+      /* Check for matching VID+PID */
+      pid_match =    (autoconfig_handle->device_info.vid == config_vid)
+                  && (autoconfig_handle->device_info.pid == config_pid)
+                  && (autoconfig_handle->device_info.vid != 0)
+                  && (autoconfig_handle->device_info.pid != 0);
 
-   /* > More Bliss-Box shenanigans... */
+      /* > More Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
-   pid_match =     pid_match
-               && (autoconfig_handle->device_info.vid != BLISSBOX_VID)
-               && (autoconfig_handle->device_info.pid != BLISSBOX_PID);
+      pid_match =     pid_match
+                  && (autoconfig_handle->device_info.vid != BLISSBOX_VID)
+                  && (autoconfig_handle->device_info.pid != BLISSBOX_PID);
 #endif
 
-   if (pid_match)
-      affinity += 3;
+      if (pid_match)
+         affinity += 3;
 
-   /* Check for matching device name */
-   if (      (entry  = config_get_entry(config, "input_device"))
-         && !string_is_empty(entry->value)
-         &&  string_is_equal(entry->value,
-             autoconfig_handle->device_info.name))
-      affinity += 2;
+      /* Check for matching device name */
+      snprintf(config_key, sizeof(config_key),
+                  "input_device%s",config_key_postfix);
+      if (     (entry  = config_get_entry(config, config_key))
+            && !string_is_empty(entry->value)
+            &&  string_is_equal(entry->value,
+                autoconfig_handle->device_info.name))
+         affinity += 2;
 
-   return affinity;
+      if (max_affinity < affinity)
+         max_affinity = affinity;
+   }
+
+   return max_affinity;
 }
 
 /* 'Attaches' specified autoconfig file to autoconfig
