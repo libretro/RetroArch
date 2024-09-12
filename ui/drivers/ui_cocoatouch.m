@@ -209,6 +209,11 @@ void get_ios_version(int *major, int *minor)
    if (minor) *minor = savedMinor;
 }
 
+bool ios_running_on_ipad(void)
+{
+   return (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
+}
+
 /* Input helpers: This is kept here because it needs ObjC */
 static void handle_touch_event(NSArray* touches)
 {
