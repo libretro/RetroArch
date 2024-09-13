@@ -757,6 +757,7 @@ enum
    update_topshelf();
 #endif
    rarch_stop_draw_observer();
+   command_event(CMD_EVENT_SAVE_FILES, NULL);
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
