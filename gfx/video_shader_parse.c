@@ -2075,7 +2075,7 @@ static bool video_shader_override_values(config_file_t *override_conf,
             fill_pathname_expanded_and_absolute(override_tex_path, override_conf->path, tex_path);
             video_shader_replace_wildcards(override_tex_path, PATH_MAX_LENGTH, override_conf->path);
 
-            strlcpy(shader->lut[i].path, override_tex_path, PATH_MAX_LENGTH);
+            strlcpy(shader->lut[i].path, override_tex_path, sizeof(shader->lut[i].path));
 
 #ifdef DEBUG
             RARCH_DBG("[Shaders]: Texture: \"%s\" = %s.\n",
