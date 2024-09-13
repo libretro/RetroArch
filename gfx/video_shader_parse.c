@@ -431,7 +431,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
                replace_text,
                replace_len);
 
-            strlcpy(replaced_path, replace_output, PATH_MAX_LENGTH);
+            strlcpy(replaced_path, replace_output, sizeof(replaced_path));
 
             free(replace_output);
          }
