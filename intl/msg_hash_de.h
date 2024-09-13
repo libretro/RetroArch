@@ -14442,6 +14442,10 @@ MSG_HASH(
    "%d nicht unterstützt"
 )
 MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Zuschauer %s"
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Hardcore pausiert. Manuelle Einstellung der Videobildverzögerung nicht gestattet."
    )
@@ -15405,6 +15409,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Mauseingabe per Touchscreen ist deaktiviert"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "sdl2-Mikrofon benötigt sdl2-Audiotreiber"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

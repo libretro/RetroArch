@@ -15687,6 +15687,10 @@ MSG_HASH(
    "La souris tactile est désactivée"
    )
 MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "Le microphone sdl2 nécessite un driver audio sdl2"
+   )
+MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,
    "Accessibilité RétroArch activée. Menu principal Charger un cœur."
    )

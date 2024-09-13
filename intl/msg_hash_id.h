@@ -4326,3 +4326,7 @@ MSG_HASH(
 #endif
 #ifdef HAVE_QT
 #endif
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "Mikrofon sdl2 perlu pengandar audio sdl2"
+   )

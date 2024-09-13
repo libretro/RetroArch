@@ -13979,6 +13979,10 @@ MSG_HASH(
    "Mysz dotykowa jest wyłączona"
    )
 MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "mikrofon sdl2 wymaga sterownika audio sdl2"
+   )
+MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "zatrzymano."
    )
