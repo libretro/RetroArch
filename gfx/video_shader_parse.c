@@ -125,7 +125,8 @@ static path_change_data_t *file_change_data = NULL;
  *
  * out_path is filled with the absolute path
  **/
-static void fill_pathname_expanded_and_absolute(char *out_path,
+static void fill_pathname_expanded_and_absolute(
+      char *out_path, size_t out_size,
       const char *in_refpath,
       const char *in_path)
 {
@@ -139,10 +140,10 @@ static void fill_pathname_expanded_and_absolute(char *out_path,
 
    /* Resolve the reference path relative to the config */
    if (path_is_absolute(expanded_path))
-      strlcpy(out_path, expanded_path, PATH_MAX_LENGTH);
+      strlcpy(out_path, expanded_path, out_size);
    else
       fill_pathname_resolve_relative(out_path, in_refpath,
-            in_path, PATH_MAX_LENGTH);
+            in_path, out_size);
 
    pathname_conform_slashes_to_os(out_path);
 }
@@ -481,7 +482,7 @@ static void video_shader_gather_reference_path_list(
          char* reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
 
          /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(reference_preset_path, conf->path, ref_tmp->path);
+         fill_pathname_expanded_and_absolute(reference_preset_path, PATH_MAX_LENGTH, conf->path, ref_tmp->path);
          video_shader_replace_wildcards(reference_preset_path, PATH_MAX_LENGTH, conf->path);
 
          video_shader_gather_reference_path_list(in_path_linked_list, reference_preset_path, reference_depth + 1);
@@ -596,7 +597,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    /* Get the absolute path and replace wildcards in the path */
-   fill_pathname_expanded_and_absolute(pass->source.path, conf->path, tmp_path);
+   fill_pathname_expanded_and_absolute(pass->source.path, PATH_MAX_LENGTH, conf->path, tmp_path);
    video_shader_replace_wildcards(pass->source.path, PATH_MAX_LENGTH, conf->path);
 
    /* Smooth */
@@ -829,7 +830,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
          config_get_path(conf, id, texture_path, sizeof(texture_path));
 
          /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path, conf->path, texture_path);
+         fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path, PATH_MAX_LENGTH, conf->path, texture_path);
          video_shader_replace_wildcards(shader->lut[shader->luts].path, PATH_MAX_LENGTH, conf->path);
 
          strlcpy(shader->lut[shader->luts].id, id,
@@ -1306,7 +1307,7 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
       }
 
       /* Get the absolute path and replace wildcards in the path */
-      fill_pathname_expanded_and_absolute(nested_reference_path, conf->path, conf->references->path);
+      fill_pathname_expanded_and_absolute(nested_reference_path, PATH_MAX_LENGTH, conf->path, conf->references->path);
       video_shader_replace_wildcards(nested_reference_path, PATH_MAX_LENGTH, conf->path);
 
       /* Create a new config from the referenced path */
@@ -1392,7 +1393,7 @@ static bool video_shader_check_reference_chain_for_save(
          }
 
          /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(nested_ref_path, conf->path, conf->references->path);
+         fill_pathname_expanded_and_absolute(nested_ref_path, PATH_MAX_LENGTH, conf->path, conf->references->path);
          video_shader_replace_wildcards(nested_ref_path, PATH_MAX_LENGTH, conf->path);
 
          /* If one of the reference paths is the same as the file we want to save then this reference chain would be
@@ -1532,7 +1533,7 @@ static bool video_shader_write_referenced_preset(
       char *abs_tmp_ref_path = (char*)malloc(PATH_MAX_LENGTH);
       abs_tmp_ref_path[0]    = '\0';
       /* Get the absolute path and replace wildcards in the path */
-      fill_pathname_expanded_and_absolute(abs_tmp_ref_path,
+      fill_pathname_expanded_and_absolute(abs_tmp_ref_path, PATH_MAX_LENGTH,
             ref_conf->path, ref_conf->references->path);
       video_shader_replace_wildcards(abs_tmp_ref_path,
             PATH_MAX_LENGTH, ref_conf->path);
@@ -1574,7 +1575,7 @@ static bool video_shader_write_referenced_preset(
       if (ref_conf->references)
       {
          /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(path_to_ref,
+         fill_pathname_expanded_and_absolute(path_to_ref, PATH_MAX_LENGTH,
                ref_conf->path, ref_conf->references->path);
          video_shader_replace_wildcards(path_to_ref,
                PATH_MAX_LENGTH, ref_conf->path);
@@ -1597,7 +1598,7 @@ static bool video_shader_write_referenced_preset(
             if (ref_conf->references)
             {
                /* Get the absolute path and replace wildcards in the path */
-               fill_pathname_expanded_and_absolute(path_to_ref,
+               fill_pathname_expanded_and_absolute(path_to_ref, PATH_MAX_LENGTH,
                      ref_conf->path, ref_conf->references->path);
                video_shader_replace_wildcards(path_to_ref,
                      PATH_MAX_LENGTH, ref_conf->path);
@@ -2072,7 +2073,7 @@ static bool video_shader_override_values(config_file_t *override_conf,
             config_get_path(override_conf, shader->lut[i].id, tex_path, PATH_MAX_LENGTH);
 
             /* Get the absolute path and replace wildcards in the path */
-            fill_pathname_expanded_and_absolute(override_tex_path, override_conf->path, tex_path);
+            fill_pathname_expanded_and_absolute(override_tex_path, PATH_MAX_LENGTH, override_conf->path, tex_path);
             video_shader_replace_wildcards(override_tex_path, PATH_MAX_LENGTH, override_conf->path);
 
             strlcpy(shader->lut[i].path, override_tex_path, sizeof(shader->lut[i].path));
@@ -2288,7 +2289,8 @@ bool video_shader_load_preset_into_shader(const char *path,
       char *path_to_ref       = (char*)malloc(PATH_MAX_LENGTH);
 
       /* Get the absolute path and replace wildcards in the path */
-      fill_pathname_expanded_and_absolute(path_to_ref, conf->path, path_list_tmp->path);
+      fill_pathname_expanded_and_absolute(path_to_ref, PATH_MAX_LENGTH,
+            conf->path, path_list_tmp->path);
       video_shader_replace_wildcards(path_to_ref, PATH_MAX_LENGTH, conf->path);
 
       if ((tmp_conf = video_shader_get_root_preset_config(path_to_ref)))
