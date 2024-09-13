@@ -15551,6 +15551,10 @@ MSG_HASH(
    "Touch mouse è disabilitato"
    )
 MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "sdl2 microfono richiede driver audio sdl2"
+   )
+MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,
    "Accessibilità RetroArch su. Menù principale Carica il Core."
    )
