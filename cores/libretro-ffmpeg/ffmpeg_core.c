@@ -368,7 +368,7 @@ void CORE_PREFIX(retro_reset)(void)
    reset_triggered = true;
 }
 
-static void print_ffmpeg_version()
+static void print_ffmpeg_version(void)
 {
    PRINT_VERSION(avformat)
    PRINT_VERSION(avcodec)
@@ -491,7 +491,7 @@ static void check_variables(bool firststart)
          }
          else
          {
-            sw_decoder_threads = strtoul(sw_threads_var.value, NULL, 0);
+            sw_decoder_threads = (unsigned)strtoul(sw_threads_var.value, NULL, 0);
          }
          /* Scale the sws threads based on core count but use at least 2 and at most 4 threads */
          sw_sws_threads = MIN(MAX(2, sw_decoder_threads / 2), 4);
@@ -877,7 +877,7 @@ void CORE_PREFIX(retro_run)(void)
          if (!temporal_interpolation)
             mix_factor = 1.0f;
 
-         glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)hw_render.get_current_framebuffer());
          glClearColor(0, 0, 0, 1);
          glClear(GL_COLOR_BUFFER_BIT);
          glViewport(0, 0, media.width, media.height);
@@ -1750,7 +1750,7 @@ static void decode_thread(void *data)
    if (video_stream_index >= 0)
    {
       frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32, media.width, media.height, 1);
-      video_buffer = video_buffer_create(4, frame_size, media.width, media.height);
+      video_buffer = video_buffer_create(4, (int)frame_size, media.width, media.height);
       tpool = tpool_create(sw_sws_threads);
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n", sw_sws_threads);
    }

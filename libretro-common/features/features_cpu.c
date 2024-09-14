@@ -123,6 +123,7 @@
 /**
  * TODO/FIXME: clock_gettime function is part of iOS 10 now
  **/
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < 100000
 static int ra_clock_gettime(int clk_ik, struct timespec *t)
 {
    struct timeval now;
@@ -133,6 +134,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
    t->tv_nsec = now.tv_usec * 1000;
    return 0;
 }
+#endif
 #endif
 
 #if defined(__MACH__) && __IPHONE_OS_VERSION_MIN_REQUIRED < 100000

@@ -722,7 +722,8 @@ enum
 #endif
 
 #if TARGET_OS_IOS
-   [MXMetricManager.sharedManager addSubscriber:self];
+   if (@available(iOS 13.0, *))
+      [MXMetricManager.sharedManager addSubscriber:self];
 #endif
 
 #ifdef HAVE_MFI
@@ -900,7 +901,7 @@ enum
 - (void)supportOtherAudioSessions { }
 
 #if TARGET_OS_IOS
-- (void)didReceiveMetricPayloads:(NSArray<MXMetricPayload *> *)payloads
+- (void)didReceiveMetricPayloads:(NSArray<MXMetricPayload *> *)payloads API_AVAILABLE(ios(13.0))
 {
     for (MXMetricPayload *payload in payloads)
     {

@@ -4215,7 +4215,6 @@ static int action_ok_file_load_ffmpeg(const char *path,
    char new_path[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_handle_t *menu             = menu_st->driver_data;
    menu_list_t *menu_list          = menu_st->entries.list;
    file_list_t *menu_stack         = MENU_LIST_GET(menu_list, 0);
 

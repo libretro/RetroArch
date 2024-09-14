@@ -637,7 +637,7 @@ static void retropad_update_input(void)
    }
 }
 
-static void open_UDP_socket()
+static void open_UDP_socket(void)
 {
    socket_target_t in_target;
 
