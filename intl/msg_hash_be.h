@@ -3307,11 +3307,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sort Remaps By Gamepad"
+   "Сартаванне пераназначэнняў па геймпадам"
    )   
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Remaps will only apply to the active gamepad in which they were saved."
+   "Пераназначэнні будуць ужывацца толькі да актыўнага геймпада, да якога яны былі захаваныя."
    )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3634,6 +3634,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "Калі ўключана, націсканні кнопкі пошуку будуць ігнаравацца."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Адключыць левы аналагавы стык у меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Прадухіліць пераход па меню левым аналагавымі стыкам."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Адключыць правы аналагавы стык у меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Прадухіліць пераход па меню правым аналагавымі стыкам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -14826,6 +14842,10 @@ MSG_HASH(
    "Гэтая гульня не мае дасягненняў."
    )
 MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Усе %d дасягненняў актываваныя для гэтага сеанса"
+)
+MSG_HASH(
    MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
    "Актывавана %d неафіцыйных дасягненняў"
 )
@@ -14834,12 +14854,36 @@ MSG_HASH(
    "Вы маеце %d сярод %d раскрытых дасягненняў"
 )
 MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d не падтрымліваюцца"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Назіраюць %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Хардкод прыпынены. Налада ручной затрымкі кадраў не дазваляецца."
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
    "Хардкор прыпынены. Падкадры шэйдара не дазваляюцца."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Хардкор прыпынены. Інтэрвал абмену vsync вышэйшы за 1 не дазваляецца."
+   )
+MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
    "Хардкор прыпынены. Устаўка чорнага кадра не дазваляецца."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Хардкор прыпынены. Недазволеная налада: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Хардкор прыпынены. Немажліва атрымаць хардкорныя дасягненні для %s з выкарыстаннем %s"
    )
 MSG_HASH(
    MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
@@ -14848,6 +14892,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_GAME_LOAD_FAILED,
    "Не атрымалася загрузіць RetroAchievements на гульню: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "Не атрымалася змяніць медыя RetroAchievements: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15777,6 +15825,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Адключана кіраванне мышшу з тачскрыну"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "Мікрафон sdl2 патрабуе гукавога драйвера sdl2"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,
