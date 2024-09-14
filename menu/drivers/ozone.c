@@ -8178,7 +8178,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             if (     !menu_navigation_wraparound_enable
                   && selection == ozone->system_tab_end + horizontal_list_size)
-               new_selection   = selection;
+               new_selection   = (int)selection;
 
             if (new_selection != (int)selection)
             {

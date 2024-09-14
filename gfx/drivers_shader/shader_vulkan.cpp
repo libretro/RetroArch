@@ -2619,7 +2619,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.extent.width        = size.width;
    info.extent.height       = size.height;
    info.extent.depth        = 1;
-   info.mipLevels           = MIN(max_levels, _y);
+   info.mipLevels           = (uint32_t)MIN(max_levels, _y);
    info.arrayLayers         = 1;
    info.samples             = VK_SAMPLE_COUNT_1_BIT;
    info.tiling              = VK_IMAGE_TILING_OPTIMAL;

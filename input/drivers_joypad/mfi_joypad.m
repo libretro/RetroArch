@@ -529,7 +529,7 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
 }
 
 #if TARGET_OS_IOS
-static void apple_gamecontroller_device_haptics_setup() IPHONE_RUMBLE_AVAIL
+static void apple_gamecontroller_device_haptics_setup(void) IPHONE_RUMBLE_AVAIL
 {
     if (!CHHapticEngine.capabilitiesForHardware.supportsHaptics)
         return;
@@ -596,14 +596,14 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_create_play
     return player;
 }
 
-static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_strong_player() IPHONE_RUMBLE_AVAIL
+static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_strong_player(void) IPHONE_RUMBLE_AVAIL
 {
     if (!deviceStrongPlayer)
         deviceStrongPlayer = apple_gamecontroller_device_haptics_create_player(1.0f);
     return deviceStrongPlayer;
 }
 
-static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_weak_player() IPHONE_RUMBLE_AVAIL
+static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_weak_player(void) IPHONE_RUMBLE_AVAIL
 {
     if (!deviceWeakPlayer)
         deviceWeakPlayer = apple_gamecontroller_device_haptics_create_player(0.5f);

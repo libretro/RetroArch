@@ -1534,7 +1534,7 @@ static void scan_states(settings_t *settings,
       {
          /* Gap index: lowest free slot in the wraparound range */
          if (gap_idx == UINT_MAX)
-            gap_idx = i;
+            gap_idx = (unsigned)i;
       }
       /* Occupied save slots */
       else
@@ -1543,7 +1543,7 @@ static void scan_states(settings_t *settings,
             after gap index */
          if (gap_idx <  UINT_MAX &&
              del_idx == UINT_MAX)
-            del_idx = i;
+            del_idx = (unsigned)i;
       }
    }
 
