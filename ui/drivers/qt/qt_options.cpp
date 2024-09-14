@@ -385,9 +385,10 @@ LatencyPage::LatencyPage(QObject *parent) :
 
 QWidget *LatencyPage::widget()
 {
-   QWidget                         *widget = new QWidget;
-   FormLayout                      *layout = new FormLayout;
-   CheckableSettingsGroup *runAheadGpuSync = new CheckableSettingsGroup(MENU_ENUM_LABEL_RUN_AHEAD_ENABLED);
+   QWidget                       *widget = new QWidget;
+   FormLayout                    *layout = new FormLayout;
+   CheckableSettingsGroup *runAheadGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_RUN_AHEAD_ENABLED);
+   CheckableSettingsGroup  *preemptGroup = new CheckableSettingsGroup(MENU_ENUM_LABEL_PREEMPT_ENABLE);
 
    rarch_setting_t *hardSyncSetting        = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
 
@@ -408,10 +409,14 @@ QWidget *LatencyPage::widget()
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_AUDIO_LATENCY));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR));
 
-   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES));
-   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE));
-   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS));
-   layout->addRow(runAheadGpuSync);
+   runAheadGroup->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES));
+   runAheadGroup->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE));
+   runAheadGroup->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS));
+   layout->addRow(runAheadGroup);
+
+   preemptGroup->add(menu_setting_find_enum(MENU_ENUM_LABEL_PREEMPT_FRAMES));
+   preemptGroup->add(menu_setting_find_enum(MENU_ENUM_LABEL_PREEMPT_HIDE_WARNINGS));
+   layout->addRow(preemptGroup);
 
    widget->setLayout(layout);
 
