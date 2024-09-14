@@ -34,7 +34,7 @@ typedef struct packet_buffer packet_buffer_t;
  *
  * Returns: A packet buffer.
  */
-packet_buffer_t *packet_buffer_create();
+packet_buffer_t *packet_buffer_create(void);
 
 /**
  * packet_buffer_destroy:

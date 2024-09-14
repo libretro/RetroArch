@@ -325,7 +325,6 @@ static void sdl_input_free(void *data)
 #ifndef HAVE_SDL2
    SDL_Event event;
 #endif
-   sdl_input_t *sdl = (sdl_input_t*)data;
 
    if (!data)
       return;

@@ -69,7 +69,9 @@ extern "C" {
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+#ifndef FFMPEG3
 #define FFMPEG3 (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100))
+#endif
 #define HAVE_CH_LAYOUT (LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100))
 
 struct ff_video_info
@@ -1083,7 +1085,7 @@ static bool ffmpeg_push_video(void *data,
       unsigned avail;
 
       slock_lock(handle->lock);
-      avail = FIFO_WRITE_AVAIL(handle->attr_fifo);
+      avail = (unsigned)FIFO_WRITE_AVAIL(handle->attr_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -1115,7 +1117,7 @@ static bool ffmpeg_push_video(void *data,
    if (attr_data.is_dupe)
       attr_data.width = attr_data.height = attr_data.pitch = 0;
    else
-      attr_data.pitch = attr_data.width * handle->video.pix_size;
+      attr_data.pitch = (int)(attr_data.width * handle->video.pix_size);
 
    fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
 
@@ -1145,7 +1147,7 @@ static bool ffmpeg_push_audio(void *data,
       unsigned avail;
 
       slock_lock(handle->lock);
-      avail = FIFO_WRITE_AVAIL(handle->audio_fifo);
+      avail = (unsigned)FIFO_WRITE_AVAIL(handle->audio_fifo);
       slock_unlock(handle->lock);
 
       if (!handle->alive)
@@ -1184,7 +1186,7 @@ static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
 
    pkt = handle->pkt;
    pkt->data = handle->video.outbuf;
-   pkt->size = handle->video.outbuf_size;
+   pkt->size = (int)handle->video.outbuf_size;
 
    ret = avcodec_send_frame(handle->video.codec, frame);
    if (ret < 0)
@@ -1346,14 +1348,14 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
    pkt = handle->pkt;
 
    pkt->data = handle->audio.outbuf;
-   pkt->size = handle->audio.outbuf_size;
+   pkt->size = (int)handle->audio.outbuf_size;
 
    frame    = av_frame_alloc();
 
    if (!frame)
       return false;
 
-   frame->nb_samples     = handle->audio.frames_in_buffer;
+   frame->nb_samples     = (int)handle->audio.frames_in_buffer;
    frame->format         = handle->audio.codec->sample_fmt;
 #if HAVE_CH_LAYOUT
    av_channel_layout_copy(&frame->ch_layout, &handle->audio.codec->ch_layout);
@@ -1373,7 +1375,7 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
    samples_size          = av_samples_get_buffer_size(
          NULL,
          nb_channels,
-         handle->audio.frames_in_buffer,
+         (int)handle->audio.frames_in_buffer,
          handle->audio.codec->sample_fmt, 0);
 
    av_frame_get_buffer(frame, 0);

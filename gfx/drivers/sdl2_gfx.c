@@ -607,7 +607,7 @@ static void sdl2_poke_set_texture_frame(void *data,
       sdl_refresh_input_size(vid, true, rgb32, width, height,
             width * (rgb32 ? 4 : 2));
 
-      SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
+      SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);
    }
 }
 

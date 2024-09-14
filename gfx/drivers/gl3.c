@@ -1568,9 +1568,6 @@ static void gl3_set_viewport(gl3_t *gl,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
-   unsigned height                 = gl->video_height;
-   int x                           = 0;
-   int y                           = 0;
    settings_t *settings            = config_get_ptr();
    float device_aspect             = (float)viewport_width / viewport_height;
    bool video_scale_integer        = settings->bools.video_scale_integer;
