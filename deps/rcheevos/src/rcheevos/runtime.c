@@ -316,7 +316,7 @@ int rc_runtime_activate_lboard(rc_runtime_t* self, uint32_t id, const char* mema
   rc_lboard_t* lboard;
   rc_parse_state_t parse;
   rc_runtime_lboard_t* runtime_lboard;
-  int size;
+  int32_t size;
   uint32_t i;
 
   if (memaddr == 0)
@@ -834,7 +834,7 @@ void rc_runtime_invalidate_address(rc_runtime_t* self, uint32_t address) {
   }
 }
 
-void rc_runtime_validate_addresses(rc_runtime_t* self, rc_runtime_event_handler_t event_handler, 
+void rc_runtime_validate_addresses(rc_runtime_t* self, rc_runtime_event_handler_t event_handler,
     rc_runtime_validate_address_t validate_handler) {
   rc_memref_t** last_memref = &self->memrefs;
   rc_memref_t* memref = self->memrefs;
