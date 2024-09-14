@@ -945,8 +945,8 @@ static int action_get_title_group_settings(const char *path, const char *label,
    }
 
    {
-      char *tok, *save;
-      char *label_cpy = strdup(label);
+      char *tok, *save = NULL;
+      char *label_cpy  = strdup(label);
 
       if ((tok = strtok_r(label_cpy, "|", &save)))
       {
