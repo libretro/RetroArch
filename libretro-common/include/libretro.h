@@ -2556,6 +2556,19 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY 79
 
+/**
+ * Returns the "file browser" start directory of the frontend.
+ *
+ * This directory can serve as a start directory for the core in case it
+ * provides an internal way of loading content.
+ *
+ * @param[out] data <tt>const char **</tt>.
+ * May be \c NULL. If so, no such directory is defined, and it's up to the
+ * implementation to find a suitable directory.
+ * @return \c true if the environment call is available.
+ */
+#define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
+
 /**@}*/
 
 /**
