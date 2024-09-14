@@ -3307,11 +3307,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Сортировать привязки по геймпаду"
+   "Сортировать привязки по геймпадам"
    )   
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Привязки будут применяться только к подключенному геймпаду, для которого были сохранены."
+   "Привязки будут применяться только при подключении геймпада, для которого были сохранены."
    )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
