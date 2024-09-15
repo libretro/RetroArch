@@ -345,11 +345,9 @@ typedef struct
    menu_input_pointer_t pointer;
 
    /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of 8192...
-    * (the extra space here is required to silence compiler
-    * warnings...) */
-   char savestate_thumbnail_file_path[8204];      /* TODO/FIXME - check size */
-   char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
+    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
+   char prev_savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
 
    char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
    char msgbox[1024];
@@ -6892,7 +6890,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
              || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204]; /* TODO/FIXME - check size */
+            char path[PATH_MAX_LENGTH * 2];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */

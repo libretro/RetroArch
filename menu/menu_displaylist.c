@@ -7960,7 +7960,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_MAX_USERS,                                                   PARSE_ONLY_UINT,  true  },
                {MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,                                           PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,                                          PARSE_ONLY_BOOL,  true  },
-               {MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,                             PARSE_ONLY_BOOL,  true  },               
+               {MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,                             PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,                                          PARSE_ONLY_UINT,  true  },
                {MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,                                                PARSE_ONLY_BOOL,  true  },
                {MENU_ENUM_LABEL_INPUT_SMALL_KEYBOARD_ENABLE,                                       PARSE_ONLY_BOOL,  true  },
@@ -12176,17 +12176,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (!strstr(descriptor, "Auto"))
                         {
-                           char desc_label[400];
+                           char desc_lbl[400];
                            const struct retro_keybind *keyptr =
                               &input_config_binds[port][retro_id];
-                           size_t _len        = strlcpy(desc_label,
+                           size_t _len        = strlcpy(desc_lbl,
                                  msg_hash_to_str(keyptr->enum_idx),
-                                 sizeof(desc_label));
-                           desc_label[  _len] = ',';
-                           desc_label[++_len] = ' ';
-                           desc_label[++_len] = '\0';
-                           strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
-                           desc_len = strlcpy(descriptor, desc_label, sizeof(descriptor));
+                                 sizeof(desc_lbl));
+                           desc_lbl[  _len] = ',';
+                           desc_lbl[++_len] = ' ';
+                           desc_lbl[++_len] = '\0';
+                           strlcpy(desc_lbl + _len, descriptor, sizeof(desc_lbl) - _len);
+                           desc_len = strlcpy(descriptor, desc_lbl, sizeof(descriptor));
                         }
 
                         /* Add user index when display driver == rgui and sublabels
@@ -12229,17 +12229,17 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                         if (!strstr(descriptor, "Auto"))
                         {
-                           char desc_label[400];
+                           char desc_lbl[400];
                            const struct retro_keybind *keyptr =
                               &input_config_binds[port][retro_id];
-                           size_t _len        = strlcpy(desc_label,
+                           size_t _len        = strlcpy(desc_lbl,
                                  msg_hash_to_str(keyptr->enum_idx),
-                                 sizeof(desc_label));
-                           desc_label[  _len] = ',';
-                           desc_label[++_len] = ' ';
-                           desc_label[++_len] = '\0';
-                           strlcpy(desc_label + _len, descriptor, sizeof(desc_label) - _len);
-                           desc_len = strlcpy(descriptor, desc_label, sizeof(descriptor));
+                                 sizeof(desc_lbl));
+                           desc_lbl[  _len] = ',';
+                           desc_lbl[++_len] = ' ';
+                           desc_lbl[++_len] = '\0';
+                           strlcpy(desc_lbl + _len, descriptor, sizeof(desc_lbl) - _len);
+                           desc_len = strlcpy(descriptor, desc_lbl, sizeof(descriptor));
                         }
 
                         /* Add user index when display driver == rgui and sublabels

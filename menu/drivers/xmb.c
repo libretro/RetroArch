@@ -434,11 +434,9 @@ typedef struct xmb_handle
    char entry_index_offset;
 
    /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of 8192...
-    * (the extra space here is required to silence compiler
-    * warnings...) */
-   char savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
-   char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
+    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
+   char savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
+   char prev_savestate_thumbnail_file_path[PATH_MAX_LENGTH * 2];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    bool allow_horizontal_animation;
@@ -1264,7 +1262,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
              || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204]; /* TODO/FIXME - check size */
+            char path[PATH_MAX_LENGTH * 2];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */
@@ -2962,7 +2960,7 @@ static void xmb_populate_entries(void *data,
    {
       if(settings->uints.menu_icon_thumbnails)
          xmb_populate_dynamic_icons(xmb);
-   } 
+   }
    else if(xmb->thumbnails.pending_icons != XMB_PENDING_THUMBNAIL_NONE )
    {
       xmb_unload_icon_thumbnail_textures(xmb);

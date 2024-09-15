@@ -631,11 +631,9 @@ struct ozone_handle
    char tab_path[PATH_MAX_LENGTH];
 
    /* These have to be huge, because runloop_st->name.savestate
-    * has a hard-coded size of 8192...
-    * (the extra space here is required to silence compiler
-    * warnings...) */
-   char savestate_thumbnail_file_path[8204];      /* TODO/FIXME - check size */
-   char prev_savestate_thumbnail_file_path[8204]; /* TODO/FIXME - check size */
+    * has a hard-coded size of (PATH_MAX_LENGTH * 2)... */
+   char savestate_thumbnail_file_path[(PATH_MAX_LENGTH * 2)];
+   char prev_savestate_thumbnail_file_path[(PATH_MAX_LENGTH * 2)];
 
    char thumbnails_left_status_prev;
    char thumbnails_right_status_prev;
@@ -3716,7 +3714,7 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
              || string_is_equal(entry.label, "savestate"))
          {
             size_t _len;
-            char path[8204]; /* TODO/FIXME - check size */
+            char path[PATH_MAX_LENGTH * 2];
             runloop_state_t *runloop_st = runloop_state_get_ptr();
 
             /* State slot dropdown */
