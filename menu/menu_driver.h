@@ -447,7 +447,7 @@ typedef struct
       char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
-   char menu_state_msg[8192];
+   char menu_state_msg[PATH_MAX_LENGTH * 2];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).

@@ -269,11 +269,7 @@ struct runloop
    uint32_t flags;
    int8_t run_frames_and_pause;
 
-   char runtime_content_path_basename[8192]; /* TODO/FIXME - check size */
-   char current_library_name[NAME_MAX_LENGTH];
-   char current_library_version[256];
-   char current_valid_extensions[256];
-   char subsystem_path[256];
+   char runtime_content_path_basename[PATH_MAX_LENGTH];
 #ifdef HAVE_SCREENSHOTS
    char max_frames_screenshot_path[PATH_MAX_LENGTH];
 #endif
@@ -284,19 +280,23 @@ struct runloop
    char runtime_core_path[PATH_MAX_LENGTH];
    char savefile_dir[DIR_MAX_LENGTH];
    char savestate_dir[DIR_MAX_LENGTH];
+   char current_library_name[NAME_MAX_LENGTH];
+   char current_valid_extensions[256];
+   char subsystem_path[256];
+   char current_library_version[64];
 
    struct
    {
       char *remapfile;
-      char savefile[8192];  /* TODO/FIXME - check size */
-      char savestate[8192]; /* TODO/FIXME - check size */
-      char replay[8192];    /* TODO/FIXME - check size */
-      char cheatfile[8192]; /* TODO/FIXME - check size */
-      char ups[8192];       /* TODO/FIXME - check size */
-      char bps[8192];       /* TODO/FIXME - check size */
-      char ips[8192];       /* TODO/FIXME - check size */
-      char xdelta[8192];    /* TODO/FIXME - check size */
-      char label[8192];     /* TODO/FIXME - check size */
+      char savefile [PATH_MAX_LENGTH*2];
+      char savestate[PATH_MAX_LENGTH*2];
+      char replay   [PATH_MAX_LENGTH*2];
+      char cheatfile[PATH_MAX_LENGTH*2];
+      char ups      [PATH_MAX_LENGTH*2];
+      char bps      [PATH_MAX_LENGTH*2];
+      char ips      [PATH_MAX_LENGTH*2];
+      char xdelta   [PATH_MAX_LENGTH*2];
+      char label    [PATH_MAX_LENGTH*2];
    } name;
 
    bool missing_bios;

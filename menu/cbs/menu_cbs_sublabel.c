@@ -1402,7 +1402,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   char tmp[4096];
+   char tmp[NAME_MAX_LENGTH];
    unsigned controller;
    const char *val_port_dev_name =
       msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME);
@@ -1533,7 +1533,7 @@ static int action_bind_sublabel_subsystem_load(
       char *s, size_t len)
 {
    unsigned j = 0;
-   char buf[4096];
+   char buf[PATH_MAX_LENGTH];
 
    buf[0] = '\0';
 
@@ -1734,7 +1734,7 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       char *s, size_t len)
 {
    size_t _len;
-   char buf[512];
+   char buf[NAME_MAX_LENGTH];
    struct netplay_room *room;
    net_driver_state_t *net_st = networking_state_get_ptr();
    unsigned room_index        = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
@@ -1788,7 +1788,7 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   char buf[512];
+   char buf[NAME_MAX_LENGTH];
    netplay_client_info_t *client;
    const char         *status = NULL;
    size_t             idx     = list->list[i].entry_idx;
@@ -3997,7 +3997,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_remap_sort_by_controller_enable);
-            break;            
+            break;
          case MENU_ENUM_LABEL_AUTOSAVE_INTERVAL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_autosave_interval);
             break;
