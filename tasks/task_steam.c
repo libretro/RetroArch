@@ -120,7 +120,6 @@ void task_push_steam_core_dlc_install(
 
    task->handler  = task_steam_core_dlc_install_handler;
    task->state    = state;
-   task->mute     = false;
    task->title    = strdup(task_title);
    task->progress = 0;
    task->callback = NULL;
