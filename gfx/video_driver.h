@@ -456,6 +456,8 @@ typedef struct video_frame_info
    uint32_t video_st_flags;
    uint16_t menu_st_flags;
 
+   uint16_t frame_time_target;
+
    char stat_text[1024];
 
    bool widgets_active;
