@@ -368,6 +368,8 @@
 
 /* Vulkan specific */
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
+#define MINIMUM_MAX_SWAPCHAIN_IMAGES 2
+#define MAXIMUM_MAX_SWAPCHAIN_IMAGES 4
 
 /* D3D1x specific */
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -391,6 +393,8 @@
  * 2: Etc ...
  */
 #define DEFAULT_HARD_SYNC_FRAMES 0
+#define MINIMUM_HARD_SYNC_FRAMES 0
+#define MAXIMUM_HARD_SYNC_FRAMES 3
 
 /* Sets how many milliseconds to delay after VSync before running the core.
  * Can reduce latency at cost of higher risk of stuttering.

@@ -14017,8 +14017,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            (*list)[list_info->index - 1].offset_by = 2;
-            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 4, 1, true, true);
+            (*list)[list_info->index - 1].offset_by = MINIMUM_MAX_SWAPCHAIN_IMAGES;
+            menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, MAXIMUM_MAX_SWAPCHAIN_IMAGES, 1, true, true);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
 
@@ -14089,7 +14089,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
-            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
+            menu_settings_list_current_add_range(list, list_info, MINIMUM_HARD_SYNC_FRAMES, MAXIMUM_HARD_SYNC_FRAMES, 1, true, true);
 
             if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             {
