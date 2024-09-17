@@ -6426,16 +6426,14 @@ static enum runloop_state_enum runloop_check_state(
             current_bits, RARCH_FAST_FORWARD_KEY);
       bool new_hold_button_state              = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
-      bool check2                             = new_button_state
-         && !old_button_state;
+      bool check2                             = new_button_state && !old_button_state;
 
       if (!check2)
          check2 = old_hold_button_state != new_hold_button_state;
 
       /* Don't allow fastmotion while paused */
-      if (runloop_paused)
+      if (check2 && runloop_paused)
       {
-         check2                = true;
          new_button_state      = false;
          new_hold_button_state = false;
          input_st->flags      |= INP_FLAG_NONBLOCKING;
