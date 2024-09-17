@@ -2955,6 +2955,31 @@ struct retro_memory_status
    uint64_t total;  /**< Total physical memory installed. */
 };
 
+/**
+ * Sets a pointer to arbitrary data for the actively running core.
+ *
+ * This is can be set in either \c retro_init() or \c retro_load_game().
+ *
+ * @param[in] data <tt>void *</tt>. Pointer to the data to set.
+ * @return \c true if the environment call is available.
+ *
+ * @see RETRO_ENVIRONMENT_GET_CORE_DATA
+ */
+#define RETRO_ENVIRONMENT_SET_CORE_DATA 95
+
+/**
+ * Gets a pointer to arbitrary data for the actively running core.
+ *
+ * This is persistent for the lifetime of the core until \c retro_deinit() is called.
+ *
+ * @param[out] data <tt>void **</tt>. Pointer to the data that was set.
+ * May be \c NULL if the data was not set yet.
+ * @return \c true if the environment call is available.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_DATA
+ */
+#define RETRO_ENVIRONMENT_GET_CORE_DATA 96
+
 /**@}*/
 
 /**

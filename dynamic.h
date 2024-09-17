@@ -68,6 +68,7 @@ struct retro_core_t
 
    enum poll_type poll_type;
    uint8_t flags;
+   void *core_data; /* Arbitrary core data. @see RETRO_ENVIRONMENT_GET_CORE_DATA */
 };
 
 
