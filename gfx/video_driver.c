@@ -4174,7 +4174,7 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
    if (!overtime_count)
       frame_time_dev += frame_time - frame_time_target;
 
-   /* Increase reserve when doing over time */
+   /* Increase reserve when doing overtime */
    if (frame_time_over && frame_delay_cur)
    {
       if (     core_run_time >= frame_time_target
@@ -4196,6 +4196,8 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
       if (core_run_time < frame_time_target / 1.5f)
          hold_count = refresh_rate * 2;
    }
+   else if (frame_time_over && core_run_time > frame_time_target * 1.5f)
+      hold_count = refresh_rate;
 
    /* Reserve can't exceed frame time target */
    if (video_st->frame_time_reserve > frame_time_target)
