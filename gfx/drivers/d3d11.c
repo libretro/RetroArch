@@ -1004,6 +1004,7 @@ static uint32_t d3d11_get_flags(void *data)
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
 #endif
 
    return flags;
@@ -3056,7 +3057,7 @@ static bool d3d11_gfx_frame(
 
    texture = d3d11->frame.texture;
 
-   if (d3d11->shader_preset)
+   if (d3d11->shader_preset && video_info->shader_active)
    {
       for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
