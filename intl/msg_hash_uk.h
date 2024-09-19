@@ -3282,6 +3282,14 @@ MSG_HASH(
    "Кількість секунд, необхідне для прив'язки натиснутої кнопки."
    )
 MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Час очікування"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Утримуйте"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Турбо-період"
    )
@@ -3610,6 +3618,10 @@ MSG_HASH(
    "Попередній диск"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Шейдери (Перемикання)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
    "Наступний шейдер"
