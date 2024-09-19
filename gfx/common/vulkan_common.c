@@ -899,8 +899,10 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
          required_extensions[required_extension_count++] = "VK_KHR_display";
          break;
       case VULKAN_WSI_MVK_MACOS:
+         required_extensions[required_extension_count++] = "VK_MVK_macos_surface";
+         break;
       case VULKAN_WSI_MVK_IOS:
-         required_extensions[required_extension_count++] = "VK_EXT_metal_surface";
+         required_extensions[required_extension_count++] = "VK_MVK_ios_surface";
          break;
       case VULKAN_WSI_NONE:
       default:
@@ -1675,18 +1677,36 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             return false;
          break;
       case VULKAN_WSI_MVK_MACOS:
-      case VULKAN_WSI_MVK_IOS:
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
          {
-            VkMetalSurfaceCreateInfoEXT surf_info;
-            PFN_vkCreateMetalSurfaceEXT create;
-            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMetalSurfaceEXT", create))
+            VkMacOSSurfaceCreateInfoMVK surf_info;
+            PFN_vkCreateMacOSSurfaceMVK create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateMacOSSurfaceMVK", create))
                return false;
 
-            surf_info.sType  = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
-            surf_info.pNext  = NULL;
-            surf_info.flags  = 0;
-            surf_info.pLayer = surface;
+            surf_info.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
+            surf_info.pNext = NULL;
+            surf_info.flags = 0;
+            surf_info.pView = surface;
+
+            if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
+                != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_MVK_IOS:
+#ifdef HAVE_COCOATOUCH
+         {
+            VkIOSSurfaceCreateInfoMVK surf_info;
+            PFN_vkCreateIOSSurfaceMVK create;
+            if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance, "vkCreateIOSSurfaceMVK", create))
+               return false;
+
+            surf_info.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
+            surf_info.pNext = NULL;
+            surf_info.flags = 0;
+            surf_info.pView = surface;
 
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
