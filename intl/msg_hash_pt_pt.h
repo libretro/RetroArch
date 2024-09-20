@@ -302,6 +302,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
    "Núcleos sem conteúdo"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Núcleos instalados que não precisam de conteúdo para iniciar aparecerão aqui."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -344,6 +348,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Transferidor de conteúdo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Descarregue conteúdo gratuito para o núcleo selecionado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Descarregar ficheiros de sistema do Núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Descarregar ficheiros auxiliares do sistema para a operação correta e otimizada do núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -480,6 +496,10 @@ MSG_HASH(
    "API de Gráficos Necessária"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Diretório completo do núcleo"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Posição de gravação de estado"
    )
@@ -494,6 +514,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
    "Serializado (Salvar/Carregar, Retroceder)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Determinante (Guardar/Carregar, Rebobinar, Run-Ahead, Netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
