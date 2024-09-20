@@ -1081,7 +1081,13 @@ const char *video_display_server_get_ident(void)
 void* video_display_server_init(enum rarch_display_type type)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   video_display_server_destroy();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+
+   /* Reuse when already and still running */
+   if (current_display_server && runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+      return video_st->current_display_server_data;
+   else
+      video_display_server_destroy();
 
    switch (type)
    {
@@ -3279,6 +3285,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_st->flags |=  VIDEO_FLAG_STARTED_FULLSCREEN;
    else
       video_st->flags &= ~VIDEO_FLAG_STARTED_FULLSCREEN;
+
    /* Reset video frame count */
    video_st->frame_count             = 0;
    video_st->frame_drop_count        = 0;

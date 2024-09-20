@@ -1405,7 +1405,6 @@ static float audio_driver_monitor_adjust_system_rates(
 }
 
 static bool video_driver_monitor_adjust_system_rates(
-      unsigned _video_swap_interval,
       float timing_skew_hz,
       float video_refresh_rate,
       bool vrr_runloop_enable,
@@ -1444,20 +1443,20 @@ static bool video_driver_monitor_adjust_system_rates(
 static void driver_adjust_system_rates(
       runloop_state_t *runloop_st,
       video_driver_state_t *video_st,
-      settings_t *settings,
-      bool vrr_runloop_enable,
-      float video_refresh_rate,
-      float audio_max_timing_skew,
-      bool video_adaptive_vsync,
-      unsigned video_swap_interval,
-      unsigned black_frame_insertion,
-      unsigned shader_subframes)
+      settings_t *settings)
 {
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
    double input_sample_rate               = info->sample_rate;
    double input_fps                       = info->fps;
+   float video_refresh_rate               = settings->floats.video_refresh_rate;
+   float audio_max_timing_skew            = settings->floats.audio_max_timing_skew;
+   unsigned video_swap_interval           = settings->uints.video_swap_interval;
+   unsigned black_frame_insertion         = settings->uints.video_black_frame_insertion;
+   unsigned shader_subframes              = settings->uints.video_shader_subframes;
+   bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
+   bool video_adaptive_vsync              = settings->bools.video_adaptive_vsync;
 
    /* Update video swap interval if automatic
     * switching is enabled */
@@ -1504,7 +1503,6 @@ static void driver_adjust_system_rates(
       video_st->core_hz             = input_fps;
 
       if (!video_driver_monitor_adjust_system_rates(
-               settings->uints.video_swap_interval,
                timing_skew_hz,
                video_refresh_rate,
                vrr_runloop_enable,
@@ -1625,17 +1623,6 @@ void drivers_init(
       menu_st->flags             |= MENU_ST_FLAG_DATA_OWN;
 #endif
 
-   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
-      driver_adjust_system_rates(runloop_st, video_st, settings,
-                                 settings->bools.vrr_runloop_enable,
-                                 settings->floats.video_refresh_rate,
-                                 settings->floats.audio_max_timing_skew,
-                                 settings->bools.video_adaptive_vsync,
-                                 settings->uints.video_swap_interval,
-                                 settings->uints.video_black_frame_insertion,
-                                 settings->uints.video_shader_subframes
-                                 );
-
    /* Initialize video driver */
    if (flags & DRIVER_VIDEO_MASK)
    {
@@ -1660,31 +1647,9 @@ void drivers_init(
       runloop_st->frame_time_last = 0;
    }
 
-   /* Initialize audio driver */
-   if (flags & DRIVER_AUDIO_MASK)
-   {
-      audio_driver_init_internal(
-            settings,
-            audio_st->callback.callback != NULL);
-      if (     audio_st->current_audio
-            && audio_st->current_audio->device_list_new
-            && audio_st->context_audio_data)
-         audio_st->devices_list = (struct string_list*)
-            audio_st->current_audio->device_list_new(
-                  audio_st->context_audio_data);
-   }
-
-#ifdef HAVE_MICROPHONE
-   if (flags & DRIVER_MICROPHONE_MASK)
-   {
-      microphone_driver_init_internal(settings);
-      if (mic_st->driver && mic_st->driver->device_list_new && mic_st->driver_context)
-         mic_st->devices_list = mic_st->driver->device_list_new(mic_st->driver_context);
-   }
-#endif
-
    /* Regular display refresh rate startup autoswitch based on content av_info */
-   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
+   if (     flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK)
+         && !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
    {
       struct retro_system_av_info *av_info = &video_st->av_info;
       float refresh_rate                   = av_info->timing.fps;
@@ -1708,17 +1673,38 @@ void drivers_init(
             bool video_switch_refresh_rate = false;
 
             video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
-
             if (video_switch_refresh_rate && video_display_server_set_refresh_rate(refresh_rate))
-            {
-               int reinit_flags = DRIVER_AUDIO_MASK;
                video_monitor_set_refresh_rate(refresh_rate);
-               /* Audio must reinit after successful rate switch */
-               command_event(CMD_EVENT_REINIT, &reinit_flags);
-            }
          }
       }
    }
+
+   /* Adjust rates */
+   if (flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK))
+      driver_adjust_system_rates(runloop_st, video_st, settings);
+
+   /* Initialize audio driver */
+   if (flags & DRIVER_AUDIO_MASK)
+   {
+      audio_driver_init_internal(
+            settings,
+            audio_st->callback.callback != NULL);
+      if (     audio_st->current_audio
+            && audio_st->current_audio->device_list_new
+            && audio_st->context_audio_data)
+         audio_st->devices_list = (struct string_list*)
+            audio_st->current_audio->device_list_new(
+                  audio_st->context_audio_data);
+   }
+
+#ifdef HAVE_MICROPHONE
+   if (flags & DRIVER_MICROPHONE_MASK)
+   {
+      microphone_driver_init_internal(settings);
+      if (mic_st->driver && mic_st->driver->device_list_new && mic_st->driver_context)
+         mic_st->devices_list = mic_st->driver->device_list_new(mic_st->driver_context);
+   }
+#endif
 
    if (flags & DRIVER_CAMERA_MASK)
    {
@@ -2063,14 +2049,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             video_driver_state_t*video_st = video_state_get_ptr();
             unsigned
                audio_output_sample_rate   = settings->uints.audio_output_sample_rate;
-            bool vrr_runloop_enable       = settings->bools.vrr_runloop_enable;
-            float video_refresh_rate      = settings->floats.video_refresh_rate;
-            float audio_max_timing_skew   = settings->floats.audio_max_timing_skew;
-            bool video_adaptive_vsync     = settings->bools.video_adaptive_vsync;
-            unsigned video_swap_interval  = settings->uints.video_swap_interval;
-            unsigned
-               black_frame_insertion      = settings->uints.video_black_frame_insertion;
-            unsigned shader_subframes     = settings->uints.video_shader_subframes;
 
             video_monitor_set_refresh_rate(*hz);
 
@@ -2079,15 +2057,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             audio_st->source_ratio_current    =
             (double)audio_output_sample_rate / audio_st->input;
 
-            driver_adjust_system_rates(runloop_st, video_st, settings,
-                                       vrr_runloop_enable,
-                                       video_refresh_rate,
-                                       audio_max_timing_skew,
-                                       video_adaptive_vsync,
-                                       video_swap_interval,
-                                       black_frame_insertion,
-                                       shader_subframes
-                                       );
+            driver_adjust_system_rates(runloop_st, video_st, settings);
          }
          break;
       case RARCH_DRIVER_CTL_FIND_FIRST:
