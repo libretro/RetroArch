@@ -395,6 +395,9 @@ void runloop_log_counters(
 
 static void runloop_perf_log(void)
 {
+   if (!runloop_state.perfcnt_enable)
+      return;
+
    RARCH_LOG("[PERF]: Performance counters (libretro):\n");
    runloop_log_counters(runloop_state.perf_counters_libretro,
          runloop_state.perf_ptr_libretro);
