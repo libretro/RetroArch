@@ -124,7 +124,9 @@ static void win32_display_server_destroy(void *data)
    if (!dispserv)
       return;
 
-   if (dispserv->orig_width > 0 && dispserv->orig_height > 0)
+   if (     dispserv->orig_width > 0
+         && dispserv->orig_height > 0
+         && dispserv->orig_refresh > 0)
       video_display_server_set_resolution(
             dispserv->orig_width,
             dispserv->orig_height,
