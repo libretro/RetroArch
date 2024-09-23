@@ -3033,8 +3033,9 @@ bool video_shader_apply_shader(
          configuration_set_bool(settings, settings->bools.video_shader_enable, true);
          if (!string_is_empty(preset_path))
          {
-            strlcpy(runloop_st->runtime_shader_preset_path, preset_path,
-                  sizeof(runloop_st->runtime_shader_preset_path));
+            if (runloop_st->runtime_shader_preset_path != preset_path)
+               strlcpy(runloop_st->runtime_shader_preset_path, preset_path,
+                     sizeof(runloop_st->runtime_shader_preset_path));
 #ifdef HAVE_MENU
             /* reflect in shader manager */
             if (menu_shader_manager_set_preset(
