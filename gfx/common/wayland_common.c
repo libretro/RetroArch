@@ -130,8 +130,12 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       wl->buffer_height = wl->fractional_scale ?
          FRACTIONAL_SCALE_MULT(wl->height, wl->fractional_scale_num) : wl->height * wl->buffer_scale;
       wl->resize        = true;
-      if (wl->viewport) /* Update viewport */
+      if (wl->viewport)
+      {
+         /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+         wl_surface_commit(wl->surface);
+      }
    }
 
    if (floating)
@@ -198,8 +202,12 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       wl->buffer_height = wl->fractional_scale ?
          FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num) : height * wl->buffer_scale;
       wl->resize        = true;
-      if (wl->viewport) /* Update viewport */
+      if (wl->viewport)
+      {
+         /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+         wl_surface_commit(wl->surface);
+      }
    }
 
    state = wl->libdecor_state_new(wl->width, wl->height);
@@ -842,8 +850,12 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
       wl->buffer_height        = wl->fractional_scale ?
          FRACTIONAL_SCALE_MULT(wl->buffer_height, wl->fractional_scale_num) : wl->buffer_height * wl->buffer_scale;
    }
-   if (wl->viewport) /* Update viewport */
+   if (wl->viewport)
+   {
+      /* Stretch old buffer to fill new size, commit/roundtrip to apply */
       wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+      wl_surface_commit(wl->surface);
+   }
 
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)
