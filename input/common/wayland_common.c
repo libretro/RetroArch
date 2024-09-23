@@ -512,11 +512,14 @@ static void wl_seat_handle_capabilities(void *data,
    {
       wl->wl_pointer = wl_seat_get_pointer(seat);
       wl_pointer_add_listener(wl->wl_pointer, &pointer_listener, wl);
-      wl->wl_relative_pointer =
-         zwp_relative_pointer_manager_v1_get_relative_pointer(
-            wl->relative_pointer_manager, wl->wl_pointer);
-      zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
-         &relative_pointer_listener, wl);
+      if (wl->relative_pointer_manager)
+      {
+         wl->wl_relative_pointer =
+            zwp_relative_pointer_manager_v1_get_relative_pointer(
+               wl->relative_pointer_manager, wl->wl_pointer);
+         zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
+            &relative_pointer_listener, wl);
+      }
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {
