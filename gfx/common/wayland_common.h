@@ -25,7 +25,7 @@
 #define SPLASH_WINDOW_WIDTH 240
 #define SPLASH_WINDOW_HEIGHT 256
 
-#define WAYLAND_APP_ID "org.libretro.RetroArch"
+#define WAYLAND_APP_ID "com.libretro.RetroArch"
 
 typedef struct toplevel_listener
 {
