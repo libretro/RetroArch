@@ -2155,7 +2155,7 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "input_remap_sort_by_controller_enable"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SETTINGS,
    "input_settings"
