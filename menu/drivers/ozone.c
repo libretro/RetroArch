@@ -4191,7 +4191,10 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       /* Fill entry enumeration */
       if (show_entry_idx)
       {
-         unsigned long _entry = (unsigned long)(playlist_index + 1);
+         unsigned long _entry = menu_entries_search_get_terms()
+               ? (unsigned long)(menu_st->selection_ptr + 1)
+               : (unsigned long)(playlist_index + 1);
+
          if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
             _entry            = (unsigned long)(selection + 1);
 
