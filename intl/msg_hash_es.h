@@ -636,7 +636,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Núcleos de la CPU"
+   "Núcleos de CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
@@ -1238,19 +1238,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   "Al activar esta opción se sincronizarán los datos guardados y los guardados rápidos a la nube."
+   "Cuando esté activado, los guardados/estados se sincronizarán con la nube."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
-   "Al activar esta opción se sincronizarán los archivos de configuración a la nube."
+   "Cuando esté activado, los archivos de configuración sincronizarán con la nube."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
-   "Al activar esta opción se sincronizarán las imágenes de las miniaturas a la nube. No se recomienda usar esta opción salvo que tengas una gran colección de miniaturas, en caso contrario, el descargador de miniaturas es una alternativa mejor."
+   "Cuando esté activado, las imágenes en miniatura se sincronizarán con la nube. Generalmente no se recomienda, excepto para grandes colecciones de imágenes en miniatura personalizadas; de lo contrario, el descargador de miniaturas es una mejor opción."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
-   "Al activar esta opción se sincronizarán los archivos del sistema a la nube. Puede aumentar significativamente el tiempo que se tarda en sincronizar. Utilizar con precaución."
+   "Cuando esté activado, los archivos del sistema se sincronizarán con la nube. Esto puede aumentar significativamente el tiempo que lleva la sincronización. Úselo con precaución."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -1504,7 +1504,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   "Características"
+   "Especificaciones"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
