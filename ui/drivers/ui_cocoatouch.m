@@ -500,6 +500,42 @@ enum
 
 @end
 
+#ifdef HAVE_COCOA_METAL
+@implementation MetalLayerView
+
++ (Class)layerClass {
+    return [CAMetalLayer class];
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        [self setupMetalLayer];
+    }
+    return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [self setupMetalLayer];
+    }
+    return self;
+}
+
+- (CAMetalLayer *)metalLayer {
+    return (CAMetalLayer *)self.layer;
+}
+
+- (void)setupMetalLayer {
+    self.metalLayer.device = MTLCreateSystemDefaultDevice();
+    self.metalLayer.contentsScale = [UIScreen mainScreen].scale;
+    self.metalLayer.opaque = YES;
+}
+
+@end
+#endif
+
 #if TARGET_OS_IOS
 @interface RetroArch_iOS () <MXMetricManagerSubscriber, UIPointerInteractionDelegate>
 @end
@@ -530,6 +566,11 @@ enum
    {
 #ifdef HAVE_COCOA_METAL
        case APPLE_VIEW_TYPE_VULKAN:
+         _renderView = [MetalLayerView new];
+#if TARGET_OS_IOS
+         _renderView.multipleTouchEnabled = YES;
+#endif
+         break;
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
