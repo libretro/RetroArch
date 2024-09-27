@@ -3573,6 +3573,12 @@ static bool config_load_file(global_t *global,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
+   char* libretro_directory                        = NULL;
+   char* libretro_assets_directory                 = NULL;
+   char* libretro_autoconfig_directory             = NULL;
+   char* libretro_system_directory                 = NULL;
+   char* libretro_video_filter_directory           = NULL;
+   char* libretro_video_shader_directory           = NULL;
    static bool first_load                          = true;
    bool without_overrides                          = false;
    unsigned msg_color                              = 0;
@@ -3848,18 +3854,32 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-#if !IOS
-   if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
-      configuration_set_string(settings,
-            settings->paths.directory_libretro, tmp_str);
-#endif
-
 #ifdef RARCH_CONSOLE
    if (conf)
       video_driver_load_settings(global, conf);
 #endif
 
    /* Post-settings load */
+
+   libretro_directory = getenv("LIBRETRO_DIRECTORY");
+   if (libretro_directory) {
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, libretro_directory);
+      configuration_set_string(settings,
+            settings->paths.path_libretro_info, libretro_directory);
+   }
+
+   libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   if (libretro_autoconfig_directory)
+       configuration_set_string(settings,
+				settings->paths.directory_autoconfig,
+				libretro_autoconfig_directory);
+
+   libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
+   if (libretro_system_directory)
+       configuration_set_string(settings,
+				settings->paths.directory_system,
+				libretro_system_directory);
 
    if (     (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
          && (override_username))
@@ -4032,15 +4052,27 @@ static bool config_load_file(global_t *global,
       *settings->paths.path_menu_wallpaper = '\0';
    if (string_is_equal(settings->paths.path_rgui_theme_preset, "default"))
       *settings->paths.path_rgui_theme_preset = '\0';
-   if (string_is_equal(settings->paths.directory_video_shader, "default"))
+   libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
+   if (libretro_video_shader_directory) { /* override configuration value */
+      configuration_set_string(settings, settings->paths.directory_video_shader,
+			       libretro_video_shader_directory);
+   } else if (string_is_equal(settings->paths.directory_video_shader, "default"))
       *settings->paths.directory_video_shader = '\0';
-   if (string_is_equal(settings->paths.directory_video_filter, "default"))
+   libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   if (libretro_video_filter_directory) { /* override configuration value */
+       configuration_set_string(settings, settings->paths.directory_video_filter,
+				libretro_video_filter_directory);
+   } else if (string_is_equal(settings->paths.directory_video_filter, "default"))
       *settings->paths.directory_video_filter = '\0';
    if (string_is_equal(settings->paths.directory_audio_filter, "default"))
       *settings->paths.directory_audio_filter = '\0';
    if (string_is_equal(settings->paths.directory_core_assets, "default"))
       *settings->paths.directory_core_assets = '\0';
-   if (string_is_equal(settings->paths.directory_assets, "default"))
+   libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
+   if (libretro_assets_directory) { /* override configuration value */
+      configuration_set_string(settings,
+           settings->paths.directory_assets, libretro_assets_directory);
+   } else if (string_is_equal(settings->paths.directory_assets, "default"))
       *settings->paths.directory_assets = '\0';
 #ifdef _3DS
    if (string_is_equal(settings->paths.directory_bottom_assets, "default"))
