@@ -155,6 +155,7 @@ else
                 mednafen_ngp
                 mednafen_pce
                 mednafen_pce_fast
+                mednafen_pcfx
                 mednafen_psx
                 mednafen_psx_hw
                 mednafen_saturn
