@@ -582,7 +582,7 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
       ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
       ":\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
