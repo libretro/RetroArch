@@ -4121,6 +4121,7 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
       uint8_t *skip_update,
       uint8_t *video_frame_delay_effective)
 {
+   retro_time_t time_now         = cpu_features_get_time_usec();
    static retro_time_t time_prev = 0;
    retro_time_t core_run_time    = (runloop_st->core_run_time) ? runloop_st->core_run_time : 500;
    static int16_t frame_time_dev = 0;
@@ -4150,8 +4151,8 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
       overtime_count = 0;
 
    /* Calibration levels */
-   frame_time                    = cpu_features_get_time_usec() - time_prev;
-   time_prev                     = cpu_features_get_time_usec();
+   frame_time                    = (*skip_update) ? frame_time_target : time_now - time_prev;
+   time_prev                     = time_now;
    frame_time_over               = frame_time > frame_time_target * 1.75f || core_run_time >= frame_time_target;
    frame_time_near               = abs(frame_time - frame_time_target) < frame_time_target * 0.125f;
 
@@ -4160,8 +4161,11 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
       *skip_update = frame_time_interval;
 
    /* No increasing allowed unless safe */
-   if (!frame_time_near && frame_delay_cur)
+   if (!frame_time_near)
       hold_count += (frame_time > frame_time_target) ? 2 : 1;
+
+   if (frame_time_over)
+      hold_count += frame_time_interval;
 
    /* Overflow looping */
    if (hold_count > refresh_rate * 3)
@@ -4203,19 +4207,13 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
       if (core_run_time < frame_time_target / 1.5f)
          hold_count = refresh_rate * 2;
    }
-   else if (frame_time_over && core_run_time > frame_time_target * 1.5f)
-      hold_count = refresh_rate;
 
    /* Reserve can't exceed frame time target */
    if (video_st->frame_time_reserve > frame_time_target)
       video_st->frame_time_reserve = (frame_time_target / 1000) * 1000;
 
    /* New delay */
-   frame_delay_new = (frame_time_target - MAX(video_st->frame_time_reserve, core_run_time)) / 1000;
-
-   /* Limit by target */
-   if (frame_delay_new > video_st->frame_delay_target)
-      frame_delay_new = video_st->frame_delay_target;
+   frame_delay_new = (frame_time_target - core_run_time - video_st->frame_time_reserve) / 1000;
 
    /* Previous frame time excess compensation */
    if (     video_st->frame_count > refresh_rate
@@ -4224,9 +4222,12 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
          && frame_delay_cur
          && frame_delay_new
          && frame_time > frame_time_target
+         && (abs(frame_time - frame_time_target) >= 1000)
          && !*skip_update)
    {
-      frame_delay_new = frame_delay_cur - ((frame_time - frame_time_target) / 1000);
+      int delay_delta = round((frame_time - frame_time_target) / 1000.0f);
+      *skip_update = frame_time_interval;
+      frame_delay_new -= delay_delta;
       if (frame_delay_new < 0)
          frame_delay_new = 0;
    }
@@ -4272,8 +4273,8 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
    /* Make sure leftover never goes below reserve */
    if (     frame_delay_cur
          && frame_delay_new
-         && core_run_time <= video_st->frame_delay_target * 1000
-         && frame_time_target - core_run_time - (frame_delay_new * 1000) < video_st->frame_time_reserve)
+         && frame_time_target - core_run_time - (frame_delay_new * 1000) < video_st->frame_time_reserve
+      )
    {
       frame_delay_new--;
       if (frame_delay_cur != frame_delay_new)
@@ -4282,8 +4283,13 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
 
    /* Decrease hold faster if there is enough leftover */
    if (     hold_count
+         && !frame_time_over
          && frame_time_target - core_run_time - (frame_delay_new * 1000) > video_st->frame_time_reserve + core_run_time)
       hold_count--;
+
+   /* Limit by target */
+   if (frame_delay_new > video_st->frame_delay_target)
+      frame_delay_new = video_st->frame_delay_target;
 
    /* Reset cumulative frame time deviation count */
    if (frame_time_over || frame_delay_new != frame_delay_cur || abs(frame_time_dev) > 1000)
