@@ -1156,6 +1156,10 @@ MSG_HASH(
    "South-east Asia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "East Asia (Chuncheon, South Korea)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    "Net-play TCP Port"
    )
