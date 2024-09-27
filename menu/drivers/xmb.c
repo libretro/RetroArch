@@ -1660,6 +1660,7 @@ static void xmb_selection_pointer_changed(
          if (xmb->entry_idx_enabled)
          {
             size_t entry_idx_selection = selection + 1;
+            size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
             unsigned entry_idx_offset  = xmb->entry_index_offset;
             bool show_entry_idx        = (xmb->is_playlist || xmb->is_explore_list) ? true : false;
 
@@ -1676,7 +1677,7 @@ static void xmb_selection_pointer_changed(
             else
                snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
                      "%lu/%lu", (unsigned long)entry_idx_selection,
-                                (unsigned long)xmb->list_size);
+                                (unsigned long)list_size);
          }
 
          ia                      = xmb->items_active_alpha;
