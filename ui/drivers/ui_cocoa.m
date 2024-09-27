@@ -667,6 +667,16 @@ static ui_application_t ui_application_cocoa = {
    switch (vt)
    {
       case APPLE_VIEW_TYPE_VULKAN:
+         {
+            _renderView                 = [CocoaView get];
+            CAMetalLayer *metal_layer   = [[CAMetalLayer alloc] init];
+            metal_layer.device          = MTLCreateSystemDefaultDevice();
+            metal_layer.framebufferOnly = YES;
+            metal_layer.contentsScale   = [[NSScreen mainScreen] backingScaleFactor];
+            _renderView.layer           = metal_layer;
+            [_renderView setWantsLayer:YES];
+         }
+         break;
       case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v            = [MetalView new];
