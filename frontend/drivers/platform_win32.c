@@ -565,14 +565,20 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 {
    const char *tmp_dir = getenv("TMP");
    const char *libretro_directory = getenv("LIBRETRO_DIRECTORY");
+   const char *libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    if (!string_is_empty(tmp_dir))
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
          tmp_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
    gfx_set_dwm();
 
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
-      ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   if (!string_is_empty(libretro_assets_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], libretro_assets_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   else
+       fill_pathname_expand_special(
+	   g_defaults.dirs[DEFAULT_DIR_ASSETS],
+	   ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
       ":\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
