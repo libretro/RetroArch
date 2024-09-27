@@ -201,7 +201,7 @@ struct bsv_movie
    size_t *frame_pos;
    int64_t identifier;
    size_t frame_mask;
-   size_t frame_ptr;
+   uint64_t frame_counter;
    size_t min_file_pos;
    size_t state_size;
    bsv_key_data_t key_events[NAME_MAX_LENGTH]; /* uint32_t alignment */
