@@ -194,6 +194,10 @@ MSG_HASH(
    "重開"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "重新啟動RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "結束"
    )
@@ -2340,17 +2344,11 @@ MSG_HASH(
    "自訂水平位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "自訂影像顯示水平位置, 正數向右移動, 負數向左移動。\n開啟「整數縮放」時此選項被忽略。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "自訂垂直位置"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自訂影像顯示垂直位置, 正數向下移動, 負數向上移動。\n開啟「整數縮放」時此選項被忽略。"
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "自訂寬度"
@@ -2446,28 +2444,8 @@ MSG_HASH(
    "當檢測到效能低於設定的更新率時, 垂直同步將自動禁用, 用於防止效能下降時造成的延遲。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "幀數延遲 (毫秒)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "增加畫面停頓減少按鍵輸入延遲, 影像顯示處理後與核心處理影格前加入毫秒的延遲。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "影像顯示處理後與核心處理影格前加入毫秒的延遲, 增加畫面停頓為代價減少按鍵輸入延遲。\n最大值: %d 毫秒。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "自動幀數延遲"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "自動有效的減少幀數延遲防止丟失影格, 當「幀數延遲」設定<0>時起點時間為半幀。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "自動有效的減少幀數延遲防止丟失影格, 當「幀數延遲」設定<0>時起點時間為半幀。\n例如: 設定<8>適用於NTSC格式使用, 設定<10>適用於PAL格式使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -3011,6 +2989,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "使用執行核心的重新映射覆寫按鍵輸入, 用於修正部分平台的按鍵映射錯誤。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "控制器隨插即用"
@@ -4915,6 +4901,10 @@ MSG_HASH(
    "載入覆蓋元件 (預設)"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   "從檔案瀏覽器選擇覆疊設定"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "(橫向) 縮放大小"
    )
@@ -5009,6 +4999,30 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
    "設定螢幕直向顯示時, 覆蓋元件的垂直位置, 正數為向上偏移, 負數為向下偏移。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   "啟用覆疊介面的光線槍、滑鼠以及指向裝置"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "於核心中使用非按下覆疊介面的任何觸控以建立指向裝置的輸入。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "覆疊介面的光線槍"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "設定在覆疊介面的光線槍輸入傳送。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "覆疊介面的滑鼠"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   "設定在覆疊介面的滑鼠輸入傳送。備註: 單指、雙指、三指的輕碰各自傳送滑鼠左鍵、右鍵、以及中鍵的點按操作。"
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -6010,8 +6024,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "顯示「加入到我的最愛」選項。"
    )
-
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "顯示「預設載入核心」"
@@ -7161,7 +7173,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "開啟時加入「開始資料夾」參數, 依開始資料夾路徑設定, 自動變更列表項目路徑, 可用於移動到開啟此選項的裝置。"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
@@ -12718,10 +12730,6 @@ MSG_HASH(
    "無法推斷新的設定路徑, 使用當前時間。"
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "開啟硬核模式: 即時存檔和倒帶模式被禁用。"
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "與已知的魔術數字比較..."
    )
@@ -13824,6 +13832,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "已完成「%s」"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "開啟硬核模式: 即時存檔和倒帶模式被禁用。"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

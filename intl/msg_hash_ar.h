@@ -138,6 +138,10 @@ MSG_HASH(
    "افتح قائمة سطح المكتب التقليدية."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "تعطيل وضع الكشك (مطلوب إعادة التشغيل)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "إظهار كافة الإعدادات ذات الصلة بالتهيئات."
    )
@@ -194,8 +198,24 @@ MSG_HASH(
    "إعادة التشغيل"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "إعادة تشغيل تطبيق RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "خروج"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج مفعل."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "إنهاء تطبيق RetroArch. حفظ الإعدادات عند الخروج معطل."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "إنهاء RetroArch. إحباط البرنامج بأي طريقة صعبة (مثل SIGKILL، إلخ.) سيتم إنهاء RetroArch دون حفظ التكوين، إلخ. على أمثال يونكس، يسمح SIGINT/SIGTERM بإزالة التشكيلات النظيفة مما يتضمن حفظ الإعدادات عندما يكون مفعلاً."
    )
 
 /* Main Menu > Load Core */
@@ -484,6 +504,10 @@ MSG_HASH(
    "مطلوب الرسومات API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "المسار الكامل للأساس"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "دعم حفظ الحالة"
    )
@@ -502,6 +526,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "البرنامج الثابت فيرموير"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- ملاحظة: تم تمكين 'ملفات النظام في دليل المحتوى' حاليا."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- جاري البحث في: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -526,6 +558,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LOCK,
    "منع تعديل النواة المثبتة حاليا. يمكن استخدامها لتجنب التحديثات غير المرغوب فيها عندما يتطلب المحتوى إصدار أساسي محدد (على سبيل المثال مجموعة رومات الآركيد)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   "استبعاد من قائمة 'نوى بلا محتوى'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_DELETE,
@@ -1839,6 +1875,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "نسبة الجوانب المخصصة (موضع X)"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "نسبة الجوانب المخصصة (العرض)"
@@ -2251,6 +2289,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
    "تذكير الروابط لهذا النواة"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "التكوين التلقائي"
@@ -3727,8 +3773,6 @@ MSG_HASH(
    "إظهار خيارات 'الأظلال'."
    )
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 
@@ -4133,7 +4177,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "عند التمكين، ويتم أيضا تحديد دليل 'مستعرض الملف'، يتم حفظ القيمة الحالية للمعلمة 'مستعرض الملف' في قائمة التشغيل. عندما يتم تحميل قائمة التشغيل على نظام آخر حيث يتم تمكين نفس الخيار، تتم مقارنة قيمة المعلمة 'مستعرض الملف' مع قيمة قائمة التشغيل؛ إذا كان الأمر مختلفاً، يتم تلقا[...]"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
@@ -8162,10 +8206,6 @@ MSG_HASH(
    "لا يمكن استنتاج مسار تكوين جديد. استخدم الوقت الحالي."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "تم تمكين وضع الهرنج للإنجاز، حفظ الحالة وإعادة الإرسال تم تعطيلها."
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "مقارنة بأرقام سحرية معروفة..."
    )
@@ -9012,6 +9052,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "تم تنشيط الغش. تم تعطيل وضع الهرنج للإنجازات في الدورة الحالية."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "تم تمكين وضع الهرنج للإنجاز، حفظ الحالة وإعادة الإرسال تم تعطيلها."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

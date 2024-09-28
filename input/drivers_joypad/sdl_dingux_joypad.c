@@ -808,6 +808,8 @@ input_device_driver_t sdl_dingux_joypad = {
    NULL,
    NULL,
 #endif
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    sdl_dingux_joypad_name,
    "sdl_dingux",
 };

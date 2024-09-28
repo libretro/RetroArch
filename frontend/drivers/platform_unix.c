@@ -114,7 +114,7 @@ enum platform_android_flags
 };
 
 static pthread_key_t thread_key;
-static char app_dir[PATH_MAX_LENGTH];
+static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
@@ -136,7 +136,7 @@ static char unix_cpu_model_name[64]      = {0};
 #define PROC_MEMINFO_CACHED_TAG          "Cached:"
 #define PROC_MEMINFO_SHMEM_TAG           "Shmem:"
 
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static int speak_pid                     = 0;
 #endif
 
@@ -1302,7 +1302,7 @@ static void frontend_unix_set_screen_brightness(int value)
 
    /* Device tree should have 'label = "backlight";' if control is desirable */
    filestream_read_file("/sys/class/backlight/backlight/max_brightness",
-                        &buffer, NULL);
+                        (void **)&buffer, NULL);
    if (buffer)
    {
       sscanf(buffer, "%u", &max_brightness);
@@ -1482,7 +1482,7 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char apk_dir[PATH_MAX_LENGTH];
+      static char apk_dir[DIR_MAX_LENGTH];
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *apk_dir = '\0';
@@ -2092,6 +2092,10 @@ static void frontend_unix_init(void *data)
          "getVolumePath", "(Ljava/lang/String;)Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->inputGrabMouse, class,
          "inputGrabMouse", "(Z)V");
+   GET_METHOD_ID(env, android_app->isScreenReaderEnabled, class,
+         "isScreenReaderEnabled", "()Z");
+   GET_METHOD_ID(env, android_app->accessibilitySpeak, class,
+         "accessibilitySpeak", "(Ljava/lang/String;)V");
 
    GET_OBJECT_CLASS(env, class, obj);
    GET_METHOD_ID(env, android_app->getStringExtra, class,
@@ -2503,11 +2507,16 @@ static uint64_t frontend_unix_get_free_mem(void)
 static void frontend_unix_sighandler(int sig)
 {
 #ifdef VALGRIND_PRINTF_BACKTRACE
-VALGRIND_PRINTF_BACKTRACE("SIGINT");
+   VALGRIND_PRINTF_BACKTRACE("SIGINT");
 #endif
    (void)sig;
    unix_sighandler_quit++;
-   if (unix_sighandler_quit == 1) {}
+   if (unix_sighandler_quit == 1)
+   {
+#if defined(HAVE_SDL_DINGUX)
+      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+#endif
+   }
    if (unix_sighandler_quit == 2) exit(1);
    /* in case there's a second deadlock in a C++ destructor or something */
    if (unix_sighandler_quit >= 3) abort();
@@ -2784,7 +2793,7 @@ enum retro_language frontend_unix_get_user_language(void)
    return lang;
 }
 
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static bool is_narrator_running_unix(void)
 {
    return (kill(speak_pid, 0) == 0);
@@ -2961,6 +2970,40 @@ end:
 }
 #endif
 
+#ifdef ANDROID
+bool is_screen_reader_enabled(void)
+{
+   JNIEnv *env = jni_thread_getenv();
+   jboolean                  jbool   = JNI_FALSE;
+
+   if (env != NULL)
+      CALL_BOOLEAN_METHOD(env, jbool,
+            g_android->activity->clazz, g_android->isScreenReaderEnabled);
+
+   return jbool == JNI_TRUE;
+}
+
+static bool is_narrator_running_android(void)
+{
+   /* Screen reader is speaking on Android is controlled by the operating
+    * system, so return false to align with the rest of the API. */
+   return false;
+}
+
+static bool accessibility_speak_android(int speed,
+      const char* speak_text, int priority)
+{
+   JNIEnv *env = jni_thread_getenv();
+
+   if (env != NULL)
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->accessibilitySpeak,
+            (*env)->NewStringUTF(env, speak_text));
+
+   return true;
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_env,       /* get_env */
    frontend_unix_init,          /* init */
@@ -3014,12 +3057,12 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_set_sustained_performance_mode,
    frontend_unix_get_cpu_model_name,
    frontend_unix_get_user_language,
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
    is_narrator_running_unix,     /* is_narrator_running */
    accessibility_speak_unix,     /* accessibility_speak */
 #else
-   NULL,                         /* is_narrator_running */
-   NULL,                         /* accessibility_speak */
+   is_narrator_running_android,                         /* is_narrator_running */
+   accessibility_speak_android,                         /* accessibility_speak */
 #endif
 #ifdef FERAL_GAMEMODE
    frontend_unix_set_gamemode,

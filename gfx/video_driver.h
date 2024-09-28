@@ -456,6 +456,8 @@ typedef struct video_frame_info
    uint32_t video_st_flags;
    uint16_t menu_st_flags;
 
+   uint16_t frame_time_target;
+
    char stat_text[1024];
 
    bool widgets_active;
@@ -485,7 +487,6 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool fastforward_frameskip;
-   bool frame_rest;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
@@ -779,7 +780,6 @@ typedef struct
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
    uint64_t frame_time_count;
    uint64_t frame_count;
-   uint64_t frame_rest_time_count;
    uint8_t *record_gpu_buffer;
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *state_filter;
@@ -865,7 +865,8 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
-   uint8_t frame_rest;
+   uint16_t frame_drop_count;
+   uint16_t frame_time_reserve;
    uint8_t frame_delay_target;
    uint8_t frame_delay_effective;
    bool frame_delay_pause;
@@ -991,18 +992,49 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 
 /**
  * video_viewport_get_scaled_integer:
- * @vp            : Viewport handle
+ * @vp            : Viewport handle.
  * @width         : Width.
  * @height        : Height.
  * @aspect_ratio  : Aspect ratio (in float).
  * @keep_aspect   : Preserve aspect ratio?
+ * @ydown         : Positive y goes "down".
  *
  * Gets viewport scaling dimensions based on
  * scaled integer aspect ratio.
  **/
 void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
-      float aspect_ratio, bool keep_aspect);
+      float aspect_ratio, bool keep_aspect,
+      bool ydown);
+
+/**
+ * video_viewport_get_scaled_aspect:
+ * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
+ * @width         : Viewport width.
+ * @height        : Viewport height.
+ * @ydown         : Positive y goes "down".
+ *
+ * Gets viewport scaling dimensions based on
+ * scaled non-integer aspect ratio.
+ **/
+void video_viewport_get_scaled_aspect(struct video_viewport *vp,
+      unsigned width, unsigned height, bool ydown);
+
+/**
+ * video_viewport_get_scaled_aspect2:
+ * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
+ * @width         : Viewport width.
+ * @height        : Viewport height.
+ * @ydown         : Positive y goes "down".
+ * @device_aspect : Device aspect ratio.
+ * @desired_aspect: Target aspect ratio.
+ *
+ * Gets viewport scaling dimensions based on
+ * scaled non-integer aspect ratio.
+ **/
+void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
+      unsigned width, unsigned height, bool ydown,
+      float device_aspect, float desired_aspect);
 
 /**
  * video_monitor_set_refresh_rate:
@@ -1011,14 +1043,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
  * Sets monitor refresh rate to new value.
  **/
 void video_monitor_set_refresh_rate(float hz);
-
-/**
- * video_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-void video_monitor_compute_fps_statistics(uint64_t
-      frame_time_count);
 
 /**
  * video_monitor_fps_statistics
@@ -1095,15 +1119,10 @@ bool *video_driver_get_threaded(void);
 void video_driver_set_threaded(bool val);
 
 void video_frame_delay(video_driver_state_t *video_st,
-      settings_t *settings,
-      bool core_paused);
+      settings_t *settings);
 
 void video_frame_delay_auto(video_driver_state_t *video_st,
       video_frame_delay_auto_t *vfda);
-
-void video_frame_rest(video_driver_state_t *video_st,
-      settings_t *settings,
-      retro_time_t current_time);
 
 /**
  * video_context_driver_init:

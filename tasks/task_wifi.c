@@ -51,7 +51,7 @@ static void task_wifi_scan_handler(retro_task_t *task)
    task_set_progress(task, 100);
    task_free_title(task);
    task_set_title(task, strdup(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE)));
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_wifi_enable_handler(retro_task_t *task)
@@ -62,7 +62,7 @@ static void task_wifi_enable_handler(retro_task_t *task)
    driver_wifi_enable(true);
 
    task_set_progress(task, 100);
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_wifi_disable_handler(retro_task_t *task)
@@ -73,7 +73,7 @@ static void task_wifi_disable_handler(retro_task_t *task)
    driver_wifi_enable(false);
 
    task_set_progress(task, 100);
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_wifi_disconnect_handler(retro_task_t *task)
@@ -86,7 +86,7 @@ static void task_wifi_disconnect_handler(retro_task_t *task)
      driver_wifi_disconnect_ssid(&netinfo);
 
    task_set_progress(task, 100);
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static void task_wifi_connect_handler(retro_task_t *task)
@@ -98,7 +98,7 @@ static void task_wifi_connect_handler(retro_task_t *task)
    free(task->user_data);
 
    task_set_progress(task, 100);
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
@@ -108,7 +108,7 @@ bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
    wifi_network_info_t *netinfo = (wifi_network_info_t*)netptr;
    if (!task)
       return false;
-      
+
    snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_WIFI_CONNECTING_TO), netinfo->ssid);
 
    task->type           = TASK_TYPE_BLOCKING;

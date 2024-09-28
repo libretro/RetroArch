@@ -1,18 +1,119 @@
 # Future
+- APPLE: Hide threaded video setting
+- CHEEVOS: Add rarity and points to achievement unlock widget
+- CHEEVOS: Add rank to leaderboard submission notification
+- CHEEVOS: Update to rcheevos 11.5
+- CHEEVOS: Show rcheevos game image in Discord rich presence
+- CLOUDSYNC: Allow saves and configs to be synced optionally
+- CLOUDSYNC: Add iCloud cloud sync driver
+- CLOUDSYNC: Speed up by upload/download in parallel
+- CLOUDSYNC: Allow thumbnails and system dir to be synced optionally
+- CRT/SWITCHRES: Update switchres to 2.2.1
+- GENERAL: Support for mbedtls v3
+- GENERAL: Automatic Frame Delay refactor
+- GENERAL: Remove Frame Rest, obsoleted by Frame Delay refactor
+- HAIKU: Restore Haiku build
+- INPUT: Allow to select a preferred/reserved device for each player
+- INPUT: Enable Caps, Num, Scroll Lock modifiers on multiple platforms
+- INPUT/HID: Fix crash on macOS when disconnecting the controller a second time
+- INPUT/UDEV: Enable mouse buttons 4 and 5
+- INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
+- INPUT/X11: Enable mouse buttons 4 and 5
+- iOS: Enable vibration by default
+- iOS: Better handling of physical mice/magic keyboard trackpad
+- iOS: Mouse grab fixes
+- iOS: Fix mouse cursor movement when button is held down
+- iOS/TVOS: Add Opera to App Store build
+- iOS/TVOS: Bring NEON defines in line with ARM64
+- FFMPEG: Fix crash when playing back a file with 96 kHz audio
+- MIDI: Fix long messages (SysEx) in WinMM driver
+- MIDI: Fix lingering notes on close in Alsa driver
+- MENU: Support local thumbnails in other image formats than png (jpg/jpeg, bmp, tga)
+- MENU: Delete also savestate thumbnails when savestates are garbage collected
+- MENU/GLUI: Make Show Sublabels options effective
+- MENU/XMB: Allow playlist icons to be individually customized, by looking for images in Named_Logos
+- RECORDING: New WAV recording driver (audio only)
+- REMOTE RETROPAD: Add gyro/acceleration/light sensor test screen
+- TVOS: Support bluetooth keyboards on tvOS
+- TVOS: Fixes to run correctly on TVOS13
+- VIDEO: Show and use exact refresh rate (3 decimals) and interlace/doublestrike where available
+- VIDEO: Allow setting viewport bias to offset viewport horizontally/vertically
+- VIDEO: Support viewport bias also with integer overscale and custom aspect ratios
+- VIDEO: Use shader path from CLI for shader cycling
+- VIDEO/D3D: Fix GPU screenshots
+- VIDEO/KMS: Force fullscreen when KMS is used
+- VIDEO/OpenGLES: Improve version directive granularity
+- VIDEO/VULKAN: Fix Vulkan window freezes when swapchain becomes suboptimal
+- VIDEO/X11: Support inhibit of Xss screensaver
+- WINDOWS: Fix restart if path to executable contains non-ASCII symbols
+
+# 1.19.1
+- (WASAPI) Only write when running and fix deadlock
+
+# 1.19.0
 - AI: Revert AI translation to previous version (fix for translation not working with HW rendered cores)
+- APPLE: Try to use system preferred language
+- APPLE: Correctly register for filetypes uniquely
+- APPLE/MFI: improved Switch Online controller support through MFi
+- AUDIO: Bring back audio toggling on menu toggle
 - CHEEVOS: Build a default RetroAchievements memory map when no RetroAchievements game is loaded
-- CHEEVOS: Update to rcheevos 11.2
+- CHEEVOS: Update to rcheevos 11.3
+- CHEEVOS: fix hardcore acting as if it's enabled when it isn't
+- CLANG: Fix clang error incompatible-pointer-types-discards-qualifiers
+- CLOUDSYNC/LINUX: Enable Cloud Sync by default on Linux builds with network (#16456)
+- CLOUDSYNC/WEBOS: Enable Cloud Sync by default on Linux builds with network (#16456)
+- CORE: Set compute fps stats logging to debug level
+- EMSCRIPTEN: Added M2000 to core selection dropdown
+- FFMPEG: Add compatibility with FFMPEG 7.0
+- GLSLANG: Remove unneeded ENABLE_HLSL code from glslang
+- GENERAL: Memory leak: Dynamic allocation from msg_hash_get_help_us_enum was not freed.
+- INPUT/KEYBOARD: Add support for multimedia keys - Extended RETROK_ values with 18 new items, commonly found on
+"multimedia" keyboards. Mapping added for SDL, X11, Wayland, dinput, winraw keymaps.
 - INPUT/MFI: Pressure sensitive left/right triggers
 - INPUT/MFI: Fix Start + L1/L2/R2 combinations
 - INPUT/MFI: Support strong and weak rumble
-- IOS: Fix ios-arm64 nightly build crash
-- IOS/tvOS: Various QoL improvements
+- INTL: Fetch translations from Crowdin
+- INTL: Add Galician and Norwegian to list of languages
+- LAKKA: Display reboot/shutdown message also when not saving config on exit
+- LAKKA: Provide update URL and target name at buildtime
+- LIBRETRO: Add a debug message for the SET_ROTATION callback
+- macOS: Default Accessibility on if VoiceOver is on
+- iOS: default audio sync on again, also more mfi logging
+- iOS: Fix Import Content
+- iOS: Fix ios-arm64 nightly build crash
+- iOS: Import content from iCloud
+- iOS: Fix #16485 crash on startup
+- iOS: Display app icon in app icon picker in materialui
+- iOS/tvOS: Various QoL improvements
+- iOS/tvOS: Fix a couple more path name mangling bugs
+- iOS/tvOS: Better way of packaging Frameworks
+- iOS/tvOS: define PACKAGE_VERSION to be App Store MARKETING_VERSION
+- iOS/tvOS: Fix keyboard handling for app store builds
+- iOS/tvOS: Fix escaping the sandbox for jailbroken devices
+- iOS/tvOS: default accessibility on if voice over is enabled
+- iOS/tvOS: better way of reporting available memory
+- macOS/iOS/tvOS: enable text-to-speech using AVSpeechSynthesizer.
+- tvOS: Fix scaling for 720p
 - MENU: New function in Quick Menu: Add to Playlist
 - MENU/XMB: New theme: FlatUX, designed to merge FlatUI and Retroactive themes into a single, unified design
+- NETWORKING/RETROPAD CORE:  Fix socket close method
+- PIXMAN: Update pixman-private.h - patch to fix build issue with musl
+- PLAYLIST: Cleanup 'Add to Playlist' (#16495)
+- SCANNING: Fix for scanning PSP ISOs (and probably few others)
+- SAVES: Fix core config saving
+- SAVES: Fix save new config name when core loaded
+- SAVESTATES: Increase save state chunk size for all platforms - Even a class 6 or class 10 SD card can handle reads and writes on the order of MB/s, which means a 4KB chunk size is just wasting time in syscalls.  This could maybe be fixed with a buffering reader but I don't feel comfortable tweaking libretro-common's VFS to handle that.  Instead, I thought it would be good to both remove an ifdef and increase the chunk size to 128KB.  For cores with small states this will should make state saving virtually instantaneous, and for cores with large states it should be a 32x speedup.
+- VIDEO: Fix crash when using threaded video - for Mesa 23.2 and later
+- VIDEO/GL: Fix reinitialization of the threaded gl drivers
 - VIDEO/VULKAN: Add support for A2R10G10B10 HDR format
+- VIDEO/VULKAN: Implement HDR readback - screenshot support
 - WAYLAND: Ignore configure events during splash (fix not remembering window size)
 - WAYLAND: Use frontend signal handler to quit (fix quit by window close)
 - WAYLAND: Commit viewport resizes (window resize is more responsive)
+- UWP: Align MESA to alpha-2-resfix - Remove wrong resolution special handling for OPENGL
+- UWP: 4K fix: align MESA reading of ClientRect to retroarch procedure, this fixes max resolution being set to 1080p. As reading must be done inside an UI thread and is in fact an async operation which might delay frame generation, the reading itself is doen once and cached, give that changing resolution while the app is running is an unlikely corner-case use
+- WINDOWS: Windows mouse ungrab must release the mouse instead of confine it to the current desktop (#16488)
+- WINDOWS: Fix numlock/pause key release events
 
 # 1.18.0
 - AI: Fix narrator language when AI translation and menu languages are different
@@ -54,10 +155,10 @@
 - VIDEO/VULKAN: Fix HDR with Vulkan after reinit
 - VIDEO/VULKAN: Remove the use of oldSwapchain
 - VIDEO/GL2: Fix OpenGL ES version detection
-- WEBDAV: Fixed SEGFAULT in WebDav task sync + type changes 
+- WEBDAV: Fixed SEGFAULT in WebDav task sync + type changes
 - WEBOS: Fix build, add core location on webosbrew.org
 - WIN32: Fix Alt+Enter not working when menubar is disabled
- 
+
 # 1.17.0
 - ACCESSIBILITY/TTS: fix target language and missing espeak handling on Linux
 - AI: AI service reworked: performance increase, automatic translation, configurable subtitle placement, and more

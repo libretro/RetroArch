@@ -120,6 +120,14 @@ const char *glslang_format_to_string(glslang_format fmt);
 
 enum glslang_format glslang_find_format(const char *fmt);
 
+/* Reads a shader file and outputs its contents as a string list.
+   Takes the path of the shader file and appends each line of the file
+   to the output string list.
+   If the root_file argument is set to true, it expects the first line of the file
+   to be a valid '#version' string
+   Handles '#include' statements by recursively parsing included files and appending their contents.
+   Returns a Bool indicating if parsing was successful.
+ */
 bool glslang_read_shader_file(const char *path,
       struct string_list *output, bool root_file);
 

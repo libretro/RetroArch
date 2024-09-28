@@ -45,7 +45,7 @@ int detect_wii_game(intfstream_t *fd, char *s, size_t len,
 int detect_system(intfstream_t *fd, const char **system_name,
       const char * filename);
 int cue_find_track(const char *cue_path, bool first, uint64_t *offset,
-      uint64_t *size, char *track_path, uint64_t max_len);
+      size_t *size, char *track_path, uint64_t max_len);
 bool cue_next_file(intfstream_t *fd, const char *cue_path,
       char *s, uint64_t len);
 int gdi_find_track(const char *gdi_path, bool first, char *track_path,

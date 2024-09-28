@@ -417,8 +417,8 @@ inline static int dxgi_compute_intersection_area(
       int ax1, int ay1, int ax2, int ay2,
       int bx1, int by1, int bx2, int by2)
 {
-    return   MAX(0, MIN(ax2, bx2) - 
-             MAX(ax1, bx1)) 
+    return   MAX(0, MIN(ax2, bx2) -
+             MAX(ax1, bx1))
            * MAX(0, MIN(ay2, by2) - MAX(ay1, by1));
 }
 
@@ -485,10 +485,10 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 #endif
 
 #ifdef __cplusplus
-   while (  dxgi_adapter->EnumOutputs(i, &current_output) 
+   while (  dxgi_adapter->EnumOutputs(i, &current_output)
          != DXGI_ERROR_NOT_FOUND)
 #else
-   while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output) 
+   while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output)
          != DXGI_ERROR_NOT_FOUND)
 #endif
    {
@@ -506,10 +506,10 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          ax1                = rect.left;
          ay1                = rect.top;
          ax2                = rect.right;
-         ay2                = rect.bottom;         
+         ay2                = rect.bottom;
       }
 
-      /* Get the rectangle bounds of current output */ 
+      /* Get the rectangle bounds of current output */
 #ifdef __cplusplus
       if (FAILED(current_output->GetDesc(&desc)))
 #else
@@ -521,7 +521,7 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       }
 
       /* TODO/FIXME - DesktopCoordinates won't work for WinRT */
-      r                      = desc.DesktopCoordinates; 
+      r                      = desc.DesktopCoordinates;
       bx1                    = r.left;
       by1                    = r.top;
       bx2                    = r.right;
@@ -567,9 +567,9 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
             video_driver_set_hdr_support();
          else
          {
-            settings_t*    settings          = config_get_ptr();
-            settings->modified               = true;
-            settings->bools.video_hdr_enable = false;
+            settings_t*    settings           = config_get_ptr();
+            settings->flags                  |= SETTINGS_FLG_MODIFIED;
+            settings->bools.video_hdr_enable  = false;
 
             video_driver_unset_hdr_support();
          }
@@ -614,14 +614,14 @@ void dxgi_swapchain_color_space(
 #ifdef __cplusplus
       if (SUCCEEDED(chain_handle->CheckColorSpaceSupport(
                   color_space, &color_space_support))
-            && ((color_space_support & 
-                  DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) 
+            && ((color_space_support &
+                  DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT)
                == DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
 #else
       if (SUCCEEDED(chain_handle->lpVtbl->CheckColorSpaceSupport(
                   chain_handle, color_space, &color_space_support))
-            && ((color_space_support & 
-                  DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) 
+            && ((color_space_support &
+                  DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT)
                == DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT))
 #endif
       {
@@ -656,16 +656,16 @@ void dxgi_set_hdr_metadata(
 )
 {
    static DXGI_HDR_METADATA_HDR10 g_hdr10_meta_data = {0};
-   static const display_chromaticities_t 
+   static const display_chromaticities_t
       display_chromaticity_list[]                   =
    {
-      { 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, /* Rec709  */   
-      { 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, /* Rec2020 */  
+      { 0.64000f, 0.33000f, 0.30000f, 0.60000f, 0.15000f, 0.06000f, 0.31270f, 0.32900f }, /* Rec709  */
+      { 0.70800f, 0.29200f, 0.17000f, 0.79700f, 0.13100f, 0.04600f, 0.31270f, 0.32900f }, /* Rec2020 */
    };
    const display_chromaticities_t* chroma           = NULL;
    DXGI_HDR_METADATA_HDR10 hdr10_meta_data          = {0};
    int selected_chroma                              = 0;
-   
+
    if (!handle)
       return;
 
@@ -687,8 +687,8 @@ void dxgi_set_hdr_metadata(
 
 
    /* Now select the chromacity based on colour space */
-   if (     chain_bit_depth   == DXGI_SWAPCHAIN_BIT_DEPTH_10 
-         && chain_color_space == 
+   if (     chain_bit_depth   == DXGI_SWAPCHAIN_BIT_DEPTH_10
+         && chain_color_space ==
          DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020)
       selected_chroma                           = 1;
    else
@@ -709,29 +709,29 @@ void dxgi_set_hdr_metadata(
    /* Set the HDR meta data */
    chroma                                       =
       &display_chromaticity_list[selected_chroma];
-   hdr10_meta_data.RedPrimary[0]                = 
+   hdr10_meta_data.RedPrimary[0]                =
       (UINT16)(chroma->red_x * 50000.0f);
-   hdr10_meta_data.RedPrimary[1]                = 
+   hdr10_meta_data.RedPrimary[1]                =
       (UINT16)(chroma->red_y * 50000.0f);
-   hdr10_meta_data.GreenPrimary[0]              = 
+   hdr10_meta_data.GreenPrimary[0]              =
       (UINT16)(chroma->green_x * 50000.0f);
-   hdr10_meta_data.GreenPrimary[1]              = 
+   hdr10_meta_data.GreenPrimary[1]              =
       (UINT16)(chroma->green_y * 50000.0f);
-   hdr10_meta_data.BluePrimary[0]               = 
+   hdr10_meta_data.BluePrimary[0]               =
       (UINT16)(chroma->blue_x * 50000.0f);
-   hdr10_meta_data.BluePrimary[1]               = 
+   hdr10_meta_data.BluePrimary[1]               =
       (UINT16)(chroma->blue_y * 50000.0f);
-   hdr10_meta_data.WhitePoint[0]                = 
+   hdr10_meta_data.WhitePoint[0]                =
       (UINT16)(chroma->white_x * 50000.0f);
-   hdr10_meta_data.WhitePoint[1]                = 
+   hdr10_meta_data.WhitePoint[1]                =
       (UINT16)(chroma->white_y * 50000.0f);
-   hdr10_meta_data.MaxMasteringLuminance        = 
+   hdr10_meta_data.MaxMasteringLuminance        =
       (UINT)(max_output_nits * 10000.0f);
-   hdr10_meta_data.MinMasteringLuminance        = 
+   hdr10_meta_data.MinMasteringLuminance        =
       (UINT)(min_output_nits * 10000.0f);
-   hdr10_meta_data.MaxContentLightLevel         = 
+   hdr10_meta_data.MaxContentLightLevel         =
       (UINT16)(max_cll);
-   hdr10_meta_data.MaxFrameAverageLightLevel    = 
+   hdr10_meta_data.MaxFrameAverageLightLevel    =
       (UINT16)(max_fall);
 
    if (g_hdr10_meta_data.RedPrimary                 != hdr10_meta_data.RedPrimary            ||

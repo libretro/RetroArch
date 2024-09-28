@@ -31,10 +31,6 @@
 
 #include "../../verbosity.h"
 
-#ifdef HAVE_SPIRV_CROSS
-using namespace spirv_cross;
-#endif
-
 template <typename M, typename S>
 static const char *get_semantic_name(
       const std::unordered_map<std::string, M>* map,
@@ -49,10 +45,10 @@ static const char *get_semantic_name(
 }
 
 static bool slang_process_reflection(
-      const Compiler*        vs_compiler,
-      const Compiler*        ps_compiler,
-      const ShaderResources& vs_resources,
-      const ShaderResources& ps_resources,
+      const spirv_cross::Compiler*        vs_compiler,
+      const spirv_cross::Compiler*        ps_compiler,
+      const spirv_cross::ShaderResources& vs_resources,
+      const spirv_cross::ShaderResources& ps_resources,
       video_shader*          shader_info,
       unsigned               pass_number,
       const semantics_map_t* map,
@@ -232,7 +228,10 @@ static bool slang_process_reflection(
             {
                size = sizeof(names) / sizeof(*names);
                if (semantic < size)
-                  snprintf(texture.id, sizeof(texture.id), "%s%d", names[_semantic], index);
+               {
+                  size_t _len = strlcpy(texture.id, names[_semantic], sizeof(texture.id));
+                  snprintf(texture.id + _len, sizeof(texture.id) - _len, "%d", index);
+               }
                else
                   strlcpy(texture.id, get_semantic_name(sl_reflection.texture_semantic_map, _semantic, index), sizeof(texture.id));
             }
@@ -279,7 +278,10 @@ static bool slang_process_reflection(
             {
                int size = sizeof(names) / sizeof(*names);
                if (semantic < size)
-                  snprintf(uniform.id, sizeof(uniform.id), "%s%d", names[_semantic], index);
+               {
+                  size_t _len = strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));
+                  snprintf(uniform.id + _len, sizeof(uniform.id) - _len, "%d", index);
+               }
                else
                   strlcpy(uniform.id, get_semantic_name(sl_reflection.texture_semantic_uniform_map, _semantic, index), sizeof(uniform.id));
             }
@@ -391,7 +393,7 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
 {
    glslang_meta meta;
    struct string_list lines = {0};
-   
+
    if (!string_list_initialize(&lines))
       goto error;
 
@@ -417,10 +419,10 @@ bool slang_process(
       const semantics_map_t* semantics_map,
       pass_semantics_t*      out)
 {
-   glslang_output     output;
-   Compiler*          vs_compiler = NULL;
-   Compiler*          ps_compiler = NULL;
-   video_shader_pass& pass        = shader_info->pass[pass_number];
+   glslang_output          output;
+   spirv_cross::Compiler  *vs_compiler = NULL;
+   spirv_cross::Compiler  *ps_compiler = NULL;
+   video_shader_pass      &pass        = shader_info->pass[pass_number];
 
    if (!glslang_compile_shader(pass.source.path, &output))
       return false;
@@ -448,8 +450,8 @@ bool slang_process(
 
    try
    {
-      ShaderResources vs_resources;
-      ShaderResources ps_resources;
+	   spirv_cross::ShaderResources vs_resources;
+      spirv_cross::ShaderResources ps_resources;
       std::string     vs_code;
       std::string     ps_code;
 
@@ -457,20 +459,20 @@ bool slang_process(
       {
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
-#ifdef ENABLE_HLSL
-            vs_compiler = new CompilerHLSL(output.vertex);
-            ps_compiler = new CompilerHLSL(output.fragment);
+#ifdef HAVE_HLSL
+            vs_compiler = new spirv_cross::CompilerHLSL(output.vertex);
+            ps_compiler = new spirv_cross::CompilerHLSL(output.fragment);
 #endif
             break;
 
          case RARCH_SHADER_METAL:
-            vs_compiler = new CompilerMSL(output.vertex);
-            ps_compiler = new CompilerMSL(output.fragment);
+            vs_compiler = new spirv_cross::CompilerMSL(output.vertex);
+            ps_compiler = new spirv_cross::CompilerMSL(output.fragment);
             break;
 
          default:
-            vs_compiler = new CompilerGLSL(output.vertex);
-            ps_compiler = new CompilerGLSL(output.fragment);
+            vs_compiler = new spirv_cross::CompilerGLSL(output.vertex);
+            ps_compiler = new spirv_cross::CompilerGLSL(output.fragment);
             break;
       }
 
@@ -497,12 +499,12 @@ bool slang_process(
       {
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
-#ifdef ENABLE_HLSL
+#ifdef HAVE_HLSL
             {
-               CompilerHLSL::Options options;
-               CompilerHLSL*         vs = (CompilerHLSL*)vs_compiler;
-               CompilerHLSL*         ps = (CompilerHLSL*)ps_compiler;
-               options.shader_model     = version;
+               spirv_cross::CompilerHLSL::Options options;
+               spirv_cross::CompilerHLSL *vs = (spirv_cross::CompilerHLSL*)vs_compiler;
+               spirv_cross::CompilerHLSL *ps = (spirv_cross::CompilerHLSL*)ps_compiler;
+               options.shader_model          = version;
                vs->set_hlsl_options(options);
                ps->set_hlsl_options(options);
                vs_code = vs->compile();
@@ -512,38 +514,44 @@ bool slang_process(
             break;
          case RARCH_SHADER_METAL:
             {
-               CompilerMSL::Options options;
-               CompilerMSL*         vs = (CompilerMSL*)vs_compiler;
-               CompilerMSL*         ps = (CompilerMSL*)ps_compiler;
-               options.msl_version     = version;
+               spirv_cross::CompilerMSL::Options options;
+               spirv_cross::CompilerMSL *vs = (spirv_cross::CompilerMSL*)vs_compiler;
+               spirv_cross::CompilerMSL *ps = (spirv_cross::CompilerMSL*)ps_compiler;
+               options.msl_version          = version;
                vs->set_msl_options(options);
                ps->set_msl_options(options);
 
-               const auto remap_push_constant = [](CompilerMSL *comp,
-                     const ShaderResources &resources) {
-                  for (const Resource& resource : resources.push_constant_buffers)
+               const auto remap_push_constant = [](spirv_cross::CompilerMSL *comp,
+                     const spirv_cross::ShaderResources &resources) {
+                  for (const spirv_cross::Resource& resource : resources.push_constant_buffers)
                   {
                      /* Explicit 1:1 mapping for bindings. */
-                     MSLResourceBinding binding = {};
+                     spirv_cross::MSLResourceBinding binding;
                      binding.stage              = comp->get_execution_model();
-                     binding.desc_set           = kPushConstDescSet;
-                     binding.binding            = kPushConstBinding;
+                     binding.desc_set           = spirv_cross::kPushConstDescSet;
+                     binding.binding            = spirv_cross::kPushConstBinding;
                      /* Use earlier decoration override. */
+                     binding.basetype           = spirv_cross::SPIRType::Unknown;
+                     binding.count              = 0;
                      binding.msl_buffer         = comp->get_decoration(
                            resource.id, spv::DecorationBinding);
+                     binding.msl_texture        = 0;
+                     binding.msl_sampler        = 0;
                      comp->add_msl_resource_binding(binding);
                   }
                };
 
-               const auto remap_generic_resource = [](CompilerMSL *comp,
-                     const SmallVector<Resource> &resources) {
-                  for (const Resource& resource : resources)
+               const auto remap_generic_resource = [](spirv_cross::CompilerMSL *comp,
+                     const spirv_cross::SmallVector<spirv_cross::Resource> &resources) {
+                  for (const spirv_cross::Resource& resource : resources)
                   {
                      /* Explicit 1:1 mapping for bindings. */
-                     MSLResourceBinding binding = {};
+                     spirv_cross::MSLResourceBinding binding;
                      binding.stage              = comp->get_execution_model();
                      binding.desc_set           = comp->get_decoration(
                            resource.id, spv::DecorationDescriptorSet);
+                     binding.basetype           = spirv_cross::SPIRType::Unknown;
+                     binding.count              = 0;
 
                      /* Use existing decoration override. */
                      uint32_t msl_binding       = comp->get_decoration(
@@ -569,10 +577,10 @@ bool slang_process(
             break;
          case RARCH_SHADER_GLSL:
             {
-               CompilerGLSL::Options options;
-               CompilerGLSL*         vs = (CompilerGLSL*)vs_compiler;
-               CompilerGLSL*         ps = (CompilerGLSL*)ps_compiler;
-               options.version          = version;
+               spirv_cross::CompilerGLSL::Options options;
+               spirv_cross::CompilerGLSL *vs = (spirv_cross::CompilerGLSL*)vs_compiler;
+               spirv_cross::CompilerGLSL *ps = (spirv_cross::CompilerGLSL*)ps_compiler;
+               options.version               = version;
                ps->set_common_options(options);
                vs->set_common_options(options);
 
@@ -592,7 +600,6 @@ bool slang_process(
                 vs_resources, ps_resources, shader_info, pass_number,
                 semantics_map, out))
          goto error;
-
    }
    catch (const std::exception& e)
    {

@@ -465,7 +465,9 @@ input_device_driver_t switch_joypad = {
 #else
    NULL, /* set_rumble */
 #endif
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    switch_joypad_name,
    "switch"
 };

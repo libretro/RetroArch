@@ -22,12 +22,15 @@ static cloud_sync_driver_t cloud_sync_null = {
    NULL,  /* sync_end */
    NULL,  /* read */
    NULL,  /* update */
-   NULL,  /* delete */
+   NULL,  /* free */
    "null" /* ident */
 };
 
 const cloud_sync_driver_t *cloud_sync_drivers[] = {
    &cloud_sync_webdav,
+#ifdef HAVE_ICLOUD
+   &cloud_sync_icloud,
+#endif
    &cloud_sync_null,
    NULL
 };
@@ -87,24 +90,24 @@ void cloud_sync_find_driver(
 bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
-   if (driver && driver->stub_sync_begin)
-      return driver->stub_sync_begin(cb, user_data);
+   if (driver && driver->cloud_sync_begin)
+      return driver->cloud_sync_begin(cb, user_data);
    return false;
 }
 
 bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
-   if (driver && driver->stub_sync_end)
-      return driver->stub_sync_end(cb, user_data);
+   if (driver && driver->cloud_sync_end)
+      return driver->cloud_sync_end(cb, user_data);
    return false;
 }
 
 bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
-   if (driver && driver->stub_read)
-      return driver->stub_read(path, file, cb, user_data);
+   if (driver && driver->cloud_sync_read)
+      return driver->cloud_sync_read(path, file, cb, user_data);
    return false;
 }
 
@@ -112,15 +115,15 @@ bool cloud_sync_update(const char *path, RFILE *file,
                        cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
-   if (driver && driver->stub_update)
-      return driver->stub_update(path, file, cb, user_data);
+   if (driver && driver->cloud_sync_update)
+      return driver->cloud_sync_update(path, file, cb, user_data);
    return false;
 }
 
-bool cloud_sync_delete(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
-   if (driver && driver->stub_delete)
-      return driver->stub_delete(path, cb, user_data);
+   if (driver && driver->cloud_sync_free)
+      return driver->cloud_sync_free(path, cb, user_data);
    return false;
 }

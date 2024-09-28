@@ -41,6 +41,10 @@ MSG_HASH(
    "Explorar"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Núcleos sem conteúdo"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Importar conteúdo"
    )
@@ -64,12 +68,20 @@ MSG_HASH(
    "Selecione o núcleo que deseja utilizar."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Navegue até um executável do núcleo libretro. Onde o navegador inicia depende da sua configuração de Pasta de Núcleos. Se a definição estiver em branco, começará na raiz do sistema de ficheiros.\nSe indicar uma pasta, o menu usará essa pasta como a principal. No entanto, se a sua Pasta de Núcleos é um caminho de ficheiro, irá iniciar na pasta que o contém."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Carregar conteúdo"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Selecione o conteúdo que deseja executar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Navegar pelo conteúdo. Para carregar um conteúdo, é necessário um 'Núcleo' e um ficheiro de conteúdo.\nPara escolher onde o menu começa a navegar, escolha a definição 'Pasta do Navegador de Ficheiros'. Caso não seja definida, será iniciada na raiz do sistema de ficheiros.\nO navegador filtrará as extensões para o último núcleo definido em 'Carregar núcleo' e usará no carregamento do conteúdo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -120,6 +132,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
    "Abre o menu tradicional do desktop."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Desativar o Modo Quiosque (é necessário reiniciar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -282,6 +298,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Procurar todos os conteúdos correspondentes ao banco de dados através de uma interface de pesquisa categorizada."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Núcleos sem conteúdo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   "Núcleos instalados que não precisam de conteúdo para iniciar aparecerão aqui."
+   )
 
 /* Main Menu > Online Updater */
 
@@ -324,6 +348,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    "Transferidor de conteúdo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   "Descarregue conteúdo gratuito para o núcleo selecionado."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Descarregar ficheiros de sistema do Núcleo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   "Descarregar ficheiros auxiliares do sistema para a operação correta e otimizada do núcleo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
@@ -460,6 +496,10 @@ MSG_HASH(
    "API de Gráficos Necessária"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Diretório completo do núcleo"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Posição de gravação de estado"
    )
@@ -474,6 +514,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
    "Serializado (Salvar/Carregar, Retroceder)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   "Determinante (Guardar/Carregar, Rebobinar, Run-Ahead, Netplay)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
@@ -545,6 +589,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
    "Data de compilação"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Versão do RetroArch"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
@@ -865,12 +913,28 @@ MSG_HASH(
    "Exclusivo de Plataforma"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   "Pontuação"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
    "Mídia"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
    "Mapeamento de teclas"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   "Jogabilidade"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   "Narrativa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   "Definição"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
@@ -1395,10 +1459,6 @@ MSG_HASH(
    "Insere fotograma(s) preto(s) entre os fotogramas para maior nitidez do movimento. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser utilizada em taxas de atualização que não sejam múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Não combinar com Intervalo de troca > 1, subfotogramas, Atraso de fotogramas, ou Sincronizar com a frequência de fotogramas exata do conteúdo. Deixar o VRR do sistema ligado é aceitável, mas não esta definição. Se [...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Desligado"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - Para uma taxa de atualização do ecrã de 120 Hz"
    )
@@ -1481,10 +1541,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "Insere fotograma(s) de sombreador extra entre fotogramas para quaisquer efeitos de sombreador possíveis que tenham sido concebidos para serem executados mais rapidamente do que a taxa de conteúdo. Utilize apenas a opção designada para a taxa de atualização do seu ecrã atual. Não deve ser usada em taxas de atualização que não sejam múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Não combinar com Intervalo de troca > 1, BFI, Atraso de fotogramas ou Sincronizar com a frequência de fotog[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "Desligado"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
@@ -1891,6 +1947,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Proporção personalizada do ecrã na posição Y"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Proporção personalizada da largura do ecrã"
@@ -2183,6 +2241,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Número máximo de utilizadores suportados pelo RetroArch."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Ativar auto-configuração de teclas"
@@ -2959,24 +3025,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Adicionar à lista de reprodução"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Adiciona o conteúdo a uma lista de reprodução."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Criar nova lista de reprodução"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Cria uma nova lista de reprodução e adiciona a entrada atual à mesma."
-   )
-
-
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
@@ -3213,7 +3261,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
    "Analisar sem correspondência do núcleo"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
@@ -3475,6 +3523,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    "Remover esta entrada da lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Adicionar à lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Adiciona o conteúdo a uma lista de reprodução."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Criar nova lista de reprodução"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Cria uma nova lista de reprodução e adiciona a entrada atual à mesma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INFORMATION,
@@ -4854,10 +4918,6 @@ MSG_HASH(
    "Não é possível inferir o novo caminho de configuração. Use a hora atual."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Modo Hardcore ativado. A gravação de estado e função de retrocedimento no tempo estão desativadas."
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "Comparando com números mágicos conhecidos..."
    )
@@ -5628,6 +5688,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
    "Falha ao obter o cabeçalho do anfitrião."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Modo Hardcore ativado. A gravação de estado e função de retrocedimento no tempo estão desativadas."
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,

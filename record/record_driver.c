@@ -31,6 +31,8 @@
 #include "../defaults.h"
 
 #include "record_driver.h"
+#include "drivers/record_ffmpeg.h"
+#include "drivers/record_wav.h"
 
 static recording_state_t recording_state = {0};
 
@@ -47,6 +49,7 @@ const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
+   &record_wav,
    &record_null,
    NULL,
 };
@@ -176,7 +179,7 @@ bool recording_deinit(void)
    bool history_list_enable        = settings->bools.history_list_enable;
 #endif
 
-   if (     !recording_st->data 
+   if (     !recording_st->data
 		   || !recording_st->driver)
       return false;
 
@@ -269,12 +272,17 @@ bool recording_init(void)
       unsigned video_record_quality = settings->uints.video_record_quality;
       unsigned video_stream_port    = settings->uints.video_stream_port;
       if (recording_st->streaming_enable)
+      {
          if (!string_is_empty(stream_url))
             strlcpy(output, stream_url, sizeof(output));
          else
+         {
             /* Fallback, stream locally to 127.0.0.1 */
-            snprintf(output, sizeof(output), "udp://127.0.0.1:%u",
+            size_t _len = strlcpy(output, "udp://127.0.0.1:", sizeof(output));
+            snprintf(output + _len, sizeof(output) - _len, "%u",
                   video_stream_port);
+         }
+      }
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
@@ -489,13 +497,14 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_LOCAL:
-         /* TODO: figure out default interface and bind to that instead */
-         snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
-            "udp://%s:%u", "127.0.0.1", settings->uints.video_stream_port);
-         break;
-      case STREAMING_MODE_CUSTOM:
-      default:
-         /* Do nothing, let the user input the URL */
+         {
+            /* TODO: figure out default interface and bind to that instead */
+            size_t _len = strlcpy(settings->paths.path_stream_url, "udp://127.0.0.1:",
+                  sizeof(settings->paths.path_stream_url));
+            snprintf(settings->paths.path_stream_url      + _len,
+                  sizeof(settings->paths.path_stream_url) - _len,
+                  "%u", settings->uints.video_stream_port);
+         }
          break;
       case STREAMING_MODE_FACEBOOK:
          if (!string_is_empty(settings->arrays.facebook_stream_key))
@@ -507,6 +516,10 @@ void recording_driver_update_streaming_url(void)
                   settings->arrays.facebook_stream_key,
                   sizeof(settings->paths.path_stream_url) - _len);
          }
+         break;
+      case STREAMING_MODE_CUSTOM:
+      default:
+         /* Do nothing, let the user input the URL */
          break;
    }
 }

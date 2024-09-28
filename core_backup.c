@@ -51,9 +51,9 @@ static bool core_backup_get_backup_dir(
       const char *core_filename,
       char *backup_dir, size_t len)
 {
-   char *last_underscore = NULL;
-   char core_file_id[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
+   char core_file_id[NAME_MAX_LENGTH];
+   char *last_underscore = NULL;
 
    /* Extract core file 'ID' (name without extension + suffix)
     * from core path */
@@ -120,8 +120,8 @@ bool core_backup_get_backup_path(
    time_t current_time;
    struct tm time_info;
    const char *core_filename = NULL;
-   char core_dir[PATH_MAX_LENGTH];
-   char backup_dir[PATH_MAX_LENGTH];
+   char core_dir[DIR_MAX_LENGTH];
+   char backup_dir[DIR_MAX_LENGTH];
    char backup_filename[PATH_MAX_LENGTH];
 
    backup_dir[0]      = '\0';
@@ -477,8 +477,8 @@ core_backup_list_t *core_backup_list_init(
    struct string_list *dir_list      = NULL;
    core_backup_list_t *backup_list   = NULL;
    core_backup_list_entry_t *entries = NULL;
-   char core_dir[PATH_MAX_LENGTH];
-   char backup_dir[PATH_MAX_LENGTH];
+   char core_dir[DIR_MAX_LENGTH];
+   char backup_dir[DIR_MAX_LENGTH];
 
    core_dir[0]   = '\0';
    backup_dir[0] = '\0';

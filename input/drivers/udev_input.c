@@ -540,7 +540,7 @@ typedef struct udev_input_device
 #endif
    enum udev_input_dev_type type; /* Type of this device */
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
-   char ident[255]; /* Identifier of the device */
+   char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
 
 typedef void (*device_handle_cb)(void *data,
@@ -884,25 +884,21 @@ static void udev_handle_mouse(void *data,
             case BTN_LEFT:
                mouse->l = event->value;
                break;
-
             case BTN_RIGHT:
                mouse->r = event->value;
                break;
-
             case BTN_MIDDLE:
                mouse->m = event->value;
                break;
             case BTN_TOUCH:
                mouse->pp = event->value;
                break;
-#if 0
-            case BTN_??:
+            case BTN_SIDE:
                mouse->b4 = event->value;
                break;
-            case BTN_??:
+            case BTN_EXTRA:
                mouse->b5 = event->value;
                break;
-#endif
             default:
                break;
          }

@@ -511,7 +511,7 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_x > 0)
+                  if (apple->window_pos_x > 0 || apple->mouse_grabbed)
                   {
                      val = apple->window_pos_x - apple->mouse_x_last;
                      apple->mouse_x_last = apple->window_pos_x;
@@ -537,7 +537,7 @@ static int16_t cocoa_input_state(
                   }
 #ifdef IOS
 #ifdef HAVE_IOS_TOUCHMOUSE
-                  if (apple->window_pos_y > 0)
+                  if (apple->window_pos_y > 0 || apple->mouse_grabbed)
                   {
                      val = apple->window_pos_y - apple->mouse_y_last;
                      apple->mouse_y_last = apple->window_pos_y;
@@ -570,10 +570,6 @@ static int16_t cocoa_input_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          {
-#ifdef IOS
-            if (!apple->touch_count)
-                return 0;
-#endif
             // with a physical mouse that is hovering, the touch_count will be 0
             // and apple->touches[0] will have the hover position
             if ((idx == 0 || idx < apple->touch_count) && (idx < MAX_TOUCHES))
@@ -641,7 +637,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
       return false;
 
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, *))
+   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
    {
       for (GCController *controller in [GCController controllers])
       {
@@ -771,6 +767,16 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    cocoa_show_mouse(nil, !state);
    apple->mouse_grabbed = state;
 }
+#elif TARGET_OS_IOS
+static void cocoa_input_grab_mouse(void *data, bool state)
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+
+   apple->mouse_grabbed = state;
+
+   if (@available(iOS 14, *))
+      [[CocoaView get] setNeedsUpdateOfPrefersPointerLocked];
+}
 #endif
 
 input_driver_t input_cocoa = {
@@ -782,7 +788,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-#ifdef OSX
+#if defined(OSX) || TARGET_OS_IOS
    cocoa_input_grab_mouse,
 #else
    NULL,                         /* grab_mouse */

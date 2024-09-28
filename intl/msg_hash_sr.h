@@ -1776,17 +1776,11 @@ MSG_HASH(
    "Postavi odnos ekrana (X pozicija)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na X osi.\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Postavi odnos ekrana (Y pozicija)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na Y osi.\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Postavi odnos ekrana (širina)"
@@ -1923,6 +1917,14 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 #ifdef ANDROID
@@ -2047,8 +2049,6 @@ MSG_HASH(
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 
@@ -2093,7 +2093,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jezgro:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

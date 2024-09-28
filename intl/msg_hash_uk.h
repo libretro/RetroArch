@@ -72,12 +72,20 @@ MSG_HASH(
    "Вибрати ядро для використання."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Знайдіть реалізацію ядра libretro. Звідки запускається браузер, залежить від шляху до основного каталогу. Якщо порожньо, то він почнеться з кореня.\nЯкщо основним каталогом є каталог, меню використовуватиме його як верхню теку. Якщо основний каталог є повним шляхом, він почнет[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    "Завантажити вміст"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    "Вибрати вміст для запуску."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Перегляд вмісту. Щоб завантажити контент, вам потрібне \"Ядро\" і файл контенту.\nЩоб контролювати, звідки меню починає переглядати вміст, встановіть параметр \"Каталог браузера файлів\". Якщо не встановлено, це буде запущено з кореневого каталогу. \nБраузер відфільтрує розши[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -128,6 +136,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
    "Відкрити традиційну оболонку для програми."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Вимкнути режим кіоску (потрібен перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -186,8 +198,24 @@ MSG_HASH(
    "Перезапустити"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Перезавантажити додаток Retroarch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Вихід"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Вихід з додатка RetroArch. Збереження конфігурації на виході увімкнено."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Вихід з додатка RetroArch. Збереження конфігурації на виході вимкнено."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Вихід з RetroArch. Завершення роботи програми будь-яким жорстким способом (SIGKILL тощо) призведе до завершення роботи RetroArch без збереження конфігурації у будь-якому випадку. На Unix-подібних системах SIGINT/SIGTERM дозволяє чисту деініціалізацію, яка включає збереження конфігурації, якщ[...]"
    )
 
 /* Main Menu > Load Core */
@@ -476,6 +504,10 @@ MSG_HASH(
    "Необхідний графічний API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Повний шлях ядра"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Підтримка збереження стану"
    )
@@ -498,6 +530,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Прошивки"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Примітка: \"Системні файли знаходяться у каталозі вмісту\" наразі увімкнено."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Шукаючи в: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -601,6 +641,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Ядра ЦП"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT доступно"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1181,6 +1225,26 @@ MSG_HASH(
    "Спробувати зсинхронізувати конфіґурації, SRAM, і стани з провайдером хмарного сховища."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Деструктивна хмарна синхронізація"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Синхронізація: Зберегти/Стани"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Синхронізація: Файли конфігурації"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Коли увімкнено, збереження чи стани будуть синхронізуватись до хмари."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Коли цей параметр увімкнено, файли конфігурації будуть синхронізовані до хмари."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "У вимкненому стані, файли переміщуються до резервного каталогу перед перезаписом чи видаленням."
    )
@@ -1195,6 +1259,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
    "Посилання до хмарного сховку"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "URL для входу в API до хмарного сховища."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
@@ -1223,6 +1291,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Файловий браузер"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Змінити параметри браузера файлів."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -1457,12 +1529,52 @@ MSG_HASH(
    "Драйвер вводу для використання. Деякі відеодрайвери примусово використовують інший драйвер вводу."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   "Драйвер udev читає події evdev для підтримки клавіатури. Він також підтримує зворотний зв'язок клавіатури, миші та тачпади.\nЗа замовчуванням у більшості дистрибутивів вузли /dev/input доступні лише для користувача root (режим 600). Ви можете налаштувати правило udev, яке зробить їх досту[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   "Драйверу вводу linuxraw потрібен активний TTY. Події з клавіатури зчитуються безпосередньо з TTY, що робить його простішим, але не таким гнучким, як udev. Миші тощо не підтримуються взагалі. Цей драйвер використовує старий API джойстика (/dev/input/js*)."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
    "Драйвер вводу. Відеодрайвер може примусово використовувати інший драйвер вводу."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    "Контролер"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "Використовувати драйвер контролера. (Потрібен перезапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   "Драйвер контролера DirectInput."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   "Низькорівневий драйвер пристрою людського інтерфейсу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   "Сирий драйвер для Linux, використовує застарілий API джойстика. Якщо можливо, використовуйте udev."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Linux-драйвер для контролерів, що підключаються до паралельного порту через спеціальні адаптери."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   "Драйвер контролера на основі бібліотек SDL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   "Драйвер контролера з інтерфейсом udev, зазвичай рекомендується. Використовує нещодавній evdev joypad API для підтримки джойстика. Підтримує гаряче підключення та зворотний зв'язок за силою.\nЗа замовчуванням у більшості дистрибутивів вузли /dev/input доступні лише для користувача root ([...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   "Драйвер контролера XInput. Переважно для контролерів XBox."
    )
 
 MSG_HASH(
@@ -1490,6 +1602,14 @@ MSG_HASH(
    "Драйвер Vulkan. Цей драйвер дозволяє використовувати Vulkan ядра libretro в додаток до ядер, що використовують проґрамний рендер. Мінімальна необхідна версія: Vulkan 1.0. Підтримує HDR і шейдери формату Slang."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "SDL 1.2 драйвер з програмною візуалізацією. Продуктивність вважається неоптимальною. Використовуйте його лише в крайньому разі."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "Драйвер SDL 2 з програмною візуалізацією. Продуктивність програмних реалізацій ядра лібрето залежить від реалізації SDL на вашій платформі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
    "Metal драйвер для платформ Apple. Підтримує Slang формат шейдерів."
    )
@@ -1506,6 +1626,54 @@ MSG_HASH(
    "Драйвер Direct3D 9 підтримує HLSL формат шейдерів."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Драйвер Direct3D 10 з підтримкою формату шейдерів Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Драйвер Direct3D 11 з підтримкою HDR і формату шейдерів Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Драйвер Direct3D 12 з підтримкою HDR і формату шейдерів Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "Драйвер DispmanX. Використовує API DispmanX для графічного процесора Videocore IV в Raspberry Pi 0..3. Без підтримки накладання та шейдерів."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "Драйвер LibCACA. Виводить символи замість графіки. Не рекомендується для практичного використання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "Низькорівневий відеодрайвер Exynos, який використовує блок G2D у SoC Samsung Exynos для операцій blit. Продуктивність для ядер програмного рендерингу повинна бути оптимальною."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Звичайний DRM відеодрайвер. Це низькорівневий відеодрайвер, що використовує libdrm для апаратного масштабування за допомогою GPU накладання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Низькорівневий відеодрайвер Sunxi, який використовує блок G2D в SoC Allwinner."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Драйвер для Wii U. Підтримує шейдери Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Драйвер перемикача. Підтримує формат шейдерів GLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "Драйвер OpenVG. Використовує апаратне прискорення API 2D векторної графіки OpenVG."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "Драйвер GDI. Використовує застарілий інтерфейс Windows. Не рекомендується."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
    "Поточний відео-драйвер."
    )
@@ -1516,6 +1684,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Драйвер звуку для використання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "Драйвер RSound для мережевих аудіосистем."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Застарілий драйвер відкритої звукової системи."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
@@ -1530,6 +1706,10 @@ MSG_HASH(
    "ALSA драйвер, реалізований без залежностей."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "Драйвер звукової системи RoarAudio."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    "OpenAL драйвер."
    )
@@ -1537,7 +1717,43 @@ MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
    "OpenSL драйвер."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "Драйвер DirectSound. DirectSound використовувався переважно з Windows 95 до Windows XP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Драйвер Windows Audio Session API. WASAPI використовується в основному з Windows 7 і вище."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "Драйвер PulseAudio. Якщо система використовує PulseAudio, переконайтеся, що ви використовуєте цей драйвер, а не, наприклад, ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Драйвер Jack Audio Connection Kit."
+   )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   "Мікрофон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Драйвер мікрофону для використання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Ре семплер мікрофона"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Драйвер ре семплера мікрофона для використання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+   "Рамки мікрофонних блоків"
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
@@ -1546,6 +1762,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
    "Драйвер перетворювача частоти для використання."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "Віконна реалізація Sinc."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "Реалізація згорнутого косинуса."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "Найближча реалізація ресемплінгу. Цей ресемплер ігнорує налаштування якості."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -1574,6 +1802,26 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Використовувати драйвер меню. (Потрібен перезапуск)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "XMB - це графічний інтерфейс RetroArch, який виглядає як меню консолі 7-го покоління. Він може підтримувати ті самі функції, що й Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "Ozone - це графічний інтерфейс RetroArch за замовчуванням на більшості платформ. Він оптимізований для навігації за допомогою ігрового контролера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "RGUI - це простий вбудований графічний інтерфейс для RetroArch. Він має найнижчі вимоги до продуктивності серед драйверів меню і може використовуватися на екранах з низькою роздільною здатністю."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "На мобільних пристроях RetroArch за замовчуванням використовує мобільний інтерфейс MaterialUI. Цей інтерфейс розроблений для сенсорних екранів та вказівних пристроїв, таких як миша/трекбол."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
@@ -1651,6 +1899,10 @@ MSG_HASH(
    "Блокувати системну заставку збереження екрану."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Призупиняє роботу заставки. Підказка, яка не обов'язково має виконуватися відеодрайвером."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    "Виокремлене відео"
    )
@@ -1659,8 +1911,160 @@ MSG_HASH(
    "Покращити продуктивність шляхом збільшення затримки та пропуску кадрів. Використовуйте лише якщо не вдалося досягти повної швидкості в інший спосіб."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Використовуйте потоковий відеодрайвер. Це може покращити продуктивність, але може призвести до затримок та більшої кількості заїкань відео."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Вставка чорного кадра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Вставте чорні рамки між кадрами. Може значно зменшити розмиття руху, імітуючи розгортку ЕПТ, але ціною втрати яскравості. Не поєднуйте з інтервалом заміни > 1, під кадрами, затримкою кадру або синхронізацією до точної частоти кадрів контенту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Вставляє чорні рамки між кадрами для покращення чіткості руху. Використовуйте лише опцію, призначену для поточної частоти оновлення екрана. Не можна використовувати з частотою оновлення, не кратною 60 Гц, наприклад, 144 Гц, 165 Гц тощо. Не поєднуйте з інтервалом заміни > 1, під к[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - Для частоти оновлення дисплея 120 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - Для частоти оновлення дисплея 180 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - Для частоти оновлення дисплея 240 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - Для частоти оновлення дисплея 300 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - Для частоти оновлення дисплея 360 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - Для частоти оновлення дисплея 420 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - Для частоти оновлення дисплея 480 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - Для частоти оновлення дисплея 540 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - Для частоти оновлення дисплея 600 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - Для частоти оновлення дисплея 660 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - Для частоти оновлення дисплея 720 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - Для частоти оновлення дисплея 780 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - Для частоти оновлення дисплея 840 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - Для частоти оновлення дисплея 900 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - Для частоти оновлення дисплея 960 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Вставка чорного кадру - темні кадри"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Налаштуйте кількість чорних кадрів у загальній послідовності розгортки BFI. Чим більше, тим вища чіткість руху, чим менше, тим вища яскравість. Не застосовується на частоті 120 Гц, оскільки для роботи використовується лише 1 кадр BFI. Вищі значення обмежать вас до максимально м[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Дозволяє регулювати кількість чорних кадрів, що відображаються у послідовності bfi. Більша кількість чорних кадрів збільшує чіткість руху, але зменшує яскравість. Не застосовується на 120 Гц, оскільки є лише один додатковий кадр з частотою 60 Гц, тому він має бути чорним, інак[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Підкадри шейдерів"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Вставляти додаткові кадри шейдерів між кадрами. Дозволяє шейдерам виконувати ефекти з вищою частотою кадрів, ніж реальна частота вмісту. Має бути налаштований на поточну частоту екрана. Не поєднуйте з інтервалом заміни > 1, BFI, затримкою кадру або синхронізацією до точної ч[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Вставляє додатковий(і) кадр(и) шейдерів між кадрами для будь-яких можливих шейдерних ефектів, які мають працювати швидше за частоту оновлення вмісту. Використовуйте лише той параметр, який призначено для поточної частоти оновлення екрана. Не використовується при частоті [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - Для частоти оновлення дисплея 120 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - Для частоти оновлення дисплея 180 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - Для частоти оновлення дисплея 240 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - Для частоти оновлення дисплея 300 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - Для частоти оновлення дисплея 360 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - Для частоти оновлення дисплея 420 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - Для частоти оновлення дисплея 480 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - Для частоти оновлення дисплея 540 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - Для частоти оновлення дисплея 600 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - Для частоти оновлення дисплея 660 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - Для частоти оновлення дисплея 720 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - Для частоти оновлення дисплея 780 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - Для частоти оновлення дисплея 840 Гц"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - Для частоти оновлення дисплея 900 Гц"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1673,6 +2077,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Білінійне фільтрування"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Додайте легке розмиття до зображення, щоб пом'якшити жорсткі краї пікселів. Цей параметр має дуже незначний вплив на продуктивність. Має бути вимкнено, якщо використовуються шейдери."
    )
 #if defined(DINGUX)
 MSG_HASH(
@@ -1731,6 +2139,14 @@ MSG_HASH(
    "Застосувати ЦП-відеофільтр. Може спричинити велике навантаження. Деякі відеофільтри працюють лише з ядрами, що використовують 32 або 16-бітний колір."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Застосувати процесорний відеофільтр. Це може спричинити високі витрати на продуктивність. Деякі відеофільтри можуть працювати лише з ядрами, що використовують 32- або 16-бітовий колір. Можна вибрати динамічно пов'язані бібліотеки відеофільтрів."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "Застосувати процесорний відеофільтр. Це може спричинити високі витрати на продуктивність. Деякі відеофільтри можуть працювати лише з ядрами, що використовують 32- або 16-бітовий колір. Можна вибрати вбудовані бібліотеки відеофільтрів."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    "Вимкнути відеофільтр"
    )
@@ -1738,6 +2154,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Вивантажити усі активні ЦП-відеофільтри."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Увімкнення повноекранного режиму поверх вирізу на пристроях Android та iOS"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -1774,6 +2194,10 @@ MSG_HASH(
    "Оберіть значення, щоб налаштувати параметри імпульсу для зміни розміру зображення."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Використання меню високої роздільної здатності"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    "Перемкнутися в режим високої роздільної здатності для меню коли не завантажено жодної гри."
    )
@@ -1796,7 +2220,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Вибрати дисплей для використання."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "Якому монітору надати перевагу. 0 (за замовчуванням) означає, що жодному монітору не надається перевага, 1 і вище (1 - перший монітор) пропонує RetroArch використовувати саме цей монітор."
+   )
 #if defined (WIIU)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Оптимізувати для ґеймпада Wii U (потрібне перезавантаження)"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Використати точний 2-кратний масштаб як область перегляду. Вимкнути зображення з рідною роздільною здатністю телевізора."
@@ -1859,12 +2291,24 @@ MSG_HASH(
    "Точно вирахувана частота оновлення екрана в Гц."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   "Точна частота оновлення вашого монітора (Гц). Це використовується для обчислення частоти вхідного аудіосигналу за формулою:\naudio_input_rate = частота вхідного сигналу гри * частота оновлення дисплея / частота оновлення гри\nЯкщо ядро не повідомляє жодних значень, для сумісності [...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
    "Частота оновлення дисплея"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
    "Частота оновлення, згідно драйвера дисплея."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Автоматичний перемикач частоти оновлення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   "Автоматичне перемикання частоти оновлення екрана залежно від поточного вмісту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -1877,6 +2321,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    "Усі Повноекранні Режими"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Автоматична частота оновлення порогу PAL"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "Максимальна частота оновлення вважається PAL."
    )
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
@@ -2070,6 +2522,10 @@ MSG_HASH(
    "Налаштування"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   "Надано ядро"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    "Користувацька"
    )
@@ -2092,17 +2548,11 @@ MSG_HASH(
    "Довільне співвідношення сторін (значення X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Задати значення зсуву області перегляду по осі Х.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Довільне співвідношення сторін (значення Y)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Задати значення зсуву області перегляду по осі Y.\nІгнорується, якщо включено параметр «Цілочисельне масштабування»."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Довільне співвідношення сторін (ширина)"
@@ -2118,6 +2568,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    "Задати висоту області перегляду, якщо для пропорцій вказано «Довільне співвідношення сторін»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+   "Пере сканування кадрування (потрібен перезапуск)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2198,16 +2652,8 @@ MSG_HASH(
    "VSync буде увімкнено, поки продуктивність не знизиться за межі цільового курсу. Може мінімізувати заїкання, коли продуктивність падає нижче в режимі реального часу, і бути більш енергоефективною."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Затримка кадрів (мс)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Автозатримка кадру"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Зменшує ефективність 'Автозатримки кадру' за потреби запобігти падінню частоти. Початкове значення становить половину часу кадра, якщо 'Затримка кадру' дорівнює 0."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2234,12 +2680,20 @@ MSG_HASH(
    "Встановити скільки кадрів ЦП може опрацювати перед ГП, використовуючи \"Hard GPU Sync\"."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   "Задає, на скільки кадрів CPU може випереджати GPU при використанні \"Жорсткої синхронізації GPU\". Максимальне значення - 3.\n 0: Синхронізація до GPU негайно.\n 1: Синхронізація до попереднього кадру.\n 2: Тощо..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    "Синхронізувати для точної частоти кадрів вмісту (G-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    "Немає відхилень від основного часу відклику. Використовуйте для екранів із змінною швидкістю оновлення (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Синхронізація з точною частотою кадрів вмісту. Ця опція еквівалентна примусовому встановленню швидкості x1, але при цьому зберігає можливість перемотування вперед. Ніяких відхилень від основної запитуваної частоти оновлення, ніякого звуку Dynamic Rate Control."
    )
 
 /* Settings > Audio */
@@ -2253,6 +2707,14 @@ MSG_HASH(
    "Зміна налаштувань аудіовиходу."
    )
 #ifdef HAVE_MICROPHONE
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+   "Мікрофон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+   "Змінити налаштування аудіо входу."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_SETTINGS,
@@ -2307,6 +2769,14 @@ MSG_HASH(
    "Вимкнути звук мікшера."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   "Дотримуйтесь беззвучного режиму"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   "Вимкнути звук всього аудіо в беззвучному режимі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    "Вимкнути звук при перемотуванні"
    )
@@ -2329,6 +2799,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    "Гучність звуку (в dB). 0 дБ - це нормальна гучність без посилення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   "Гучність звуку, виражена в дБ. 0 дБ - це нормальна гучність, коли підсилення не застосовується. Посилення можна регулювати під час виконання за допомогою кнопок Input Volume Up / Input Volume Down."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
@@ -2402,6 +2876,22 @@ MSG_HASH(
    "Перевизначити типовий аудіо пристрій, який використовує звуковий драйвер. Це залежить від драйвера."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   "Користувацьке значення пристрою PCM для драйвера ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   "Користувацьке значення шляху до драйвера OSS (наприклад, /dev/dsp)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   "Користувацьке значення імені порту для драйвера JACK (наприклад, system:playback1,system:playback_2)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   "Користувацька IP-адреса сервера RSound для драйвера RSound."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Затримка звуку (мс)"
    )
@@ -2413,8 +2903,24 @@ MSG_HASH(
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   "Мікрофон"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   "Увімкніть аудіовхід у підтримуваних ядрах. Не має накладних витрат, якщо ядро не використовує мікрофон."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
    "Пристрій"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+   "Перевизначити пристрій введення за замовчуванням, який використовує драйвер мікрофона. Це залежить від драйвера."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+   "Перевизначити пристрій введення за замовчуванням, який використовує драйвер мікрофона. Це залежить від драйвера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
@@ -2425,12 +2931,36 @@ MSG_HASH(
    "Знизьте це значення, щоб сприяти продуктивності/меншій затримці порівняно з якістю звуку, збільшуйте для кращої якості звуку за рахунок продуктивності/меншої затримки."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   "Вхідна частота за замовчуванням (Гц)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   "Частота дискретизації аудіовходу, яка використовується, якщо ядро не запитує конкретне число."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   "Затримка аудіовходу (мс)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   "Бажана затримка аудіовходу в мілісекундах. Може бути не враховано, якщо драйвер мікрофона не може забезпечити задану затримку."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
    "Ексклюзивний режим WASAPI"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   "Дозвольте RetroArch отримати ексклюзивний контроль над мікрофонним пристроєм при використанні мікрофонного драйвера WASAPI. Якщо його вимкнено, RetroArch використовуватиме режим спільного доступу."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
    "Формат WASAPI з плаваючою комою"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   "Використовуйте введення з пливучою комою для драйвера WASAPI, якщо він підтримується вашим аудіопристроєм."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
@@ -2478,6 +3008,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    "Максимальна зміна швидкості введення звуку. Збільшення цього забезпечує дуже великі зміни часу за рахунок неточного звукового тону (наприклад, запуск ядер PAL на дисплеях NTSC)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   "Максимальний перекіс синхронізації звуку.\nВизначає максимальну зміну вхідної швидкості. Можливо, ви захочете збільшити цей параметр, щоб уможливити дуже великі зміни синхронізації, наприклад, запуск ядер PAL на дисплеях NTSC, ціною неточної висоти тону звуку.\nШвидкість вве[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -2636,6 +3170,14 @@ MSG_HASH(
    "Завантажити перевизначення прив'язок вводу для поточного ядра."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Автоналаштування"
    )
@@ -2738,6 +3280,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
    "Кількість секунд, необхідне для прив'язки натиснутої кнопки."
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_TIMEOUT,
+   "Час очікування"
+   )
+MSG_HASH(
+   MSG_INPUT_BIND_HOLD,
+   "Утримуйте"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
@@ -3068,6 +3618,10 @@ MSG_HASH(
    "Попередній диск"
    )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   "Шейдери (Перемикання)"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
    "Наступний шейдер"
@@ -3906,8 +4460,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    "Показати пункт меню «Зберегти параметри на диск» у меню «Параметри > Керування параметрами ядра»."
    )
-
-
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Показати 'Додати до Списку Відтворення'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Показувати опцію 'Додати до Списку Відтворення'."
+   )
 
 /* Settings > User Interface > Views > Settings */
 
@@ -4229,7 +4789,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Керувати списками відтворення"
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Керувати"
    )

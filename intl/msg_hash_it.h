@@ -627,6 +627,10 @@ MSG_HASH(
    "Core della CPU"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT disponibile"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    "Identificatore frontend"
    )
@@ -1183,6 +1187,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    "Sincronizzazione Cloud Distruttiva"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Sincronizzazione: Salva/Stati"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Sincronizza: File Di Configurazione"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Sincronizza: Immagini Miniatura"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Sincronizza: File Di Sistema"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Se abilitata, i salvataggi/stati verranno sincronizzati su cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Se abilitata, i file di configurazione verranno sincronizzati su cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Se abilitata, le immagini delle miniature saranno sincronizzate su cloud. Non generalmente raccomandato, tranne che per grandi collezioni di immagini di miniature personalizzate; altrimenti il download di miniature è una scelta migliore."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Se abilitata, i file di sistema saranno sincronizzati su cloud. Questo può aumentare significativamente il tempo necessario per sincronizzarli; usare con cautela."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -2008,11 +2044,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "Simula una linea di scanline di base su più sotto-fotogrammi dividendo lo schermo in verticale e rendendo ogni parte dello schermo in base a quanti sotto-fotogrammi ci sono"
+   "Simula una linea di scanline di base su più sotto-frame dividendo lo schermo su verticalmente e rendendo ogni parte dello schermo in base a quanti sotto-frame ci sono."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "Simula una linea di scanline di base su più sotto-fotogrammi dividendo lo schermo su verticalmente e rendendo ogni parte dello schermo secondo quanti sotto-fotogrammi ci sono dalla parte superiore dello schermo verso il basso"
+   "Simula una linea di scanline di base su più sotto-frame dividendo lo schermo su verticalmente e rendendo ogni parte dello schermo secondo quanti sotto-frame ci sono dalla parte superiore dello schermo verso il basso."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2485,7 +2521,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Scostamento visuale personalizzato usato per definire la posizione dell'asse X della porta di visualizzazione.\nQuesti vengono ignorati se 'Scala intera' è abilitata."
+   "Scostamento visuale personalizzato utilizzato per definire la posizione dell'asse X della porta di visualizzazione."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2493,8 +2529,58 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Scostamento visuale personalizzato usato per definire la posizione dell'asse Y della porta di visualizzazione.\nQuesti vengono ignorati se 'Scala intera' è abilitata."
+   "Scostamento visuale personalizzato utilizzato per definire la posizione dell'asse Y della porta di visualizzazione."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Bias Di Ancoraggio Di Viewport X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Bias Di Ancoraggio Di Viewport X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Bias Di Ancoraggio Di Viewport Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Bias Di Ancoraggio Di Viewport Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Bias di visualizzazione personalizzata utilizzato per spostare la vista orizzontalmente (se più ampia dell'altezza del contenuto). 0.0 significa lontano a sinistra e 1.0 significa lontano a destra."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Bias di visualizzazione personalizzata utilizzato per spostare la porta di visualizzazione verticalmente (se più alta dell'altezza del contenuto). 0.0 significa superiore e 1.0 significa basso."
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Bias Di Ancoraggio Di Viewport X (Orientamento Verticale)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Bias Di Ancoraggio Di Viewport X (Orientamento Verticale)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Bias Di Ancoraggio Di Viewport Y (Orientamento Verticale)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Bias Di Ancoraggio Di Viewport Y (Orientamento Verticale)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Bias di visualizzazione personalizzata utilizzato per spostare la vista orizzontalmente (se più ampia dell'altezza del contenuto). 0.0 significa lontano a sinistra e 1.0 significa lontano a destra. (Orientamento verticale)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Bias di visualizzazione personalizzata utilizzato per spostare la porta di visualizzazione verticalmente (se più alta dell'altezza del contenuto). 0.0 significa superiore e 1.0 significa inferiore. (Orientamento verticale)"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Rapporto d'aspetto personalizzato(in Larghezza)"
@@ -2591,15 +2677,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Ritardo Frame (ms)"
+   "Ritardo del Frame"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Riduce la latenza al costo di un rischio più elevato di intercettazioni video. Aggiunge un ritardo in millisecondi dopo la presentazione video e prima della cornice principale."
+   "Riduce la latenza al costo di un rischio più elevato di stuttering video."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Imposta quanti millisecondi di ritardo dopo la presentazione video prima di eseguire il core. Puoi ridurre la latenza al costo di un rischio più elevato di balbuzia. Il massimo è %d."
+   "Imposta quanti millisecondi per riposare prima di eseguire il core dopo la presentazione del video. Riduce la latenza al costo di un rischio più elevato di stuttering. I valori\n20 e superiori sono trattati come percentuali di tempo del fotogramma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2607,11 +2693,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Diminuisce temporaneamente l'efficacia di 'Ritardo fotogramma' per evitare cadute future. Il punto di partenza è il tempo di metà fotogramma quando 'Ritardo fotogrammi' è 0."
+   "Regola dinamicamente il ''Ritardo del fotogramma'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Riduce temporaneamente l'efficacia del 'Ritardo del Fotogramma' fino a quando la frequenza di aggiornamento dell'obiettivo è stabile. La misurazione inizia dal tempo di metà frame quando 'Frame Delay' è 0. Ad esempio 8 per NTSC e 10 per PAL."
+   "Tentativo di tenere premuto l'obiettivo 'Ritardo fotogramma' desiderato e ridurre al minimo le gocce fotogramma. Il punto di partenza è di 3/4 tempo di fotogramma quando 'Ritardo fotogrammi' è 0 (Auto)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -3136,6 +3222,14 @@ MSG_HASH(
    "Sovrascrivi le connessioni in ingresso con le binds rimappate impostate per il core corrente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Ordina Remap Per Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "I Remap si applicheranno solo al gamepad attivo in cui sono stati salvati."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Abilita Autoconfigurazione"
    )
@@ -3452,6 +3546,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "Se abilitata, i pulsanti di ricerca verranno ignorati."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Disabilita l'analogico sinistro nel menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Impedisci all'analogico sinistro di navigare nel menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Disabilita l'analogico destro nel menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Impedisci all'analogico destro di navigare nel menu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3988,6 +4098,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    "Il controller fisico riconosciuto da RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Dispositivo riservato per questo giocatore"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Questo controller sarà assegnato per questo giocatore, in base alla modalità di prenotazione."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "Nessuna Prenotazione"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "Preferiti"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "Prenotato"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "Tipo Di Prenotazione Dispositivo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "Preferito: se il dispositivo specificato è presente, sarà assegnato per questo giocatore. Riservato: nessun altro regolatore sarà assegnato per questo giocatore."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
@@ -6482,32 +6620,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Mostra l'opzione 'Aggiungi ai Preferiti'."
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Aggiungi alla Scaletta"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Mostra 'Aggiungi alla playlist'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Aggiungi il contenuto a una scaletta."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Mostra l'opzione 'Aggiungi alla scaletta'."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Crea una nuova scaletta"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Aggiunto alla playlist"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Impossibile aggiungere alla playlist: playlist completa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Crea una nuova scaletta e aggiungi la voce corrente."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Mostra 'Imposta associazione al nucleo'"
@@ -6702,6 +6822,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "Mostra 'Utente'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Icone Playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Tipo di miniatura dell'icona della playlist da visualizzare."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7681,7 +7809,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Se abilitata, troverà le miniature dal nome del file della voce, piuttosto che dalla sua etichetta."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Consenti tutti i tipi di immagini supportate per le miniature"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Se abilitata, le miniature locali possono essere aggiunte in tutti i tipi di immagine supportati da RetroArch (come jpeg). Potrebbe avere un impatto sulle prestazioni minore."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Gestisci"
    )
@@ -8643,6 +8779,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Aggiungi il contenuto a 'Preferiti'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Aggiungi alla Scaletta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Aggiungi il contenuto a una scaletta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Crea una nuova scaletta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Crea una nuova scaletta e aggiungi la voce corrente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -10326,6 +10478,10 @@ MSG_HASH(
    "Schermata del Titolo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Logo Contenuto"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "Normale"
    )
@@ -11299,6 +11455,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE,
    "Zona Crepuscolare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "Selenio"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
@@ -13122,6 +13282,14 @@ MSG_HASH(
    "Impossibile aggiungere il preferito: playlist completa"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Aggiunto alla playlist"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Impossibile aggiungere alla playlist: playlist completa"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "Core associato: "
    )
@@ -13192,10 +13360,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Impossibile trovare il nuovo percorso di configurazione. Verrà utilizzato quello corrente ."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Abilita la modalità Hardcore. I salvataggi e la funzione riavvolgimento sono stati disattivati."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -13970,6 +14134,10 @@ MSG_HASH(
    "Trofeo Sbloccato"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Obiettivo Raro Sbloccato"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Tentativo di classifica iniziato"
    )
@@ -13980,6 +14148,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "Inviato %s per %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Classificato: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Migliore: %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -14362,6 +14538,10 @@ MSG_HASH(
    "Ricezione dell'intestazione dall'host non riuscita."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Accesso come \"%s\"."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "È necessario mettere in pausa o disabilitare gli obiettivi Modalità Hardcore per caricare gli stati."
    )
@@ -14380,6 +14560,70 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Completato %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Abilita la modalità Hardcore. I salvataggi e la funzione riavvolgimento sono stati disattivati."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Questo gioco non ha obiettivi."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Tutte gli obiettivi di %d attivate per questa sessione"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "%d obiettivi non ufficiali attivati"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Hai %d di %d obiettivi sbloccati"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d non supportato"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Osservazione %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Hardcore in pausa. Impostazione manuale di ritardo frame video non consentita."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
+   "Hardcore in pausa. I sottoframe Shader non sono consentiti."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Hardcore in pausa. intervallo di swap vsync superiore a 1 non consentito."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Hardcore in pausa. Inserimento cornice nera non consentito."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Hardcore in pausa. Impostazione non consentita: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Hardcore in pausa. Non è possibile ottenere successi hardcore per %s utilizzando %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroAchievements: Il gioco non può essere identificato."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "Impossibile caricamento gioco RetroAchievements: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "Impossibile cambio media di RetroAchievements: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -14872,14 +15116,6 @@ MSG_HASH(
    "Abilitare Linux GameMode può migliorare la latenza, correggere i problemi di crackling audio e massimizzare le prestazioni complessive configurando automaticamente la CPU e la GPU per le migliori prestazioni.\nIl software GameMode deve essere installato per funzionare. Vedi https://github.com/FeralInteractive/gamemode per informazioni su come installare GameMode."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Riposo fotogramma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Prova a ridurre l'utilizzo della CPU vsync dormendo il più possibile dopo la presentazione del quadro. Progettato principalmente per la sincronizzazione di scanline di terze parti."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Usa modalità PAL60"
    )
@@ -15313,6 +15549,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Touch mouse è disabilitato"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "sdl2 microfono richiede driver audio sdl2"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

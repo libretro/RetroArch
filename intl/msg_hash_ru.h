@@ -1229,6 +1229,38 @@ MSG_HASH(
    "Деструктивная облачная синхронизация"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Синхронизация: карты памяти/сохранения"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Синхронизация: файлы конфигураций"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Синхронизация: Миниатюры изображений"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Синхронизация: Системные файлы"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Если включено, карты памяти/сохранения будут синхронизироваться с облаком."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Если включено, файлы конфигураций будут синхронизироваться с облаком."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Когда включено, эскизы изображений будут синхронизированы с облаком. Не рекомендуется, кроме больших коллекций пользовательских картинок, в противном случае сканер эскизов является лучшим выбором."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Если включено, системные файлы будут синхронизированы в облако. Это может значительно увеличить время синхронизации, используйте с осторожностью."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Если отключено, перед удалением или перезаписью файлы помещаются в каталог резервирования."
    )
@@ -1911,10 +1943,6 @@ MSG_HASH(
    "Вставляет между кадрами кадр(ы) чёрного цвета для повышения чёткости движения. Используйте значение только для текущей частоты обновления. Не применимо с частотой обновления не кратной 60 Гц, например 144 Гц, 165 Гц и т.д. Не включайте одновременно с интервалом обновления > 1, по[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "ВЫКЛ"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - для частоты обновления экрана 120 Гц"
    )
@@ -1999,10 +2027,6 @@ MSG_HASH(
    "Вставляет между кадрами дополнительный кадр(ы) шейдера для всех шейдерных эффектов с частотой выше частоты контента. Используйте значение только для текущей частоты обновления. Не применимо с частотой обновления не кратной 60 Гц, например 144 Гц, 165 Гц и т.д. Не включайте одно[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "ВЫКЛ"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
    "2 - для частоты обновления экрана 120 Гц"
    )
@@ -2072,11 +2096,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "Имитирует плавающую строку развёртки поверх нескольких подкадров путём разделения экрана по вертикали и отрисовки каждой его части в зависимости от количества подкадров."
+   "Имитирует простую плавающую строку развёртки поверх нескольких подкадров путём деления экрана по вертикали и отрисовки каждой его части исходя из количества подкадров."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "Имитирует плавающую строку развёртки поверх нескольких подкадров путём разделения экрана по вертикали и отрисовки каждой его части в зависимости от количества подкадров от верха до низа экрана."
+   "Имитирует простую плавающую строку развёртки поверх нескольких подкадров путём деления экрана по вертикали и отрисовки каждой его части исходя из количества подкадров от верха до низа экрана."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2557,7 +2581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Ручная установка смещения области отображения по оси X.\nНе учитывается, если включено 'Целочисленное масштабирование'."
+   "Установка смещения для определения положения области просмотра по оси X."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2565,11 +2589,61 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Ручная установка смещения области отображения по оси Y.\nНе учитывается, если включено 'Целочисленное масштабирование'."
+   "Установка смещения для определения положения области просмотра по оси Y."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Сдвиг области просмотра по X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Сдвиг области просмотра по X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "Сдвиг области просмотра по Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "Сдвиг области просмотра по Y"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Установка смещения области просмотра по горизонтали (если ширина превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Установка смещения области просмотра по вертикали (если высота превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому."
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Сдвиг области просмотра по X (портретный режим)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Сдвиг области просмотра по X (портретный режим)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Сдвиг области просмотра по Y (портретный режим)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "Сдвиг области просмотра по Y (портретный режим)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Установка смещения области просмотра по горизонтали (если ширина превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому. Для портретного режима."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Установка смещения области просмотра по вертикали (если высота превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому. Для портретного режима."
+   )
+#endif
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Пользовательское соотношение сторон (ширина)"
+   "Ручная установка соотношения сторон (ширина)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
@@ -2577,7 +2651,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Пользовательское соотношение сторон (высота)"
+   "Ручная установка соотношения сторон (высота)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -2651,7 +2725,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Ручная установка интервала подкачки VSync. Понижает частоту экрана на заданный коэффициент. В режиме 'Автоматически' значение выбирается исходя из частоты обновления ядра, улучшая распределение кадров для контента в 30 fps на дисплеях с 60 Гц либо контента в 60 fps на дисплеях с 120 [...]"
+   "Ручная установка интервала подкачки VSync. Понижает частоту экрана на заданный коэффициент. В режиме 'Автоматически' значение выбирается исходя из частоты обновления ядра, улучшая распределение кадров контента в 30 к/с на дисплеях 60 Гц либо контента в 60 к/с на дисплеях 120 Гц."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -2667,15 +2741,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Задержка кадра (мс)"
+   "Задержка кадра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Уменьшает задержку ввода, но может ухудшать плавность изображения. Вносит количество миллисекунд задержки между выводом изображения и временем кадра ядра."
+   "Уменьшает запаздывание, но может влиять на плавность изображения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Количество миллисекунд задержки между выводом изображения и запуском ядра. Может снижать запаздывание, но повышает риск снижения плавности. Макс. значение равно %d."
+   "Устанавливает количество миллисекунд бездействия перед запуском ядра после вывода изображения. Уменьшает запаздывание, но может влиять на плавность.\nЗначение выше или равное 20 обрабатывается как процент от времени кадра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2683,11 +2757,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Временно уменьшает действующую 'Задержку кадра', чтобы предотвратить выпадение кадров. При 'Задержке кадра' равной 0 точка отсчёта соответствует половине времени кадра."
+   "Динамическая подстройка действующей 'Задержки кадра'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Временно уменьшает действующую 'Задержку кадра' до стабилизации целевой частоты обновления. При 'Задержке кадра' равной 0 измерение начинается с середины времени кадра. Например 8 для NTSC и 10 для PAL."
+   "Пытаться сохранять целевую 'Задержку кадра' и минимизировать выпадение кадров. При значении 'Задержки кадра' 0 (автоматически) начальная точка равна 3/4 времени кадра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -3072,7 +3146,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "Выбор устройства вывода (зависит от драйвера). Значение 'ВЫКЛ' отключает вывод MIDI. Также может быть указано имя устройства."
+   "Выбор устройства ввода (зависит от драйвера). Значение 'ВЫКЛ' отключает ввод MIDI. Также может быть указано имя устройства."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -3231,6 +3305,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Загружать переопределения привязок ввода для текущего ядра."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Сортировать привязки по геймпадам"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Привязки будут применяться только при подключении геймпада, для которого были сохранены."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Автонастройка"
@@ -3552,6 +3634,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "При включении будут игнорироваться нажатия кнопки поиска."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Отключить левый стик в меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Не использовать левый аналоговый стик для навигации по меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Отключить правый стик в меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Не использовать правый аналоговый стик для навигации по меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3961,11 +4059,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
-   "Кадры упреждения (переключение)"
+   "Упреждающие кадры (переключение)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
-   "Включает/выключает кадры упреждения."
+   "Включает/выключает упреждающие кадры."
    )
 
 MSG_HASH(
@@ -4015,7 +4113,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Включает/выключает счётчик пинга для текущей комнаты netplay."
+   "Включает/отключает отображение пинга для текущей сетевой игры."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
@@ -4088,6 +4186,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    "Физический контроллер, опознанный RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Устройство для данного игрока"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "Выбранный контроллер будет присвоен текущему игроку согласно режиму резервирования."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "Без резервирования"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "Предпочитать"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "Резервировать"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "Тип резервирования устройства"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "Предпочитать: при подключении указанного устройства оно будет присвоено данному игроку. Резервировать: не присваивать другие контроллеры данному игроку."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
@@ -4318,7 +4444,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Кадры упреждения недоступны]"
+   "[Упреждающие кадры недоступны]"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
@@ -4326,27 +4452,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Обработка кадров упреждения"
+   "Обработка упреждающих кадров"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Повторно обрабатывать логику ядра с последними событиями ввода при изменении состояния контроллера. Действует быстрее забегания, но может вызывать проблемы со звуком при загрузке сохранений."
+   "Повторная обработка логики ядра с последними событиями ввода при изменении состояния контроллера. Работает быстрее забегания, но может вызывать проблемы со звуком у ядер при загрузке быстрых сохранений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
-   "Количество кадров упреждения"
+   "Количество упреждающих кадров"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
-   "Количество кадров для перезапуска. Вызывает нестабильность геймплея при превышении числа кадров внутриигровой задержки."
+   "Количество кадров для повторной обработки. Вызывает неровность геймплея, если превышено количество кадров внутриигровой задержки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Скрывать предупреждения упреждения кадров"
+   "Скрывать сообщения об упреждающих кадрах"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Не отображать предупреждение, если ядро несовместимо с кадрами упреждения."
+   "Не показывать предупреждение при несовместимости ядра с упреждающими кадрами."
    )
 
 /* Settings > Core */
@@ -5477,11 +5603,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   "Перетаскивание долгим тапом"
+   "Перетаскивать долгим нажатием"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   "Сделайте долгий тап по экрану, чтобы начать удерживание кнопки."
+   "Сделайте долгое нажатие по экрану для удерживания кнопки."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
@@ -5489,23 +5615,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
-   "Время удерживания, необходимое для долгого нажатия (тапа)."
+   "Время удерживания, необходимое для долгого нажатия."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-   "Перетаскивание двойным тапом"
+   "Перетаскивать двойным нажатием"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-   "Сделайте двойной тап по экрану для удерживания кнопки после второго касания. Добавляет задержку к кликам мыши."
+   "Дважды коснитесь экрана для удерживания кнопки после второго нажатия. Добавляет задержку к кликам мыши."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-   "Задержка двойного тапа (мс)"
+   "Задержка двойного нажатия (мс)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-   "Допустимая задержка между касаниями для срабатывания двойного тапа."
+   "Допустимая задержка между касаниями для обработки двойного нажатия."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Допуск нажатия"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Допустимое отклонение при определении долгого или одиночного нажатия. Выражается в процентах меньшего размера экрана."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -6590,32 +6724,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Показывать опцию 'Добавить в избранное'."
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Добавить в плейлист"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Показывать 'Добавить в плейлист'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Добавить контент в плейлист."
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "Показывать опцию 'Добавить в плейлист'."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Создать новый плейлист"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Добавлено в плейлист"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Не удалось добавить: плейлист заполнен"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "Создать новый плейлист и добавить в него текущую запись."
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Показывать 'Привязать ядро'"
@@ -6814,6 +6930,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "Показывать 'Пользователь'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Значки в плейлистах"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Тип иконки, отображаемый для плейлиста."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7767,7 +7891,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-   "Сканировать без привязки к ядру"
+   "Сканировать без привязки к ядрам"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
@@ -7779,7 +7903,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   "В некоторых случаях образы дублируют серийные номера, в частности игры PSP/PSN. Проверяя только серийный номер сканер иногда может соотносить контент с другой системой. Данная опция добавляет проверку CRC, которая существенно замедляет сканирование, но повышает его точность."
+   "Иногда серийные номера образов могут дублироваться, в частности для игр PSP/PSN. Сканирование только по серийным номерам может приводить к сопоставлению контента с неправильной системой. Данная опция добавляет проверку CRC, которая ощутимо замедляет сканирование, но делает е[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -7805,7 +7929,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Если включено, поиск миниатюр вместо названий записей производится по именам файлов."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Разрешать все форматы изображений для миниатюр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Если включено, локальные миниатюры можно добавлять во всех поддерживаемых RetroArch форматах изображений (например jpeg). Может незначительно влиять на производительность."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Управление"
    )
@@ -8779,6 +8911,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Добавить контент в избранное."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Добавить в плейлист"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Добавить контент в плейлист."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Создать новый плейлист"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Создать новый плейлист и добавить в него текущую запись."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -10486,6 +10634,10 @@ MSG_HASH(
    "Титульный экран"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Логотип контента"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "Нормально"
    )
@@ -11477,6 +11629,10 @@ MSG_HASH(
    "Gruvbox тёмная"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "Селен"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "Solarized тёмная"
    )
@@ -11521,7 +11677,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Иконки"
+   "Иконки меню"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
@@ -11545,15 +11701,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Оптимизировать меню в ландшафте"
+   "Оптимизировать альбомный макет"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Автоматически подгонять макет меню для лучшего отображения в ландшафтной ориентации экрана."
+   "Автоматически подстраивать макет меню для оптимального отображения в альбомной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
-   "Панель навигации"
+   "Показывать панель навигации"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
@@ -11565,7 +11721,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "Автоматически перемещать панель навигации в правую часть экрана при использовании ландшафтной ориентации."
+   "Автоматически перемещать панель навигации вправо при использовании ландшафтной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
@@ -11581,23 +11737,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Включить эффекты сглаживания анимации переходов по уровням меню."
+   "Включает эффект плавной анимации при переходе между разными уровнями меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-   "Вид эскизов в портрет. режиме"
+   "Тип эскизов в портретном режиме"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-   "Выбор режима миниатюр плейлиста в портретной ориентации."
+   "Выбор отображения эскизов плейлиста в портретной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Вид эскизов в ландш. режиме"
+   "Тип эскизов в альбомном режиме"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Выбор режима отображения эскизов плейлиста в альбомной ориентации."
+   "Выбор отображения эскизов плейлиста в альбомной ориентации экрана."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
@@ -11605,7 +11761,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Показывает дополнительный эскиз в режиме плейлиста типа 'Список'. Настройка работает только если ширины экрана достаточно для отображения двух эскизов."
+   "Включает дополнительный эскиз при просмотре плейлиста в режиме 'Список'. Настройка применяется только если ширины экрана достаточно для отображения двух эскизов."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
@@ -11613,7 +11769,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Включает заполнение пустого места вокруг миниатюр сплошным фоном. Обеспечивает единую размерность для всех изображений, улучшая внешний вид меню при просмотре эскизов разных размеров."
+   "Включает заполнение свободного пространства вокруг миниатюр сплошным фоном. Обеспечивает единую размерность для всех изображений, улучшая отображение меню при просмотре эскизов разного размера."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -12043,7 +12199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
-   "Иконки"
+   "Иконки меню"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
@@ -13346,6 +13502,14 @@ MSG_HASH(
    "Не удалось добавить в избранное: плейлист заполнен"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Добавлено в плейлист"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Не удалось добавить: плейлист заполнен"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "Привязано ядро: "
    )
@@ -13416,10 +13580,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Не удалось определить путь к новой конфигурации. Используйте текущее время."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Активирован режим хардкора, быстрые сохранения и обратная перемотка отключены."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -13523,7 +13683,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DETECTED_VIEWPORT_OF,
-   "Найденная область отображения"
+   "Обнаружена область просмотра"
    )
 MSG_HASH(
    MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
@@ -14198,6 +14358,10 @@ MSG_HASH(
    "Открыто достижение"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Открыто редкое достижение"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "Попытка войти в таблицу лидеров начата"
    )
@@ -14208,6 +14372,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "Отправлено %s для %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "Ранг: %d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Лучший результат: %s" /* Best: [value] */
    )
 MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
@@ -14287,7 +14459,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
-   "Ошибка расчёта области отображения. Будут использованы необработанные данные. Возможны ошибки."
+   "Не удалось рассчитать размеры области просмотра. Будут использованы необработанные данные. Возможны ошибки."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_EJECT,
@@ -14459,19 +14631,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_ENABLED,
-   "Кадры упреждения включены. Удалено кадров задержки: %u."
+   "Упреждающие кадры включены. Кадров задержки убрано: %u."
    )
 MSG_HASH(
    MSG_PREEMPT_DISABLED,
-   "Кадры упреждения выключены."
+   "Упреждающие кадры выключены."
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Кадры упреждения отключены, т.к. ядро не поддерживает быстрые сохранения."
+   "Упреждающие кадры выключены, т.к. текущее ядро не поддерживает быстрые сохранения."
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
-   "Кадры упреждения недоступны из-за отсутствия в ядре детерминированной поддержки быстрых сохранений."
+   "Упреждающие кадры недоступны из-за отсутствия в ядре детерминированной поддержки быстрых сохранений."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_ALLOCATE,
@@ -14479,11 +14651,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_SAVE_STATE,
-   "Не удалось создать сохранение. Кадры упреждения отключены."
+   "Не удалось создать сохранение. Упреждающие кадры выключены."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_LOAD_STATE,
-   "Не удалось загрузить сохранение. Кадры упреждения отключены."
+   "Не удалось загрузить сохранение. Упреждающие кадры выключены."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
@@ -14590,6 +14762,10 @@ MSG_HASH(
    "Не удалось получить заголовок хоста."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: выполнен вход для \"%s\"."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Для загрузки сохранений требуется отключить или приостановить Режим хардкора для достижений."
    )
@@ -14608,6 +14784,70 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Получено %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Активирован режим хардкора, быстрые сохранения и обратная перемотка отключены."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Нет достижений для данной игры."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Все %d достижений активны для текущего сеанса"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Активно %d неофициальных достижений"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Открыто %d из %d достижений"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d не поддерживаются"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Наблюдают %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Режим хардкора приостановлен. Ручная установка задержки кадра запрещена."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
+   "Режим хардкора приостановлен. Подкадры шейдера запрещены."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Режим хардкора приостановлен. Интервал подкачки VSync больше 1 запрещён."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Режим хардкора приостановлен. Вставка чёрного кадра запрещена."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Режим хардкора приостановлен. Настройка запрещена: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Режим хардкора приостановлен. Нельзя получить хардкорные достижения для %s, используя %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroAchievements: не удалось определить игру."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "RetroAchievements: не удалось загрузить игру %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "RetroAchievements: не удалось сменить медиа: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15108,14 +15348,6 @@ MSG_HASH(
    "Включение Linux GameMode может уменьшить задержку, исправить проблемы со звуком и повысить общую производительность путём автонастройки CPU и GPU для оптимальной эффективности.\nТребуется установка программного обеспечения GameMode. Посетите https://github.com/FeralInteractive/gamemode для получения ин[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Простой кадра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Пытаться снижать нагрузку на CPU при верт. синхронизации путём максимального бездействия после вывода кадра. Предназначено главным образом для сторонних методов синхронизации строк развёртки."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Использовать режим PAL60"
    )
@@ -15549,6 +15781,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Отключено управление мышью с тачскрина"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "Для микрофона sdl2 требуется аудиодрайвер sdl2"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

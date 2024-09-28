@@ -22,16 +22,18 @@
 #include "../gfx/gfx_display.h"
 #include "../file_path_special.h"
 
-#ifdef HAVE_MENU
-
 #include "cheevos.h"
 
 #include "../deps/rcheevos/include/rc_runtime_types.h"
 #include "../deps/rcheevos/include/rc_api_runtime.h"
 #include "../deps/rcheevos/src/rc_client_internal.h"
 
+#if HAVE_MENU
+
 #include "../menu/menu_driver.h"
 #include "../menu/menu_entries.h"
+
+#endif
 
 #include <features/features_cpu.h>
 #include <retro_assert.h>
@@ -43,6 +45,8 @@
 
 #ifdef HAVE_RC_CLIENT
 
+#if HAVE_MENU
+
 bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_size)
 {
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
@@ -53,18 +57,17 @@ bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_s
       if (cheevo)
       {
          if (cheevo->state != RC_CLIENT_ACHIEVEMENT_STATE_ACTIVE)
-         {
             strlcpy(buffer, msg_hash_to_str(menuitem->state_label_idx), buffer_size);
-         }
          else
          {
             const char* missable = cheevo->type == RC_CLIENT_ACHIEVEMENT_TYPE_MISSABLE ? "[m] " : "";
+            size_t _len = strlcpy(buffer, missable, buffer_size);
+            _len += strlcpy(buffer + _len, msg_hash_to_str(menuitem->state_label_idx), buffer_size - _len);
             if (cheevo->measured_progress[0])
-               snprintf(buffer, buffer_size, "%s%s - %s", missable,
-                  msg_hash_to_str(menuitem->state_label_idx), cheevo->measured_progress);
-            else
-               snprintf(buffer, buffer_size, "%s%s", missable,
-                  msg_hash_to_str(menuitem->state_label_idx));
+            {
+               _len += strlcpy(buffer + _len, " - ", buffer_size - _len);
+               strlcpy(buffer + _len, cheevo->measured_progress, buffer_size - _len);
+            }
          }
          return true;
       }
@@ -429,10 +432,8 @@ void rcheevos_menu_populate(void* data)
                   msg_hash_to_str(menuitem->state_label_idx));
             }
             else
-            {
                snprintf(buffer, sizeof(buffer), "----- %s -----",
                   msg_hash_to_str(menuitem->state_label_idx));
-            }
 
             menu_entries_append(info->list, buffer, "",
                MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY,
@@ -515,9 +516,11 @@ void rcheevos_menu_populate(void* data)
    }
 }
 
+#endif /* HAVE_MENU */
 
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
+   size_t _len;
    char badge_file[24];
    char fullpath[PATH_MAX_LENGTH];
    uintptr_t tex = 0;
@@ -535,8 +538,9 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
       return 0;
 #endif
 
-   snprintf(badge_file, sizeof(badge_file), "%s%s%s", badge,
-      locked ? "_lock" : "", FILE_PATH_PNG_EXTENSION);
+   _len  = strlcpy(badge_file, badge, sizeof(badge_file));
+   _len += strlcpy(badge_file + _len, locked ? "_lock" : "", sizeof(badge_file) - _len);
+   strlcpy(badge_file + _len, FILE_PATH_PNG_EXTENSION, sizeof(badge_file) - _len);
 
    fill_pathname_application_special(fullpath, sizeof(fullpath),
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
@@ -574,6 +578,8 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
 }
 
 #else /* !HAVE_RC_CLIENT */
+
+#if HAVE_MENU
 
 enum rcheevos_menuitem_bucket
 {
@@ -1194,6 +1200,8 @@ void rcheevos_menu_populate(void* data)
    }
 }
 
+#endif /* HAVE_MENU */
+
 uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked, bool download_if_missing)
 {
    if (badge)
@@ -1223,5 +1231,3 @@ uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked, bool downlo
 }
 
 #endif /* HAVE_RC_CLIENT */
-
-#endif /* HAVE_MENU */

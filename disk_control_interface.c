@@ -409,7 +409,7 @@ bool disk_control_set_index(
    bool error            = false;
    unsigned num_images   = 0;
    unsigned msg_duration = 0;
-   char msg[NAME_MAX_LENGTH];
+   char msg[128];
 
    msg[0] = '\0';
 
@@ -845,7 +845,7 @@ bool disk_control_verify_initial_index(
    if (disk_control->initial_num_images > 1)
    {
       unsigned msg_duration = 0;
-      char msg[PATH_MAX_LENGTH];
+      char msg[128];
 
       msg[0] = '\0';
 

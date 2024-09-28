@@ -27,7 +27,7 @@
 //============================================================
 
 #ifndef SWITCHRES_VERSION
-#define SWITCHRES_VERSION "2.1.0"
+#define SWITCHRES_VERSION "2.2.1"
 #endif
 
 

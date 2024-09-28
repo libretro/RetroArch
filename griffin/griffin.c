@@ -733,6 +733,7 @@ INPUT
 
 #ifdef HAVE_TEST_DRIVERS
 #include "../input/drivers_joypad/test_joypad.c"
+#include "../input/drivers/test_input.c"
 #endif
 
 /*============================================================
@@ -881,6 +882,9 @@ AUDIO
 
 #if defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
+#include "../input/drivers/sdl_input.c"
+#include "../input/drivers_joypad/sdl_joypad.c"
+#include "../gfx/drivers_context/sdl_gl_ctx.c"
 #ifdef HAVE_MICROPHONE
 #include "../audio/drivers_microphone/sdl_microphone.c"
 #endif
@@ -1213,6 +1217,7 @@ WIFI
 RECORDING
 ============================================================ */
 #include "../record/record_driver.c"
+#include "../record/drivers/record_wav.c"
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif
@@ -1633,6 +1638,16 @@ ANDROID PLAY FEATURE DELIVERY
 ============================================================ */
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.c"
+#endif
+
+
+/*============================================================
+FFMPEG
+============================================================ */
+#ifdef HAVE_FFMPEG
+#include "../cores/libretro-ffmpeg/packet_buffer.c"
+#include "../cores/libretro-ffmpeg/video_buffer.c"
+#include "../libretro-common/rthreads/tpool.c"
 #endif
 
 /*============================================================

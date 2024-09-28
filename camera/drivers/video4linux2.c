@@ -67,7 +67,7 @@ typedef struct video4linux
    uint32_t *buffer_output;
    bool ready;
 
-   char dev_name[255];
+   char dev_name[NAME_MAX_LENGTH];
 } video4linux_t;
 
 static int xioctl(int fd, unsigned long request, void *args)

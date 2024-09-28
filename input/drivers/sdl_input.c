@@ -325,7 +325,6 @@ static void sdl_input_free(void *data)
 #ifndef HAVE_SDL2
    SDL_Event event;
 #endif
-   sdl_input_t *sdl = (sdl_input_t*)data;
 
    if (!data)
       return;
@@ -441,6 +440,11 @@ static void sdl_input_poll(void *data)
 
          if (event.key.keysym.mod & KMOD_CAPS)
             mod |= RETROKMOD_CAPSLOCK;
+
+         /* KMOD_SCROLL was added in SDL 2.0.18, use the raw number
+            to stay backwards compatible with older versions */
+         if (event.key.keysym.mod & 0x8000 /*KMOD_SCROLL*/)
+            mod |= RETROKMOD_SCROLLOCK;
 
          input_keyboard_event(event.type == SDL_KEYDOWN, code, code, mod,
                RETRO_DEVICE_KEYBOARD);

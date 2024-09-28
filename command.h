@@ -381,10 +381,8 @@ void command_event_load_auto_state(void);
 void command_event_set_savestate_auto_index(
       settings_t *settings);
 
-void command_event_set_savestate_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      );
+int command_event_get_next_savestate_auto_index(
+      settings_t *settings);
 
 void command_event_set_replay_auto_index(
       settings_t *settings);

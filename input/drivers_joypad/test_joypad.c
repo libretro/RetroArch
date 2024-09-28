@@ -44,6 +44,7 @@
 #endif
 
 #define JOYPAD_TEST_COMMAND_ADD_CONTROLLER          1
+#define JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER       2
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST     16
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST      31
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
@@ -65,14 +66,14 @@ typedef struct
    unsigned frame;
    unsigned action;
    unsigned param_num;
-   char param_str[255];
+   char param_str[256];
    bool handled;
 } input_test_step_t;
 
 static input_test_step_t input_test_steps[MAX_TEST_STEPS];
 
-static unsigned current_frame         = 0;
-static unsigned next_teststep_frame   = 0;
+static uint32_t current_frame         = 0;
+static uint32_t next_teststep_frame   = 0;
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
 static uint32_t input_state_validated = 0;
@@ -106,7 +107,7 @@ static bool JTifJSONObjectEndHandler(void* context)
       input_test_steps[current_test_step].frame  = input_test_steps[current_test_step-1].frame + 60;
    else
       input_test_steps[current_test_step].frame  = pCtx->frame;
-   
+
    input_test_steps[current_test_step].action    = pCtx->action;
    input_test_steps[current_test_step].param_num = pCtx->param_num;
    input_test_steps[current_test_step].handled   = false;
@@ -117,7 +118,7 @@ static bool JTifJSONObjectEndHandler(void* context)
             sizeof(input_test_steps[current_test_step].param_str));
    else
       input_test_steps[current_test_step].param_str[0] = '\0';
-   
+
    current_test_step++;
    last_test_step = current_test_step;
    pCtx->frame = 0xffff;
@@ -193,10 +194,10 @@ static bool input_test_file_read(const char* file_path)
        || !path_is_valid(file_path)
       )
    {
-      RARCH_DBG("[Test input driver]: No test input file supplied.\n");
+      RARCH_DBG("[Test joypad driver]: No test input file supplied.\n");
       return false;
    }
-      
+
    /* Attempt to open test input file */
    file = filestream_open(
          file_path,
@@ -205,7 +206,7 @@ static bool input_test_file_read(const char* file_path)
 
    if (!file)
    {
-      RARCH_ERR("[Test input driver]: Failed to open test input file: \"%s\".\n",
+      RARCH_ERR("[Test joypad driver]: Failed to open test input file: \"%s\".\n",
             file_path);
       return false;
    }
@@ -213,7 +214,7 @@ static bool input_test_file_read(const char* file_path)
    /* Initialise JSON parser */
    if (!(parser = rjson_open_rfile(file)))
    {
-      RARCH_ERR("[Test input driver]: Failed to create JSON parser.\n");
+      RARCH_ERR("[Test joypad driver]: Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -232,16 +233,16 @@ static bool input_test_file_read(const char* file_path)
       if (rjson_get_source_context_len(parser))
       {
          RARCH_ERR(
-               "[Test input driver]: Error parsing chunk of test input file: %s\n---snip---\n%.*s\n---snip---\n",
+               "[Test joypad driver]: Error parsing chunk of test input file: %s\n---snip---\n%.*s\n---snip---\n",
                file_path,
                rjson_get_source_context_len(parser),
                rjson_get_source_context_buf(parser));
       }
       RARCH_WARN(
-            "[Test input driver]: Error parsing test input file: %s\n",
+            "[Test joypad driver]: Error parsing test input file: %s\n",
             file_path);
       RARCH_ERR(
-            "[Test input driver]: Error: Invalid JSON at line %d, column %d - %s.\n",
+            "[Test joypad driver]: Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
@@ -261,12 +262,12 @@ end:
 
    if (last_test_step >= MAX_TEST_STEPS)
    {
-      RARCH_WARN("[Test input driver]: too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
+      RARCH_WARN("[Test joypad driver]: too long test input json, maximum size: %d\n",MAX_TEST_STEPS);
    }
    for (current_test_step = 0; current_test_step < last_test_step; current_test_step++)
    {
       RARCH_DBG(
-         "[Test input driver]: test step %02d read from file: frame %d, action %x, num %x, str %s\n",
+         "[Test joypad driver]: test step %02d read from file: frame %d, action %x, num %x, str %s\n",
          current_test_step,
          input_test_steps[current_test_step].frame,
          input_test_steps[current_test_step].action,
@@ -286,27 +287,42 @@ static const char *test_joypad_name(unsigned pad)
    if (pad >= MAX_USERS || string_is_empty(test_joypads[pad].name))
       return NULL;
 
-   return test_joypads[pad].name;
+   if (strstr(test_joypads[pad].name, ") "))
+      return strstr(test_joypads[pad].name, ") ") + 2;
+   else
+      return test_joypads[pad].name;
 }
-
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
 {
+   int vid = 0;
+   int pid = 0;
+
+   sscanf(strstr(test_joypads[autoconf_pad].name, "(") + 1, "%04x:%04x", &vid, &pid);
+   RARCH_DBG("[Test input driver]: Autoconf vid/pid %x:%x\n",vid,pid);
+
    input_autoconfigure_connect(
          test_joypad_name(autoconf_pad),
          NULL,
          "test",
          autoconf_pad,
-         0,
-         0
+         vid,
+         pid
          );
+}
+
+static void test_joypad_autodetect_remove(unsigned autoconf_pad)
+{
+   RARCH_DBG("[Test input driver]: Autoremove port %d\n", autoconf_pad);
+
+   input_autoconfigure_disconnect(autoconf_pad, test_joypad_name(autoconf_pad));
 }
 
 static void *test_joypad_init(void *data)
 {
    settings_t *settings = config_get_ptr();
    unsigned i;
-   
+
    input_test_file_read(settings->paths.test_input_file_joypad);
    if (last_test_step > MAX_TEST_STEPS)
       last_test_step = 0;
@@ -337,7 +353,7 @@ static int32_t test_joypad_button(unsigned port_num, uint16_t joykey)
    return 0;
 }
 
-static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis) 
+static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    /*RARCH_DBG("test_joypad_axis %d / %u\n",port_num, joyaxis);*/
    if (port_num >= DEFAULT_MAX_PADS)
@@ -356,7 +372,7 @@ static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis)
          return val;
    }
    return 0;
-   
+
 }
 
 static int16_t test_joypad_state(
@@ -383,7 +399,7 @@ static int16_t test_joypad_state(
          }
 	   }
    }
-   
+
    return ret;
 }
 
@@ -394,7 +410,7 @@ static void test_joypad_poll(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    uint64_t curr_frame            = video_st->frame_count;
    unsigned i;
-   
+
    for (i=0; i<last_test_step; i++)
    {
       if (!input_test_steps[i].handled && curr_frame > input_test_steps[i].frame)
@@ -405,6 +421,11 @@ static void test_joypad_poll(void)
             test_joypad_autodetect_add(input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
          }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER)
+         {
+            test_joypad_autodetect_remove(input_test_steps[i].param_num);
+            input_test_steps[i].handled = true;
+         }
          else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST &&
                   input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
          {
@@ -412,7 +433,7 @@ static void test_joypad_poll(void)
             test_joypads[targetpad].button_state |= input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test input driver]: Pressing device %d buttons %x, new state %x.\n",
+               "[Test joypad driver]: Pressing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
          else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST &&
@@ -422,7 +443,7 @@ static void test_joypad_poll(void)
             test_joypads[targetpad].button_state &= ~input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test input driver]: Releasing device %d buttons %x, new state %x.\n",
+               "[Test joypad driver]: Releasing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
          else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST &&
@@ -436,19 +457,19 @@ static void test_joypad_poll(void)
                test_joypads[targetpad].axis_state[targetaxis] = (int16_t) input_test_steps[i].param_num;
             else
                RARCH_WARN(
-                  "[Test input driver]: Decoded axis outside target range: action %d pad %d axis %d.\n",
+                  "[Test joypad driver]: Decoded axis outside target range: action %d pad %d axis %d.\n",
                   input_test_steps[i].action, targetpad, targetaxis);
 
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test input driver]: Setting axis device %d axis %d value %d.\n",
+               "[Test joypad driver]: Setting axis device %d axis %d value %d.\n",
                targetpad, targetaxis, (int16_t)input_test_steps[i].param_num);
          }
          else
          {
             input_test_steps[i].handled = true;
             RARCH_WARN(
-               "[Test input driver]: Unrecognized action %d in step %d, skipping\n",
+               "[Test joypad driver]: Unrecognized action %d in step %d, skipping\n",
                input_test_steps[i].action,i);
          }
 
@@ -475,8 +496,10 @@ input_device_driver_t test_joypad = {
    NULL, /* get_buttons */
    test_joypad_axis,
    test_joypad_poll,
-   NULL, /* rumble */
-   NULL, /* rumble_gain */
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    test_joypad_name,
    "test",
 };

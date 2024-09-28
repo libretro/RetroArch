@@ -1808,17 +1808,11 @@ MSG_HASH(
    "Relació d'aspecte personalitzat (posició X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Indica el diferencial de posició respecte a l'eix X de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relació d'aspecte personalitzat (posició Y)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Indica el diferencial de posició respecte a l'eix Y de l'área de visualització.\nEste valor s'ignorarà si l'opció «Escalar usant nombres sencers» hi és activa."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Relació d'aspecte personalitzat (amplària)"
@@ -1908,10 +1902,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Retardament automàtic de fotogrames"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Aminora temporalment el retardament de fotogrames real per evitar futures filtracions. Si el valor de \"Retardament de fotogrames\" és a 0, es comença a calcular a partir de mig fotograma de duració."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2239,6 +2229,14 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 #ifdef ANDROID
@@ -2735,8 +2733,6 @@ MSG_HASH(
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 MSG_HASH(
@@ -2821,7 +2817,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Gestiona les llistes de reproducció"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

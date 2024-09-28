@@ -477,6 +477,8 @@ enum retro_language
    RETRO_LANGUAGE_BRITISH_ENGLISH     = 30,
    RETRO_LANGUAGE_HUNGARIAN           = 31,
    RETRO_LANGUAGE_BELARUSIAN          = 32,
+   RETRO_LANGUAGE_GALICIAN            = 33,
+   RETRO_LANGUAGE_NORWEGIAN           = 34,
    RETRO_LANGUAGE_LAST,
 
    /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
@@ -663,6 +665,25 @@ enum retro_key
    RETROK_EURO           = 321,
    RETROK_UNDO           = 322,
    RETROK_OEM_102        = 323,
+
+   RETROK_BROWSER_BACK      = 324,
+   RETROK_BROWSER_FORWARD   = 325,
+   RETROK_BROWSER_REFRESH   = 326,
+   RETROK_BROWSER_STOP      = 327,
+   RETROK_BROWSER_SEARCH    = 328,
+   RETROK_BROWSER_FAVORITES = 329,
+   RETROK_BROWSER_HOME      = 330,
+   RETROK_VOLUME_MUTE       = 331,
+   RETROK_VOLUME_DOWN       = 332,
+   RETROK_VOLUME_UP         = 333,
+   RETROK_MEDIA_NEXT        = 334,
+   RETROK_MEDIA_PREV        = 335,
+   RETROK_MEDIA_STOP        = 336,
+   RETROK_MEDIA_PLAY_PAUSE  = 337,
+   RETROK_LAUNCH_MAIL       = 338,
+   RETROK_LAUNCH_MEDIA      = 339,
+   RETROK_LAUNCH_APP1       = 340,
+   RETROK_LAUNCH_APP2       = 341,
 
    RETROK_LAST,
 
@@ -1742,7 +1763,7 @@ enum retro_mod
 /**
  * Gets an interface that the core can use for raw MIDI I/O.
  *
- * @param[out] data <tt>struct retro_midi_interface **</tt>.
+ * @param[out] data <tt>struct retro_midi_interface *</tt>.
  * Pointer to the MIDI interface.
  * May be \c NULL.
  * @return \c true if the environment call is available,
@@ -2534,6 +2555,19 @@ enum retro_mod
  * @return \c true if the environment call is available.
  */
 #define RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY 79
+
+/**
+ * Returns the "file browser" start directory of the frontend.
+ *
+ * This directory can serve as a start directory for the core in case it
+ * provides an internal way of loading content.
+ *
+ * @param[out] data <tt>const char **</tt>.
+ * May be \c NULL. If so, no such directory is defined, and it's up to the
+ * implementation to find a suitable directory.
+ * @return \c true if the environment call is available.
+ */
+#define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
 
 /**@}*/
 
@@ -7405,7 +7439,7 @@ typedef void (RETRO_CALLCONV *retro_audio_sample_t)(int16_t left, int16_t right)
  *     is defined as a sample of left and right channels, interleaved.
  *     For example: <tt>int16_t buf[4] = { l, r, l, r };</tt> would be 2 frames.
  *
- * @return The number of samples that were processed.
+ * @return The number of frames that were processed.
  *
  * @see retro_set_audio_sample_batch()
  * @see retro_set_audio_sample()

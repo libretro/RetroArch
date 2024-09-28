@@ -221,7 +221,7 @@ typedef struct
    uint32_t              flags;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef HAVE_DXGI_HDR
-   enum dxgi_swapchain_bit_depth 
+   enum dxgi_swapchain_bit_depth
                          chain_bit_depth;
    DXGI_COLOR_SPACE_TYPE chain_color_space;
    DXGI_FORMAT           chain_formats[DXGI_SWAPCHAIN_BIT_DEPTH_COUNT];

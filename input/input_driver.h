@@ -201,10 +201,10 @@ struct bsv_movie
    size_t *frame_pos;
    int64_t identifier;
    size_t frame_mask;
-   size_t frame_ptr;
+   uint64_t frame_counter;
    size_t min_file_pos;
    size_t state_size;
-   bsv_key_data_t key_events[255]; /* uint32_t alignment */
+   bsv_key_data_t key_events[NAME_MAX_LENGTH]; /* uint32_t alignment */
 
    /* Staging variables for keyboard events */
    uint8_t key_event_count;
@@ -257,7 +257,7 @@ typedef struct
    char joypad_driver[32];
    char name[128];
    char display_name[128];
-   char config_name[256]; /* Base name of the RetroArch config file */
+   char config_name[NAME_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
 
@@ -280,7 +280,7 @@ struct input_remote
 
 typedef struct
 {
-   char display_name[256];
+   char display_name[NAME_MAX_LENGTH];
 } input_mouse_info_t;
 
 typedef struct input_remote input_remote_t;
@@ -465,6 +465,9 @@ struct rarch_joypad_driver
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
    bool (*set_rumble_gain)(unsigned, unsigned);
+   bool (*set_sensor_state)(void *data, unsigned port,
+         enum retro_sensor_action action, unsigned rate);
+   float (*get_sensor_input)(void *data, unsigned port, unsigned id);
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -949,15 +952,28 @@ void input_remote_free(input_remote_t *handle, unsigned max_users);
 
 void input_game_focus_free(void);
 
-void input_config_get_bind_string_joyaxis(
-      bool input_descriptor_label_show,
-      char *buf, const char *prefix,
-      const struct retro_keybind *bind, size_t size);
+/**
+ * Converts a retro_keybind to a human-readable string, optionally allowing a
+ * fallback auto_bind to be used as the source for the string.
+ *
+ * @param buf        A string which will be overwritten with the returned value
+ * @param bind       A binding to convert to a string
+ * @param auto_bind  A default binding which will be used after `bind`. Can be NULL.
+ * @param size       The maximum length that will be written to `buf`
+ */
+size_t input_config_get_bind_string(void *settings_data,
+      char *s, const struct retro_keybind *bind,
+      const struct retro_keybind *auto_bind, size_t len);
 
-void input_config_get_bind_string_joykey(
+size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
-      char *buf, const char *prefix,
-      const struct retro_keybind *bind, size_t size);
+      char *s, const char *prefix,
+      const struct retro_keybind *bind, size_t len);
+
+size_t input_config_get_bind_string_joykey(
+      bool input_descriptor_label_show,
+      char *s, const char *prefix,
+      const struct retro_keybind *bind, size_t len);
 
 bool input_key_pressed(int key, bool keyboard_pressed);
 
@@ -1090,6 +1106,7 @@ extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
+extern input_driver_t input_test;
 
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;

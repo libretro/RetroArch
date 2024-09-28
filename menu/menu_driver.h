@@ -28,6 +28,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -110,6 +111,7 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
 #ifdef ANDROID
     MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -430,11 +432,10 @@ typedef struct
       enum rarch_shader_type preset_type;
       enum rarch_shader_type pass_type;
 
-      char preset_dir[PATH_MAX_LENGTH];
-      char preset_file_name[PATH_MAX_LENGTH];
-
-      char pass_dir[PATH_MAX_LENGTH];
-      char pass_file_name[PATH_MAX_LENGTH];
+      char pass_dir[DIR_MAX_LENGTH];
+      char preset_dir[DIR_MAX_LENGTH];
+      char preset_file_name[NAME_MAX_LENGTH];
+      char pass_file_name[NAME_MAX_LENGTH];
    } last_shader_selection;
 #endif
 
@@ -442,11 +443,11 @@ typedef struct
     * loaded via the menu file browser */
    struct
    {
-      char directory[PATH_MAX_LENGTH];
-      char file_name[PATH_MAX_LENGTH];
+      char directory[DIR_MAX_LENGTH];
+      char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
-   char menu_state_msg[8192];
+   char menu_state_msg[PATH_MAX_LENGTH * 2];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -455,7 +456,7 @@ typedef struct
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
    char db_playlist_file[PATH_MAX_LENGTH];
-   char filebrowser_label[PATH_MAX_LENGTH];
+   char filebrowser_label[NAME_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
 } menu_handle_t;
 
@@ -522,7 +523,7 @@ struct menu_state
    char pending_selection[PATH_MAX_LENGTH];
    /* Storage container for current menu datetime
     * representation string */
-   char datetime_cache[255];
+   char datetime_cache[NAME_MAX_LENGTH];
    /* Filled with current content path when a core calls
     * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
     * generic_menu_entry_action(), and must be cached
@@ -626,7 +627,7 @@ bool menu_driver_init(bool video_is_threaded);
 
 retro_time_t menu_driver_get_current_time(void);
 
-void menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
 
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 

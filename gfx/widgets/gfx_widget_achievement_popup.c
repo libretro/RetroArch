@@ -18,7 +18,7 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/cheevos.h"
+#include "../../cheevos/cheevos.h"
 
 #define CHEEVO_NOTIFICATION_DURATION      4000
 

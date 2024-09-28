@@ -1896,17 +1896,11 @@ MSG_HASH(
    "Relació d'aspecte personalitzat (posició X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Òfset de subàrea de visualització personalitzat per definir la posició de l'eix X de la subàrea de visualització.\nS'ignora si s'activa 'Escalat d'enter'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Relació d'aspecte personalitzat (posició Y)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Òfset de subàrea de visualització personalitzat per definir la posició de l'eix Y de la subàrea de visualització.\nS'ignora si s'activa 'Escalat d'enter'."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Relació d'aspecte personalitzat (amplada)"
@@ -1998,16 +1992,8 @@ MSG_HASH(
    "El VSync roman actiu fins que el rendiment cau per davall de la freqüència de refresc establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Retard de fotograma (ms)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Retard automàtic de fotograma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Redueix temporalment el 'Retard de fotograma' efectiu per a prevenir futures pèrdues de fotogrames. El punt de sortida és el tems de mig fotograma quan 'Retard de fotograma' és 0."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2431,6 +2417,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Sobreescriu les assignacions d'entrada amb les establertes per a aquest nucli."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Auto-configura"
@@ -4270,8 +4264,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Mostra l’opció “Afegeix als preferits”."
    )
-
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Mostra «Estableix l’associació de nucli»"
@@ -4717,7 +4709,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
    "Quan s’activa i també se selecciona el directori del «navegador de fitxers», el valor actual del paràmetre «navegador de fitxers» es desa a la llista de reproducció. Quan es carrega la llista en un altre sistema on s’hagi activat la mateixa opció, el valor del paràmetre «navegador de fitxers» es compara amb el valor de la llista de reproducció; si són diferents els camins de les entrades de la llista s’arreglen automàticament."
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(
@@ -7330,10 +7322,6 @@ MSG_HASH(
    "No es pot inferir el nou camí de configuració. Useu l’hora actual."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "S’ha activat el mode expert d’assoliments; s’han desactivat els desats ràpids i el rebobinat."
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "S’està comparant amb nombres màgics coneguts..."
    )
@@ -7820,6 +7808,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "S’ha activat un truc. S’ha desactivat el mode expert d’assoliments per la sessió actual."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "S’ha activat el mode expert d’assoliments; s’han desactivat els desats ràpids i el rebobinat."
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,

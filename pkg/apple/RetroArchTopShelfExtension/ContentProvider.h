@@ -8,8 +8,11 @@
 
 #import <TVServices/TVServices.h>
 
+#ifndef kRetroArchAppGroup
 #define kRetroArchAppGroup @"group.com.libretro.dist.tvos.RetroArchAppGroup"
+#endif
 
+API_AVAILABLE(tvos(13.0))
 @interface ContentProvider : TVTopShelfContentProvider
 
 

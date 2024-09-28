@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -28,16 +28,13 @@
 		0718BC632ABBAFB6001F2CBE /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0718BC5F2ABBA807001F2CBE /* Network.framework */; };
 		073734A42A093A5700BF7397 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 92A1F81727006CAE00DEAD2A /* JITSupport.m */; };
 		073734A62A093ACA00BF7397 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 073734A52A093ACA00BF7397 /* AltKit */; };
+		0753AD192C86144200874A42 /* BaseConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */; };
+		0753AD1A2C86144200874A42 /* BaseConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */; };
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
-		077A8E202BCE31F3000ECA41 /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 077A8E1F2BCE31E5000ECA41 /* Frameworks */; };
 		0789FC302A07847E00D042B7 /* AltKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0789FC2F2A07847E00D042B7 /* AltKit */; };
+		077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9292D6E428F549D000E47A75 /* SwiftUI.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
-		07E8EBE32BCCD1E10070B42D /* Frameworks in Resources */ = {isa = PBXBuildFile; fileRef = 07E8EBE22BCCD1E10070B42D /* Frameworks */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
-		07FA26C82BD8B2FB00E1AF91 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; };
-		07FA26C92BD8B2FB00E1AF91 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		07FA26CA2BD8B74900E1AF91 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; };
-		07FA26CB2BD8B74900E1AF91 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
 		9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
@@ -122,7 +119,6 @@
 		92CC05B921FE3C1700FF79F0 /* GCDWebServerDataRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC059B21FE3C1700FF79F0 /* GCDWebServerDataRequest.m */; };
 		92CC05BA21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC059C21FE3C1700FF79F0 /* GCDWebServerFileRequest.m */; };
 		92CC05BB21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC059C21FE3C1700FF79F0 /* GCDWebServerFileRequest.m */; };
-		92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 92CC059F21FE3C1700FF79F0 /* GCDWebUploader.bundle */; };
 		92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 92CC059F21FE3C1700FF79F0 /* GCDWebUploader.bundle */; };
 		92CC05BE21FE3C1700FF79F0 /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC05A121FE3C1700FF79F0 /* GCDWebUploader.m */; };
 		92CC05BF21FE3C1700FF79F0 /* GCDWebUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 92CC05A121FE3C1700FF79F0 /* GCDWebUploader.m */; };
@@ -162,28 +158,6 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		07FA26C52BD8B01400E1AF91 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				07FA26C92BD8B2FB00E1AF91 /* MoltenVK.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		07FA26CC2BD8B74900E1AF91 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				07FA26CB2BD8B74900E1AF91 /* MoltenVK.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		9292D6F528F549D500E47A75 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -204,17 +178,15 @@
 		0712A7742B807AE400C9765F /* ContentProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ContentProvider.h; sourceTree = "<group>"; };
 		0712A7752B807AE400C9765F /* ContentProvider.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ContentProvider.m; sourceTree = "<group>"; };
 		0712A7772B807AE400C9765F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0712A77F2B807F8F00C9765F /* RetroArchTopShelfExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTopShelfExtension.entitlements; sourceTree = "<group>"; };
 		0718BC5F2ABBA807001F2CBE /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.0.sdk/System/Library/Frameworks/Network.framework; sourceTree = DEVELOPER_DIR; };
 		073DB2892B8706490001BA32 /* RetroArchTV.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchTV.entitlements; sourceTree = "<group>"; };
+		0753AD182C86144200874A42 /* BaseConfig.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = BaseConfig.xcconfig; sourceTree = "<group>"; };
+		076A9EAF2C438E1D00504BDF /* RetroArchiOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; name = RetroArchiOS.entitlements; path = iOS/RetroArchiOS.entitlements; sourceTree = SOURCE_ROOT; };
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
-		077A8E1F2BCE31E5000ECA41 /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Frameworks; sourceTree = "<group>"; };
+		077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = AppStore.xcconfig; path = iOS/AppStore.xcconfig; sourceTree = "<group>"; };
 		0789FC2E2A07845300D042B7 /* AltKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = AltKit; path = Frameworks/AltKit; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
-		07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MoltenVK.framework; path = tvOS/Frameworks/MoltenVK.framework; sourceTree = "<group>"; };
-		07E8EBE22BCCD1E10070B42D /* Frameworks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Frameworks; path = iOS/Frameworks; sourceTree = SOURCE_ROOT; };
 		07F7FB012A2DA8B800037C04 /* filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = filters; path = iOS/filters; sourceTree = SOURCE_ROOT; };
-		07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -406,7 +378,6 @@
 		92B9EC9824E0537500E6CFB2 /* config.def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.def.h; path = ../../config.def.h; sourceTree = "<group>"; };
 		92B9EC9924E0537500E6CFB2 /* config.features.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = config.features.h; path = ../../config.features.h; sourceTree = "<group>"; };
 		92B9EC9A24E0537500E6CFB2 /* content.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = content.h; path = ../../content.h; sourceTree = "<group>"; };
-		92B9EC9B24E0539000E6CFB2 /* core_type.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_type.h; path = ../../core_type.h; sourceTree = "<group>"; };
 		92B9EC9C24E0539000E6CFB2 /* core_info.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = core_info.c; path = ../../core_info.c; sourceTree = "<group>"; };
 		92B9EC9D24E0539000E6CFB2 /* core_info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_info.h; path = ../../core_info.h; sourceTree = "<group>"; };
 		92B9EC9E24E0539000E6CFB2 /* core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core.h; path = ../../core.h; sourceTree = "<group>"; };
@@ -518,12 +489,12 @@
 				92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */,
 				9204BE121D319EF300BD49DB /* libz.dylib in Frameworks */,
 				9204BE131D319EF300BD49DB /* QuartzCore.framework in Frameworks */,
+				077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */,
 				9204BE141D319EF300BD49DB /* GameController.framework in Frameworks */,
 				9204BE151D319EF300BD49DB /* CoreText.framework in Frameworks */,
 				9204BE161D319EF300BD49DB /* CoreLocation.framework in Frameworks */,
 				9204BE171D319EF300BD49DB /* CoreMedia.framework in Frameworks */,
 				9204BE181D319EF300BD49DB /* AVFoundation.framework in Frameworks */,
-				07FA26C82BD8B2FB00E1AF91 /* MoltenVK.xcframework in Frameworks */,
 				9204BE191D319EF300BD49DB /* CoreVideo.framework in Frameworks */,
 				070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */,
 				9204BE1A1D319EF300BD49DB /* AudioToolbox.framework in Frameworks */,
@@ -544,7 +515,6 @@
 				076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */,
 				926C77F121FD26E800103EDE /* GameController.framework in Frameworks */,
 				926C77EF21FD263800103EDE /* AudioToolbox.framework in Frameworks */,
-				07FA26CA2BD8B74900E1AF91 /* MoltenVK.xcframework in Frameworks */,
 				073734A62A093ACA00BF7397 /* AltKit in Frameworks */,
 				0718BC632ABBAFB6001F2CBE /* Network.framework in Frameworks */,
 			);
@@ -565,7 +535,6 @@
 		0712A7732B807AE400C9765F /* RetroArchTopShelfExtension */ = {
 			isa = PBXGroup;
 			children = (
-				0712A77F2B807F8F00C9765F /* RetroArchTopShelfExtension.entitlements */,
 				0712A7742B807AE400C9765F /* ContentProvider.h */,
 				0712A7752B807AE400C9765F /* ContentProvider.m */,
 				0712A7772B807AE400C9765F /* Info.plist */,
@@ -584,11 +553,11 @@
 		83D632D719ECFCC4009E3161 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
-				07E8EBE22BCCD1E10070B42D /* Frameworks */,
 				07F7FB012A2DA8B800037C04 /* filters */,
 				9222F20A2315DD3D0097C0FD /* retroarch_logo.png */,
 				83EB675F19EEAF050096F441 /* iOS/modules */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Icons.xcassets */,
+				076A9EAF2C438E1D00504BDF /* RetroArchiOS.entitlements */,
 			);
 			name = iOS;
 			path = Resources;
@@ -597,7 +566,6 @@
 		926C77D821FD1E6500103EDE /* tvOS */ = {
 			isa = PBXGroup;
 			children = (
-				077A8E1F2BCE31E5000ECA41 /* Frameworks */,
 				07B7872C29E8FE8F0088B74F /* filters */,
 				92E5DCD3231A5786006491BF /* modules */,
 				926C77E221FD1E6700103EDE /* Assets.xcassets */,
@@ -1098,7 +1066,6 @@
 				92B9ECBF24E054B500E6CFB2 /* core_backup.h */,
 				92B9EC9C24E0539000E6CFB2 /* core_info.c */,
 				92B9EC9D24E0539000E6CFB2 /* core_info.h */,
-				92B9EC9B24E0539000E6CFB2 /* core_type.h */,
 				92B9ECB024E054B400E6CFB2 /* core_updater_list.c */,
 				92B9ECB624E054B500E6CFB2 /* core_updater_list.h */,
 				92B9EC9E24E0539000E6CFB2 /* core.h */,
@@ -1223,6 +1190,8 @@
 		96AFAE1A16C1D4EA009DE44C = {
 			isa = PBXGroup;
 			children = (
+				0753AD182C86144200874A42 /* BaseConfig.xcconfig */,
+				077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */,
 				0789FC2D2A07845300D042B7 /* Packages */,
 				96AFAE9C16C1D976009DE44C /* Main Entry Core */,
 				92B9EAE024E04F8800E6CFB2 /* Sources */,
@@ -1257,12 +1226,10 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				07FA26C62BD8B2EA00E1AF91 /* MoltenVK.xcframework */,
 				076CA50C2B695C2C00840EA5 /* libz.tbd */,
 				0718BC5F2ABBA807001F2CBE /* Network.framework */,
 				070A88422A4E7AA9003161C0 /* OpenAL.framework */,
 				9210C2F124B3A19100E6FE7C /* Metal.framework */,
-				07BC17D12BD2ACAE0005A0F2 /* MoltenVK.framework */,
 				9210C2F024B3A19100E6FE7C /* MetalKit.framework */,
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
 				92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */,
@@ -1349,7 +1316,6 @@
 				9204BE271D319EF300BD49DB /* ShellScript */,
 				9204BE211D319EF300BD49DB /* Resources */,
 				9292D6F528F549D500E47A75 /* Embed Foundation Extensions */,
-				07FA26C52BD8B01400E1AF91 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1374,7 +1340,6 @@
 				92CC057521FE2D4900FF79F0 /* ShellScript */,
 				926C77D521FD1E6500103EDE /* Resources */,
 				0712A77B2B807AE400C9765F /* Embed Foundation Extensions */,
-				07FA26CC2BD8B74900E1AF91 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1471,12 +1436,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				07F7FB022A2DA8B800037C04 /* filters in Resources */,
+				0753AD192C86144200874A42 /* BaseConfig.xcconfig in Resources */,
 				9222F2092315DAD50097C0FD /* Launch Screen.storyboard in Resources */,
 				9204BE231D319EF300BD49DB /* InfoPlist.strings in Resources */,
-				92CC05BC21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
 				9222F20B2315DD3D0097C0FD /* retroarch_logo.png in Resources */,
 				929784502200EEE400989A60 /* iOS/Resources/Icons.xcassets in Resources */,
-				07E8EBE32BCCD1E10070B42D /* Frameworks in Resources */,
 				9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1485,9 +1449,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				077A8E202BCE31F3000ECA41 /* Frameworks in Resources */,
 				07B7872D29E8FE8F0088B74F /* filters in Resources */,
 				92CC05BD21FE3C1700FF79F0 /* GCDWebUploader.bundle in Resources */,
+				0753AD1A2C86144200874A42 /* BaseConfig.xcconfig in Resources */,
 				9222F2002314BA7C0097C0FD /* assets.zip in Resources */,
 				926C77E321FD1E6700103EDE /* Assets.xcassets in Resources */,
 			);
@@ -1576,7 +1540,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./make-frameworks.sh\n#./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/iOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/iOS/filters/audio/\nmkdir -p ${SRCROOT}/iOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/iOS/filters/video/\n";
+			shellScript = "if [ -n \"${APPSTORE_BUILD}\" ] ; then\n    rm -f ${SRCROOT}/iOS/modules/*.dylib\n    ./update-cores.sh appstore\n    ./rebuild-assets.sh -d -i -o -x\nfi\n\n./make-frameworks.sh\n#./code-sign-cores.sh\n\nmkdir -p ${SRCROOT}/iOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/iOS/filters/audio/\nmkdir -p ${SRCROOT}/iOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/iOS/filters/video/\n";
 		};
 		92CC057521FE2D4900FF79F0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1594,7 +1558,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "./make-frameworks.sh tvos\n#./code-sign-cores.sh tvos\n\nmkdir -p ${SRCROOT}/tvOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/tvOS/filters/audio/\nmkdir -p ${SRCROOT}/tvOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/tvOS/filters/video/\n";
+			shellScript = "if [ -n \"${APPSTORE_BUILD}\" ] ; then\n    rm -f ${SRCROOT}/tvOS/modules/*.dylib\n    ./update-cores.sh --tvos appstore\n    ./rebuild-assets.sh -d -i -o -x\nfi\n\n./make-frameworks.sh tvos\n#./code-sign-cores.sh tvos\n\nmkdir -p ${SRCROOT}/tvOS/filters/audio\ncp -f ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp ${SRCROOT}/tvOS/filters/audio/\nmkdir -p ${SRCROOT}/tvOS/filters/video\ncp -f ${SRCBASE}/gfx/video_filters/*.filt ${SRCROOT}/tvOS/filters/video/\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1719,60 +1683,21 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CODE_SIGN_ENTITLEMENTS = RetroArchTopShelfExtension/RetroArchTopShelfExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_TOPSHELF_CODE_SIGN_ENTITLEMENTS)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchTopShelfExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchTopShelfExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.18.0;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch.RetroArchTopShelfExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER).RetroArchTopShelfExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
 				SKIP_INSTALL = YES;
@@ -1786,59 +1711,21 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CODE_SIGN_ENTITLEMENTS = RetroArchTopShelfExtension/RetroArchTopShelfExtension.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_TOPSHELF_CODE_SIGN_ENTITLEMENTS)";
 				GCC_C_LANGUAGE_STANDARD = gnu17;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchTopShelfExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchTopShelfExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arm64;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.18.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch.RetroArchTopShelfExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER).RetroArchTopShelfExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
 				SKIP_INSTALL = YES;
@@ -1870,147 +1757,40 @@
 		9204BE291D319EF300BD49DB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_BITCODE = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/iOS/Frameworks",
-				);
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
-					../../deps/stb,
-					../../deps/rcheevos/include,
-					../../deps/7zip,
-					../../deps,
-					"$(DEPS_DIR)/glslang",
-					"$(DEPS_DIR)/SPIRV-Cross",
-					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
-					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
-					"$(DEPS_DIR)/glslang/glslang/SPIRV",
-					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
-					../../gfx/include,
-				);
+				CODE_SIGN_ENTITLEMENTS = "$(IOS_CODE_SIGN_ENTITLEMENTS)";
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_NO_PIE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/Frameworks/MoltenVK.framework",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.18.0;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (
-					"-DHAVE_COREMOTION",
-					"-DHAVE_IOS_CUSTOMKEYBOARD",
-					"-DHAVE_IOS_SWIFT",
-					"-DHAVE_IOS_TOUCHMOUSE",
-					"-DHAVE_MATERIALUI",
-					"$(inherited)",
-				);
-				"OTHER_CFLAGS[sdk=iphoneos*]" = "$(inherited)";
-				"OTHER_CFLAGS[sdk=iphonesimulator*]" = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArch;
-				PROVISIONING_PROFILE = "";
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				VALID_ARCHS = "armv7 arm64";
-				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
-				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
 		};
 		9204BE2A1D319EF300BD49DB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
-				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_BITCODE = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/iOS/Frameworks",
-				);
-				GCC_PRECOMPILE_PREFIX_HEADER = NO;
-				GCC_PREFIX_HEADER = "";
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
-					../../deps/stb,
-					../../deps/rcheevos/include,
-					../../deps/7zip,
-					../../deps,
-					"$(DEPS_DIR)/glslang",
-					"$(DEPS_DIR)/SPIRV-Cross",
-					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
-					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
-					"$(DEPS_DIR)/glslang/glslang/SPIRV",
-					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
-					../../gfx/include,
-				);
+				CODE_SIGN_ENTITLEMENTS = "$(IOS_CODE_SIGN_ENTITLEMENTS)";
 				INFOPLIST_FILE = "$(SRCROOT)/iOS/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				LD_NO_PIE = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/Frameworks/MoltenVK.framework",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.18.0;
-				MTL_FAST_MATH = YES;
-				OTHER_CFLAGS = (
-					"$(inherited)",
-					"-DHAVE_COREMOTION",
-					"-DHAVE_IOS_CUSTOMKEYBOARD",
-					"-DHAVE_IOS_SWIFT",
-					"-DHAVE_IOS_TOUCHMOUSE",
-					"-DHAVE_MATERIALUI",
-				);
-				"OTHER_CFLAGS[sdk=iphoneos*]" = "$(inherited)";
-				"OTHER_CFLAGS[sdk=iphonesimulator*]" = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = RetroArch;
-				PROVISIONING_PROFILE = "";
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "RetroArch-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-				VALID_ARCHS = "armv7 arm64";
-				WARNING_CFLAGS = "-Wno-invalid-source-encoding";
-				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
 		};
@@ -2019,88 +1799,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTV.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/tvOS/Frameworks",
-				);
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
-					../../deps/stb,
-					../../deps/rcheevos/include,
-					../../deps,
-					../../deps/7zip,
-					"$(DEPS_DIR)/glslang",
-					"$(DEPS_DIR)/SPIRV-Cross",
-					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
-					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
-					"$(DEPS_DIR)/glslang/glslang/SPIRV",
-					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
-					../../gfx/include,
-				);
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_CODE_SIGN_ENTITLEMENTS)";
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/Frameworks/MoltenVK.framework",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(PROJECT_DIR)/tvOS/modules",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.18.0;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "$(inherited)";
-				"OTHER_CFLAGS[sdk=appletvos*]" = "$(inherited)";
-				"OTHER_CFLAGS[sdk=appletvsimulator*]" = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = RetroArchTV;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -2109,88 +1818,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTV.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEPS_DIR = "$(SRCBASE)/deps";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/tvOS/Frameworks",
-				);
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				HEADER_SEARCH_PATHS = (
-					../../,
-					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
-					../../deps/stb,
-					../../deps/rcheevos/include,
-					../../deps,
-					../../deps/7zip,
-					"$(DEPS_DIR)/glslang",
-					"$(DEPS_DIR)/SPIRV-Cross",
-					"$(DEPS_DIR)/glslang/glslang/glslang/Public",
-					"$(DEPS_DIR)/glslang/glslang/glslang/OSDependent/Unix",
-					"$(DEPS_DIR)/glslang/glslang/SPIRV",
-					"$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent",
-					../../gfx/include,
-				);
+				CODE_SIGN_ENTITLEMENTS = "$(TVOS_CODE_SIGN_ENTITLEMENTS)";
 				INFOPLIST_FILE = "$(SRCROOT)/tvOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/Frameworks/MoltenVK.framework",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(PROJECT_DIR)/tvOS/modules",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.18.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				OTHER_CFLAGS = "$(inherited)";
-				"OTHER_CFLAGS[sdk=appletvos*]" = "$(inherited)";
-				"OTHER_CFLAGS[sdk=appletvsimulator*]" = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TVOS_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = RetroArchTV;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
@@ -2199,67 +1837,23 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchWidgetExtension;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.18.0;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER).RetroArchWidgetExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -2269,327 +1863,142 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.18.0;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = UK699V5ZS8;
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RetroArchWidgetExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArchWidgetExtension;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 RetroArch. All rights reserved.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2024 RetroArch. All rights reserved.";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/iOS/modules";
-				MARKETING_VERSION = 1.18.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11.RetroArchWidgetExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_BUNDLE_IDENTIFIER).RetroArchWidgetExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
-				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 		96AFAE5216C1D4EA009DE44C /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				COPY_PHASE_STRIP = NO;
-				ENABLE_BITCODE = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEPS_DIR = "$(SRCBASE)/deps";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_FAST_MATH = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(PROJECT_DIR)/iOS/modules",
-					"@executable_path/Frameworks",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				LIBRARY_SEARCH_PATHS = "";
+				LLVM_LTO = YES_THIN;
+				MARKETING_VERSION = 1.19.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
-					"-DENABLE_HLSL",
-					"-DGLES_SILENCE_DEPRECATION",
-					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DHAVE_7ZIP",
-					"-DHAVE_ACCESSIBILITY",
-					"-DHAVE_AL",
-					"-DHAVE_ALTKIT",
-					"-DHAVE_AUDIOMIXER",
-					"-DHAVE_BTSTACK",
-					"-DHAVE_BUILTINGLSLANG",
-					"-DHAVE_BUILTINMBEDTLS",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_CHD",
-					"-DHAVE_CHEATS",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_CLOUDSYNC",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_COCOA_METAL",
-					"-DHAVE_CONFIGFILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DSP_FILTER",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_GFX_WIDGETS",
-					"-DHAVE_GIT_VERSION",
-					"-DHAVE_GLSL",
-					"-DHAVE_GLSLANG",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_VULKAN",
-					"-DHAVE_HID",
-					"-DHAVE_IFINFO",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_KEYMAPPER",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_LIBRETRODB",
-					"-DHAVE_MAIN",
-					"-DHAVE_MENU",
-					"-DHAVE_METAL",
-					"-DHAVE_MFI",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_NETPLAYDISCOVERY_NSNET",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_NO_BUILTINZLIB",
-					"-DHAVE_ONLINE_UPDATER",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES3",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_OZONE",
-					"-DHAVE_PATCH",
-					"-DHAVE_RBMP",
-					"-DHAVE_REWIND",
-					"-DHAVE_RGUI",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RPNG",
-					"-DHAVE_RTGA",
-					"-DHAVE_BSV_MOVIE",
-					"-DHAVE_RUNAHEAD",
-					"-DHAVE_RWAV",
-					"-DHAVE_SCREENSHOTS",
-					"-DHAVE_SHADERPIPELINE",
-					"-DHAVE_SLANG",
-					"-DHAVE_SPIRV_CROSS",
-					"-DHAVE_SSL",
-					"-DHAVE_STB_FONT",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_THREADS",
-					"-DHAVE_TRANSLATE",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_UPDATE_CORE_INFO",
-					"-DHAVE_VIDEO_FILTER",
-					"-DHAVE_XDELTA",
-					"-DHAVE_XMB",
-					"-DHAVE_ZLIB",
-					"-DINLINE=inline",
-					"-DIOS",
-					"-DRARCH_INTERNAL",
-					"-DRARCH_MOBILE",
-					"-DRC_DISABLE_LUA",
-					"-DWANT_GLSLANG",
-					"-D_7ZIP_ST",
-					"-D_LZMA_UINT32_IS_ULONG",
-					"-D__LIBRETRO__",
-				);
-				"OTHER_LDFLAGS[arch=*]" = "-Wl,-segalign,4000";
+				OTHER_CFLAGS = "$(inherited)";
 				SDKROOT = iphoneos;
-				SRCBASE = "$(SRCROOT)/../..";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				VALID_ARCHS = "armv7 arm64";
+				TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
+				TVOS_CODE_SIGN_ENTITLEMENTS = "";
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
 		96AFAE5316C1D4EA009DE44C /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0753AD182C86144200874A42 /* BaseConfig.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "";
 				COPY_PHASE_STRIP = NO;
-				ENABLE_BITCODE = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEPS_DIR = "$(SRCBASE)/deps";
+				DEVELOPMENT_TEAM = UK699V5ZS8;
+				ENABLE_NS_ASSERTIONS = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_OPTIMIZATION_LEVEL = 2;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					NDEBUG,
-					"NS_BLOCK_ASSERTIONS=1",
-				);
+				GCC_FAST_MATH = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = fast;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = ../;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(PROJECT_DIR)/iOS/modules",
-					"@executable_path/Frameworks",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited)";
+				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				LIBRARY_SEARCH_PATHS = "";
+				LLVM_LTO = YES_THIN;
+				MARKETING_VERSION = 1.19.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				MTL_IGNORE_WARNINGS = YES;
-				OTHER_CFLAGS = (
-					"-DDONT_WANT_ARM_OPTIMIZATIONS",
-					"-DENABLE_HLSL",
-					"-DGLES_SILENCE_DEPRECATION",
-					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DHAVE_7ZIP",
-					"-DHAVE_ACCESSIBILITY",
-					"-DHAVE_AL",
-					"-DHAVE_ALTKIT",
-					"-DHAVE_AUDIOMIXER",
-					"-DHAVE_BTSTACK",
-					"-DHAVE_BUILTINGLSLANG",
-					"-DHAVE_BUILTINMBEDTLS",
-					"-DHAVE_BUILTINMINIUPNPC",
-					"-DHAVE_CC_RESAMPLER",
-					"-DHAVE_CHD",
-					"-DHAVE_CHEATS",
-					"-DHAVE_CHEEVOS",
-					"-DHAVE_CLOUDSYNC",
-					"-DHAVE_COCOATOUCH",
-					"-DHAVE_COCOA_METAL",
-					"-DHAVE_CONFIGFILE",
-					"-DHAVE_COREAUDIO",
-					"-DHAVE_DSP_FILTER",
-					"-DHAVE_DYNAMIC",
-					"-DHAVE_FILTERS_BUILTIN",
-					"-DHAVE_GFX_WIDGETS",
-					"-DHAVE_GIT_VERSION",
-					"-DHAVE_GLSL",
-					"-DHAVE_GLSLANG",
-					"-DHAVE_GRIFFIN",
-					"-DHAVE_VULKAN",
-					"-DHAVE_HID",
-					"-DHAVE_IFINFO",
-					"-DHAVE_IMAGEVIEWER",
-					"-DHAVE_KEYMAPPER",
-					"-DHAVE_LANGEXTRA",
-					"-DHAVE_LIBRETRODB",
-					"-DHAVE_MAIN",
-					"-DHAVE_MENU",
-					"-DHAVE_METAL",
-					"-DHAVE_MFI",
-					"-DHAVE_MINIUPNPC",
-					"-DHAVE_NETPLAYDISCOVERY",
-					"-DHAVE_NETPLAYDISCOVERY_NSNET",
-					"-DHAVE_NETWORKGAMEPAD",
-					"-DHAVE_NETWORKING",
-					"-DHAVE_NO_BUILTINZLIB",
-					"-DHAVE_ONLINE_UPDATER",
-					"-DHAVE_OPENGL",
-					"-DHAVE_OPENGLES",
-					"-DHAVE_OPENGLES3",
-					"-DHAVE_OVERLAY",
-					"-DHAVE_OZONE",
-					"-DHAVE_PATCH",
-					"-DHAVE_RBMP",
-					"-DHAVE_REWIND",
-					"-DHAVE_RGUI",
-					"-DHAVE_RJPEG",
-					"-DHAVE_RPNG",
-					"-DHAVE_RTGA",
-					"-DHAVE_BSV_MOVIE",
-					"-DHAVE_RUNAHEAD",
-					"-DHAVE_RWAV",
-					"-DHAVE_SCREENSHOTS",
-					"-DHAVE_SHADERPIPELINE",
-					"-DHAVE_SLANG",
-					"-DHAVE_SPIRV_CROSS",
-					"-DHAVE_SSL",
-					"-DHAVE_STB_FONT",
-					"-DHAVE_STB_VORBIS",
-					"-DHAVE_THREADS",
-					"-DHAVE_TRANSLATE",
-					"-DHAVE_UPDATE_ASSETS",
-					"-DHAVE_UPDATE_CORE_INFO",
-					"-DHAVE_VIDEO_FILTER",
-					"-DHAVE_XDELTA",
-					"-DHAVE_XMB",
-					"-DHAVE_ZLIB",
-					"-DINLINE=inline",
-					"-DIOS",
-					"-DRARCH_INTERNAL",
-					"-DRARCH_MOBILE",
-					"-DRC_DISABLE_LUA",
-					"-DWANT_GLSLANG",
-					"-D_7ZIP_ST",
-					"-D_LZMA_UINT32_IS_ULONG",
-					"-D__LIBRETRO__",
-				);
-				"OTHER_LDFLAGS[arch=*]" = "-Wl,-segalign,4000";
+				OTHER_CFLAGS = "$(inherited)";
 				SDKROOT = iphoneos;
-				SRCBASE = "$(SRCROOT)/../..";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
+				TVOS_CODE_SIGN_ENTITLEMENTS = "";
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 				VALIDATE_PRODUCT = YES;
-				VALID_ARCHS = "armv7 arm64";
 			};
 			name = Release;
 		};

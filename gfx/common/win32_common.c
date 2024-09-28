@@ -877,12 +877,12 @@ static void win32_save_position(void)
    placement.rcNormalPosition.right  = 0;
    placement.rcNormalPosition.bottom = 0;
 
-   /* If 'skip_window_positions' is true it means we've
+   /* If SETTINGS_FLG_SKIP_WINDOW_POSITIONS is set, it means we've
     * just unloaded an override that had fullscreen mode
     * enabled while we have windowed mode set globally,
     * in this case we skip the following blocks to not
     * end up with fullscreen size and position. */
-   if (!settings->skip_window_positions)
+   if (!(settings->flags & SETTINGS_FLG_SKIP_WINDOW_POSITIONS))
    {
       if (GetWindowPlacement(main_window.hwnd, &placement))
       {
@@ -897,7 +897,7 @@ static void win32_save_position(void)
       }
    }
    else
-      settings->skip_window_positions = false;
+      settings->flags &= ~SETTINGS_FLG_SKIP_WINDOW_POSITIONS;
 
    if (window_save_positions)
    {
@@ -987,6 +987,8 @@ static LRESULT CALLBACK wnd_proc_common(
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1091,14 +1093,12 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             unsigned keysym       = (lparam >> 16) & 0xff;
             bool extended         = (lparam >> 24) & 0x1;
 
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
+
             /* extended keys will map to dinput if the high bit is set */
             if (extended)
-               keysym |= 0x80;
-
-            /* NumLock vs Pause correction */
-            if (GetKeyState(VK_NUMLOCK) & 0x80 && extended)
-               keysym &= ~0x80;
-            else if (GetKeyState(VK_PAUSE) & 0x80 && !extended)
                keysym |= 0x80;
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
@@ -1113,6 +1113,8 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1344,14 +1346,12 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             unsigned keysym       = (lparam >> 16) & 0xff;
             bool extended         = (lparam >> 24) & 0x1;
 
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
+
             /* extended keys will map to dinput if the high bit is set */
             if (extended)
-               keysym |= 0x80;
-
-            /* NumLock vs Pause correction */
-            if (GetKeyState(VK_NUMLOCK) & 0x80 && extended)
-               keysym &= ~0x80;
-            else if (GetKeyState(VK_PAUSE) & 0x80 && !extended)
                keysym |= 0x80;
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
@@ -1373,6 +1373,8 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1958,11 +1960,11 @@ void win32_clip_window(bool state)
          free(info);
       }
       info = NULL;
+
+      ClipCursor(&clip_rect);
    }
    else
-      GetWindowRect(GetDesktopWindow(), &clip_rect);
-
-   ClipCursor(&clip_rect);
+      ClipCursor(NULL);
 }
 #endif
 

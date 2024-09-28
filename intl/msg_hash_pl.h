@@ -1213,6 +1213,34 @@ MSG_HASH(
    "Destrukcyjna synchronizacja w chmurze"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Synchronizacja: Zapisy/Stany"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Synchronizacja: Pliki konfiguracyjne"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Zsynchronizuj: Obrazki Miniatur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Synchronizacja: Pliki systemowe"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Po włączeniu zapisy/stany zostaną zsynchronizowane z chmurą."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Po włączeniu pliki konfiguracyjne zostaną zsynchronizowane z chmurą."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Gdy włączone, pliki systemowe będą synchronizowane z chmurą. To może znacząco wydłużyć czas potrzebny do synchronizacji; używaj z ostrożnością."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Gdy wyłączone, pliki są przenoszone do folderu kopii zapasowej przed nadpisaniem lub usunięciem."
    )
@@ -1875,10 +1903,6 @@ MSG_HASH(
    "Wstawia czarne ramki pomiędzy ramkami w celu zwiększenia jasności ruchu. Użyj opcji tylko dla aktualnego wskaźnika odświeżania ekranu. Nie używać z szybkością odświeżania, które nie są wielokrotnościami 60Hz, takimi jak 144Hz, 165Hz itp. Nie łączyć z Interwalem Swap > 1, podramki, ramki Frame lub Synchronizuj z dokładną zawartością. Pozostawienie systemu VRR jest w porządku, a nie to ustawienie. Jeśli zauważysz dowolne tymczasowe zatrzymanie obrazu, powinieneś wyłącz[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Wyłączony"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1 - Dla tempa odświeżania ekranu 120Hz"
    )
@@ -1963,10 +1987,6 @@ MSG_HASH(
    "Wstawia dodatkowe klatki shaderów pomiędzy klatkami dla wszelkich możliwych efektów shaderów, które są zaprojektowane do działania szybciej niż częstotliwość zawartości. Używaj tylko opcji wyznaczonej dla bieżącej częstotliwości odświeżania wyświetlacza. Nie używać przy częstotliwościach odświeżania, które nie są wielokrotnościami 60 Hz, takich jak 144 Hz, 165 Hz itp. Nie łączyć z opcjami Interwał zmiany klatek > 1, BFI, Opóźnienie klatek lub Synchronizuj do d[...]"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "Wyłączony"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
    "2 - Dla tempa odświeżania ekranu 120Hz"
    )
@@ -2029,6 +2049,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Zrzut ekranu GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Symulacja prześwietlania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Symuluje prostą kroczącą linię skanującą na wielu podklatkach poprzez podzielenie ekranu w górę pionowo i renderowanie każdej części ekranu w zależności od liczby podklatek."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Symuluje prostą kroczącą linię skanującą na wielu podklatkach poprzez podzielenie ekranu w górę pionowo i renderowanie każdej części ekranu w zależności od liczby podklatek."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2496,17 +2528,43 @@ MSG_HASH(
    "Niestandardowy współczynnik proporcji (pozycja X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Własne przesunięcie widoku używane do zdefiniowania pozycji osi X widoku.\nSą one ignorowane, jeśli 'Skala całkowita' jest włączona."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Niestandardowy współczynnik proporcji (pozycja Y)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Własne przesunięcie widoku używane do zdefiniowania położenia osi Y widoku.\nSą one ignorowane, jeśli włączona jest „skala całkowita”."
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "Podgląd zakotwiczenia X"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "Podgląd zakotwiczenia X"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   "Własny widok używany do wyrównywania widoku poziomo (jeśli jest większy niż wysokość zawartości). 0.0 oznacza lewy i 1.0 oznacza prawo."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   "Własny widok używany do wyrównywania widoku poziomo (jeśli jest większy niż wysokość zawartości). 0.0 oznacza lewy i 1.0 oznacza prawo."
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Podgląd kotwicy X (orientacja pionowa)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "Podgląd kotwicy X (orientacja pionowa)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   "Własny widok używany do wyrównywania widoku poziomo (jeśli jest większy niż wysokość zawartości). 0.0 oznacza lewo, a 1.0 oznacza prawo. (orientacja pionowa)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   "Własny widok używany do przesuwania widoku pionowo (jeśli jest wyższy niż wysokość zawartości). 0.0 oznacza górny i 1.0 oznacza dolny (orientacja pionowa)"
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Niestandardowy współczynnik proporcji (szerokość)"
@@ -2607,27 +2665,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Opóźnienie ramki (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Zmniejsza opóźnienie kosztem wyższego ryzyka przycinania się wideo. Dodaje opóźnienie w milisekundach po prezentacji wideo i przed główną klatką."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Ustawia liczbę milisekund opóźnienia po prezentacji wideo przed uruchomieniem rdzenia. Może zmniejszyć opóźnienie kosztem wyższego ryzyka przycinania się. Maksymalnie %d."
+   "Opóźnienie ramki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatyczne opóźnienie ramki"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Tymczasowo zmniejsz efektywne \"Opóźnienie klatek\", aby zapobiec potencjalnym spadkom klatek. Punktem początkowym jest połowa czasu ramki, gdy \"Opóźnienie klatek\" wynosi 0."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Tymczasowo zmniejsz efektywne \"Opóźnienie klatek\", aż docelowa częstotliwość odświeżania będzie stabilna. Pomiar rozpoczyna się od połowy czasu klatki, gdy \"Opóźnienie klatek\" wynosi 0. Np. 8 dla NTSC i 10 dla PAL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -3067,6 +3109,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Zastąp powiązania wejściowe z zapisanymi powiązaniami ustawionymi dla bieżącego rdzenia."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Konfiguracja automatyczna"
@@ -5930,24 +5980,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Pokaż opcję 'Dodaj do ulubionych'."
    )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Dodaj do playlisty"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "Dodaj zawartość do listy odtwarzania."
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Dodano do playlisty"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Nie udało się dodać do playlisty: playlista pełna"
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Pokaż 'Ustaw powiązanie rdzenia'"
@@ -6130,6 +6162,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "Pokaż 'Użytkownik'"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Ikony listy odtwarzania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Typ miniatury ikony listy odtwarzania do wyświetlenia."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -6993,7 +7033,15 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Gdy włączone, znajdziesz miniaturki według nazwy pliku wpisu, a nie jego etykiety."
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Zezwól na wszystkie obsługiwane typy obrazów dla miniatur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Gdy włączone, lokalne miniatury mogą być dodawane do wszystkich typów obrazów obsługiwanych przez RetroArch (takich jak jpeg). Może mieć niewielki wpływ na wydajność."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Zarządzaj"
    )
@@ -7883,6 +7931,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "Dodaj zawartość do 'Ulubione'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Dodaj do playlisty"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Dodaj zawartość do listy odtwarzania."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -12050,6 +12106,14 @@ MSG_HASH(
    "Nie udało się dodać ulubionych: playlista pełna"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Dodano do playlisty"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Nie udało się dodać do playlisty: playlista pełna"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "Zestaw rdzenia: "
    )
@@ -12120,10 +12184,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Nie można określić nowej ścieżki konfiguracji. Użyj bieżącego czasu."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Osiągnięcia Tryb Hardcore Włączono, zapisywanie stanu i przewijanie wyłączone."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -12842,6 +12902,10 @@ MSG_HASH(
    "Osiągnięcie odblokowane"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "Rzadkie Osiągnięcia odblokowane"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
    "Przesłano %s dla %s" /* Submitted [value] for [leaderboard name] */
    )
@@ -13164,6 +13228,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Ukończono %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Osiągnięcia Tryb Hardcore Włączono, zapisywanie stanu i przewijanie wyłączone."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -13909,6 +13977,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Mysz dotykowa jest wyłączona"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "mikrofon sdl2 wymaga sterownika audio sdl2"
    )
 MSG_HASH(
    MSG_AI_SERVICE_STOPPED,

@@ -134,6 +134,10 @@ MSG_HASH(
    "Öppna traditionell skrivbordsmeny."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Inaktivera Kioskläge (omstart krävs)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Visar även dolda konfigurationsrelaterade inställningar."
    )
@@ -2236,17 +2240,11 @@ MSG_HASH(
    "Anpassa bildformat (X-position)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Anpassad visningsportoffset som används för att definiera X-axelns position för visningsporten.\nDessa ignoreras om 'Heltalsskala' är aktiverat."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Anpassa bildformat (Y-position)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Anpassad visningsportoffset som används för att definiera Y-axelns position för visningsporten.\nDessa ignoreras om 'Heltalsskala' är aktiverat."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Anpassa bildformat (Bredd)"
@@ -2336,10 +2334,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
    "VSynk är aktiverat tills prestandan faller under måluppdateringsfrekvensen. Kan minimera lagg när prestandan sjunker under realtid och vara mer energieffektiv."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Bildfördröjning (ms)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2823,6 +2817,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Åsidosätt nuvarande med de ommappade bindningarna för den nuvarande kärnan."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Autokonfig"
@@ -4299,6 +4301,10 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   "Mushastighet"
+   )
 
 /* Settings > On-Screen Display > Video Layout */
 
@@ -5130,8 +5136,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "Visa alternativet 'Lägg till i favoriter'."
    )
-
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "Visa 'Ställ in kärnassociation'"
@@ -5483,6 +5487,10 @@ MSG_HASH(
    "Samla prestationframgångar i klassiska spel. För mer information, besök 'https://retroachievements.org'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Hardcore läge"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "Automatisk skärmdump"
    )
@@ -5529,6 +5537,10 @@ MSG_HASH(
 /* Settings > Achievements > Visibility */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   "Synlighet"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
    "Ändra vilka meddelanden och element på skärmen som visas. Inaktiverar inte funktionalitet."
    )
@@ -5551,6 +5563,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
    "Visa indikationer på skärmen samtidigt som vissa prestationer kan tjänas."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   "Förloppsindikator"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
@@ -5773,7 +5789,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "Hantera Spellistor"
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Hantera"
    )
@@ -6231,6 +6247,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
    "Arkad DAT-filter"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+   "Starta skanning"
+   )
 
 /* Explore tab */
 MSG_HASH(
@@ -6338,6 +6358,10 @@ MSG_HASH(
    "Visa"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
+   "Spara som vy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
    "Radera vy"
    )
@@ -6391,6 +6415,10 @@ MSG_HASH(
 
 /* Playlist Item > Set Core Association */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+   "Nuvarande kärna"
+   )
 
 /* Playlist Item > Information */
 
@@ -6520,6 +6548,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
    "Starta Inspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   "Stoppa inspelning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
@@ -7667,6 +7699,10 @@ MSG_HASH(
    "Dynamisk bakgrund"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+   "Horisontell animering"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,
    "Typsnitt"
    )
@@ -7736,6 +7772,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
    "Monokrom inverterad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+   "Systematisk"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
@@ -8158,6 +8198,10 @@ MSG_HASH(
    "Mörk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+   "Anpassad..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    "Inställningar"
    )
@@ -8470,6 +8514,10 @@ MSG_HASH(
    "Tillämpa"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
+   "Återställ parameter"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
    "Hela systemet"
    )
@@ -8599,6 +8647,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
    "Nicknamn: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   "Ingen kärna hittades"
    )
 
 /* Unused (Only Exist in Translation Files) */
@@ -9006,6 +9058,10 @@ MSG_HASH(
    "Rensar spellista: "
    )
 MSG_HASH(
+   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   "Spellista rensad: "
+   )
+MSG_HASH(
    MSG_ADDED_TO_FAVORITES,
    "Tillagd i favoriter"
    )
@@ -9094,6 +9150,14 @@ MSG_HASH(
    "Misslyckades att ladda Innehåll"
    )
 MSG_HASH(
+   MSG_FAILED_TO_SAVE_SRAM,
+   "Det gick inte att spara SRAM"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_SRAM,
+   "Det gick inte att ladda SRAM"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SAVE_STATE_TO,
    "Misslyckades att spara status till"
    )
@@ -9124,6 +9188,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
    "Game Focus inaktiv"
+   )
+MSG_HASH(
+   MSG_INPUT_RENAME_ENTRY,
+   "Döp om titel"
    )
 MSG_HASH(
    MSG_INTERFACE,
@@ -9198,6 +9266,10 @@ MSG_HASH(
    "Sparade status till plats #-1 (Auto)."
    )
 MSG_HASH(
+   MSG_SAVING_RAM_TYPE,
+   "Sparar RAM-typ"
+   )
+MSG_HASH(
    MSG_SCANNING,
    "Skannar"
    )
@@ -9220,6 +9292,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
    "Helskärmsminiatyrer"
+   )
+MSG_HASH(
+   MSG_TOGGLE_CONTENT_METADATA,
+   "Växla metadata"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -9318,6 +9394,10 @@ MSG_HASH(
    "Run-Ahead har inaktiverats för att denna Kärna saknar stöd för Spara Statusar."
    )
 MSG_HASH(
+   MSG_CHEAT_DELETE_ALL_SUCCESS,
+   "Alla fusk borttagna."
+   )
+MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "Fusk raderat."
    )
@@ -9338,12 +9418,32 @@ MSG_HASH(
    "Högsta"
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_START,
+   "Skannar innehåll: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Skannar: "
    )
 MSG_HASH(
+   MSG_CORE_BACKUP_SCANNING_CORE,
+   "Skannar kärna: "
+   )
+MSG_HASH(
+   MSG_BACKING_UP_CORE,
+   "Säkerhetskopierar kärna: "
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Återställer kärna: "
+   )
+MSG_HASH(
    MSG_INSTALLING_CORE,
    "Installerar Kärna: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_INVALID_CONTENT,
+   "Ogiltig kärnfil vald: "
    )
 MSG_HASH(
    MSG_CORE_LOCK_FAILED,
@@ -9428,6 +9528,14 @@ MSG_HASH(
    "Manuell"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   "Maximal prestanda"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   "Spelläge"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Starta om RetroArch"
    )
@@ -9454,6 +9562,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCAL,
    "Lokal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Skärmens ljusstyrka"
    )
 #ifdef HAVE_LIBNX
 MSG_HASH(
@@ -9504,6 +9616,10 @@ MSG_HASH(
    "Aktivera CPU-handskakning med TV vid dockning"
    )
 #endif
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Inget SSID]"
+   )
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif

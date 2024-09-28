@@ -91,6 +91,10 @@ extern "C" {
 #include "../../version_git.h"
 #endif
 
+#ifdef HAVE_WAYLAND
+#include "../../gfx/common/wayland_common.h"
+#endif
+
 #ifndef CXX_BUILD
 }
 #endif
@@ -2418,7 +2422,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       core_info_ctx_firmware_t firmware_info;
       bool update_missing_firmware    = false;
       bool set_missing_firmware       = false;
-      settings_t *settings            = config_get_ptr(); 
+      settings_t *settings            = config_get_ptr();
       uint8_t flags                   = content_get_flags();
       bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
       bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
@@ -2481,7 +2485,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
          /* Show the path that was checked */
          snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH), 
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
                firmware_info.directory.system);
 
          hash["key"]   = QString(tmp);
@@ -4230,9 +4234,17 @@ static void* ui_application_qt_initialize(void)
 
 #ifdef Q_OS_UNIX
    setlocale(LC_NUMERIC, "C");
+#ifdef HAVE_WAYLAND
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
+   /* This needs to match the name of the .desktop file in order for
+    * Windows to be correctly associated on Wayland */
+   ui_application.app->setDesktopFileName(WAYLAND_APP_ID);
+#endif
+#endif
 #endif
    {
-      /* Can't declare the pixmap at the top, because: "QPixmap: Must construct a QGuiApplication before a QPixmap" */
+      /* Can't declare the pixmap at the top, because:
+       * "QPixmap: Must construct a QGuiApplication before a QPixmap" */
       QImage iconImage(16, 16, QImage::Format_ARGB32);
       QPixmap iconPixmap;
       unsigned char *bits = iconImage.bits();
@@ -4992,6 +5004,7 @@ ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_is_active,
    NULL, /* get_app_icons */
    NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    &ui_browser_window_qt,
    &ui_msg_window_qt,
    &ui_window_qt,

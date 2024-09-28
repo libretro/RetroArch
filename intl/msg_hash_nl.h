@@ -2064,17 +2064,11 @@ MSG_HASH(
    "Aangepaste Beeldverhouding (X-positie)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Aangepaste weergave-offset gebruikt voor het definiëren van de X-as positie van de weergave.\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Aangepaste Beeldverhouding (Y-positie)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Aangepaste weergave-offset gebruikt voor het definiëren van de Y-as positie van de weergave.\nDeze worden genegeerd als 'Integer Schaal' is ingeschakeld."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Aangepaste Beeldverhouding (Breedte)"
@@ -2166,28 +2160,8 @@ MSG_HASH(
    "V-Sync is ingeschakeld totdat de prestaties onder de doelvernieuwingsfrequentie komen. Kan stotteren minimaliseren wanneer de prestaties onder realtime vallen en kan energiezuiniger zijn."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Frame-vertraging (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Vermindert de vertraging ten koste van een hoger risico dat video zal stotteren. Voegt een vertraging in milliseconden toe na de video-presentatie en voor de kern frame."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Stelt in hoeveel milliseconden na video-presentatie moeten worden uitgesteld voordat de core wordt uitgevoerd. Kan latentie verminderen ten koste van een hoger risico om te stotteren. Maximum is %d."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatisch Frame-vertraging"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Verlaag de effectieve 'Frame-vertraging' tijdelijk om toekomstige framedalen te voorkomen. Beginpunt is half-framesneltijd wanneer 'Frame-vertraging' 0 is."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Tijdelijk verlaagt de effectieve 'Frame vertraging' totdat de doelververssnelheid stabiel is. Het meten begint vanaf halve frame tijd wanneer 'Frame Delay' 0 is. Bijvoorbeeld 8 voor NTSC en 10 voor PAL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -2659,6 +2633,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Overschrijf de invoerbindingen met de opnieuw toegewezen bindingen die zijn ingesteld voor de huidige core."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Autoconfiguratie Activeren"
@@ -4990,8 +4972,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CLOSE_CONTENT,
    "Toon de optie 'Sluit Inhoud'."
    )
-
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    "Toon 'Informatie'"
@@ -5161,7 +5141,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
    "secondes"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

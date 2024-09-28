@@ -90,7 +90,7 @@ float vibratocore_core(struct vibrato_core *core,float in)
    float lfo                      = sin(M * 2. * M_PI * core->phase++);
    int maxdelay                   = VIBRATO_BASE_DELAY_SEC * core->samplerate;
    core->phase                    = core->phase % maxphase;
-   lfo                            = (lfo + 1) * 1.; // transform from [-1; 1] to [0; 1]
+   lfo                            = (lfo + 1) * 1.; /* Transform from [-1; 1] to [0; 1] */
    delay                          =  lfo * core->depth * maxdelay;
    delay                         += VIBRATO_ADD_DELAY;
    readindex                      = core->writeindex - 1 - delay;

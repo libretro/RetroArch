@@ -138,6 +138,19 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
 }
 #endif
 
+static float cocoa_vk_gfx_ctx_get_refresh_rate(void *data)
+{
+#ifdef OSX
+    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
+    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
+    float currentRate = CGDisplayModeGetRefreshRate(currentMode);
+    CFRelease(currentMode);
+    return currentRate;
+#else
+    return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
+}
+
 static gfx_ctx_proc_t cocoa_vk_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return NULL;
@@ -236,7 +249,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
             &cocoa_ctx->vk,
             VULKAN_WSI_MVK_MACOS,
             NULL,
-            (BRIDGE void *)g_view,
+            (BRIDGE void *)g_view.layer,
             cocoa_ctx->width,
             cocoa_ctx->height,
             cocoa_ctx->swap_interval))
@@ -285,7 +298,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    if (!vulkan_surface_create(&cocoa_ctx->vk,
                               VULKAN_WSI_MVK_IOS,
                               NULL,
-                              (BRIDGE void *)g_view,
+                              (BRIDGE void *)((MetalLayerView*)g_view).metalLayer,
                               cocoa_ctx->width,
                               cocoa_ctx->height,
                               cocoa_ctx->swap_interval))
@@ -353,7 +366,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
 #else
    cocoa_vk_gfx_ctx_get_video_size,
 #endif
-   NULL, /* get_refresh_rate */
+   cocoa_vk_gfx_ctx_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

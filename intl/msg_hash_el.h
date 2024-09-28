@@ -1611,6 +1611,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Προτιμώμενη Θέση Άξωνα Y Αναλογίας Οθόνης"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Προτιμώμενο Πλάτος Αναλογίας Οθόνης"
@@ -1927,6 +1929,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    "Μέγιστος αριθμός χρηστών που υποστηρίζεται από το RetroArch."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Ενεργοποίηση Αυτόματης Διαμόρφωσης"
@@ -2811,8 +2821,6 @@ MSG_HASH( /* FIXME Not RGUI specific */
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 
@@ -2985,7 +2993,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
    "Φορητές Λίστες Αναπαραγωγής"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

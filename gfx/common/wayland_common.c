@@ -34,7 +34,6 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-vk-splash"
 
-#define APP_ID "org.libretro.RetroArch"
 #define WINDOW_TITLE "RetroArch"
 
 #ifdef HAVE_LIBDECOR_H
@@ -136,7 +135,6 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
          /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
          wl_surface_commit(wl->surface);
-         wl_display_roundtrip(wl->input.dpy);
       }
    }
 
@@ -209,7 +207,6 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
          /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
          wl_surface_commit(wl->surface);
-         wl_display_roundtrip(wl->input.dpy);
       }
    }
 
@@ -449,8 +446,13 @@ bool gfx_ctx_wl_get_metrics_common(void *data,
 static int create_shm_file(off_t size)
 {
    int fd, ret;
+#ifndef __FreeBSD__
    if ((fd = syscall(SYS_memfd_create, SPLASH_SHM_NAME,
                MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
+#else
+   if ((fd = memfd_create(SPLASH_SHM_NAME,
+               MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
+#endif
    {
       fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
 
@@ -727,7 +729,7 @@ bool gfx_ctx_wl_init_common(
          goto error;
       }
 
-      wl->libdecor_frame_set_app_id(wl->libdecor_frame, APP_ID);
+      wl->libdecor_frame_set_app_id(wl->libdecor_frame, WAYLAND_APP_ID);
       wl->libdecor_frame_set_title(wl->libdecor_frame, WINDOW_TITLE);
       wl->libdecor_frame_map(wl->libdecor_frame);
 
@@ -753,7 +755,7 @@ bool gfx_ctx_wl_init_common(
       wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
       xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
 
-      xdg_toplevel_set_app_id(wl->xdg_toplevel, APP_ID);
+      xdg_toplevel_set_app_id(wl->xdg_toplevel, WAYLAND_APP_ID);
       xdg_toplevel_set_title(wl->xdg_toplevel, WINDOW_TITLE);
 
       if (wl->deco_manager)
@@ -853,7 +855,6 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
       /* Stretch old buffer to fill new size, commit/roundtrip to apply */
       wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
       wl_surface_commit(wl->surface);
-      wl_display_roundtrip(wl->input.dpy);
    }
 
 #ifdef HAVE_LIBDECOR_H

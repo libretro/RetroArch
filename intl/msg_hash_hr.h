@@ -902,14 +902,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    "Sinkronizacija"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "Isključeno"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "Isključeno"
-   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
@@ -962,6 +954,8 @@ MSG_HASH(
    "Puno"
    )
 #if defined(DINGUX)
+#endif
+#if defined(RARCH_MOBILE)
 #endif
 
 /* Settings > Video > HDR */
@@ -1063,6 +1057,14 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 #ifdef ANDROID
@@ -1195,8 +1197,6 @@ MSG_HASH(
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 
-
-
 /* Settings > User Interface > Views > Settings */
 
 
@@ -1241,7 +1241,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jezgra:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

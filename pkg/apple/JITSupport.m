@@ -39,13 +39,13 @@ extern int ptrace(int request, pid_t pid, caddr_t addr, int data);
 #define PT_TRACE_ME     0       /* child declares it's being traced */
 #define PT_SIGEXC       12      /* signals as exceptions for current_proc */
 
-static void *exception_handler(void *argument) {
 #if !TARGET_OS_TV
+static void *exception_handler(void *argument) {
     mach_port_t port = *(mach_port_t *)argument;
     mach_msg_server(exc_server, 2048, port, 0);
-#endif
     return NULL;
 }
+#endif
 
 static bool jb_has_debugger_attached(void) {
     int flags;

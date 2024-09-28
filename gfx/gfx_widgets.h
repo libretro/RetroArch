@@ -119,7 +119,7 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_NEGATIVE                  = (1 << 9)
 };
 
-/* There can only be one message animation at a time to 
+/* There can only be one message animation at a time to
  * avoid confusing users */
 enum dispgfx_widget_flags
 {
@@ -246,7 +246,8 @@ typedef struct dispgfx_widget
 
    uint8_t flags;
 
-   char assets_pkg_dir[PATH_MAX_LENGTH];
+   char gfx_widgets_status_text[NAME_MAX_LENGTH];
+   char assets_pkg_dir[DIR_MAX_LENGTH];
    char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
    char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */
    char ozone_regular_font_path[PATH_MAX_LENGTH]; /* TODO/FIXME - decouple from Ozone */
@@ -254,7 +255,6 @@ typedef struct dispgfx_widget
 
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
-   char gfx_widgets_status_text[255];
 
    bool active;
 } dispgfx_widget_t;

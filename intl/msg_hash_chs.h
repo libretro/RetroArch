@@ -139,7 +139,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "禁用游戏机厅模式。(需要重启)"
+   "禁用游戏厅模式 (需要重启)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -195,11 +195,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "重启"
+   "重新启动"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "重新启动RetroArch"
+   "重新启动RetroArch。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
@@ -1233,6 +1233,38 @@ MSG_HASH(
    "破坏性云同步"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "同步：保存/状态"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "同步：配置文件"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "同步：缩略图"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "同步：系统文件"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "启用时，存档/即时存档将同步到云端。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "启用时，配置文件将同步到云端。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "启用时，缩略图图像将同步到云端。 除了大量自定义缩略图图像收藏以外，一般不推荐使用；否则缩略图下载器是一个更好的选择。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "启用后，系统文件将同步到云端。这会大大增加同步所需的时间；请谨慎使用。"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "禁用后，文件会在被覆盖或删除之前移至备份文件夹。"
    )
@@ -1919,10 +1951,6 @@ MSG_HASH(
    "为增强运动清晰度在帧之间插入黑帧。仅使用为您当前显示刷新率指定的选项。 不以非倍数60赫兹的刷新速率使用，例如144赫兹，165赫兹等。 不要与Swap Interval > 1, sub-frames, Frame Delay, 或者 Sync to Exact Content Framerate功能同时使用. 可以打开系统的 VRR 选项，仅仅不是那个设置。 如果你注意到-任何-临时图像保留, 你应该在 120hz 处禁用, 对于更高的hz 则调整下面的暗色帧设置。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_OFF,
-   "关闭"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
    "1-120Hz显示刷新率"
    )
@@ -2007,10 +2035,6 @@ MSG_HASH(
    "设计用来在任何可能的着色器特效上提升游戏本身的帧率，在帧之间插入额外的着色器帧。仅可以使用为您当前显示器刷新率指定的选项。 不要在非60赫兹倍数的屏幕刷新率使用，例如144赫兹，165赫兹等。 不要与“Swap 间隔 > 1”, “BFI”, “帧延迟”, 或者 “精确同步游戏帧率”功能同时使用. 可以保持系统的 VRR 功能打开，仅仅不是那个设置。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_OFF,
-   "关闭"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
    "2-120Hz显示刷新率"
    )
@@ -2080,11 +2104,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "模拟多个子帧上的基本滚动扫描，垂直向上分割屏幕，并根据屏幕上的子帧数渲染每个部分"
+   "在多个子帧上模拟基本的滚动扫描线，方法是垂直分割屏幕，并根据子帧的数量渲染屏幕的每个部分。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "模拟多个子帧上的基本滚动扫描，垂直向上分割屏幕，并根据屏幕上的子帧数渲染每个部分，从上到下。"
+   "在多个子帧上模拟基本的滚动扫描线，方法是垂直分割屏幕，并根据从屏幕顶部向下的子帧数量渲染屏幕的每个部分。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2557,7 +2581,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "自定义 X 轴视图偏移量。\n如果启用「整数缩放」则忽略此选项。"
+   "自定义视图偏移用于定义视图的X轴位置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
@@ -2565,8 +2589,26 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "自定义 Y 轴视图偏移量。\n如果启用「整数缩放」则忽略此选项。"
+   "自定义视图偏移用于定义视图的Y轴位置。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "视口锚点偏置 X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
+   "视口锚点偏置 X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "视口锚点偏置 Y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
+   "视口锚点偏置 Y"
+   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "自定义宽高比宽度"
@@ -2666,28 +2708,8 @@ MSG_HASH(
    "垂直同步默认启用，除非性能降到低于目标刷新率。当性能低于实时水平，这可以最大限度地减少卡顿，并且更加节能。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "帧延迟 (毫秒)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "减少延迟的代价是视频停顿的风险更高。在视频演示之后和核心帧之前增加一个以毫秒为单位的延迟。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "设置在视频呈现后延迟多少毫秒再运行核心。可以减少延迟，但代价是更高的卡顿风险。最大为%d。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "自动帧延迟"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "暂时降低有效的“帧延迟”以防止将来的帧丢失。起始点是当“帧延迟”为0时的半帧时间。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "暂时减少有效的 \"帧延迟\"，直到目标刷新率稳定。当 \"帧延迟 \"为0时，从一半的帧时间开始测量，例如NTSC为8，PAL为10。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
@@ -3231,6 +3253,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "用当前核心的重映射绑定覆盖输入绑定。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "自动配置"
@@ -4088,6 +4118,34 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    "RetroArch识别的物理控制器。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "为此播放器所保留的设备"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "根据预设模式，该控制器将分配给此玩家。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   "无预设"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   "偏好"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   "已预设"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   "设备预设类型"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "首选：如果存在指定设备，将为该播放器分配该设备。保留：不会为该播放器分配其他控制器。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
@@ -6602,32 +6660,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "显示「收藏」选项。"
    )
-
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "添加至列表"
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "显示‘添加到播放列表’"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
-   "将内容添加到播放列表中。"
+   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "显示‘添加到播放列表’选项"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "新建播放列表"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "已添加到播放列表"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "添加至列表失败：列表已满"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
-   "创建一个新的播放列表并添加当前条目。"
-   )
-
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
    "显示「设置核心关联」"
@@ -6828,6 +6868,10 @@ MSG_HASH(
    "显示「用户」"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "要显示的游戏列表图标缩略图类型。"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "显示「用户」设置。"
    )
@@ -6957,6 +7001,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
    "AI 服务输出"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   "将翻译显示为文本叠加（图像模式），播放为文本到语音（语音），或使用 NVDA 等系统旁白（旁白）。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
@@ -7813,7 +7861,11 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "如果启用，将通过条目文件名而不是其标签找到缩略图。"
    )
-   MSG_HASH(
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "如果启用，本地缩略图可以添加到RetroArch支持的所有图像类型(例如jpeg)。可能会产生较小的性能影响。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "管理"
    )
@@ -8791,6 +8843,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    "把游戏添加到「收藏」。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "添加至列表"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "将内容添加到播放列表中。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "新建播放列表"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "创建一个新的播放列表并添加当前条目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
@@ -11318,6 +11386,10 @@ MSG_HASH(
    "自定义"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX,
+   "扁平化"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
    "单色"
    )
@@ -13366,6 +13438,14 @@ MSG_HASH(
    "收藏失败：列表已满"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "已添加到播放列表"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "添加至列表失败：列表已满"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "已设置核心："
    )
@@ -13436,10 +13516,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "无法推断新的配置路径，使用当前时间。"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "成就硬核模式已启用，状态存储和回溯被禁用。"
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -14222,6 +14298,10 @@ MSG_HASH(
    "成就已解锁"
    )
 MSG_HASH(
+   MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   "成就已解锁"
+   )
+MSG_HASH(
    MSG_LEADERBOARD_STARTED,
    "排行榜尝试已开始"
    )
@@ -14632,6 +14712,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "已完成「%s」"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "成就硬核模式已启用，状态存储和回溯被禁用。"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15130,14 +15214,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    "启用 Linux 游戏模式可以通过自动配置 CPU 和 GPU 的最佳性能来提高延迟性，修复音频破解问题，并最大限度地提高整体性能。\n需要安装游戏模式软件才能正常工作。请参阅https://github.com/FeralInteractive/gamemode获取如何安装 GameMode的信息。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "图像休眠"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "尽量在图像显示后通过休眠来减少垂直同步 CPU使用率。主要为第三方扫描同步设计。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,

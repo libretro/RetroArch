@@ -123,26 +123,50 @@ static INLINE bool bits_any_different(uint32_t *a, uint32_t *b, uint32_t count)
    return false;
 }
 
-#ifndef PATH_MAX_LENGTH
-#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(__PSL1GHT__) || defined(__PS3__) || defined(HAVE_EMSCRIPTEN)
-#define PATH_MAX_LENGTH 512
-#else
 /**
  * An upper limit for the length of a path (including the filename).
  * If a path is longer than this, it may not work properly.
  * This value may vary by platform.
  */
-#define PATH_MAX_LENGTH 4096
-#endif
+
+#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(__PSL1GHT__) || defined(__PS3__) || defined(HAVE_EMSCRIPTEN)
+
+#ifndef PATH_MAX_LENGTH
+#define PATH_MAX_LENGTH 512
 #endif
 
-#ifndef NAME_MAX_LENGTH
+#ifndef DIR_MAX_LENGTH
+#define DIR_MAX_LENGTH 256
+#endif
+
 /**
  * An upper limit for the length of a file or directory (excluding parent directories).
  * If a path has a component longer than this, it may not work properly.
  */
+#ifndef NAME_MAX_LENGTH
+#define NAME_MAX_LENGTH 128
+#endif
+
+#else
+
+#ifndef PATH_MAX_LENGTH
+#define PATH_MAX_LENGTH 2048
+#endif
+
+#ifndef DIR_MAX_LENGTH
+#define DIR_MAX_LENGTH 1024
+#endif
+
+/**
+ * An upper limit for the length of a file or directory (excluding parent directories).
+ * If a path has a component longer than this, it may not work properly.
+ */
+#ifndef NAME_MAX_LENGTH
 #define NAME_MAX_LENGTH 256
 #endif
+
+#endif
+
 
 #ifndef MAX
 /**

@@ -213,6 +213,8 @@ static void wl_pointer_handle_leave(void *data,
    wl->input.mouse.left       = false;
    wl->input.mouse.right      = false;
    wl->input.mouse.middle     = false;
+   wl->input.mouse.side       = false;
+   wl->input.mouse.extra      = false;
 
    if (wl->input.mouse.surface == surface)
       wl->input.mouse.surface = NULL;
@@ -270,6 +272,12 @@ static void wl_pointer_handle_button(void *data,
          case BTN_MIDDLE:
             wl->input.mouse.middle = true;
             break;
+         case BTN_SIDE:
+            wl->input.mouse.side = true;
+            break;
+         case BTN_EXTRA:
+            wl->input.mouse.extra = true;
+            break;
       }
    }
    else
@@ -284,6 +292,12 @@ static void wl_pointer_handle_button(void *data,
             break;
          case BTN_MIDDLE:
             wl->input.mouse.middle = false;
+            break;
+         case BTN_SIDE:
+            wl->input.mouse.side = false;
+            break;
+         case BTN_EXTRA:
+            wl->input.mouse.extra = false;
             break;
       }
    }
@@ -498,11 +512,14 @@ static void wl_seat_handle_capabilities(void *data,
    {
       wl->wl_pointer = wl_seat_get_pointer(seat);
       wl_pointer_add_listener(wl->wl_pointer, &pointer_listener, wl);
-      wl->wl_relative_pointer =
-         zwp_relative_pointer_manager_v1_get_relative_pointer(
-            wl->relative_pointer_manager, wl->wl_pointer);
-      zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
-         &relative_pointer_listener, wl);
+      if (wl->relative_pointer_manager)
+      {
+         wl->wl_relative_pointer =
+            zwp_relative_pointer_manager_v1_get_relative_pointer(
+               wl->relative_pointer_manager, wl->wl_pointer);
+         zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
+            &relative_pointer_listener, wl);
+      }
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {

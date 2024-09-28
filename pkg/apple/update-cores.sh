@@ -22,7 +22,7 @@ function debug() {
 if [ -z "$PROJECT_DIR" ] ; then
     APPLE_DIR=$(dirname $0)
 else
-    APPLE_DIR="${PROJECT_DIR}/pkg/apple"
+    APPLE_DIR="${PROJECT_DIR}"
 fi
 
 if [ "$1" = "-n" -o "$1" = "--dry-run" ] ; then
@@ -51,18 +51,18 @@ NC='\033[0m'
 
 function update_dylib() {
     dylib=$1
-    printf "Updating ${YELLOW}$dylib${NC}... "
+    printf "Updating ${YELLOW}$dylib${NC}...\n"
     if [ -n "$DRY_RUN" ] ; then
-        echo
         return
     fi
     if [ -f "$dylib" ] ; then
         mv "$dylib" "$dylib".bak
     fi
     debug curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
+    (
     curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
     if [ ! -f "$dylib".zip ] ; then
-        printf "${RED}Download failed${NC}\n"
+        printf "${RED}Download ${dylib} failed${NC}\n"
         if [ -f "$dylib".bak ] ; then
             mv "$dylib".bak "$dylib"
         fi
@@ -70,13 +70,14 @@ function update_dylib() {
         debug unzip $UNZIP_DEBUG "$dylib".zip
         unzip $UNZIP_DEBUG "$dylib".zip
         if [ ! -f "$dylib" ] ; then
-            printf "${RED}Unzip failed${NC}\n"
+            printf "${RED}Unzip ${dylib} failed${NC}\n"
             mv "$dylib".bak "$dylib"
         else
-            printf "${GREEN}Success!${NC}\n"
+            printf "${GREEN}Download ${dylib} success!${NC}\n"
             [ -n "$NO_RM" ] || rm -f "$dylib".zip "$dylib".bak
         fi
     fi
+    ) &
 }
 
 allcores=
@@ -116,45 +117,92 @@ else
             dylibs=(${allcores[*]})
         elif [ "$1" = "appstore" ] ; then
             exports=(
-                mupen64plus_next
-                kronos
-                pcsx_rearmed
-                easyrpg
-                dinothawr
-                sameboy
-                mgba
-                gpsp
-                mesen
-                mesen-s
-                genesis_plus_gx
-                genesis_plus_gx_wide
-                fbneo
+                2048
+                a5200
+                anarch
+                ardens
+                atari800
+                #blastem
+                bluemsx
                 bsnes
                 bsnes_hd_beta
-                #flycast
+                cap32
+                crocods
                 desmume
+                dinothawr
+                dirksimple
+                dosbox_pure
+                DoubleCherryGB
+                easyrpg
+                ep128emu_core
+                fbneo
+                fceumm
+                #flycast
+                freechaf
+                freeintv
+                fuse
+                gambatte
+                gearboy
+                gearsystem
+                genesis_plus_gx
+                genesis_plus_gx_wide
+                geolith
+                gme
+                gpsp
+                gw
+                handy
+                kronos
+                mednafen_ngp
+                mednafen_pce
+                mednafen_pce_fast
+                mednafen_pcfx
+                mednafen_psx
+                mednafen_psx_hw
+                mednafen_saturn
+                mednafen_supergrafx
+                mednafen_vb
+                mednafen_wswan
+                melondsds
+                mesen
+                mesen-s
+                mgba
+                mojozork
+                mu
+                mupen64plus_next
+                neocd
+                nestopia
+                np2kai
+                numero
+                nxengine
+                opera
+                pcsx_rearmed
+                picodrive
+                #play
+                pocketcdg
+                pokemini
+                potator
                 ppsspp
-                stella
-                stella2014
+                prboom
+                prosystem
+                puae
+                px68k
+                quicknes
+                race
+                sameboy
+                scummvm
+                smsplus
                 snes9x
                 snes9x2005
                 snes9x2010
-                vbam
+                stella
+                stella2014
+                tgbdual
+                theodore
+                tic80
+                tyrquake
                 vba_next
-                picodrive
-                np2kai
-                atari800
-                prosystem
-                cap32
-                crocods
-                pocketcdg
-                neocd
-                nestopia
-                fceumm
-                race
-                quicknes
-                smsplus
-                blastem
+                vbam
+                vecx
                 vice_x128
                 vice_x64
                 vice_x64sc
@@ -164,45 +212,10 @@ else
                 vice_xplus4
                 vice_xscpu64
                 vice_xvic
-                puae
-                mednafen_pce
-                mednafen_pce_fast
-                mednafen_supergrafx
-                mednafen_vb
-                mednafen_wswan
-                mednafen_psx
-                mednafen_psx_hw
-                mednafen_saturn
-                potator
-                vecx
-                tgbdual
-                gw
-                fuse
-                freechaf
-                gambatte
-                freeintv
-                gearsystem
-                gearboy
-                handy
-                tic80
-                wasm4
-                gme
-                tyrquake
-                theodore
-                a5200
-                #play
-                bluemsx
-                px68k
-                xrick
-                ep128emu_core
-                mojozork
-                numero
-                dirksimple
-                scummvm
-                virtualxt
-                geolith
                 vircon32
-                melondsds
+                virtualxt
+                wasm4
+                xrick
             )
             for dylib in "${exports[@]}" ; do
                 find_dylib $dylib
@@ -225,3 +238,4 @@ fi
 for dylib in "${dylibs[@]}" ; do
     update_dylib "$dylib"
 done
+wait

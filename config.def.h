@@ -69,6 +69,14 @@
 #define DEFAULT_ASPECT_RATIO 1.3333f
 #endif
 
+#define DEFAULT_VIEWPORT_BIAS_X 0.5
+#define DEFAULT_VIEWPORT_BIAS_Y 0.5
+
+#if defined(RARCH_MOBILE)
+#define DEFAULT_VIEWPORT_BIAS_PORTRAIT_X 0.5
+#define DEFAULT_VIEWPORT_BIAS_PORTRAIT_Y 0.0
+#endif
+
 #if defined(GEKKO)
 #define DEFAULT_MOUSE_SCALE 1
 #endif
@@ -360,6 +368,8 @@
 
 /* Vulkan specific */
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
+#define MINIMUM_MAX_SWAPCHAIN_IMAGES 2
+#define MAXIMUM_MAX_SWAPCHAIN_IMAGES 4
 
 /* D3D1x specific */
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
@@ -383,16 +393,15 @@
  * 2: Etc ...
  */
 #define DEFAULT_HARD_SYNC_FRAMES 0
+#define MINIMUM_HARD_SYNC_FRAMES 0
+#define MAXIMUM_HARD_SYNC_FRAMES 3
 
 /* Sets how many milliseconds to delay after VSync before running the core.
  * Can reduce latency at cost of higher risk of stuttering.
  */
 #define DEFAULT_FRAME_DELAY 0
-#define MAXIMUM_FRAME_DELAY 19
+#define MAXIMUM_FRAME_DELAY 99
 #define DEFAULT_FRAME_DELAY_AUTO false
-
-/* Try to sleep the spare time after frame is presented in order to reduce vsync CPU usage. */
-#define DEFAULT_FRAME_REST false
 
 /* Duplicates frames for the purposes of running Shaders at a higher framerate
  * than content framerate. Requires running screen at multiple of 60hz, and
@@ -689,6 +698,7 @@
 #define DEFAULT_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE true
 #define DEFAULT_QUICK_MENU_SHOW_REPLAY false
 #define DEFAULT_QUICK_MENU_SHOW_ADD_TO_FAVORITES true
+#define DEFAULT_QUICK_MENU_SHOW_ADD_TO_PLAYLIST false
 #define DEFAULT_QUICK_MENU_SHOW_START_RECORDING true
 #define DEFAULT_QUICK_MENU_SHOW_START_STREAMING true
 #define DEFAULT_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION true
@@ -1164,12 +1174,7 @@
 #endif
 
 /* Will sync audio. (recommended) */
-#ifdef IOS
-/* FIXME: coreaudio will cause the main thread to hang on backgrounding, causing a crash */
-#define DEFAULT_AUDIO_SYNC false
-#else
 #define DEFAULT_AUDIO_SYNC true
-#endif
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
@@ -1507,6 +1512,8 @@
 
 #define DEFAULT_PLAYLIST_USE_FILENAME false
 
+#define DEFAULT_PLAYLIST_ALLOW_NON_PNG false
+
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 
@@ -1614,6 +1621,7 @@
 #define DEFAULT_GFX_THUMBNAILS_DEFAULT 3
 
 #define DEFAULT_MENU_LEFT_THUMBNAILS_DEFAULT 0
+#define DEFAULT_MENU_ICON_THUMBNAILS_DEFAULT 0
 
 #define DEFAULT_GFX_THUMBNAIL_UPSCALE_THRESHOLD 0
 
@@ -1689,13 +1697,17 @@
 /* Only applies to Android 7.0 (API 24) and up */
 #define DEFAULT_SUSTAINED_PERFORMANCE_MODE false
 
-#if defined(ANDROID)
+#if defined(ANDROID) || defined(IOS)
 #define DEFAULT_VIBRATE_ON_KEYPRESS true
 #else
 #define DEFAULT_VIBRATE_ON_KEYPRESS false
 #endif
 
+#if defined(IOS)
+#define DEFAULT_ENABLE_DEVICE_VIBRATION true
+#else
 #define DEFAULT_ENABLE_DEVICE_VIBRATION false
+#endif
 
 /* Defines the strength of rumble effects
  * on OpenDingux devices */

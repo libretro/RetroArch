@@ -316,16 +316,15 @@ check_enabled SSL BUILTINMBEDTLS 'builtin mbedtls' 'ssl is' false
 check_enabled SSL BUILTINBEARSSL 'builtin bearssl' 'ssl is' false
 
 if [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then SYSTEMMBEDTLS_IS_AUTO=yes; else SYSTEMMBEDTLS_IS_AUTO=no; fi
-check_lib '' SYSTEMMBEDTLS '-lmbedtls -lmbedx509 -lmbedcrypto'
-check_header '' SYSTEMMBEDTLS \
-   mbedtls/config.h \
-   mbedtls/certs.h \
-   mbedtls/debug.h \
-   mbedtls/platform.h \
-   mbedtls/net_sockets.h \
-   mbedtls/ssl.h \
-   mbedtls/ctr_drbg.h \
-   mbedtls/entropy.h
+check_val '' SYSTEMMBEDTLS '-lmbedtls' 'mbedtls' mbedtls 2.5.1 '' true
+check_val '' SYSTEMMBEDX509 '-lmbedx509' 'mbedtls' mbedx509 2.5.1 '' true
+check_val '' SYSTEMMBEDCRYPTO '-lmbedcrypto' 'mbedtls' mbedcrypto 2.5.1 '' true
+if [ "$HAVE_SYSTEMMBEDTLS" = 'yes' ] && [ -z "$SYSTEMMBEDTLS_VERSION" ]; then
+  # Ancient versions (such as the one included in the Ubuntu version used for
+  # build checks) don't have this header
+  check_header '' SYSTEMMBEDTLS mbedtls/net_sockets.h
+fi
+if [ "$HAVE_SYSTEMMBEDX509" = 'no' ] || [ "$HAVE_SYSTEMMBEDCRYPTO" = 'no' ]; then HAVE_SYSTEMMBEDTLS=no; fi
 if [ "$SYSTEMMBEDTLS_IS_AUTO" = "yes" ] && [ "$HAVE_SYSTEMMBEDTLS" = "yes" ]; then HAVE_SYSTEMMBEDTLS=auto; fi
 
 SSL_BACKEND_CHOSEN=no
@@ -400,6 +399,10 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    elif [ "$OS" = 'Win32' ]; then
       check_header '' OPENGL "GL/gl.h"
       check_lib '' OPENGL -lopengl32
+   elif [ "$HAVE_GLX" = 'no' ]; then
+      # Use vendor-neutral OpenGL implementation instead of GLX
+      check_header '' OPENGL "GL/gl.h"
+      check_lib '' OPENGL -lOpenGL
    else
       check_header '' OPENGL "GL/gl.h"
       check_lib '' OPENGL -lGL
@@ -505,6 +508,7 @@ if [ "$HAVE_X11" != 'no' ]; then
    check_val '' XCB -lxcb '' xcb '' '' false
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
+   check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false
 else
    die : 'Notice: X11 not present. Skipping X11 code paths.'
 fi
