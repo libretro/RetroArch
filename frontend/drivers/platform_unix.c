@@ -1766,8 +1766,12 @@ static void frontend_unix_get_env(int *argc,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    else
 #endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
-         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
+            "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
          "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));

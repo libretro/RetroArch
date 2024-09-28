@@ -611,8 +611,12 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    else
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
             ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-      ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+           ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
       ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
