@@ -1325,6 +1325,7 @@ static void frontend_unix_get_env(int *argc,
    unsigned i;
    const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
    const char* libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
+   const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
@@ -1773,9 +1774,13 @@ static void frontend_unix_get_env(int *argc,
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 #endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
-         "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-
+   if (!string_is_empty(libretro_autoconfig_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+	    libretro_autoconfig_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
+            "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
 #ifdef ASSETS_DIR
    if (path_is_directory(ASSETS_DIR "/assets"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
