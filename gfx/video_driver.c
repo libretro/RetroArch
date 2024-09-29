@@ -2354,12 +2354,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    int padding_y                   = 0;
    float viewport_bias_x           = settings->floats.video_viewport_bias_x;
    float viewport_bias_y           = settings->floats.video_viewport_bias_y;
-   /* Use system reported sizes as these define the
-    * geometry for the "normal" case. */
-   unsigned content_width          =
-      video_st->av_info.geometry.base_width;
-   unsigned content_height         =
-      video_st->av_info.geometry.base_height;
+   unsigned content_width          = video_st->frame_cache_width;
+   unsigned content_height         = video_st->frame_cache_height;
    unsigned int rotation           = retroarch_get_rotation();
 #if defined(RARCH_MOBILE)
    if (width < height)
@@ -2373,7 +2369,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       viewport_bias_y = 1.0 - viewport_bias_y;
 
    if (rotation % 2)
-      content_height     = video_st->av_info.geometry.base_width;
+      content_height  = content_width;
 
    if (content_height == 0)
       content_height     = 1;
