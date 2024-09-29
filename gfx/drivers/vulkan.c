@@ -3862,14 +3862,14 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
    if (vk->vp.x < 0)
    {
-      vk->translate_x = (float)vk->vp.x;
+      vk->translate_x = (float)vk->vp.x * 2;
       vk->vp.x = 0.0;
    }
    else
       vk->translate_x = 0.0;
    if (vk->vp.y < 0)
    {
-      vk->translate_y = (float)vk->vp.y;
+      vk->translate_y = (float)vk->vp.y * 2;
       vk->vp.y = 0.0;
    }
    else
