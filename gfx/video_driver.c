@@ -4225,7 +4225,7 @@ static void video_frame_delay_leftover(video_driver_state_t *video_st,
          && (abs(frame_time - frame_time_target) >= 1000)
          && !*skip_update)
    {
-      int delay_delta = round((frame_time - frame_time_target) / 1000.0f);
+      int delay_delta = ceil((frame_time - frame_time_target) / 1000.0f);
       *skip_update = frame_time_interval;
       frame_delay_new -= delay_delta;
       if (frame_delay_new < 0)
