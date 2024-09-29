@@ -720,7 +720,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_dpad_diag_sens,  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_abxy_diag_sens,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_collection_list,       MENU_ENUM_SUBLABEL_PLAYLISTS_TAB)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer_overscale, MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer_axis,      MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer_scaling,   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_screenshot,          MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_rotation,                MENU_ENUM_SUBLABEL_VIDEO_ROTATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_screen_orientation,            MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION)
@@ -4243,8 +4244,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scale_integer);
             break;
-         case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scale_integer_overscale);
+         case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scale_integer_axis);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scale_integer_scaling);
             break;
          case MENU_ENUM_LABEL_PLAYLISTS_TAB:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_collection_list);
