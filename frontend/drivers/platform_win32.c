@@ -568,6 +568,7 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    const char *libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
    const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
    if (!string_is_empty(tmp_dir))
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
          tmp_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
@@ -630,9 +631,14 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 	      sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    else
        fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-            ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
-      ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+             ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   if (!string_is_empty(libretro_video_filter_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
+	      libretro_video_shader_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
+             ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
       ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],

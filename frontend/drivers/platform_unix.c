@@ -1327,6 +1327,7 @@ static void frontend_unix_get_env(int *argc,
    const char* libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
    const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
@@ -1890,8 +1891,13 @@ static void frontend_unix_get_env(int *argc,
          "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
-         "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   if (!string_is_empty(libretro_video_shader_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
+	       libretro_video_shader_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
+             "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
