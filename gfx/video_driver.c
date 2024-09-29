@@ -3935,7 +3935,8 @@ void video_driver_frame(const void *data, unsigned width,
             sizeof(video_info.stat_text),
             "CORE AV_INFO\n"
             " Size:        %u x %u\n"
-            " Max Size:    %u x %u\n"
+            " - Base:      %u x %u\n"
+            " - Max:       %u x %u\n"
             " Aspect:      %3.3f\n"
             " FPS:         %3.2f\n"
             " Sample Rate: %6.2f\n"
@@ -3954,6 +3955,8 @@ void video_driver_frame(const void *data, unsigned width,
             " Blocking:    %5.2f %%\n"
             " Samples:  %8d\n"
             "%s",
+            video_st->frame_cache_width,
+            video_st->frame_cache_height,
             av_info->geometry.base_width,
             av_info->geometry.base_height,
             av_info->geometry.max_width,
