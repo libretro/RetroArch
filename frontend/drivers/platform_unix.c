@@ -1326,6 +1326,7 @@ static void frontend_unix_get_env(int *argc,
    const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
    const char* libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
@@ -1851,7 +1852,11 @@ static void frontend_unix_get_env(int *argc,
             "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
 #endif
-   if (path_is_directory("/usr/local/share/retroarch/filters/video"))
+   if (!string_is_empty(libretro_video_filter_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+	      libretro_video_filter_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else if (path_is_directory("/usr/local/share/retroarch/filters/video"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
             "/usr/local/share/retroarch",
             "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
