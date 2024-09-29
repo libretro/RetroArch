@@ -506,6 +506,10 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    if (string_is_empty(url))
       return false;
 
+#ifndef HAVE_SSL
+   if (strncmp(url, "https", 5) == 0)
+      return false;
+#endif
    /* TODO: LOCK? */
 
    if (!strstr(url, "://"))
