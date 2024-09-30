@@ -14670,6 +14670,10 @@ MSG_HASH(
    "実績ハードコアモードが有効になりました。ステートセーブと巻き戻しが無効になります。"
    )
 MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "このゲームには実績がありません。"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "最低"
    )
