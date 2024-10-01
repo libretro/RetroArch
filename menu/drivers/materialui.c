@@ -3910,7 +3910,7 @@ static enum materialui_entry_value_type materialui_get_entry_value_type(
                /* Note that we have to perform a backup check here,
                 * since the 'manual content scan - file extensions'
                 * setting may have a value of 'zip' or '7z' etc, which
-                * means it would otherwise get incorreclty identified as
+                * means it would otherwise get incorrectly identified as
                 * an archive file... */
                if (entry_type != FILE_TYPE_CARCHIVE)
                   value_type = MUI_ENTRY_VALUE_TEXT;
@@ -5637,14 +5637,14 @@ static void materialui_render_entry_touch_feedback(
     * touch feedback highlight */
    if (mui->touch_feedback_alpha > 0.0f)
    {
-      float higlight_color[16];
+      float highlight_color[16];
       float shadow_top_color[16];
       float shadow_bottom_color[16];
 
       /* Set highlight colour */
-      memcpy(higlight_color, mui->colors.list_highlighted_background,
-            sizeof(higlight_color));
-      gfx_display_set_alpha(higlight_color,
+      memcpy(highlight_color, mui->colors.list_highlighted_background,
+            sizeof(highlight_color));
+      gfx_display_set_alpha(highlight_color,
             mui->transition_alpha * mui->touch_feedback_alpha);
 
       /* Set shadow colour (if required) */
@@ -5670,7 +5670,7 @@ static void materialui_render_entry_touch_feedback(
             mui, p_disp, userdata, video_width, video_height,
             header_height, x_offset,
             mui->touch_feedback_selection,
-            higlight_color,
+            highlight_color,
             shadow_top_color, shadow_bottom_color);
    }
 }

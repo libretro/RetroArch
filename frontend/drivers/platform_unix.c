@@ -1599,7 +1599,7 @@ static void frontend_unix_get_env(int *argc,
                   sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
 
             /* This switch tries to handle the different locations for devices with
-               weird write permissions. Should be largelly unnecesary nowadays. Most
+               weird write permissions. Should be largelly unnecessary nowadays. Most
                devices I have tested are INTERNAL_STORAGE_WRITABLE but better safe than sorry */
 
             switch (storage_permissions)

@@ -611,7 +611,7 @@ bool audio_driver_init_internal(
 #ifdef HAVE_REWIND
    int16_t *rewind_buf            = NULL;
 #endif
-   /* Accomodate rewind since at some point we might have two full buffers. */
+   /* Accommodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max          = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * AUDIO_MAX_RATIO * slowmotion_ratio;
    int16_t *out_conv_buf          = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
    size_t audio_buf_length        = AUDIO_CHUNK_SIZE_NONBLOCKING * 2 * sizeof(float);

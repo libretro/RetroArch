@@ -250,7 +250,7 @@ size_t word_wrap_wideglyph(
 /**
  * string_tokenize:
  *
- * Splits string into tokens seperated by @delim
+ * Splits string into tokens separated by @delim
  * > Returned token string must be free()'d
  * > Returns NULL if token is not found
  * > After each call, @str is set to the position after the

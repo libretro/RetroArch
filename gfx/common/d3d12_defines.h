@@ -201,7 +201,7 @@ typedef struct
 #endif
    DXGIAdapter adapter;
    D3D12Device device;
- 
+
 #ifdef DEVICE_DEBUG
 #ifdef DEBUG
    D3D12DebugDevice debug_device;
@@ -232,8 +232,8 @@ typedef struct
       D3D12RootSignature      cs_rootSignature; /* descriptor layout */
       D3D12RootSignature      sl_rootSignature; /* descriptor layout */
       D3D12RootSignature      rootSignature;    /* descriptor layout */
-      d3d12_descriptor_heap_t srv_heap;         /* ShaderResouceView descritor heap */
-      d3d12_descriptor_heap_t rtv_heap;         /* RenderTargetView descritor heap */
+      d3d12_descriptor_heap_t srv_heap;         /* ShaderResourceView descriptor heap */
+      d3d12_descriptor_heap_t rtv_heap;         /* RenderTargetView descriptor heap */
       d3d12_descriptor_heap_t sampler_heap;
    } desc;
 

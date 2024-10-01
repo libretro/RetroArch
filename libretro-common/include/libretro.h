@@ -219,7 +219,7 @@ extern "C" {
 #define RETRO_DEVICE_KEYBOARD     3
 
 /**
- * An abstraction around a light gun, simular to the PlayStation's Guncon.
+ * An abstraction around a light gun, similar to the PlayStation's Guncon.
  *
  * When provided as the \c device argument to \c retro_input_state_t,
  * the \c id argument denotes one of several possible inputs.
@@ -1094,7 +1094,7 @@ enum retro_mod
  * to write audio. The audio callbacks must be called from within the
  * notification callback.
  * The amount of audio data to write is up to the core.
- * Generally, the audio callback will be called continously in a loop.
+ * Generally, the audio callback will be called continuously in a loop.
  *
  * A frontend may disable this callback in certain situations.
  * The core must be able to render audio with the "normal" interface.
@@ -1332,7 +1332,7 @@ enum retro_mod
  * <li>Changing the emulated system's internal resolution,
  * within the limits defined by the existing values of \c max_width and \c max_height.
  * Use \c RETRO_ENVIRONMENT_SET_GEOMETRY instead,
- * and adjust \c retro_get_system_av_info to account fo
+ * and adjust \c retro_get_system_av_info to account for
  * supported scale factors and screen layouts
  * when computing \c max_width and \c max_height.
  * Only use this environment call if \c max_width or \c max_height needs to increase.
@@ -5174,14 +5174,14 @@ struct retro_hw_render_callback
  * character is the text character of the pressed key. (UTF-32).
  * key_modifiers is a set of RETROKMOD values or'ed together.
  *
- * The pressed/keycode state can be indepedent of the character.
+ * The pressed/keycode state can be independent of the character.
  * It is also possible that multiple characters are generated from a
  * single keypress.
  * Keycode events should be treated separately from character events.
  * However, when possible, the frontend should try to synchronize these.
  * If only a character is posted, keycode should be RETROK_UNKNOWN.
  *
- * Similarily if only a keycode event is generated with no corresponding
+ * Similarly if only a keycode event is generated with no corresponding
  * character, character should be 0.
  */
 typedef void (RETRO_CALLCONV *retro_keyboard_event_t)(bool down, unsigned keycode,
@@ -5732,7 +5732,7 @@ struct retro_message
 enum retro_message_target
 {
    /**
-    * Indicates that the frontent should display the given message
+    * Indicates that the frontend should display the given message
     * using all other targets defined by \c retro_message_target at once.
     */
    RETRO_MESSAGE_TARGET_ALL = 0,
@@ -5923,7 +5923,7 @@ struct retro_message_ext
    /**
     * The progress of an asynchronous task.
     *
-    * A value betwen 0 and 100 (inclusive) indicates the task's percentage,
+    * A value between 0 and 100 (inclusive) indicates the task's percentage,
     * and a value of -1 indicates a task of unknown completion.
     *
     * @note Since message type is a hint, a frontend may ignore progress values.

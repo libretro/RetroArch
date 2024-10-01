@@ -175,7 +175,7 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
 }
 
 /* Generate a list with core dlcs
- * Needs to be called after initializion because it uses core info */
+ * Needs to be called after initialization because it uses core info */
 MistResult steam_generate_core_dlcs_list(steam_core_dlc_list_t **list)
 {
    int count, i;

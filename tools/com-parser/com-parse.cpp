@@ -29,8 +29,8 @@ AstBase<Annotation> AstBase<Annotation>::empty = AstBase<Annotation>("", 0, 0, "
 //bool use_typedefs = false;
 bool use_typedefs = true;
 
-//const char* prefix_seperator = "_";
-const char* prefix_seperator = "";
+//const char* prefix_separator = "_";
+const char* prefix_separator = "";
 
 vector<string> ignored_fn_prefixes_list =
 {
@@ -452,7 +452,7 @@ public:
 
       }
 
-      name = prefix + prefix_seperator;
+      name = prefix + prefix_separator;
 
       if(overloaded && !this_.base)
       {
@@ -676,7 +676,7 @@ public:
             break;
          else
          {
-//           cout << "Unexcpected node " << node->name << endl;
+//           cout << "Unexpected node " << node->name << endl;
          }
       }
 

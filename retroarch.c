@@ -4474,7 +4474,7 @@ bool command_event(enum event_command cmd, void *data)
                   playlist_config_set_path(&playlist_config, str_list->elems[6].data);
                   playlist = playlist_init(&playlist_config);
 
-                  /* Check whether favourties playlist is at capacity */
+                  /* Check whether favourites playlist is at capacity */
                   if (playlist_size(playlist) >=
                         playlist_capacity(playlist))
                   {
@@ -6407,7 +6407,7 @@ static void retroarch_print_help(const char *arg0)
 #ifdef HAVE_ACCESSIBILITY
    _len += strlcpy(buf + _len,
          "      --accessibility            "
-         "Enables accessibilty for blind users using text-to-speech.\n"
+         "Enables accessibility for blind users using text-to-speech.\n"
          , sizeof(buf) - _len);
 #endif
 
@@ -8231,7 +8231,7 @@ bool retroarch_main_quit(void)
 
 #if !defined(HAVE_DYNAMIC)
    {
-      /* Salamander sets RUNLOOP_FLAG_SHUTDOWN_INITIATED prior, so we need to handle it seperately */
+      /* Salamander sets RUNLOOP_FLAG_SHUTDOWN_INITIATED prior, so we need to handle it separately */
       /* config_save_file_salamander() must be called independent of config_save_on_exit */
       config_save_file_salamander();
       if (config_save_on_exit)

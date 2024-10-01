@@ -132,7 +132,7 @@ static void recording_driver_free_state(void)
    recording_state.gpu_width     = 0;
    recording_state.gpu_height    = 0;
    recording_state.width         = 0;
-   recording_stte.height         = 0;
+   recording_state.height        = 0;
 }
 #endif
 

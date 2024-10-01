@@ -650,7 +650,7 @@ void path_parent_dir(char *path, size_t len)
          /* We removed the only slash from what used to be an absolute path.
           * On Linux, this goes from "/" to an empty string and everything works fine,
           * but on Windows, we went from C:\ to C:, which is not a valid path and that later
-          * gets errornously treated as a relative one by path_basedir and returns "./".
+          * gets erroneously treated as a relative one by path_basedir and returns "./".
           * What we really wanted is an empty string. */
          path[0] = '\0';
          return;
@@ -722,8 +722,8 @@ bool path_is_absolute(const char *path)
             || string_starts_with_size(path + 1, ":\\",  STRLEN_CONST(":\\")));
 #elif defined(__wiiu__) || defined(VITA)
       {
-         const char *seperator = strchr(path, ':');
-         return (seperator && (seperator[1] == '/'));
+         const char *separator = strchr(path, ':');
+         return (separator && (separator[1] == '/'));
       }
 #endif
    }
@@ -746,7 +746,7 @@ bool path_is_absolute(const char *path)
  * Note: Symlinks are only resolved on Unix-likes
  * Note: The current working dir might not be what you expect,
  *       e.g. on Android it is "/"
- *       Use of fill_pathname_resolve_relative() should be prefered
+ *       Use of fill_pathname_resolve_relative() should be preferred
  **/
 char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks)
 {

@@ -782,7 +782,7 @@ void rcheevos_award_achievement(rcheevos_locals_t* locals,
    if (!cheevo)
       return;
 
-   /* Deactivates the acheivement. */
+   /* Deactivates the achievement. */
    rc_runtime_deactivate_achievement(&locals->runtime, cheevo->id);
 
    cheevo->active &= ~RCHEEVOS_ACTIVE_SOFTCORE;

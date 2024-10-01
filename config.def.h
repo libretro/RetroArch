@@ -245,8 +245,8 @@
 /* Do not use windowed mode for WinRT and Winapi Family builds on the Xbox UWP with fixed resolution shrinks the image into the left top corner of the screen with some libretro cores */
 #define DEFAULT_WINDOWED_FULLSCREEN false
 #else
-#define DEFAULT_WINDOWED_FULLSCREEN true 
-#endif 
+#define DEFAULT_WINDOWED_FULLSCREEN true
+#endif
 
 /* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
  * based on running core/content */
@@ -410,20 +410,20 @@
  */
 #define DEFAULT_SHADER_SUBFRAMES 1
 
-/* Divides implements basic rolling scanning of sub frames - does this simply by scrolling a 
- * a scissor rect down the screen according to how many sub frames there are  
+/* Divides implements basic rolling scanning of sub frames - does this simply by scrolling a
+ * a scissor rect down the screen according to how many sub frames there are
  */
 #define DEFAULT_SCAN_SUBFRAMES false
 
 /* Inserts black frame(s) inbetween frames.
- * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz 
+ * Useful for Higher Hz monitors (set to multiples of 60 Hz) who want to play 60 Hz
  * material with CRT-like motion clarity.
  */
 #define DEFAULT_BLACK_FRAME_INSERTION 0
 
 /* Black Frame Insertion Dark Frames.
  * Increase for more clarity at the cost of lower brightness. Adjusting can also eliminate
- * any temporary image retention if noticed. Only useful at 180hz or higher 60hz multiples, 
+ * any temporary image retention if noticed. Only useful at 180hz or higher 60hz multiples,
  * as 120hz only has one total extra frame for BFI to work with.
  */
 #define DEFAULT_BFI_DARK_FRAMES 1
@@ -508,7 +508,7 @@
 /* Should we expand the colour gamut when using hdr */
 #define DEFAULT_VIDEO_HDR_EXPAND_GAMUT true
 
-/* When presets are saved they will be saved using the #reference 
+/* When presets are saved they will be saved using the #reference
  * directive by default */
 #define DEFAULT_VIDEO_SHADER_PRESET_SAVE_REFERENCE_ENABLE true
 
@@ -1121,7 +1121,7 @@
 /*Desired duration of the screenshot notification*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_DURATION 0
 
-/* Display a white flashing effect with the desired 
+/* Display a white flashing effect with the desired
  * duration when taking a screenshot*/
 #define DEFAULT_NOTIFICATION_SHOW_SCREENSHOT_FLASH 0
 #endif
@@ -1262,9 +1262,9 @@
 
 
 #if defined(RETROFW) || defined(MIYOO)
-/*RETROFW jz4760 has signficant slowdown with default settings */
+/*RETROFW jz4760 has significant slowdown with default settings */
 #define DEFAULT_REWIND_BUFFER_SIZE (1 << 20)
-#define DEFAULT_REWIND_BUFFER_SIZE_STEP 1 
+#define DEFAULT_REWIND_BUFFER_SIZE_STEP 1
 #define DEFAULT_REWIND_GRANULARITY 6
 #else
 /* The buffer size for the rewind buffer. This needs to be about
@@ -1517,7 +1517,7 @@
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 
-/* Default scale factor for non-frambuffer-based display
+/* Default scale factor for non-framebuffer-based display
  * drivers and display widgets */
 #if defined(VITA)
 #define DEFAULT_MENU_SCALE_FACTOR 1.5f
@@ -1666,7 +1666,7 @@
 #define DEFAULT_CONTENT_RUNTIME_LOG true
 #endif
 
-/* Keep track of how long each content has been running 
+/* Keep track of how long each content has been running
  * for over time (ignores core) */
 #define DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE false
 

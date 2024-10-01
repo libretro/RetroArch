@@ -6,7 +6,7 @@ good fbdev implementation. It is derived from the old Android GLES driver.
 
 It was meant to be used on Cubieboard/Cubieboard2/Cubietruck, but it should not
 be used on an Odroid X2/U2/U3 where a superior solution (RetroArch exynos video driver) is available.
-Fbdev implementation on Odroid harware is missing WAITFORVSYNC ioctl, so use Exynos driver there.
+Fbdev implementation on Odroid hardware is missing WAITFORVSYNC ioctl, so use Exynos driver there.
 
 This driver requires MALI r4p0 binary blobs for fbdev, and a kernel compatible with r4p0 binaries.
 

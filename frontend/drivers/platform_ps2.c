@@ -201,7 +201,7 @@ static void mount_partition(void)
 
    if (getMountInfo(mount_path, mountString, mountPoint, new_cwd) != 1)
    {
-      RARCH_WARN("Partition info not readed\n");
+      RARCH_WARN("Partition info not read\n");
       return;
    }
 
@@ -212,7 +212,7 @@ static void mount_partition(void)
       return;
    }
 
-   /* If we're booting from HDD, we must update the cwd variable 
+   /* If we're booting from HDD, we must update the cwd variable
     * and add : to the mount point */
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
    {
@@ -221,7 +221,7 @@ static void mount_partition(void)
    }
    else
    {
-      /* We MUST put mountPoint as empty to avoid wrong results 
+      /* We MUST put mountPoint as empty to avoid wrong results
          with LoadELFFromFileWithPartition */
       strlcpy(mountPoint, "", sizeof(mountPoint));
    }
@@ -295,7 +295,7 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 #endif
 }
 
-static void common_init_drivers(bool extra_drivers) 
+static void common_init_drivers(bool extra_drivers)
 {
    init_drivers(extra_drivers);
 
@@ -303,11 +303,11 @@ static void common_init_drivers(bool extra_drivers)
 
    getcwd(cwd, sizeof(cwd));
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
-   /* If it is not Salamander, we need to go one level 
+   /* If it is not Salamander, we need to go one level
     * up for setting the CWD. */
    path_parent_dir(cwd, strlen(cwd));
 #endif
-   
+
    mount_partition();
 
    waitUntilDeviceIsReady(cwd);

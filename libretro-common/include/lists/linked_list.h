@@ -50,7 +50,7 @@ linked_list_t *linked_list_new(void);
 
 /**
  * @brief frees the memory used by the linked list
- * 
+ *
  * Frees all of the memory used by this linked list. The values of all
  * remaining elements are freed using the "free_value" function. Does
  * nothing if "list" is NULL.
@@ -62,7 +62,7 @@ void linked_list_free(linked_list_t *list, void (*free_value)(void *value));
 
 /**
  * @brief adds an element to the linked list
- * 
+ *
  * Add a new element to the end of this linked list. Does nothing if
  * "list" is NULL.
  *
@@ -285,7 +285,7 @@ void linked_list_iterator_free(linked_list_iterator_t *iterator);
 /**
  * @brief Apply the provided function to all values in the linked list
  *
- * Apply the provied function to all values in the linked list. The values are applied
+ * Apply the provided function to all values in the linked list. The values are applied
  * in the forward direction. Does nothing if "list" is NULL.
  *
  * @param list linked list to apply the function to

@@ -84,7 +84,7 @@ bool gx_init_mem2(void)
     * reserve about 256KB for stuff like network and USB to work correctly.
     * However, other sources says these functions need at least 0xE0000 bytes,
     * 7/8 of a megabyte, of reserved memory to do this. My initial testing
-    * shows that we can work with only 128KB, but we use 256KB becuse testing
+    * shows that we can work with only 128KB, but we use 256KB because testing
     * has shown some stuff being iffy with only 128KB, mainly Wiimote stuff.
     * If some stuff mysteriously stops working, try fiddling with this size.
     */

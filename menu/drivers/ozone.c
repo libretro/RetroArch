@@ -7906,7 +7906,7 @@ static bool ozone_is_current_entry_settings(size_t current_selection)
                /* Note that we have to perform a backup check here,
                 * since the 'manual content scan - file extensions'
                 * setting may have a value of 'zip' or '7z' etc, which
-                * means it would otherwise get incorreclty identified as
+                * means it would otherwise get incorrectly identified as
                 * an archive file... */
                if (entry_type != FILE_TYPE_CARCHIVE)
                   return true;
@@ -10408,7 +10408,7 @@ static void ozone_draw_header(
    unsigned logo_icon_size                  = 60 * scale_factor;
    unsigned status_icon_size                = 92 * scale_factor;
    unsigned status_row_size                 = 160 * scale_factor;
-   unsigned seperator_margin                = 30 * scale_factor;
+   unsigned separator_margin                = 30 * scale_factor;
    enum gfx_animation_ticker_type
          menu_ticker_type                   = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    gfx_display_ctx_driver_t *dispctx        = p_disp->dispctx;
@@ -10436,9 +10436,9 @@ static void ozone_draw_header(
          userdata,
          video_width,
          video_height,
-         seperator_margin,
+         separator_margin,
          ozone->dimensions.header_height,
-         video_width - seperator_margin * 2,
+         video_width - separator_margin * 2,
          ozone->dimensions.spacer_1px,
          video_width,
          video_height,
@@ -10670,7 +10670,7 @@ static void ozone_draw_footer(
    bool search_enabled                    = !settings->bools.menu_disable_search_button;
    size_t selection                       = ozone->selection;
    float scale_factor                     = ozone->last_scale_factor;
-   unsigned seperator_margin              = 30 * scale_factor;
+   unsigned separator_margin              = 30 * scale_factor;
    float footer_margin                    = 42 * scale_factor;
    float footer_text_y                    = (float)video_height
          - (ozone->dimensions.footer_height / 2.0f)
@@ -10766,9 +10766,9 @@ static void ozone_draw_footer(
          userdata,
          video_width,
          video_height,
-         seperator_margin,
+         separator_margin,
          video_height - ozone->dimensions.footer_height,
-         video_width - seperator_margin * 2,
+         video_width - separator_margin * 2,
          ozone->dimensions.spacer_1px,
          video_width,
          video_height,

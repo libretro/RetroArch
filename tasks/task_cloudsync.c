@@ -969,7 +969,7 @@ static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char
       return NULL;
    }
 
-   /* since we may be transfering files at the same time,
+   /* since we may be transferring files at the same time,
     * the newly created manifest might be out of order */
    file_list_sort_on_alt(manifest);
 
