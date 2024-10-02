@@ -1067,7 +1067,7 @@ bool task_push_overlay_load_default(
 
    if (!config_get_uint(conf, "overlays", &loader->size))
    {
-      /* Error - overlays varaible not defined in config. */
+      /* Error - overlays variable not defined in config. */
       config_file_free(conf);
       free(loader);
       return false;

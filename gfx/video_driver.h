@@ -576,7 +576,7 @@ typedef struct gfx_ctx_driver
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
    /* Returns true if this context supports EGLImage buffers for
-    * screen drawing and was initalized correctly. */
+    * screen drawing and was initialized correctly. */
    bool (*image_buffer_init)(void*, const video_info_t*);
 
    /* Writes the frame to the EGLImage and sets image_handle to it.

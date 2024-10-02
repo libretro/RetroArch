@@ -6948,7 +6948,7 @@ clear:
  * menu_shader_manager_append_preset:
  * @shader                   : current shader
  * @preset_path              : path to the preset to append
- * @dir_video_shader         : temporary diretory
+ * @dir_video_shader         : temporary directory
  *
  * combine current shader with a shader preset on disk
  **/

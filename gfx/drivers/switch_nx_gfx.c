@@ -471,7 +471,7 @@ static void gfx_cpy_dsp_buf(uint32_t *buffer, uint32_t *image, int w, int h, uin
     }
 }
 
-/* needed to clear surface completely as hw scaling doesn't always scale to full resoution perflectly */
+/* needed to clear surface completely as hw scaling doesn't always scale to full resolution perflectly */
 static void clear_screen(switch_video_t *sw)
 {
     nwindowSetDimensions(sw->win, sw->vp.full_width, sw->vp.full_height);

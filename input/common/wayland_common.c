@@ -478,7 +478,7 @@ static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
 static void wl_touch_handle_cancel(void *data, struct wl_touch *wl_touch)
 {
    /* If i understand the spec correctly we have to reset all touches here
-    * since they were not ment for us anyway */
+    * since they were not meant for us anyway */
    int i;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
@@ -924,7 +924,7 @@ static void wl_data_device_handle_enter(void *data,
 {
    data_offer_ctx *offer_data;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   enum wl_data_device_manager_dnd_action dnd_action = 
+   enum wl_data_device_manager_dnd_action dnd_action =
       WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
 
    if (!offer)
@@ -936,11 +936,11 @@ static void wl_data_device_handle_enter(void *data,
    wl_data_offer_accept(offer, serial,
       offer_data->is_file_mime_type ? FILE_MIME : NULL);
 
-   if (     offer_data->is_file_mime_type 
+   if (     offer_data->is_file_mime_type
          && offer_data->supported_actions & DND_ACTION)
       dnd_action = DND_ACTION;
 
-   if (     wl_data_offer_get_version(offer) 
+   if (     wl_data_offer_get_version(offer)
          >= WL_DATA_OFFER_SET_ACTIONS_SINCE_VERSION)
      wl_data_offer_set_actions(offer, dnd_action, dnd_action);
 }

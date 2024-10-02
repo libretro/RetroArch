@@ -5487,7 +5487,7 @@ static void rgui_render(
             /* Note:
              * - 'Right' thumbnail is drawn at the top
              * - 'Left' thumbnail is drawn at the bottom
-             * ...unless thumbnail postions are swapped.
+             * ...unless thumbnail positions are swapped.
              * (legacy naming, unfortunately...) */
 
             /* An annoyance - cannot assume terminal will have a
@@ -6579,7 +6579,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->prev_savestate_thumbnail_file_path[0] = '\0';
 
    /* Ensure that pointer device starts with well defined
-    * values (shoult not be necessary, but some platforms may
+    * values (should not be necessary, but some platforms may
     * not handle struct initialisation correctly...) */
    memset(&rgui->pointer, 0, sizeof(menu_input_pointer_t));
 

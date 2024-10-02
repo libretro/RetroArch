@@ -769,7 +769,7 @@ void processing_heal(uint8_t *src, int width, int height) {
    int i;
    for (i = 0; i < width * height; i+=1, src += 3, ++fp1) {
       /* Tries to filter a bunch of blanked out scanline sections my capture cards spits out with this crazy hack
-       * Since the blanked out scanlines are set to a black value bellow anything that can be captued, it's quite
+       * Since the blanked out scanlines are set to a black value bellow anything that can be captured, it's quite
        * easy to select the scanlines...
        */
       if (src[0] <= 0 && src[1] <= 0 && src[2] <= 0 && i >= width && i <= width * height - width) {
@@ -895,7 +895,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &outputmode);
       VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &frametimes);
       /* Video or Audio device(s) has(ve) been changed
-       * TODO We may get away without reseting devices when changing output mode...
+       * TODO We may get away without resetting devices when changing output mode...
        */
       if ((videodev.value    && (strcmp(video_device, videodev.value) != 0)) ||\
           (audiodev.value    && (strcmp(audio_device, audiodev.value) != 0)) ||\
@@ -915,7 +915,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
 
    /* printf("%d %d %d %s\n", video_cap_width, video_cap_height, video_buf.field, video_output_mode);
     * TODO pass frame_curr to source_* functions
-    * half_feed_rate allows interlaced intput to be fed at half the calls to this function
+    * half_feed_rate allows interlaced input to be fed at half the calls to this function
     * where the same frame is then read by the deinterlacer twice, for each field
     */
    if (video_half_feed_rate == 0) {
@@ -943,7 +943,7 @@ RETRO_API void VIDEOPROC_CORE_PREFIX(retro_run)(void)
     */
    if (strcmp(video_output_mode, "deinterlaced") == 0) {
       processing_bgr_xrgb(frame_cap, frame_curr, video_cap_width, video_cap_height);
-      /* When deinterlacing a interlaced intput, we need to process both fields of a frame,
+      /* When deinterlacing a interlaced input, we need to process both fields of a frame,
        * one at a time (retro_run needs to be called twice, vide_half_feed_rate prevents the
        * source from being read twice...
        */
@@ -1260,7 +1260,7 @@ RETRO_API bool VIDEOPROC_CORE_PREFIX(retro_load_game)(const struct retro_game_in
       if (strcmp(video_capture_mode, "interlaced") == 0) {
          video_out_height = video_cap_height;
       } else {
-         printf("WARNING: Capture mode %s with output mode %s is not properly supported yet... (Is this even usefull?)\n", \
+         printf("WARNING: Capture mode %s with output mode %s is not properly supported yet... (Is this even useful?)\n", \
                  video_capture_mode, video_output_mode);
          video_out_height = video_cap_height*2;
       }

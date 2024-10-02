@@ -1148,7 +1148,7 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    }
 
    /* Note: If we reach this point then str_len > ticker->len
-    * (previously had an unecessary 'if (str_len > ticker->len)'
+    * (previously had an unnecessary 'if (str_len > ticker->len)'
     * check here...) */
    switch (ticker->type_enum)
    {

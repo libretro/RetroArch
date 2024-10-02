@@ -493,7 +493,7 @@ void pixman_composite_src_8888_8888_asm_neon(int width,
    uint16_t *src,
    int src_stride_pixels);
 
-/* Pointer to the blitting function. Will be asigned
+/* Pointer to the blitting function. Will be assigned
  * when we find out what bpp the core uses. */
 void (*pixman_blit) (int width,
    int height,

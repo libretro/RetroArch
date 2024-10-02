@@ -272,7 +272,7 @@ static void free_core_updater_list_handle(
 {
    if (list_handle->http_data)
    {
-      /* since we took onwership, we have to destroy it ourself */
+      /* since we took ownership, we have to destroy it ourself */
       if (list_handle->http_data->data)
          free(list_handle->http_data->data);
 

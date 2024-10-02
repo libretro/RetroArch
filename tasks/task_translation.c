@@ -1088,7 +1088,7 @@ bool run_translation_service(settings_t *settings, bool paused)
       /* mode */
       {
          unsigned ai_service_mode   = settings->uints.ai_service_mode;
-         /*"image" is included for backwards compatability with
+         /*"image" is included for backwards compatibility with
           * vgtranslate < 1.04 */
 
          new_ai_service_url[  _len] = separator;

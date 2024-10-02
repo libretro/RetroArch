@@ -982,7 +982,7 @@ void CORE_PREFIX(retro_run)(void)
 #if ENABLE_HW_ACCEL
 /*
  * Try to initialize a specific HW decoder defined by type.
- * Optionaly tests the pixel format list for a compatible pixel format.
+ * Optionally tests the pixel format list for a compatible pixel format.
  */
 static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
                                     const enum AVHWDeviceType type,
