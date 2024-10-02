@@ -2978,7 +2978,7 @@ void config_set_defaults(void *data)
    for (i = 0; i < MAX_USERS; i++)
    {
       settings->uints.input_joypad_index[i] = (unsigned)i;
-#ifdef SWITCH /* Switch prefered default dpad mode */
+#ifdef SWITCH /* Switch preferred default dpad mode */
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
 #else
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_NONE;
@@ -4645,13 +4645,13 @@ bool config_load_remap(const char *directory_input_remapping,
        || string_is_empty(directory_input_remapping))
       return false;
 
-   if (   sort_remaps_by_controller 
-       && input_device_name != NULL 
+   if (   sort_remaps_by_controller
+       && input_device_name != NULL
        && !string_is_empty(input_device_name))
    {
-      /* Ensure directory does not contain special chars */ 
+      /* Ensure directory does not contain special chars */
       input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
-      
+
       /* Allocate memory for the new path */
       remap_path_total_len = strlen(core_name) + strlen(input_device_dir) + 2;
       remap_path = (char *)malloc(remap_path_total_len);
@@ -4661,7 +4661,7 @@ bool config_load_remap(const char *directory_input_remapping,
       _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), remap_path_total_len - _len);
       _len += strlcpy(remap_path + _len, input_device_dir, remap_path_total_len - _len);
 
-      /* Deallocate as we no longer this */ 
+      /* Deallocate as we no longer this */
       free((char*)input_device_dir);
       input_device_dir = NULL;
    }

@@ -493,7 +493,7 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** convert raw gamecube serial to redump serial.
    not enough is known about the disc data to properly
    convert every raw serial to redump serial.  it will
-   only fail with the following excpetions: the
+   only fail with the following exceptions: the
    subregions of europe P-UKV, P-AUS, X-UKV, X-EUU
    will not match redump.**/
 

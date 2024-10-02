@@ -677,8 +677,8 @@ void gfx_display_draw_texture_slice(
    draw.x                   = 0;
    draw.y                   = 0;
 
-   /* vertex coords are specfied bottom-up in this order: BL BR TL TR */
-   /* texture coords are specfied top-down in this order: BL BR TL TR */
+   /* vertex coords are specified bottom-up in this order: BL BR TL TR */
+   /* texture coords are specified top-down in this order: BL BR TL TR */
 
    /* If someone wants to change this to not draw several times, the
     * coordinates will need to be modified because of the triangle strip usage. */

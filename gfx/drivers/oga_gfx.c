@@ -141,7 +141,7 @@ static bool oga_create_display(oga_video_t* vid)
 
    vid->connector_id = connector->connector_id;
 
-   /* Find prefered mode */
+   /* Find preferred mode */
    for (i = 0; i < connector->count_modes; i++)
    {
       drmModeModeInfo *current_mode = &connector->modes[i];

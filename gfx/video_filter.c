@@ -450,7 +450,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 #endif
    if (!append_softfilter_plugs(filt, plugs))
    {
-      RARCH_ERR("[SoftFitler]: Failed to append softfilter plugins...\n");
+      RARCH_ERR("[SoftFilter]: Failed to append softfilter plugins...\n");
       goto error;
    }
 
@@ -461,7 +461,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    if (!create_softfilter_graph(filt, in_pixel_format,
             max_width, max_height, cpu_features, threads))
    {
-      RARCH_ERR("[SoftFitler]: Failed to create softfilter graph...\n");
+      RARCH_ERR("[SoftFilter]: Failed to create softfilter graph...\n");
       goto error;
    }
 

@@ -775,7 +775,7 @@ bool gfx_ctx_wl_init_common(
 
    /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
     * This shows the window which assigns us a display (wl_output)
-    *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
+    * which is useful for HiDPI and auto selecting a display for fullscreen. */
    if (video_monitor_index == 0 && wl_list_length (&wl->all_outputs) > 1)
    {
       if (!wl_draw_splash_screen(wl))

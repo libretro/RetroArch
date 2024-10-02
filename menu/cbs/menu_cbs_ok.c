@@ -3666,33 +3666,33 @@ static int generic_action_ok_remap_file_operation(const char *path,
    if (string_is_empty(core_name))
       return -1;
 
-   if (   sort_remaps_by_controller 
-       && input_device_name != NULL 
+   if (   sort_remaps_by_controller
+       && input_device_name != NULL
        && !string_is_empty(input_device_name))
    {
       /* Ensure directory does not contain special chars */
       input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
-      
-      /* Allocate memory for the new path */ 
+
+      /* Allocate memory for the new path */
       remap_path_total_len = strlen(core_name) + strlen(input_device_dir) + 2;
       remap_path = (char *)malloc(remap_path_total_len);
 
-      /* Build the new path with the controller name */ 
+      /* Build the new path with the controller name */
       _len  = strlcpy(remap_path, core_name, remap_path_total_len);
       _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), remap_path_total_len - _len);
       _len += strlcpy(remap_path + _len, input_device_dir, remap_path_total_len - _len);
 
-      /* Deallocate as we no longer this */ 
+      /* Deallocate as we no longer this */
       free((char*)input_device_dir);
       input_device_dir = NULL;
    }
    else
    {
-      /* Allocate memory for the new path */ 
+      /* Allocate memory for the new path */
       remap_path_total_len = strlen(core_name) + 1;
       remap_path = (char *)malloc(remap_path_total_len);
 
-      /* We're not using controller path, just use core name */ 
+      /* We're not using controller path, just use core name */
       strlcpy(remap_path, core_name, remap_path_total_len);
    }
 
@@ -5145,7 +5145,7 @@ void cb_generic_download(retro_task_t *task,
 
    output_path[0] = '\0';
 
-   /* we have to determine dir_path at the time of writting or else
+   /* we have to determine dir_path at the time of writing or else
     * we'd run into races when the user changes the setting during an
     * http transfer. */
    switch (transf->enum_idx)

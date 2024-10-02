@@ -10274,7 +10274,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "All pending requests have succesfully been synced to the RetroAchievements server."
+   "All pending requests have successfully been synced to the RetroAchievements server."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,

@@ -1391,7 +1391,7 @@ static rarch_setting_t setting_action_setting(const char* name,
 
 /**
  * setting_group_setting:
- * @type               : type of settting.
+ * @type               : type of setting.
  * @name               : name of setting.
  *
  * Initializes a setting of type ST_GROUP.
@@ -1891,7 +1891,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
 /**
  * setting_string_setting_options:
- * @type               : type of settting.
+ * @type               : type of setting.
  * @name               : name of setting.
  * @short_description  : Short description of setting.
  * @target             : Target of bind setting.
@@ -1930,7 +1930,7 @@ static rarch_setting_t setting_string_setting_options(enum setting_type type,
 
 /**
  * setting_subgroup_setting:
- * @type               : type of settting.
+ * @type               : type of setting.
  * @name               : name of setting.
  * @parent_name        : group that the subgroup setting belongs to.
  *
@@ -3391,7 +3391,7 @@ static void setting_get_string_representation_uint_menu_icon_thumbnails(
    }
 }
 
-static void setting_set_string_representation_timedate_date_seperator(char *s)
+static void setting_set_string_representation_timedate_date_separator(char *s)
 {
    settings_t *settings                  = config_get_ptr();
    unsigned menu_timedate_date_separator = settings ?
@@ -3550,7 +3550,7 @@ static void setting_get_string_representation_uint_menu_timedate_style(
    }
 
    /* Change date separator, if required */
-   setting_set_string_representation_timedate_date_seperator(s);
+   setting_set_string_representation_timedate_date_separator(s);
 }
 
 static void setting_get_string_representation_uint_menu_timedate_date_separator(
@@ -5248,7 +5248,7 @@ static void setting_get_string_representation_uint_playlist_sublabel_last_played
    }
 
    /* Change date separator, if required */
-   setting_set_string_representation_timedate_date_seperator(s);
+   setting_set_string_representation_timedate_date_separator(s);
 }
 
 static void setting_get_string_representation_uint_playlist_inline_core_display_type(
@@ -21771,7 +21771,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "Playlist", &group_info, &subgroup_info, parent_group);
 
-         /* Favourites size is traditionally associtated with
+         /* Favourites size is traditionally associated with
           * history size, but they are in fact unrelated. We
           * therefore place this entry outside the "History"
           * sub group. */

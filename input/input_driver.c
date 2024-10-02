@@ -4344,7 +4344,7 @@ bool input_set_rumble_state(unsigned port,
    unsigned joy_idx                       = settings->uints.input_joypad_index[port];
    uint16_t scaled_strength               = strength;
 
-   /* If gain setting is not suported, do software gain control */
+   /* If gain setting is not supported, do software gain control */
    if (input_driver_st.primary_joypad)
    {
       if (!input_driver_st.primary_joypad->set_rumble_gain)
@@ -5700,7 +5700,7 @@ void bsv_movie_frame_rewind(void)
        * However, playing back that frame caused us to read data, and push
        * data to the ring buffer.
        *
-       * Sucessively rewinding frames, we need to rewind past the read data,
+       * Successively rewinding frames, we need to rewind past the read data,
        * plus another. */
       uint8_t delta = handle->first_rewind ? 1 : 2;
       if (handle->frame_counter >= delta)

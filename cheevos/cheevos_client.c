@@ -1552,7 +1552,7 @@ void rcheevos_client_initialize_runtime(unsigned game_id,
 
    if (!data)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate runtime initalization data\n");
+      CHEEVOS_LOG(RCHEEVOS_TAG "Failed to allocate runtime initialization data\n");
       return;
    }
 

@@ -16,7 +16,7 @@
 
 /* Support 360 controllers on Windows.
  * Said controllers do show under DInput but they have limitations in this mode;
- * The triggers are combined rather than seperate and it is not possible to use
+ * The triggers are combined rather than separate and it is not possible to use
  * the guide button.
  *
  * Some wrappers for other controllers also simulate xinput (as it is easier to implement)
@@ -73,9 +73,9 @@ static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 
 /* Buttons are provided by XInput as bits of a uint16.
- * Map from rarch button index (0..10) to a mask to 
+ * Map from rarch button index (0..10) to a mask to
  * bitwise-& the buttons against.
- * dpad is handled seperately. */
+ * dpad is handled separately. */
 static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_A,
    XINPUT_GAMEPAD_B,
@@ -97,7 +97,7 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 
 static INLINE int pad_index_to_xuser_index(unsigned pad)
 {
-   return pad < DEFAULT_MAX_PADS 
+   return pad < DEFAULT_MAX_PADS
       && g_xinput_states[pad].connected ? pad : -1;
 }
 
@@ -190,7 +190,7 @@ static void *xinput_joypad_init(void *data)
       g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
-      g_xinput_states[i].connected                    = 
+      g_xinput_states[i].connected                    =
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
 
@@ -317,12 +317,12 @@ static int16_t xinput_joypad_state_func(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && xinput_joypad_button_state(
                xuser, btn_word, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -336,7 +336,7 @@ static void xinput_joypad_poll(void)
 
    for (i = 0; i < 4; ++i)
    {
-      xinput_joypad_state 
+      xinput_joypad_state
          *state          = &g_xinput_states[i];
       DWORD status       = g_XInputGetStateEx(i, &state->xstate);
       bool success       = status == ERROR_SUCCESS;

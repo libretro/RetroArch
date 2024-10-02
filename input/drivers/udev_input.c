@@ -96,7 +96,7 @@
 
 /* Define this to use direct printf debug messages. */
 /*#define UDEV_TOUCH_PRINTF_DEBUG*/
-/* Define this to add more deep debugging messages - performace will suffer... */
+/* Define this to add more deep debugging messages - performance will suffer... */
 /*#define UDEV_TOUCH_DEEP_DEBUG*/
 
 /* TODO - Temporary debugging using direct printf */
@@ -401,7 +401,7 @@ typedef struct
    udev_slot_state_t *current;
    uint16_t current_active;
 
-   /* Timestamp of when the last touch state update ocurred */
+   /* Timestamp of when the last touch state update occurred */
    udev_touch_ts_t last_state_update;
 
    /* Simulated pointer / touchscreen */
@@ -1884,7 +1884,7 @@ static bool udev_translate_touch_pos(
    /*
     * TODO - This keeps the precision, but might result in +-1 pixel difference
     *   One way to fix this is to add or remove 0.5, but this needs floating
-    *   point operations which might not be desireable.
+    *   point operations which might not be desirable.
     */
    int32_t ma_pos_x   = (((((pointer_pos_x + src_touch->info_x_limits.min) * 0x7fff) / src_touch->info_x_limits.range) * target_vp->full_width) / 0x7fff);
    int32_t ma_pos_y   = (((((pointer_pos_y + src_touch->info_y_limits.min) * 0x7fff) / src_touch->info_y_limits.range) * target_vp->full_height) / 0x7fff);
@@ -2420,10 +2420,10 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                RARCH_ERR("[udev] Cannot report touch up since there are no active points!\n");
             }
 
-            /* Letting go of the primary gesture point -> Wait for full relese */
+            /* Letting go of the primary gesture point -> Wait for full release */
             if (iii == touch->gest_primary_slot)
                touch->gest_primary_slot = UDEV_INPUT_TOUCH_TRACKING_ID_NONE;
-            /* Letting go of the secondary gesture point -> Wait for full relese */
+            /* Letting go of the secondary gesture point -> Wait for full release */
             if (iii == touch->gest_secondary_slot)
                touch->gest_secondary_slot = UDEV_INPUT_TOUCH_TRACKING_ID_NONE;
 
@@ -3237,7 +3237,7 @@ static int udev_input_add_device(udev_input_t *udev,
             mouse = 1;
 
             if (!test_bit(keycaps, BTN_MOUSE))
-               RARCH_DBG("[udev]: Waring REL pointer device (%s) has no mouse button\n",device->ident);
+               RARCH_DBG("[udev]: Warning REL pointer device (%s) has no mouse button\n",device->ident);
          }
       }
 

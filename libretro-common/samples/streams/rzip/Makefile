@@ -47,7 +47,7 @@ SOURCES := \
 ifneq ($(wildcard $(LIBRETRO_DEPS_DIR)/*),)
 	# If we are building from inside the RetroArch
 	# directory (i.e. if an 'external' deps directory
-	# is avaiable), bake in zlib support
+	# is available), bake in zlib support
 	SOURCES += \
 		$(LIBRETRO_DEPS_DIR)/libz/adler32.c \
 		$(LIBRETRO_DEPS_DIR)/libz/libz-crc32.c \

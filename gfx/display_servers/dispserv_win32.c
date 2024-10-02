@@ -25,7 +25,7 @@
 #define COBJMACROS
 #define COBJMACROS_DEFINED
 #endif
-/* We really just want shobjidl.h, but there's no way to detect its existance at compile time (especially with mingw). however shlobj happens to include it for us when it's supported, which is easier. */
+/* We really just want shobjidl.h, but there's no way to detect its existence at compile time (especially with mingw). however shlobj happens to include it for us when it's supported, which is easier. */
 #include <shlobj.h>
 #ifdef COBJMACROS_DEFINED
 #undef COBJMACROS

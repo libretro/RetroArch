@@ -77,7 +77,7 @@ void MainWindow::onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError
          code, errorStringData);
 
 #if 0
-   /* Deleting the reply here seems to cause a strange 
+   /* Deleting the reply here seems to cause a strange
     * heap-use-after-free crash. */
    reply->disconnect();
    reply->abort();
@@ -96,10 +96,10 @@ void MainWindow::onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> 
    for (i = 0; i < errors.count(); i++)
    {
       const QSslError &error = errors.at(i);
-      QString string         = 
-           QString("Ignoring SSL error code ") 
-         + QString::number(error.error()) 
-         + ": " 
+      QString string         =
+           QString("Ignoring SSL error code ")
+         + QString::number(error.error())
+         + ": "
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -124,10 +124,10 @@ void MainWindow::onThumbnailPackDownloadFinished()
 
    m_thumbnailPackDownloadProgressDialog->cancel();
 
-   /* At least on Linux, the progress dialog will refuse 
-    * to hide itself and will stay on screen in a corrupted 
-    * way if we happen to show an error message in this function. 
-    * processEvents() will sometimes fix it, other times not... 
+   /* At least on Linux, the progress dialog will refuse
+    * to hide itself and will stay on screen in a corrupted
+    * way if we happen to show an error message in this function.
+    * processEvents() will sometimes fix it, other times not...
     * seems random. */
    qApp->processEvents();
 
@@ -249,9 +249,9 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
    if (!settings)
       return;
 
-   urlString            = 
-      QString(THUMBNAILPACK_URL_HEADER) 
-      + system 
+   urlString            =
+      QString(THUMBNAILPACK_URL_HEADER)
+      + system
       + THUMBNAILPACK_EXTENSION;
 
    if (url.isEmpty())
@@ -272,11 +272,11 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
       QDir dir;
       const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
       QString dirString               = QString(path_dir_thumbnails);
-      QString fileName                = 
-         dirString 
-         + "/" 
-         + system 
-         + THUMBNAILPACK_EXTENSION 
+      QString fileName                =
+         dirString
+         + "/"
+         + system
+         + THUMBNAILPACK_EXTENSION
          + PARTIAL_EXTENSION;
       QByteArray fileNameArray        = fileName.toUtf8();
       const char *fileNameData        = fileNameArray.constData();
@@ -368,7 +368,7 @@ void MainWindow::onThumbnailDownloadNetworkError(QNetworkReply::NetworkError cod
          code, errorStringData);
 
 #if 0
-   /* Deleting the reply here seems to cause a strange 
+   /* Deleting the reply here seems to cause a strange
     * heap-use-after-free crash. */
    reply->disconnect();
    reply->abort();
@@ -388,10 +388,10 @@ void MainWindow::onThumbnailDownloadNetworkSslErrors(
    for (i = 0; i < errors.count(); i++)
    {
       const QSslError &error = errors.at(i);
-      QString         string = 
-           QString("Ignoring SSL error code ") 
-         + QString::number(error.error()) 
-         + ": " 
+      QString         string =
+           QString("Ignoring SSL error code ")
+         + QString::number(error.error())
+         + ": "
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -418,10 +418,10 @@ void MainWindow::onThumbnailDownloadFinished()
 
    m_thumbnailDownloadProgressDialog->cancel();
 
-   /* At least on Linux, the progress dialog will refuse 
-    * to hide itself and will stay on screen in a corrupted 
-    * way if we happen to show an error message in this 
-    * function. processEvents() will sometimes fix it, 
+   /* At least on Linux, the progress dialog will refuse
+    * to hide itself and will stay on screen in a corrupted
+    * way if we happen to show an error message in this
+    * function. processEvents() will sometimes fix it,
     * other times not... seems random. */
    qApp->processEvents();
 
@@ -441,7 +441,7 @@ void MainWindow::onThumbnailDownloadFinished()
 
    if (code != 200)
    {
-      QUrl redirectUrl               = 
+      QUrl redirectUrl               =
          reply->attribute(
                QNetworkRequest::RedirectionTargetAttribute).toUrl();
 
@@ -513,10 +513,10 @@ void MainWindow::onThumbnailDownloadFinished()
 
       RARCH_ERR("[Qt]: Thumbnail download ended prematurely: %s\n", errorData);
       emit showErrorMessageDeferred(
-              QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) 
-            + ": Code " 
-            + QString::number(code) 
-            + ": " 
+              QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
+            + ": Code "
+            + QString::number(code)
+            + ": "
             + errorData);
    }
 
@@ -568,10 +568,10 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 
    title                    = getScrubbedString(title);
    downloadType             = m_pendingThumbnailDownloadTypes.takeFirst();
-   urlString                = QString(THUMBNAIL_URL_HEADER) 
+   urlString                = QString(THUMBNAIL_URL_HEADER)
       + system + "/"
-      + downloadType + "/" 
-      + title 
+      + downloadType + "/"
+      + title
       + THUMBNAIL_IMAGE_EXTENSION;
 
    if (url.isEmpty())
@@ -592,10 +592,10 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
       QDir dir;
       const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
       QString               dirString = QString(path_dir_thumbnails) + "/" + system + "/" + downloadType;
-      QString fileName                = dirString 
-         + "/" 
-         + title 
-         + THUMBNAIL_IMAGE_EXTENSION 
+      QString fileName                = dirString
+         + "/"
+         + title
+         + THUMBNAIL_IMAGE_EXTENSION
          + PARTIAL_EXTENSION;
       QByteArray fileNameArray        = fileName.toUtf8();
       const char *fileNameData        = fileNameArray.constData();
@@ -674,10 +674,10 @@ void MainWindow::onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslErr
    for (i = 0; i < errors.count(); i++)
    {
       const QSslError &error = errors.at(i);
-      QString string         = 
-           QString("Ignoring SSL error code ") 
-         + QString::number(error.error()) 
-         + ": " 
+      QString string         =
+           QString("Ignoring SSL error code ")
+         + QString::number(error.error())
+         + ": "
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -749,7 +749,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
       }
       else
       {
-         /* Thumbnail download finished succesfully? */
+         /* Thumbnail download finished successfully? */
          if (m_playlistThumbnailDownloadFile.rename(newFileName))
             m_downloadedThumbnails++;
          else
@@ -815,12 +815,12 @@ void MainWindow::downloadNextPlaylistThumbnail(
 
    title                = getScrubbedString(title);
 
-   urlString            = 
-        QString(THUMBNAIL_URL_HEADER) 
+   urlString            =
+        QString(THUMBNAIL_URL_HEADER)
       + system  + "/"
-      + type 
-      + "/" 
-      + title 
+      + type
+      + "/"
+      + title
       + THUMBNAIL_IMAGE_EXTENSION;
 
    if (url.isEmpty())
@@ -951,7 +951,7 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    {
       QHash<QString, QString> firstThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
 
-      /* Start downloading the first thumbnail, 
+      /* Start downloading the first thumbnail,
        * the rest will download as each one finishes. */
       downloadNextPlaylistThumbnail(firstThumbnail.value("db_name"), firstThumbnail.value("label_noext"), firstThumbnail.value("type"));
    }

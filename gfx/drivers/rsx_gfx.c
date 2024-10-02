@@ -214,7 +214,7 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
          texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
 
 #if RSX_MAX_TEXTURE_VERTICES > 0
-   /* Using preallocated texture vertices uses better memory managment but may cause more flickering */
+   /* Using preallocated texture vertices uses better memory management but may cause more flickering */
    end_vert_idx             = rsx->texture_vert_idx + draw->coords->vertices;
    if (end_vert_idx > RSX_MAX_TEXTURE_VERTICES)
    {
@@ -1154,7 +1154,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 
    if (!saved_context)
    {
-      /* Allocate a 1MB buffer, alligned to a 1MB boundary
+      /* Allocate a 1MB buffer, aligned to a 1MB boundary
        * to be our shared I/O memory with the RSX. */
       void *host_addr = memalign(1024*1024, HOST_SIZE);
 

@@ -261,7 +261,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                by testing if the axis initial value is negative, allowing for
                for some slop (1300 =~ 4%) in an axis centred around 0.
                The actual work is done in udev_joypad_axis.
-               All bets are off if you're sitting on it. Reinitailise it by unpluging
+               All bets are off if you're sitting on it. Reinitialise it by unpluging
                and plugging back in. */
             if (udev_compute_axis(abs, abs->value) < -1300)
               pad->neg_trigger[i] = true;

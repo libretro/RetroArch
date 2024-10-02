@@ -148,7 +148,7 @@ static bool connmanctl_tether_status(connman_t *connman)
 
    /* Following command lists 'technologies' of connman,
     * greps the wifi + 10 following lines, then first
-    * occurance of 'Tethering', then 'True' and counts
+    * occurrence of 'Tethering', then 'True' and counts
     * the matching lines.
     * Expected result is either 1 (active) or 0 (not active)
     */

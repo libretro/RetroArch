@@ -333,7 +333,7 @@ struct input_driver
    /**
     * Queries state for a specified control on a specified input port. This
     * function pointer can be set to NULL if not supported by the input driver,
-    * for example if a joypad driver is responsible for quering state for a
+    * for example if a joypad driver is responsible for querying state for a
     * particular driver/platform.
     *
     * @param joypad_data      Input state struct, defined by the input driver
@@ -395,7 +395,7 @@ struct input_driver
 
    /**
     * Retrieves the sensor state associated with the provided port and ID. This
-    * function pointer may be set to NULL if retreiving sensor state is not
+    * function pointer may be set to NULL if retrieving sensor state is not
     * supported.
     *
     * @param data

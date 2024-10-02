@@ -628,7 +628,7 @@ static void xmb_free_node(xmb_node_t *node)
 /**
  * @brief frees all xmb_node_t in a file_list_t
  *
- * file_list_t asumes userdata holds a simple structure and
+ * file_list_t assumes userdata holds a simple structure and
  * free()'s it. Can't change this at the time because other
  * code depends on this behavior.
  *
@@ -5518,7 +5518,7 @@ static bool xmb_load_dynamic_icon(const char *icon_path,
    gfx_thumbnail_t *icon)
 {
    unsigned width, height;
-   /* Wierd unwanted state */
+   /* Weird unwanted state */
    if(icon->status == GFX_THUMBNAIL_STATUS_UNKNOWN &&
          icon->texture > 0)
       gfx_thumbnail_reset(icon);
