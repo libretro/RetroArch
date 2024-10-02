@@ -685,8 +685,6 @@ enum
    [self refreshSystemConfig];
    [self showGameView];
 
-   jb_start_altkit();
-
    rarch_main(argc, argv, NULL);
 
    uico_driver_state_t *uico_st     = uico_state_get_ptr();
