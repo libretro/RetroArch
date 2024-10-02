@@ -807,7 +807,7 @@ static int16_t dinput_input_state(
                         case RETRO_DEVICE_ID_POINTER_Y:
                            return res_y;
                         case RETRO_DEVICE_ID_POINTER_PRESSED:
-                           return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN);
+                           return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
                         default:
                            break;
                      }
