@@ -10093,10 +10093,6 @@ MSG_HASH(
    "A RetroAchievements kiszolgáló nem elérhető. A beküldés mindaddig újra lesz próbálva, amíg nem sikerül, vagy az alkalmazás nyitva marad."
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "A függőben maradt RetroAchievements kiszolgáló kérések szinkronizálása sikeres."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
    "Játék azonosítása"
 )

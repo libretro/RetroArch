@@ -10138,7 +10138,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Все необработанные запросы успешно синхронизированы с сервером RetroAchievements."
+   "Все незавершённые запросы успешно синхронизированы с сервером RetroAchievements."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
