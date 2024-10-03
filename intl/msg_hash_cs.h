@@ -9625,10 +9625,6 @@ MSG_HASH(
    "Server Retroúspěchů je nedostupný. Pokusy se opakují, dokud nejsou úspěšné nebo dokud není aplikace ukončena."
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Všechny nevyřízené žádosti byly úspěšně synchronizovány se serverem Retroúspěchů."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Nepřihášen"
 )

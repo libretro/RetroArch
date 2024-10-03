@@ -10077,10 +10077,6 @@ MSG_HASH(
    "Retro成就服务器无法访问。将在应用程序关闭之前重试。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "所有待处理请求已成功同步到Retro成就服务器。"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
    "正在识别游戏"
 )

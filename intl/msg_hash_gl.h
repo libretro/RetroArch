@@ -9953,10 +9953,6 @@ MSG_HASH(
    "O servidor de RetroAchievements non é accesible. Tentarase de novo ata que teña éxito ou se peche a aplicación."
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Todas as solicitudes pendentes sincronizáronse correctamente co servidor de RetroAchievements."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
    "Xogo de identificación"
 )

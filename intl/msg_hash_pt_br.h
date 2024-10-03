@@ -8641,10 +8641,6 @@ MSG_HASH(
    "Servidor do RetroAchievements está indisponível. Tentará novamente até ser bem-sucedido ou o aplicativo ser fechado."
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Todos os envios pendentes foram sincronizados com o servidor do RetroAchievements."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
    "Verificando o jogo"
 )

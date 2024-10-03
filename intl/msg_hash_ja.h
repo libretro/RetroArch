@@ -10081,10 +10081,6 @@ MSG_HASH(
    "RetroAchievements サーバーにアクセスできません。成功するかアプリが閉じられるまで再試行します。"
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "すべての保留中のリクエストが RetroAchievements サーバーに同期されました。"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
    "ゲームを識別中"
 )
