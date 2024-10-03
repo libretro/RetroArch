@@ -13,12 +13,18 @@ echo "${CODE_SIGN_IDENTITY_FOR_ITEMS}"
 if [ "$PLATFORM_FAMILY_NAME" = "tvOS" ] ; then
     BASE_DIR="tvOS"
     SUFFIX="_tvos"
+    PLATFORM="tvos"
+    DEPLOYMENT_TARGET="${TVOS_DEPLOYMENT_TARGET}"
 elif [ "$PLATFORM_FAMILY_NAME" = "iOS" ] ; then
     BASE_DIR="iOS"
     SUFFIX="_ios"
+    PLATFORM="ios"
+    DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET}"
 elif [ "$PLATFORM_FAMILY_NAME" = "macOS" ] ; then
     BASE_DIR="OSX"
     SUFFIX=
+    PLATFORM=
+    DEPLOYMENT_TARGET=
 fi
 
 if [ -n "$BUILT_PRODUCTS_DIR" -a -n "$FRAMEWORKS_FOLDER_PATH" ] ; then
@@ -40,9 +46,9 @@ for dylib in $(find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*
 
     fwDir="${OUTDIR}/${fwName}.framework"
     mkdir -p "$fwDir"
-    if [ "$PLATFORM_FAMILY_NAME" = "iOS" ] ; then
+    if [ "$PLATFORM_FAMILY_NAME" = "iOS" -o "$PLATFORM_FAMILY_NAME" = "tvOS" ] ; then
         build_sdk=$(vtool -show-build "$dylib" | grep sdk | awk '{print $2}')
-        vtool -set-build-version ios "${IPHONEOS_DEPLOYMENT_TARGET}" "${build_sdk}" -set-source-version 0.0 -replace -output "$dylib" "$dylib"
+        vtool -set-build-version "${PLATFORM}" "${DEPLOYMENT_TARGET}" "${build_sdk}" -set-build-tool "$PLATFORM" ld 1115.7.3 -set-source-version 0.0 -replace -output "$dylib" "$dylib"
     fi
     lipo -create "$dylib" -output "$fwDir/$fwName"
     sed -e "s,%CORE%,$fwName," -e "s,%BUNDLE%,$fwName," -e "s,%IDENTIFIER%,$fwName," iOS/fw.tmpl > "$fwDir/Info.plist"
