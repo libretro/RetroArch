@@ -52,7 +52,7 @@
 #define IDENTIFIER_INDEX   4
 #define HEADER_LEN         6
 
-#define REPLAY_FORMAT_VERSION 0
+#define REPLAY_FORMAT_VERSION 1
 #define REPLAY_MAGIC       0x42535632
 
 /* Forward declaration */
@@ -66,6 +66,7 @@ static bool bsv_movie_init_playback(
    int64_t *identifier_loc;
    uint32_t state_size         = 0;
    uint32_t header[HEADER_LEN] = {0};
+   uint32_t vsn                = 0;
    intfstream_t *file          = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -85,13 +86,13 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-#if 0
-   if (swap_if_big32(header[VERSION_INDEX]) > REPLAY_FORMAT_VERSION)
+   vsn                = swap_if_big32(header[VERSION_INDEX]);
+   if (vsn > REPLAY_FORMAT_VERSION)
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-#endif
+   handle->version    = vsn;
 
    state_size         = swap_if_big32(header[STATE_SIZE_INDEX]);
    identifier_loc     = (int64_t *)(header+IDENTIFIER_INDEX);
@@ -137,6 +138,7 @@ static bool bsv_movie_init_playback(
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
+   bsv_movie_read_next_events(handle);
 
    return true;
 }
@@ -161,11 +163,12 @@ static bool bsv_movie_init_record(
    }
 
    handle->file             = file;
+   handle->version          = REPLAY_FORMAT_VERSION;
 
    content_crc              = content_get_crc();
 
    header[MAGIC_INDEX]      = swap_if_big32(REPLAY_MAGIC);
-   header[VERSION_INDEX]    = REPLAY_FORMAT_VERSION;
+   header[VERSION_INDEX]    = swap_if_big32(handle->version);
    header[CRC_INDEX]        = swap_if_big32(content_crc);
 
    info_size                = core_serialize_size();

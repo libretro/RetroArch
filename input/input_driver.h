@@ -184,30 +184,45 @@ struct bsv_state
 struct bsv_key_data
 {
   uint8_t down;
-  uint16_t mod;
   uint8_t _padding;
+  uint16_t mod;
   uint32_t code;
   uint32_t character;
 };
-
 typedef struct bsv_key_data bsv_key_data_t;
+
+struct bsv_input_data
+{
+  uint8_t port;
+  uint8_t device;
+  uint8_t idx;
+  uint8_t _padding;
+  /* little-endian numbers */
+  uint16_t id;
+  int16_t value;
+};
+typedef struct bsv_input_data bsv_input_data_t;
 
 struct bsv_movie
 {
    intfstream_t *file;
    uint8_t *state;
+   int64_t identifier;
+   uint32_t version;
+   size_t min_file_pos;
+   size_t state_size;
+
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
    size_t *frame_pos;
-   int64_t identifier;
    size_t frame_mask;
    uint64_t frame_counter;
-   size_t min_file_pos;
-   size_t state_size;
-   bsv_key_data_t key_events[NAME_MAX_LENGTH]; /* uint32_t alignment */
 
-   /* Staging variables for keyboard events */
+   /* Staging variables for events */
    uint8_t key_event_count;
+   uint16_t input_event_count;
+   bsv_key_data_t key_events[128];
+   bsv_input_data_t input_events[512];
 
    /* Rewind state */
    bool playback;
@@ -1018,6 +1033,7 @@ void input_overlay_check_mouse_cursor(void);
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
+void bsv_movie_read_next_events(bsv_movie_t*handle);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
