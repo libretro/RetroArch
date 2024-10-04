@@ -6453,7 +6453,7 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
    /* Check if path is a directory */
    if (
        ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
-#if IOS
+#if defined(IOS) || defined(OSX)
        && !string_ends_with(path, ".framework")
 #endif
        )

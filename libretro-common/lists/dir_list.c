@@ -189,7 +189,7 @@ static int dir_list_read(const char *dir,
          if (!include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
 #endif
-#ifdef IOS
+#if defined(IOS) || defined(OSX)
          if (string_ends_with(name, ".framework"))
          {
             attr.i = RARCH_PLAIN_FILE;
