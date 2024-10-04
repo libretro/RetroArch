@@ -15,6 +15,85 @@
 
 default_platform(:ios)
 
+platform :mac do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # this needs these environment variables set:
+    # APP_STORE_CONNECT_API_KEY_KEY_ID,
+    # APP_STORE_CONNECT_API_KEY_ISSUER_ID,
+    # APP_STORE_CONNECT_API_KEY_KEY_FILEPATH
+    app_store_connect_api_key
+
+    reset_git_repo(
+      force: true,
+      files: [
+        "./OSX/assets.zip",
+        "./OSX/Info_AppStore.plist"
+      ]
+    )
+    # ensure_git_status_clean
+    # git_pull
+    # sh("git log -1")
+    begin
+      app_store_build_number(
+        app_identifier: "com.libretro.dist.RetroArch",
+        platform: "osx",
+        username: "libretro@gmail.com",
+        team_id: "118576492",
+        live: true
+      )
+      current_version_number = lane_context[SharedValues::LATEST_VERSION]
+    rescue => ex
+      current_version_number = "1.19.1"
+    end
+    begin
+      latest_testflight_build_number(
+        app_identifier: "com.libretro.dist.RetroArch",
+        platform: "osx",
+        username: "libretro@gmail.com",
+        team_id: "118576492"
+      )
+      next_version_number = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION]
+      next_build_number = lane_context[SharedValues::LATEST_TESTFLIGHT_BUILD_NUMBER]
+    rescue => ex
+      next_version_number = "1.19.2"
+      next_build_number = 45
+    end
+    next_version_number = "1.19.2"
+    if current_version_number == next_version_number
+      version_array = next_version_number.split(".").map(&:to_i)
+      version_array[-1] = version_array[-1] + 1
+      next_version_number = version_array.join(".")
+    end
+    # can't use update_build_number/agvtool to update this as it
+    # doesn't deal with multiple projects in the same folder
+    update_info_plist(
+      plist_path: "OSX/Info_AppStore.plist",
+      block: proc do |plist|
+        plist["CFBundleVersion"] = (next_build_number + 1).to_s
+        plist["CFBundleShortVersionString"] = next_version_number
+      end
+    )
+    build_mac_app(
+      workspace: "RetroArch.xcworkspace",
+      scheme: "RetroArch AppStore",
+      xcodebuild_formatter: 'xcpretty',
+      buildlog_path: "buildlog",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.libretro.dist.RetroArch" => "macOS App Store"
+        }
+      }
+    )
+    upload_to_testflight(
+      distribute_external: true,
+      groups: ['Invaders', 'Patreons'],
+      changelog: "Rebuild frontend from latest master branch and take latest build of all cores."
+    )
+  end
+end
+
 platform :ios do
   desc "Push a new beta build to TestFlight"
   lane :beta do

@@ -5,12 +5,10 @@ DEBUG=
 if [ -z "$DEBUG" ] ; then
     CURL_DEBUG=-sf
     UNZIP_DEBUG=-q
-    NO_RM=
 else
     printf "Turning on debug\n"
     CURL_DEBUG=
     UNZIP_DEBUG=
-    NO_RM=1
 fi
 
 function debug() {
@@ -32,18 +30,33 @@ else
     DRY_RUN=
 fi
 
-if [ "$1" = "tvos" -o "$1" = "--tvos" ] ; then
+URL_BASE="https://buildbot.libretro.com/nightly/apple"
+
+if [ "$PLATFORM_FAMILY_NAME" = "tvOS" -o "$1" = "tvos" -o "$1" = "--tvos" ] ; then
     CORES_DIR="${APPLE_DIR}/tvOS/modules"
     PLATFORM=tvos
-    shift
+    URL_PLATFORMS=( tvos-arm64 )
+    if [ "$1" = "tvos" -o "$1" = "--tvos" ] ; then
+        shift
+    fi
+elif [ "$PLATFORM_FAMILY_NAME" = "macOS" -o "$1" = "macos" -o "$1" = "--macos" ] ; then
+    CORES_DIR="${APPLE_DIR}/OSX/modules"
+    PLATFORM=osx
+    URL_PLATFORMS=( osx/arm64 osx/x86_64 )
+    if [ "$1" = "macos" -o "$1" = "--macos" ] ; then
+        shift
+    fi
 else
     CORES_DIR="${APPLE_DIR}/iOS/modules"
     PLATFORM=ios
+    URL_PLATFORMS=( ios-arm64 )
+    if [ "$1" = "ios" -o "$1" = "--ios" ] ; then
+        shift
+    fi
 fi
 debug CORES_DIR is $CORES_DIR
 cd "$CORES_DIR"
 
-URL_BASE="https://buildbot.libretro.com/nightly/apple/${PLATFORM}-arm64/latest"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -55,35 +68,47 @@ function update_dylib() {
     if [ -n "$DRY_RUN" ] ; then
         return
     fi
-    if [ -f "$dylib" ] ; then
-        mv "$dylib" "$dylib".bak
-    fi
-    debug curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
+
     (
-    curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$dylib".zip
-    if [ ! -f "$dylib".zip ] ; then
-        printf "${RED}Download ${dylib} failed${NC}\n"
-        if [ -f "$dylib".bak ] ; then
-            mv "$dylib".bak "$dylib"
+        mkdir "$dylib".tmp
+        pushd "$dylib".tmp >/dev/null
+        for urlp in "${URL_PLATFORMS[@]}" ; do
+            debug curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$urlp"/latest/"$dylib".zip
+            curl $CURL_DEBUG -o "$dylib".zip "$URL_BASE"/"$urlp"/latest/"$dylib".zip
+            if [ ! -f "$dylib".zip ] ; then
+                printf "${RED}Download ${dylib} failed${NC}\n"
+                break
+            fi
+
+            debug unzip $UNZIP_DEBUG "$dylib".zip
+            unzip $UNZIP_DEBUG "$dylib".zip
+            if [ ! -f "$dylib" ] ; then
+                printf "${RED}Unzip ${dylib} failed${NC}\n"
+                break
+            fi
+            rm -f "$dylib".zip
+
+            # macos app store needs universal binaries
+            if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
+                mv "$dylib" "$dylib".$(basename "$urlp")
+            fi
+        done
+        if [ "${#URL_PLATFORMS[@]}" != 1 ] ; then
+            lipo -create -output "$dylib" "$dylib".*
         fi
-    else
-        debug unzip $UNZIP_DEBUG "$dylib".zip
-        unzip $UNZIP_DEBUG "$dylib".zip
-        if [ ! -f "$dylib" ] ; then
-            printf "${RED}Unzip ${dylib} failed${NC}\n"
-            mv "$dylib".bak "$dylib"
-        else
+        popd >/dev/null
+        if [ -f "$dylib".tmp/"$dylib" ] ; then
             printf "${GREEN}Download ${dylib} success!${NC}\n"
-            [ -n "$NO_RM" ] || rm -f "$dylib".zip "$dylib".bak
+            mv "$dylib".tmp/"$dylib" "$dylib"
         fi
-    fi
+        rm -rf "$dylib".tmp
     ) &
 }
 
 allcores=
 function get_all_cores() {
     if [ -z "$allcores" ] ; then
-        allcores=($(curl $CURL_DEBUG $URL_BASE/ | sed -e 's/></\n/g' | grep '>[^<]\+\.dylib.zip<' | sed -e 's/.*>\(.*\)\.zip<.*/\1/'))
+        allcores=($(curl $CURL_DEBUG "$URL_BASE/${URL_PLATFORMS[0]}/latest/" | sed -e 's/></\n/g' | grep '>[^<]\+\.dylib.zip<' | sed -e 's/.*>\(.*\)\.zip<.*/\1/'))
     fi
 }
 
@@ -217,6 +242,12 @@ else
                 wasm4
                 xrick
             )
+            if [ "$PLATFORM" = "osx" ] ; then
+                exports+=(
+                    flycast
+                    play
+                )
+            fi
             for dylib in "${exports[@]}" ; do
                 find_dylib $dylib
             done
