@@ -3241,6 +3241,9 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
           * so these casts are safe */
          entry.label                  = (char*)label;
          command_playlist_update_write(NULL, idx, &entry);
+
+         menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                         |  MENU_ST_FLAG_PREVENT_POPULATE;
       }
    }
 
