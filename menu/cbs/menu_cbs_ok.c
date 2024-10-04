@@ -1955,7 +1955,7 @@ static void menu_driver_set_last_start_content(struct menu_state *menu_st, const
 }
 
 
-static int file_load_with_detect_core_wrapper(
+int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       size_t idx, size_t entry_idx,
       const char *path, const char *label,
