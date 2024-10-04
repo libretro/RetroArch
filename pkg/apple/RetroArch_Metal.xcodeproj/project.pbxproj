@@ -76,11 +76,10 @@
 		0790F67B2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0790F67C2BF2925400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
+		07D851CD2CAF06E2005097EA /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075650242C488918004C5E7E /* CloudKit.framework */; };
 		07EF0FFA2BEB117000EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		07EF0FFC2BEB117400EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
 		07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		07EF0FFF2BEB117900EDCA9B /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
-		07EF10002BEB117900EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		07F2BBC92BE83A4700FD1295 /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
@@ -162,17 +161,6 @@
 			dstSubfolderSpec = 10;
 			files = (
 				07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		07EF10012BEB117900EDCA9B /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				07EF10002BEB117900EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -579,9 +567,9 @@
 				07F2BBDC2BE83A4700FD1295 /* MetalKit.framework in Frameworks */,
 				07F2BBDD2BE83A4700FD1295 /* libz.dylib in Frameworks */,
 				07F2BBDE2BE83A4700FD1295 /* OpenAL.framework in Frameworks */,
-				07EF0FFF2BEB117900EDCA9B /* MoltenVK.xcframework in Frameworks */,
 				07F2BBDF2BE83A4700FD1295 /* CoreAudio.framework in Frameworks */,
 				07F2BBE02BE83A4700FD1295 /* AudioUnit.framework in Frameworks */,
+				07D851CD2CAF06E2005097EA /* CloudKit.framework in Frameworks */,
 				07F2BBE12BE83A4700FD1295 /* AppKit.framework in Frameworks */,
 				07F2BBE22BE83A4700FD1295 /* IOKit.framework in Frameworks */,
 			);
@@ -1372,11 +1360,10 @@
 			buildConfigurationList = 07F2BBE62BE83A4700FD1295 /* Build configuration list for PBXNativeTarget "RetroArch AppStore" */;
 			buildPhases = (
 				07F2BBC42BE83A4700FD1295 /* ShellScript */,
-				07F2BBC52BE83A4700FD1295 /* Resources */,
 				07F2BBCB2BE83A4700FD1295 /* Sources */,
 				07F2BBD22BE83A4700FD1295 /* Frameworks */,
 				070CCFA82BF248E600E560BA /* ShellScript */,
-				07EF10012BEB117900EDCA9B /* Embed Frameworks */,
+				07F2BBC52BE83A4700FD1295 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -1528,7 +1515,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "FILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
+			shellScript = "./rebuild-assets.sh -d -i -m -x\n\nrm -f ${SRCROOT}/OSX/modules/*.dylib\n./update-cores.sh macos appstore\n./make-frameworks.sh\n\nFILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
 		};
 		0720993C29B1258C001642BB /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1800,9 +1787,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArchAppStore.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "3rd Party Mac Developer Application";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 44;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = UK699V5ZS8;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "macOS App Store";
 			};
 			name = Debug;
 		};
@@ -1813,9 +1807,16 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = RetroArchAppStore.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "3rd Party Mac Developer Application";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 44;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = UK699V5ZS8;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "macOS App Store";
 			};
 			name = Release;
 		};

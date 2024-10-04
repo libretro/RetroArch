@@ -1569,7 +1569,7 @@ static bool core_info_get_file_id(const char *core_filename,
    /* > Remove extension */
    strlcpy(core_file_id, core_filename, len);
    path_remove_extension(core_file_id);
-#if IOS
+#if defined(IOS) || defined(OSX)
    /* iOS framework names, to quote Apple:
     * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
     *

@@ -130,7 +130,7 @@ dylib_t dylib_load(const char *path)
 #elif defined(ORBIS)
    int res;
    dylib_t lib = (dylib_t)sceKernelLoadStartModule(path, 0, NULL, 0, NULL, &res);
-#elif defined(IOS)
+#elif defined(IOS) || defined(OSX)
     dylib_t lib;
     static const char fw_suffix[] = ".framework";
     if (string_ends_with(path, fw_suffix))
