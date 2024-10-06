@@ -33,7 +33,10 @@ CLIB=-lc
 PTHREADLIB=-lpthread
 SOCKETLIB=-lc
 SOCKETHEADER=
-INCLUDES='usr/include usr/local/include'
+TR='tr'
+INCLUDES="$(echo $C_INCLUDE_PATH | $TR ':' ' ') \
+$(echo $CPLUS_INCLUDE_PATH | $TR ':' ' ') \
+usr/include usr/local/include"
 SORT='sort'
 EXTRA_GL_LIBS=''
 VC_PREFIX=''
