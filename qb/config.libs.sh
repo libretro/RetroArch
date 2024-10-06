@@ -662,6 +662,7 @@ check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
 check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
 check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
+check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
 
 if [ "$HAVE_GLSLANG" != no ]; then
    check_header cxx GLSLANG \
@@ -691,6 +692,27 @@ if [ "$HAVE_GLSLANG" != no ]; then
       fi
    else
       HAVE_GLSLANG=yes
+   fi
+fi
+
+if [ "$HAVE_SPIRV_CROSS" != no ]; then
+   check_lib cxx SPIRV_CROSS -lspirv-cross-core '' '' 'spirv_cross.hpp' 'spirv_cross'
+   check_lib cxx SPIRV_CROSS_GLSL -lspirv-cross-glsl
+   check_lib cxx SPIRV_CROSS_MSL -lspirv-cross-msl
+   check_lib cxx SPIRV_CROSS_REFLECT -lspirv-cross-reflect
+   if [ "$HAVE_SPIRV_CROSS" = no ] ||
+      [ "$HAVE_SPIRV_CROSS_GLSL" = no ] ||
+      [ "$HAVE_SPIRV_CROSS_MSL" = no ] ||
+      [ "$HAVE_SPIRV_CROSS_REFLECT" = no ]; then
+      if [ "$HAVE_BUILTINSPIRV_CROSS" != yes ]; then
+         die : "Notice: System spirv-cross libraries not found, \
+disabling spirv-cross support"
+         HAVE_SPIRV_CROSS=no
+      else
+         HAVE_SPIRV_CROSS=yes
+      fi
+   else
+      HAVE_SPIRV_CROSS=yes
    fi
 fi
 
