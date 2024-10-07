@@ -31,9 +31,9 @@ platform :mac do
         "./OSX/Info_AppStore.plist"
       ]
     )
-    # ensure_git_status_clean
-    # git_pull
-    # sh("git log -1")
+    ensure_git_status_clean
+    git_pull
+    sh("git log -1")
     begin
       app_store_build_number(
         app_identifier: "com.libretro.dist.RetroArch",
@@ -77,7 +77,7 @@ platform :mac do
     build_mac_app(
       workspace: "RetroArch.xcworkspace",
       scheme: "RetroArch AppStore",
-      xcodebuild_formatter: 'xcpretty',
+      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
       buildlog_path: "buildlog",
       export_method: "app-store",
       export_options: {
