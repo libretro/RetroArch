@@ -100,7 +100,8 @@
 /*#define UDEV_TOUCH_DEEP_DEBUG*/
 
 /* TODO - Temporary debugging using direct printf */
-#ifdef UDEV_TOUCH_PRINTF_DEBUG
+#include <verbosity.h>
+#if 0
 #define RARCH_ERR(...) do{ \
     printf("[ERR]" __VA_ARGS__); \
 } while (0)
@@ -116,7 +117,6 @@
 #define RARCH_DBG(...) do{ \
     printf("[DBG]" __VA_ARGS__); \
 } while (0)
-#endif
 /* UDEV_TOUCH_PRINTF_DEBUG */
 
 #ifdef UDEV_TOUCH_DEEP_DEBUG
@@ -126,6 +126,9 @@
 #else
 #define RARCH_DDBG(msg, ...)
 #endif
+
+#endif
+#define RARCH_DDBG RARCH_DBG
 /* UDEV_TOUCH_DEEP_DEBUG */
 
 /* Helper macro for declaring things as unused - use sparingly. */
@@ -204,16 +207,23 @@ enum udev_input_dev_type
    UDEV_INPUT_KEYBOARD = 0,
    UDEV_INPUT_MOUSE,
    UDEV_INPUT_TOUCHPAD,
-   UDEV_INPUT_TOUCHSCREEN
+   UDEV_INPUT_TOUCHSCREEN,
+   UDEV_INPUT_SENSOR
 };
-
+static bool udev_is_mouse(enum udev_input_dev_type type){
+   return (
+      (type == UDEV_INPUT_MOUSE) ||
+      (type == UDEV_INPUT_TOUCHPAD) || 
+      (type == UDEV_INPUT_TOUCHSCREEN));
+}
 /* NOTE: must be in sync with enum udev_input_dev_type */
 static const char *g_dev_type_str[] =
 {
    "ID_INPUT_KEY",
    "ID_INPUT_MOUSE",
    "ID_INPUT_TOUCHPAD",
-   "ID_INPUT_TOUCHSCREEN"
+   "ID_INPUT_TOUCHSCREEN",
+   "ID_INPUT_ACCELEROMETER"
 };
 
 typedef struct
@@ -226,11 +236,39 @@ typedef struct
    int32_t x_max, y_max;
    int32_t x_rel, y_rel;
    int32_t abs;
-   bool l, r, m, b4, b5;
-   bool wu, wd, whu, whd;
-   bool pp;
+   bool l : 1, r : 1, m : 1, b4 : 1, b5 : 1;
+   bool wu : 1, wd : 1, whu: 1, whd: 1;
+   bool pp : 1;
 } udev_input_mouse_t;
+enum udev_sensor_type
+{
+   UDEV_SENSOR_ACCELEROMETER,
+   UDEV_SENSOR_GYROSCOPE,
+   UDEV_SENSOR_SIXAXIS
+};
 
+/**
+ * Definition of feature limits.
+ */
+typedef struct
+{
+   /* Range of values supported by this feature:  */
+   int32_t min;
+   int32_t max;
+   int32_t range;
+
+   /* Optional, but could be useful later:  */
+   /* Fuzz value used to filter noise from event stream. */
+   int32_t fuzz;
+   /* Values within this value will be discarded and reported as 0 */
+   int32_t flat;
+   /* Resolution for the reported values. */
+   int32_t resolution;
+   /* Is this feature enabled? */
+   bool enabled;
+} udev_input_limits_t;
+typedef udev_input_limits_t udev_input_sensor_limits_t;
+typedef udev_input_limits_t udev_input_touch_limits_t;
 #ifdef UDEV_TOUCH_SUPPORT
 
 /**
@@ -290,26 +328,6 @@ typedef enum
    UDEV_TOUCH_MGEST_LAST
 } udev_input_touch_mgest_type;
 
-/**
- * Definition of feature limits.
- */
-typedef struct
-{
-   /* Range of values supported by this feature:  */
-   int32_t min;
-   int32_t max;
-   int32_t range;
-
-   /* Optional, but could be useful later:  */
-   /* Fuzz value used to filter noise from event stream. */
-   int32_t fuzz;
-   /* Values within this value will be discarded and reported as 0 */
-   int32_t flat;
-   /* Resolution for the reported values. */
-   int32_t resolution;
-   /* Is this feature enabled? */
-   bool enabled;
-} udev_input_touch_limits_t;
 
 /**
  * Helper structure for representing the time of a touch event.
@@ -527,6 +545,35 @@ typedef struct
 #endif
 /* UDEV_TOUCH_SUPPORT */
 
+
+
+typedef struct {
+   
+   union {
+      struct{
+         udev_input_sensor_limits_t accelerometer_x_limit;
+         udev_input_sensor_limits_t accelerometer_y_limit;
+         udev_input_sensor_limits_t accelerometer_z_limit;
+         udev_input_sensor_limits_t gyro_x_limit;
+         udev_input_sensor_limits_t gyro_y_limit;
+         udev_input_sensor_limits_t gyro_z_limit;
+      } s;
+      udev_input_sensor_limits_t a[6];
+   } limits;
+   union {
+      struct {
+         int32_t accelerometer_x;
+         int32_t accelerometer_y;
+         int32_t accelerometer_z;
+         int32_t gyro_x;
+         int32_t gyro_y;
+         int32_t gyro_z;
+      } s;
+      int32_t a[6];
+   } sensor_data;
+   enum udev_sensor_type type;
+} udev_input_sensor_t;
+
 typedef struct udev_input_device
 {
    void (*handle_cb)(void *data,
@@ -534,14 +581,27 @@ typedef struct udev_input_device
          struct udev_input_device *dev);
    int fd; /* Device file descriptor */
    dev_t dev; /* Device handle */
-   udev_input_mouse_t mouse; /* State tracking for mouse-type devices */
-#ifdef UDEV_TOUCH_SUPPORT
-   udev_input_touch_t touch; /* State tracking for touch-type devices */
-#endif
+   union {
+      struct {
+      udev_input_mouse_t _mouse; /* State tracking for mouse-type devices */
+   #ifdef UDEV_TOUCH_SUPPORT
+      udev_input_touch_t _touch; /* State tracking for touch-type devices */
+   #endif
+      } _mouse;
+      struct {
+         udev_input_sensor_t _sensor;
+         struct udev_input_device * _wii_motion_plus;
+      } _sensor;
+   } _u;
    enum udev_input_dev_type type; /* Type of this device */
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
    char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
+
+#define mouse_state _u._mouse._mouse
+#define touch_state _u._mouse._touch
+#define sensor_state _u._sensor._sensor
+#define wii_motion_plus_state _u._sensor._wii_motion_plus
 
 typedef void (*device_handle_cb)(void *data,
       const struct input_event *event, udev_input_device_t *dev);
@@ -556,6 +616,8 @@ typedef struct udev_input
    int32_t keyboards[MAX_INPUT_DEVICES];
    /* Indices of pointers in the devices array. Negative values are invalid. */
    int32_t pointers[MAX_INPUT_DEVICES];
+   /* Indices of sensors in the devices array. Negative values are invalid. */
+   int32_t sensors[MAX_INPUT_DEVICES];
 
    int fd;
    /* OS pointer coords (zeros if we don't have X11) */
@@ -672,27 +734,59 @@ static void udev_input_kb_free(struct udev_input *udev)
 #endif
 }
 
-static udev_input_mouse_t *udev_get_mouse(
+static udev_input_device_t *udev_get_pointer_device(
       struct udev_input *udev, unsigned port)
 {
-   unsigned i;
    unsigned mouse_index      = 0;
    int dev_index             = -1;
    settings_t *settings      = config_get_ptr();
-   udev_input_mouse_t *mouse = NULL;
+   
+
+   if (port >= MAX_USERS || !video_driver_has_focus())
+      return NULL;
+   mouse_index = settings->uints.input_mouse_index[port];
+   if (mouse_index < MAX_INPUT_DEVICES)
+      dev_index = udev->pointers[mouse_index];
+   if (dev_index < 0)
+      return NULL;
+
+       
+   else if (udev_is_mouse(udev->devices[dev_index]->type))
+      return udev->devices[dev_index];
+   else return NULL;
+}
+static udev_input_device_t *udev_get_sensor_device(
+      const struct udev_input *udev, unsigned port)
+{
+   int dev_index             = -1;
+   settings_t *settings      = config_get_ptr();
+
 
    if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
-   mouse_index = settings->uints.input_mouse_index[port];
-   if (mouse_index < MAX_INPUT_DEVICES)
-       dev_index = udev->pointers[mouse_index];
+   if (port < MAX_INPUT_DEVICES)
+      dev_index = udev->sensors[port];
    if (dev_index < 0)
-       return NULL;
-   else
-       return &udev->devices[dev_index]->mouse;
+      return NULL;
+   else if(udev->devices[dev_index]->type == UDEV_INPUT_SENSOR)
+      return udev->devices[dev_index];
+   else return NULL;
 }
-
+static udev_input_sensor_t *udev_get_sensor(
+      const struct udev_input *udev, unsigned port)
+{
+   udev_input_device_t *input_device=udev_get_sensor_device(udev,port);
+   if (input_device) return &input_device->sensor_state;
+   else return NULL;
+}
+static udev_input_mouse_t *udev_get_pointer(
+      const struct udev_input *udev, unsigned port)
+{
+   udev_input_device_t *input_device=udev_get_pointer_device(udev,port);
+   if (input_device) return &input_device->mouse_state;
+   else return NULL;
+}
 static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 {
     video_viewport_t vp;
@@ -874,7 +968,8 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
 static void udev_handle_mouse(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
-   udev_input_mouse_t *mouse = &dev->mouse;
+
+   udev_input_mouse_t *mouse = &dev->mouse_state;
 
    switch (event->type)
    {
@@ -941,7 +1036,17 @@ static void udev_handle_mouse(void *data,
          break;
    }
 }
-
+static void udev_set_limits_from(struct input_absinfo *info,
+        udev_input_touch_limits_t *limits)
+{
+   limits->enabled    = true;
+   limits->min        = info->minimum;
+   limits->max        = info->maximum;
+   limits->range      = limits->max - limits->min + 1;
+   limits->fuzz       = info->fuzz;
+   limits->flat       = info->flat;
+   limits->resolution = info->resolution;
+}
 #ifdef UDEV_TOUCH_SUPPORT
 
 /**
@@ -1134,32 +1239,6 @@ static void udev_touch_ts_print(const udev_touch_ts_t *ts)
 }
 
 /**
- * Get pointer device for given port.
- *
- * @param udev UDev system to search.
- * @param port Target port.
- */
-static udev_input_device_t *udev_get_pointer_port_dev(
-      struct udev_input *udev, unsigned port)
-{
-   uint16_t i;
-   uint16_t pointer_index    = 0;
-   int16_t dev_index         = -1;
-   settings_t *settings      = config_get_ptr();
-   udev_input_mouse_t *mouse = NULL;
-
-   if (port >= MAX_USERS || !video_driver_has_focus())
-      return NULL;
-
-   pointer_index = settings->uints.input_mouse_index[port];
-   if (pointer_index < MAX_INPUT_DEVICES)
-       dev_index = udev->pointers[pointer_index];
-   if (dev_index < 0)
-       return NULL;
-   return udev->devices[dev_index];
-}
-
-/**
  * Dump information about the given absinfo structure.
  *
  * @param label Label to prefix the message with.
@@ -1329,23 +1408,7 @@ static void udev_dump_touch_device_slots(const char *indent, const udev_input_to
    RARCH_DBG("[udev] %s}\n", indent);
 }
 
-/**
- * Set touch limits from given absinfo structure.
- *
- * @param info Input info structure.
- * @param limits Target limits structure.
- */
-static void udev_touch_set_limits_from(struct input_absinfo *info,
-        udev_input_touch_limits_t *limits)
-{
-   limits->enabled    = true;
-   limits->min        = info->minimum;
-   limits->max        = info->maximum;
-   limits->range      = limits->max - limits->min + 1;
-   limits->fuzz       = info->fuzz;
-   limits->flat       = info->flat;
-   limits->resolution = info->resolution;
-}
+
 
 /**
  * Dump information about the provided device. Works even
@@ -1355,8 +1418,8 @@ static void udev_touch_set_limits_from(struct input_absinfo *info,
  */
 static void udev_dump_touch_dev(udev_input_device_t *dev)
 {
-   udev_input_mouse_t *mouse = &dev->mouse;
-   udev_input_touch_t *touch = &dev->touch;
+   udev_input_mouse_t *mouse = &dev->mouse_state;
+   udev_input_touch_t *touch = &dev->touch_state;
 
    RARCH_DBG("[udev] === UDEV_INPUT_DEVICE INFO DUMP ===\n");
 
@@ -1407,7 +1470,7 @@ static void udev_dump_touch_dev(udev_input_device_t *dev)
  */
 static void udev_destroy_touch_dev(udev_input_device_t *dev)
 {
-   udev_input_touch_t *touch = &dev->touch;
+   udev_input_touch_t *touch = &dev->touch_state;
 
    RARCH_DBG("[udev] Destroying touch device \"%s\"\n", dev->ident);
 
@@ -1456,35 +1519,35 @@ static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
    if (force || pointer_en_new != pointer_en)
    {
        pointer_en                 = pointer_en_new;
-       dev->touch.pointer_enabled = pointer_en_new;
+       dev->touch_state.pointer_enabled = pointer_en_new;
    }
 
    mouse_en_new = UDEV_INPUT_TOUCH_MOUSE_EN;
    if (force || mouse_en_new != mouse_en)
    {
        mouse_en                 = mouse_en_new;
-       dev->touch.mouse_enabled = mouse_en_new;
+       dev->touch_state.mouse_enabled = mouse_en_new;
    }
 
    touchpad_en_new = UDEV_INPUT_TOUCH_TOUCHPAD_EN;
    if (force || touchpad_en_new != touchpad_en)
    {
        touchpad_en                 = touchpad_en_new;
-       dev->touch.touchpad_enabled = touchpad_en_new;
+       dev->touch_state.touchpad_enabled = touchpad_en_new;
    }
 
    trackball_en_new = UDEV_INPUT_TOUCH_TRACKBALL_EN;
    if (force || trackball_en_new != trackball_en)
    {
        trackball_en                 = trackball_en_new;
-       dev->touch.trackball_enabled = trackball_en_new;
+       dev->touch_state.trackball_enabled = trackball_en_new;
    }
 
    gest_en_new = UDEV_INPUT_TOUCH_GEST_EN;
    if (force || gest_en_new != gest_en)
    {
        gest_en                 = gest_en_new;
-       dev->touch.gest_enabled = gest_en_new;
+       dev->touch_state.gest_enabled = gest_en_new;
    }
 }
 
@@ -1498,7 +1561,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    int iii, ret;
    struct input_absinfo abs_info;
    unsigned long xreq, yreq;
-   udev_input_touch_t *touch = &dev->touch;
+   udev_input_touch_t *touch = &dev->touch_state;
    settings_t *settings      = config_get_ptr();
 
    RARCH_DBG("[udev] Initializing touch device \"%s\"\n", dev->ident);
@@ -1523,7 +1586,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       touch->info_slots.enabled = false;
    }
    else
-      udev_touch_set_limits_from(&abs_info, &touch->info_slots);
+      udev_set_limits_from(&abs_info, &touch->info_slots);
 
    /* Single-touch devices use ABS_X/Y, Multi-touch use ABS_MT_POSITION_X/Y */
    if (abs_info.maximum == 0)
@@ -1549,7 +1612,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       touch->info_x_limits.enabled = false;
    }
    else
-      udev_touch_set_limits_from(&abs_info, &touch->info_x_limits);
+      udev_set_limits_from(&abs_info, &touch->info_x_limits);
 
    /* Get y-axis limits */
    ret = ioctl(dev->fd, yreq, &abs_info);
@@ -1560,7 +1623,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       touch->info_y_limits.enabled = false;
    }
    else
-      udev_touch_set_limits_from(&abs_info, &touch->info_y_limits);
+      udev_set_limits_from(&abs_info, &touch->info_y_limits);
 
    /* Get major axis limits - i.e. primary radius of the touch */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_TOUCH_MAJOR), &abs_info);
@@ -1571,7 +1634,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       touch->info_major.enabled = false;
    }
    else
-      udev_touch_set_limits_from(&abs_info, &touch->info_major);
+      udev_set_limits_from(&abs_info, &touch->info_major);
 
    /* Get minor axis limits - i.e. secondary radius of the touch */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_TOUCH_MINOR), &abs_info);
@@ -1582,7 +1645,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       touch->info_minor.enabled = false;
    }
    else
-      udev_touch_set_limits_from(&abs_info, &touch->info_minor);
+      udev_set_limits_from(&abs_info, &touch->info_minor);
 
    /* Get pressure limits */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_PRESSURE), &abs_info);
@@ -1593,7 +1656,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       touch->info_pressure.enabled = false;
    }
    else
-      udev_touch_set_limits_from(&abs_info, &touch->info_pressure);
+      udev_set_limits_from(&abs_info, &touch->info_pressure);
 
    /* Allocate the data blocks required for state tracking */
    /* __u32 + __s32[num_slots] */
@@ -1722,6 +1785,8 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    udev_dump_touch_dev(dev);
 }
 
+
+
 /**
  * Fully synchronize the statue of given touch device.
  * This is inefficient compared to the event-driven
@@ -1739,8 +1804,8 @@ static void udev_sync_touch(udev_input_device_t *dev)
    size_t mt_request_data_size;
    size_t slot_count;
    udev_touch_ts_t now;
-   udev_input_touch_t *touch = &dev->touch;
-   udev_slot_state_t *staging = dev->touch.staging;
+   udev_input_touch_t *touch = &dev->touch_state;
+   udev_slot_state_t *staging = dev->touch_state.staging;
 
    RARCH_DDBG("[udev] Synchronizing touch data...\n");
 
@@ -2303,7 +2368,7 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
 static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 {
    /* Touch state being modified. */
-   udev_input_touch_t *touch = &dev->touch;
+   udev_input_touch_t *touch = &dev->touch_state;
 
    /* Helper variables. */
    int iii;
@@ -2659,7 +2724,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 
 /**
  * Function handling incoming udev events pertaining to a touch device.
- *
+udev_handle_touch *
  * @param data Data passed by the callback -> udev_input_t*
  * @param event Incoming event.
  * @param dev The source device.
@@ -2668,9 +2733,8 @@ static void udev_handle_touch(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
    udev_input_t *udev        = (udev_input_t*)data;
-   udev_input_mouse_t *mouse = &dev->mouse;
-   udev_input_touch_t *touch = &dev->touch;
-
+   udev_input_mouse_t *mouse = &dev->mouse_state;
+   udev_input_touch_t *touch = &dev->touch_state;
    /* struct input_event */
    /* { */
    /*   (pseudo) input_event_sec; */
@@ -2687,7 +2751,6 @@ static void udev_handle_touch(void *data,
    /* EV_KEY: BTN_TOUCH -> Signal for any touch - 1 down and 0 up */
    /* EV_ABS: ABS_X/Y -> Absolute position of the touch */
    /* SYN_REPORT -> End of packet */
-
    switch (event->type)
    {
       case EV_ABS:
@@ -2793,7 +2856,7 @@ static void udev_handle_touch(void *data,
       case EV_KEY:
          if (event->code == BTN_TOUCH)
          {
-            RARCH_DDBG("[udev] handle_touch: [%d] TOUCH %d\n", touch->current_slot, event->value);
+            RARCH_DDBG("[udev] handle_touch: [%d] touch_state %d\n", touch->current_slot, event->value);
             if (event->value > 0)
                touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_DOWN;
             else
@@ -3026,9 +3089,9 @@ static int16_t udev_input_touch_state(
 {
    int16_t ret = 0;
    bool screen = false;
-   udev_input_touch_t *touch = &dev->touch;
+   udev_input_touch_t *touch = &dev->touch_state;
    udev_touch_ts_t now;
-
+   
    /* Get current time for measurements */
    udev_touch_ts_now(&now);
 
@@ -3116,7 +3179,6 @@ static int16_t udev_input_touch_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
          screen = (device == RARCH_DEVICE_MOUSE_SCREEN);
-         break;
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
@@ -3168,12 +3230,54 @@ static int16_t udev_input_touch_state(
          }
          break;
    }
-
    return ret;
 }
 
 #endif
 /* UDEV_TOUCH_SUPPORT */
+/**
+ * Function handling incoming udev events pertaining to a touch device.
+udev_handle_touch *
+ * @param data Data passed by the callback -> udev_input_t*
+ * @param event Incoming event.
+ * @param dev The source device.
+ */
+static void udev_handle_sensor(void *data,
+      const struct input_event *event, udev_input_device_t *dev)
+{
+   if (event->type == EV_ABS)
+      dev->sensor_state.sensor_data.a[event->code]=event->value;
+   
+}
+
+/**
+ * Initialize given sensor device.
+ *
+ * @param dev Input sensor device to initialize.
+ */
+static void udev_init_sensor_dev(udev_input_device_t *dev)
+{
+   udev_input_sensor_t *sensor = &dev->sensor_state;
+   int ret,i;
+   struct input_absinfo abs_info;
+
+   dev->wii_motion_plus_state=NULL;
+   RARCH_DBG("[udev] Initializing sensor device \"%s\"\n", dev->ident);
+   for (i=ABS_X ; i<=ABS_RZ; i++){
+      ret = ioctl(dev->fd, EVIOCGABS(i), &abs_info);
+      if (ret < 0)
+      {
+         RARCH_WARN("[udev sensor] Failed to get sensor limits\n");
+
+         sensor->limits.a[i].enabled = false;
+      }
+      else{
+         RARCH_DBG("[udev sensor]: Initializing sensor %d\n",i);
+         udev_set_limits_from(&abs_info, &sensor->limits.a[i]);
+      }
+   }
+
+}
 
 #define test_bit(array, bit)    (array[bit/8] & (1<<(bit%8)))
 
@@ -3188,6 +3292,7 @@ static int udev_input_add_device(udev_input_t *udev,
    struct input_absinfo absinfo;
    int fd                                   = -1;
    int ret                                  = 0;
+   /*int new_device                           = 1;*/
    struct stat st;
 #if defined(HAVE_EPOLL)
    struct epoll_event event;
@@ -3218,8 +3323,11 @@ static int udev_input_add_device(udev_input_t *udev,
    if (ioctl(fd, EVIOCGNAME(sizeof(device->ident)), device->ident) < 0)
       device->ident[0] = '\0';
 
+
+   
+   RARCH_DBG("device->ident %s\n", device->ident);
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
-   if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD || type == UDEV_INPUT_TOUCHSCREEN )
+   if (udev_is_mouse(type))
    {
       bool mouse = 0;
       bool touch = 0;
@@ -3251,23 +3359,23 @@ static int udev_input_add_device(udev_input_t *udev,
             if (test_bit(keycaps, BTN_TOUCH))
             {
                touch             = 1;
-               device->mouse.abs = 1;
+               device->mouse_state.abs = 1;
             }
             /* check for light gun or any other device that might not have a touch button */
             else
-               device->mouse.abs = 2;
+               device->mouse_state.abs = 2;
 
             if ( !test_bit(keycaps, BTN_TOUCH) && !test_bit(keycaps, BTN_MOUSE) )
                RARCH_DBG("[udev]: Warning ABS pointer device (%s) has no touch or mouse button\n",device->ident);
          }
       }
 
-      device->mouse.x_min = 0;
-      device->mouse.y_min = 0;
-      device->mouse.x_max = 0;
-      device->mouse.y_max = 0;
+      device->mouse_state.x_min = 0;
+      device->mouse_state.y_min = 0;
+      device->mouse_state.x_max = 0;
+      device->mouse_state.y_max = 0;
 
-      if (device->mouse.abs)
+      if (device->mouse_state.abs)
       {
          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
          {
@@ -3275,16 +3383,16 @@ static int udev_input_add_device(udev_input_t *udev,
             goto end;
          }
 
-         device->mouse.x_min = absinfo.minimum;
-         device->mouse.x_max = absinfo.maximum;
+         device->mouse_state.x_min = absinfo.minimum;
+         device->mouse_state.x_max = absinfo.maximum;
 
          if (ioctl(fd, EVIOCGABS(ABS_Y), &absinfo) == -1)
          {
             RARCH_DBG("[udev]: ABS pointer device (%s) Failed to get ABS_Y parameters \n",device->ident);
             goto end;
          }
-         device->mouse.y_min = absinfo.minimum;
-         device->mouse.y_max = absinfo.maximum;
+         device->mouse_state.y_min = absinfo.minimum;
+         device->mouse_state.y_max = absinfo.maximum;
       }
 
       if (touch)
@@ -3295,9 +3403,13 @@ static int udev_input_add_device(udev_input_t *udev,
 #endif
       }
 
+
+
       if (!mouse)
          goto end;
-   }
+   } else if (type == UDEV_INPUT_SENSOR)
+      udev_init_sensor_dev(device);
+   
 
    tmp = (udev_input_device_t**)realloc(udev->devices,
          (udev->num_devices + 1) * sizeof(*udev->devices));
@@ -3350,7 +3462,6 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
    {
       if (!string_is_equal(devnode, udev->devices[i]->devnode))
          continue;
-
       close(udev->devices[i]->fd);
       free(udev->devices[i]);
       memmove(udev->devices + i, udev->devices + i + 1,
@@ -3367,9 +3478,11 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_mouse             = NULL;
    const char *val_touchpad          = NULL;
    const char *val_touchscreen       = NULL;
+   const char *val_sensor            = NULL;
    const char *action                = NULL;
    const char *devnode               = NULL;
    int mouse                         = 0;
+   int sensor                        = 0;
    int keyboard                      = 0;
    int check                         = 0;
    int i                             = 0;
@@ -3383,6 +3496,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    val_mouse       = udev_device_get_property_value(dev, "ID_INPUT_MOUSE");
    val_touchpad    = udev_device_get_property_value(dev, "ID_INPUT_TOUCHPAD");
    val_touchscreen = udev_device_get_property_value(dev, "ID_INPUT_TOUCHSCREEN");
+   val_sensor      = udev_device_get_property_value(dev, "ID_INPUT_ACCELEROMETER");
    action          = udev_device_get_action(dev);
    devnode         = udev_device_get_devnode(dev);
 
@@ -3412,6 +3526,11 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
       cb         = udev_handle_mouse;
 #endif
    }
+   else if (val_sensor && string_is_equal(val_sensor, "1") && devnode)
+   {
+      dev_type   = UDEV_INPUT_SENSOR;
+      cb         = udev_handle_sensor;
+   }
    else
       goto end;
 
@@ -3429,17 +3548,25 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    for (i = 0; i < MAX_USERS; i++)
    {
       input_config_set_mouse_display_name(i, "N/A");
+      input_config_set_sensor_display_name(i, "N/A");
       udev->pointers[i]  = -1;
       udev->keyboards[i] = -1;
+      udev->sensors[i] = -1;
    }
 
    /* Add what devices we have now */
-   for (i = 0; i < (int)udev->num_devices; i++)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
+   for (i=0;i<(int)udev->num_devices;i++){
+      udev_input_device_t * cur_device=udev->devices[i];
+      if (cur_device->type == UDEV_INPUT_SENSOR){
+         /* Sensors */
+         input_config_set_sensor_display_name(sensor, cur_device->ident);
+         udev->sensors[sensor] = i;
+         sensor++;
+      }
+      else if (cur_device->type != UDEV_INPUT_KEYBOARD)
       {
          /* Pointers */
-         input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+         input_config_set_mouse_display_name(mouse, cur_device->ident);
          udev->pointers[mouse]     = i;
          mouse++;
       }
@@ -3535,26 +3662,29 @@ static void udev_input_poll(void *data)
 
    for (i = 0; i < (int)udev->num_devices; i++)
    {
-      if (udev->devices[i]->type == UDEV_INPUT_KEYBOARD)
-         continue;
+      udev_input_device_t * cur_device=udev->devices[i];
+         if (cur_device->type == UDEV_INPUT_KEYBOARD || 
+            cur_device->type == UDEV_INPUT_SENSOR)
+            continue;
 
-      mouse = &udev->devices[i]->mouse;
-#ifdef HAVE_X11
-      udev_input_adopt_rel_pointer_position_from_mouse(
-            &udev->pointer_x, &udev->pointer_y, mouse);
-#else
-      mouse->x_rel = 0;
-      mouse->y_rel = 0;
-#endif
-      mouse->wu    = false;
-      mouse->wd    = false;
-      mouse->whu   = false;
-      mouse->whd   = false;
+         mouse = &cur_device->mouse_state;
+   #ifdef HAVE_X11
+         udev_input_adopt_rel_pointer_position_from_mouse(
+               &udev->pointer_x, &udev->pointer_y, mouse);
+   #else
+         mouse->x_rel = 0;
+         mouse->y_rel = 0;
+   #endif
+         mouse->wu    = false;
+         mouse->wd    = false;
+         mouse->whu   = false;
+         mouse->whd   = false;
 
-#ifdef UDEV_TOUCH_SUPPORT
-      /* Schedule touch state update. */
-      udev->devices[i]->touch.run_state_update = true;
-#endif
+   #ifdef UDEV_TOUCH_SUPPORT
+         /* Schedule touch state update. */
+         cur_device->touch_state.run_state_update = true;
+   #endif
+      
    }
 
    while (udev->monitor && udev_input_poll_hotplug_available(udev->monitor))
@@ -3615,7 +3745,7 @@ static int16_t udev_lightgun_aiming_state(
 {
 
    const int edge_detect       = 32700;
-   udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
+   udev_input_mouse_t *mouse   = udev_get_pointer(udev, port);
 
    if (mouse)
    {
@@ -3646,7 +3776,7 @@ static int16_t udev_lightgun_aiming_state(
 static int16_t udev_mouse_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
-   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+   udev_input_mouse_t *mouse = udev_get_pointer(udev, port);
 
    if (mouse)
    {
@@ -3694,7 +3824,7 @@ static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
 static bool udev_mouse_button_pressed(
       udev_input_t *udev, unsigned port, unsigned key)
 {
-   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+   udev_input_mouse_t *mouse = udev_get_pointer(udev, port);
 
    if (mouse)
    {
@@ -3728,7 +3858,7 @@ static bool udev_mouse_button_pressed(
 static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned port, unsigned id, bool screen)
 {
-   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+   udev_input_mouse_t *mouse = udev_get_pointer(udev, port);
 
    if (mouse)
    {
@@ -3782,6 +3912,12 @@ static unsigned udev_retro_id_to_rarch(unsigned id)
 
    return 0;
 }
+/**
+ * Set touch limits from given absinfo structure.
+ *
+ * @param info Input info structure.
+ * @param limits Target limits structure.
+ */
 
 static int16_t udev_input_state(
       void *data,
@@ -3797,7 +3933,7 @@ static int16_t udev_input_state(
 {
    udev_input_t *udev               = (udev_input_t*)data;
 #ifdef UDEV_TOUCH_SUPPORT
-   udev_input_device_t *pointer_dev = udev_get_pointer_port_dev(udev, port);
+   udev_input_device_t *pointer_dev = udev_get_pointer_device(udev, port);
 #endif
 
    switch (device)
@@ -3886,7 +4022,7 @@ static int16_t udev_input_state(
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
-         if (pointer_dev && pointer_dev->touch.is_touch_device)
+         if (pointer_dev && pointer_dev->touch_state.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
@@ -3896,7 +4032,7 @@ static int16_t udev_input_state(
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
-         if (pointer_dev && pointer_dev->touch.is_touch_device)
+         if (pointer_dev && pointer_dev->touch_state.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
@@ -3907,7 +4043,7 @@ static int16_t udev_input_state(
 
       case RETRO_DEVICE_LIGHTGUN:
 #ifdef UDEV_TOUCH_SUPPORT
-         if (pointer_dev && pointer_dev->touch.is_touch_device)
+         if (pointer_dev && pointer_dev->touch_state.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
@@ -3967,14 +4103,14 @@ static int16_t udev_input_state(
                /*deprecated*/
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {
-                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+                  udev_input_mouse_t *mouse = udev_get_pointer(udev, port);
                   if (mouse)
                      return udev_mouse_get_x(mouse);
                }
                break;
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
                {
-                  udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+                  udev_input_mouse_t *mouse = udev_get_pointer(udev, port);
                   if (mouse)
                      return udev_mouse_get_y(mouse);
                }
@@ -4071,13 +4207,13 @@ static void *udev_input_init(const char *joypad_driver)
 {
    int mouse = 0;
    int keyboard=0;
+   int sensor=0;
    int fd;
    int i;
 #ifdef UDEV_XKB_HANDLING
    gfx_ctx_ident_t ctx_ident;
 #endif
    udev_input_t *udev   = (udev_input_t*)calloc(1, sizeof(*udev));
-
    if (!udev)
       return NULL;
 
@@ -4129,7 +4265,8 @@ static void *udev_input_init(const char *joypad_driver)
    if (!open_devices(udev, UDEV_INPUT_TOUCHSCREEN, udev_handle_touch))
       goto error;
 #endif
-
+   if (!open_devices(udev, UDEV_INPUT_SENSOR, udev_handle_sensor))
+      goto error;
    /* If using KMS and we forgot this,
     * we could lock ourselves out completely. */
    if (!udev->num_devices)
@@ -4150,32 +4287,43 @@ static void *udev_input_init(const char *joypad_driver)
    for (i = 0; i < MAX_USERS; i++)
    {
       udev->pointers[i] = -1;
+      udev->sensors[i] = -1;
       udev->keyboards[i] = -1;
    }
-
    for (i = 0; i < (int)udev->num_devices; ++i)
    {
-      if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
-      {
-          RARCH_LOG("[udev]: Mouse/Touch #%u: \"%s\" (%s) %s.\n",
-             mouse,
-             udev->devices[i]->ident,
-             udev->devices[i]->mouse.abs ? "ABS" : "REL",
-             udev->devices[i]->devnode);
+      udev_input_device_t * curdevice=udev->devices[i];
+         if (curdevice->type == UDEV_INPUT_SENSOR)
+         {
+            RARCH_LOG("[udev]: Sensor: \"%s\" %s.\n",
+            curdevice->ident,
+            curdevice->devnode);
+            input_config_set_sensor_display_name(sensor, curdevice->ident);
+            udev->sensors[sensor] = i;
+            RARCH_DBG("[udev]: sensors[%d]=%d\n",sensor,i);
+            sensor++;
+         }
+         else if (curdevice->type != UDEV_INPUT_KEYBOARD)
+         {
+            RARCH_LOG("[udev]: Mouse/Touch #%u: \"%s\" (%s) %s.\n",
+               mouse,
+               curdevice->ident,
+               curdevice->mouse_state.abs ? "ABS" : "REL",
+               curdevice->devnode);
 
-          input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
-          udev->pointers[mouse] = i;
-          mouse++;
-       }
-       else
-       {
-          RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
-             keyboard,
-             udev->devices[i]->ident,
-             udev->devices[i]->devnode);
-          udev->keyboards[keyboard] = i;
-          keyboard++;
-       }
+            input_config_set_mouse_display_name(mouse, curdevice->ident);
+            udev->pointers[mouse] = i;
+            mouse++;
+         }
+         else
+         {
+            RARCH_LOG("[udev]: Keyboard #%u: \"%s\" (%s).\n",
+               keyboard,
+               udev->devices[i]->ident,
+               udev->devices[i]->devnode);
+            udev->keyboards[keyboard] = i;
+            keyboard++;
+         }
    }
 
    return udev;
@@ -4222,13 +4370,60 @@ static void udev_input_grab_mouse(void *data, bool state)
 #endif
 }
 
+
+static bool udev_input_set_sensor_state (void *data, unsigned port, enum retro_sensor_action action, unsigned rate) {
+   /*TODO*/
+   RARCH_DBG("udev_input_set_sensor_state: %d %d %d\n", port, action,rate);
+   return true;
+}
+static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id) {
+   const udev_input_t *udev = (const udev_input_t *)data;
+   const udev_input_sensor_t * sensor;
+   float sensor_value;
+   udev_input_sensor_limits_t limits;
+
+   if (udev->devices == NULL) return 0.f;
+
+   sensor=udev_get_sensor(udev,port);
+   if (!sensor) return 0.f;
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_GYROSCOPE_Z){
+      sensor_value=(float)sensor->sensor_data.a[id-RETRO_SENSOR_ACCELEROMETER_X];
+      limits=sensor->limits.a[id-RETRO_SENSOR_ACCELEROMETER_X];
+   }
+   else
+      return 0.f;
+   
+   
+   RARCH_DBG(
+      "[udev] sensor:\n"
+      "\t%d\n"
+      "\t%f\n"
+      "\t%d\n"
+      "\t%d\n"
+      "\t%f\n",
+      id,
+      sensor_value,
+      limits.min,
+      limits.max,
+      (((sensor_value-limits.min)/(limits.max-limits.min))-0.5f)*2.f
+   );
+   return (
+      /*clamp it to the 0 to 1 range*/
+      ((sensor_value-limits.min)/(limits.max-limits.min))
+      /*convert to the -1 to 1 range*/
+      -0.5f)*2.f;
+   
+
+}
+
+
 input_driver_t input_udev = {
    udev_input_init,
    udev_input_poll,
    udev_input_state,
    udev_input_free,
-   NULL,
-   NULL,
+   udev_input_set_sensor_state,
+   udev_input_get_sensor_input,
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,
