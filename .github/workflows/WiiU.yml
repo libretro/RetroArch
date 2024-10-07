@@ -25,12 +25,12 @@ jobs:
     - name: Compile Salamander
       run: |
         make -f Makefile.wiiu -j$(getconf _NPROCESSORS_ONLN) SALAMANDER_BUILD=1 clean
-        make -f Makefile.wiiu -j$(getconf _NPROCESSORS_ONLN) SALAMANDER_BUILD=1
+        make -f Makefile.wiiu -j$(getconf _NPROCESSORS_ONLN) SALAMANDER_BUILD=1 V=1
 
     - name: Compile RA
       run: |
         make -f Makefile.wiiu -j$(getconf _NPROCESSORS_ONLN) clean
-        make -f Makefile.wiiu -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1
+        make -f Makefile.wiiu -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1 V=1
     - name: Get short SHA
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
