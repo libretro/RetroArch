@@ -1760,6 +1760,10 @@ MSG_HASH(
    "Valikko"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Käytettävä valikkoajuri. (Vaatii uudelleenkäynnistyksen)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Nauhoitus"
    )
@@ -6040,6 +6044,10 @@ MSG_HASH(
    "Näytä \"Käyttäjä\""
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Soittolistan kuvakkeet"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Näytä \"Käyttäjä\"-asetukset."
    )
@@ -8956,6 +8964,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Jatka saavutusten hardcore-tilaa"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Kaikki odottavat pyynnöt on synkronoitu RetroAchievements-palvelimelle."
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
    "Tunnistetaan peli"
@@ -12298,6 +12310,14 @@ MSG_HASH(
    "Suosikin lisääminen epäonnistui: soittolista täynnä"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Lisätty soittolistalle"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Ei voitu lisätä soittolistaan: soittolista täynnä"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "Ydin asetettu: "
    )
@@ -13434,12 +13454,20 @@ MSG_HASH(
    "Yhteyden muodostaminen isäntään epäonnistui."
    )
 MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Verkkopelin isäntä on täynnä."
+   )
+MSG_HASH(
    MSG_NETPLAY_BANNED,
    "Sinulla on porttikielto tälle palvelimelle."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
    "Otsakkeen vastaanottaminen isännältä epäonnistui."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Kirjautuneena tilillä \"%s\"."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13464,6 +13492,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
    "Saavutuksien hardcore tila käytössä, tilatallennukset ja takaisinkelaus poistettiin käytöstä."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Tälle pelille ei ole saavutuksia."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
