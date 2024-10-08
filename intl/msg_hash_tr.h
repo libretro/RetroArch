@@ -7404,6 +7404,10 @@ MSG_HASH(
    "Güneydoğu Asya"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "Doğu Asya (Chuncheon, Güney Kore)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Özel"
    )
