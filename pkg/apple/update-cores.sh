@@ -221,6 +221,7 @@ else
                 snes9x2010
                 stella
                 stella2014
+                stella2023
                 tgbdual
                 theodore
                 tic80
