@@ -69,16 +69,12 @@
 		076E640C2BF30A7A00681536 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
 		076E640D2BF30A9200681536 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		076E640E2BF30AA200681536 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
-		076E64102BF30AFF00681536 /* MoltenVK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; };
-		076E64112BF30AFF00681536 /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0790F6792BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0790F67A2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0790F67B2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0790F67C2BF2925400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
 		07D851CD2CAF06E2005097EA /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075650242C488918004C5E7E /* CloudKit.framework */; };
-		07EF0FFA2BEB117000EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		07F2BBC62BE83A4700FD1295 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
 		07F2BBC82BE83A4700FD1295 /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9254B33025FA0BA300A1E0DA /* assets.zip */; };
 		07F2BBC92BE83A4700FD1295 /* MainMenu_Metal.xib in Resources */ = {isa = PBXBuildFile; fileRef = A9020F323D5F3C8E120D04AC /* MainMenu_Metal.xib */; };
@@ -127,7 +123,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				076E64112BF30AFF00681536 /* MoltenVK.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -142,24 +137,12 @@
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		07EF0FFB2BEB117000EDCA9B /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				07EF0FFA2BEB117000EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		07EF0FFE2BEB117400EDCA9B /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				07EF0FFD2BEB117400EDCA9B /* MoltenVK.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -470,7 +453,6 @@
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
 		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
-		07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = MoltenVK.xcframework; path = Frameworks/MoltenVK.xcframework; sourceTree = "<group>"; };
 		07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppStore.xcconfig; sourceTree = "<group>"; };
 		07F2BBE92BE83A4700FD1295 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		07F8037C2BEFE4BD000FD557 /* RetroArchAppStore.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchAppStore.entitlements; sourceTree = "<group>"; };
@@ -515,7 +497,6 @@
 				053FC26521433F2200D98D46 /* QtWidgets.framework in Frameworks */,
 				076E640C2BF30A7A00681536 /* CoreHaptics.framework in Frameworks */,
 				05422E4A2140C8DB00F09961 /* QuartzCore.framework in Frameworks */,
-				076E64102BF30AFF00681536 /* MoltenVK.xcframework in Frameworks */,
 				05422E4B2140C8DB00F09961 /* IOSurface.framework in Frameworks */,
 				05422E4C2140C8DB00F09961 /* Metal.framework in Frameworks */,
 				05422E4D2140C8DB00F09961 /* MetalKit.framework in Frameworks */,
@@ -1265,7 +1246,6 @@
 			isa = PBXGroup;
 			children = (
 				075650242C488918004C5E7E /* CloudKit.framework */,
-				07EF0FF42BEB114000EDCA9B /* MoltenVK.xcframework */,
 				070A883F2A4E7A1B003161C0 /* OpenAL.framework */,
 				0795A8C6299A095300D5035D /* CoreHaptics.framework */,
 				074695362995C03900CCB7BD /* GameController.framework */,
@@ -1382,7 +1362,6 @@
 				8D11072C0486CEB800E47090 /* Sources */,
 				8D11072E0486CEB800E47090 /* Frameworks */,
 				07B7872F29EA3B7D0088B74F /* ShellScript */,
-				07EF0FFB2BEB117000EDCA9B /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -1550,7 +1529,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\nif [ -d \"$MIST_PATH\" ]; then\n    cp \"$MIST_PATH\"/mist/*.txt \"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/\n\n    cp \"$MIST_PATH\"/libmist.dylib \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/libmist.dylib\n\n    mkdir \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist\n\n    lipo \"$MIST_PATH\"/mist/libsteam_api.dylib -remove i386 -output \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/libsteam_api.dylib\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/libsteam_api.dylib\n\n    cp \"$MIST_PATH\"/mist/mist \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/mist\nfi\n\nFILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
+			shellScript = "./make-frameworks.sh\n\nif [ -d \"$MIST_PATH\" ]; then\n    cp \"$MIST_PATH\"/mist/*.txt \"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/\n\n    cp \"$MIST_PATH\"/libmist.dylib \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$FRAMEWORKS_FOLDER_PATH\"/libmist.dylib\n\n    mkdir \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist\n\n    lipo \"$MIST_PATH\"/mist/libsteam_api.dylib -remove i386 -output \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/libsteam_api.dylib\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/libsteam_api.dylib\n\n    cp \"$MIST_PATH\"/mist/mist \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/\n    codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY}\" --timestamp -o runtime --preserve-metadata=identifier,entitlements,flags --generate-entitlement-der \"$TARGET_BUILD_DIR\"/\"$EXECUTABLE_FOLDER_PATH\"/mist/mist\nfi\n\nFILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
 		};
 		07340E8B2B4750520076B75D /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1588,7 +1567,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "FILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
+			shellScript = "./make-frameworks.sh\n\nFILTERSDIR=\"$TARGET_BUILD_DIR\"/\"$UNLOCALIZED_RESOURCES_FOLDER_PATH\"/filters\nmkdir -p \"$FILTERSDIR\"/audio\ncp -Xf ${SRCBASE}/libretro-common/audio/dsp_filters/*.dsp \"$FILTERSDIR\"/audio/\nmkdir -p \"$FILTERSDIR\"/video\ncp -Xf ${SRCBASE}/gfx/video_filters/*.filt \"$FILTERSDIR\"/video/\n";
 		};
 		07F2BBC42BE83A4700FD1295 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
