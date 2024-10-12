@@ -14,42 +14,97 @@
  */
 
 
-#ifndef _RETROARCH_ALSA
-#define _RETROARCH_ALSA
+#ifndef RETROARCH_ALSA_H
+#define RETROARCH_ALSA_H
 
-#include <boolean.h>
-#include <queues/fifo_queue.h>
-#include <rthreads/rthreads.h>
-
-/* Header file for common functions that are used by alsa and alsathread. */
+#include <stdbool.h>
+#include <stddef.h>
+#include <alsa/asoundlib.h>
 
 /**
- * Used for info that's common to all pcm devices
- * that's relevant for our purposes.
+ * @brief Common information for PCM devices.
  */
-typedef struct alsa_stream_info
-{
-   size_t buffer_size;
-   size_t period_size;
-   snd_pcm_uframes_t period_frames;
-   unsigned int frame_bits;
-   bool has_float;
-   bool can_pause;
+typedef struct alsa_stream_info {
+    size_t buffer_size;
+    size_t period_size;
+    snd_pcm_uframes_t period_frames;
+    unsigned int frame_bits;
+    bool has_float;
+    bool can_pause;
 } alsa_stream_info_t;
 
+/**
+ * @brief Initialize a PCM device.
+ * 
+ * @param[out] pcm Pointer to the PCM handle.
+ * @param[in] device Device name.
+ * @param[in] stream Stream direction (playback or capture).
+ * @param[in] rate Desired sample rate.
+ * @param[in] latency Desired latency in milliseconds.
+ * @param[in] channels Number of channels.
+ * @param[out] stream_info Pointer to store stream information.
+ * @param[out] new_rate Pointer to store the actual sample rate.
+ * @param[in] mode ALSA open mode.
+ * @return int 0 on success, negative error code on failure.
+ */
 int alsa_init_pcm(snd_pcm_t **pcm,
-   const char* device,
-   snd_pcm_stream_t stream,
-   unsigned rate,
-   unsigned latency,
-   unsigned channels,
-   alsa_stream_info_t *stream_info,
-   unsigned *new_rate,
-   int mode);
+                  const char *device,
+                  snd_pcm_stream_t stream,
+                  unsigned int rate,
+                  unsigned int latency,
+                  unsigned int channels,
+                  alsa_stream_info_t *stream_info,
+                  unsigned int *new_rate,
+                  int mode);
+
+/**
+ * @brief Free a PCM device.
+ * 
+ * @param pcm PCM handle to free.
+ */
 void alsa_free_pcm(snd_pcm_t *pcm);
+
+/**
+ * @brief Create a new ALSA device list.
+ * 
+ * @param data User data.
+ * @return void* Pointer to the new device list.
+ */
 void *alsa_device_list_new(void *data);
-struct string_list *alsa_device_list_type_new(const char* type);
+
+/**
+ * @brief Create a new ALSA device list of a specific type.
+ * 
+ * @param type Device type.
+ * @return struct string_list* List of devices.
+ */
+struct string_list *alsa_device_list_type_new(const char *type);
+
+/**
+ * @brief Free an ALSA device list.
+ * 
+ * @param data User data.
+ * @param array_list_data Array list data to free.
+ */
 void alsa_device_list_free(void *data, void *array_list_data);
+
+/**
+ * @brief Start a PCM device.
+ * 
+ * @param pcm PCM handle.
+ * @return true if successful, false otherwise.
+ */
+bool alsa_start_pcm(snd_pcm_t *pcm);
+
+/**
+ * @brief Stop a PCM device.
+ * 
+ * @param pcm PCM handle.
+ * @return true if successful, false otherwise.
+ */
+bool alsa_stop_pcm(snd_pcm_t *pcm);
+
+#endif /* RETROARCH_ALSA_H */
 
 bool alsa_start_pcm(snd_pcm_t *pcm);
 bool alsa_stop_pcm(snd_pcm_t *pcm);
