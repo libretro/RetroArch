@@ -1,42 +1,64 @@
-name: CI 3DS
+name: RetroArch 3DS CI
 
 on:
   push:
+    branches: [_main,_develop_]
   pull_request:
-  repository_dispatch:
-    types: [run_build]
-
-permissions:
-  contents: read
+    branches: [_main,_develop_]
+  workflow_dispatch:
 
 env:
+  DEVKITPRO: /opt/devkitpro
+  DEVKITARM: /opt/devkitpro/devkitARM
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container: 
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-devkitpro:latest
+      image: devkitpro/devkitarm:latest
       options: --user root
 
     steps:
     - uses: actions/checkout@v3
-    
+      with:
+        fetch-depth: 0
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y build-essential git wget libarchive-tools
+
+    - name: Setup environment
+      run: |
+        echo "$DEVKITPRO/tools/bin" >> $GITHUB_PATH
+        echo "$DEVKITARM/bin" >> $GITHUB_PATH
+
     - name: Compile Salamander
       run: |
-        make -f Makefile.ctr.salamander -j$(getconf _NPROCESSORS_ONLN) USE_CTRULIB_2=1 clean
-        make -f Makefile.ctr.salamander -j$(getconf _NPROCESSORS_ONLN) USE_CTRULIB_2=1
-    
-    - name: Compile RA
+        make -f Makefile.ctr.salamander -j$(nproc) USE_CTRULIB_2=1 clean
+        make -f Makefile.ctr.salamander -j$(nproc) USE_CTRULIB_2=1
+
+    - name: Compile RetroArch
       run: |
-        make -f Makefile.ctr -j$(getconf _NPROCESSORS_ONLN) USE_CTRULIB_2=1 clean
-        make -f Makefile.ctr -j$(getconf _NPROCESSORS_ONLN) USE_CTRULIB_2=1 HAVE_STATIC_DUMMY=1
-    - name: Get short SHA
-      id: slug
-      run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
-    
-    - uses: actions/upload-artifact@v3
+        make -f Makefile.ctr -j$(nproc) USE_CTRULIB_2=1 clean
+        make -f Makefile.ctr -j$(nproc) USE_CTRULIB_2=1 HAVE_STATIC_DUMMY=1
+
+    - name: Get version
+      id: version
+      run: echo "version=$(git describe --always --tags --dirty)" >> $GITHUB_OUTPUT
+
+    - name: Package build
+      run: |
+        mkdir -p package/3ds
+        cp retroarch_3ds.cia package/3ds/
+        cp retroarch_3ds.3dsx package/3ds/
+        cp retroarch_3ds.smdh package/3ds/
+        cd package && zip -r retroarch-3ds-${{ steps.version.outputs.version }}.zip 3ds
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
       with:
-        name: RA-3DS-dummy-${{ steps.slug.outputs.sha8 }}
-        path: |
-          retroarch_3ds.cia
+        name: retroarch-3ds-${{ steps.version.outputs.version }}
+        path: package/retroarch-3ds-${{ steps.version.outputs.version }}.zip
