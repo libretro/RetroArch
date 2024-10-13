@@ -1473,7 +1473,7 @@ bool preempt_init(void *data)
 error:
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.preemptive_frames_hide_warnings)
+   if (!settings->bools.run_ahead_hide_warnings)
       runloop_msg_queue_push(
             failed_str, 0, 2 * 60, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1683,7 +1683,7 @@ error:
    video_st->flags   |=  VIDEO_FLAG_ACTIVE;
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.preemptive_frames_hide_warnings)
+   if (!settings->bools.run_ahead_hide_warnings)
       runloop_msg_queue_push(
             failed_str, 0, 2 * 60, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

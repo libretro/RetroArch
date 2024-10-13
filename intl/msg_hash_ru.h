@@ -4411,28 +4411,12 @@ MSG_HASH(
    "Текущее ядро несовместимо с забеганием из-за отсутствия детерминированной поддержки быстрых сохранений."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Забегание для снижения задержки ввода"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Обрабатывать логику ядра на один или более кадров вперёд с последующим откатом состояния для уменьшения полученной задержки ввода."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Количество кадров забегания"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Количество кадров забегания. Вызывает нестабильность геймплея при завышении количества кадров внутриигровой задержки."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Использовать второй инстанс для забегания"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Использовать для забегания второй экземпляр ядра RetroArch. Устраняет проблемы со звуком, вызываемые загрузкой сохранений."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4443,36 +4427,12 @@ MSG_HASH(
    "Не показывать предупреждение, если включено забегание и ядро не поддерживает сохранение состояния."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Упреждающие кадры недоступны]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Текущее ядро несовместимо с кадрами упреждения из-за отсутствия детерминированной поддержки быстрых сохранений."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Обработка упреждающих кадров"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Повторная обработка логики ядра с последними событиями ввода при изменении состояния контроллера. Работает быстрее забегания, но может вызывать проблемы со звуком у ядер при загрузке быстрых сохранений."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Количество упреждающих кадров"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Количество кадров для повторной обработки. Вызывает неровность геймплея, если превышено количество кадров внутриигровой задержки."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Скрывать сообщения об упреждающих кадрах"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Не показывать предупреждение при несовместимости ядра с упреждающими кадрами."
    )
 
 /* Settings > Core */

@@ -4343,28 +4343,12 @@ MSG_HASH(
    "由于缺少确定性存档支持，当前的核心与超前运行不兼容。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "超前运行以降低延迟"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "提前运行核心逻辑一帧或多帧，然后加载计算好的状态，以降低按键延迟卡顿。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "超前运行的帧数"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "设置要超前运行的帧数。如果滞后于游戏本体的帧数将导致类似于抖动之类的游戏问题。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "使用第二实例来超前运行"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "使用第二个全能模拟器核心实例来超前运行。防止加载状态导致的音频问题。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4375,36 +4359,12 @@ MSG_HASH(
    "当使用「超前运行」功能而核心不支持即时存档时，隐藏警告信息。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[优先帧不可用]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "由于缺少确定性存档支持，当前的核心与[优先帧] 不兼容。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "运行优先帧"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "当控制器状态发生变化时使用最新输入重新运行核心逻辑。 比超前运行更快，但核心载入时可能出现音频问题。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "设定优先帧数"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "设置要重新运行的帧数。如果滞后于游戏本体的帧数将导致类似于抖动之类的游戏问题。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "隐藏优先帧警告"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "隐藏当核心与优先帧不兼容时出现的警告信息。"
    )
 
 /* Settings > Core */
