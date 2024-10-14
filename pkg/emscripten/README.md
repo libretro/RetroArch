@@ -26,6 +26,7 @@ cd libretro-fceumm
 emmake make -f Makefile.libretro platform=emscripten
 git clone https://github.com/libretro/RetroArch.git ~/retroarch/RetroArch
 cp ~/retroarch/libretro-fceumm/fceumm_libretro_emscripten.bc ~/retroarch/RetroArch/libretro_emscripten.bc
+cd ~/retroarch
 emmake make -f Makefile.emscripten LIBRETRO=fceumm -j all
 cp fceumm_libretro.{js,wasm} pkg/emscripten/libretro
 ```
