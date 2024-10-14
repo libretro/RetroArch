@@ -405,6 +405,8 @@ typedef struct video_frame_info
    unsigned crt_switch_resolution_super;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
    unsigned xmb_theme;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
@@ -837,6 +839,8 @@ typedef struct
    unsigned frame_cache_height;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
 
    float core_hz;
    float aspect_ratio;
