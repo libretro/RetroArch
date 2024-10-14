@@ -551,6 +551,19 @@ struct menu_dialog
 
 typedef struct menu_dialog menu_dialog_t;
 
+#ifdef HAVE_RUNAHEAD
+enum menu_runahead_mode
+{
+   MENU_RUNAHEAD_MODE_OFF = 0,
+   MENU_RUNAHEAD_MODE_SINGLE_INSTANCE,
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   MENU_RUNAHEAD_MODE_SECOND_INSTANCE,
+#endif
+   MENU_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   MENU_RUNAHEAD_MODE_LAST
+};
+#endif
+
 RETRO_END_DECLS
 
 #endif

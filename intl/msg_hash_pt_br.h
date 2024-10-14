@@ -3827,28 +3827,12 @@ MSG_HASH(
    "Núcleo atual é incompatível com a execução antecipada, porque não tem suporte determinístico ao jogo salvo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Execução antecipada para reduzir a latência"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Executa a lógica do núcleo um ou mais quadros adiantado e carrega o jogo salvo para reduzir a latência dos controles percebida."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Número de quadros para a execução antecipada"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "O número de quadros para a execução antecipada. Pode causar problemas de jogabilidade, como jitter, caso o número de quadros atrasados internos seja excedido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usar segunda instância para a \"Execução antecipada\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usa uma segunda instância do núcleo do RetroArch para antecipar quadros. Evita problemas de áudio devido ao estado de carregamento."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,

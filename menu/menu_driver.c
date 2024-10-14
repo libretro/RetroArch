@@ -8108,3 +8108,31 @@ size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len)
       return 0;
    return strlcpy(s, system, len);
 }
+
+#ifdef HAVE_RUNAHEAD
+/**
+ * menu_update_runahead_mode
+ *
+ * Updates the menu runahead mode to match current settings for runahead
+ * and preemptive frames.
+ */
+void menu_update_runahead_mode(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+
+   if (settings->bools.run_ahead_enabled)
+   {
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+      if (settings->bools.run_ahead_secondary_instance)
+         menu_st->runahead_mode = MENU_RUNAHEAD_MODE_SECOND_INSTANCE;
+      else
+#endif
+         menu_st->runahead_mode = MENU_RUNAHEAD_MODE_SINGLE_INSTANCE;
+   }
+   else if (settings->bools.preemptive_frames_enable)
+      menu_st->runahead_mode = MENU_RUNAHEAD_MODE_PREEMPTIVE_FRAMES;
+   else
+      menu_st->runahead_mode = MENU_RUNAHEAD_MODE_OFF;
+}
+#endif

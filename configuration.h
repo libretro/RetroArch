@@ -990,7 +990,6 @@ typedef struct settings
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
       bool preemptive_frames_enable;
-      bool preemptive_frames_hide_warnings;
       bool pause_nonactive;
       bool pause_on_disconnect;
       bool block_sram_overwrite;

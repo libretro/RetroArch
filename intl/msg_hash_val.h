@@ -2443,28 +2443,12 @@ MSG_HASH(
    "El nucli actual és imcompatible amb la reducció predictiva de latència per mancar de suport de desats ràpids determinístics."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Reducció predictiva de latència"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Executa la lògica del nucli un o més fotogrames amb antelació i després carrega un guardat ràpid per a fer decréixer la latència d'entrada percebuda."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Nombre de fotogrames a la reducció predictiva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Determina el nombre de fotogrames a executar amb antelació. Poden haver fluctuacions de senyal si el nombre de fotogrames endarrerits supera al valor intern del joc."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usa una segona instància per a la reducció predictiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usa una segona instància del nucli RetroArch per portar a terme la reducció predictiva de latència. Evita els problemes d'àudio ocasionats al carregar guardats ràpids."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,

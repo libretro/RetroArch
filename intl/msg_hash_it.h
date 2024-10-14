@@ -4319,28 +4319,12 @@ MSG_HASH(
    "Il nucleo attuale è incompatibile con il run-ahead a causa della mancanza del salvataggio di stato deterministico."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Run-Ahead - Riduzione della Latenza"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Eseguire la logica di un core per uno o più fotogrammi avanti, e dopo caricare lo stato di nuovo per ridurre il ritardo percepito in ingresso."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Run-Ahead - Numero di Frame da Anticipare"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Il numero di fotogrammi da eseguire in anticipo. Causa problemi di gameplay come il jitter se il numero di fotogrammi di ritardo interni al gioco viene superato."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Run-Ahead - Usa una Seconda Istanza"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usa una seconda instanza del core di RetroArch per l'anticipazione predittiva. Previene problemi audio dovuti al costante caricamento di uno stato di salvataggio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4351,36 +4335,12 @@ MSG_HASH(
    "Nascondi il messaggio di avviso che appare quando si usa l'Anticipazione e il core non supporta gli stati di salvataggio."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Frame Preventivi Non Disponibili]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Il core attuale è incompatibile con i fotogrammi preventivi a causa della mancanza di un sostegno di Stato deterministico di salvataggio."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Esegui Frame Preventivi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Rerun core logic con l'ultimo input quando lo stato del controller cambia. Più veloce di Run-Ahead, ma non impedisce i problemi audio core possono avere con gli stati di caricamento."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Numero di frame preventivi"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Il numero di fotogrammi da riprodurre. Causa problemi di gameplay come il jitter se il numero di fotogrammi di ritardo interni al gioco viene superato."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Nascondi Avvertenze frame preventivi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Nascondi il messaggio di avviso che appare quando un nucleo è incompatibile con i frame preventivi."
    )
 
 /* Settings > Core */

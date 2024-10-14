@@ -3231,22 +3231,27 @@ bool command_event(enum event_command cmd, void *data)
                runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
                      1, 100, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+#ifdef HAVE_MENU
+            /* Update menu */
+            menu_update_runahead_mode();
+#endif
          }
 #endif
          break;
       case CMD_EVENT_PREEMPT_TOGGLE:
 #if HAVE_RUNAHEAD
          {
-            bool old_warn   = settings->bools.preemptive_frames_hide_warnings;
+            bool old_warn   = settings->bools.run_ahead_hide_warnings;
             bool old_inited = runloop_st->preempt_data != NULL;
 
             /* Toggle with warnings shown */
-            settings->bools.preemptive_frames_hide_warnings = false;
-            settings->bools.preemptive_frames_enable        =
+            settings->bools.run_ahead_hide_warnings  = false;
+            settings->bools.preemptive_frames_enable =
                   !(settings->bools.preemptive_frames_enable);
             command_event(CMD_EVENT_PREEMPT_UPDATE, NULL);
 
-            settings->bools.preemptive_frames_hide_warnings = old_warn;
+            settings->bools.run_ahead_hide_warnings = old_warn;
 
             if (old_inited && !runloop_st->preempt_data)
                runloop_msg_queue_push(msg_hash_to_str(MSG_PREEMPT_DISABLED),
@@ -3256,7 +3261,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                char msg[128];
                snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_PREEMPT_ENABLED),
-                        settings->uints.run_ahead_frames);
+                     settings->uints.run_ahead_frames);
                runloop_msg_queue_push(
                      msg, 1, 100, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -3266,11 +3271,20 @@ bool command_event(enum event_command cmd, void *data)
             }
             else /* Failed to init */
                settings->bools.preemptive_frames_enable = false;
+
+#ifdef HAVE_MENU
+            /* Update menu */
+            menu_update_runahead_mode();
+#endif
          }
 #endif
          break;
       case CMD_EVENT_PREEMPT_UPDATE:
 #if HAVE_RUNAHEAD
+#ifdef HAVE_NETWORKING
+         if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            break;
+#endif
          preempt_deinit(runloop_st);
          preempt_init(runloop_st);
 #endif
@@ -7772,6 +7786,9 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
 
 #ifdef HAVE_RUNAHEAD
+#ifdef HAVE_MENU
+   menu_update_runahead_mode();
+#endif
 #ifdef HAVE_NETWORKING
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif

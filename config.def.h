@@ -1427,8 +1427,6 @@
 
 /* Hide warning messages when using the Run Ahead feature. */
 #define DEFAULT_RUN_AHEAD_HIDE_WARNINGS false
-/* Hide warning messages when using Preemptive Frames. */
-#define DEFAULT_PREEMPT_HIDE_WARNINGS   false
 
 /* Enable stdin/network command interface. */
 #define DEFAULT_NETWORK_CMD_ENABLE false
