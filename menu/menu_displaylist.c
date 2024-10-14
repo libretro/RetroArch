@@ -9803,27 +9803,13 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-                        PARSE_ONLY_BOOL, false) == 0)
+                        MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS,
+                        PARSE_ONLY_UINT, false) == 0)
                   count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-                        PARSE_ONLY_FLOAT, false) == 0)
+                        MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING,
+                        PARSE_ONLY_UINT, false) == 0)
                   count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
-                        PARSE_ONLY_FLOAT, false) == 0)
-                  count++;
-#if defined(RARCH_MOBILE)
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-                        PARSE_ONLY_FLOAT, false) == 0)
-                  count++;
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-                        PARSE_ONLY_FLOAT, false) == 0)
-                  count++;
-#endif
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
                         PARSE_ONLY_UINT, false) == 0)
@@ -9857,6 +9843,24 @@ unsigned menu_displaylist_build_list(
                   default:
                      break;
                }
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+#if defined(RARCH_MOBILE)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+                        PARSE_ONLY_FLOAT, false) == 0)
+                  count++;
+#endif
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,

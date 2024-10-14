@@ -242,6 +242,8 @@ typedef struct settings
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
       unsigned video_scale;
+      unsigned video_scale_integer_axis;
+      unsigned video_scale_integer_scaling;
       unsigned video_max_swapchain_images;
       unsigned video_max_frame_latency;
       unsigned video_swap_interval;
@@ -617,7 +619,6 @@ typedef struct settings
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
-      bool video_scale_integer_overscale;
       bool video_shader_enable;
       bool video_shader_watch_files;
       bool video_shader_remember_last_dir;
