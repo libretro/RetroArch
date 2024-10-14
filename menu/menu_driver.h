@@ -508,6 +508,9 @@ struct menu_state
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
+#ifdef HAVE_RUNAHEAD
+   enum menu_runahead_mode runahead_mode;
+#endif
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
@@ -747,6 +750,10 @@ bool menu_input_key_bind_set_mode(
 void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
 
 size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
+
+#ifdef HAVE_RUNAHEAD
+void menu_update_runahead_mode(void);
+#endif
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

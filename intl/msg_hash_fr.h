@@ -4347,28 +4347,12 @@ MSG_HASH(
    "Le cœur actuel est incompatible avec l'exécution en avance en raison de la non prise en charge de la sauvegarde instantanée déterministe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Exécuter en avance pour réduire la latence"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Exécute la logique du cœur une ou plusieurs images à l'avance, puis recharge l'état précédent pour réduire la latence perçue à chaque touche pressée."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Nombre d'images à éxecuter en avance"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Nombre d'images à exécuter en avance. Provoque des problèmes de jeu tels que des variations de la latence si le nombre d'images de latence interne du jeu est dépassé."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Utiliser une instance secondaire pour l'exécution en avance"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Utilise une seconde instance du cœur RetroArch pour l'exécution en avance. Empêche les problèmes audio dus au chargement de l'état précédent."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4379,36 +4363,12 @@ MSG_HASH(
    "Masque le message d'avertissement qui apparaît lors de l'utilisation de l'exécution en avance si le cœur ne prend pas en charge les sauvegardes instantanées."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Images préemptives indisponibles]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Le cœur actuel est incompatible avec les images préemptives en raison de la non prise en charge de la sauvegarde instantanée déterministe."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Exécuter des images préemptives"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Relancer la logique du cœur avec la dernière entrée lorsque l'état du contrôleur change. Plus rapide que l'exécution en avance, mais ne prévient pas les problèmes audio qui peuvent survenir avec le chargement des sauvegardes instantanées."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Nombre d'images préemptives"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Nombre d'images à relancer. Provoque des problèmes de jeu tels que des variations de la latence si le nombre d'images de latence interne du jeu est dépassé."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Masquer les avertissements des images préemptives"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Masquer le message d'avertissement qui apparaît lorsqu'un cœur est incompatible avec les images préemptives."
    )
 
 /* Settings > Core */

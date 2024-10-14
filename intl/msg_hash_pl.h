@@ -4015,24 +4015,8 @@ MSG_HASH(
 /* Settings > Latency */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Uruchomienie z wyprzedzeniem aby zmniejszyć opóźnienia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Uruchom logikę rdzenia o jedną lub więcej klatek z wyprzedzeniem, a następnie załaduj stan z powrotem, aby zmniejszyć postrzegane opóźnienie wejścia."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Liczba klatek uruchomienia z wyprzedzeniem"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Użyj drugiej instancji dla uruchomienia z wyprzedzeniem"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Użyj drugiej instancji rdzenia RetroArch do uruchomienia z wyprzedzeniem. Zapobiega problemom dźwiękowym z powodu ładowania stanu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,

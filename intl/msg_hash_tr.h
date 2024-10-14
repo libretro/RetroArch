@@ -4387,28 +4387,12 @@ MSG_HASH(
    "Mevcut çekirdek, deterministik tasarruf durumu desteğinin olmaması nedeniyle önden git ile uyumlu değil."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Gecikmeyi Azaltmak için Önden-Git"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Çekirdek mantığını bir veya daha fazla karenin önünde çalıştırın, ardından algılanan giriş gecikmesini azaltmak için durumu geri yükleyin."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Önden Gidilecek Kare Sayısı"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Önde çalıştırılacak kare sayısı. Oyunun içindeki gecikme karelerinin sayısı aşılırsa titreme gibi oyun sorunlarına neden olur."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Önden-Git için İkinci Örneği Kullan"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Önden-Git için RetroArch çekirdeğinin ikincil örneğini kullanın. Yükleme durumu nedeniyle ses sorunlarını önler."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4419,36 +4403,12 @@ MSG_HASH(
    "Önden-Git kullanırken görüntülenen uyarı mesajını gizleyin ve çekirdek durum kaydı desteklemez."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Sınırlı Kareler Kullanılamıyor]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Mevcut çekirdek, deterministik durum kaydı desteğinin olmaması nedeniyle sınırlı karelerle uyumlu değil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Sınırlı Kareleri Çalıştır"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Kontrolcü durumu değiştiğinde çekirdeği en son girdiyle yeniden çalıştırın. Önden-Git yönteminden daha hızlıdır, ancak çekirdeklerin durum kaydı yüklemelerinde olabilecek ses sorunlarını engellemez."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Sınırlı Kare Sayısı"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Yeniden çalıştırılacak kare sayısı. Oyunun içindeki sınırlı karelerin sayısı aşılırsa titreme gibi oyun sorunlarına neden olur."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Sınırlı Kareler Uyarılarını Gizle"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Bir çekirdek sınırlı karelerle uyumsuz olduğunda görüntülenen uyarı mesajını gizleyin."
    )
 
 /* Settings > Core */

@@ -4387,28 +4387,12 @@ MSG_HASH(
    "El núcleo actual no es compatible con la reducción predictiva de latencia por no tener soporte para guardados rápidos determinísticos."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Reducción predictiva de latencia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Ejecuta la lógica del núcleo uno o más fotogramas por anticipado y luego carga un guardado rápido para reducir la latencia de entrada percibida."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Fotogramas a calcular en la reducción predictiva"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Ajusta el número de fotogramas a ejecutar de forma anticipada. Puede haber distorsiones visuales si el número de fotogramas retrasados supera al valor interno del juego."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usar una segunda instancia para la reducción predictiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Utiliza una segunda instancia del núcleo RetroArch para llevar a cabo la reducción predictiva de latencia. Previene los problemas de audio causados al cargar guardados rápidos."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4419,36 +4403,12 @@ MSG_HASH(
    "Oculta el mensaje de advertencia que aparece al usar la reducción predictiva de latencia si el núcleo no es compatible con los guardados rápidos."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Sistema de fotogramas preventivos no disponible]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "El núcleo actual no es compatible con el sistema de fotogramas preventivos por no tener soporte para guardados rápidos determinísticos."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Ejecutar fotogramas preventivos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Ejecuta varias veces la lógica del núcleo con las últimas acciones de entrada en cuanto cambie el estado del mando. Este sistema es más rápido que la reducción predictiva de latencia, pero no evita los problemas de audio que podrían tener los núcleos al cargar guardados rápidos."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "N.º de fotogramas preventivos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Ajusta el número de fotogramas preventivos que se ejecutarán. Puede haber distorsiones visuales si el número de fotogramas retrasados supera al valor interno del juego."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Ocultar advertencias de fotogramas preventivos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Oculta el mensaje de advertencia que aparecerá cuando un núcleo no sea compatible con el sistema de fotogramas preventivos."
    )
 
 /* Settings > Core */

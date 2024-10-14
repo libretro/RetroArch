@@ -3967,28 +3967,12 @@ MSG_HASH(
    "不支援儲存即時存檔, 核心和超前執行不相容。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "開啟超前執行"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "執行虛擬核心邏輯超前一幀或多幀, 接收到控制器輸入時載入, 用於降低按鍵輸入延遲。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "超前執行幀數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "設定超前執行的幀數, 如果超過遊戲內設定的延遲幀數, 會導致遊戲畫面發生錯誤。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "第二實例超前執行"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "使用第二個應用程式核心實例進行超前執行, 防止載入即時存檔時產生音訊問題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -3999,36 +3983,12 @@ MSG_HASH(
    "隱藏開啟超前執行時, 核心不支援即時存檔的警告通知。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[搶占幀數無法使用]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "不支援儲存即時存檔, 核心和搶占幀數不相容。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "開啟搶占幀數"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "控制器輸入時重新執行核心邏輯, 比超前執行更快, 但核心載入時可能出現音訊的問題。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "設定搶占幀數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "設定重新執行的幀數, 如果超過遊戲內設定的延遲幀數, 會導致遊戲畫面發生錯誤。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "隱藏搶占幀數警告"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "隱藏開啟搶占幀數時, 核心不支援即時存檔的警告通知。"
    )
 
 /* Settings > Core */
