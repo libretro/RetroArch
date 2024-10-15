@@ -2522,16 +2522,8 @@ MSG_HASH(
    "Цэлалікавы маштаб"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Маштабаваць малюнак з цэлалікім інтэрвалам. Базавы памер залежыць ад геаметрыі і суадносін бакоў сістэмы. Калі не ўключана 'Прымусовая ўстаноўка' для суадносін бакоў, значэнні X/Y будуць мяняцца незалежна адзін ад аднаго."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Павялічванне цэлалікавага маштабу"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Рабіць акругленне пры цэлалікім маштабаванні ў бок большага, а не меншага цэлага ліку."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Разумнае"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -4418,6 +4410,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Колькасць кадраў забягання. Выклікае нестабільнасць геймплэя пры завышэнні колькасці кадраў унутрагульнявой затрымкі."
    )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Хаваць папярэджанні забягання"

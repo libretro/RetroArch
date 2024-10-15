@@ -2186,18 +2186,6 @@ MSG_HASH(
    "Heltalsskala"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Skala video endast i heltalssteg. Basstorleken beror på systemrapporterad geometri och bildformat. Om 'Tvinga Bildformat' inte är inställt, kommer X/Y att heltalsskalas oberoende av varandra."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Heltalsöverskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Tvinga heltalsskalning att avrunda uppåt till nästa större heltal istället för att avrunda nedåt."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Bildformat"
    )
@@ -3714,6 +3702,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Antal bildrutor att köra före"
    )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Dölj Run-Ahead Varningar"
