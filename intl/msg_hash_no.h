@@ -1870,18 +1870,6 @@ MSG_HASH(
    "Heltall skalering"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Skalerer video i bare heltallsteg. Basestørrelsen er avhengig av systemrapportert geometri og størrelsesforhold. Hvis \"tving størrelsesforhold\" er ikke på vil X/Y helltallsskalert uavhengig."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Opprunding av heltallskalering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Tving heltallskalering til å runde opp til det neste heltallet i stedet for å runde ned."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Størrelsesforhold"
    )
@@ -2338,6 +2326,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
