@@ -2308,7 +2308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_STATE,
-   "loadstate"
+   "load_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_LOCATION_ALLOW,
@@ -3553,6 +3553,10 @@ MSG_HASH(
    "savestate_max_keep"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,
+   "replay_auto_index"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REPLAY_MAX_KEEP,
    "replay_max_keep"
    )
@@ -3606,7 +3610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_STATE,
-   "savestate"
+   "save_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RECORD_REPLAY,
@@ -4020,11 +4024,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-   "undoloadstate"
+   "undo_load_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-   "undosavestate"
+   "undo_save_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UPDATER_SETTINGS,
@@ -4481,6 +4485,10 @@ MSG_HASH(
    "video_autoswitch_refresh_rate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "video_autoswitch_pal_threshold"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ROTATION,
    "video_rotation"
    )
@@ -4497,8 +4505,12 @@ MSG_HASH(
    "video_scale_integer"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "video_scale_integer_overscale"
+   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "video_scale_integer_axis"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "video_scale_integer_scaling"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SETTINGS,
@@ -6151,6 +6163,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_PLAYLIST_PORTABLE_PATHS,
    "playlist_portable_paths"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,
+   "playlist_use_filename"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,
+   "playlist_allow_non_png"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
