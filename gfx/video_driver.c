@@ -2367,10 +2367,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
-      viewport_bias_x = settings->floats.video_viewport_bias_portrait_x;
-      viewport_bias_y = settings->floats.video_viewport_bias_portrait_y;
+      viewport_bias_x              = settings->floats.video_viewport_bias_portrait_x;
+      viewport_bias_y              = settings->floats.video_viewport_bias_portrait_y;
    }
 #endif
+
+   content_width  = (content_width  == 4) ? video_st->av_info.geometry.base_width  : content_width;
+   content_height = (content_height == 4) ? video_st->av_info.geometry.base_height : content_height;
 
    if (!ydown)
       viewport_bias_y = 1.0 - viewport_bias_y;
@@ -2389,7 +2392,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    if (content_width < 2 || content_height < 2)
       return;
 
-   content_width  = (content_width > width) ? width : content_width;
+   content_width  = (content_width  > width)  ? width  : content_width;
    content_height = (content_height > height) ? height : content_height;
 
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
@@ -2481,7 +2484,10 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             uint8_t i                 = 0;
 
             /* Reset width to exact width */
-            content_width = (rotation % 2) ? video_st->frame_cache_height : video_st->frame_cache_width;
+            content_width = (rotation % 2)
+                  ? ((video_st->frame_cache_height == 4) ? video_st->av_info.geometry.base_height : video_st->frame_cache_height)
+                  : ((video_st->frame_cache_width  == 4) ? video_st->av_info.geometry.base_width  : video_st->frame_cache_width);
+
             overscale_w   = (width / content_width) + !!(width % content_width);
 
             /* Populate the ratios */
