@@ -10376,6 +10376,10 @@ static void materialui_list_insert(
       gfx_thumbnail_reset(&node->thumbnails.secondary);
    }
 
+   /* Never show icons in certain lists */
+   if (string_is_equal(fullpath, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS)))
+      menu_materialui_icons_enable = false;
+
    if (menu_materialui_icons_enable)
    {
       switch (type)
@@ -10389,9 +10393,6 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_DISK;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
-         case FILE_TYPE_DOWNLOAD_CORE:
-         case FILE_TYPE_CORE:
-         case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
          case MENU_SETTING_ACTION_CORE_LOCK:
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
          case MENU_CONTENTLESS_CORES_TAB:
