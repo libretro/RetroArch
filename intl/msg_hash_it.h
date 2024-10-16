@@ -2462,6 +2462,34 @@ MSG_HASH(
    "Scala Intera"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Scala il video solo con passaggi interi. La dimensione di base dipende dalla geometria e dal rapporto di aspetto riportati dal nucleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Asse A Scala Intera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Scala solo altezza, o entrambi altezza e larghezza. Metà passi si applicano alle sorgenti ad alta risoluzione."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Scala Intera"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Arrotonda o fino al prossimo intero. 'Smart' scende in sottoscala quando l'immagine viene ritagliata troppo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Sottodimensiona"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Sovradimensiona"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "Intelligente"
    )

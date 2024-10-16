@@ -2526,6 +2526,34 @@ MSG_HASH(
    "정수 단위 화면 크기"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "화면 크기를 정수 단위 배율로 조정합니다. 기본 크기는 코어가 보고한 크기와 종횡비에 따라 결정됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "정수 단위 조정 기준 축"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "화면 크기를 조정할 때 기준을 높이로 할지, 높이와 너비 모두로 할지 설정합니다. 고해상도 영상에는 절반 단위 조정도 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "정수 단위 조정 방식"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "정수 배율을 올림으로 계산할지 버림으로 계산할지 설정합니다. '스마트'로 설정하면 화면이 너무 많이 잘려 나갈 것 같을 때는 버림으로 계산합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "버림"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "올림"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "스마트"
    )
@@ -4415,6 +4443,10 @@ MSG_HASH(
    "이 코어는 결정식 상태저장을 지원하지 않아 미리 실행과 호환되지 않습니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "미리 실행"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "미리 실행할 프레임 수"
    )
@@ -4422,8 +4454,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "먼저 실행할 프레임 수를 설정합니다. 게임 자체의 지연 프레임을 넘어설 경우 화면이 떨리는 등 게임플레이에 문제가 생길 수 있습니다."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "코어 연산을 미리 실행하여 지연시간을 줄입니다. 단일 인스턴스 모드는 미래의 프레임까지 실행한 뒤 현재 상태로 되돌아옵니다. 이중 인스턴스 모드는 영상만 생성하는 두 번째 코어 인스턴스에서 미래의 프레임을 실행하여 만일의 오디오 문제를 우회합니다. 선제 프레임 모드는 필요한 경우 과거의 프레임을 새로운 입력으로 다시 실행하며 효율적입니다."
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "코어 연산을 미리 실행하여 지연시간을 줄입니다. 단일 인스턴스 모드는 미래의 프레임까지 실행한 뒤 현재 상태로 되돌아옵니다. 선제 프레임 모드는 필요한 경우 과거의 프레임을 새로운 입력으로 다시 실행하며 효율적입니다."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "단일 인스턴스 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "이중 인스턴스 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "선제 프레임 모드"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "미리 실행 경고 숨김"
