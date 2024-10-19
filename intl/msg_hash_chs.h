@@ -6822,6 +6822,10 @@ MSG_HASH(
    "显示「用户」"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "游戏列表图标"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
    "要显示的游戏列表图标缩略图类型。"
    )
@@ -7316,6 +7320,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "东南亚"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "东亚(春川市, 韩国)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -7814,6 +7822,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "如果启用，将通过条目文件名而不是其标签找到缩略图。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "允许所有支持的图像类型用于缩略图"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
@@ -10029,6 +10041,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    "Retro成就服务器无法访问。将在应用程序关闭之前重试。"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "所有待处理请求已成功同步到RetroAchievements。"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
@@ -14264,6 +14280,14 @@ MSG_HASH(
    "已提交 %s 为 %s" /* Submitted [value] for [leaderboard name] */
    )
 MSG_HASH(
+   MSG_LEADERBOARD_RANK,
+   "排名：%d" /* Rank: [leaderboard rank] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "最佳: %s" /* Best: [value] */
+   )
+MSG_HASH(
    MSG_CHANGE_THUMBNAIL_TYPE,
    "更改缩略图类型"
    )
@@ -14644,6 +14668,10 @@ MSG_HASH(
    "接收主机端报文失败."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: 以 \"%s \" 登录."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "您必须暂停或禁用硬核心模式才能加载状态。"
    )
@@ -14666,6 +14694,26 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
    "成就硬核模式已启用，状态存储和回溯被禁用。"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "此游戏没有成就。"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "本次会话已激活所有 %d 个成就"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "已激活 %d 个非官方成就"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "你已解锁 %d 个成就中的 %d 个"
+)
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "硬核模式已暂停。不允许设置手动视频帧延迟。"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
