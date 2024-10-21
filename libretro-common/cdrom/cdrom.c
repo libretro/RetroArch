@@ -384,7 +384,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    size_t copied_bytes = 0;
    bool read_cd = false;
 
-   if (cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
+   if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
 
    if (cmd[0] == 0xBE || cmd[0] == 0xB9)
