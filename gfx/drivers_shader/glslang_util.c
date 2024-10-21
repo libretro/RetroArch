@@ -182,11 +182,6 @@ bool glslang_read_shader_file(const char *path,
    snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
    if (!string_list_append(output, tmp, attr))
       goto error;
-
-   
-   /* Add defines about supported retroarch features */
-   if (!string_list_append(output, "#define _RARCH_SUPPORTS_INCLUDE_OPTIONAL", attr))
-      goto error;
    
    /* Loop through lines of file */
    for (i = root_file ? 1 : 0; i < lines.size; i++)
