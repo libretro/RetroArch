@@ -372,7 +372,7 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
 }
 #endif
 
-static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char cmd[static CDROM_MIN_BUFSIZE], size_t cmd_len, size_t skip)
+static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
    unsigned char *xfer_buf = NULL;
    unsigned char *xfer_buf_pos = xfer_buf;
@@ -384,7 +384,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    size_t copied_bytes = 0;
    bool read_cd = false;
 
-   if (cmd_len == 0)
+   if (cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
 
    if (cmd[0] == 0xBE || cmd[0] == 0xB9)
