@@ -98,7 +98,7 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 }
 
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file)
+      struct string_list *output, bool root_file, bool is_optional)
 {
    size_t i;
    char tmp[PATH_MAX_LENGTH];
@@ -124,7 +124,8 @@ bool glslang_read_shader_file(const char *path,
    /* Read file contents */
    if (!filestream_read_file(path, (void**)&buf, &buf_len))
    {
-      RARCH_ERR("[slang]: Failed to open shader file: \"%s\".\n", path);
+      if (!is_optional)
+         RARCH_ERR("[slang]: Failed to open shader file: \"%s\".\n", path);
       return false;
    }
 
@@ -181,15 +182,17 @@ bool glslang_read_shader_file(const char *path,
    snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
    if (!string_list_append(output, tmp, attr))
       goto error;
-
+   
    /* Loop through lines of file */
    for (i = root_file ? 1 : 0; i < lines.size; i++)
    {
       const char *line   = lines.elems[i].data;
-
+   
       /* Check for 'include' statements */
-      if (!strncmp("#include ", line, STRLEN_CONST("#include ")))
+      bool include_optional = !strncmp("#pragma include_optional ", line, STRLEN_CONST("#pragma include_optional "));
+      if ( !strncmp("#include ", line, STRLEN_CONST("#include ")) || include_optional )
       {
+
          char include_file[PATH_MAX_LENGTH];
          char include_path[PATH_MAX_LENGTH];
 
@@ -209,8 +212,12 @@ bool glslang_read_shader_file(const char *path,
                include_path, path, include_file, sizeof(include_path));
 
          /* Parse include file */
-         if (!glslang_read_shader_file(include_path, output, false))
-            goto error;
+         if (!glslang_read_shader_file(include_path, output, false, include_optional)) {
+            if (include_optional)
+               RARCH_LOG("[slang]: Optional include not found \"%s\".\n", include_path);
+            else
+               goto error;
+         }
 
          /* After including a file, use line directive
           * to pull it back to current file. */
