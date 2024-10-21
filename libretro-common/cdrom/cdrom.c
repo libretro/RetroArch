@@ -62,6 +62,7 @@
 #define CDROM_CUE_TRACK_BYTES 107
 #define CDROM_MAX_SENSE_BYTES 16
 #define CDROM_MAX_RETRIES 10
+#define CDROM_MIN_BUFSIZE 9
 
 typedef enum
 {
@@ -383,7 +384,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    size_t copied_bytes = 0;
    bool read_cd = false;
 
-   if (!cmd || cmd_len == 0)
+   if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
 
    if (cmd[0] == 0xBE || cmd[0] == 0xB9)
@@ -665,7 +666,7 @@ static const char* get_profile(unsigned short profile)
 
 int cdrom_get_sense(libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len)
 {
-   unsigned char cdb[] = {0x3, 0, 0, 0, 0xFC, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x3, 0, 0, 0, 0xFC, 0};
    unsigned char buf[0xFC] = {0};
    int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
 
@@ -1161,7 +1162,7 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int len, bool *is_cdrom)
 {
    /* MMC Command: INQUIRY */
-   unsigned char cdb[] = {0x12, 0, 0, 0, 0xff, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x12, 0, 0, 0, 0xff, 0};
    unsigned char buf[256] = {0};
    int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
    bool cdrom = false;
@@ -1248,7 +1249,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t 
 int cdrom_stop(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
-   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x0, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1B, 0, 0, 0, 0x0, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
@@ -1265,7 +1266,7 @@ int cdrom_stop(libretro_vfs_implementation_file *stream)
 int cdrom_unlock(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: PREVENT ALLOW MEDIUM REMOVAL */
-   unsigned char cdb[] = {0x1E, 0, 0, 0, 0x2, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1E, 0, 0, 0, 0x2, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
@@ -1294,7 +1295,7 @@ int cdrom_unlock(libretro_vfs_implementation_file *stream)
 int cdrom_open_tray(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
-   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x2, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1B, 0, 0, 0, 0x2, 0};
    int rv;
 
    cdrom_unlock(stream);
@@ -1316,7 +1317,7 @@ int cdrom_open_tray(libretro_vfs_implementation_file *stream)
 int cdrom_close_tray(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
-   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x3, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1B, 0, 0, 0, 0x3, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
@@ -1495,7 +1496,7 @@ struct string_list* cdrom_get_available_drives(void)
 bool cdrom_is_media_inserted(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: TEST UNIT READY */
-   unsigned char cdb[] = {0x00, 0, 0, 0, 0, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x00, 0, 0, 0, 0, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
