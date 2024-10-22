@@ -1538,6 +1538,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d11->pass[i].frame_count,     /* FrameCount */
             &d3d11->pass[i].frame_direction, /* FrameDirection */
             &d3d11->pass[i].rotation,        /* Rotation */
+            &d3d11->pass[i].core_aspect,     /* CoreAspect */
             &d3d11->pass[i].total_subframes, /* TotalSubFrames */
             &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
          }
@@ -3093,6 +3094,8 @@ static bool d3d11_gfx_frame(
 #endif
 
          d3d11->pass[i].rotation = retroarch_get_rotation();
+
+         d3d11->pass[i].core_aspect = video_driver_get_core_aspect();
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */

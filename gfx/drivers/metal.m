@@ -1206,6 +1206,7 @@ typedef struct MTLALIGN(16)
       uint32_t frame_count;
       int32_t frame_direction;
       uint32_t rotation;
+      float_t core_aspect;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -1579,6 +1580,8 @@ typedef struct MTLALIGN(16)
 
       _engine.pass[i].rotation = retroarch_get_rotation();
 
+      _engine.pass[i].core_aspect = video_driver_get_core_aspect();;
+
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          id<MTLBuffer> buffer      = _engine.pass[i].buffers[j];
@@ -1836,6 +1839,7 @@ typedef struct MTLALIGN(16)
                &_engine.pass[i].frame_count,     /* FrameCount */
                &_engine.pass[i].frame_direction, /* FrameDirection */
                &_engine.pass[i].rotation,        /* Rotation */
+               &_engine.pass[i].core_aspect,     /* CoreAspect */
             }
          };
          /* clang-format on */

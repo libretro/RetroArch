@@ -2744,6 +2744,8 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
 
+   gl3_filter_chain_set_core_aspect(gl->filter_chain, video_driver_get_core_aspect());
+
    /* Sub-frame info for multiframe shaders (per real content frame).
       Should always be 1 for non-use of subframes*/
    if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))

@@ -51,6 +51,7 @@ static const char *semantic_uniform_names[] = {
    "FrameCount",
    "FrameDirection",
    "Rotation",
+   "CoreAspect",
    "TotalSubFrames",
    "CurrentSubFrame",
 };
@@ -268,6 +269,10 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
          /* uint */
       case SLANG_SEMANTIC_ROTATION:
          return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_CORE_ASPECT:
+         return type.basetype == spirv_cross::SPIRType::Float
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
          /* float */

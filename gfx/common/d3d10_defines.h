@@ -218,6 +218,8 @@ typedef struct
       uint32_t                   rotation;
       uint32_t                   total_subframes;
       uint32_t                   current_subframe;
+      float                   core_aspect;
+
    } pass[GFX_MAX_SHADERS];
 
    struct video_shader* shader_preset;
