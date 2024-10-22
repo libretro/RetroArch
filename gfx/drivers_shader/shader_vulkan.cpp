@@ -1446,7 +1446,7 @@ void vulkan_filter_chain::set_rotation(uint32_t rot)
 }
 
 
-void vulkan_filter_chain::set_core_aspect(float coreaspect)
+void vulkan_filter_chain::set_core_aspect(float_t coreaspect)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
