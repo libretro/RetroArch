@@ -500,6 +500,10 @@ MSG_HASH(
    "圖形介面需求"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "核心路徑"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "核心其他支援"
    )
@@ -522,6 +526,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "韌體"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "※ 注意: 核心設定「路徑讀取系統」已開啟。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "※ 檢視: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1202,11 +1214,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
-   "嘗試將雲端設定檔、記憶存檔與狀態同步到雲端儲存供應商。"
+   "嘗試將設定檔、記憶存檔和即時存檔, 同步到雲端儲存供應商。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "同步: 記憶存檔/即時存檔"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "同步: 設定檔"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
    "同步: 預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "同步: 系統檔案"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -1514,11 +1538,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
-   "直接輸入控制器驅動。"
+   "DirectInput 控制器驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
-   "低階人類使用者介面裝置驅動。"
+   "低階的人機介面裝置驅動程式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
@@ -2467,7 +2491,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "設定可縮放高度或同時縮放高度和寬度, 高度一半或寬度一半適用於高解析度。"
+   "設定可以使用高度或同時使用高度和寬度, 高度加半高或寬度加半寬適用於高解析度。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -2475,7 +2499,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "設定可<最大化>或<最小化>調整比例, 設定<智慧型>時當影像過於放大會自動降低比例。"
+   "設定可以使用<最大化>或<最小化>調整比例, 設定<智能型>時影像過於放大會自動降低比例。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
@@ -2573,7 +2597,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
-   "設定影像水平位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
+   "設定影像垂直位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
@@ -2598,7 +2622,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
-   "設定影像水平位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
+   "設定影像垂直位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
    )
 #endif
 MSG_HASH(
@@ -3423,7 +3447,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "設定[連發鍵]模式, 設定<單次>時按住要連發的按鍵後按一下連發鍵。"
+   "設定[連發鍵]模式, 設定<組合>時按住要連發的按鍵後按一下連發鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -3476,6 +3500,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "連發設定"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "變更連發的設定。\n注意: 需要在「設定/輸入/控制器/連接埠#控制器」選項中, 設定輸入裝置對應的「連發鍵」按鍵。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -3633,6 +3661,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "設定組合鍵的觸發識別延遲(幀數), 在延遲時間內可當作基本按鍵使用, 用於控制器基本按鍵設定為組合鍵。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "組合鍵合併裝置類型"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "開啟時鍵盤和控制器任一裝置設定「組合鍵 (按住)」, 所有裝置設定的快捷鍵皆須先按住組合鍵才能識別。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -5412,6 +5448,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
    "配置核心連接埠用來接收光線槍的輸入。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   "任意"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
@@ -6739,7 +6779,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "設定選單的背景圖片, 設定此選項和動態壁紙將覆蓋選單主題配色。"
+   "設定選單的背景圖片, 設定此選項和動態壁紙將覆蓋選單色彩主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
@@ -6763,7 +6803,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   "支援時套用作業系統的主題配色, 關閉時可自訂選單主題配色。"
+   "支援時套用作業系統的主題配色, 關閉時可自訂選單色彩主題。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
@@ -6811,7 +6851,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "選單頁面切換時記住目前選項的位置, RGUI主題僅支援列表頁面。"
+   "選單頁面切換時記住目前選項的位置, RGUI主題僅支援設定選項和列表頁面。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -10747,6 +10787,10 @@ MSG_HASH(
    "開啟時調整選單充分利用螢幕的空間。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+   "線性濾波器"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    "開啟時選單輕微模糊用於平滑邊緣。"
    )
@@ -10767,6 +10811,10 @@ MSG_HASH(
    "設定寬比例可增加水平解析度。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   "鎖定寬高比"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    "鎖定寬高比, 變更設定時需要重新啟動。"
    )
@@ -10777,6 +10825,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
    "設定選單主題的配色, 設定<自訂>時可自訂選單預設主題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   "透明度"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
@@ -11258,7 +11310,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "選單主題配色"
+   "選單色彩主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+   "設定選單使用的色彩主題, 設定<背景圖片>時預設使用「選單圖示主題」的背景圖片。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
@@ -11484,7 +11540,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "自訂選單主題配色"
+   "自訂選單色彩主題"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
@@ -11521,6 +11577,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
    "德古拉紫"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "硒元素灰"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
@@ -11620,6 +11680,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
    "色彩主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   "設定選單使用的色彩主題。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   "轉場動畫"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,

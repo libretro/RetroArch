@@ -2526,6 +2526,14 @@ MSG_HASH(
    "Вось цэлалікавага маштабу"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Цэлалікавае маштабаванне"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Акругліць у меншы або большы бок да наступнага цэлага ліку. 'Разумна' зніжае да меншага маштабу пры празмернай абрэзцы выявы."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "Разумнае"
    )
