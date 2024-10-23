@@ -142,6 +142,9 @@ void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *chain,
 void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *chain,
       float coreaspect);
 
+void vulkan_filter_chain_set_core_aspect_rot(vulkan_filter_chain_t *chain,
+      float coreaspectrot);
+
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);
 void vulkan_filter_chain_build_viewport_pass(vulkan_filter_chain_t *chain,

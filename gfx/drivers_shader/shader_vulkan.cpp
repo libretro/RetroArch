@@ -255,6 +255,7 @@ class Pass
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_core_aspect(float coreaspect) { core_aspect = coreaspect; }
+      void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
       glslang_filter_chain_filter get_source_filter() const {
@@ -345,7 +346,8 @@ class Pass
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
       uint32_t rotation           = 0;
-      float   core_aspect         = 0;
+      float core_aspect           = 0;
+      float core_aspect_rot       = 0;
       unsigned frame_count_period = 0;
       unsigned pass_number        = 0;
       uint32_t total_subframes    = 1;
@@ -415,6 +417,7 @@ struct vulkan_filter_chain
       void set_frame_direction(int32_t direction);
       void set_rotation(uint32_t rot);
       void set_core_aspect(float coreaspect);
+      void set_core_aspect_rot(float coreaspect);
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(std::unique_ptr<StaticTexture> texture);
@@ -1453,6 +1456,13 @@ void vulkan_filter_chain::set_core_aspect(float coreaspect)
       passes[i]->set_core_aspect(coreaspect);
 }
 
+void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect_rot(coreaspectrot);
+}
+
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
    passes[pass]->set_name(name);
@@ -2372,6 +2382,9 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
                       core_aspect);
 
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      core_aspect_rot);
+
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
@@ -3223,6 +3236,12 @@ void vulkan_filter_chain_set_core_aspect(
    chain->set_core_aspect(coreaspect);
 }
 
+void vulkan_filter_chain_set_core_aspect_rot(
+      vulkan_filter_chain_t *chain,
+      float coreaspectrot)
+{
+   chain->set_core_aspect_rot(coreaspectrot);
+}
 
 void vulkan_filter_chain_set_pass_name(
       vulkan_filter_chain_t *chain,

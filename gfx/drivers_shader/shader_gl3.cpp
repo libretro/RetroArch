@@ -762,6 +762,11 @@ public:
       core_aspect = coreaspect;
    }
 
+   void set_core_aspect_rot(float coreaspectrot)
+   {
+      core_aspect_rot = coreaspectrot;
+   }
+
    void set_shader_subframes(uint32_t tot_subframes)
    {
       total_subframes = tot_subframes;
@@ -880,6 +885,7 @@ private:
    int32_t frame_direction = 1;
    uint32_t rotation = 0;
    float core_aspect = 0;
+   float core_aspect_rot = 0;
    unsigned pass_number = 0;
    uint32_t total_subframes = 1;
    uint32_t current_subframe = 1;
@@ -1089,6 +1095,7 @@ bool Pass::init_pipeline()
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
    reflect_parameter("CoreAspect", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
+   reflect_parameter("CoreAspectRot", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
    reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
    reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
 
@@ -1559,6 +1566,9 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
                       core_aspect);
 
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      core_aspect_rot);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
                       total_subframes);
    build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
@@ -1809,6 +1819,7 @@ public:
    void set_frame_direction(int32_t direction);
    void set_rotation(uint32_t rot);
    void set_core_aspect(float coreaspect);
+   void set_core_aspect_rot(float coreaspectrot);
    void set_shader_subframes(uint32_t tot_subframes);
    void set_current_shader_subframe(uint32_t cur_subframe);
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
@@ -2311,6 +2322,14 @@ void gl3_filter_chain::set_core_aspect(float coreaspect)
       passes[i]->set_core_aspect(coreaspect);
 }
 
+void gl3_filter_chain::set_core_aspect_rot(float coreaspectrot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect_rot(coreaspectrot);
+}
+
+
 void gl3_filter_chain::set_shader_subframes(uint32_t tot_subframes)
 {
    unsigned i;
@@ -2759,6 +2778,13 @@ void gl3_filter_chain_set_core_aspect(
       float coreaspect)
 {
    chain->set_core_aspect(coreaspect);
+}
+
+void gl3_filter_chain_set_core_aspect_rot(
+      gl3_filter_chain_t *chain,
+      float coreaspectrot)
+{
+   chain->set_core_aspect_rot(coreaspectrot);
 }
 
 void gl3_filter_chain_set_shader_subframes(

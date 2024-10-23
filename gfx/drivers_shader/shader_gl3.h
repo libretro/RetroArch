@@ -123,6 +123,10 @@ void gl3_filter_chain_set_core_aspect(
       gl3_filter_chain_t *chain,
       float coreaspect);
 
+void gl3_filter_chain_set_core_aspect_rot(
+      gl3_filter_chain_t *chain,
+      float coreaspectrot);
+
 void gl3_filter_chain_set_shader_subframes(
       gl3_filter_chain_t *chain,
       uint32_t tot_subframes);

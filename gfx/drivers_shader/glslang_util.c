@@ -184,7 +184,7 @@ bool glslang_read_shader_file(const char *path,
       goto error;
 
    /* Add defines about supported retroarch features */
-   if (!string_list_append(output, "#define _RARCH_HAS_COREASPECT_UNIFORM", attr))
+   if (!string_list_append(output, "#define _RARCH_HAS_COREASPECT_UNIFORMS", attr))
       goto error;
 
    /* Loop through lines of file */
