@@ -1725,7 +1725,7 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
 
       if (string_is_equal(id, "CoreAspect"))
       {
-         *dst        = CoreAspect;
+         *dst        = core_aspect;
          continue;
       }
 
