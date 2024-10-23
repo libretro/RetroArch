@@ -1270,10 +1270,10 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
    GLenum type            = GL_UNSIGNED_BYTE;
 #endif
    float vertices[]       = {
-	   -1.0f, -1.0f, 0.0f,
-	   -1.0f,  1.0f, 0.0f,
-	    1.0f, -1.0f, 0.0f,
-	    1.0f,  1.0f, 0.0f,
+      -1.0f, -1.0f, 0.0f,
+      -1.0f,  1.0f, 0.0f,
+       1.0f, -1.0f, 0.0f,
+       1.0f,  1.0f, 0.0f,
    };
 
    float colors[]         = {
@@ -1408,6 +1408,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
 static void gl1_readback(gl1_t *gl1,
       unsigned alignment, unsigned fmt, unsigned type,
+      unsigned video_width, unsigned video_height,
       void *src)
 {
 #ifndef VITA
@@ -1415,8 +1416,12 @@ static void gl1_readback(gl1_t *gl1,
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
 #endif
-   glReadPixels(gl1->vp.x, gl1->vp.y,
-         gl1->vp.width, gl1->vp.height,
+
+   glReadPixels(
+         (gl1->vp.x > 0) ? gl1->vp.x : 0,
+         (gl1->vp.y > 0) ? gl1->vp.y : 0,
+         (gl1->vp.width  > video_width)  ? video_width  : gl1->vp.width,
+         (gl1->vp.height > video_height) ? video_height : gl1->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
@@ -1656,6 +1661,7 @@ static bool gl1_frame(void *data, const void *frame,
 #else
             GL_UNSIGNED_BYTE,
 #endif
+            video_width, video_height,
             gl1->readback_buffer_screenshot);
 
 

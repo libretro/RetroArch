@@ -66,8 +66,8 @@ void d3d_matrix_ortho_off_center_lh(void *_pout,
    pout->m[0][0] = 2.0f / (r - l);
    pout->m[1][1] = 2.0f / (t - b);
    pout->m[2][2] = 1.0f / (zf -zn);
-   pout->m[3][0] = -1.0f -2.0f *l / (r - l);
-   pout->m[3][1] = 1.0f + 2.0f * t / (b - t);
+   pout->m[3][0] = -1.0f - 2.0f * l / (r - l);
+   pout->m[3][1] =  1.0f + 2.0f * t / (b - t);
    pout->m[3][2] = zn / (zn -zf);
 }
 
