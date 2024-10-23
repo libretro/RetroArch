@@ -338,6 +338,12 @@ int action_scan_file(const char *path,
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
+int file_load_with_detect_core_wrapper(
+      enum msg_hash_enums enum_label_idx,
+      size_t idx, size_t entry_idx,
+      const char *path, const char *label,
+      unsigned type, bool is_carchive);
+
 void cb_generic_download(retro_task_t *task,
       void *task_data,
       void *user_data, const char *err);
