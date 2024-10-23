@@ -33,12 +33,12 @@ typedef void (*cloud_sync_complete_handler_t)(void *user_data, const char *path,
 
 typedef struct cloud_sync_driver
 {
-   bool (*sync_begin)(cloud_sync_complete_handler_t cb, void *user_data);
-   bool (*sync_end)(cloud_sync_complete_handler_t cb, void *user_data);
+   bool (*cloud_sync_begin)(cloud_sync_complete_handler_t cb, void *user_data);
+   bool (*cloud_sync_end)(cloud_sync_complete_handler_t cb, void *user_data);
 
-   bool (*read)(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data);
-   bool (*update)(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data);
-   bool (*free)(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
+   bool (*cloud_sync_read)(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data);
+   bool (*cloud_sync_update)(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data);
+   bool (*cloud_sync_free)(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
 
    const char *ident;
 } cloud_sync_driver_t;
