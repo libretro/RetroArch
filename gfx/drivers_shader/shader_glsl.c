@@ -488,7 +488,8 @@ static bool gl_glsl_compile_program(
       if (!gl_glsl_compile_shader(
                glsl,
                program->vprg,
-               "#define VERTEX\n#define PARAMETER_UNIFORM\n", program_info->vertex))
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _RARCH_HAS_COREASPECT_UNIFORM\n",
+               program_info->vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
          goto error;
@@ -502,7 +503,7 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL]: Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n",
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _RARCH_HAS_COREASPECT_UNIFORM\n",
                program_info->fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", idx);
@@ -1362,7 +1363,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1i(uni->rotation, retroarch_get_rotation());
 
   if (uni->core_aspect >= 0)
-      glUniform1i(uni->core_aspect, video_driver_get_core_aspect());
+      glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
 
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
