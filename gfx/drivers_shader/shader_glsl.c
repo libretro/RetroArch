@@ -489,7 +489,7 @@ static bool gl_glsl_compile_program(
       if (!gl_glsl_compile_shader(
                glsl,
                program->vprg,
-               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _RARCH_HAS_COREASPECT_UNIFORMS\n",
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_COREASPECT_UNIFORMS\n",
                program_info->vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
@@ -504,7 +504,7 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL]: Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _RARCH_HAS_COREASPECT_UNIFORMS\n",
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_COREASPECT_UNIFORMS\n",
                program_info->fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", idx);
