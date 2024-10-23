@@ -1539,7 +1539,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d11->pass[i].frame_direction, /* FrameDirection */
             &d3d11->pass[i].rotation,        /* Rotation */
             &d3d11->pass[i].core_aspect,     /* CoreAspect */
-            &d3d10->pass[i].core_aspect_rot, /* CoreAspectRot */
+            &d3d11->pass[i].core_aspect_rot, /* CoreAspectRot */
             &d3d11->pass[i].total_subframes, /* TotalSubFrames */
             &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
          }
