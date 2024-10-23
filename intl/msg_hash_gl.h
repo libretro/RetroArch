@@ -2486,6 +2486,34 @@ MSG_HASH(
    "Escala enteira"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Escalar o vídeo só en pasos enteiros. O tamaño base depende da xeometría e da relación de aspecto informadas polo núcleo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Eixo de escala enteira"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Escalar só a altura, ou tanto a altura como o ancho. Os pasos medios aplícanse a fontes de alta resolución."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Escalado de escala enteira"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Redondear cara abaixo ou arriba ao próximo enteiro. 'Intelixente' reduce a escala cando a imaxe está recortada en exceso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Subescala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Sobreescala"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "Intelixente"
    )
@@ -2692,8 +2720,28 @@ MSG_HASH(
    "VSync está habilitado ata que o rendemento cae por debaixo da taxa de actualización obxectivo. Pode minimizar o tartamudeo cando o rendemento cae por debaixo do tempo real e ser máis eficiente enerxéticamente."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "Retraso de fotogramas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   "Reduce a latencia ao custo dun maior risco de entrecortamento do vídeo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   "Establece cantos milisegundos debe durmir antes de executar o núcleo despois da presentación do vídeo. Reduce a latencia ao custo dun maior risco de entrecortamento.\nOs valores de 20 ou máis considéranse porcentaxes do tempo do fotograma."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Retraso de fotograma automático"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   "Axustar dinámicamente o 'Retraso de fotograma' efectivo."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "Intenta manter o obxectivo de 'Retraso de fotogramas' desexado e minimizar as caídas de fotogramas. O punto de partida é 3/4 do tempo de cadro cando o 'Retraso de fotogramas' é 0 (Automático)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -3227,11 +3275,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sort Remaps By Gamepad"
+   "Ordenar reasignacións por mando"
    )   
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Remaps will only apply to the active gamepad in which they were saved."
+   "As reasignacións só se aplicarán ao mando activo no que foron gardadas."
    )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3546,6 +3594,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "Se está activado, ignoraranse as pulsacións do botón Buscar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Desactivar o analóxico esquerdo no menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Previr que a panca (stick) analóxica esquerda navegue no menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Desactivar o analóxico dereito no menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Previr que a panca (stick) analóxica dereita navegue no menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -4303,6 +4367,10 @@ MSG_HASH(
    "O núcleo actual é incompatible con adiante debido á falta de soporte determinista para o estado de gardado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "Adiantar a execución"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Número de fotogramas para correr adiante"
    )
@@ -4310,8 +4378,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "O número de fotogramas que se van adiante. Causa problemas de xogo, como tremores, se se supera o número de fotogramas de atraso internos do xogo."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Executar lóxica adicional do núcleo para reducir a latencia. A Instancia Única avanza a un fotograma futuro e, despois, recarga o estado actual. A Segunda Instancia mantén unha instancia do núcleo só para vídeo nun fotograma futuro para evitar problemas co estado do audio. Os Fotogramas Preemptivos avanzan a través de fotogramas con nova entrada cando é necesario, para maior eficiencia."
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Executar lóxica adicional do núcleo para reducir a latencia. A Instancia Única avanza a un fotograma futuro e, despois, recarga o estado actual. Os Fotogramas Preemptivos avanzan a través de cadros con nova entrada cando é necesario, para maior eficiencia."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "Modo de Instancia Única"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "Modo de Segunda Instancia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "Modo de Fotogramas Preemptivos"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Ocultar avisos de adianto"
@@ -7218,6 +7306,10 @@ MSG_HASH(
    "Sueste asiático"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "Asia Oriental (Chuncheon, Corea do Sur)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Personalizado"
    )
@@ -9905,6 +9997,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    "O servidor de RetroAchievements non é accesible. Tentarase de novo ata que teña éxito ou se peche a aplicación."
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Todas as solicitudes pendentes foron sincronizadas correctamente co servidor de RetroAchievements."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
@@ -14488,6 +14584,10 @@ MSG_HASH(
    "Produciuse un erro ao recibir a cabeceira do host."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroLogros: Conectado como \"%s\"."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Debes pausar ou desactivar o modo Hardcore de logros para cargar estados."
    )
@@ -14510,6 +14610,66 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
    "Logros Modo Hardcore activado, estado de gardar e rebobinado desactiváronse."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Este xogo non ten logros."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Todos os %d logros activados para esta sesión"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Activados %d logros non oficiais"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Tes %d de %d logros desbloqueados"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d non soportado"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Espectando %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Modo hardcore en pausa. A configuración manual do retraso de fotograma de vídeo non está permitida."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
+   "Modo hardcore en pausa. Os subfotogramas de sombreadores non están permitidos."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Modo hardcore en pausa. O intervalo de intercambio de vsync por riba de 1 non está permitido."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Modo hardcore en pausa. A inserción de cadros negros non está permitida."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Modo hardcore en pausa. Configuración non permitida: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Modo hardcore en pausa. Non podes conseguir logros hardcore para %s utilizando %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroLogros: Non se puido identificar o xogo."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "Erro ao cargar o xogo de RetroLogros: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "Erro ao cambiar o medio en RetroLogros: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15407,6 +15567,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "O rato táctil está desactivado"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "O micrófono sdl2 require o controlador de audio sdl2"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,
