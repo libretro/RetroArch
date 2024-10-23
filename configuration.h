@@ -154,6 +154,7 @@ typedef struct settings
       unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
+      unsigned input_sensor_index[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
@@ -162,6 +163,7 @@ typedef struct settings
       unsigned input_remap_ports[MAX_USERS];
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
       unsigned input_keymapper_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
+      unsigned input_sensor_ids[MAX_USERS][RETRO_SENSOR_MAX];
       unsigned input_remap_port_map[MAX_USERS][MAX_USERS + 1];
 
       unsigned led_map[MAX_LEDS];
@@ -448,6 +450,8 @@ typedef struct settings
       float input_analog_deadzone;
       float input_axis_threshold;
       float input_analog_sensitivity;
+      float input_sensor_accelerometer_sensitivity;
+      float input_sensor_gyroscope_sensitivity;
 #ifdef _3DS
       float bottom_font_scale;
 #endif
@@ -720,6 +724,7 @@ typedef struct settings
       bool input_touch_vmouse_trackball;
       bool input_touch_vmouse_gesture;
 #endif
+      bool input_sensor_flip_axis[MAX_USERS][RETRO_SENSOR_MAX];
 
       /* Frame time counter */
       bool frame_time_counter_reset_after_fastforwarding;

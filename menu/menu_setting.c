@@ -8031,6 +8031,7 @@ static int setting_action_start_input_mouse_index(rarch_setting_t *setting)
    return 0;
 }
 
+
 /**
  ******* ACTION TOGGLE CALLBACK FUNCTIONS *******
 **/
@@ -8339,7 +8340,37 @@ static void get_string_representation_input_mouse_index(
    if (string_is_empty(s))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
+static void get_string_representation_input_sensor_index(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned map              = 0;
 
+   if (!setting || !settings)
+      return;
+
+   map = settings->uints.input_sensor_index[setting->index_offset];
+
+   if (map < MAX_INPUT_DEVICES)
+   {
+      const char *device_name = input_config_get_sensor_display_name(map);
+
+      if (!string_is_empty(device_name))
+         strlcpy(s, device_name, len);
+      else if (map > 0)
+      {
+         size_t _len = strlcpy(s,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               len);
+         snprintf(s + _len, len - _len, " (#%u)", map + 1);
+      }
+      else
+         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
+   }
+
+   if (string_is_empty(s))
+      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
+}
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -9573,8 +9604,8 @@ static bool setting_append_list_input_player_options(
     * 2 is the length of '99'; we don't need more users than that.
     */
    static char buffer[MAX_USERS][13+2+1];
+
    static char group_label[MAX_USERS][NAME_MAX_LENGTH];
-   unsigned i, j;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
@@ -9608,6 +9639,7 @@ static bool setting_append_list_input_player_options(
       static char device_reservation_type[MAX_USERS][64];
       static char device_reserved_device[MAX_USERS][64];
       static char mouse_index[MAX_USERS][64];
+      static char sensor_index[MAX_USERS][64];
       static char analog_to_digital[MAX_USERS][64];
       static char bind_all[MAX_USERS][64];
       static char bind_all_save_autoconfig[MAX_USERS][64];
@@ -9617,6 +9649,7 @@ static bool setting_append_list_input_player_options(
       static char label_device_reservation_type[MAX_USERS][64];
       static char label_device_reserved_device[MAX_USERS][64];
       static char label_mouse_index[MAX_USERS][64];
+      static char label_sensor_index[MAX_USERS][64];
       static char label_analog_to_digital[MAX_USERS][64];
       static char label_bind_all[MAX_USERS][64];
       static char label_bind_all_save_autoconfig[MAX_USERS][64];
@@ -9637,12 +9670,15 @@ static bool setting_append_list_input_player_options(
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME), user + 1);
       snprintf(mouse_index[user],              sizeof(mouse_index[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX),                 user + 1);
+      snprintf(sensor_index[user],              sizeof(sensor_index[user]),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX),                user + 1);
       snprintf(bind_all[user],                 sizeof(bind_all[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX),              user + 1);
       snprintf(bind_all_save_autoconfig[user], sizeof(bind_all_save_autoconfig[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX),       user + 1);
       snprintf(bind_defaults[user],            sizeof(bind_defaults[user]),
             msg_hash_to_str(MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX),         user + 1);
+
 
       strlcpy(label_analog_to_digital[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE),
@@ -9659,6 +9695,9 @@ static bool setting_append_list_input_player_options(
       strlcpy(label_mouse_index[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX),
             sizeof(label_mouse_index[user]));
+      strlcpy(label_sensor_index[user],
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_INDEX),
+            sizeof(label_sensor_index[user]));
       strlcpy(label_bind_all[user],
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL),
             sizeof(label_bind_all[user]));
@@ -9817,9 +9856,30 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].get_string_representation =
             &get_string_representation_input_mouse_index;
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
+
+
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
-
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_sensor_index[user],
+            sensor_index[user],
+            label_sensor_index[user],
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].get_string_representation =
+            &get_string_representation_input_sensor_index;
+      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
+      
       CONFIG_ACTION_ALT(
             list, list_info,
             bind_all[user],
@@ -9860,71 +9920,56 @@ static bool setting_append_list_input_player_options(
    }
 
    {
-      const char *value_na =
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      unsigned i;
+      for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
-         char label[NAME_MAX_LENGTH];
-         char name[NAME_MAX_LENGTH];
-         size_t _len = 0;
-         i           =  (j < RARCH_ANALOG_BIND_LIST_END)
-            ? input_config_bind_order[j]
-            : j;
-
-         if (input_config_bind_map_get_meta(i))
+         const char *input_desc_btn;
+         bool value_available=true;
+         unsigned cur_binding =  (i < RARCH_ANALOG_BIND_LIST_END)
+            ? input_config_bind_order[i]
+            : i;
+         if (input_config_bind_map_get_meta(cur_binding))
             continue;
 
-         name[0]          = '\0';
-
-         if (!string_is_empty(buffer[user]))
-         {
-            _len          = strlcpy(label, buffer[user], sizeof(label));
-            label[  _len] = ' ';
-            label[++_len] = '\0';
-         }
-         else
-            label[0]      = '\0';
-
-         if (
-               settings->bools.input_descriptor_label_show
-               && (i < RARCH_FIRST_META_KEY)
+         /*default value*/
+         input_desc_btn=input_config_bind_map_get_desc(cur_binding);
+         if (settings->bools.input_descriptor_label_show
+               && (cur_binding < RARCH_FIRST_META_KEY)
                && core_has_set_input_descriptor()
-               && (i != RARCH_TURBO_ENABLE)
-            )
+               && (cur_binding != RARCH_TURBO_ENABLE))
          {
-            if (sys_info->input_desc_btn[user][i])
-               strlcpy(label       + _len,
-                     sys_info->input_desc_btn[user][i],
-                     sizeof(label) - _len);
-            else
-            {
-               snprintf(label, sizeof(label), "%s (%s)",
-                     input_config_bind_map_get_desc(i),
-                     value_na);
-
-               if (settings->bools.input_descriptor_hide_unbound)
-                  continue;
-            }
+            if (sys_info->input_desc_btn[user][cur_binding])
+               input_desc_btn=sys_info->input_desc_btn[user][cur_binding];
+            else value_available=false;
          }
-         else
-            strlcpy(label       + _len,
-                  input_config_bind_map_get_desc(i),
-                  sizeof(label) - _len);
+         if (value_available || !settings->bools.input_descriptor_hide_unbound){
+            char label[NAME_MAX_LENGTH];
+            char name[NAME_MAX_LENGTH];
+            int len;
 
-         snprintf(name, sizeof(name), "p%u_%s", user + 1, input_config_bind_map_get_base(i));
+            snprintf(name, sizeof(name), "p%u_%s", user + 1,
+               input_config_bind_map_get_base(cur_binding));
+            len=snprintf(label, sizeof(label), "%s%s%s",
+               buffer[user],
+               string_is_empty(buffer[user])?"":" ",
+               input_desc_btn);
+            if (!value_available)
+               snprintf(label+len,sizeof(label)-len, " (%s)",
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-         CONFIG_BIND_ALT(
-               list, list_info,
-               &input_config_binds[user][i],
-               user + 1,
-               user,
-               strdup(name),
-               strdup(label),
-               &defaults[i],
-               &group_info,
-               &subgroup_info,
-               parent_group);
-         (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
+            CONFIG_BIND_ALT(
+                  list, list_info,
+                  &input_config_binds[user][cur_binding],
+                  user + 1,
+                  user,
+                  strdup(name),
+                  strdup(label),
+                  &defaults[cur_binding],
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+            (*list)[list_info->index - 1].bind_type = cur_binding + MENU_SETTINGS_BIND_BEGIN;
+         }
       }
    }
 
@@ -16008,6 +16053,36 @@ static bool setting_append_list(
                   MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,
                   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
                   DEFAULT_ANALOG_SENSITIVITY,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_sensor_accelerometer_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY,
+                  "%.1f",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, -5.0, 5.0, 0.1, true, true);
+
+            CONFIG_FLOAT(
+                  list, list_info,
+                  &settings->floats.input_sensor_gyroscope_sensitivity,
+                  MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+                  DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY,
                   "%.1f",
                   &group_info,
                   &subgroup_info,
