@@ -1,21 +1,31 @@
 # Future
+- AUDIO: Fix audio handling in case of RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE
 - APPLE: Hide threaded video setting
 - CHEEVOS: Add rarity and points to achievement unlock widget
 - CHEEVOS: Add rank to leaderboard submission notification
 - CHEEVOS: Update to rcheevos 11.5
+- CHEEVOS: Update to rcheevos 11.6
 - CHEEVOS: Show rcheevos game image in Discord rich presence
+- CHEEVOS: Use translated strings for achievement messages
 - CLOUDSYNC: Allow saves and configs to be synced optionally
 - CLOUDSYNC: Add iCloud cloud sync driver
 - CLOUDSYNC: Speed up by upload/download in parallel
 - CLOUDSYNC: Allow thumbnails and system dir to be synced optionally
+- CLOUDSYNC: Enable CloudSync on Android (non-SSL)
 - CRT/SWITCHRES: Update switchres to 2.2.1
 - GENERAL: Support for mbedtls v3
 - GENERAL: Automatic Frame Delay refactor
 - GENERAL: Remove Frame Rest, obsoleted by Frame Delay refactor
+- GENERAL: Wrap around auto increment save state indexes when amount of states is limited
+- GENERAL: Enable CHD hashing for Switch and DOS
+- GENERAL: Enable auto save state when new content is loaded
+- GENERAL: Improve Preemptive Frames when pointing device is used
 - HAIKU: Restore Haiku build
 - INPUT: Allow to select a preferred/reserved device for each player
 - INPUT: Enable Caps, Num, Scroll Lock modifiers on multiple platforms
+- INPUT: Autoconfig extension with alternative name/vid/pid
 - INPUT/HID: Fix crash on macOS when disconnecting the controller a second time
+- INPUT/Remaps: Sort and apply remaps based on the specific connected controller
 - INPUT/UDEV: Enable mouse buttons 4 and 5
 - INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
 - INPUT/X11: Enable mouse buttons 4 and 5
@@ -23,28 +33,52 @@
 - iOS: Better handling of physical mice/magic keyboard trackpad
 - iOS: Mouse grab fixes
 - iOS: Fix mouse cursor movement when button is held down
+- iOS: Fix microphone support request and entitlement
+- iOS: Enable compilation back to iOS 12
 - iOS/TVOS: Add Opera to App Store build
 - iOS/TVOS: Bring NEON defines in line with ARM64
+- iOS/TVOS: Flush save files on backgrounding
+- LIBRETRO: Support RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY
 - FFMPEG: Fix crash when playing back a file with 96 kHz audio
+- MACOS: New display server, including support for ProMotion 120Hz V-Sync
+- MACOS: Create App Store build
 - MIDI: Fix long messages (SysEx) in WinMM driver
 - MIDI: Fix lingering notes on close in Alsa driver
 - MENU: Support local thumbnails in other image formats than png (jpg/jpeg, bmp, tga)
 - MENU: Delete also savestate thumbnails when savestates are garbage collected
+- MENU: Option to disable analog stick menu navigation
+- MENU: Fix pause toggle to not clear fast forward state
+- MENU: Fix search playlist index in XMB/Ozone
+- MENU: Fix renamed entry display
 - MENU/GLUI: Make Show Sublabels options effective
+- MENU/GLUI: Icon fixes
 - MENU/XMB: Allow playlist icons to be individually customized, by looking for images in Named_Logos
+- MENU/OZONE: Add Selenium theme for Ozone
+- MENU/OZONE: Touchscreen improvements
+- NETPLAY: Add East Asian relay server
+- PS2: Fix several broken cores depending on pthread
 - RECORDING: New WAV recording driver (audio only)
 - REMOTE RETROPAD: Add gyro/acceleration/light sensor test screen
+- REPLAY: Replay format extended to support external tools
 - TVOS: Support bluetooth keyboards on tvOS
 - TVOS: Fixes to run correctly on TVOS13
+- TVOS: Better handling of Siri remote
 - VIDEO: Show and use exact refresh rate (3 decimals) and interlace/doublestrike where available
 - VIDEO: Allow setting viewport bias to offset viewport horizontally/vertically
 - VIDEO: Support viewport bias also with integer overscale and custom aspect ratios
 - VIDEO: Use shader path from CLI for shader cycling
+- VIDEO: Pixel perfect integer scaling improvements: axis options, smart mode
 - VIDEO/D3D: Fix GPU screenshots
 - VIDEO/KMS: Force fullscreen when KMS is used
 - VIDEO/OpenGLES: Improve version directive granularity
+- VIDEO/SHADERS: Fix memory leak when shader parameter step is 0.0
+- VIDEO/SLANG: Support optional includes
 - VIDEO/VULKAN: Fix Vulkan window freezes when swapchain becomes suboptimal
+- VIDEO/VULKAN: Prefer IMMEDIATE mode without vsync
 - VIDEO/X11: Support inhibit of Xss screensaver
+- WAYLAND: Fix segfault when relative pointer is not supported
+- WAYLAND: Use reverse DNS name for desktop file and icon
+- WAYLAND: Commit viewport resizes for more responsive display when resizing window
 - WINDOWS: Fix restart if path to executable contains non-ASCII symbols
 
 # 1.19.1
