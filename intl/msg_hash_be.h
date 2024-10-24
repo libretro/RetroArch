@@ -14397,11 +14397,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LEADERBOARD_STARTED,
-   "Спроба ўвайсці ў табліцу лідараў пачата"
+   "Спроба трапіць у табліцу лідараў пачата"
    )
 MSG_HASH(
    MSG_LEADERBOARD_FAILED,
-   "Не ўдалося ўвайсці ў табліцу лідараў"
+   "Не ўдалося трапіць у табліцу лідараў"
    )
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
