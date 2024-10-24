@@ -3601,7 +3601,7 @@ static bool d3d12_gfx_frame(
 
          /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
          d3d12->pass[i].core_aspect_rot = video_driver_get_core_aspect();
-         uint32_t rot = video_driver_get_core_aspect();
+         uint32_t rot = retroarch_get_rotation();
          if (rot == 1 || rot == 3)
             d3d12->pass[i].core_aspect_rot = 1/d3d12->pass[i].core_aspect_rot;
 
