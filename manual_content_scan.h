@@ -82,11 +82,11 @@ enum manual_content_scan_playlist_refresh_status
  * for a manual content scan task */
 typedef struct
 {
+   char core_name[NAME_MAX_LENGTH];
+   char system_name[NAME_MAX_LENGTH];
+   char database_name[NAME_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
    char playlist_file[PATH_MAX_LENGTH];
-   char content_dir[PATH_MAX_LENGTH];
-   char system_name[PATH_MAX_LENGTH];
-   char database_name[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char file_exts[PATH_MAX_LENGTH];
    char dat_file_path[PATH_MAX_LENGTH];
@@ -112,10 +112,6 @@ typedef struct
 /* Returns a pointer to the internal
  * 'content_dir' string */
 char *manual_content_scan_get_content_dir_ptr(void);
-
-/* Returns size of the internal
- * 'content_dir' string */
-size_t manual_content_scan_get_content_dir_size(void);
 
 /* Returns a pointer to the internal
  * 'system_name_custom' string */

@@ -22,8 +22,10 @@
 #include "../input_driver.h"
 
 /* what is 1? */
-#define HID_REPORT_OUTPUT 2
+#define HID_REPORT_INPUT   1
+#define HID_REPORT_OUTPUT  2
 #define HID_REPORT_FEATURE 3
+#define HID_REPORT_COUNT   4
 /* are there more? */
 
 /*
@@ -48,37 +50,11 @@ struct hid_driver
    const char *(*name)(void *handle, unsigned pad);
    const char *ident;
    void (*send_control)(void *handle, uint8_t *buf, size_t size);
-   int32_t (*set_report)(void *handle, uint8_t, uint8_t, void *data, uint32_t size);
+   int32_t (*set_report)(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data, size_t length);
+   int32_t (*get_report)(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data, size_t length);
    int32_t (*set_idle)(void *handle, uint8_t amount);
    int32_t (*set_protocol)(void *handle, uint8_t protocol);
    int32_t (*read)(void *handle, void *buf, size_t size);
-};
-
-#define HID_GET_BUTTONS(pad, state) hid_instance.os_driver->get_buttons( \
-   hid_instance.os_driver_data, pad, state)
-#define HID_BUTTON(pad, key) hid_instance.os_driver->button( \
-   hid_instance.os_driver_data, pad, key)
-#define HID_AXIS(pad, a) hid_instance.os_driver->axis( \
-   hid_instance.os_driver_data, pad, (a))
-#define HID_PAD_NAME(pad) \
-   hid_instance.os_driver->name(hid_instance.os_driver_data, pad)
-#define HID_SET_PROTOCOL(pad, protocol) \
-   hid_instance.os_driver->set_protocol(pad, protocol)
-#define HID_SET_REPORT(pad, rpttype, rptid, data, len) \
-   hid_instance.os_driver->set_report(pad, rpttype, rptid, data, len)
-#define HID_SEND_CONTROL(pad, data, len) \
-   hid_instance.os_driver->send_control(pad, data, len)
-#define HID_POLL() hid_instance.os_driver->poll( \
-   hid_instance.os_driver_data)
-#define HID_MAX_SLOT() hid_instance.max_slot
-#define HID_PAD_CONNECTION_PTR(slot) &(hid_instance.pad_list[(slot)])
-
-struct hid_driver_instance {
-   hid_driver_t *os_driver;
-   void *os_driver_data;
-   input_device_driver_t *pad_driver;
-   joypad_connection_t *pad_list;
-   unsigned max_slot;
 };
 
 #endif /* HID_DRIVER_H__ */

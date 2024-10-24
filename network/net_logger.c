@@ -37,6 +37,17 @@
 #error "An UDP port for the PC logging server was not set in the Makefile, cannot continue."
 #endif
 
+#ifdef ORBIS
+void logger_init(void)
+{
+   debugNetInit(PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT,3);
+}
+
+void logger_shutdown(void)
+{
+   debugNetFinish();
+}
+#else
 /* TODO/FIXME - static global variables */
 static int g_sid;
 static struct sockaddr_in target;
@@ -48,10 +59,7 @@ void logger_init(void)
    unsigned      port = PC_DEVELOPMENT_UDP_PORT;
 
    if (!network_init())
-   {
-      printf("Could not initialize network logger interface.\n");
       return;
-   }
 
    g_sid  = socket_create(
          "ra_netlogger",
@@ -68,10 +76,7 @@ void logger_init(void)
 
 void logger_shutdown(void)
 {
-   if (socket_close(g_sid) < 0)
-      printf("Could not close socket.\n");
-
-   network_deinit();
+   socket_close(g_sid);
 }
 
 void logger_send(const char *__format,...)
@@ -98,3 +103,4 @@ void logger_send_v(const char *__format, va_list args)
          (struct sockaddr*)&target,
          sizeof(target));
 }
+#endif

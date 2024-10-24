@@ -25,11 +25,11 @@ HAVE_D3D12               := 1
 HAVE_CG                  := 1
 HAVE_OPENGL              := 1
 HAVE_OPENGL1             := 1
-HAVE_GFX_WIDGETS			 := 1
+HAVE_GFX_WIDGETS         := 1
 HAVE_VULKAN              := 1
 HAVE_XAUDIO              := 1
 HAVE_XINPUT              := 1
-HAVE_WASAPI              := 0
+HAVE_WASAPI              := 1
 HAVE_THREAD_STORAGE      := 1
 HAVE_WINMM               := 1
 
@@ -58,15 +58,16 @@ HAVE_RBMP                := 1
 HAVE_RTGA                := 1
 HAVE_7ZIP                := 1
 HAVE_NETWORKING          := 1
+HAVE_IFINFO              := 1
 HAVE_NETWORK_CMD         := 1
 HAVE_OVERLAY             := 1
-HAVE_VIDEO_LAYOUT        := 0
 HAVE_LANGEXTRA           := 1
 HAVE_CHEEVOS             := 1
 HAVE_SHADERPIPELINE      := 1
 HAVE_IMAGEVIEWER         := 1
 HAVE_BSV_MOVIE           := 1
 HAVE_CHEATS              := 1
+HAVE_CORE_INFO_CACHE     := 1
 
 ifeq ($(HAVE_D3D8), 1)
    D3D8_LIBS := -ld3d8

@@ -1,8 +1,8 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch.legacy"
-    android:versionCode="1556806361"
-    android:versionName="1.9.10"
+    android:versionCode="1556806381"
+    android:versionName="1.19.1"
     android:installLocation="internalOnly">
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
@@ -17,8 +17,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
+        android:allowAudioPlaybackCapture="true"
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:label="RetroArch"
         android:hasCode="true"
         android:isGame="true"

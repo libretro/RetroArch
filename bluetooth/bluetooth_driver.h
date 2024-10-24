@@ -43,12 +43,20 @@ typedef struct bluetooth_driver
    bool (*device_is_connected)(void *data, unsigned i);
    void (*device_get_sublabel)(void *data, char *s, unsigned i, size_t len);
    bool (*connect_device)(void *data, unsigned i);
+   bool (*remove_device)(void *data, unsigned i);
 
    const char *ident;
 } bluetooth_driver_t;
 
 extern bluetooth_driver_t bluetooth_bluetoothctl;
 extern bluetooth_driver_t bluetooth_bluez;
+
+typedef struct
+{
+   const bluetooth_driver_t *drv;
+   void *data;
+   bool active;
+} bluetooth_driver_state_t;
 
 /**
  * config_get_bluetooth_driver_options:
@@ -71,7 +79,13 @@ void driver_bluetooth_device_get_sublabel(char *s, unsigned i, size_t len);
 
 bool driver_bluetooth_connect_device(unsigned i);
 
+bool driver_bluetooth_remove_device(unsigned i);
+
 bool bluetooth_driver_ctl(enum rarch_bluetooth_ctl_state state, void *data);
+
+bluetooth_driver_state_t *bluetooth_state_get_ptr(void);
+
+extern const bluetooth_driver_t *bluetooth_drivers[];
 
 RETRO_END_DECLS
 

@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <ogc/machine/asm.h>
+#include <ogc/machine/processor.h>
 #include <ogc/lwp_heap.h>
 #include <ogc/system.h>
 
@@ -52,7 +53,7 @@ static uint32_t __lwp_heap_block_size(heap_cntrl *theheap, void *ptr)
    _CPU_ISR_Disable(level);
    block = __lwp_heap_usrblockat(ptr);
 
-   if(!__lwp_heap_blockin(theheap, block) || __lwp_heap_blockfree(block))
+   if (!__lwp_heap_blockin(theheap, block) || __lwp_heap_blockfree(block))
    {
       _CPU_ISR_Restore(level);
       return 0;
@@ -83,7 +84,7 @@ bool gx_init_mem2(void)
     * reserve about 256KB for stuff like network and USB to work correctly.
     * However, other sources says these functions need at least 0xE0000 bytes,
     * 7/8 of a megabyte, of reserved memory to do this. My initial testing
-    * shows that we can work with only 128KB, but we use 256KB becuse testing
+    * shows that we can work with only 128KB, but we use 256KB because testing
     * has shown some stuff being iffy with only 128KB, mainly Wiimote stuff.
     * If some stuff mysteriously stops working, try fiddling with this size.
     */
@@ -100,7 +101,7 @@ bool gx_init_mem2(void)
 
 void *_mem2_memalign(uint8_t align, uint32_t size)
 {
-   if(size == 0)
+   if (size == 0)
       return NULL;
    return __lwp_heap_allocate(&gx_mem2_heap, size);
 }
@@ -163,9 +164,8 @@ char *_mem2_strdup(const char *s)
 
     if (s)
     {
-        int len = strlen(s) + 1;
-
-        ptr = _mem2_calloc(1, len);
+        size_t len = strlen(s) + 1;
+        ptr        = _mem2_calloc(1, len);
 
         if (ptr)
             memcpy(ptr, s, len);

@@ -19,6 +19,5 @@
 #define HID_TYPES_H__
 
 typedef struct hid_driver hid_driver_t;
-typedef struct hid_driver_instance hid_driver_instance_t;
 
 #endif /* HID_TYPES_H__ */

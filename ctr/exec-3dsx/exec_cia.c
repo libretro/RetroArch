@@ -1,11 +1,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <math.h>
 #include <sys/stat.h>
 #include <3ds.h>
 #include "ctr/ctr_debug.h"
 
 #define FILE_CHUNK_SIZE 4096
+
+PrintConsole debugConsoleTop;
 
 typedef struct
 {
@@ -60,6 +63,18 @@ static int isCiaInstalled(u64 titleId, u16 version)
    return 0;
 }
 
+static int deleteCia(u64 TitleId)
+{
+   u64 currTitleId = 0;
+
+   /*  Do not delete if the titleid is currently running. */
+   if (R_FAILED(APT_GetAppletInfo((NS_APPID) envGetAptAppId(), &currTitleId, NULL, NULL, NULL, NULL)) || TitleId != currTitleId)
+   {
+      AM_DeleteTitle(MEDIATYPE_SD, TitleId);
+      AM_DeleteTicket(TitleId);
+   }
+}
+
 static int installCia(Handle ciaFile)
 {
    Handle outputHandle;
@@ -91,13 +106,22 @@ static int installCia(Handle ciaFile)
       }
 
       failed = FSFILE_Write(outputHandle, &bytesWritten,
-            fileOffset, transferBuffer, bytesRead, 0);
+            fileOffset, transferBuffer, bytesRead, FS_WRITE_FLUSH);
       if (R_FAILED(failed))
       {
          AM_CancelCIAInstall(outputHandle);
          if (R_DESCRIPTION(failed) == RD_ALREADY_EXISTS)
             return 1;
+
          return -1;
+      }
+
+      printf(PRINTFPOS(27,0)" %llu / %llu\n\n", fileOffset, fileSize);
+
+      int progress = roundf(((float)fileOffset/(float)fileSize)*50);
+      for (int i = 0; i < progress; i++)
+      {
+         printf("#");
       }
 
       if (bytesWritten != bytesRead)
@@ -121,6 +145,12 @@ int exec_cia(const char* path, const char** args)
    struct stat sBuff;
    bool fileExists;
    bool inited;
+#ifdef USE_CTRULIB_2
+   if (!gspHasGpuRight())
+#endif
+       gfxInitDefault();
+
+   consoleInit(GFX_TOP, &debugConsoleTop);
 
    if (!path || path[0] == '\0')
    {
@@ -175,10 +205,20 @@ int exec_cia(const char* path, const char** args)
       }
       else if (ciaInstalled == 0)
       {
-         /* not installed */
+         /* titleid with version not installed. */
+         consoleSelect(&debugConsoleTop);
+         printf(PRINTFPOS(2,0)"Do not close RetroArch or turn off your console.");
+         printf(PRINTFPOS(5,0)"Installing core:\n%s\n", path);
+
+         /*  Delete existing content of the pending titleid. */
+         deleteCia(ciaInfo.titleID);
+
          int error = installCia(ciaFile);
          if (error == -1)
-            error_and_quit("Cant install CIA.");
+         {
+            printf(PRINTFPOS(25,0)"CIA install failed.\n");
+            wait_for_input();
+         }
       }
 
       FSFILE_Close(ciaFile);

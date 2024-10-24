@@ -50,5 +50,6 @@ input_driver_t input_sdl_dingux = {
    sdl_dingux_input_get_capabilities,
    "sdl_dingux",
    NULL,                              /* grab_mouse */
-   NULL                               /* grab_stdin */
+   NULL,                              /* grab_stdin */
+   NULL
 };

@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #pragma mark - ringbuffer
@@ -204,7 +204,7 @@ static bool g_interrupted;
          return nil;
 
       format = au.outputBusses[0].format;
-      if (format.channelCount != 2)
+      if (format.channelCount < 2)
          return nil;
 
       renderFormat = [[AVAudioFormat alloc] initStandardFormatWithSampleRate:rate channels:2];

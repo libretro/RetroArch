@@ -8,6 +8,9 @@ layout(binding = 0, std140) uniform Block
 layout(location = 0) in vec4 a_position;
 layout(location = 0) out mediump float v_vtxResult;
 
+highp mat2x3 spvWorkaroundRowMajor(highp mat2x3 wrap) { return wrap; }
+mediump mat2x3 spvWorkaroundRowMajorMP(mediump mat2x3 wrap) { return wrap; }
+
 mediump float compare_float(float a, float b)
 {
     return float(abs(a - b) < 0.0500000007450580596923828125);
@@ -37,7 +40,7 @@ void main()
 {
     gl_Position = a_position;
     mediump float result = 1.0;
-    mat2x3 param = _104.var[0][0];
+    mat2x3 param = spvWorkaroundRowMajor(_104.var[0][0]);
     mat2x3 param_1 = mat2x3(vec3(2.0, 6.0, -6.0), vec3(0.0, 5.0, 5.0));
     result *= compare_mat2x3(param, param_1);
     v_vtxResult = result;

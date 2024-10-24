@@ -43,40 +43,34 @@ static uint16_t normal_keys[LAST_KEYCODE + 1];
 static _go32_dpmi_seginfo old_kbd_int;
 static _go32_dpmi_seginfo kbd_int;
 
-int LockData(void *a, int size)
+static int LockData(void *a, int size)
 {
    uint32_t baseaddr;
-   __dpmi_meminfo region;
-
-   if (__dpmi_get_segment_base_address(_my_ds(), &baseaddr) == -1)
-      return -1;
-
-   region.handle = 0;
-   region.size = size;
-   region.address = baseaddr + (uint32_t)a;
-
-   if (__dpmi_lock_linear_region(&region) == -1)
-    return -1;
-
-   return 0;
+   if (__dpmi_get_segment_base_address(_my_ds(), &baseaddr) != -1)
+   {
+      __dpmi_meminfo region;
+      region.handle  = 0;
+      region.size    = size;
+      region.address = baseaddr + (uint32_t)a;
+      if (__dpmi_lock_linear_region(&region) != -1)
+         return 0;
+   }
+   return -1;
 }
 
-int LockCode(void *a, int size)
+static int LockCode(void *a, int size)
 {
    uint32_t baseaddr;
-   __dpmi_meminfo region;
-
-   if (__dpmi_get_segment_base_address(_my_cs(), &baseaddr) == -1)
-      return (-1);
-
-   region.handle = 0;
-   region.size = size;
-   region.address = baseaddr + (uint32_t)a;
-
-   if (__dpmi_lock_linear_region(&region) == -1)
-      return (-1);
-
-   return 0;
+   if (__dpmi_get_segment_base_address(_my_cs(), &baseaddr) != -1)
+   {
+      __dpmi_meminfo region;
+      region.handle  = 0;
+      region.size    = size;
+      region.address = baseaddr + (uint32_t)a;
+      if (__dpmi_lock_linear_region(&region) != -1)
+         return 0;
+   }
+   return -1;
 }
 
 static void keyb_int(void)
@@ -107,35 +101,6 @@ static void keyb_int(void)
 }
 END_FUNC(keyb_int)
 
-static void hook_keyb_int(void)
-{
-   _go32_dpmi_get_protected_mode_interrupt_vector(9, &old_kbd_int);
-
-   memset(&kbd_int, 0, sizeof(kbd_int));
-   memset(normal_keys, 0, sizeof(normal_keys));
-
-   LOCK_FUNC(keyb_int);
-   LOCK_VAR(normal_keys);
-
-   kbd_int.pm_selector = _go32_my_cs();
-   kbd_int.pm_offset = (uint32_t)&keyb_int;
-
-   _go32_dpmi_allocate_iret_wrapper(&kbd_int);
-
-   _go32_dpmi_set_protected_mode_interrupt_vector(9, &kbd_int);
-}
-
-static void unhook_keyb_int(void)
-{
-   if (old_kbd_int.pm_offset)
-   {
-      _go32_dpmi_set_protected_mode_interrupt_vector(9, &old_kbd_int);
-      _go32_dpmi_free_iret_wrapper(&kbd_int);
-
-      memset(&old_kbd_int, 0, sizeof(old_kbd_int));
-   }
-}
-
 static const char *dos_joypad_name(unsigned pad)
 {
    return "DOS Controller";
@@ -155,7 +120,20 @@ static void dos_joypad_autodetect_add(unsigned autoconf_pad)
 
 static void *dos_joypad_init(void *data)
 {
-   hook_keyb_int();
+   _go32_dpmi_get_protected_mode_interrupt_vector(9, &old_kbd_int);
+
+   memset(&kbd_int,    0, sizeof(kbd_int));
+   memset(normal_keys, 0, sizeof(normal_keys));
+
+   LOCK_FUNC(keyb_int);
+   LOCK_VAR(normal_keys);
+
+   kbd_int.pm_selector = _go32_my_cs();
+   kbd_int.pm_offset   = (uint32_t)&keyb_int;
+
+   _go32_dpmi_allocate_iret_wrapper(&kbd_int);
+
+   _go32_dpmi_set_protected_mode_interrupt_vector(9, &kbd_int);
    dos_joypad_autodetect_add(0);
    return (void*)-1;
 }
@@ -163,7 +141,7 @@ static void *dos_joypad_init(void *data)
 static int32_t dos_joypad_button_state(
       uint16_t *buf, uint16_t joykey)
 {
-   switch (key)
+   switch (joykey)
    {
       case RETRO_DEVICE_ID_JOYPAD_A:
          return buf[DOSKEY_x];
@@ -211,17 +189,17 @@ static int16_t dos_joypad_state(
    uint16_t port_idx                    = joypad_info->joy_idx;
    uint16_t *buf                        = dos_keyboard_state_get(port_idx);
 
-   if (port_idx >= DEFAULT_MAX_PADS)
-      return 0;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (port_idx < DEFAULT_MAX_PADS)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      if ((uint16_t)joykey != NO_BTN && dos_joypad_button_state(
-               buf, (uint16_t)joykey))
-         ret |= ( 1 << i);
+	   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+	   {
+		   /* Auto-binds are per joypad, not per user. */
+		   const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+			   ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+		   if ((uint16_t)joykey != NO_BTN && dos_joypad_button_state(
+					   buf, (uint16_t)joykey))
+			   ret |= ( 1 << i);
+	   }
    }
 
    return ret;
@@ -258,7 +236,13 @@ static bool dos_joypad_query_pad(unsigned pad)
 
 static void dos_joypad_destroy(void)
 {
-   unhook_keyb_int();
+   if (old_kbd_int.pm_offset)
+   {
+      _go32_dpmi_set_protected_mode_interrupt_vector(9, &old_kbd_int);
+      _go32_dpmi_free_iret_wrapper(&kbd_int);
+
+      memset(&old_kbd_int, 0, sizeof(old_kbd_int));
+   }
 }
 
 input_device_driver_t dos_joypad = {
@@ -270,8 +254,10 @@ input_device_driver_t dos_joypad = {
    NULL,
    dos_joypad_axis,
    dos_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    dos_joypad_name,
    "dos",
 };

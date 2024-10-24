@@ -6,7 +6,7 @@
 #include <QScrollArea>
 #include <QDebug>
 
-#include "settingswidgets.h"
+#include "qt_widgets.h"
 
 #include "../../../configuration.h"
 
@@ -464,6 +464,12 @@ class AchievementsPage : public OptionsPage
 public:
    AchievementsPage(QObject *parent = nullptr);
    QWidget *widget();
+private slots:
+   void onAchievementEnabledChanged(int);
+private:
+   SettingsGroup* m_generalGroup;
+   SettingsGroup* m_appearanceGroup;
+   SettingsGroup* m_visibilityGroup;
 };
 
 /************************************************************
@@ -573,7 +579,7 @@ static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
          file_list_get_actiondata_at_offset(list, i);
 
-      layout->add(cbs->enum_idx);
+      layout->add(menu_setting_find_enum(cbs->enum_idx));
    }
 
    file_list_free(list);

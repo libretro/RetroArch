@@ -18,7 +18,6 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
-#include "../../retroarch.h"
 
 #define LIBRETRO_MESSAGE_FADE_DURATION MSG_QUEUE_ANIMATION_DURATION
 
@@ -43,7 +42,7 @@ struct gfx_widget_libretro_message_state
 
    unsigned message_duration;
 
-   gfx_timer_t timer;   /* float alignment */
+   float timer;   /* float alignment */
 
    float bg_x;
    float bg_y_start;
@@ -54,6 +53,8 @@ struct gfx_widget_libretro_message_state
    float alpha;
 
    float frame_color[16];
+ 
+   size_t message_len;
 
    enum gfx_widget_libretro_message_status status;
 
@@ -83,7 +84,9 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0.0f,                               /* text_y_end */
    0.0f,                               /* alpha */
 
-   COLOR_HEX_TO_FLOAT(0x909090, 1.0f), /* frame_color */
+   COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f), /* frame_color */
+
+   0,                                  /* message_len */
 
    GFX_WIDGET_LIBRETRO_MESSAGE_IDLE,   /* status */
 
@@ -153,10 +156,10 @@ static void gfx_widget_libretro_message_slide_in_cb(void *userdata)
 
 /* Widget interface */
 
-void gfx_widget_set_libretro_message(void *data,
+void gfx_widget_set_libretro_message(
       const char *msg, unsigned duration)
 {
-   dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget             = dispwidget_get_ptr();
    gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
    gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
@@ -165,14 +168,14 @@ void gfx_widget_set_libretro_message(void *data,
       return;
 
    /* Cache message parameters */
-   strlcpy(state->message, msg, sizeof(state->message));
+   state->message_len      = strlcpy(state->message, msg, sizeof(state->message));
    state->message_duration = duration;
 
    /* Get background width */
    state->bg_width = (state->text_padding * 2) +
          font_driver_get_message_width(
                font_msg_queue->font, state->message,
-               (unsigned)strlen(state->message), 1.0f);
+               state->message_len, 1.0f);
 
    /* If a 'slide in' animation is already in
     * progress, no further action is required;
@@ -221,10 +224,11 @@ static void gfx_widget_libretro_message_layout(
    state->text_padding = (unsigned)(((float)font_msg_queue->line_height * (2.0f / 3.0f)) + 0.5f);
    state->frame_width  = divider_width;
 
-   state->bg_x         = 0.0f;
+   /* X-alignment with other widget types */
+   state->bg_x         = (float)state->text_padding * 2.0f;
    state->bg_y_start   = (float)last_video_height + (float)state->frame_width;
    state->bg_y_end     = (float)last_video_height - (float)state->bg_height;
-   state->text_x       = (float)state->text_padding;
+   state->text_x       = state->bg_x + (float)state->text_padding;
    state->text_y_start = state->bg_y_start + ((float)state->bg_height * 0.5f) +
          (float)font_msg_queue->line_centre_offset;
    state->text_y_end   = state->bg_y_end + ((float)state->bg_height * 0.5f) +
@@ -236,7 +240,7 @@ static void gfx_widget_libretro_message_layout(
    if (!string_is_empty(state->message))
       state->bg_width += font_driver_get_message_width(
             font_msg_queue->font, state->message,
-            (unsigned)strlen(state->message), 1.0f);
+            state->message_len, 1.0f);
 }
 
 /* Widget iterate() */
@@ -416,6 +420,20 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                NULL);
 
          /* Frame */
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               state->bg_x,
+               bg_y,
+               state->frame_width,
+               state->bg_height,
+               video_width,
+               video_height,
+               state->frame_color,
+               NULL);
+
          gfx_display_draw_quad(
                p_disp,
                userdata,

@@ -1,9 +1,9 @@
 #version 450
 
+vec4 undef;
+
 layout(location = 0) out vec4 FragColor;
 layout(location = 0) in vec4 vFloat;
-
-vec4 undef;
 
 void main()
 {

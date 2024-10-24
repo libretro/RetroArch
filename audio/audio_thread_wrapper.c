@@ -21,6 +21,7 @@
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
+#include "audio_driver.h"
 #include "../verbosity.h"
 
 typedef struct audio_thread
@@ -50,6 +51,10 @@ typedef struct audio_thread
 
 } audio_thread_t;
 
+/**
+ * The thread that manages the life of the audio driver.
+ * The wrapped audio driver lives and dies with this function.
+ */
 static void audio_thread_loop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -112,6 +117,10 @@ static void audio_thread_loop(void *data)
    thr->driver->free(thr->driver_data);
 }
 
+/**
+ * Lets the audio thread finish what it's doing,
+ * then stops it from doing further work.
+ */
 static void audio_thread_block(audio_thread_t *thr)
 {
    if (!thr)
@@ -132,15 +141,19 @@ static void audio_thread_block(audio_thread_t *thr)
    slock_unlock(thr->lock);
 }
 
+/**
+ * Resumes the audio thread.
+ * This function is called from the main thread.
+ */
 static void audio_thread_unblock(audio_thread_t *thr)
 {
    if (!thr)
       return;
 
-   slock_lock(thr->lock);
-   thr->stopped = false;
-   scond_signal(thr->cond);
-   slock_unlock(thr->lock);
+   slock_lock(thr->lock); /* Prevent the audio thread from touching this flag... */
+   thr->stopped = false; /* ...so that the main thread can do it. */
+   scond_signal(thr->cond); /* Then let the audio thread know that it's okay to resume. */
+   slock_unlock(thr->lock); /* "As you were." */
 }
 
 static void audio_thread_free(void *data)
@@ -152,13 +165,15 @@ static void audio_thread_free(void *data)
 
    if (thr->thread)
    {
-      slock_lock(thr->lock);
-      thr->stopped = false;
+      slock_lock(thr->lock); /* Let the audio thread finish what it's doing... */
+      thr->stopped = false; /* Then stop it. "You're fired." */
       thr->alive   = false;
-      scond_signal(thr->cond);
-      slock_unlock(thr->lock);
+      scond_signal(thr->cond); /* Let the thread know it's okay to continue */
+      slock_unlock(thr->lock); /* At this point, it will exit its loop. */
 
       sthread_join(thr->thread);
+      /* Wait for the audio thread to exit, ensure that it's really dead.
+       * (It will call the wrapped driver's free() function.) */
    }
 
    if (thr->lock)
@@ -166,6 +181,7 @@ static void audio_thread_free(void *data)
    if (thr->cond)
       scond_free(thr->cond);
    free(thr);
+   /* The audio driver is done, clean up the thread itself. */
 }
 
 static bool audio_thread_alive(void *data)
@@ -190,6 +206,9 @@ static bool audio_thread_stop(void *data)
    if (!thr)
       return false;
 
+   /* Don't immediately call stop on the driver;
+    * let the audio thread finish its current loop iteration.
+    * It will call stop then. */
    audio_thread_block(thr);
    thr->is_paused = true;
 
@@ -218,6 +237,8 @@ static void audio_thread_set_nonblock_state(void *data, bool state)
 {
    (void)data;
    (void)state;
+   /* Ignored, because blocking state is irrelevant
+    * when audio is running on a separate thread. */
 }
 
 static bool audio_thread_use_float(void *data)
@@ -250,7 +271,7 @@ static ssize_t audio_thread_write(void *data, const void *buf, size_t size)
 }
 
 static const audio_driver_t audio_thread = {
-   NULL,
+   NULL, /* No need to wrap init, it's called at the start of the thread loop */
    audio_thread_write,
    audio_thread_stop,
    audio_thread_start,
@@ -261,6 +282,8 @@ static const audio_driver_t audio_thread = {
    "audio-thread",
    NULL, /* No point in using rate control with threaded audio. */
    NULL,
+   NULL,
+   NULL
 };
 
 /**

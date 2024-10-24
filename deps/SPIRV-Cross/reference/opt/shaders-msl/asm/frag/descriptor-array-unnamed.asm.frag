@@ -42,7 +42,7 @@ fragment main0_out main0(const device _4* _5_0 [[buffer(0)]], const device _4* _
     };
 
     main0_out out = {};
-    out.m_3 = _5[_20._m0]->_m0 + (_8[_20._m0]->_m0 * float4(0.20000000298023223876953125));
+    out.m_3 = fma(_8[_20._m0]->_m0, float4(0.20000000298023223876953125), _5[_20._m0]->_m0);
     return out;
 }
 

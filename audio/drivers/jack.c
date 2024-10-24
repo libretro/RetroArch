@@ -26,7 +26,7 @@
 #include <rthreads/rthreads.h>
 
 #include "../../configuration.h"
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #define FRAMES(x) (x / (sizeof(float) * 2))

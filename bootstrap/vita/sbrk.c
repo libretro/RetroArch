@@ -43,7 +43,6 @@ void _init_vita_heap(void) {
 
 	  if (_newlib_vm_memblock < 0){
 	    //sceClibPrintf("sceKernelAllocMemBlockForVM failed\n");
-			goto failure;
 		}
 	}else{
 		_newlib_vm_memblock = 0;
@@ -53,8 +52,8 @@ void _init_vita_heap(void) {
 	if (sceKernelCreateLwMutex((struct SceKernelLwMutexWork*)_newlib_sbrk_mutex, "sbrk mutex", 0, 0, 0) < 0) {
 		goto failure;
 	}
-	
-	// Always allocating the max avaliable USER_RW mem on the system
+
+	// Always allocating the max available USER_RW mem on the system
 	SceKernelFreeMemorySizeInfo info;
 	info.size = sizeof(SceKernelFreeMemorySizeInfo);
 	sceKernelGetFreeMemorySize(&info);
@@ -99,8 +98,8 @@ void _free_vita_heap(void) {
 	// Free the heap memblock to avoid memory leakage.
 	sceKernelFreeMemBlock(_newlib_heap_memblock);
 
-	if(_newlib_vm_memblock)
-  	sceKernelFreeMemBlock(_newlib_vm_memblock);
+	if (_newlib_vm_memblock > 0)
+		sceKernelFreeMemBlock(_newlib_vm_memblock);
 
 	_newlib_vm_memblock = 0;
 	_newlib_heap_memblock = 0;

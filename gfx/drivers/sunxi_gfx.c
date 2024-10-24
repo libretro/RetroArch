@@ -99,27 +99,24 @@ typedef enum tag_DISP_CMD
 
 typedef struct
 {
+   uintptr_t           framebuffer_paddr; /* physical address */
    int                 fd_fb;
    int                 fd_disp;
    int                 fb_id;             /* /dev/fb0 = 0, /dev/fb1 = 1 */
-
-   int                 xres, yres, bits_per_pixel;
-   uint8_t            *framebuffer_addr;  /* mmapped address */
-   uintptr_t           framebuffer_paddr; /* physical address */
-   uint32_t            framebuffer_size;  /* total size of the framebuffer */
    int                 framebuffer_height;/* virtual vertical resolution */
-   uint32_t            gfx_layer_size;    /* the size of the primary layer */
-   float               refresh_rate;
-
+   int                 xres, yres, bits_per_pixel;
    /* Layers support */
    int                 gfx_layer_id;
    int                 layer_id;
    int                 layer_has_scaler;
-
    int                 layer_buf_x, layer_buf_y, layer_buf_w, layer_buf_h;
    int                 layer_win_x, layer_win_y;
    int                 layer_scaler_is_enabled;
    int                 layer_format;
+   uint32_t            framebuffer_size;  /* total size of the framebuffer */
+   uint32_t            gfx_layer_size;    /* the size of the primary layer */
+   float               refresh_rate;
+   uint8_t            *framebuffer_addr;  /* mmapped address */
 } sunxi_disp_t;
 
 typedef struct
@@ -496,7 +493,7 @@ void pixman_composite_src_8888_8888_asm_neon(int width,
    uint16_t *src,
    int src_stride_pixels);
 
-/* Pointer to the blitting function. Will be asigned
+/* Pointer to the blitting function. Will be assigned
  * when we find out what bpp the core uses. */
 void (*pixman_blit) (int width,
    int height,
@@ -514,8 +511,6 @@ struct sunxi_page
 struct sunxi_video
 {
    void *font;
-   const font_renderer_driver_t *font_driver;
-
    uint8_t font_rgb[4];
 
    /* Sunxi framebuffer information struct */
@@ -618,7 +613,7 @@ static void sunxi_vsync_thread_func(void *data)
    }
 }
 
-static void *sunxi_gfx_init(const video_info_t *video,
+static void *sunxi_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)
@@ -681,7 +676,7 @@ error:
    return NULL;
 }
 
-static void sunxi_gfx_free(void *data)
+static void sunxi_free(void *data)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
@@ -771,13 +766,13 @@ static void sunxi_setup_scale (void *data,
    sunxi_layer_show(_dispvars->sunxi_disp);
 }
 
-static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
+static bool sunxi_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive            = video_info->menu_is_alive;
+   bool menu_is_alive            = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (_dispvars->src_width != width || _dispvars->src_height != height)
@@ -804,29 +799,13 @@ static bool sunxi_gfx_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void sunxi_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static void sunxi_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool sunxi_alive(void *data) { return true; }
+/* Framebuffer device always has focus */
+static bool sunxi_focus(void *data) { return true; }
+static bool sunxi_suppress_screensaver(void *a, bool b) { return false; }
 
-static bool sunxi_gfx_alive(void *data)
-{
-   (void)data;
-   return true; /* always alive */
-}
-
-static bool sunxi_gfx_focus(void *data)
-{
-   (void)data;
-   return true; /* fb device always has focus */
-}
-
-static bool sunxi_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   return false;
-}
-
-static void sunxi_gfx_viewport_info(void *data, struct video_viewport *vp)
+static void sunxi_viewport_info(void *data, struct video_viewport *vp)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
@@ -839,15 +818,8 @@ static void sunxi_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = _dispvars->src_height;
 }
 
-static bool sunxi_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
+static bool sunxi_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
 
 static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
 {
@@ -932,8 +904,8 @@ static float sunxi_get_refresh_rate (void *data)
 
 static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* get_flags */
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    NULL, /* set_video_mode */
    NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
@@ -946,47 +918,46 @@ static const video_poke_interface_t sunxi_poke_interface = {
    NULL, /* sunxi_apply_state_changes */
    sunxi_set_texture_frame,
    sunxi_set_texture_enable,
-   NULL,                         /* set_osd_msg */
-   NULL,                         /* show_mouse */
-   NULL,                         /* grab_mouse_toggle */
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL,                         /* get_hw_render_interface */
-   NULL,                         /* set_hdr_max_nits */
-   NULL,                         /* set_hdr_paper_white_nits */
-   NULL,                         /* set_hdr_contrast */
-   NULL                          /* set_hdr_expand_gamut */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL  /* set_hdr_expand_gamut */
 };
 
-static void sunxi_gfx_get_poke_interface(void *data,
+static void sunxi_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
-   (void)data;
    *iface = &sunxi_poke_interface;
 }
 
 video_driver_t video_sunxi = {
-  sunxi_gfx_init,
-  sunxi_gfx_frame,
-  sunxi_gfx_set_nonblock_state,
-  sunxi_gfx_alive,
-  sunxi_gfx_focus,
-  sunxi_gfx_suppress_screensaver,
-  NULL, /* has_windowed */
-  sunxi_gfx_set_shader,
-  sunxi_gfx_free,
-  "sunxi",
-  NULL, /* set_viewport */
-  NULL, /* set_rotation */
-  sunxi_gfx_viewport_info,
-  NULL, /* read_viewport */
-  NULL, /* read_frame_raw */
-
+   sunxi_init,
+   sunxi_frame,
+   sunxi_set_nonblock_state,
+   sunxi_alive,
+   sunxi_focus,
+   sunxi_suppress_screensaver,
+   NULL, /* has_windowed */
+   sunxi_set_shader,
+   sunxi_free,
+   "sunxi",
+   NULL, /* set_viewport */
+   NULL, /* set_rotation */
+   sunxi_viewport_info,
+   NULL, /* read_viewport */
+   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   sunxi_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-  sunxi_gfx_get_poke_interface
 };

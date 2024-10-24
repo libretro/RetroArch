@@ -24,7 +24,7 @@
 #include "../../wiiu/wiiu_dbg.h"
 #include "../../wiiu/system/memory.h"
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 typedef struct
 {

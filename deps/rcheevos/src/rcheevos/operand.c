@@ -3,19 +3,16 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include <string.h>
 
 #ifndef RC_DISABLE_LUA
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RC_BEGIN_C_DECLS
 
 #include <lua.h>
 #include <lauxlib.h>
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_DISABLE_LUA */
 
@@ -59,6 +56,8 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
     self->value.luafunc = luaL_ref(parse->L, LUA_REGISTRYINDEX);
   }
 
+#else
+  (void)parse;
 #endif /* RC_DISABLE_LUA */
 
   self->type = RC_OPERAND_LUA;
@@ -66,10 +65,41 @@ static int rc_parse_operand_lua(rc_operand_t* self, const char** memaddr, rc_par
   return RC_OK;
 }
 
-static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse, int is_indirect) {
+static int rc_parse_operand_variable(rc_operand_t* self, const char** memaddr) {
   const char* aux = *memaddr;
-  unsigned address;
-  char size;
+  size_t i;
+  char varName[RC_VALUE_MAX_NAME_LENGTH + 1] = { 0 };
+
+  for (i = 0; i < RC_VALUE_MAX_NAME_LENGTH && *aux != '}'; i++) {
+    if (!rc_is_valid_variable_character(*aux, i == 0))
+      return RC_INVALID_VARIABLE_NAME;
+
+    varName[i] = *aux++;
+  }
+
+  if (i == 0)
+    return RC_INVALID_VARIABLE_NAME;
+
+  if (*aux != '}')
+    return RC_INVALID_VARIABLE_NAME;
+
+  ++aux;
+
+  if (strcmp(varName, "recall") == 0) {
+    self->type = RC_OPERAND_RECALL;
+  }
+  else { /* process named variable when feature is available.*/
+    return RC_UNKNOWN_VARIABLE_NAME;
+  }
+
+  *memaddr = aux;
+  return RC_OK;
+}
+
+static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_parse_state_t* parse, uint8_t is_indirect) {
+  const char* aux = *memaddr;
+  uint32_t address;
+  uint8_t size;
   int ret;
 
   switch (*aux) {
@@ -103,7 +133,17 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
     return ret;
 
   size = rc_memref_shared_size(self->size);
-  self->value.memref = rc_alloc_memref(parse, address, size, (char)is_indirect);
+  if (size != self->size && self->type == RC_OPERAND_PRIOR) {
+    /* if the shared size differs from the requested size and it's a prior operation, we
+     * have to check to make sure both sizes use the same mask, or the prior value may be
+     * updated when bits outside the mask are modified, which would make it look like the
+     * current value once the mask is applied. if the mask differs, create a new 
+     * non-shared record for tracking the prior data. */
+    if (rc_memref_mask(size) != rc_memref_mask(self->size))
+      size = self->size;
+  }
+
+  self->value.memref = rc_alloc_memref(parse, address, size, is_indirect);
   if (parse->offset < 0)
     return parse->offset;
 
@@ -111,7 +151,7 @@ static int rc_parse_operand_memory(rc_operand_t* self, const char** memaddr, rc_
   return RC_OK;
 }
 
-int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, rc_parse_state_t* parse) {
+int rc_parse_operand(rc_operand_t* self, const char** memaddr, uint8_t is_indirect, rc_parse_state_t* parse) {
   const char* aux = *memaddr;
   char* end;
   int ret;
@@ -142,6 +182,14 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
       break;
 
     case 'f': case 'F': /* floating point constant */
+      if (isalpha((unsigned char)aux[1])) {
+        ret = rc_parse_operand_memory(self, &aux, parse, is_indirect);
+
+        if (ret < 0)
+          return ret;
+
+        break;
+      }
       allow_decimal = 1;
       /* fall through */
     case 'v': case 'V': /* signed integer constant */
@@ -169,13 +217,16 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
           return RC_INVALID_FP_OPERAND;
 
         do {
-          fraction *= 10;
-          fraction += (*aux - '0');
-          shift *= 10;
+          /* only keep as many digits as will fit in a 32-bit value to prevent overflow.
+           * float only has around 7 digits of precision anyway. */
+          if (shift < 1000000000) {
+            fraction *= 10;
+            fraction += (*aux - '0');
+            shift *= 10;
+          }
           ++aux;
         } while (*aux >= '0' && *aux <= '9');
 
-        /* if fractional part is 0, convert to an integer constant */
         if (fraction != 0) {
           /* non-zero fractional part, convert to double and merge in integer portion */
           const double dbl_fraction = ((double)fraction) / ((double)shift);
@@ -183,33 +234,46 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
             self->value.dbl = ((double)(-((long)value))) - dbl_fraction;
           else
             self->value.dbl = (double)value + dbl_fraction;
-
-          self->type = RC_OPERAND_FP;
-          break;
         }
-      } else {
+        else {
+          /* fractional part is 0, just convert the integer portion */
+          if (negative)
+            self->value.dbl = (double)(-((long)value));
+          else
+            self->value.dbl = (double)value;
+        }
+
+        self->type = RC_OPERAND_FP;
+      }
+      else {
         /* not a floating point value, make sure something was read and advance the read pointer */
         if (end == aux)
           return allow_decimal ? RC_INVALID_FP_OPERAND : RC_INVALID_CONST_OPERAND;
 
         aux = end;
+
+        if (value > 0x7fffffffU)
+          value = 0x7fffffffU;
+
+        self->type = RC_OPERAND_CONST;
+
+        if (negative)
+          self->value.num = (unsigned)(-((long)value));
+        else
+          self->value.num = (unsigned)value;
       }
-
-      if (value > 0x7fffffffU)
-        value = 0x7fffffffU;
-
-      self->type = RC_OPERAND_CONST;
-
-      if (negative)
-        self->value.num = (unsigned)(-((long)value));
-      else
-        self->value.num = (unsigned)value;
+      break;
+    case '{': /* variable */
+      ++aux;
+      ret = rc_parse_operand_variable(self, &aux);
+      if (ret < 0)
+        return ret;
 
       break;
 
     case '0':
       if (aux[1] == 'x' || aux[1] == 'X') { /* hex integer constant */
-        /* fall through */
+        /* fallthrough */ /* to default */
     default:
         ret = rc_parse_operand_memory(self, &aux, parse, is_indirect);
 
@@ -218,8 +282,7 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, int is_indirect, 
 
         break;
       }
-
-      /* fall through for case '0' where not '0x' */
+      /* fallthrough */ /* to case '1' for case '0' where not '0x' */
     case '1': case '2': case '3': case '4': case '5': /* unsigned integer constant */
     case '6': case '7': case '8': case '9':
       value = strtoul(aux, &end, 10);
@@ -257,11 +320,11 @@ typedef struct {
 rc_luapeek_t;
 
 static int rc_luapeek(lua_State* L) {
-  unsigned address = (unsigned)luaL_checkinteger(L, 1);
-  unsigned num_bytes = (unsigned)luaL_checkinteger(L, 2);
+  uint32_t address = (uint32_t)luaL_checkinteger(L, 1);
+  uint32_t num_bytes = (uint32_t)luaL_checkinteger(L, 2);
   rc_luapeek_t* luapeek = (rc_luapeek_t*)lua_touserdata(L, 3);
 
-  unsigned value = luapeek->peek(address, num_bytes, luapeek->ud);
+  uint32_t value = luapeek->peek(address, num_bytes, luapeek->ud);
 
   lua_pushinteger(L, value);
   return 1;
@@ -269,11 +332,27 @@ static int rc_luapeek(lua_State* L) {
 
 #endif /* RC_DISABLE_LUA */
 
-int rc_operand_is_memref(rc_operand_t* self) {
+int rc_operand_is_float_memref(const rc_operand_t* self) {
+  switch (self->size) {
+    case RC_MEMSIZE_FLOAT:
+    case RC_MEMSIZE_FLOAT_BE:
+    case RC_MEMSIZE_DOUBLE32:
+    case RC_MEMSIZE_DOUBLE32_BE:
+    case RC_MEMSIZE_MBF32:
+    case RC_MEMSIZE_MBF32_LE:
+      return 1;
+
+    default:
+      return 0;
+  }
+}
+
+int rc_operand_is_memref(const rc_operand_t* self) {
   switch (self->type) {
     case RC_OPERAND_CONST:
     case RC_OPERAND_FP:
     case RC_OPERAND_LUA:
+    case RC_OPERAND_RECALL:
       return 0;
 
     default:
@@ -281,60 +360,24 @@ int rc_operand_is_memref(rc_operand_t* self) {
   }
 }
 
-unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state) {
-#ifndef RC_DISABLE_LUA
-  rc_luapeek_t luapeek;
-#endif /* RC_DISABLE_LUA */
-
-  unsigned value;
-
-  /* step 1: read memory */
+int rc_operand_is_recall(const rc_operand_t* self) {
   switch (self->type) {
-    case RC_OPERAND_CONST:
-      return self->value.num;
-
-    case RC_OPERAND_FP:
-      /* This is handled by rc_evaluate_condition_value. */
-      return 0;
-
-    case RC_OPERAND_LUA:
-      value = 0;
-
-#ifndef RC_DISABLE_LUA
-      if (eval_state->L != 0) {
-        lua_rawgeti(eval_state->L, LUA_REGISTRYINDEX, self->value.luafunc);
-        lua_pushcfunction(eval_state->L, rc_luapeek);
-
-        luapeek.peek = eval_state->peek;
-        luapeek.ud = eval_state->peek_userdata;
-
-        lua_pushlightuserdata(eval_state->L, &luapeek);
-
-        if (lua_pcall(eval_state->L, 2, 1, 0) == LUA_OK) {
-          if (lua_isboolean(eval_state->L, -1)) {
-            value = lua_toboolean(eval_state->L, -1);
-          }
-          else {
-            value = (unsigned)lua_tonumber(eval_state->L, -1);
-          }
-        }
-
-        lua_pop(eval_state->L, 1);
-      }
-
-#endif /* RC_DISABLE_LUA */
-
-      break;
+    case RC_OPERAND_RECALL:
+      return 1;
 
     default:
-      value = rc_get_memref_value(self->value.memref, self->type, eval_state);
-      break;
+      return 0;
   }
+}
 
-  /* step 2: mask off appropriate bits */
-  value = rc_transform_memref_value(value, self->size);
+int rc_operand_is_float(const rc_operand_t* self) {
+  if (self->type == RC_OPERAND_FP)
+    return 1;
 
-  /* step 3: apply logic */
+  return rc_operand_is_float_memref(self);
+}
+
+uint32_t rc_transform_operand_value(uint32_t value, const rc_operand_t* self) {
   switch (self->type)
   {
     case RC_OPERAND_BCD:
@@ -420,4 +463,70 @@ unsigned rc_evaluate_operand(rc_operand_t* self, rc_eval_state_t* eval_state) {
   }
 
   return value;
+}
+
+void rc_evaluate_operand(rc_typed_value_t* result, rc_operand_t* self, rc_eval_state_t* eval_state) {
+#ifndef RC_DISABLE_LUA
+  rc_luapeek_t luapeek;
+#endif /* RC_DISABLE_LUA */
+
+  /* step 1: read memory */
+  switch (self->type) {
+    case RC_OPERAND_CONST:
+      result->type = RC_VALUE_TYPE_UNSIGNED;
+      result->value.u32 = self->value.num;
+      return;
+
+    case RC_OPERAND_FP:
+      result->type = RC_VALUE_TYPE_FLOAT;
+      result->value.f32 = (float)self->value.dbl;
+      return;
+
+    case RC_OPERAND_LUA:
+      result->type = RC_VALUE_TYPE_UNSIGNED;
+      result->value.u32 = 0;
+
+#ifndef RC_DISABLE_LUA
+      if (eval_state->L != 0) {
+        lua_rawgeti(eval_state->L, LUA_REGISTRYINDEX, self->value.luafunc);
+        lua_pushcfunction(eval_state->L, rc_luapeek);
+
+        luapeek.peek = eval_state->peek;
+        luapeek.ud = eval_state->peek_userdata;
+
+        lua_pushlightuserdata(eval_state->L, &luapeek);
+
+        if (lua_pcall(eval_state->L, 2, 1, 0) == LUA_OK) {
+          if (lua_isboolean(eval_state->L, -1)) {
+            result->value.u32 = (uint32_t)lua_toboolean(eval_state->L, -1);
+          }
+          else {
+            result->value.u32 = (uint32_t)lua_tonumber(eval_state->L, -1);
+          }
+        }
+
+        lua_pop(eval_state->L, 1);
+      }
+
+#endif /* RC_DISABLE_LUA */
+
+      break;
+
+    case RC_OPERAND_RECALL:
+      result->type = eval_state->recall_value.type;
+      result->value = eval_state->recall_value.value;
+      return;
+
+    default:
+      result->type = RC_VALUE_TYPE_UNSIGNED;
+      result->value.u32 = rc_get_memref_value(self->value.memref, self->type, eval_state);
+      break;
+  }
+
+  /* step 2: convert read memory to desired format */
+  rc_transform_memref_value(result, self->size);
+
+  /* step 3: apply logic (BCD/invert) */
+  if (result->type == RC_VALUE_TYPE_UNSIGNED)
+    result->value.u32 = rc_transform_operand_value(result->value.u32, self);
 }

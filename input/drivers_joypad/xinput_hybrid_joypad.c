@@ -16,14 +16,14 @@
 
 /* Support 360 controllers on Windows.
  * Said controllers do show under DInput but they have limitations in this mode;
- * The triggers are combined rather than seperate and it is not possible to use
+ * The triggers are combined rather than separate and it is not possible to use
  * the guide button.
  *
  * Some wrappers for other controllers also simulate xinput (as it is easier to implement)
  * so this may be useful for those also.
  **/
 
-/* Specialized version of xinput_joypad.c, 
+/* Specialized version of xinput_joypad.c,
  * has both DirectInput and XInput codepaths */
 
 /* TODO/FIXME - integrate dinput_joypad into this version */
@@ -70,11 +70,11 @@ typedef struct
 
 /* TODO/FIXME - static globals */
 static int g_xinput_pad_indexes[MAX_USERS];
-static unsigned g_last_xinput_pad_idx;
-static bool g_xinput_block_pads;
-#ifdef HAVE_DYNAMIC
+static unsigned g_last_xinput_pad_idx       = 0;
+static bool g_xinput_block_pads             = false;
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
 /* For xinput1_n.dll */
-static dylib_t g_xinput_dll = NULL;
+static dylib_t g_xinput_dll                 = NULL;
 #endif
 /* Function pointer, to be assigned with dylib_proc */
 typedef uint32_t (__stdcall *XInputGetStateEx_t)(uint32_t, XINPUT_STATE*);
@@ -92,9 +92,9 @@ static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 
 /* Buttons are provided by XInput as bits of a uint16.
- * Map from rarch button index (0..10) to a mask to 
+ * Map from rarch button index (0..10) to a mask to
  * bitwise-& the buttons against.
- * dpad is handled seperately. */
+ * dpad is handled separately. */
 static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_A,
    XINPUT_GAMEPAD_B,
@@ -170,7 +170,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
 
       rdi.cbSize      = rdi_size;
 
-      /* 
+      /*
        * Step 1 -
        * Check if device type is HID
        * Step 2 -
@@ -182,7 +182,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
        * Step 5 -
        * Check if the device ID contains "IG_".
        * If it does, then it's an XInput device
-       * This information can not be found from DirectInput 
+       * This information can not be found from DirectInput
        */
       if (
                (raw_devs[i].dwType == RIM_TYPEHID)                    /* 1 */
@@ -217,7 +217,7 @@ static bool dinput_joypad_get_vidpid_from_xinput_index(
       int32_t index, int32_t *vid,
       int32_t *pid, int32_t *dinput_index)
 {
-   int i;
+   size_t i;
 
    for (i = 0; i < ARRAY_SIZE(g_xinput_pad_indexes); i++)
    {
@@ -242,6 +242,11 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
+   while (!g_xinput_states[g_last_xinput_pad_idx].connected && g_last_xinput_pad_idx < 3)
+   {
+      g_last_xinput_pad_idx++;
+   }
+
    pad = &g_pads[g_joypad_cnt].joypad;
 
 #ifdef __cplusplus
@@ -253,9 +258,9 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
 #endif
       return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name          = 
+   g_pads[g_joypad_cnt].joy_name          =
       strdup((const char*)inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = 
+   g_pads[g_joypad_cnt].joy_friendly_name =
       strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID,
@@ -346,7 +351,7 @@ static void *xinput_joypad_init(void *data)
    unsigned i, j;
    XINPUT_STATE dummy_state;
 
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
    if (!g_xinput_dll)
       if (!load_xinput_dll())
          goto error;
@@ -370,7 +375,7 @@ static void *xinput_joypad_init(void *data)
        * XInputGetState, at the cost of losing guide button support.
        */
       g_xinput_guide_button_supported = false;
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
       g_XInputGetStateEx = (XInputGetStateEx_t)dylib_proc(
             g_xinput_dll, "XInputGetState");
 #else
@@ -380,7 +385,7 @@ static void *xinput_joypad_init(void *data)
       if (!g_XInputGetStateEx)
       {
          RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
          dylib_close(g_xinput_dll);
 #endif
          /* DLL was loaded but did not contain the correct function. */
@@ -389,7 +394,7 @@ static void *xinput_joypad_init(void *data)
       RARCH_WARN("[XInput]: No guide button support.\n");
    }
 
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
    g_XInputSetState = (XInputSetState_t)dylib_proc(
          g_xinput_dll, "XInputSetState");
 #else
@@ -398,7 +403,7 @@ static void *xinput_joypad_init(void *data)
    if (!g_XInputSetState)
    {
       RARCH_ERR("[XInput]: Failed to init: DLL is invalid or corrupt.\n");
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
       dylib_close(g_xinput_dll);
 #endif
       goto error; /* DLL was loaded but did not contain the correct function. */
@@ -415,7 +420,7 @@ static void *xinput_joypad_init(void *data)
       g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
-      g_xinput_states[i].connected                    = 
+      g_xinput_states[i].connected                    =
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
 
@@ -475,7 +480,7 @@ succeeded:
 error:
    /* non-hat button. */
    g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
-   
+
    return NULL;
 }
 
@@ -486,37 +491,6 @@ static bool xinput_joypad_query_pad(unsigned pad)
       return g_xinput_states[xuser].connected;
    return dinput_joypad_query_pad(pad);
 }
-
-static void xinput_joypad_destroy(void)
-{
-   unsigned i;
-
-   for (i = 0; i < 4; ++i)
-   {
-      g_xinput_states[i].xstate.dwPacketNumber        = 0;
-      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
-      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
-      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
-      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
-      g_xinput_states[i].connected                    = false;
-   }
-
-#if defined(HAVE_DYNAMIC) && !defined(__WINRT__)
-   dylib_close(g_xinput_dll);
-
-   g_xinput_dll        = NULL;
-#endif
-   g_XInputGetStateEx  = NULL;
-   g_XInputSetState    = NULL;
-
-   dinput_joypad_destroy();
-
-   g_xinput_block_pads = false;
-}
-
 
 static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
@@ -569,12 +543,12 @@ static int16_t xinput_joypad_state_func(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && xinput_joypad_button_state(
                xuser, btn_word, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -685,6 +659,36 @@ static bool xinput_joypad_rumble(unsigned pad,
       == 0);
 }
 
+static void xinput_joypad_destroy(void)
+{
+   unsigned i;
+
+   for (i = 0; i < 4; ++i)
+   {
+      g_xinput_states[i].xstate.dwPacketNumber        = 0;
+      g_xinput_states[i].xstate.Gamepad.wButtons      = 0;
+      g_xinput_states[i].xstate.Gamepad.bLeftTrigger  = 0;
+      g_xinput_states[i].xstate.Gamepad.bRightTrigger = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
+      g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      g_xinput_states[i].connected                    = false;
+   }
+
+#if defined(HAVE_DYLIB) && !defined(__WINRT__)
+   dylib_close(g_xinput_dll);
+
+   g_xinput_dll        = NULL;
+#endif
+   g_XInputGetStateEx  = NULL;
+   g_XInputSetState    = NULL;
+
+   dinput_joypad_destroy();
+
+   g_xinput_block_pads = false;
+}
+
 input_device_driver_t xinput_joypad = {
    xinput_joypad_init,
    xinput_joypad_query_pad,
@@ -695,7 +699,9 @@ input_device_driver_t xinput_joypad = {
    xinput_joypad_axis,
    xinput_joypad_poll,
    xinput_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    xinput_joypad_name,
    "xinput",
 };

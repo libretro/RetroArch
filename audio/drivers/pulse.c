@@ -17,13 +17,15 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <lists/string_list.h>
+
 #include <pulse/pulseaudio.h>
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 typedef struct
@@ -35,6 +37,7 @@ typedef struct
    bool nonblock;
    bool success;
    bool is_paused;
+   struct string_list *devicelist;
 } pa_t;
 
 static void pulse_free(void *data)
@@ -87,6 +90,25 @@ static void context_state_cb(pa_context *c, void *data)
       default:
          break;
    }
+}
+
+static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *data) 
+{
+   union string_list_elem_attr attr;
+   attr.i = 0;
+   pa_t *pa = (pa_t*)data;
+
+   if (!pa->devicelist)
+     pa->devicelist = string_list_new();
+   if (!pa->devicelist)
+      return;
+
+   // If eol is set to a positive number, you're at the end of the list
+   if (eol > 0) {
+      return;
+   }
+   RARCH_DBG("[PulseAudio]: Sink detected: %s\n",l->name);
+   string_list_append(pa->devicelist, l->name, attr);
 }
 
 static void stream_state_cb(pa_stream *s, void *data)
@@ -174,7 +196,8 @@ static void *pulse_init(const char *device, unsigned rate,
 
    pa_context_set_state_callback(pa->context, context_state_cb, pa);
 
-   if (pa_context_connect(pa->context, device, PA_CONTEXT_NOFLAGS, NULL) < 0)
+   /* Code is not prepared to use multiple PulseAudio servers, device is used as sink. */
+   if (pa_context_connect(pa->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
       goto error;
 
    pa_threaded_mainloop_lock(pa->mainloop);
@@ -186,6 +209,11 @@ static void *pulse_init(const char *device, unsigned rate,
    if (pa_context_get_state(pa->context) != PA_CONTEXT_READY)
       goto unlock_error;
 
+   pa_context_get_sink_info_list(pa->context,pa_sinklist_cb,pa);
+   /* Checking device against sink list would be tricky due to callback, so it is just set. */
+   if (device)
+     pa_context_set_default_sink(pa->context, device, NULL, NULL);
+         
    spec.format   = is_little_endian() ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_FLOAT32BE;
    spec.channels = 2;
    spec.rate     = rate;
@@ -352,6 +380,28 @@ static size_t pulse_buffer_size(void *data)
    return pa->buffer_size;
 }
 
+static void *pulse_device_list_new(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   if (!pa)
+      return NULL;
+
+   struct string_list *s = pa->devicelist ? string_list_clone(pa->devicelist) : NULL;
+   if (!s)
+      return NULL;
+   return s;
+}
+
+static void pulse_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *s = (struct string_list*)array_list_data;
+
+   if (!s)
+      return;
+
+   string_list_free(s);
+}
+
 audio_driver_t audio_pulse = {
    pulse_init,
    pulse_write,
@@ -362,8 +412,8 @@ audio_driver_t audio_pulse = {
    pulse_free,
    pulse_use_float,
    "pulse",
-   NULL,
-   NULL,
+   pulse_device_list_new,
+   pulse_device_list_free,
    pulse_write_avail,
    pulse_buffer_size,
 };

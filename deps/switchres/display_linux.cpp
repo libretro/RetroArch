@@ -42,8 +42,9 @@ linux_display::~linux_display()
 //  linux_display::init
 //============================================================
 
-bool linux_display::init()
+bool linux_display::init(void* pfdata)
 {
+	m_pf_data = pfdata;
 	// Initialize custom video
 	int method = CUSTOM_VIDEO_TIMING_AUTO;
 
@@ -146,7 +147,7 @@ int linux_display::get_available_video_modes()
 
 		// get next mode
 		video()->get_timing(&mode);
-		if (mode.type == 0 || mode.platform_data == 0)
+		if (mode.type == 0)
 			break;
 
 		// set the desktop mode
@@ -155,6 +156,8 @@ int linux_display::get_available_video_modes()
 			memcpy(&desktop_mode, &mode, sizeof(modeline));
 			if (current_mode() == nullptr)
 				set_current_mode(&mode);
+
+			if (mode.type & MODE_ROTATED) set_desktop_is_rotated(true);
 		}
 
 		video_modes.push_back(mode);

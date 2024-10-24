@@ -16,30 +16,30 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 #include <process.h>
+
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
 #include "../frontend_driver.h"
+#include "../../command.h"
 #include "../../defaults.h"
 #include "../../paths.h"
+#include "../../verbosity.h"
 
 static enum frontend_fork dos_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_dos_init(void *data)
 {
-	printf("Loading RetroArch...\n");
+	/* Keep a call to time() as otherwise we trigger some obscure bug in
+	 * djgpp libc code and time(NULL) return only -1 */
+	printf("Loading RetroArch. Time is @%ld...\n", (long) time(NULL));
 }
 
-static void frontend_dos_shutdown(bool unused)
-{
-	(void)unused;
-}
-
-static int frontend_dos_get_rating(void)
-{
-	return -1;
-}
+/* TODO/FIXME - implement */
+static void frontend_dos_shutdown(bool unused) { }
+static int frontend_dos_get_rating(void) { return -1; }
 
 enum frontend_architecture frontend_dos_get_arch(void)
 {
@@ -49,14 +49,13 @@ enum frontend_architecture frontend_dos_get_arch(void)
 static void frontend_dos_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
-	char base_path[PATH_MAX] = {0};
-	int i;
+   char *slash;
+	char base_path[PATH_MAX];
 
 	retro_main_log_file_init("retrodos.txt", false);
 
 	strlcpy(base_path, argv[0], sizeof(base_path));
-	char *slash = strrchr(base_path, '/');
-	if (slash)
+	if ((slash = strrchr(base_path, '/')))
 	  *slash = '\0';
 	slash = strrchr(base_path, '/');
 	if (slash && strcasecmp(slash, "/cores"))
@@ -83,8 +82,6 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 			   "recrdcfg", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
 			   "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], base_path,
-			   "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
 			   "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
@@ -93,10 +90,6 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 			   "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
 			   "overlay", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], base_path,
-			   "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], base_path,
 			   "download", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
 	fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT], base_path,
@@ -113,8 +106,6 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 
 static void frontend_dos_exec(const char *path, bool should_load_game)
 {
-	printf("Loading %s, %d\n", path, should_load_game);
-
 	char *newargv[]    = { NULL, NULL };
 	size_t len         = strlen(path);
 
@@ -131,35 +122,24 @@ static void frontend_dos_exitspawn(char *s, size_t len, char *args)
 
 	if (dos_fork_mode == FRONTEND_FORK_NONE)
 		return;
-	
-	switch (dos_fork_mode)
-	{
-	case FRONTEND_FORK_CORE_WITH_ARGS:
-		should_load_content = true;
-		break;
-	case FRONTEND_FORK_NONE:
-	default:
-		break;
-	}
+	if (dos_fork_mode == FRONTEND_FORK_CORE_WITH_ARGS)
+      should_load_content = true;
 
 	frontend_dos_exec(s, should_load_content);
 }
 
-static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
+static bool frontend_dos_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         RARCH_LOG("FRONTEND_FORK_CORE\n");
-         unix_fork_mode  = fork_mode;
+         dos_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
-         unix_fork_mode  = fork_mode;
+         dos_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_RESTART:
-         RARCH_LOG("FRONTEND_FORK_RESTART\n");
-         unix_fork_mode  = FRONTEND_FORK_CORE;
+         dos_fork_mode  = FRONTEND_FORK_CORE;
 
          {
             char executable_path[PATH_MAX_LENGTH] = {0};
@@ -210,6 +190,7 @@ frontend_ctx_driver_t frontend_ctx_dos = {
 	NULL,                         /* get_user_language */
 	NULL,                         /* is_narrator_running */
 	NULL,                         /* accessibility_speak */
+	NULL,                         /* set_gamemode        */
 	"dos",                        /* ident               */
    NULL                          /* get_video_driver    */
 };

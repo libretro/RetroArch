@@ -25,7 +25,7 @@
 #define COBJMACROS
 #define COBJMACROS_DEFINED
 #endif
-/* We really just want shobjidl.h, but there's no way to detect its existance at compile time (especially with mingw). however shlobj happens to include it for us when it's supported, which is easier. */
+/* We really just want shobjidl.h, but there's no way to detect its existence at compile time (especially with mingw). however shlobj happens to include it for us when it's supported, which is easier. */
 #include <shlobj.h>
 #ifdef COBJMACROS_DEFINED
 #undef COBJMACROS
@@ -37,15 +37,13 @@
 
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
-#include "../../retroarch.h"
-#include "../../verbosity.h"
 
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
 
-/* MSVC really doesn't want CINTERFACE to be used 
+/* MSVC really doesn't want CINTERFACE to be used
  * with shobjidl for some reason, but since we use C++ mode,
- * we need a workaround... so use the names of the 
+ * we need a workaround... so use the names of the
  * COBJMACROS functions instead. */
 #if defined(__cplusplus) && !defined(CINTERFACE)
 #define ITaskbarList3_HrInit(x) (x)->HrInit()
@@ -54,29 +52,36 @@
 #define ITaskbarList3_SetProgressValue(a, b, c, d) (a)->SetProgressValue(b, c, d)
 #endif
 
+/*
+   NOTE: When an application displays a window,
+   its taskbar button is created by the system.
+   When the button is in place, the taskbar sends a
+   TaskbarButtonCreated message to the window.
+
+   Its value is computed by calling RegisterWindowMessage(
+   L("TaskbarButtonCreated")).
+   That message must be received by your application before
+   it calls any ITaskbarList3 method.
+ */
 #endif
+
+enum dispserv_win32_flags
+{
+   DISPSERV_WIN32_FLAG_DECORATIONS = (1 << 0)
+};
 
 typedef struct
 {
-   bool decorations;
-   int progress;
-   int crt_center;
-   unsigned opacity;
-   unsigned orig_width;
-   unsigned orig_height;
-   unsigned orig_refresh;
 #ifdef HAS_TASKBAR_EXT
    ITaskbarList3 *taskbar_list;
 #endif
+   int crt_center;
+   unsigned orig_width;
+   unsigned orig_height;
+   unsigned orig_refresh;
+   uint8_t flags;
 } dispserv_win32_t;
 
-/*
-   NOTE: When an application displays a window, its taskbar button is created
-   by the system. When the button is in place, the taskbar sends a
-   TaskbarButtonCreated message to the window. Its value is computed by
-   calling RegisterWindowMessage(L("TaskbarButtonCreated")). That message must
-   be received by your application before it calls any ITaskbarList3 method.
- */
 
 static void *win32_display_server_init(void)
 {
@@ -87,24 +92,25 @@ static void *win32_display_server_init(void)
 
 #ifdef HAS_TASKBAR_EXT
 #ifdef __cplusplus
-   /* When compiling in C++ mode, GUIDs are references instead of pointers */
+   /* When compiling in C++ mode, GUIDs
+      are references instead of pointers */
    if (FAILED(CoCreateInstance(CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
          (void**)&dispserv->taskbar_list)))
 #else
-   /* Mingw GUIDs are pointers instead of references since we're in C mode */
+   /* Mingw GUIDs are pointers
+      instead of references since we're in C mode */
    if (FAILED(CoCreateInstance(&CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
          (void**)&dispserv->taskbar_list)))
 #endif
    {
       dispserv->taskbar_list = NULL;
-      RARCH_ERR("[dispserv]: CoCreateInstance of ITaskbarList3 failed.\n");
    }
    else
    {
       if (FAILED(ITaskbarList3_HrInit(dispserv->taskbar_list)))
-         RARCH_ERR("[dispserv]: HrInit of ITaskbarList3 failed.\n");
+         dispserv->taskbar_list = NULL;
    }
 #endif
 
@@ -115,7 +121,12 @@ static void win32_display_server_destroy(void *data)
 {
    dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
 
-   if (dispserv->orig_width > 0 && dispserv->orig_height > 0)
+   if (!dispserv)
+      return;
+
+   if (     dispserv->orig_width > 0
+         && dispserv->orig_height > 0
+         && dispserv->orig_refresh > 0)
       video_display_server_set_resolution(
             dispserv->orig_width,
             dispserv->orig_height,
@@ -131,20 +142,15 @@ static void win32_display_server_destroy(void *data)
    }
 #endif
 
-   if (dispserv)
-      free(dispserv);
+   free(dispserv);
 }
 
 static bool win32_display_server_set_window_opacity(
       void *data, unsigned opacity)
 {
+#ifdef HAVE_WINDOW_TRANSP
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
-
-   if (serv)
-      serv->opacity       = opacity;
-
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
    /* Set window transparency on Windows 2000 and above */
    if (opacity < 100)
    {
@@ -167,14 +173,16 @@ static bool win32_display_server_set_window_opacity(
 static bool win32_display_server_set_window_progress(
       void *data, int progress, bool finished)
 {
+   uint8_t win32_flags    = 0;
    HWND              hwnd = win32_get_window();
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   if (serv)
-      serv->progress      = progress;
+   if (!serv)
+      return false;
 
 #ifdef HAS_TASKBAR_EXT
-   if (!serv->taskbar_list || !win32_taskbar_is_created())
+   win32_flags            = win32_get_flags();
+   if (!serv->taskbar_list || !(win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED))
       return false;
 
    if (progress == -1)
@@ -208,8 +216,10 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 {
    dispserv_win32_t *serv = (dispserv_win32_t*)data;
 
-   if (serv)
-      serv->decorations = on;
+   if (!serv)
+      return false;
+
+   serv->flags      |= DISPSERV_WIN32_FLAG_DECORATIONS;
 
    /* menu_setting performs a reinit instead to properly
     * apply decoration changes */
@@ -220,6 +230,9 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 static bool win32_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id           = 0;
    DEVMODE dm                = {0};
    LONG res                  = 0;
    unsigned i                = 0;
@@ -265,7 +278,7 @@ static bool win32_display_server_set_resolution(void *data,
          continue;
       if (dm.dmBitsPerPel != curr_bpp)
          continue;
-      if (dm.dmDisplayFrequency != int_hz)
+      if (dm.dmDisplayFrequency != (DWORD)int_hz)
          continue;
 #if _WIN32_WINNT >= 0x0500
       if (dm.dmDisplayOrientation != curr_orientation)
@@ -274,22 +287,22 @@ static bool win32_display_server_set_resolution(void *data,
          continue;
 #endif
 
-      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT 
+      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT
                   | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 #if _WIN32_WINNT >= 0x0500
       dm.dmFields |= DM_DISPLAYORIENTATION;
 #endif
 
-      res = win32_change_display_settings(NULL, &dm, CDS_TEST);
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+      res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, CDS_TEST);
 
       switch (res)
       {
          case DISP_CHANGE_SUCCESSFUL:
-            res = win32_change_display_settings(NULL, &dm, 0);
+            res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, 0);
             switch (res)
             {
                case DISP_CHANGE_SUCCESSFUL:
-                  return true;
                case DISP_CHANGE_NOTUPDATED:
                   return true;
                default:
@@ -316,6 +329,8 @@ static int resolution_list_qsort_func(
    if (!a || !b)
       return 0;
 
+   str_a[0] = str_b[0] = '\0';
+
    snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
          a->width,
          a->height,
@@ -333,7 +348,9 @@ static void *win32_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
    DEVMODE dm                        = {0};
-   unsigned i, j, count              = 0;
+   unsigned i                        = 0;
+   unsigned j                        = 0;
+   unsigned count                    = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
@@ -341,6 +358,7 @@ static void *win32_display_server_get_resolution_list(
 #if _WIN32_WINNT >= 0x0500
    unsigned curr_orientation         = 0;
 #endif
+   bool curr_interlaced              = false;
    struct video_display_config *conf = NULL;
 
    if (win32_get_video_output(&dm, -1, sizeof(dm)))
@@ -351,6 +369,7 @@ static void *win32_display_server_get_resolution_list(
       curr_refreshrate               = dm.dmDisplayFrequency;
 #if _WIN32_WINNT >= 0x0500
       curr_orientation               = dm.dmDisplayOrientation;
+      curr_interlaced                = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
 #endif
    }
 
@@ -369,10 +388,8 @@ static void *win32_display_server_get_resolution_list(
    }
 
    *len = count;
-   conf = (struct video_display_config*)
-      calloc(*len, sizeof(struct video_display_config));
-
-   if (!conf)
+   if (!(conf = (struct video_display_config*)
+      calloc(*len, sizeof(struct video_display_config))))
       return NULL;
 
    for (i = 0, j = 0; win32_get_video_output(&dm, i, sizeof(dm)); i++)
@@ -390,13 +407,22 @@ static void *win32_display_server_get_resolution_list(
       conf[j].height      = dm.dmPelsHeight;
       conf[j].bpp         = dm.dmBitsPerPel;
       conf[j].refreshrate = dm.dmDisplayFrequency;
+      /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
+      conf[j].refreshrate_float = 0.0f;
       conf[j].idx         = j;
       conf[j].current     = false;
+#if _WIN32_WINNT >= 0x0500
+      conf[j].interlaced  = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+#else
+      conf[j].interlaced  = false;
+#endif
+      conf[j].dblscan     = false; /* no flag for doublescan on this platform */
 
       if (     (conf[j].width       == curr_width)
             && (conf[j].height      == curr_height)
             && (conf[j].bpp         == curr_bpp)
             && (conf[j].refreshrate == curr_refreshrate)
+            && (conf[j].interlaced  == curr_interlaced)
          )
          conf[j].current  = true;
 
@@ -416,28 +442,22 @@ static void *win32_display_server_get_resolution_list(
 enum rotation win32_display_server_get_screen_orientation(void *data)
 {
    DEVMODE dm = {0};
-   enum rotation rotation;
-
    win32_get_video_output(&dm, -1, sizeof(dm));
 
    switch (dm.dmDisplayOrientation)
    {
+      case DMDO_90:
+         return ORIENTATION_FLIPPED_ROTATED;
+      case DMDO_180:
+         return ORIENTATION_FLIPPED;
+      case DMDO_270:
+         return ORIENTATION_VERTICAL;
       case DMDO_DEFAULT:
       default:
-         rotation = ORIENTATION_NORMAL;
-         break;
-      case DMDO_90:
-         rotation = ORIENTATION_FLIPPED_ROTATED;
-         break;
-      case DMDO_180:
-         rotation = ORIENTATION_FLIPPED;
-         break;
-      case DMDO_270:
-         rotation = ORIENTATION_VERTICAL;
          break;
    }
 
-   return rotation;
+   return ORIENTATION_NORMAL;
 }
 
 void win32_display_server_set_screen_orientation(void *data,
@@ -454,12 +474,12 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_90 
+            if ((       dm.dmDisplayOrientation == DMDO_90
                      || dm.dmDisplayOrientation == DMDO_270)
-                  && width != dm.dmPelsHeight)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 
@@ -470,12 +490,12 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
-                     || dm.dmDisplayOrientation == DMDO_180) 
-                  && width != dm.dmPelsHeight)
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
+                     || dm.dmDisplayOrientation == DMDO_180)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 
@@ -486,12 +506,12 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_90 
+            if ((       dm.dmDisplayOrientation == DMDO_90
                      || dm.dmDisplayOrientation == DMDO_270)
-                  && width != dm.dmPelsHeight)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 
@@ -502,12 +522,12 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
                      || dm.dmDisplayOrientation == DMDO_180)
-                  && width != dm.dmPelsHeight)
+                     && (width != (int)dm.dmPelsHeight))
             {
-               /* device is changing orientations, swap the aspect */
-               dm.dmPelsWidth = dm.dmPelsHeight;
+               /* Device is changing orientations, swap the aspect */
+               dm.dmPelsWidth  = dm.dmPelsHeight;
                dm.dmPelsHeight = width;
             }
 

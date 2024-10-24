@@ -132,21 +132,21 @@ xrandr_timing::xrandr_timing(char *device_name, custom_video_settings *vs)
 		if (p_XOpenDisplay == NULL)
 		{
 			log_error("XRANDR: <%d> (xrandr_timing) [ERROR] missing func %s in %s\n", m_id, "XOpenDisplay", "X11_LIBRARY");
-			throw new std::exception();
+			throw std::exception();
 		}
 		else
 		{
 			if (!XOpenDisplay(NULL))
 			{
 				log_verbose("XRANDR: <%d> (xrandr_timing) X server not found\n", m_id);
-				throw new std::exception();
+				throw std::exception();
 			}
 		}
 	}
 	else
 	{
 		log_error("XRANDR: <%d> (xrandr_timing) [ERROR] missing %s library\n", m_id, "X11_LIBRARY");
-		throw new std::exception();
+		throw std::exception();
 	}
 
 	s_total_managed_screen++;
@@ -161,6 +161,8 @@ xrandr_timing::~xrandr_timing()
 	s_total_managed_screen--;
 	if (s_total_managed_screen == 0)
 	{
+		s_id = 0;
+
 		if (sp_desktop_crtc)
 			delete[]sp_desktop_crtc;
 
@@ -1046,7 +1048,16 @@ bool xrandr_timing::delete_mode(modeline *mode)
 			XRROutputInfo *output_info = XRRGetOutputInfo(m_pdisplay, resources, resources->outputs[m_desktop_output]);
 			XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(m_pdisplay, resources, output_info->crtc);
 			if (resources->modes[m].id == crtc_info->mode)
-				log_verbose("XRANDR: <%d> (delete_mode) [WARNING] modeline [%04lx] is currently active\n", m_id, resources->modes[m].id);
+			{
+				log_verbose("XRANDR: <%d> (delete_mode) [WARNING] modeline [%04lx] is currently active, restoring desktop mode first\n", m_id, resources->modes[m].id);
+				modeline desktop_mode = {};
+				desktop_mode.type |= MODE_DESKTOP;
+				if (!set_timing(&desktop_mode, 0))
+				{
+					log_error("XRANDR: <%d> (delete_mode) [ERROR] Could not restore desktop mode\n", m_id);
+					return false;
+				}
+			}
 
 			XRRFreeCrtcInfo(crtc_info);
 			XRRFreeOutputInfo(output_info);
@@ -1175,6 +1186,9 @@ bool xrandr_timing::process_modelist(std::vector<modeline *> modelist)
 
 		else if (mode->type & MODE_ADD)
 			result = add_mode(mode);
+
+		else if (mode->type & MODE_UPDATE)
+			result = update_mode(mode);
 
 		if (!result)
 		{

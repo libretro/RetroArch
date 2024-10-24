@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2022 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (net_ifinfo.c).
@@ -20,239 +20,401 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <stdio.h>
 
-#include <retro_miscellaneous.h>
+#include <string/stdstring.h>
+#include <net/net_compat.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
-#include <winsock2.h>
-#include <iphlpapi.h>
-#include <ws2tcpip.h>
-#else
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#ifdef _MSC_VER
+#pragma comment(lib, "Iphlpapi")
+#endif
 
-#ifdef WANT_IFADDRS
+#include <iphlpapi.h>
+
+#elif !defined(VITA) && !defined(GEKKO)
+#if defined(WANT_IFADDRS)
 #include <compat/ifaddrs.h>
-#else
-#if !defined HAVE_LIBNX && !defined(_3DS)
+#elif !defined(HAVE_LIBNX) && !defined(_3DS)
 #include <ifaddrs.h>
+#ifndef WIIU
+#include <net/if.h>
 #endif
 #endif
 #endif
 
 #include <net/net_ifinfo.h>
 
-#if defined(BSD)
-#include <netinet/in.h>
-#endif
-
-void net_ifinfo_free(net_ifinfo_t *list)
-{
-   unsigned k;
-
-   if (!list)
-      return;
-
-   for (k = 0; k < list->size; k++)
-   {
-      struct net_ifinfo_entry *ptr =
-         (struct net_ifinfo_entry*)&list->entries[k];
-
-      if (*ptr->name)
-         free(ptr->name);
-      if (*ptr->host)
-         free(ptr->host);
-
-      ptr->name = NULL;
-      ptr->host = NULL;
-   }
-   free(list->entries);
-}
-
-#if defined(HAVE_LIBNX) || defined(_3DS)
-static void convert_ip(char *dst, size_t size, uint32_t ip, bool inverted)
-{
-   unsigned char bytes[4];
-   bytes[0] = ip & 0xFF;
-   bytes[1] = (ip >> 8) & 0xFF;
-   bytes[2] = (ip >> 16) & 0xFF;
-   bytes[3] = (ip >> 24) & 0xFF;
-
-   if (inverted)
-      snprintf(dst, size, "%d.%d.%d.%d", bytes[0], bytes[1], bytes[2], bytes[3]);
-   else
-      snprintf(dst, size, "%d.%d.%d.%d", bytes[3], bytes[2], bytes[1], bytes[0]);
-}
-#endif
-
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
-   unsigned k              = 0;
-#if defined(HAVE_LIBNX) || defined(_3DS)
-   uint32_t id;
-   Result rc;
+#if defined(_WIN32) && !defined(_XBOX)
+   /* Microsoft docs recommend doing it this way. */
+   char buf[512];
+   ULONG result;
+   PIP_ADAPTER_ADDRESSES addr;
+   struct net_ifinfo_entry *entry;
+   size_t                interfaces = 0;
+   ULONG                 flags      = GAA_FLAG_SKIP_ANYCAST
+                                    | GAA_FLAG_SKIP_MULTICAST 
+                                    | GAA_FLAG_SKIP_DNS_SERVER;
+   ULONG                 len        = 15 * 1024;
+   PIP_ADAPTER_ADDRESSES addresses  = (PIP_ADAPTER_ADDRESSES)calloc(1, len);
 
-   char hostname[128];
-   struct net_ifinfo_entry *ptr = NULL;
+   list->entries                    = NULL;
 
-   memset(list, 0, sizeof(net_ifinfo_t));
+   if (!addresses)
+      goto failure;
 
-   /* loopback */
-   convert_ip(hostname, sizeof(hostname), INADDR_LOOPBACK, false);
-
-   ptr = (struct net_ifinfo_entry*)
-         realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
-
-   if (!ptr)
-      goto error;
-
-   list->entries          = ptr;
-
-   list->entries[k].name  = strdup("lo");
-   list->entries[k].host  = strdup(hostname);
-   list->size             = k + 1;
-
-   k++;
-
-   /*
-      actual interface
-      can be wlan or eth (with a wiiu adapter)
-      so we just use "switch" as a name
-   */
-#if defined(_3DS)
-   convert_ip(hostname, sizeof(hostname), gethostid(), true);
-#else
-   rc = nifmGetCurrentIpAddress(&id);
-
-   if (!R_SUCCEEDED(rc)) /* not connected to any network */
-      return true;
-
-   convert_ip(hostname, sizeof(hostname), id, true);
-#endif
-
-   ptr = (struct net_ifinfo_entry*)
-         realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
-
-   if (!ptr)
-      goto error;
-
-   list->entries          = ptr;
-#if defined(_3DS)
-   list->entries[k].name  = strdup("wlan");
-#else
-   list->entries[k].name  = strdup("switch");
-#endif
-   list->entries[k].host  = strdup(hostname);
-   list->size             = k + 1;
-
-   return true;
-#elif defined(_WIN32) && !defined(_XBOX)
-   PIP_ADAPTER_ADDRESSES adapter_addresses = NULL, aa = NULL;
-   PIP_ADAPTER_UNICAST_ADDRESS ua = NULL;
-#ifdef _WIN32_WINNT_WINXP
-   DWORD size = 0;
-   DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
-
-   adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
-
-   rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
-
-   memset(list, 0, sizeof(net_ifinfo_t));
-
-   if (rv != ERROR_SUCCESS)
-      goto error;
-#endif
-   for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
+   result = GetAdaptersAddresses(AF_UNSPEC, flags, NULL, addresses, &len);
+   if (result == ERROR_BUFFER_OVERFLOW)
    {
-      char name[PATH_MAX_LENGTH];
-      memset(name, 0, sizeof(name));
+      PIP_ADAPTER_ADDRESSES new_addresses =
+         (PIP_ADAPTER_ADDRESSES)realloc(addresses, len);
 
-      WideCharToMultiByte(CP_UTF8, 0, aa->FriendlyName, wcslen(aa->FriendlyName),
-            name, PATH_MAX_LENGTH, NULL, NULL);
-
-      for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
+      if (new_addresses)
       {
-         char host[PATH_MAX_LENGTH];
-         struct net_ifinfo_entry *ptr = (struct net_ifinfo_entry*)
-            realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
+         memset(new_addresses, 0, len);
 
-         if (!ptr)
-            goto error;
-
-         list->entries          = ptr;
-
-         memset(host, 0, sizeof(host));
-
-         getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength,
-               host, sizeof(host), NULL, NI_MAXSERV, NI_NUMERICHOST);
-
-         list->entries[k].name  = strdup(name);
-         list->entries[k].host  = strdup(host);
-         list->size             = k + 1;
-
-         k++;
+         addresses = new_addresses;
+         result    = GetAdaptersAddresses(AF_UNSPEC, flags, NULL,
+            addresses, &len);
       }
    }
+   if (result != ERROR_SUCCESS)
+      goto failure;
 
-   free(adapter_addresses);
-#else
-   struct ifaddrs *ifa     = NULL;
-   struct ifaddrs *ifaddr  = NULL;
+   /* Count the number of valid interfaces first. */
+   addr = addresses;
 
-   memset(list, 0, sizeof(net_ifinfo_t));
-
-   if (getifaddrs(&ifaddr) == -1)
-      goto error;
-
-   if (!list)
-      goto error;
-
-   for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+   do
    {
-      char host[NI_MAXHOST];
-      struct net_ifinfo_entry *ptr = NULL;
+      PIP_ADAPTER_UNICAST_ADDRESS unicast_addr = addr->FirstUnicastAddress;
 
-      if (!ifa->ifa_addr)
+      if (!unicast_addr)
+         continue;
+      if (addr->OperStatus != IfOperStatusUp)
          continue;
 
-      if (ifa->ifa_addr->sa_family != AF_INET)
+      do
+      {
+         interfaces++;
+      } while ((unicast_addr = unicast_addr->Next));
+   } while ((addr = addr->Next));
+
+   if (!interfaces)
+      goto failure;
+
+   if (!(list->entries =
+      (struct net_ifinfo_entry*)calloc(interfaces, sizeof(*list->entries))))
+      goto failure;
+
+   list->size    = 0;
+   /* Now create the entries. */
+   addr          = addresses;
+   entry         = list->entries;
+
+   do
+   {
+      PIP_ADAPTER_UNICAST_ADDRESS unicast_addr = addr->FirstUnicastAddress;
+
+      if (!unicast_addr)
+         continue;
+      if (addr->OperStatus != IfOperStatusUp)
          continue;
 
-      if (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
-               host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) != 0)
-         goto error;
+      buf[0] = '\0';
+      if (addr->FriendlyName)
+      {
+         if (!WideCharToMultiByte(CP_UTF8, 0, addr->FriendlyName, -1,
+               buf, sizeof(buf), NULL, NULL))
+            buf[0] = '\0'; /* Empty name on conversion failure. */
+      }
 
-      ptr = (struct net_ifinfo_entry*)
-         realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
+      do
+      {
+         if (getnameinfo_retro(unicast_addr->Address.lpSockaddr,
+               unicast_addr->Address.iSockaddrLength,
+               entry->host, sizeof(entry->host), NULL, 0, NI_NUMERICHOST))
+            continue;
 
-      if (!ptr)
-         goto error;
+         strlcpy(entry->name, buf, sizeof(entry->name));
 
-      list->entries          = ptr;
+         if (++list->size >= interfaces)
+            break;
 
-      list->entries[k].name  = strdup(ifa->ifa_name);
-      list->entries[k].host  = strdup(host);
-      list->size             = k + 1;
+         entry++;
+      } while ((unicast_addr = unicast_addr->Next));
 
-      k++;
-   }
+      if (list->size >= interfaces)
+         break;
+   } while ((addr = addr->Next));
 
-   freeifaddrs(ifaddr);
-#endif
+   free(addresses);
+
    return true;
 
-error:
-#ifdef _WIN32
-   if (adapter_addresses)
-      free(adapter_addresses);
-#elif !defined(HAVE_LIBNX) && !defined(_3DS)
-   freeifaddrs(ifaddr);
-#endif
+failure:
+   free(addresses);
    net_ifinfo_free(list);
 
    return false;
+#elif defined(VITA)
+   SceNetCtlInfo info;
+   if (!(list->entries = (struct net_ifinfo_entry*)calloc(2, sizeof(*list->entries))))
+   {
+      list->size = 0;
+      return false;
+   }
+
+   strlcpy(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
+   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   list->size = 1;
+
+   if (!sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info))
+   {
+      strlcpy(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
+      strlcpy(list->entries[1].host, info.ip_address,
+         sizeof(list->entries[1].host));
+      list->size++;
+   }
+
+   return true;
+#elif defined(HAVE_LIBNX) || defined(_3DS) || defined(GEKKO)
+   uint32_t addr = 0;
+   if (!(list->entries = (struct net_ifinfo_entry*)calloc(2, sizeof(*list->entries))))
+   {
+      list->size = 0;
+      return false;
+   }
+
+   strlcpy(list->entries[0].name, "lo", sizeof(list->entries[0].name));
+   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   list->size = 1;
+
+#if defined(HAVE_LIBNX)
+   {
+      Result rc = nifmGetCurrentIpAddress(&addr);
+
+      if (!R_SUCCEEDED(rc))
+         return true;
+   }
+#elif defined(_3DS)
+   addr = gethostid();
+#else
+   addr = net_gethostip();
+#endif
+   if (addr)
+   {
+      uint8_t *addr8 = (uint8_t*)&addr;
+      strlcpy(list->entries[1].name,
+#if defined(HAVE_LIBNX)
+         "switch"
+#elif defined(_3DS)
+         "wlan"
+#else
+         "gekko"
+#endif
+      , sizeof(list->entries[1].name));
+      snprintf(list->entries[1].host, sizeof(list->entries[1].host),
+         "%d.%d.%d.%d",
+         (int)addr8[0], (int)addr8[1], (int)addr8[2], (int)addr8[3]);
+      list->size++;
+   }
+
+   return true;
+#else
+   struct ifaddrs *addr;
+   struct net_ifinfo_entry *entry;
+   size_t         interfaces = 0;
+   struct ifaddrs *addresses = NULL;
+
+   list->entries             = NULL;
+
+   if (getifaddrs(&addresses) || !addresses)
+      goto failure;
+
+   /* Count the number of valid interfaces first. */
+   addr                      = addresses;
+
+   do
+   {
+      if (!addr->ifa_addr)
+         continue;
+#ifndef WIIU
+      if (!(addr->ifa_flags & IFF_UP))
+         continue;
+#endif
+
+      switch (addr->ifa_addr->sa_family)
+      {
+         case AF_INET:
+#ifdef HAVE_INET6
+         case AF_INET6:
+#endif
+            interfaces++;
+            break;
+         default:
+            break;
+      }
+   } while ((addr = addr->ifa_next));
+
+   if (!interfaces)
+      goto failure;
+
+   list->entries =
+      (struct net_ifinfo_entry*)calloc(interfaces, sizeof(*list->entries));
+   if (!list->entries)
+      goto failure;
+   list->size    = 0;
+
+   /* Now create the entries. */
+   addr  = addresses;
+   entry = list->entries;
+
+   do
+   {
+      socklen_t addrlen;
+
+      if (!addr->ifa_addr)
+         continue;
+#ifndef WIIU
+      if (!(addr->ifa_flags & IFF_UP))
+         continue;
+#endif
+
+      switch (addr->ifa_addr->sa_family)
+      {
+         case AF_INET:
+            addrlen = sizeof(struct sockaddr_in);
+            break;
+#ifdef HAVE_INET6
+         case AF_INET6:
+            addrlen = sizeof(struct sockaddr_in6);
+            break;
+#endif
+         default:
+            continue;
+      }
+
+      if (getnameinfo_retro(addr->ifa_addr, addrlen,
+            entry->host, sizeof(entry->host), NULL, 0, NI_NUMERICHOST))
+         continue;
+
+      if (addr->ifa_name)
+         strlcpy(entry->name, addr->ifa_name, sizeof(entry->name));
+
+      if (++list->size >= interfaces)
+         break;
+
+      entry++;
+   } while ((addr = addr->ifa_next));
+
+   freeifaddrs(addresses);
+
+   return true;
+
+failure:
+   freeifaddrs(addresses);
+   net_ifinfo_free(list);
+
+   return false;
+#endif
+}
+
+void net_ifinfo_free(net_ifinfo_t *list)
+{
+   free(list->entries);
+
+   list->entries = NULL;
+   list->size    = 0;
+}
+
+bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
+{
+   bool ret = false;
+
+/* TODO/FIXME: Implement for other platforms, if necessary. */
+#if defined(_WIN32) && !defined(_XBOX)
+   if (!ipv6)
+   {
+      /* Courtesy of MiniUPnP: https://github.com/miniupnp/miniupnp */
+      DWORD index;
+#ifdef __WINRT__
+      struct sockaddr_in dst_addr = {0};
+#endif
+      ULONG dst_ip               = (ULONG)inet_addr(dst);
+
+      if (!src)
+         return false;
+      if (dst_ip == INADDR_NONE || dst_ip == INADDR_ANY)
+         return false;
+
+#ifdef __WINRT__
+      dst_addr.sin_family      = AF_INET;
+      dst_addr.sin_addr.s_addr = dst_ip;
+      if (GetBestInterfaceEx((struct sockaddr*)&dst_addr, &index) == NO_ERROR)
+#else
+      if (GetBestInterface(dst_ip, &index) == NO_ERROR)
+#endif
+      {
+         /* Microsoft docs recommend doing it this way. */
+         ULONG                 len       = 15 * 1024;
+         PIP_ADAPTER_ADDRESSES addresses =
+            (PIP_ADAPTER_ADDRESSES)calloc(1, len);
+
+         if (addresses)
+         {
+            ULONG flags  = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
+               GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_FRIENDLY_NAME;
+            ULONG result = GetAdaptersAddresses(AF_INET, flags, NULL,
+               addresses, &len);
+
+            if (result == ERROR_BUFFER_OVERFLOW)
+            {
+               PIP_ADAPTER_ADDRESSES new_addresses =
+                  (PIP_ADAPTER_ADDRESSES)realloc(addresses, len);
+
+               if (new_addresses)
+               {
+                  memset(new_addresses, 0, len);
+
+                  addresses = new_addresses;
+                  result    = GetAdaptersAddresses(AF_INET, flags, NULL,
+                     addresses, &len);
+               }
+            }
+
+            if (result == NO_ERROR)
+            {
+               PIP_ADAPTER_ADDRESSES addr = addresses;
+
+               do
+               {
+                  if (addr->IfIndex == index)
+                  {
+                     if (addr->FirstUnicastAddress)
+                     {
+                        struct sockaddr_in *addr_unicast =
+                           (struct sockaddr_in*)
+                              addr->FirstUnicastAddress->Address.lpSockaddr;
+
+                        memcpy(src, &addr_unicast->sin_addr,
+                           sizeof(addr_unicast->sin_addr));
+
+                        ret = true;
+                     }
+
+                     break;
+                  }
+               } while ((addr = addr->Next));
+            }
+
+            free(addresses);
+         }
+      }
+   }
+#endif
+
+   return ret;
 }

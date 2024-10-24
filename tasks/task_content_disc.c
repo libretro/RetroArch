@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <string.h>
 #include <time.h>
-#include <errno.h>
 
 #include <file/file_path.h>
 #include <queues/task_queue.h>
@@ -63,7 +62,6 @@
 
 #include "../configuration.h"
 #include "../msg_hash.h"
-#include "../retroarch.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_CDROM
@@ -91,16 +89,13 @@ typedef struct
    unsigned char cur_track;
    char drive_letter[2];
    char cdrom_path[64];
-   char title[512];
+   char title[NAME_MAX_LENGTH];
    bool next;
 } task_cdrom_dump_state_t;
 
 static void task_cdrom_dump_handler(retro_task_t *task)
 {
    task_cdrom_dump_state_t *state    = (task_cdrom_dump_state_t*)task->state;
-   settings_t              *settings = config_get_ptr();
-   const char *directory_core_assets = settings 
-      ? settings->paths.directory_core_assets : NULL;
 
    if (task_get_progress(task) == 100)
    {
@@ -111,7 +106,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
       state->file        = NULL;
       state->output_file = NULL;
 
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
       RARCH_LOG("[CDROM]: Dump finished.\n");
 
@@ -144,13 +139,15 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          }
       case DUMP_STATE_WRITE_CUE:
          {
+            size_t _len;
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
+            settings_t              *settings = config_get_ptr();
+            const char *directory_core_assets = settings
+               ? settings->paths.directory_core_assets : NULL;
             /* write cuesheet to a file */
             int64_t cue_size     = filestream_get_size(state->file);
             char *cue_data       = (char*)calloc(1, cue_size);
-
-            output_file[0]       = cue_filename[0] = '\0';
 
             filestream_read(state->file, cue_data, cue_size);
 
@@ -162,9 +159,13 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
             filestream_close(state->file);
 
-            snprintf(cue_filename, sizeof(cue_filename), "%s.cue", state->title);
+            _len = strlcpy(cue_filename,
+                  state->title, sizeof(cue_filename));
+            strlcpy(cue_filename       + _len,
+                  ".cue",
+                  sizeof(cue_filename) - _len);
 
-            fill_pathname_join(output_file,
+            fill_pathname_join_special(output_file,
                   directory_core_assets, cue_filename, sizeof(output_file));
 
             {
@@ -255,19 +256,20 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             {
                char output_path[PATH_MAX_LENGTH];
                char track_filename[PATH_MAX_LENGTH];
+               settings_t              *settings = config_get_ptr();
+               const char *directory_core_assets = settings
+                  ? settings->paths.directory_core_assets : NULL;
 
-               output_path[0] = track_filename[0] = '\0';
+               track_filename[0] = '\0';
 
                snprintf(track_filename, sizeof(track_filename), "%s (Track %02d).bin", state->title, state->cur_track);
 
                state->cur_track_bytes = filestream_get_size(state->file);
 
-               fill_pathname_join(output_path,
+               fill_pathname_join_special(output_path,
                      directory_core_assets, track_filename, sizeof(output_path));
 
-               state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0);
-
-               if (!state->output_file)
+               if (!(state->output_file = filestream_open(output_path, RETRO_VFS_FILE_ACCESS_WRITE, 0)))
                {
                   RARCH_ERR("[CDROM]: Error opening file for writing: %s\n", output_path);
                   task_set_progress(task, 100);

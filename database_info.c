@@ -34,93 +34,417 @@ int database_info_build_query_enum(char *s, size_t len,
       enum database_query_type type,
       const char *path)
 {
-   bool add_quotes = true;
-   bool add_glob   = false;
-
-   s[0]            = '{';
-   s[1]            = '\'';
-   s[2]            = '\0';
+   size_t _len = 0;
 
    switch (type)
    {
       case DATABASE_QUERY_ENTRY:
-         strlcat(s, "name", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'n';
+         s[++_len]  = 'a';
+         s[++_len]  = 'm';
+         s[++_len]  = 'e';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_PUBLISHER:
-         strlcat(s, "publisher", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'p';
+         s[++_len]  = 'u';
+         s[++_len]  = 'b';
+         s[++_len]  = 'l';
+         s[++_len]  = 'i';
+         s[++_len]  = 's';
+         s[++_len]  = 'h';
+         s[++_len]  = 'e';
+         s[++_len]  = 'r';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_DEVELOPER:
-         strlcat(s, "developer", len);
-         add_glob   = true;
-         add_quotes = false;
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'd';
+         s[++_len]  = 'e';
+         s[++_len]  = 'v';
+         s[++_len]  = 'e';
+         s[++_len]  = 'l';
+         s[++_len]  = 'o';
+         s[++_len]  = 'p';
+         s[++_len]  = 'e';
+         s[++_len]  = 'r';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = 'g';
+         s[++_len]  = 'l';
+         s[++_len]  = 'o';
+         s[++_len]  = 'b';
+         s[++_len]  = '(';
+         s[++_len]  = '\'';
+         s[++_len]  = '*';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '*';
+         s[++_len]  = '\'';
+         s[++_len]  = ')';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ORIGIN:
-         strlcat(s, "origin", len);
+         s[  _len]  = '{';
+	      s[++_len]  = '\'';
+         s[++_len]  = 'o';
+         s[++_len]  = 'r';
+         s[++_len]  = 'i';
+         s[++_len]  = 'g';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_FRANCHISE:
-         strlcat(s, "franchise", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'f';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 'n';
+         s[++_len]  = 'c';
+         s[++_len]  = 'h';
+         s[++_len]  = 'i';
+         s[++_len]  = 's';
+         s[++_len]  = 'e';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RATING:
-         strlcat(s, "esrb_rating", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'e';
+         s[++_len]  = 's';
+         s[++_len]  = 'r';
+         s[++_len]  = 'b';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_BBFC_RATING:
-         strlcat(s, "bbfc_rating", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'b';
+         s[++_len]  = 'b';
+         s[++_len]  = 'f';
+         s[++_len]  = 'c';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[++_len]  = '"';
+         s[++_len]  = '}';
+         s[++_len] = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ELSPA_RATING:
-         strlcat(s, "elspa_rating", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'e';
+         s[++_len]  = 'l';
+         s[++_len]  = 's';
+         s[++_len]  = 'p';
+         s[++_len]  = 'a';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ESRB_RATING:
-         strlcat(s, "esrb_rating", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'e';
+         s[++_len]  = 's';
+         s[++_len]  = 'r';
+         s[++_len]  = 'b';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_PEGI_RATING:
-         strlcat(s, "pegi_rating", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'p';
+         s[++_len]  = 'e';
+         s[++_len]  = 'g';
+         s[++_len]  = 'i';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_CERO_RATING:
-         strlcat(s, "cero_rating", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'c';
+         s[++_len]  = 'e';
+         s[++_len]  = 'r';
+         s[++_len]  = 'o';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_ENHANCEMENT_HW:
-         strlcat(s, "enhancement_hw", len);
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'e';
+         s[++_len]  = 'n';
+         s[++_len]  = 'h';
+         s[++_len]  = 'a';
+         s[++_len]  = 'n';
+         s[++_len]  = 'c';
+         s[++_len]  = 'e';
+         s[++_len]  = 'm';
+         s[++_len]  = 'e';
+         s[++_len]  = 'n';
+         s[++_len]  = 't';
+         s[++_len]  = '_';
+         s[++_len]  = 'h';
+         s[++_len]  = 'w';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_RATING:
-         strlcat(s, "edge_rating", len);
-         add_quotes = false;
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'e';
+         s[++_len]  = 'd';
+         s[++_len]  = 'g';
+         s[++_len]  = 'e';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]   = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_EDGE_MAGAZINE_ISSUE:
-         strlcat(s, "edge_issue", len);
-         add_quotes = false;
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'e';
+         s[++_len]  = 'd';
+         s[++_len]  = 'g';
+         s[++_len]  = 'e';
+         s[++_len]  = '_';
+         s[++_len]  = 'i';
+         s[++_len]  = 's';
+         s[++_len]  = 's';
+         s[++_len]  = 'u';
+         s[++_len]  = 'e';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_FAMITSU_MAGAZINE_RATING:
-         strlcat(s, "famitsu_rating", len);
-         add_quotes = false;
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'f';
+         s[++_len]  = 'a';
+         s[++_len]  = 'm';
+         s[++_len]  = 'i';
+         s[++_len]  = 't';
+         s[++_len]  = 's';
+         s[++_len]  = 'u';
+         s[++_len]  = '_';
+         s[++_len]  = 'r';
+         s[++_len]  = 'a';
+         s[++_len]  = 't';
+         s[++_len]  = 'i';
+         s[++_len]  = 'n';
+         s[++_len]  = 'g';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_MONTH:
-         strlcat(s, "releasemonth", len);
-         add_quotes = false;
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'r';
+         s[++_len]  = 'e';
+         s[++_len]  = 'l';
+         s[++_len]  = 'e';
+         s[++_len]  = 'a';
+         s[++_len]  = 's';
+         s[++_len]  = 'e';
+         s[++_len]  = 'm';
+         s[++_len]  = 'o';
+         s[++_len]  = 'n';
+         s[++_len]  = 't';
+         s[++_len]  = 'h';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_RELEASEDATE_YEAR:
-         strlcat(s, "releaseyear", len);
-         add_quotes = false;
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'r';
+         s[++_len]  = 'e';
+         s[++_len]  = 'l';
+         s[++_len]  = 'e';
+         s[++_len]  = 'a';
+         s[++_len]  = 's';
+         s[++_len]  = 'e';
+         s[++_len]  = 'y';
+         s[++_len]  = 'e';
+         s[++_len]  = 'a';
+         s[++_len]  = 'r';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_ENTRY_MAX_USERS:
-         strlcat(s, "users", len);
-         add_quotes = false;
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = 'u';
+         s[++_len]  = 's';
+         s[++_len]  = 'e';
+         s[++_len]  = 'r';
+         s[++_len]  = 's';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '}';
+         s[++_len]  = '\0';
          break;
       case DATABASE_QUERY_NONE:
+         s[  _len]  = '{';
+         s[++_len]  = '\'';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '\'';
+         s[++_len]  = ':';
+         s[++_len]  = '"';
+         s[++_len]  = '\0';
+         _len      += strlcpy(s + _len, path, len - _len);
+         s[  _len]  = '"';
+         s[++_len]  = '}';
+         s[++_len]  = '\0';
          break;
    }
-
-   strlcat(s, "':", len);
-   if (add_glob)
-      strlcat(s, "glob('*", len);
-   if (add_quotes)
-      strlcat(s, "\"", len);
-   strlcat(s, path, len);
-   if (add_glob)
-      strlcat(s, "*')", len);
-   if (add_quotes)
-      strlcat(s, "\"", len);
-
-   strlcat(s, "}", len);
 
    return 0;
 }
@@ -191,8 +515,11 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       }
       else if (string_is_equal(str, "rom_name"))
       {
+/* rom_name is not used anywhere in codebase, but is frequently added to DB */
+#if 0
          if (!string_is_empty(val_string))
             db_info->rom_name = strdup(val_string);
+#endif
       }
       else if (string_is_equal(str, "name"))
       {
@@ -208,6 +535,76 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       {
          if (!string_is_empty(val_string))
             db_info->genre = strdup(val_string);
+      }
+      else if (string_is_equal(str, "category"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->category = strdup(val_string);
+      }
+      else if (string_is_equal(str, "language"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->language = strdup(val_string);
+      }
+      else if (string_is_equal(str, "region"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->region = strdup(val_string);
+      }
+      else if (string_is_equal(str, "score"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->score = strdup(val_string);
+      }
+      else if (string_is_equal(str, "media"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->media = strdup(val_string);
+      }
+      else if (string_is_equal(str, "controls"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->controls = strdup(val_string);
+      }
+      else if (string_is_equal(str, "artstyle"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->artstyle = strdup(val_string);
+      }
+      else if (string_is_equal(str, "gameplay"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->gameplay = strdup(val_string);
+      }
+      else if (string_is_equal(str, "narrative"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->narrative = strdup(val_string);
+      }
+      else if (string_is_equal(str, "pacing"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->pacing = strdup(val_string);
+      }
+      else if (string_is_equal(str, "perspective"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->perspective = strdup(val_string);
+      }
+      else if (string_is_equal(str, "setting"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->setting = strdup(val_string);
+      }
+      else if (string_is_equal(str, "visual"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->visual = strdup(val_string);
+      }
+      else if (string_is_equal(str, "vehicular"))
+      {
+         if (!string_is_empty(val_string))
+            db_info->vehicular = strdup(val_string);
       }
       else if (string_is_equal(str, "origin"))
       {
@@ -274,6 +671,12 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
          db_info->releaseyear             = (unsigned)val->val.uint_;
       else if (string_is_equal(str, "rumble"))
          db_info->rumble_supported        = (int)val->val.uint_;
+      else if (string_is_equal(str, "achievements"))
+         db_info->achievements            = (int)val->val.uint_;
+      else if (string_is_equal(str, "console_exclusive"))
+         db_info->console_exclusive       = (int)val->val.uint_;
+      else if (string_is_equal(str, "platform_exclusive"))
+         db_info->platform_exclusive      = (int)val->val.uint_;
       else if (string_is_equal(str, "coop"))
          db_info->coop_supported          = (int)val->val.uint_;
       else if (string_is_equal(str, "analog"))
@@ -317,7 +720,7 @@ static int database_cursor_open(libretrodb_t *db,
    const char *error     = NULL;
    libretrodb_query_t *q = NULL;
 
-   if ((libretrodb_open(path, db)) != 0)
+   if ((libretrodb_open(path, db, false)) != 0)
       return -1;
 
    if (query)
@@ -342,14 +745,6 @@ error:
    return -1;
 }
 
-static int database_cursor_close(libretrodb_t *db, libretrodb_cursor_t *cur)
-{
-   libretrodb_cursor_close(cur);
-   libretrodb_close(db);
-
-   return 0;
-}
-
 static bool type_is_prioritized(const char *path)
 {
    const char *ext = path_get_extension(path);
@@ -370,11 +765,6 @@ static int dir_entry_compare(const void *left, const void *right)
    return (int) r - (int) l;
 }
 
-static void dir_list_prioritize(struct string_list *list)
-{
-   qsort(list->elems, list->size, sizeof(*list->elems), dir_entry_compare);
-}
-
 database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type, retro_task_t *task,
       bool show_hidden_files)
@@ -389,17 +779,16 @@ database_info_handle_t *database_info_dir_init(const char *dir,
 
    core_info_get_list(&core_info_list);
 
-   list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
+   if (!(list = dir_list_new(dir, core_info_list ? core_info_list->all_ext : NULL,
          false, show_hidden_files,
-         false, true);
-
-   if (!list)
+         false, true)))
    {
       free(db);
       return NULL;
    }
 
-   dir_list_prioritize(list);
+   /* dir list prioritize */
+   qsort(list->elems, list->size, sizeof(*list->elems), dir_entry_compare);
 
    db->status             = DATABASE_STATUS_ITERATE;
    db->type               = type;
@@ -420,16 +809,13 @@ database_info_handle_t *database_info_file_init(const char *path,
    if (!db)
       return NULL;
 
-   attr.i             = 0;
-
-   list               = string_list_new();
-
-   if (!list)
+   if (!(list = string_list_new()))
    {
       free(db);
       return NULL;
    }
 
+   attr.i                 = 0;
    string_list_append(list, path, attr);
 
    db->status             = DATABASE_STATUS_ITERATE;
@@ -442,10 +828,8 @@ database_info_handle_t *database_info_file_init(const char *path,
 
 void database_info_free(database_info_handle_t *db)
 {
-   if (!db)
-      return;
-
-   string_list_free(db->list);
+   if (db)
+      string_list_free(db->list);
 }
 
 database_info_list_t *database_info_list_new(
@@ -504,6 +888,34 @@ database_info_list_t *database_info_list_new(
                free(db_info.franchise);
             if (db_info.genre)
                free(db_info.genre);
+            if (db_info.category)
+               free(db_info.category);
+            if (db_info.language)
+               free(db_info.language);
+            if (db_info.region)
+               free(db_info.region);
+            if (db_info.score)
+               free(db_info.score);
+            if (db_info.media)
+               free(db_info.media);
+            if (db_info.controls)
+               free(db_info.controls);
+            if (db_info.artstyle)
+               free(db_info.artstyle);
+            if (db_info.gameplay)
+               free(db_info.gameplay);
+            if (db_info.narrative)
+               free(db_info.narrative);
+            if (db_info.pacing)
+               free(db_info.pacing);
+            if (db_info.perspective)
+               free(db_info.perspective);
+            if (db_info.setting)
+               free(db_info.setting);
+            if (db_info.visual)
+               free(db_info.visual);
+            if (db_info.vehicular)
+               free(db_info.vehicular);
             if (db_info.name)
                free(db_info.name);
             if (db_info.origin)
@@ -520,6 +932,26 @@ database_info_list_t *database_info_list_new(
                free(db_info.md5);
             if (db_info.sha1)
                free(db_info.sha1);
+
+            db_info.name                 = NULL;
+            db_info.rom_name             = NULL;
+            db_info.serial               = NULL;
+            db_info.genre                = NULL;
+            db_info.description          = NULL;
+            db_info.publisher            = NULL;
+            db_info.developer            = NULL;
+            db_info.origin               = NULL;
+            db_info.franchise            = NULL;
+            db_info.edge_magazine_review = NULL;
+            db_info.cero_rating          = NULL;
+            db_info.pegi_rating          = NULL;
+            db_info.enhancement_hw       = NULL;
+            db_info.elspa_rating         = NULL;
+            db_info.esrb_rating          = NULL;
+            db_info.bbfc_rating          = NULL; 
+            db_info.sha1                 = NULL;
+            db_info.md5                  = NULL;
+
             database_info_list_free(database_info_list);
             free(database_info);
             free(database_info_list);
@@ -542,7 +974,8 @@ database_info_list_t *database_info_list_new(
 end:
    if (db)
    {
-      database_cursor_close(db, cur);
+      libretrodb_cursor_close(cur);
+      libretrodb_close(db);
       libretrodb_free(db);
    }
    if (cur)
@@ -570,13 +1003,40 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->serial);
       if (info->genre)
          free(info->genre);
+      if (info->category)
+         free(info->category);
+      if (info->language)
+         free(info->language);
+      if (info->region)
+         free(info->region);
+      if (info->score)
+         free(info->score);
+      if (info->media)
+         free(info->media);
+      if (info->controls)
+         free(info->controls);
+      if (info->artstyle)
+         free(info->artstyle);
+      if (info->gameplay)
+         free(info->gameplay);
+      if (info->narrative)
+         free(info->narrative);
+      if (info->pacing)
+         free(info->pacing);
+      if (info->perspective)
+         free(info->perspective);
+      if (info->setting)
+         free(info->setting);
+      if (info->visual)
+         free(info->visual);
+      if (info->vehicular)
+         free(info->vehicular);
       if (info->description)
          free(info->description);
       if (info->publisher)
          free(info->publisher);
       if (info->developer)
          string_list_free(info->developer);
-      info->developer = NULL;
       if (info->origin)
          free(info->origin);
       if (info->franchise)
@@ -600,6 +1060,25 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->sha1);
       if (info->md5)
          free(info->md5);
+
+      info->name                 = NULL;
+      info->rom_name             = NULL;
+      info->serial               = NULL;
+      info->genre                = NULL;
+      info->description          = NULL;
+      info->publisher            = NULL;
+      info->developer            = NULL;
+      info->origin               = NULL;
+      info->franchise            = NULL;
+      info->edge_magazine_review = NULL;
+      info->cero_rating          = NULL;
+      info->pegi_rating          = NULL;
+      info->enhancement_hw       = NULL;
+      info->elspa_rating         = NULL;
+      info->esrb_rating          = NULL;
+      info->bbfc_rating          = NULL; 
+      info->sha1                 = NULL;
+      info->md5                  = NULL;
    }
 
    free(database_info_list->list);

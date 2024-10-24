@@ -1,5 +1,6 @@
 /*
- * Copyright 2018-2019 Bradley Austin Davis
+ * Copyright 2018-2021 Bradley Austin Davis
+ * SPDX-License-Identifier: Apache-2.0 OR MIT
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +13,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+
+/*
+ * At your option, you may choose to accept this material under either:
+ *  1. The Apache License, Version 2.0, found at <http://www.apache.org/licenses/LICENSE-2.0>, or
+ *  2. The MIT License, found at <http://opensource.org/licenses/MIT>.
  */
 
 #ifndef SPIRV_CROSS_REFLECT_HPP
@@ -67,11 +74,12 @@ private:
 	void emit_resources();
 	void emit_specialization_constants();
 
-	void emit_type(const SPIRType &type, bool &emitted_open_tag);
+	void emit_type(uint32_t type_id, bool &emitted_open_tag);
 	void emit_type_member(const SPIRType &type, uint32_t index);
 	void emit_type_member_qualifiers(const SPIRType &type, uint32_t index);
 	void emit_type_array(const SPIRType &type);
 	void emit_resources(const char *tag, const SmallVector<Resource> &resources);
+	bool type_is_reference(const SPIRType &type) const;
 
 	std::string to_member_name(const SPIRType &type, uint32_t index) const;
 

@@ -27,6 +27,7 @@
 #include <ogc/lwp_threads.h>
 #include <sdcard/wiisd_io.h>
 
+#include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
@@ -34,6 +35,11 @@
 #include "../../config.h"
 #endif
 
+#if !defined(IS_SALAMANDER) && defined(HAVE_NETWORKING)
+#include "../../network/netplay/netplay.h"
+#endif
+
+#include "../../paths.h"
 #include "../../verbosity.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)
@@ -119,33 +125,80 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    DCFlushRange(ARGS_ADDR, sizeof(struct __argv) + argv->length);
 }
 
+static void dol_copy_raw_argv(const char *dolpath,
+      const void *args, size_t size)
+{
+   struct __argv *argv    = (struct __argv*)ARGS_ADDR;
+   char          *cmdline = (char*)++argv;
+
+   memset(argv, 0, sizeof(*argv));
+
+   argv->argvMagic   = ARGV_MAGIC;
+   argv->commandLine = cmdline;
+
+   /* a device-less fullpath */
+   if (dolpath[0] == '/')
+      strlcpy(cmdline, __system_argv->argv[0],
+         strchr(__system_argv->argv[0], ':') - __system_argv->argv[0] + 2);
+   /* a relative path */
+   else if (   !string_starts_with_size(dolpath, "sd:/",  STRLEN_CONST("sd:/"))
+            && !string_starts_with_size(dolpath, "usb:/", STRLEN_CONST("usb:/"))
+            && !string_starts_with_size(dolpath, "carda:/", STRLEN_CONST("carda:/"))
+            && !string_starts_with_size(dolpath, "cardb:/", STRLEN_CONST("cardb:/")))
+      fill_pathname_parent_dir(cmdline, __system_argv->argv[0],
+         PATH_MAX_LENGTH);
+   /* fullpath */
+   else
+      *cmdline = '\0';
+
+   argv->length  = (int)strlcat(cmdline, dolpath, PATH_MAX_LENGTH);
+   argv->length += 1;
+
+   memcpy(cmdline + argv->length, args, size);
+   argv->length += size;
+
+   DCFlushRange(argv, sizeof(*argv) + argv->length);
+}
+
 /* WARNING: after we move any data
  * into EXECUTE_ADDR, we can no longer use any
  * heap memory and are restricted to the stack only. */
 void system_exec_wii(const char *_path, bool should_load_game)
 {
-   size_t size, booter_size;
-   FILE *fp                        = NULL;
-   void *dol                       = NULL;
-   char path[PATH_MAX_LENGTH]      = {0};
-   char game_path[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH];
+   char args[PATH_MAX_LENGTH];
+   size_t args_size;
+   size_t size;
+   FILE *fp;
+   void *dol;
 #ifndef IS_SALAMANDER
-   bool original_verbose           = verbosity_is_enabled();
+   bool verbosity = verbosity_is_enabled();
 #endif
+
+   args_size = 0;
 
    /* copy heap info into stack so it survives
     * us moving the .dol into MEM2. */
    strlcpy(path, _path, sizeof(path));
+
    if (should_load_game)
    {
-#ifdef IS_SALAMANDER
-      strlcpy(game_path, gx_rom_path, sizeof(game_path));
+#ifndef IS_SALAMANDER
+#ifdef HAVE_NETWORKING
+      net_driver_state_t *net_st = networking_state_get_ptr();
+
+      if (net_st->fork_args.size)
+      {
+         memcpy(args, net_st->fork_args.args, net_st->fork_args.size);
+         args_size = net_st->fork_args.size;
+      }
+      else
+#endif
+         strlcpy(args, path_get(RARCH_PATH_CONTENT), sizeof(args));
 #else
-      strlcpy(game_path, path_get(RARCH_PATH_CONTENT), sizeof(game_path));
+      strlcpy(args, gx_rom_path, sizeof(args));
 #endif
    }
-
-   RARCH_LOG("Attempt to load executable: [%s]\n", path);
 
    fp = fopen(path, "rb");
    if (!fp)
@@ -181,22 +234,25 @@ void system_exec_wii(const char *_path, bool should_load_game)
    memmove(EXECUTE_ADDR, dol, size);
    DCFlushRange(EXECUTE_ADDR, size);
 
-   dol_copy_argv_path(path, should_load_game ? game_path : NULL);
+   if (args_size)
+      dol_copy_raw_argv(path, args, args_size);
+   else
+      dol_copy_argv_path(path, should_load_game ? args : NULL);
 
-   booter_size = booter_end - booter_start;
-   memcpy(BOOTER_ADDR, booter_start, booter_size);
-   DCFlushRange(BOOTER_ADDR, booter_size);
+   size = booter_end - booter_start;
+   memcpy(BOOTER_ADDR, booter_start, size);
+   DCFlushRange(BOOTER_ADDR, size);
 
-   RARCH_LOG("jumping to %08x\n", (unsigned) BOOTER_ADDR);
-   SYS_ResetSystem(SYS_SHUTDOWN,0,0);
-   __lwp_thread_stopmultitasking((void (*)(void)) BOOTER_ADDR);
+   SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+   __lwp_thread_stopmultitasking((void (*)(void))BOOTER_ADDR);
 
 exit:
-   (void)0;
 #ifndef IS_SALAMANDER
-   if (original_verbose)
+   if (verbosity)
       verbosity_enable();
    else
       verbosity_disable();
+#else
+   return;
 #endif
 }

@@ -113,30 +113,17 @@ typedef struct frontend_ctx_driver
    bool (*is_narrator_running)(void);
    bool (*accessibility_speak)(int speed,
          const char* speak_text, int priority);
+   bool (*set_gamemode)(bool on);
 
    const char *ident;
 
    const struct video_driver *(*get_video_driver)(void);
 } frontend_ctx_driver_t;
 
-extern frontend_ctx_driver_t frontend_ctx_gx;
-extern frontend_ctx_driver_t frontend_ctx_wiiu;
-extern frontend_ctx_driver_t frontend_ctx_ps3;
-extern frontend_ctx_driver_t frontend_ctx_xdk;
-extern frontend_ctx_driver_t frontend_ctx_qnx;
-extern frontend_ctx_driver_t frontend_ctx_darwin;
-extern frontend_ctx_driver_t frontend_ctx_unix;
-extern frontend_ctx_driver_t frontend_ctx_psp;
-extern frontend_ctx_driver_t frontend_ctx_ps2;
-extern frontend_ctx_driver_t frontend_ctx_ctr;
-extern frontend_ctx_driver_t frontend_ctx_switch;
-extern frontend_ctx_driver_t frontend_ctx_win32;
-extern frontend_ctx_driver_t frontend_ctx_uwp;
-extern frontend_ctx_driver_t frontend_ctx_xenon;
-extern frontend_ctx_driver_t frontend_ctx_emscripten;
-extern frontend_ctx_driver_t frontend_ctx_dos;
-extern frontend_ctx_driver_t frontend_ctx_switch;
-extern frontend_ctx_driver_t frontend_ctx_orbis;
+typedef struct
+{
+   frontend_ctx_driver_t *current_frontend_ctx; /* ptr alignment */
+} frontend_state_t;
 
 /**
  * frontend_ctx_find_driver:
@@ -178,8 +165,6 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void);
 const void *frontend_driver_get_cpu_architecture_str(
       char *frontend_architecture, size_t size);
 
-environment_get_t frontend_driver_environment_get_ptr(void);
-
 bool frontend_driver_has_get_video_driver_func(void);
 
 const struct video_driver *frontend_driver_get_video_driver(void);
@@ -192,7 +177,7 @@ void frontend_driver_exitspawn(char *s, size_t len, char *args);
 
 bool frontend_driver_has_fork(void);
 
-bool frontend_driver_get_core_extension(char *s, size_t len);
+size_t frontend_driver_get_core_extension(char *s, size_t len);
 
 bool frontend_driver_get_salamander_basename(char *s, size_t len);
 
@@ -227,6 +212,32 @@ void frontend_driver_set_sustained_performance_mode(bool on);
 const char* frontend_driver_get_cpu_model_name(void);
 
 enum retro_language frontend_driver_get_user_language(void);
+
+bool frontend_driver_has_gamemode(void);
+
+bool frontend_driver_set_gamemode(bool on);
+
+frontend_state_t *frontend_state_get_ptr(void);
+
+extern frontend_ctx_driver_t frontend_ctx_gx;
+extern frontend_ctx_driver_t frontend_ctx_wiiu;
+extern frontend_ctx_driver_t frontend_ctx_ps3;
+extern frontend_ctx_driver_t frontend_ctx_xdk;
+extern frontend_ctx_driver_t frontend_ctx_qnx;
+extern frontend_ctx_driver_t frontend_ctx_darwin;
+extern frontend_ctx_driver_t frontend_ctx_unix;
+extern frontend_ctx_driver_t frontend_ctx_psp;
+extern frontend_ctx_driver_t frontend_ctx_ps2;
+extern frontend_ctx_driver_t frontend_ctx_ctr;
+extern frontend_ctx_driver_t frontend_ctx_switch;
+extern frontend_ctx_driver_t frontend_ctx_win32;
+extern frontend_ctx_driver_t frontend_ctx_uwp;
+extern frontend_ctx_driver_t frontend_ctx_xenon;
+extern frontend_ctx_driver_t frontend_ctx_emscripten;
+extern frontend_ctx_driver_t frontend_ctx_dos;
+extern frontend_ctx_driver_t frontend_ctx_switch;
+extern frontend_ctx_driver_t frontend_ctx_orbis;
+
 
 RETRO_END_DECLS
 

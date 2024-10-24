@@ -30,10 +30,11 @@ struct hidpad_ps2adapter_data
    uint32_t buttons;
 };
 
-static void* hidpad_ps2adapter_init(void *data, uint32_t slot, hid_driver_t *driver)
+static void* hidpad_ps2adapter_init(void *data, uint32_t slot,
+      hid_driver_t *driver)
 {
-   struct pad_connection* connection = (struct pad_connection*)data;
-   struct hidpad_ps2adapter_data* device    = (struct hidpad_ps2adapter_data*)
+   struct pad_connection* connection     = (struct pad_connection*)data;
+   struct hidpad_ps2adapter_data* device = (struct hidpad_ps2adapter_data*)
       calloc(1, sizeof(struct hidpad_ps2adapter_data));
 
    if (!device)
@@ -45,15 +46,16 @@ static void* hidpad_ps2adapter_init(void *data, uint32_t slot, hid_driver_t *dri
       return NULL;
    }
 
-   device->connection   = connection;
    device->slot         = slot;
+   device->connection   = connection;
 
    return device;
 }
 
 static void hidpad_ps2adapter_deinit(void *data)
 {
-   struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)data;
+   struct hidpad_ps2adapter_data *device = 
+      (struct hidpad_ps2adapter_data*)data;
 
    if (device)
       free(device);
@@ -61,8 +63,8 @@ static void hidpad_ps2adapter_deinit(void *data)
 
 static void hidpad_ps2adapter_get_buttons(void *data, input_bits_t *state)
 {
-	struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)
-      data;
+	struct hidpad_ps2adapter_data *device = 
+      (struct hidpad_ps2adapter_data*)data;
 
 	if (device)
    {
@@ -137,15 +139,15 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
    if (!device)
       return;
 
-   /* Check if the data corresponds to the first controller, exit otherwise */
+   /* Check if the data corresponds to the first controller, 
+    * exit otherwise */
    if (packet[1] != 1)
       return;
 
    memcpy(device->data, packet, size);
 
    device->buttons = 0;
-
-   pressed_keys  = device->data[7] | (device->data[6] << 8);
+   pressed_keys    = device->data[7] | (device->data[6] << 8);
 
    for (i = 0; i < 16; i ++)
       if (button_mapping[i] != NO_BTN)
@@ -153,25 +155,27 @@ static void hidpad_ps2adapter_packet_handler(void *data, uint8_t *packet, uint16
 
    /* Now process the hat values as if they were pad buttons */
    hat_value = PS2_H_GET(device->data[6]);
-   device->buttons |= PS2_H_LEFT(hat_value) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+   device->buttons |= PS2_H_LEFT(hat_value)  ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
    device->buttons |= PS2_H_RIGHT(hat_value) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-   device->buttons |= PS2_H_UP(hat_value) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-   device->buttons |= PS2_H_DOWN(hat_value) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+   device->buttons |= PS2_H_UP(hat_value)    ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+   device->buttons |= PS2_H_DOWN(hat_value)  ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
 }
 
 static void hidpad_ps2adapter_set_rumble(void *data,
-      enum retro_rumble_effect effect, uint16_t strength)
-{
-	(void)data;
-	(void)effect;
-   (void)strength;
-}
+      enum retro_rumble_effect effect, uint16_t strength) { }
 
+/* For now we return a single static name */
 const char * hidpad_ps2adapter_get_name(void *data)
 {
-	(void)data;
-	/* For now we return a single static name */
 	return "PS2/PSX Controller Adapter";
+}
+
+static int32_t hidpad_ps2adapter_button(void *data, uint16_t joykey)
+{
+   struct hidpad_ps2adapter_data *pad = (struct hidpad_ps2adapter_data*)data;
+   if (!pad || joykey > 31)
+      return 0;
+   return pad->buttons & (1 << joykey);
 }
 
 pad_connection_interface_t pad_connection_ps2adapter = {
@@ -182,4 +186,6 @@ pad_connection_interface_t pad_connection_ps2adapter = {
    hidpad_ps2adapter_get_buttons,
    hidpad_ps2adapter_get_axis,
    hidpad_ps2adapter_get_name,
+   hidpad_ps2adapter_button,
+   false,
 };

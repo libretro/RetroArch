@@ -60,7 +60,7 @@ static void kb_key_callback(KBDKeyEvent *key)
 
    code                    = input_keymaps_translate_keysym_to_rk(
          key->scancode);
-   if (code < RETROK_LAST)
+   if (code && code < RETROK_LAST)
       keyboard_state[code] = pressed;
 
    if (key->modifier & KBD_WIIU_SHIFT)
@@ -90,7 +90,7 @@ static int16_t wiiu_input_state(
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind **binds,
+      const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
@@ -106,14 +106,14 @@ static int16_t wiiu_input_state(
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
-         if (id < RETROK_LAST && keyboard_state[id] && (keyboard_channel > 0))
+         if (id && id < RETROK_LAST && keyboard_state[id] && (keyboard_channel > 0))
             return 1;
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         /* TODO: Emulate a relative mouse. 
-          * This is suprisingly hard to get working nicely.
-            */
+         /* TODO: Emulate a relative mouse.
+          * This is surprisingly hard to get working nicely.
+          */
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_PRESSED:
@@ -152,10 +152,10 @@ static void* wiiu_input_init(const char *joypad_driver)
 
 static uint64_t wiiu_input_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) |
-          (1 << RETRO_DEVICE_ANALOG) |
-          (1 << RETRO_DEVICE_KEYBOARD) |
-          (1 << RETRO_DEVICE_POINTER);
+   return   (1 << RETRO_DEVICE_JOYPAD)
+          | (1 << RETRO_DEVICE_ANALOG)
+          | (1 << RETRO_DEVICE_KEYBOARD)
+          | (1 << RETRO_DEVICE_POINTER);
 }
 
 input_driver_t input_wiiu = {
@@ -168,5 +168,6 @@ input_driver_t input_wiiu = {
    wiiu_input_get_capabilities,
    "wiiu",
    NULL,                            /* grab_mouse */
+   NULL,
    NULL
 };

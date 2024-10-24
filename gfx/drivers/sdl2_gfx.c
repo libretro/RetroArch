@@ -43,6 +43,10 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+/*
+ * FORWARD DECLARATIONS
+ */
+
 static void sdl2_gfx_free(void *data);
 
 static INLINE void sdl_tex_zero(sdl2_tex_t *t)
@@ -225,7 +229,6 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    int win_w, win_h;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
@@ -239,44 +242,13 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    if (video_scale_integer)
       video_viewport_get_scaled_integer(&vid->vp,
             win_w, win_h, video_driver_get_aspect_ratio(),
-            vid->video.force_aspect);
-   else if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-   {
-      const struct video_viewport *custom =
-         (const struct video_viewport*)video_viewport_get_custom();
-
-      vid->vp.x = custom->x;
-      vid->vp.y = custom->y;
-      vid->vp.width  = custom->width;
-      vid->vp.height = custom->height;
-   }
+            vid->video.force_aspect, true);
    else if (vid->video.force_aspect)
    {
-      float delta;
-      float device_aspect  = (float)win_w / win_h;
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-      if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-      {
-         /* If the aspect ratios of screen and desired aspect ratio are
-             * sufficiently equal (floating point stuff), assume they are
-             * actually equal. */
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-         vid->vp.x     = (int)roundf(win_w * (0.5f - delta));
-         vid->vp.width = (unsigned)roundf(2.0f * win_w * delta);
-      }
-      else
-      {
-         delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-         vid->vp.y      = (int)roundf(win_h * (0.5f - delta));
-         vid->vp.height = (unsigned)roundf(2.0f * win_h * delta);
-      }
+      video_viewport_get_scaled_aspect(&vid->vp, win_w, win_h, true);
    }
 
-   vid->should_resize = false;
+   vid->flags &= ~SDL2_FLAG_SHOULD_RESIZE;
 
    sdl_refresh_renderer(vid);
 }
@@ -299,7 +271,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
          format = rgb32 ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_RGB565;
 
       SDL_SetHintWithPriority(SDL_HINT_RENDER_SCALE_QUALITY,
-                              (vid->video.smooth || menu) ? "linear" : "nearest",
+                              (menu ? "nearest" : (vid->video.smooth ? "linear" : "nearest")),
                               SDL_HINT_OVERRIDE);
 
       target->tex = SDL_CreateTexture(vid->renderer, format,
@@ -399,7 +371,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
 
    vid->video         = *video;
    vid->video.smooth  = video->smooth;
-   vid->should_resize = true;
+   vid->flags        |=  SDL2_FLAG_SHOULD_RESIZE;
 
    sdl_tex_zero(&vid->frame);
    sdl_tex_zero(&vid->menu);
@@ -456,14 +428,13 @@ static void check_window(sdl2_video_t *vid)
       switch (event.type)
       {
          case SDL_QUIT:
-            vid->quitting = true;
+            vid->flags |= SDL2_FLAG_QUITTING;
             break;
 
          case SDL_WINDOWEVENT:
             if (event.window.event == SDL_WINDOWEVENT_RESIZED)
-               vid->should_resize = true;
+               vid->flags |= SDL2_FLAG_SHOULD_RESIZE;
             break;
-
          default:
             break;
       }
@@ -475,12 +446,12 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    char title[128];
-   sdl2_video_t *vid     = (sdl2_video_t*)data;
+   sdl2_video_t *vid  = (sdl2_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive    = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (vid->should_resize)
+   if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)
       sdl_refresh_viewport(vid);
 
    if (frame)
@@ -518,7 +489,6 @@ static void sdl2_gfx_set_nonblock_state(void *data, bool toggle,
       bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
-
    vid->video.vsync  = !toggle;
    sdl_refresh_renderer(vid);
 }
@@ -527,7 +497,9 @@ static bool sdl2_gfx_alive(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    check_window(vid);
-   return !vid->quitting;
+   if (vid->flags & SDL2_FLAG_QUITTING)
+      return false;
+   return true;
 }
 
 static bool sdl2_gfx_focus(void *data)
@@ -537,30 +509,12 @@ static bool sdl2_gfx_focus(void *data)
    return (SDL_GetWindowFlags(vid->window) & flags) == flags;
 }
 
-static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
-{
-   (void)data;
-   (void)enable;
-
-   if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
-   {
-#ifdef HAVE_X11
-      x11_suspend_screensaver(video_driver_window_get(), enable);
+#if !defined(HAVE_X11)
+static bool sdl2_gfx_suspend_screensaver(void *data, bool enable) { return false; }
 #endif
-      return true;
-   }
 
-   return false;
-}
-
-static bool sdl2_gfx_has_windowed(void *data)
-{
-   (void)data;
-
-   /* TODO - implement */
-
-   return true;
-}
+/* TODO/FIXME - implement */
+static bool sdl2_gfx_has_windowed(void *data) { return true; }
 
 static void sdl2_gfx_free(void *data)
 {
@@ -633,13 +587,13 @@ static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       return;
 
    vid->video.force_aspect = true;
-   vid->should_resize      = true;
+   vid->flags             |= SDL2_FLAG_SHOULD_RESIZE;
 }
 
 static void sdl2_poke_apply_state_changes(void *data)
 {
-   sdl2_video_t *vid = (sdl2_video_t*)data;
-   vid->should_resize = true;
+   sdl2_video_t *vid       = (sdl2_video_t*)data;
+   vid->flags             |= SDL2_FLAG_SHOULD_RESIZE;
 }
 
 static void sdl2_poke_set_texture_frame(void *data,
@@ -653,7 +607,7 @@ static void sdl2_poke_set_texture_frame(void *data,
       sdl_refresh_input_size(vid, true, rgb32, width, height,
             width * (rgb32 ? 4 : 2));
 
-      SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
+      SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);
    }
 }
 
@@ -668,9 +622,8 @@ static void sdl2_poke_texture_enable(void *data,
    vid->menu.active = enable;
 }
 
-static void sdl2_poke_set_osd_msg(void *data,
-      const char *msg,
-      const void *params, void *font)
+static void sdl2_poke_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
    sdl2_render_msg(vid, msg);
@@ -686,9 +639,9 @@ static uint32_t sdl2_get_flags(void *data) { return 0; }
 
 static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_get_flags,
-   NULL,
-   NULL,
-   NULL,
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
+   NULL, /* set_video_mode */
    NULL, /* get_refresh_rate */
    sdl2_poke_set_filtering,
    NULL, /* get_video_output_size */
@@ -703,9 +656,13 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    sdl2_poke_set_osd_msg,
    sdl2_show_mouse,
    sdl2_grab_mouse_toggle,
-   NULL,                         /* get_current_shader */
-   NULL,                         /* get_current_software_framebuffer */
-   NULL                          /* get_hw_render_interface */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
+   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_paper_white_nits */
+   NULL, /* set_hdr_contrast */
+   NULL, /* set_hdr_expand_gamut */
 };
 
 static void sdl2_gfx_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -730,22 +687,26 @@ video_driver_t video_sdl2 = {
    sdl2_gfx_set_nonblock_state,
    sdl2_gfx_alive,
    sdl2_gfx_focus,
-   sdl2_gfx_suppress_screensaver,
+#ifdef HAVE_X11
+   x11_suspend_screensaver,
+#else
+   sdl2_gfx_suspend_screensaver,
+#endif
    sdl2_gfx_has_windowed,
    sdl2_gfx_set_shader,
    sdl2_gfx_free,
    "sdl2",
-
-   NULL,
+   NULL, /* set_viewport */
    sdl2_gfx_set_rotation,
    sdl2_gfx_viewport_info,
    sdl2_gfx_read_viewport,
    NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
-    NULL,
+   NULL, /* get_overlay_interface */
 #endif
-#ifdef HAVE_VIDEO_LAYOUT
-  NULL,
+   sdl2_gfx_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
 #endif
-    sdl2_gfx_poke_interface
 };

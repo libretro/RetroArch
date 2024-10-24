@@ -52,7 +52,7 @@
 #       error Could not find system header "<filesystem>" or "<experimental/filesystem>"
 #   endif
 
-// We priously determined that we need the exprimental version
+// We priously determined that we need the experimental version
 #   if INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
 // Include it
 #       include <experimental/filesystem>

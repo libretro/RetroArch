@@ -1,16 +1,24 @@
 #include "rc_hash.h"
 
-#include "../rcheevos/rc_compat.h"
+#include "../rc_compat.h"
 
+#include "aes.h"
 #include "md5.h"
 
 #include <stdio.h>
 #include <ctype.h>
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <share.h>
+#endif
+
 /* arbitrary limit to prevent allocating and hashing large files */
 #define MAX_BUFFER_SIZE 64 * 1024 * 1024
 
 const char* rc_path_get_filename(const char* path);
+static int rc_hash_whole_file(char hash[33], const char* path);
 
 /* ===================================================== */
 
@@ -46,10 +54,57 @@ static void rc_hash_verbose(const char* message)
 static struct rc_hash_filereader filereader_funcs;
 static struct rc_hash_filereader* filereader = NULL;
 
+#if defined(WINVER) && WINVER >= 0x0500
 static void* filereader_open(const char* path)
 {
-  return fopen(path, "rb");
+  /* Windows requires using wchar APIs for Unicode paths */
+  /* Note that MultiByteToWideChar will only be defined for >= Windows 2000 */
+  wchar_t* wpath;
+  int wpath_length;
+  FILE* fp;
+
+  /* Calculate wpath length from path */
+  wpath_length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+  if (wpath_length == 0) /* 0 indicates error (this is likely from invalid UTF-8) */
+    return NULL;
+
+  wpath = (wchar_t*)malloc(wpath_length * sizeof(wchar_t));
+  if (!wpath)
+    return NULL;
+
+  if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, wpath_length) == 0)
+  {
+    free(wpath);
+    return NULL;
+  }
+
+ #if defined(__STDC_WANT_SECURE_LIB__)
+  /* have to use _SH_DENYNO because some cores lock the file while its loaded */
+  fp = _wfsopen(wpath, L"rb", _SH_DENYNO);
+ #else
+  fp = _wfopen(wpath, L"rb");
+ #endif
+
+  free(wpath);
+  return fp;
 }
+#else /* !WINVER >= 0x0500 */
+static void* filereader_open(const char* path)
+{
+ #if defined(__STDC_WANT_SECURE_LIB__)
+  #if defined(WINVER)
+   /* have to use _SH_DENYNO because some cores lock the file while its loaded */
+   return _fsopen(path, "rb", _SH_DENYNO);
+  #else /* !WINVER */
+   FILE *fp;
+   fopen_s(&fp, path, "rb");
+   return fp;
+  #endif
+ #else /* !__STDC_WANT_SECURE_LIB__ */
+  return fopen(path, "rb");
+ #endif
+}
+#endif /* WINVER >= 0x0500 */
 
 static void filereader_seek(void* file_handle, int64_t offset, int origin)
 {
@@ -81,6 +136,12 @@ static size_t filereader_read(void* file_handle, void* buffer, size_t requested_
 static void filereader_close(void* file_handle)
 {
   fclose((FILE*)file_handle);
+}
+
+/* for unit tests - normally would call rc_hash_init_custom_filereader(NULL) */
+void rc_hash_reset_filereader(void)
+{
+  filereader = NULL;
 }
 
 void rc_hash_init_custom_filereader(struct rc_hash_filereader* reader)
@@ -193,13 +254,13 @@ static size_t rc_cd_read_sector(void* track_handle, uint32_t sector, void* buffe
   return 0;
 }
 
-static uint32_t rc_cd_absolute_sector_to_track_sector(void* track_handle, uint32_t sector)
+static uint32_t rc_cd_first_track_sector(void* track_handle)
 {
-  if (cdreader && cdreader->absolute_sector_to_track_sector)
-    return cdreader->absolute_sector_to_track_sector(track_handle, sector);
+  if (cdreader && cdreader->first_track_sector)
+    return cdreader->first_track_sector(track_handle);
 
-  rc_hash_error("no hook registered for cdreader_absolute_sector_to_track_sector");
-  return sector;
+  rc_hash_error("no hook registered for cdreader_first_track_sector");
+  return 0;
 }
 
 static void rc_cd_close_track(void* track_handle)
@@ -213,15 +274,20 @@ static void rc_cd_close_track(void* track_handle)
   rc_hash_error("no hook registered for cdreader_close_track");
 }
 
-static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, unsigned* size)
+static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uint32_t* size)
 {
   uint8_t buffer[2048], *tmp;
   int sector;
+  uint32_t num_sectors = 0;
   size_t filename_length;
   const char* slash;
 
   if (!track_handle)
     return 0;
+
+  /* we start at the root. don't need to explicitly find it */
+  if (*path == '\\')
+    ++path;
 
   filename_length = strlen(path);
   slash = strrchr(path, '\\');
@@ -241,37 +307,60 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
   }
   else
   {
+    uint32_t logical_block_size;
+
     /* find the cd information */
-    if (!rc_cd_read_sector(track_handle, 16, buffer, 256))
+    if (!rc_cd_read_sector(track_handle, rc_cd_first_track_sector(track_handle) + 16, buffer, 256))
       return 0;
 
     /* the directory_record starts at 156, the sector containing the table of contents is 2 bytes into that.
      * https://www.cdroller.com/htm/readdata.html
      */
     sector = buffer[156 + 2] | (buffer[156 + 3] << 8) | (buffer[156 + 4] << 16);
+
+    /* if the table of contents spans more than one sector, it's length of section will exceed it's logical block size */
+    logical_block_size = (buffer[128] | (buffer[128 + 1] << 8)); /* logical block size */
+    if (logical_block_size == 0) {
+      num_sectors = 1;
+    } else {
+      num_sectors = (buffer[156 + 10] | (buffer[156 + 11] << 8) | (buffer[156 + 12] << 16) | (buffer[156 + 13] << 24)); /* length of section */
+      num_sectors /= logical_block_size;
+    }
   }
 
   /* fetch and process the directory record */
-  sector = rc_cd_absolute_sector_to_track_sector(track_handle, sector);
   if (!rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer)))
     return 0;
 
   tmp = buffer;
-  while (tmp < buffer + sizeof(buffer))
+  do
   {
-    if (!*tmp)
-      return 0;
+    if (tmp >= buffer + sizeof(buffer) || !*tmp)
+    {
+      /* end of this path table block. if the path table spans multiple sectors, keep scanning */
+      if (num_sectors > 1)
+      {
+        --num_sectors;
+        if (rc_cd_read_sector(track_handle, ++sector, buffer, sizeof(buffer)))
+        {
+          tmp = buffer;
+          continue;
+        }
+      }
+      break;
+    }
 
     /* filename is 33 bytes into the record and the format is "FILENAME;version" or "DIRECTORY" */
-    if ((tmp[33 + filename_length] == ';' || tmp[33 + filename_length] == '\0') &&
+    if ((tmp[32] == filename_length || tmp[33 + filename_length] == ';') &&
         strncasecmp((const char*)(tmp + 33), path, filename_length) == 0)
     {
       sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
 
       if (verbose_message_callback)
       {
-        snprintf((char*)buffer, sizeof(buffer), "Found %s at sector %d", path, sector);
-        verbose_message_callback((const char*)buffer);
+        char message[128];
+        snprintf(message, sizeof(message), "Found %s at sector %d", path, sector);
+        verbose_message_callback(message);
       }
 
       if (size)
@@ -282,9 +371,24 @@ static uint32_t rc_cd_find_file_sector(void* track_handle, const char* path, uns
 
     /* the first byte of the record is the length of the record */
     tmp += *tmp;
-  }
+  } while (1);
 
   return 0;
+}
+
+/* ===================================================== */
+
+static rc_hash_3ds_get_cia_normal_key_func _3ds_get_cia_normal_key_func = NULL;
+static rc_hash_3ds_get_ncch_normal_keys_func _3ds_get_ncch_normal_keys_func = NULL;
+
+void rc_hash_init_3ds_get_cia_normal_key_func(rc_hash_3ds_get_cia_normal_key_func func)
+{
+  _3ds_get_cia_normal_key_func = func;
+}
+
+void rc_hash_init_3ds_get_ncch_normal_keys_func(rc_hash_3ds_get_ncch_normal_keys_func func)
+{
+  _3ds_get_ncch_normal_keys_func = func;
 }
 
 /* ===================================================== */
@@ -342,6 +446,34 @@ int rc_path_compare_extension(const char* path, const char* ext)
 
 /* ===================================================== */
 
+static void rc_hash_byteswap16(uint8_t* buffer, const uint8_t* stop)
+{
+  uint32_t* ptr = (uint32_t*)buffer;
+  const uint32_t* stop32 = (const uint32_t*)stop;
+  while (ptr < stop32)
+  {
+    uint32_t temp = *ptr;
+    temp = (temp & 0xFF00FF00) >> 8 |
+           (temp & 0x00FF00FF) << 8;
+    *ptr++ = temp;
+  }
+}
+
+static void rc_hash_byteswap32(uint8_t* buffer, const uint8_t* stop)
+{
+  uint32_t* ptr = (uint32_t*)buffer;
+  const uint32_t* stop32 = (const uint32_t*)stop;
+  while (ptr < stop32)
+  {
+    uint32_t temp = *ptr;
+    temp = (temp & 0xFF000000) >> 24 |
+           (temp & 0x00FF0000) >> 8 |
+           (temp & 0x0000FF00) << 8 |
+           (temp & 0x000000FF) << 24;
+    *ptr++ = temp;
+  }
+}
+
 static int rc_hash_finalize(md5_state_t* md5, char hash[33])
 {
   md5_byte_t digest[16];
@@ -384,7 +516,7 @@ static int rc_hash_buffer(char hash[33], const uint8_t* buffer, size_t buffer_si
   return rc_hash_finalize(&md5, hash);
 }
 
-static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector, const char* name, unsigned size, const char* description)
+static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector, const char* name, uint32_t size, const char* description)
 {
   uint8_t buffer[2048];
   size_t num_read;
@@ -405,10 +537,13 @@ static int rc_hash_cd_file(md5_state_t* md5, void* track_handle, uint32_t sector
     if (name)
       snprintf(message, sizeof(message), "Hashing %s title (%u bytes) and contents (%u bytes) ", name, (unsigned)strlen(name), size);
     else
-      snprintf(message, sizeof(message), "Hashing %s contents (%u bytes)", description, size);
+      snprintf(message, sizeof(message), "Hashing %s contents (%u bytes @ sector %u)", description, size, sector);
 
     verbose_message_callback(message);
   }
+
+  if (size < (unsigned)num_read) /* we read a whole sector - only hash the part containing file data */
+    num_read = (size_t)size;
 
   do
   {
@@ -575,16 +710,401 @@ static int rc_hash_7800(char hash[33], const uint8_t* buffer, size_t buffer_size
   return rc_hash_buffer(hash, buffer, buffer_size);
 }
 
+struct rc_hash_zip_idx
+{
+  size_t length;
+  uint8_t* data;
+};
+
+struct rc_hash_ms_dos_dosz_state
+{
+  const char* path;
+  const struct rc_hash_ms_dos_dosz_state* child;
+};
+
+static int rc_hash_zip_idx_sort(const void* a, const void* b)
+{
+  struct rc_hash_zip_idx *A = (struct rc_hash_zip_idx*)a, *B = (struct rc_hash_zip_idx*)b;
+  size_t len = (A->length < B->length ? A->length : B->length);
+  return memcmp(A->data, B->data, len);
+}
+
+static int rc_hash_ms_dos_parent(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *child, const char* parentname, uint32_t parentname_len);
+static int rc_hash_ms_dos_dosc(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *dosz);
+
+static int rc_hash_zip_file(md5_state_t* md5, void* file_handle, const struct rc_hash_ms_dos_dosz_state* dosz)
+{
+  uint8_t buf[2048], *alloc_buf, *cdir_start, *cdir_max, *cdir, *hashdata, eocdirhdr_size, cdirhdr_size, nparents;
+  uint32_t cdir_entry_len;
+  size_t sizeof_idx, indices_offset, alloc_size;
+  int64_t i_file, archive_size, ecdh_ofs, total_files, cdir_size, cdir_ofs;
+  struct rc_hash_zip_idx* hashindices, *hashindex;
+
+  rc_file_seek(file_handle, 0, SEEK_END);
+  archive_size = rc_file_tell(file_handle);
+
+  /* Basic sanity checks - reject files which are too small */
+  eocdirhdr_size = 22; /* the 'end of central directory header' is 22 bytes */
+  if (archive_size < eocdirhdr_size)
+    return rc_hash_error("ZIP is too small");
+
+  /* Macros used for reading ZIP and writing to a buffer for hashing (undefined again at the end of the function) */
+  #define RC_ZIP_READ_LE16(p) ((uint16_t)(((const uint8_t*)(p))[0]) | ((uint16_t)(((const uint8_t*)(p))[1]) << 8U))
+  #define RC_ZIP_READ_LE32(p) ((uint32_t)(((const uint8_t*)(p))[0]) | ((uint32_t)(((const uint8_t*)(p))[1]) << 8U) | ((uint32_t)(((const uint8_t*)(p))[2]) << 16U) | ((uint32_t)(((const uint8_t*)(p))[3]) << 24U))
+  #define RC_ZIP_READ_LE64(p) ((uint64_t)(((const uint8_t*)(p))[0]) | ((uint64_t)(((const uint8_t*)(p))[1]) << 8U) | ((uint64_t)(((const uint8_t*)(p))[2]) << 16U) | ((uint64_t)(((const uint8_t*)(p))[3]) << 24U) | ((uint64_t)(((const uint8_t*)(p))[4]) << 32U) | ((uint64_t)(((const uint8_t*)(p))[5]) << 40U) | ((uint64_t)(((const uint8_t*)(p))[6]) << 48U) | ((uint64_t)(((const uint8_t*)(p))[7]) << 56U))
+  #define RC_ZIP_WRITE_LE32(p,v) { ((uint8_t*)(p))[0] = (uint8_t)((uint32_t)(v) & 0xFF); ((uint8_t*)(p))[1] = (uint8_t)(((uint32_t)(v) >> 8) & 0xFF); ((uint8_t*)(p))[2] = (uint8_t)(((uint32_t)(v) >> 16) & 0xFF); ((uint8_t*)(p))[3] = (uint8_t)((uint32_t)(v) >> 24); }
+  #define RC_ZIP_WRITE_LE64(p,v) { ((uint8_t*)(p))[0] = (uint8_t)((uint64_t)(v) & 0xFF); ((uint8_t*)(p))[1] = (uint8_t)(((uint64_t)(v) >> 8) & 0xFF); ((uint8_t*)(p))[2] = (uint8_t)(((uint64_t)(v) >> 16) & 0xFF); ((uint8_t*)(p))[3] = (uint8_t)(((uint64_t)(v) >> 24) & 0xFF); ((uint8_t*)(p))[4] = (uint8_t)(((uint64_t)(v) >> 32) & 0xFF); ((uint8_t*)(p))[5] = (uint8_t)(((uint64_t)(v) >> 40) & 0xFF); ((uint8_t*)(p))[6] = (uint8_t)(((uint64_t)(v) >> 48) & 0xFF); ((uint8_t*)(p))[7] = (uint8_t)((uint64_t)(v) >> 56); }
+
+  /* Find the end of central directory record by scanning the file from the end towards the beginning */
+  for (ecdh_ofs = archive_size - sizeof(buf); ; ecdh_ofs -= (sizeof(buf) - 3))
+  {
+    int i, n = sizeof(buf);
+    if (ecdh_ofs < 0)
+      ecdh_ofs = 0;
+    if (n > archive_size)
+      n = (int)archive_size;
+    rc_file_seek(file_handle, ecdh_ofs, SEEK_SET);
+    if (rc_file_read(file_handle, buf, n) != (size_t)n)
+      return rc_hash_error("ZIP read error");
+    for (i = n - 4; i >= 0; --i)
+      if (RC_ZIP_READ_LE32(buf + i) == 0x06054b50) /* end of central directory header signature */
+        break;
+    if (i >= 0)
+    {
+      ecdh_ofs += i;
+      break;
+    }
+    if (!ecdh_ofs || (archive_size - ecdh_ofs) >= (0xFFFF + eocdirhdr_size))
+      return rc_hash_error("Failed to find ZIP central directory");
+  }
+
+  /* Read and verify the end of central directory record. */
+  rc_file_seek(file_handle, ecdh_ofs, SEEK_SET);
+  if (rc_file_read(file_handle, buf, eocdirhdr_size) != eocdirhdr_size)
+    return rc_hash_error("Failed to read ZIP central directory");
+
+  /* Read central dir information from end of central directory header */
+  total_files = RC_ZIP_READ_LE16(buf + 0x0A);
+  cdir_size   = RC_ZIP_READ_LE32(buf + 0x0C);
+  cdir_ofs    = RC_ZIP_READ_LE32(buf + 0x10);
+
+  /* Check if this is a Zip64 file. In the block of code below:
+   * - 20 is the size of the ZIP64 end of central directory locator
+   * - 56 is the size of the ZIP64 end of central directory header
+   */
+  if ((cdir_ofs == 0xFFFFFFFF || cdir_size == 0xFFFFFFFF || total_files == 0xFFFF) && ecdh_ofs >= (20 + 56))
+  {
+    /* Read the ZIP64 end of central directory locator if it actually exists */
+    rc_file_seek(file_handle, ecdh_ofs - 20, SEEK_SET);
+    if (rc_file_read(file_handle, buf, 20) == 20 && RC_ZIP_READ_LE32(buf) == 0x07064b50) /* locator signature */
+    {
+      /* Found the locator, now read the actual ZIP64 end of central directory header */
+      int64_t ecdh64_ofs = (int64_t)RC_ZIP_READ_LE64(buf + 0x08);
+      if (ecdh64_ofs <= (archive_size - 56))
+      {
+        rc_file_seek(file_handle, ecdh64_ofs, SEEK_SET);
+        if (rc_file_read(file_handle, buf, 56) == 56 && RC_ZIP_READ_LE32(buf) == 0x06064b50) /* header signature */
+        {
+          total_files = RC_ZIP_READ_LE64(buf + 0x20);
+          cdir_size   = RC_ZIP_READ_LE64(buf + 0x28);
+          cdir_ofs    = RC_ZIP_READ_LE64(buf + 0x30);
+        }
+      }
+    }
+  }
+
+  /* Basic verificaton of central directory (limit to a 256MB content directory) */
+  cdirhdr_size = 46; /* the 'central directory header' is 46 bytes */
+  if ((cdir_size >= 0x10000000) || (cdir_size < total_files * cdirhdr_size) || ((cdir_ofs + cdir_size) > archive_size))
+    return rc_hash_error("Central directory of ZIP file is invalid");
+
+  /* Allocate once for both directory and our temporary sort index (memory aligned to sizeof(rc_hash_zip_idx)) */
+  sizeof_idx = sizeof(struct rc_hash_zip_idx);
+  indices_offset = (size_t)((cdir_size + sizeof_idx - 1) / sizeof_idx * sizeof_idx);
+  alloc_size = (size_t)(indices_offset + total_files * sizeof_idx);
+  alloc_buf = (uint8_t*)malloc(alloc_size);
+
+  /* Read entire central directory to a buffer */
+  if (!alloc_buf)
+    return rc_hash_error("Could not allocate temporary buffer");
+  rc_file_seek(file_handle, cdir_ofs, SEEK_SET);
+  if ((int64_t)rc_file_read(file_handle, alloc_buf, (int)cdir_size) != cdir_size)
+  {
+    free(alloc_buf);
+    return rc_hash_error("Failed to read central directory of ZIP file");
+  }
+
+  cdir_start = alloc_buf;
+  cdir_max = cdir_start + cdir_size - cdirhdr_size;
+  cdir = cdir_start;
+
+  /* Write our temporary hash data to the same buffer we read the central directory from.
+   * We can do that because the amount of data we keep for each file is guaranteed to be less than the file record.
+   */
+  hashdata = alloc_buf;
+  hashindices = (struct rc_hash_zip_idx*)(alloc_buf + indices_offset);
+  hashindex = hashindices;
+
+  /* Now process the central directory file records */
+  for (i_file = nparents = 0, cdir = cdir_start; i_file < total_files && cdir >= cdir_start && cdir <= cdir_max; i_file++, cdir += cdir_entry_len)
+  {
+    const uint8_t *name, *name_end;
+    uint32_t signature     = RC_ZIP_READ_LE32(cdir + 0x00);
+    uint32_t method        = RC_ZIP_READ_LE16(cdir + 0x0A);
+    uint32_t crc32         = RC_ZIP_READ_LE32(cdir + 0x10);
+    uint64_t comp_size     = RC_ZIP_READ_LE32(cdir + 0x14);
+    uint64_t decomp_size   = RC_ZIP_READ_LE32(cdir + 0x18);
+    uint32_t filename_len  = RC_ZIP_READ_LE16(cdir + 0x1C);
+    int32_t  extra_len     = RC_ZIP_READ_LE16(cdir + 0x1E);
+    int32_t  comment_len   = RC_ZIP_READ_LE16(cdir + 0x20);
+    int32_t  external_attr = RC_ZIP_READ_LE16(cdir + 0x26);
+    uint64_t local_hdr_ofs = RC_ZIP_READ_LE32(cdir + 0x2A);
+    cdir_entry_len = cdirhdr_size + filename_len + extra_len + comment_len;
+
+    if (signature != 0x02014b50) /* expected central directory entry signature */
+      break;
+
+    /* Ignore records describing a directory (we only hash file records) */
+    name = (cdir + cdirhdr_size);
+    if (name[filename_len - 1] == '/' || name[filename_len - 1] == '\\' || (external_attr & 0x10))
+        continue;
+
+    /* Handle Zip64 fields */
+    if (decomp_size == 0xFFFFFFFF || comp_size == 0xFFFFFFFF || local_hdr_ofs == 0xFFFFFFFF)
+    {
+      int invalid = 0;
+      const uint8_t *x = cdir + cdirhdr_size + filename_len, *xEnd, *field, *fieldEnd;
+      for (xEnd = x + extra_len; (x + (sizeof(uint16_t) * 2)) < xEnd; x = fieldEnd)
+      {
+        field = x + (sizeof(uint16_t) * 2);
+        fieldEnd = field + RC_ZIP_READ_LE16(x + 2);
+        if (RC_ZIP_READ_LE16(x) != 0x0001 || fieldEnd > xEnd)
+          continue; /* Not the Zip64 extended information extra field */
+
+        if (decomp_size == 0xFFFFFFFF)
+        {
+          if ((unsigned)(fieldEnd - field) < sizeof(uint64_t)) { invalid = 1; break; }
+          decomp_size = RC_ZIP_READ_LE64(field);
+          field += sizeof(uint64_t);
+        }
+        if (comp_size == 0xFFFFFFFF)
+        {
+          if ((unsigned)(fieldEnd - field) < sizeof(uint64_t)) { invalid = 1; break; }
+          comp_size = RC_ZIP_READ_LE64(field);
+          field += sizeof(uint64_t);
+        }
+        if (local_hdr_ofs == 0xFFFFFFFF)
+        {
+          if ((unsigned)(fieldEnd - field) < sizeof(uint64_t)) { invalid = 1; break; }
+          local_hdr_ofs = RC_ZIP_READ_LE64(field);
+          field += sizeof(uint64_t);
+        }
+        break;
+      }
+      if (invalid)
+      {
+        free(alloc_buf);
+        return rc_hash_error("Encountered invalid Zip64 file");
+      }
+    }
+
+    /* Basic sanity check on file record */
+    /* 30 is the length of the local directory header preceeding the compressed data */
+    if ((!method && decomp_size != comp_size) || (decomp_size && !comp_size) || ((local_hdr_ofs + 30 + comp_size) > (uint64_t)archive_size))
+    {
+      free(alloc_buf);
+      return rc_hash_error("Encountered invalid entry in ZIP central directory");
+    }
+
+    /* A DOSZ file can contain a special empty <base>.dosz.parent file in its root which means a parent dosz file is used */
+    if (dosz && decomp_size == 0 && filename_len > 7 && !strncasecmp((const char*)name + filename_len - 7, ".parent", 7) && !memchr(name, '/', filename_len) && !memchr(name, '\\', filename_len))
+    {
+      /* A DOSZ file can only have one parent file */
+      if (nparents++)
+      {
+        free(alloc_buf);
+        return rc_hash_error("Invalid DOSZ file with multiple parents");
+      }
+
+      /* If there is an error with the parent DOSZ, abort now */
+      if (!rc_hash_ms_dos_parent(md5, dosz, (const char*)name, (filename_len - 7)))
+      {
+        free(alloc_buf);
+        return 0;
+      }
+
+      /* We don't hash this meta file so a user is free to rename it and the parent file */
+      continue;
+    }
+
+    /* Write the pointer and length of the data we record about this file */
+    hashindex->data = hashdata;
+    hashindex->length = filename_len + 1 + 4 + 8;
+    hashindex++;
+
+    /* Convert and store the file name in the hash data buffer */
+    for (name_end = name + filename_len; name != name_end; name++)
+    {
+      *(hashdata++) =
+        (*name == '\\' ? '/' : /* convert back-slashes to regular slashes */
+        (*name >= 'A' && *name <= 'Z') ? (*name | 0x20) : /* convert upper case letters to lower case */
+        *name); /* else use the byte as-is */
+    }
+
+    /* Add zero terminator, CRC32 and decompressed size to the hash data buffer */
+    *(hashdata++) = '\0';
+    RC_ZIP_WRITE_LE32(hashdata, crc32);
+    hashdata += 4;
+    RC_ZIP_WRITE_LE64(hashdata, decomp_size);
+    hashdata += 8;
+
+    if (verbose_message_callback)
+    {
+      char message[1024];
+      snprintf(message, sizeof(message), "File in ZIP: %.*s (%u bytes, CRC32 = %08X)", filename_len, (const char*)(cdir + cdirhdr_size), (unsigned)decomp_size, crc32);
+      verbose_message_callback(message);
+    }
+  }
+
+  if (verbose_message_callback)
+  {
+    char message[1024];
+    snprintf(message, sizeof(message), "Hashing %u files in ZIP archive", (unsigned)(hashindex - hashindices));
+    verbose_message_callback(message);
+  }
+
+  /* Sort the file list indices */
+  qsort(hashindices, (hashindex - hashindices), sizeof(struct rc_hash_zip_idx), rc_hash_zip_idx_sort);
+
+  /* Hash the data in the order of the now sorted indices */
+  for (; hashindices != hashindex; hashindices++)
+    md5_append(md5, hashindices->data, (int)hashindices->length);
+
+  free(alloc_buf);
+
+  /* If this is a .dosz file, check if an associated .dosc file exists */
+  if (dosz && !rc_hash_ms_dos_dosc(md5, dosz))
+    return 0;
+
+  return 1;
+
+  #undef RC_ZIP_READ_LE16
+  #undef RC_ZIP_READ_LE32
+  #undef RC_ZIP_READ_LE64
+  #undef RC_ZIP_WRITE_LE32
+  #undef RC_ZIP_WRITE_LE64
+}
+
+static int rc_hash_ms_dos_parent(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *child, const char* parentname, uint32_t parentname_len)
+{
+  const char *lastfslash = strrchr(child->path, '/');
+  const char *lastbslash = strrchr(child->path, '\\');
+  const char *lastslash = (lastbslash > lastfslash ? lastbslash : lastfslash);
+  size_t dir_len = (lastslash ? (lastslash + 1 - child->path) : 0);
+  char* parent_path = (char*)malloc(dir_len + parentname_len + 1);
+  struct rc_hash_ms_dos_dosz_state parent;
+  const struct rc_hash_ms_dos_dosz_state *check;
+  void* parent_handle;
+  int parent_res;
+
+  /* Build the path of the parent by combining the directory of the current file with the name */
+  if (!parent_path)
+    return rc_hash_error("Could not allocate temporary buffer");
+
+  memcpy(parent_path, child->path, dir_len);
+  memcpy(parent_path + dir_len, parentname, parentname_len);
+  parent_path[dir_len + parentname_len] = '\0';
+
+  /* Make sure there is no recursion where a parent DOSZ is an already seen child DOSZ */
+  for (check = child->child; check; check = check->child)
+  {
+    if (!strcmp(check->path, parent_path))
+    {
+        free(parent_path);
+        return rc_hash_error("Invalid DOSZ file with recursive parents");
+    }
+  }
+
+  /* Try to open the parent DOSZ file */
+  parent_handle = rc_file_open(parent_path);
+  if (!parent_handle)
+  {
+    char message[1024];
+    snprintf(message, sizeof(message), "DOSZ parent file '%s' does not exist", parent_path);
+    free(parent_path);
+    return rc_hash_error(message);
+  }
+
+  /* Fully hash the parent DOSZ ahead of the child */
+  parent.path = parent_path;
+  parent.child = child;
+  parent_res = rc_hash_zip_file(md5, parent_handle, &parent);
+  rc_file_close(parent_handle);
+  free(parent_path);
+  return parent_res;
+}
+
+static int rc_hash_ms_dos_dosc(md5_state_t* md5, const struct rc_hash_ms_dos_dosz_state *dosz)
+{
+  size_t path_len = strlen(dosz->path);
+  if (dosz->path[path_len-1] == 'z' || dosz->path[path_len-1] == 'Z')
+  {
+    void* file_handle;
+    char *dosc_path = strdup(dosz->path);
+    if (!dosc_path)
+        return rc_hash_error("Could not allocate temporary buffer");
+
+    /* Swap the z to c and use the same capitalization, hash the file if it exists */
+    dosc_path[path_len-1] = (dosz->path[path_len-1] == 'z' ? 'c' : 'C');
+    file_handle = rc_file_open(dosc_path);
+    free(dosc_path);
+
+    if (file_handle)
+    {
+      /* Hash the DOSC as a plain zip file (pass NULL as dosz state) */
+      int res = rc_hash_zip_file(md5, file_handle, NULL);
+      rc_file_close(file_handle);
+      if (!res)
+        return 0;
+    }
+  }
+  return 1;
+}
+
+static int rc_hash_ms_dos(char hash[33], const char* path)
+{
+  struct rc_hash_ms_dos_dosz_state dosz;
+  md5_state_t md5;
+  int res;
+
+  void* file_handle = rc_file_open(path);
+  if (!file_handle)
+    return rc_hash_error("Could not open file");
+
+  /* hash the main content zip file first */
+  md5_init(&md5);
+  dosz.path = path;
+  dosz.child = NULL;
+  res = rc_hash_zip_file(&md5, file_handle, &dosz);
+  rc_file_close(file_handle);
+
+  if (!res)
+    return 0;
+
+  return rc_hash_finalize(&md5, hash);
+}
+
 static int rc_hash_arcade(char hash[33], const char* path)
 {
   /* arcade hash is just the hash of the filename (no extension) - the cores are pretty stringent about having the right ROM data */
   const char* filename = rc_path_get_filename(path);
   const char* ext = rc_path_get_extension(filename);
+  char buffer[128]; /* realistically, this should never need more than ~32 characters */
   size_t filename_length = ext - filename - 1;
 
   /* fbneo supports loading subsystems by using specific folder names.
    * if one is found, include it in the hash.
-   * https://github.com/libretro/FBNeo/blob/master/src/burner/libretro/README.md#emulating-consoles
+   * https://github.com/libretro/FBNeo/blob/master/src/burner/libretro/README.md#emulating-consoles-and-computers
    */
   if (filename > path + 1)
   {
@@ -601,31 +1121,67 @@ static int rc_hash_arcade(char hash[33], const char* path)
     } while (folder > path);
 
     parent_folder_length = filename - folder - 1;
+    if (parent_folder_length < 16)
+    {
+      char* ptr = buffer;
+      while (folder < filename - 1)
+        *ptr++ = tolower(*folder++);
+      *ptr = '\0';
+
+      folder = buffer;
+    }
+
     switch (parent_folder_length)
     {
       case 3:
-        if (memcmp(folder, "nes", 3) == 0 ||
-            memcmp(folder, "fds", 3) == 0 ||
-            memcmp(folder, "sms", 3) == 0 ||
-            memcmp(folder, "msx", 3) == 0 ||
-            memcmp(folder, "ngp", 3) == 0 ||
-            memcmp(folder, "pce", 3) == 0 ||
-            memcmp(folder, "sgx", 3) == 0)
+        if (memcmp(folder, "nes", 3) == 0 || /* NES */
+            memcmp(folder, "fds", 3) == 0 || /* FDS */
+            memcmp(folder, "sms", 3) == 0 || /* Master System */
+            memcmp(folder, "msx", 3) == 0 || /* MSX */
+            memcmp(folder, "ngp", 3) == 0 || /* NeoGeo Pocket */
+            memcmp(folder, "pce", 3) == 0 || /* PCEngine */
+            memcmp(folder, "chf", 3) == 0 || /* ChannelF */
+            memcmp(folder, "sgx", 3) == 0)   /* SuperGrafX */
           include_folder = 1;
         break;
       case 4:
-        if (memcmp(folder, "tg16", 4) == 0)
+        if (memcmp(folder, "tg16", 4) == 0 || /* TurboGrafx-16 */
+            memcmp(folder, "msx1", 4) == 0)   /* MSX */
+          include_folder = 1;
+        break;
+      case 5:
+        if (memcmp(folder, "neocd", 5) == 0) /* NeoGeo CD */
           include_folder = 1;
         break;
       case 6:
-        if (memcmp(folder, "coleco", 6) == 0 ||
-            memcmp(folder, "sg1000", 6) == 0)
+        if (memcmp(folder, "coleco", 6) == 0 || /* Colecovision */
+            memcmp(folder, "sg1000", 6) == 0)   /* SG-1000 */
+          include_folder = 1;
+        break;
+      case 7:
+        if (memcmp(folder, "genesis", 7) == 0) /* Megadrive (Genesis) */
           include_folder = 1;
         break;
       case 8:
-        if (memcmp(folder, "gamegear", 8) == 0 ||
-            memcmp(folder, "megadriv", 8) == 0 ||
-            memcmp(folder, "spectrum", 8) == 0)
+        if (memcmp(folder, "gamegear", 8) == 0 || /* Game Gear */
+            memcmp(folder, "megadriv", 8) == 0 || /* Megadrive */
+            memcmp(folder, "pcengine", 8) == 0 || /* PCEngine */
+            memcmp(folder, "channelf", 8) == 0 || /* ChannelF */
+            memcmp(folder, "spectrum", 8) == 0)   /* ZX Spectrum */
+          include_folder = 1;
+        break;
+      case 9:
+        if (memcmp(folder, "megadrive", 9) == 0) /* Megadrive */
+          include_folder = 1;
+        break;
+      case 10:
+        if (memcmp(folder, "supergrafx", 10) == 0 || /* SuperGrafX */
+            memcmp(folder, "zxspectrum", 10) == 0)   /* ZX Spectrum */
+          include_folder = 1;
+        break;
+      case 12:
+        if (memcmp(folder, "mastersystem", 12) == 0 || /* Master System */
+            memcmp(folder, "colecovision", 12) == 0)   /* Colecovision */
           include_folder = 1;
         break;
       default:
@@ -634,10 +1190,8 @@ static int rc_hash_arcade(char hash[33], const char* path)
 
     if (include_folder)
     {
-      char buffer[128]; /* realistically, this should never need more than ~20 characters */
       if (parent_folder_length + filename_length + 1 < sizeof(buffer))
       {
-        memcpy(&buffer[0], folder, parent_folder_length);
         buffer[parent_folder_length] = '_';
         memcpy(&buffer[parent_folder_length + 1], filename, filename_length);
         return rc_hash_buffer(hash, (uint8_t*)&buffer[0], parent_folder_length + filename_length + 1);
@@ -646,6 +1200,173 @@ static int rc_hash_arcade(char hash[33], const char* path)
   }
 
   return rc_hash_buffer(hash, (uint8_t*)filename, filename_length);
+}
+
+static int rc_hash_text(char hash[33], const uint8_t* buffer, size_t buffer_size)
+{
+  md5_state_t md5;
+  const uint8_t* scan = buffer;
+  const uint8_t* stop = buffer + buffer_size;
+
+  md5_init(&md5);
+
+  do {
+    /* find end of line */
+    while (scan < stop && *scan != '\r' && *scan != '\n')
+      ++scan;
+
+    md5_append(&md5, buffer, (int)(scan - buffer));
+
+    /* include a normalized line ending */
+    /* NOTE: this causes a line ending to be hashed at the end of the file, even if one was not present */
+    md5_append(&md5, (const uint8_t*)"\n", 1);
+
+    /* skip newline */
+    if (scan < stop && *scan == '\r')
+      ++scan;
+    if (scan < stop && *scan == '\n')
+      ++scan;
+
+    buffer = scan;
+  } while (scan < stop);
+
+  return rc_hash_finalize(&md5, hash);
+}
+
+/* helper variable only used for testing */
+const char* _rc_hash_jaguar_cd_homebrew_hash = NULL;
+
+static int rc_hash_jaguar_cd(char hash[33], const char* path)
+{
+  uint8_t buffer[2352];
+  char message[128];
+  void* track_handle;
+  md5_state_t md5;
+  int byteswapped = 0;
+  uint32_t size = 0;
+  uint32_t offset = 0;
+  uint32_t sector = 0;
+  uint32_t remaining;
+  uint32_t i;
+
+  /* Jaguar CD header is in the first sector of the first data track OF THE SECOND SESSION.
+   * The first track must be an audio track, but may be a warning message or actual game audio */
+  track_handle = rc_cd_open_track(path, RC_HASH_CDTRACK_FIRST_OF_SECOND_SESSION);
+  if (!track_handle)
+    return rc_hash_error("Could not open track");
+
+  /* The header is an unspecified distance into the first sector, but usually two bytes in.
+   * It consists of 64 bytes of "TAIR" or "ATRI" repeating, depending on whether or not the data 
+   * is byteswapped. Then another 32 byte that reads "ATARI APPROVED DATA HEADER ATRI "
+   * (possibly byteswapped). Then a big-endian 32-bit value for the address where the boot code
+   * should be loaded, and a second big-endian 32-bit value for the size of the boot code. */ 
+  sector = rc_cd_first_track_sector(track_handle);
+  rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer));
+
+  for (i = 64; i < sizeof(buffer) - 32 - 4 * 3; i++)
+  {
+    if (memcmp(&buffer[i], "TARA IPARPVODED TA AEHDAREA RT I", 32) == 0)
+    {
+      byteswapped = 1;
+      offset = i + 32 + 4;
+      size = (buffer[offset] << 16) | (buffer[offset + 1] << 24) | (buffer[offset + 2]) | (buffer[offset + 3] << 8);
+      break;
+    }
+    else if (memcmp(&buffer[i], "ATARI APPROVED DATA HEADER ATRI ", 32) == 0)
+    {
+      byteswapped = 0;
+      offset = i + 32 + 4;
+      size = (buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | (buffer[offset + 3]);
+      break;
+    }
+  }
+
+  if (size == 0) /* did not see ATARI APPROVED DATA HEADER */
+  {
+    rc_cd_close_track(track_handle);
+    return rc_hash_error("Not a Jaguar CD");
+  }
+
+  i = 0; /* only loop once */
+  do
+  {
+    md5_init(&md5);
+
+    offset += 4;
+
+    if (verbose_message_callback)
+    {
+      snprintf(message, sizeof(message), "Hashing boot executable (%u bytes starting at %u bytes into sector %u)", size, offset, sector);
+      rc_hash_verbose(message);
+    }
+
+    if (size > MAX_BUFFER_SIZE)
+      size = MAX_BUFFER_SIZE;
+
+    do
+    {
+      if (byteswapped)
+        rc_hash_byteswap16(buffer, &buffer[sizeof(buffer)]);
+
+      remaining = sizeof(buffer) - offset;
+      if (remaining >= size)
+      {
+        md5_append(&md5, &buffer[offset], size);
+        size = 0;
+        break;
+      }
+
+      md5_append(&md5, &buffer[offset], remaining);
+      size -= remaining;
+      offset = 0;
+    } while (rc_cd_read_sector(track_handle, ++sector, buffer, sizeof(buffer)) == sizeof(buffer));
+
+    rc_cd_close_track(track_handle);
+
+    if (size > 0)
+      return rc_hash_error("Not enough data");
+
+    rc_hash_finalize(&md5, hash);
+
+    /* homebrew games all seem to have the same boot executable and store the actual game code in track 2.
+     * if we generated something other than the homebrew hash, return it. assume all homebrews are byteswapped. */
+    if (strcmp(hash, "254487b59ab21bc005338e85cbf9fd2f") != 0 || !byteswapped) {
+      if (_rc_hash_jaguar_cd_homebrew_hash == NULL || strcmp(hash, _rc_hash_jaguar_cd_homebrew_hash) != 0)
+        return 1;
+    }
+
+    /* if we've already been through the loop a second time, just return the hash */
+    if (i == 1)
+      return 1;
+    ++i;
+
+    if (verbose_message_callback)
+    {
+      snprintf(message, sizeof(message), "Potential homebrew at sector %u, checking for KART data in track 2", sector);
+      rc_hash_verbose(message);
+    }
+
+    track_handle = rc_cd_open_track(path, 2);
+    if (!track_handle)
+      return rc_hash_error("Could not open track");
+
+    /* track 2 of the homebrew code has the 64 bytes or ATRI followed by 32 bytes of "ATARI APPROVED DATA HEADER ATRI!",
+     * then 64 bytes of KART repeating. */
+    sector = rc_cd_first_track_sector(track_handle);
+    rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer));
+    if (memcmp(&buffer[0x5E], "RT!IRTKA", 8) != 0)
+      return rc_hash_error("Homebrew executable not found in track 2");
+
+    /* found KART data*/
+    if (verbose_message_callback)
+    {
+      snprintf(message, sizeof(message), "Found KART data in track 2");
+      rc_hash_verbose(message);
+    }
+
+    offset = 0xA6;
+    size = (buffer[offset] << 16) | (buffer[offset + 1] << 24) | (buffer[offset + 2]) | (buffer[offset + 3] << 8);
+  } while (1);
 }
 
 static int rc_hash_lynx(char hash[33], const uint8_t* buffer, size_t buffer_size)
@@ -660,6 +1381,70 @@ static int rc_hash_lynx(char hash[33], const uint8_t* buffer, size_t buffer_size
   }
 
   return rc_hash_buffer(hash, buffer, buffer_size);
+}
+
+static int rc_hash_neogeo_cd(char hash[33], const char* path)
+{
+  char buffer[1024], *ptr;
+  void* track_handle;
+  uint32_t sector;
+  uint32_t size;
+  md5_state_t md5;
+
+  track_handle = rc_cd_open_track(path, 1);
+  if (!track_handle)
+    return rc_hash_error("Could not open track");
+
+  /* https://wiki.neogeodev.org/index.php?title=IPL_file, https://wiki.neogeodev.org/index.php?title=PRG_file
+   * IPL file specifies data to be loaded before the game starts. PRG files are the executable code
+   */
+  sector = rc_cd_find_file_sector(track_handle, "IPL.TXT", &size);
+  if (!sector)
+  {
+    rc_cd_close_track(track_handle);
+    return rc_hash_error("Not a NeoGeo CD game disc");
+  }
+
+  if (rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer)) == 0)
+  {
+    rc_cd_close_track(track_handle);
+    return 0;
+  }
+
+  md5_init(&md5);
+
+  buffer[sizeof(buffer) - 1] = '\0';
+  ptr = &buffer[0];
+  do
+  {
+    char* start = ptr;
+    while (*ptr && *ptr != '.')
+      ++ptr;
+
+    if (strncasecmp(ptr, ".PRG", 4) == 0)
+    {
+      ptr += 4;
+      *ptr++ = '\0';
+
+      sector = rc_cd_find_file_sector(track_handle, start, &size);
+      if (!sector || !rc_hash_cd_file(&md5, track_handle, sector, NULL, size, start))
+      {
+        char error[128];
+        rc_cd_close_track(track_handle);
+        snprintf(error, sizeof(error), "Could not read %.16s", start);
+        return rc_hash_error(error);
+      }
+    }
+
+    while (*ptr && *ptr != '\n')
+      ++ptr;
+    if (*ptr != '\n')
+      break;
+    ++ptr;
+  } while (*ptr != '\0' && *ptr != '\x1a');
+
+  rc_cd_close_track(track_handle);
+  return rc_hash_finalize(&md5, hash);
 }
 
 static int rc_hash_nes(char hash[33], const uint8_t* buffer, size_t buffer_size)
@@ -683,114 +1468,7 @@ static int rc_hash_nes(char hash[33], const uint8_t* buffer, size_t buffer_size)
   return rc_hash_buffer(hash, buffer, buffer_size);
 }
 
-static void rc_hash_v64_to_z64(uint8_t* buffer, const uint8_t* stop)
-{
-  uint32_t* ptr = (uint32_t*)buffer;
-  const uint32_t* stop32 = (const uint32_t*)stop;
-  while (ptr < stop32)
-  {
-    uint32_t temp = *ptr;
-    temp = (temp & 0xFF00FF00) >> 8 |
-           (temp & 0x00FF00FF) << 8;
-    *ptr++ = temp;
-  }
-}
-
-static void rc_hash_n64_to_z64(uint8_t* buffer, const uint8_t* stop)
-{
-  uint32_t* ptr = (uint32_t*)buffer;
-  const uint32_t* stop32 = (const uint32_t*)stop;
-  while (ptr < stop32)
-  {
-    uint32_t temp = *ptr;
-    temp = (temp & 0xFF000000) >> 24 |
-           (temp & 0x00FF0000) >> 8 |
-           (temp & 0x0000FF00) << 8 |
-           (temp & 0x000000FF) << 24;
-    *ptr++ = temp;
-  }
-}
-
-static int rc_hash_n64(char hash[33], const uint8_t* buffer, size_t buffer_size)
-{
-  uint8_t* swapbuffer;
-  uint8_t* stop;
-  const size_t swapbuffer_size = 65536;
-  md5_state_t md5;
-  size_t remaining;
-  int is_v64;
-
-  if (buffer[0] == 0x80) /* z64 format (big endian [native]) */
-  {
-    return rc_hash_buffer(hash, buffer, buffer_size);
-  }
-  else if (buffer[0] == 0x37) /* v64 format (byteswapped) */
-  {
-    rc_hash_verbose("converting v64 to z64");
-    is_v64 = 1;
-  }
-  else if (buffer[0] == 0x40) /* n64 format (little endian) */
-  {
-    rc_hash_verbose("converting n64 to z64");
-    is_v64 = 0;
-  }
-  else
-  {
-    rc_hash_verbose("Not a Nintendo 64 ROM");
-    return 0;
-  }
-
-  swapbuffer = (uint8_t*)malloc(swapbuffer_size);
-  if (!swapbuffer)
-    return rc_hash_error("Could not allocate temporary buffer");
-  stop = swapbuffer + swapbuffer_size;
-
-  md5_init(&md5);
-
-  if (buffer_size > MAX_BUFFER_SIZE)
-    remaining = MAX_BUFFER_SIZE;
-  else
-    remaining = (size_t)buffer_size;
-
-  if (verbose_message_callback)
-  {
-    char message[64];
-    snprintf(message, sizeof(message), "Hashing %u bytes", (unsigned)remaining);
-    verbose_message_callback(message);
-  }
-
-  while (remaining >= swapbuffer_size)
-  {
-    memcpy(swapbuffer, buffer, swapbuffer_size);
-
-    if (is_v64)
-      rc_hash_v64_to_z64(swapbuffer, stop);
-    else
-      rc_hash_n64_to_z64(swapbuffer, stop);
-
-    md5_append(&md5, swapbuffer, (int)swapbuffer_size);
-    buffer += swapbuffer_size;
-    remaining -= swapbuffer_size;
-  }
-
-  if (remaining > 0)
-  {
-    memcpy(swapbuffer, buffer, remaining);
-
-    stop = swapbuffer + remaining;
-    if (is_v64)
-      rc_hash_v64_to_z64(swapbuffer, stop);
-    else
-      rc_hash_n64_to_z64(swapbuffer, stop);
-
-    md5_append(&md5, swapbuffer, (int)remaining);
-  }
-
-  free(swapbuffer);
-  return rc_hash_finalize(&md5, hash);
-}
-
-static int rc_hash_n64_file(char hash[33], const char* path)
+static int rc_hash_n64(char hash[33], const char* path)
 {
   uint8_t* buffer;
   uint8_t* stop;
@@ -830,6 +1508,9 @@ static int rc_hash_n64_file(char hash[33], const char* path)
     rc_hash_verbose("converting n64 to z64");
     is_n64 = 1;
   }
+  else if (buffer[0] == 0xE8 || buffer[0] == 0x22) /* ndd format (don't byteswap) */
+  {
+  }
   else
   {
     free(buffer);
@@ -861,9 +1542,9 @@ static int rc_hash_n64_file(char hash[33], const char* path)
     rc_file_read(file_handle, buffer, (int)buffer_size);
 
     if (is_v64)
-      rc_hash_v64_to_z64(buffer, stop);
+      rc_hash_byteswap16(buffer, stop);
     else if (is_n64)
-      rc_hash_n64_to_z64(buffer, stop);
+      rc_hash_byteswap32(buffer, stop);
 
     md5_append(&md5, buffer, (int)buffer_size);
     remaining -= buffer_size;
@@ -875,9 +1556,9 @@ static int rc_hash_n64_file(char hash[33], const char* path)
 
     stop = buffer + remaining;
     if (is_v64)
-      rc_hash_v64_to_z64(buffer, stop);
+      rc_hash_byteswap16(buffer, stop);
     else if (is_n64)
-      rc_hash_n64_to_z64(buffer, stop);
+      rc_hash_byteswap32(buffer, stop);
 
     md5_append(&md5, buffer, (int)remaining);
   }
@@ -889,11 +1570,624 @@ static int rc_hash_n64_file(char hash[33], const char* path)
   return rc_hash_finalize(&md5, hash);
 }
 
+static int rc_hash_nintendo_3ds_ncch(md5_state_t* md5, void* file_handle, uint8_t header[0x200], struct AES_ctx* cia_aes)
+{
+  struct AES_ctx ncch_aes;
+  uint8_t* hash_buffer;
+  uint64_t exefs_offset, exefs_real_size;
+  uint32_t exefs_buffer_size;
+  uint8_t primary_key[AES_KEYLEN], secondary_key[AES_KEYLEN];
+  uint8_t fixed_key_flag, no_crypto_flag, seed_crypto_flag;
+  uint8_t crypto_method, secondary_key_x_slot;
+  uint16_t ncch_version;
+  uint32_t i;
+  uint8_t primary_key_y[AES_KEYLEN], program_id[sizeof(uint64_t)];
+  uint8_t iv[AES_BLOCKLEN];
+  uint8_t exefs_section_name[8];
+  uint64_t exefs_section_offset, exefs_section_size;
+
+  exefs_offset = ((uint32_t)header[0x1A3] << 24) | (header[0x1A2] << 16) | (header[0x1A1] << 8) | header[0x1A0];
+  exefs_real_size = ((uint32_t)header[0x1A7] << 24) | (header[0x1A6] << 16) | (header[0x1A5] << 8) | header[0x1A4];
+
+  /* Offset and size are in "media units" (1 media unit = 0x200 bytes) */
+  exefs_offset *= 0x200;
+  exefs_real_size *= 0x200;
+
+  if (exefs_real_size > MAX_BUFFER_SIZE)
+    exefs_buffer_size = MAX_BUFFER_SIZE;
+  else
+    exefs_buffer_size = (uint32_t)exefs_real_size;
+
+  /* This region is technically optional, but it should always be present for executable content (i.e. games) */
+  if (exefs_offset == 0 || exefs_real_size == 0)
+    return rc_hash_error("ExeFS was not available");
+
+  /* NCCH flag 7 is a bitfield of various crypto related flags */
+  fixed_key_flag = header[0x188 + 7] & 0x01;
+  no_crypto_flag = header[0x188 + 7] & 0x04;
+  seed_crypto_flag = header[0x188 + 7] & 0x20;
+
+  ncch_version = (header[0x113] << 8) | header[0x112];
+
+  if (no_crypto_flag == 0)
+  {
+    rc_hash_verbose("Encrypted NCCH detected");
+
+    if (fixed_key_flag != 0)
+    {
+      /* Fixed crypto key means all 0s for both keys */
+      memset(primary_key, 0, sizeof(primary_key));
+      memset(secondary_key, 0, sizeof(secondary_key));
+      rc_hash_verbose("Using fixed key crypto");
+    }
+    else
+    {
+      if (_3ds_get_ncch_normal_keys_func == NULL)
+        return rc_hash_error("An encrypted NCCH was detected, but the NCCH normal keys callback was not set");
+
+      /* Primary key y is just the first 16 bytes of the header */
+      memcpy(primary_key_y, header, sizeof(primary_key_y));
+
+      /* NCCH flag 3 indicates which secondary key x slot is used */
+      crypto_method = header[0x188 + 3];
+
+      switch (crypto_method)
+      {
+        case 0x00:
+          rc_hash_verbose("Using NCCH crypto method v1");
+          secondary_key_x_slot = 0x2C;
+          break;
+        case 0x01:
+          rc_hash_verbose("Using NCCH crypto method v2");
+          secondary_key_x_slot = 0x25;
+          break;
+        case 0x0A:
+          rc_hash_verbose("Using NCCH crypto method v3");
+          secondary_key_x_slot = 0x18;
+          break;
+        case 0x0B:
+          rc_hash_verbose("Using NCCH crypto method v4");
+          secondary_key_x_slot = 0x1B;
+          break;
+        default:
+          snprintf((char*)header, 0x200, "Invalid crypto method %02X", (unsigned)crypto_method);
+          return rc_hash_error((const char*)header);
+      }
+
+      /* We only need the program id if we're doing seed crypto */
+      if (seed_crypto_flag != 0)
+      {
+        rc_hash_verbose("Using seed crypto");
+        memcpy(program_id, &header[0x118], sizeof(program_id));
+      }
+
+      if (_3ds_get_ncch_normal_keys_func(primary_key_y, secondary_key_x_slot, seed_crypto_flag != 0 ? program_id : NULL, primary_key, secondary_key) == 0)
+        return rc_hash_error("Could not obtain NCCH normal keys");
+    }
+
+    switch (ncch_version)
+    {
+      case 0:
+      case 2:
+        rc_hash_verbose("Detected NCCH version 0/2");
+        for (i = 0; i < 8; i++)
+        {
+          /* First 8 bytes is the partition id in reverse byte order */
+          iv[7 - i] = header[0x108 + i];
+        }
+
+        /* Magic number for ExeFS */
+        iv[8] = 2;
+
+        /* Rest of the bytes are 0 */
+        memset(&iv[9], 0, sizeof(iv) - 9);
+        break;
+      case 1:
+        rc_hash_verbose("Detected NCCH version 1");
+        for (i = 0; i < 8; i++)
+        {
+          /* First 8 bytes is the partition id in normal byte order */
+          iv[i] = header[0x108 + i];
+        }
+
+        /* Next 4 bytes are 0 */
+        memset(&iv[8], 0, 4);
+
+        /* Last 4 bytes is the ExeFS byte offset in big endian */
+        iv[12] = (exefs_offset >> 24) & 0xFF;
+        iv[13] = (exefs_offset >> 16) & 0xFF;
+        iv[14] = (exefs_offset >> 8) & 0xFF;
+        iv[15] = exefs_offset & 0xFF;
+        break;
+      default:
+        snprintf((char*)header, 0x200, "Invalid NCCH version %04X", (unsigned)ncch_version);
+        return rc_hash_error((const char*)header);
+    }
+  }
+
+  /* ASSERT: file position must be +0x200 from start of NCCH (i.e. end of header) */
+  exefs_offset -= 0x200;
+
+  if (cia_aes)
+  {
+    /* We have to decrypt the data between the header and the ExeFS so the CIA AES state is correct
+     * when we reach the ExeFS. This decrypted data is not included in the RetroAchievements hash */
+
+    /* This should never happen in practice, but just in case */
+    if (exefs_offset > MAX_BUFFER_SIZE)
+      return rc_hash_error("Too much data required to decrypt in order to hash");
+
+    hash_buffer = (uint8_t*)malloc((uint32_t)exefs_offset);
+    if (!hash_buffer)
+    {
+      snprintf((char*)header, 0x200, "Failed to allocate %u bytes", (unsigned)exefs_offset);
+      return rc_hash_error((const char*)header);
+    }
+
+    if (rc_file_read(file_handle, hash_buffer, (uint32_t)exefs_offset) != (uint32_t)exefs_offset)
+    {
+      free(hash_buffer);
+      return rc_hash_error("Could not read NCCH data");
+    }
+
+    AES_CBC_decrypt_buffer(cia_aes, hash_buffer, (uint32_t)exefs_offset);
+    free(hash_buffer);
+  }
+  else
+  {
+    /* No decryption needed, just skip over the in-between data */
+    rc_file_seek(file_handle, (int64_t)exefs_offset, SEEK_CUR);
+  }
+
+  hash_buffer = (uint8_t*)malloc(exefs_buffer_size);
+  if (!hash_buffer)
+  {
+    snprintf((char*)header, 0x200, "Failed to allocate %u bytes", (unsigned)exefs_buffer_size);
+    return rc_hash_error((const char*)header);
+  }
+
+  /* Clear out crypto flags to ensure we get the same hash for decrypted and encrypted ROMs */
+  memset(&header[0x114], 0, 4);
+  header[0x188 + 3] = 0;
+  header[0x188 + 7] &= ~(0x20 | 0x04 | 0x01);
+
+  rc_hash_verbose("Hashing 512 byte NCCH header");
+  md5_append(md5, header, 0x200);
+
+  if (verbose_message_callback)
+  {
+    snprintf((char*)header, 0x200, "Hashing %u bytes for ExeFS (at NCCH offset %08X%08X)", (unsigned)exefs_buffer_size, (unsigned)(exefs_offset >> 32), (unsigned)exefs_offset);
+    verbose_message_callback((const char*)header);
+  }
+
+  if (rc_file_read(file_handle, hash_buffer, exefs_buffer_size) != exefs_buffer_size)
+  {
+    free(hash_buffer);
+    return rc_hash_error("Could not read ExeFS data");
+  }
+
+  if (cia_aes)
+  {
+    rc_hash_verbose("Performing CIA decryption for ExeFS");
+    AES_CBC_decrypt_buffer(cia_aes, hash_buffer, exefs_buffer_size);
+  }
+
+  if (no_crypto_flag == 0)
+  {
+    rc_hash_verbose("Performing NCCH decryption for ExeFS");
+
+    AES_init_ctx_iv(&ncch_aes, primary_key, iv);
+    AES_CTR_xcrypt_buffer(&ncch_aes, hash_buffer, 0x200);
+
+    for (i = 0; i < 8; i++)
+    {
+      memcpy(exefs_section_name, &hash_buffer[i * 16], sizeof(exefs_section_name));
+      exefs_section_offset = ((uint32_t)hash_buffer[i * 16 + 11] << 24) | (hash_buffer[i * 16 + 10] << 16) | (hash_buffer[i * 16 + 9] << 8) | hash_buffer[i * 16 + 8];
+      exefs_section_size = ((uint32_t)hash_buffer[i * 16 + 15] << 24) | (hash_buffer[i * 16 + 14] << 16) | (hash_buffer[i * 16 + 13] << 8) | hash_buffer[i * 16 + 12];
+
+      /* 0 size indicates an unused section */
+      if (exefs_section_size == 0)
+        continue;
+
+      /* Offsets must be aligned by a media unit */
+      if (exefs_section_offset & 0x1FF)
+        return rc_hash_error("ExeFS section offset is misaligned");
+
+      /* Offset is relative to the end of the header */
+      exefs_section_offset += 0x200;
+
+      /* Check against malformed sections */
+      if (exefs_section_offset + ((exefs_section_size + 0x1FF) & ~(uint64_t)0x1FF) > (uint64_t)exefs_real_size)
+        return rc_hash_error("ExeFS section would overflow");
+
+      if (memcmp(exefs_section_name, "icon", 4) == 0 || memcmp(exefs_section_name, "banner", 6) == 0)
+      {
+        /* Align size up by a media unit */
+        exefs_section_size = (exefs_section_size + 0x1FF) & ~(uint64_t)0x1FF;
+        AES_init_ctx(&ncch_aes, primary_key);
+      }
+      else
+      {
+        /* We don't align size up here, as the padding bytes will use the primary key rather than the secondary key */
+        AES_init_ctx(&ncch_aes, secondary_key);
+      }
+
+      /* In theory, the section offset + size could be greater than the buffer size */
+      /* In practice, this likely never occurs, but just in case it does, ignore the section or constrict the size */
+      if (exefs_section_offset + exefs_section_size > exefs_buffer_size)
+      {
+        if (exefs_section_offset >= exefs_buffer_size)
+          continue;
+
+        exefs_section_size = exefs_buffer_size - exefs_section_offset;
+      }
+
+      if (verbose_message_callback)
+      {
+        exefs_section_name[7] = '\0';
+        snprintf((char*)header, 0x200, "Decrypting ExeFS file %s at ExeFS offset %08X with size %08X", (const char*)exefs_section_name, (unsigned)exefs_section_offset, (unsigned)exefs_section_size);
+        verbose_message_callback((const char*)header);
+      }
+
+      AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], exefs_section_size & ~(uint64_t)0xF);
+
+      if (exefs_section_size & 0x1FF)
+      {
+        /* Handle padding bytes, these always use the primary key */
+        exefs_section_offset += exefs_section_size;
+        exefs_section_size = 0x200 - (exefs_section_size & 0x1FF);
+
+        if (verbose_message_callback)
+        {
+          snprintf((char*)header, 0x200, "Decrypting ExeFS padding at ExeFS offset %08X with size %08X", (unsigned)exefs_section_offset, (unsigned)exefs_section_size);
+          verbose_message_callback((const char*)header);
+        }
+
+        /* Align our decryption start to an AES block boundary */
+        if (exefs_section_size & 0xF)
+        {
+          /* We're a little evil here re-using the IV like this, but this seems to be the best way to deal with this... */
+          memcpy(iv, ncch_aes.Iv, sizeof(iv));
+          exefs_section_offset &= ~(uint64_t)0xF;
+
+          /* First decrypt these last bytes using the secondary key */
+          AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], 0x10 - (exefs_section_size & 0xF));
+
+          /* Now re-encrypt these bytes using the primary key */
+          AES_init_ctx_iv(&ncch_aes, primary_key, iv);
+          AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], 0x10 - (exefs_section_size & 0xF));
+
+          /* All of the padding can now be decrypted using the primary key */
+          AES_ctx_set_iv(&ncch_aes, iv);
+          exefs_section_size += 0x10 - (exefs_section_size & 0xF);
+        }
+
+        AES_init_ctx(&ncch_aes, primary_key);
+        AES_CTR_xcrypt_buffer(&ncch_aes, &hash_buffer[exefs_section_offset], (size_t)exefs_section_size);
+      }
+    }
+  }
+
+  md5_append(md5, hash_buffer, exefs_buffer_size);
+
+  free(hash_buffer);
+  return 1;
+}
+
+static uint32_t rc_hash_nintendo_3ds_cia_signature_size(uint8_t header[0x200])
+{
+  uint32_t signature_type;
+
+  signature_type = ((uint32_t)header[0] << 24) | (header[1] << 16) | (header[2] << 8) | header[3];
+  switch (signature_type)
+  {
+    case 0x010000:
+    case 0x010003:
+      return 0x200 + 0x3C;
+    case 0x010001:
+    case 0x010004:
+      return 0x100 + 0x3C;
+    case 0x010002:
+    case 0x010005:
+      return 0x3C + 0x40;
+    default:
+      snprintf((char*)header, 0x200, "Invalid signature type %08X", (unsigned)signature_type);
+      return rc_hash_error((const char*)header);
+  }
+}
+
+static int rc_hash_nintendo_3ds_cia(md5_state_t* md5, void* file_handle, uint8_t header[0x200])
+{
+  const uint32_t CIA_HEADER_SIZE = 0x2020; /* Yes, this is larger than the header[0x200], but we only use the beginning of the header */
+  const uint64_t CIA_ALIGNMENT_MASK = 64 - 1; /* sizes are aligned by 64 bytes */
+  struct AES_ctx aes;
+  uint8_t iv[AES_BLOCKLEN], normal_key[AES_KEYLEN], title_key[AES_KEYLEN], title_id[sizeof(uint64_t)];
+  uint32_t cert_size, tik_size, tmd_size;
+  int64_t cert_offset, tik_offset, tmd_offset, content_offset;
+  uint32_t signature_size, i;
+  uint16_t content_count;
+  uint8_t common_key_index;
+
+  cert_size = ((uint32_t)header[0x0B] << 24) | (header[0x0A] << 16) | (header[0x09] << 8) | header[0x08];
+  tik_size = ((uint32_t)header[0x0F] << 24) | (header[0x0E] << 16) | (header[0x0D] << 8) | header[0x0C];
+  tmd_size = ((uint32_t)header[0x13] << 24) | (header[0x12] << 16) | (header[0x11] << 8) | header[0x10];
+
+  cert_offset = (CIA_HEADER_SIZE + CIA_ALIGNMENT_MASK) & ~CIA_ALIGNMENT_MASK;
+  tik_offset = (cert_offset + cert_size + CIA_ALIGNMENT_MASK) & ~CIA_ALIGNMENT_MASK;
+  tmd_offset = (tik_offset + tik_size + CIA_ALIGNMENT_MASK) & ~CIA_ALIGNMENT_MASK;
+  content_offset = (tmd_offset + tmd_size + CIA_ALIGNMENT_MASK) & ~CIA_ALIGNMENT_MASK;
+
+  /* Check if this CIA is encrypted, if it isn't, we can hash it right away */
+
+  rc_file_seek(file_handle, tmd_offset, SEEK_SET);
+  if (rc_file_read(file_handle, header, 4) != 4)
+    return rc_hash_error("Could not read TMD signature type");
+
+  signature_size = rc_hash_nintendo_3ds_cia_signature_size(header);
+  if (signature_size == 0)
+    return 0; /* rc_hash_nintendo_3ds_cia_signature_size will call rc_hash_error, so we don't need to do so here */
+
+  rc_file_seek(file_handle, signature_size + 0x9E, SEEK_CUR);
+  if (rc_file_read(file_handle, header, 2) != 2)
+    return rc_hash_error("Could not read TMD content count");
+
+  content_count = (header[0] << 8) | header[1];
+
+  rc_file_seek(file_handle, 0x9C4 - 0x9E - 2, SEEK_CUR);
+  for (i = 0; i < content_count; i++)
+  {
+    if (rc_file_read(file_handle, header, 0x30) != 0x30)
+      return rc_hash_error("Could not read TMD content chunk");
+
+    /* Content index 0 is the main content (i.e. the 3DS executable)  */
+    if (((header[4] << 8) | header[5]) == 0)
+      break;
+
+    content_offset += ((uint32_t)header[0xC] << 24) | (header[0xD] << 16) | (header[0xE] << 8) | header[0xF];
+  }
+
+  if (i == content_count)
+    return rc_hash_error("Could not find main content chunk in TMD");
+
+  if ((header[7] & 1) == 0)
+  {
+    /* Not encrypted, we can hash the NCCH immediately */
+    rc_file_seek(file_handle, content_offset, SEEK_SET);
+    if (rc_file_read(file_handle, header, 0x200) != 0x200)
+      return rc_hash_error("Could not read NCCH header");
+
+    if (memcmp(&header[0x100], "NCCH", 4) != 0)
+    {
+      snprintf((char*)header, 0x200, "NCCH header was not at %08X%08X", (unsigned)(content_offset >> 32), (unsigned)content_offset);
+      return rc_hash_error((const char*)header);
+    }
+
+    return rc_hash_nintendo_3ds_ncch(md5, file_handle, header, NULL);
+  }
+
+  if (_3ds_get_cia_normal_key_func == NULL)
+    return rc_hash_error("An encrypted CIA was detected, but the CIA normal key callback was not set");
+
+  /* Acquire the encrypted title key, title id, and common key index from the ticket */
+  /* These will be needed to decrypt the title key, and that will be needed to decrypt the CIA */
+
+  rc_file_seek(file_handle, tik_offset, SEEK_SET);
+  if (rc_file_read(file_handle, header, 4) != 4)
+    return rc_hash_error("Could not read ticket signature type");
+
+  signature_size = rc_hash_nintendo_3ds_cia_signature_size(header);
+  if (signature_size == 0)
+    return 0;
+
+  rc_file_seek(file_handle, signature_size, SEEK_CUR);
+  if (rc_file_read(file_handle, header, 0xB2) != 0xB2)
+    return rc_hash_error("Could not read ticket data");
+
+  memcpy(title_key, &header[0x7F], sizeof(title_key));
+  memcpy(title_id, &header[0x9C], sizeof(title_id));
+  common_key_index = header[0xB1];
+
+  if (common_key_index > 5)
+  {
+    snprintf((char*)header, 0x200, "Invalid common key index %02X", (unsigned)common_key_index);
+    return rc_hash_error((const char*)header);
+  }
+
+  if (_3ds_get_cia_normal_key_func(common_key_index, normal_key) == 0)
+  {
+    snprintf((char*)header, 0x200, "Could not obtain common key %02X", (unsigned)common_key_index);
+    return rc_hash_error((const char*)header);
+  }
+
+  memset(iv, 0, sizeof(iv));
+  memcpy(iv, title_id, sizeof(title_id));
+  AES_init_ctx_iv(&aes, normal_key, iv);
+
+  /* Finally, decrypt the title key */
+  AES_CBC_decrypt_buffer(&aes, title_key, sizeof(title_key));
+
+  /* Now we can hash the NCCH */
+
+  rc_file_seek(file_handle, content_offset, SEEK_SET);
+  if (rc_file_read(file_handle, header, 0x200) != 0x200)
+    return rc_hash_error("Could not read NCCH header");
+
+  memset(iv, 0, sizeof(iv)); /* Content index is iv (which is always 0 for main content) */
+  AES_init_ctx_iv(&aes, title_key, iv);
+  AES_CBC_decrypt_buffer(&aes, header, 0x200);
+
+  if (memcmp(&header[0x100], "NCCH", 4) != 0)
+  {
+    snprintf((char*)header, 0x200, "NCCH header was not at %08X%08X", (unsigned)(content_offset >> 32), (unsigned)content_offset);
+    return rc_hash_error((const char*)header);
+  }
+
+  return rc_hash_nintendo_3ds_ncch(md5, file_handle, header, &aes);
+}
+
+static int rc_hash_nintendo_3ds_3dsx(md5_state_t* md5, void* file_handle, uint8_t header[0x200])
+{
+  uint8_t* hash_buffer;
+  uint32_t header_size, reloc_header_size, code_size;
+  int64_t code_offset;
+
+  header_size = (header[5] << 8) | header[4];
+  reloc_header_size = (header[7] << 8) | header[6];
+  code_size = ((uint32_t)header[0x13] << 24) | (header[0x12] << 16) | (header[0x11] << 8) | header[0x10];
+
+  /* 3 relocation headers are in-between the 3DSX header and code segment */
+  code_offset = header_size + reloc_header_size * 3;
+
+  if (code_size > MAX_BUFFER_SIZE)
+    code_size = MAX_BUFFER_SIZE;
+
+  hash_buffer = (uint8_t*)malloc(code_size);
+  if (!hash_buffer)
+  {
+    snprintf((char*)header, 0x200, "Failed to allocate %u bytes", (unsigned)code_size);
+    return rc_hash_error((const char*)header);
+  }
+
+  rc_file_seek(file_handle, code_offset, SEEK_SET);
+
+  if (verbose_message_callback)
+  {
+    snprintf((char*)header, 0x200, "Hashing %u bytes for 3DSX (at %08X)", (unsigned)code_size, (unsigned)code_offset);
+    verbose_message_callback((const char*)header);
+  }
+
+  if (rc_file_read(file_handle, hash_buffer, code_size) != code_size)
+  {
+    free(hash_buffer);
+    return rc_hash_error("Could not read 3DSX code segment");
+  }
+
+  md5_append(md5, hash_buffer, code_size);
+
+  free(hash_buffer);
+  return 1;
+}
+
+static int rc_hash_nintendo_3ds(char hash[33], const char* path)
+{
+  md5_state_t md5;
+  void* file_handle;
+  uint8_t header[0x200]; /* NCCH and NCSD headers are both 0x200 bytes */
+  int64_t header_offset;
+
+  file_handle = rc_file_open(path);
+  if (!file_handle)
+    return rc_hash_error("Could not open file");
+
+  rc_file_seek(file_handle, 0, SEEK_SET);
+
+  /* If we don't have a full header, this is probably not a 3DS ROM */
+  if (rc_file_read(file_handle, header, sizeof(header)) != sizeof(header))
+  {
+    rc_file_close(file_handle);
+    return rc_hash_error("Could not read 3DS ROM header");
+  }
+
+  md5_init(&md5);
+
+  if (memcmp(&header[0x100], "NCSD", 4) == 0)
+  {
+    /* A NCSD container contains 1-8 NCCH partitions */
+    /* The first partition (index 0) is reserved for executable content */
+    header_offset = ((uint32_t)header[0x123] << 24) | (header[0x122] << 16) | (header[0x121] << 8) | header[0x120];
+    /* Offset is in "media units" (1 media unit = 0x200 bytes) */
+    header_offset *= 0x200;
+
+    /* We include the NCSD header in the hash, as that will ensure different versions of a game result in a different hash
+     * This is due to some revisions / languages only ever changing other NCCH paritions (e.g. the game manual)
+     */
+    rc_hash_verbose("Hashing 512 byte NCSD header");
+    md5_append(&md5, header, sizeof(header));
+
+    if (verbose_message_callback)
+    {
+      snprintf((char*)header, sizeof(header), "Detected NCSD header, seeking to NCCH partition at %08X%08X", (unsigned)(header_offset >> 32), (unsigned)header_offset);
+      verbose_message_callback((const char*)header);
+    }
+
+    rc_file_seek(file_handle, header_offset, SEEK_SET);
+    if (rc_file_read(file_handle, header, sizeof(header)) != sizeof(header))
+    {
+      rc_file_close(file_handle);
+      return rc_hash_error("Could not read 3DS NCCH header");
+    }
+
+    if (memcmp(&header[0x100], "NCCH", 4) != 0)
+    {
+      rc_file_close(file_handle);
+      snprintf((char*)header, sizeof(header), "3DS NCCH header was not at %08X%08X", (unsigned)(header_offset >> 32), (unsigned)header_offset);
+      return rc_hash_error((const char*)header);
+    }
+  }
+
+  if (memcmp(&header[0x100], "NCCH", 4) == 0)
+  {
+    if (rc_hash_nintendo_3ds_ncch(&md5, file_handle, header, NULL))
+    {
+      rc_file_close(file_handle);
+      return rc_hash_finalize(&md5, hash);
+    }
+
+    rc_file_close(file_handle);
+    return rc_hash_error("Failed to hash 3DS NCCH container");
+  }
+
+  /* Couldn't identify either an NCSD or NCCH */
+
+  /* Try to identify this as a CIA */
+  if (header[0] == 0x20 && header[1] == 0x20 && header[2] == 0x00 && header[3] == 0x00)
+  {
+    rc_hash_verbose("Detected CIA, attempting to find executable NCCH");
+
+    if (rc_hash_nintendo_3ds_cia(&md5, file_handle, header))
+    {
+      rc_file_close(file_handle);
+      return rc_hash_finalize(&md5, hash);
+    }
+
+    rc_file_close(file_handle);
+    return rc_hash_error("Failed to hash 3DS CIA container");
+  }
+
+  /* This might be a homebrew game, try to detect that */
+  if (memcmp(&header[0], "3DSX", 4) == 0)
+  {
+    rc_hash_verbose("Detected 3DSX");
+
+    if (rc_hash_nintendo_3ds_3dsx(&md5, file_handle, header))
+    {
+      rc_file_close(file_handle);
+      return rc_hash_finalize(&md5, hash);
+    }
+
+    rc_file_close(file_handle);
+    return rc_hash_error("Failed to hash 3DS 3DSX container");
+  }
+
+  /* Raw ELF marker (AXF/ELF files) */
+  if (memcmp(&header[0], "\x7f\x45\x4c\x46", 4) == 0)
+  {
+    rc_hash_verbose("Detected AXF/ELF file, hashing entire file");
+
+    /* Don't bother doing anything fancy here, just hash entire file */
+    rc_file_close(file_handle);
+    return rc_hash_whole_file(hash, path);
+  }
+
+  rc_file_close(file_handle);
+  return rc_hash_error("Not a 3DS ROM");
+}
+
 static int rc_hash_nintendo_ds(char hash[33], const char* path)
 {
   uint8_t header[512];
   uint8_t* hash_buffer;
-  unsigned int hash_size, arm9_size, arm9_addr, arm7_size, arm7_addr, icon_addr;
+  uint32_t hash_size, arm9_size, arm9_addr, arm7_size, arm7_addr, icon_addr;
   size_t num_read;
   int64_t offset = 0;
   md5_state_t md5;
@@ -1000,6 +2294,121 @@ static int rc_hash_nintendo_ds(char hash[33], const char* path)
   return rc_hash_finalize(&md5, hash);
 }
 
+static int rc_hash_gamecube(char hash[33], const char* path)
+{
+  md5_state_t md5;
+  void* file_handle;
+  const uint32_t BASE_HEADER_SIZE = 0x2440;
+  const uint32_t MAX_HEADER_SIZE = 1024 * 1024;
+  uint32_t apploader_header_size, apploader_body_size, apploader_trailer_size, header_size;
+  uint8_t quad_buffer[4];
+  uint8_t addr_buffer[0xD8];
+  uint8_t* buffer;
+  uint32_t dol_offset;
+  uint32_t dol_offsets[18];
+  uint32_t dol_sizes[18];
+  uint32_t dol_buf_size = 0;
+  uint32_t ix;
+
+  file_handle = rc_file_open(path);
+  if (!file_handle)
+    return rc_hash_error("Could not open file");
+
+  /* Verify Gamecube */
+  rc_file_seek(file_handle, 0x1c, SEEK_SET);
+  rc_file_read(file_handle, quad_buffer, 4);
+  if (quad_buffer[0] != 0xC2|| quad_buffer[1] != 0x33 || quad_buffer[2] != 0x9F || quad_buffer[3] != 0x3D)
+  {
+    rc_file_close(file_handle);
+    return rc_hash_error("Not a Gamecube disc");
+  }
+
+  /* GetApploaderSize */
+  rc_file_seek(file_handle, BASE_HEADER_SIZE + 0x14, SEEK_SET);
+  apploader_header_size = 0x20;
+  rc_file_read(file_handle, quad_buffer, 4);
+  apploader_body_size =
+    (quad_buffer[0] << 24) | (quad_buffer[1] << 16) | (quad_buffer[2] << 8) | quad_buffer[3];
+  rc_file_read(file_handle, quad_buffer, 4);
+  apploader_trailer_size =
+    (quad_buffer[0] << 24) | (quad_buffer[1] << 16) | (quad_buffer[2] << 8) | quad_buffer[3];
+  header_size = BASE_HEADER_SIZE + apploader_header_size + apploader_body_size + apploader_trailer_size;
+  if (header_size > MAX_HEADER_SIZE) header_size = MAX_HEADER_SIZE;
+
+  /* Hash headers */
+  buffer = (uint8_t*)malloc(header_size);
+  if (!buffer)
+  {
+    rc_file_close(file_handle);
+    return rc_hash_error("Could not allocate temporary buffer");
+  }
+  rc_file_seek(file_handle, 0, SEEK_SET);
+  rc_file_read(file_handle, buffer, header_size);
+  md5_init(&md5);
+  if (verbose_message_callback)
+  {
+    char message[128];
+    snprintf(message, sizeof(message), "Hashing %u byte header", header_size);
+    verbose_message_callback(message);
+  }
+  md5_append(&md5, buffer, header_size);
+
+  /* GetBootDOLOffset
+   * Base header size is guaranteed larger than 0x423 therefore buffer contains dol_offset right now
+   */
+  dol_offset = (buffer[0x420] << 24) | (buffer[0x421] << 16) | (buffer[0x422] << 8) | buffer[0x423];
+  free(buffer);
+
+  /* Find offsetsand sizes for the 7 main.dol code segments and 11 main.dol data segments */
+  rc_file_seek(file_handle, dol_offset, SEEK_SET);
+  rc_file_read(file_handle, addr_buffer, 0xD8);
+  for (ix = 0; ix < 18; ix++)
+  {
+    dol_offsets[ix] =
+      (addr_buffer[0x0 + ix * 4] << 24) |
+      (addr_buffer[0x1 + ix * 4] << 16) |
+      (addr_buffer[0x2 + ix * 4] << 8) |
+      addr_buffer[0x3 + ix * 4];
+    dol_sizes[ix] =
+      (addr_buffer[0x90 + ix * 4] << 24) |
+      (addr_buffer[0x91 + ix * 4] << 16) |
+      (addr_buffer[0x92 + ix * 4] << 8) |
+      addr_buffer[0x93 + ix * 4];
+    dol_buf_size = (dol_sizes[ix] > dol_buf_size) ? dol_sizes[ix] : dol_buf_size;
+  }
+
+  /* Iterate through the 18 main.dol segments and hash each */
+  buffer = (uint8_t*)malloc(dol_buf_size);
+  if (!buffer)
+  {
+    rc_file_close(file_handle);
+    return rc_hash_error("Could not allocate temporary buffer");
+  }
+  for (ix = 0; ix < 18; ix++)
+  {
+    if (dol_sizes[ix] == 0)
+      continue;
+    rc_file_seek(file_handle, dol_offsets[ix], SEEK_SET);
+    rc_file_read(file_handle, buffer, dol_sizes[ix]);
+    if (verbose_message_callback)
+    {
+      char message[128];
+      if (ix < 7)
+        snprintf(message, sizeof(message), "Hashing %u byte main.dol code segment %u", dol_sizes[ix], ix);
+      else
+        snprintf(message, sizeof(message), "Hashing %u byte main.dol data segment %u", dol_sizes[ix], ix - 7);
+      verbose_message_callback(message);
+    }
+    md5_append(&md5, buffer, dol_sizes[ix]);
+  }
+
+  /* Finalize */
+  rc_file_close(file_handle);
+  free(buffer);
+
+  return rc_hash_finalize(&md5, hash);
+}
+
 static int rc_hash_pce(char hash[33], const uint8_t* buffer, size_t buffer_size)
 {
   /* if the file contains a header, ignore it (expect ROM data to be multiple of 128KB) */
@@ -1019,14 +2428,14 @@ static int rc_hash_pce_track(char hash[33], void* track_handle)
 {
   uint8_t buffer[2048];
   md5_state_t md5;
-  int sector, num_sectors;
-  unsigned size;
+  uint32_t sector, num_sectors;
+  uint32_t size;
 
   /* the PC-Engine uses the second sector to specify boot information and program name.
    * the string "PC Engine CD-ROM SYSTEM" should exist at 32 bytes into the sector
    * http://shu.sheldows.com/shu/download/pcedocs/pce_cdrom.html
    */
-  if (rc_cd_read_sector(track_handle, 1, buffer, 128) < 128)
+  if (rc_cd_read_sector(track_handle, rc_cd_first_track_sector(track_handle) + 1, buffer, 128) < 128)
   {
     return rc_hash_error("Not a PC Engine CD");
   }
@@ -1059,6 +2468,7 @@ static int rc_hash_pce_track(char hash[33], void* track_handle)
       verbose_message_callback(message);
     }
 
+    sector += rc_cd_first_track_sector(track_handle);
     while (num_sectors > 0)
     {
       rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer));
@@ -1122,7 +2532,8 @@ static int rc_hash_pcfx_cd(char hash[33], const char* path)
     return rc_hash_error("Could not open track");
 
   /* PC-FX CD will have a header marker in sector 0 */
-  rc_cd_read_sector(track_handle, 0, buffer, 32);
+  sector = rc_cd_first_track_sector(track_handle);
+  rc_cd_read_sector(track_handle, sector, buffer, 32);
   if (memcmp("PC-FX:Hu_CD-ROM", &buffer[0], 15) != 0)
   {
     rc_cd_close_track(track_handle);
@@ -1132,7 +2543,8 @@ static int rc_hash_pcfx_cd(char hash[33], const char* path)
     if (!track_handle)
       return rc_hash_error("Could not open track");
 
-    rc_cd_read_sector(track_handle, 0, buffer, 32);
+    sector = rc_cd_first_track_sector(track_handle);
+    rc_cd_read_sector(track_handle, sector, buffer, 32);
   }
 
   if (memcmp("PC-FX:Hu_CD-ROM", &buffer[0], 15) == 0)
@@ -1140,7 +2552,7 @@ static int rc_hash_pcfx_cd(char hash[33], const char* path)
     /* PC-FX boot header fills the first two sectors of the disc
      * https://bitbucket.org/trap15/pcfxtools/src/master/pcfx-cdlink.c
      * the important stuff is the first 128 bytes of the second sector (title being the first 32) */
-    rc_cd_read_sector(track_handle, 1, buffer, 128);
+    rc_cd_read_sector(track_handle, sector + 1, buffer, 128);
 
     md5_init(&md5);
     md5_append(&md5, buffer, 128);
@@ -1166,6 +2578,7 @@ static int rc_hash_pcfx_cd(char hash[33], const char* path)
       verbose_message_callback(message);
     }
 
+    sector += rc_cd_first_track_sector(track_handle);
     while (num_sectors > 0)
     {
       rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer));
@@ -1178,7 +2591,7 @@ static int rc_hash_pcfx_cd(char hash[33], const char* path)
   else
   {
     int result = 0;
-    rc_cd_read_sector(track_handle, 1, buffer, 128);
+    rc_cd_read_sector(track_handle, sector + 1, buffer, 128);
 
     /* some PC-FX CDs still identify as PCE CDs */
     if (memcmp("PC Engine CD-ROM SYSTEM", &buffer[32], 23) == 0)
@@ -1198,30 +2611,41 @@ static int rc_hash_pcfx_cd(char hash[33], const char* path)
 
 static int rc_hash_dreamcast(char hash[33], const char* path)
 {
-  uint8_t buffer[256];
+  uint8_t buffer[256] = "";
   void* track_handle;
-  void* last_track_handle;
   char exe_file[32] = "";
-  unsigned size;
+  uint32_t size;
   uint32_t sector;
-  uint32_t track_sector;
   int result = 0;
   md5_state_t md5;
   int i = 0;
 
   /* track 03 is the data track that contains the TOC and IP.BIN */
   track_handle = rc_cd_open_track(path, 3);
-  if (!track_handle)
-    return rc_hash_error("Could not open track");
-
-  /* first 256 bytes from first sector should have IP.BIN structure that stores game meta information
-   * https://mc.pp.se/dc/ip.bin.html */
-  rc_cd_read_sector(track_handle, 0, buffer, sizeof(buffer));
+  if (track_handle)
+  {
+    /* first 256 bytes from first sector should have IP.BIN structure that stores game meta information
+     * https://mc.pp.se/dc/ip.bin.html */
+    rc_cd_read_sector(track_handle, rc_cd_first_track_sector(track_handle), buffer, sizeof(buffer));
+  }
 
   if (memcmp(&buffer[0], "SEGA SEGAKATANA ", 16) != 0)
   {
-    rc_cd_close_track(track_handle);
-    return rc_hash_error("Not a Dreamcast CD");
+    if (track_handle)
+      rc_cd_close_track(track_handle);
+
+    /* not a gd-rom dreamcast file. check for mil-cd by looking for the marker in the first data track */
+    track_handle = rc_cd_open_track(path, RC_HASH_CDTRACK_FIRST_DATA);
+    if (!track_handle)
+      return rc_hash_error("Could not open track");
+
+    rc_cd_read_sector(track_handle, rc_cd_first_track_sector(track_handle), buffer, sizeof(buffer));
+    if (memcmp(&buffer[0], "SEGA SEGAKATANA ", 16) != 0)
+    {
+      /* did not find marker on track 3 or first data track */
+      rc_cd_close_track(track_handle);
+      return rc_hash_error("Not a Dreamcast CD");
+    }
   }
 
   /* start the hash with the game meta information */
@@ -1258,40 +2682,36 @@ static int rc_hash_dreamcast(char hash[33], const char* path)
   exe_file[i] = '\0';
 
   sector = rc_cd_find_file_sector(track_handle, exe_file, &size);
-
-  rc_cd_close_track(track_handle);
-
   if (sector == 0)
-    return rc_hash_error("Could not locate boot executable");
-
-  /* last track contains the boot executable */
-  last_track_handle = rc_cd_open_track(path, RC_HASH_CDTRACK_LAST);
-  track_sector = rc_cd_absolute_sector_to_track_sector(last_track_handle, sector);
-
-  if ((int32_t)track_sector < 0)
   {
-    /* boot executable is not in the last track; try the primary data track.
-     * There's only a handful of games that do this: Q*bert was the first identified. */
-    rc_cd_close_track(last_track_handle);
-
-    rc_hash_verbose("Boot executable not found in last track, trying primary track");
-    last_track_handle = rc_cd_open_track(path, 3);
-    track_sector = rc_cd_absolute_sector_to_track_sector(last_track_handle, sector);
+    rc_cd_close_track(track_handle);
+    return rc_hash_error("Could not locate boot executable");
   }
 
-  result = rc_hash_cd_file(&md5, last_track_handle, track_sector, NULL, size, "boot executable");
+  if (rc_cd_read_sector(track_handle, sector, buffer, 1))
+  {
+    /* the boot executable is in the primary data track */
+  }
+  else
+  {
+    rc_cd_close_track(track_handle);
 
-  rc_cd_close_track(last_track_handle);
+    /* the boot executable is normally in the last track */
+    track_handle = rc_cd_open_track(path, RC_HASH_CDTRACK_LAST);
+  }
+
+  result = rc_hash_cd_file(&md5, track_handle, sector, NULL, size, "boot executable");
+  rc_cd_close_track(track_handle);
 
   rc_hash_finalize(&md5, hash);
   return result;
 }
 
 static int rc_hash_find_playstation_executable(void* track_handle, const char* boot_key, const char* cdrom_prefix, 
-                                               char exe_name[], unsigned exe_name_size, unsigned* exe_size)
+                                               char exe_name[], uint32_t exe_name_size, uint32_t* exe_size)
 {
   uint8_t buffer[2048];
-  unsigned size;
+  uint32_t size;
   char* ptr;
   char* start;
   const size_t boot_key_len = strlen(boot_key);
@@ -1302,7 +2722,7 @@ static int rc_hash_find_playstation_executable(void* track_handle, const char* b
   if (!sector)
     return 0;
 
-  size = (unsigned)rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer) - 1);
+  size = (uint32_t)rc_cd_read_sector(track_handle, sector, buffer, sizeof(buffer) - 1);
   buffer[size] = '\0';
 
   sector = 0;
@@ -1322,14 +2742,14 @@ static int rc_hash_find_playstation_executable(void* track_handle, const char* b
 
         if (strncmp(ptr, cdrom_prefix, cdrom_prefix_len) == 0)
           ptr += cdrom_prefix_len;
-        if (*ptr == '\\')
+        while (*ptr == '\\')
           ++ptr;
 
         start = ptr;
         while (!isspace((unsigned char)*ptr) && *ptr != ';')
           ++ptr;
 
-        size = (unsigned)(ptr - start);
+        size = (uint32_t)(ptr - start);
         if (size >= exe_name_size)
           size = exe_name_size - 1;
 
@@ -1361,7 +2781,7 @@ static int rc_hash_psx(char hash[33], const char* path)
   char exe_name[64] = "";
   void* track_handle;
   uint32_t sector;
-  unsigned size;
+  uint32_t size;
   int result = 0;
   md5_state_t md5;
 
@@ -1425,7 +2845,7 @@ static int rc_hash_ps2(char hash[33], const char* path)
   char exe_name[64] = "";
   void* track_handle;
   uint32_t sector;
-  unsigned size;
+  uint32_t size;
   int result = 0;
   md5_state_t md5;
 
@@ -1473,8 +2893,16 @@ static int rc_hash_psp(char hash[33], const char* path)
 {
   void* track_handle;
   uint32_t sector;
-  unsigned size;
+  uint32_t size;
   md5_state_t md5;
+
+  /* https://www.psdevwiki.com/psp/PBP
+   * A PBP file is an archive containing the PARAM.SFO, primary executable, and a bunch of metadata.
+   * While we could extract the PARAM.SFO and primary executable to mimic the normal PSP hashing logic,
+   * it's easier to just hash the entire file. This also helps alleviate issues where the primary
+   * executable is just a game engine and the only differentiating data would be the metadata. */
+  if (rc_path_compare_extension(path, "pbp"))
+    return rc_hash_whole_file(hash, path);
 
   track_handle = rc_cd_open_track(path, 1);
   if (!track_handle)
@@ -1486,18 +2914,30 @@ static int rc_hash_psp(char hash[33], const char* path)
    */
   sector = rc_cd_find_file_sector(track_handle, "PSP_GAME\\PARAM.SFO", &size);
   if (!sector)
+  {
+    rc_cd_close_track(track_handle);
     return rc_hash_error("Not a PSP game disc");
+  }
 
   md5_init(&md5);
   if (!rc_hash_cd_file(&md5, track_handle, sector, NULL, size, "PSP_GAME\\PARAM.SFO"))
+  {
+    rc_cd_close_track(track_handle);
     return 0;
+  }
 
   sector = rc_cd_find_file_sector(track_handle, "PSP_GAME\\SYSDIR\\EBOOT.BIN", &size);
   if (!sector)
+  {
+    rc_cd_close_track(track_handle);
     return rc_hash_error("Could not find primary executable");
+  }
 
   if (!rc_hash_cd_file(&md5, track_handle, sector, NULL, size, "PSP_GAME\\SYSDIR\\EBOOT.BIN"))
+  {
+    rc_cd_close_track(track_handle);
     return 0;
+  }
 
   rc_cd_close_track(track_handle);
   return rc_hash_finalize(&md5, hash);
@@ -1532,6 +2972,21 @@ static int rc_hash_sega_cd(char hash[33], const char* path)
   return rc_hash_buffer(hash, buffer, sizeof(buffer));
 }
 
+static int rc_hash_scv(char hash[33], const uint8_t* buffer, size_t buffer_size)
+{
+  /* if the file contains a header, ignore it */
+  /* https://gitlab.com/MaaaX-EmuSCV/libretro-emuscv/-/blob/master/readme.txt#L211 */
+  if (memcmp(buffer, "EmuSCV", 6) == 0)
+  {
+    rc_hash_verbose("Ignoring SCV header");
+
+    buffer += 32;
+    buffer_size -= 32;
+  }
+
+  return rc_hash_buffer(hash, buffer, buffer_size);
+}
+
 static int rc_hash_snes(char hash[33], const uint8_t* buffer, size_t buffer_size)
 {
   /* if the file contains a header, ignore it */
@@ -1547,7 +3002,89 @@ static int rc_hash_snes(char hash[33], const uint8_t* buffer, size_t buffer_size
   return rc_hash_buffer(hash, buffer, buffer_size);
 }
 
-int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* buffer, size_t buffer_size)
+struct rc_buffered_file
+{
+  const uint8_t* read_ptr;
+  const uint8_t* data;
+  size_t data_size;
+};
+
+static struct rc_buffered_file rc_buffered_file;
+
+static void* rc_file_open_buffered_file(const char* path)
+{
+  struct rc_buffered_file* handle = (struct rc_buffered_file*)malloc(sizeof(struct rc_buffered_file));
+  (void)path;
+
+  if (handle)
+    memcpy(handle, &rc_buffered_file, sizeof(rc_buffered_file));
+
+  return handle;
+}
+
+void rc_file_seek_buffered_file(void* file_handle, int64_t offset, int origin)
+{
+  struct rc_buffered_file* buffered_file = (struct rc_buffered_file*)file_handle;
+  switch (origin)
+  {
+    case SEEK_SET: buffered_file->read_ptr = buffered_file->data + offset; break;
+    case SEEK_CUR: buffered_file->read_ptr += offset; break;
+    case SEEK_END: buffered_file->read_ptr = buffered_file->data + buffered_file->data_size + offset; break;
+  }
+
+  if (buffered_file->read_ptr < buffered_file->data)
+    buffered_file->read_ptr = buffered_file->data;
+  else if (buffered_file->read_ptr > buffered_file->data + buffered_file->data_size)
+    buffered_file->read_ptr = buffered_file->data + buffered_file->data_size;
+}
+
+int64_t rc_file_tell_buffered_file(void* file_handle)
+{
+  struct rc_buffered_file* buffered_file = (struct rc_buffered_file*)file_handle;
+  return (buffered_file->read_ptr - buffered_file->data);
+}
+
+size_t rc_file_read_buffered_file(void* file_handle, void* buffer, size_t requested_bytes)
+{
+  struct rc_buffered_file* buffered_file = (struct rc_buffered_file*)file_handle;
+  const int64_t remaining = buffered_file->data_size - (buffered_file->read_ptr - buffered_file->data);
+  if ((int)requested_bytes > remaining)
+     requested_bytes = (int)remaining;
+
+  memcpy(buffer, buffered_file->read_ptr, requested_bytes);
+  buffered_file->read_ptr += requested_bytes;
+  return requested_bytes;
+}
+
+void rc_file_close_buffered_file(void* file_handle)
+{
+  free(file_handle);
+}
+
+static int rc_hash_file_from_buffer(char hash[33], uint32_t console_id, const uint8_t* buffer, size_t buffer_size)
+{
+  struct rc_hash_filereader buffered_filereader_funcs;
+  struct rc_hash_filereader* old_filereader = filereader;
+  int result;
+
+  memset(&buffered_filereader_funcs, 0, sizeof(buffered_filereader_funcs));
+  buffered_filereader_funcs.open = rc_file_open_buffered_file;
+  buffered_filereader_funcs.close = rc_file_close_buffered_file;
+  buffered_filereader_funcs.read = rc_file_read_buffered_file;
+  buffered_filereader_funcs.seek = rc_file_seek_buffered_file;
+  buffered_filereader_funcs.tell = rc_file_tell_buffered_file;
+  filereader = &buffered_filereader_funcs;
+
+  rc_buffered_file.data = rc_buffered_file.read_ptr = buffer;
+  rc_buffered_file.data_size = buffer_size;
+
+  result = rc_hash_generate_from_file(hash, console_id, "[buffered file]");
+
+  filereader = old_filereader;
+  return result;
+}
+
+int rc_hash_generate_from_buffer(char hash[33], uint32_t console_id, const uint8_t* buffer, size_t buffer_size)
 {
   switch (console_id)
   {
@@ -1558,18 +3095,25 @@ int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* b
       return rc_hash_error(message);
     }
 
+    case RC_CONSOLE_AMSTRAD_PC:
     case RC_CONSOLE_APPLE_II:
+    case RC_CONSOLE_ARCADIA_2001:
     case RC_CONSOLE_ATARI_2600:
     case RC_CONSOLE_ATARI_JAGUAR:
     case RC_CONSOLE_COLECOVISION:
+    case RC_CONSOLE_COMMODORE_64:
+    case RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER:
+    case RC_CONSOLE_FAIRCHILD_CHANNEL_F:
     case RC_CONSOLE_GAMEBOY:
     case RC_CONSOLE_GAMEBOY_ADVANCE:
     case RC_CONSOLE_GAMEBOY_COLOR:
     case RC_CONSOLE_GAME_GEAR:
     case RC_CONSOLE_INTELLIVISION:
+    case RC_CONSOLE_INTERTON_VC_4000:
     case RC_CONSOLE_MAGNAVOX_ODYSSEY2:
     case RC_CONSOLE_MASTER_SYSTEM:
     case RC_CONSOLE_MEGA_DRIVE:
+    case RC_CONSOLE_MEGADUCK:
     case RC_CONSOLE_MSX:
     case RC_CONSOLE_NEOGEO_POCKET:
     case RC_CONSOLE_ORIC:
@@ -1578,11 +3122,19 @@ int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* b
     case RC_CONSOLE_SEGA_32X:
     case RC_CONSOLE_SG1000:
     case RC_CONSOLE_SUPERVISION:
+    case RC_CONSOLE_TI83:
     case RC_CONSOLE_TIC80:
+    case RC_CONSOLE_UZEBOX:
     case RC_CONSOLE_VECTREX:
     case RC_CONSOLE_VIRTUAL_BOY:
+    case RC_CONSOLE_WASM4:
     case RC_CONSOLE_WONDERSWAN:
+    case RC_CONSOLE_ZX_SPECTRUM:
       return rc_hash_buffer(hash, buffer, buffer_size);
+
+    case RC_CONSOLE_ARDUBOY:
+      /* https://en.wikipedia.org/wiki/Intel_HEX */
+      return rc_hash_text(hash, buffer, buffer_size);
 
     case RC_CONSOLE_ATARI_7800:
       return rc_hash_7800(hash, buffer, buffer_size);
@@ -1593,14 +3145,20 @@ int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* b
     case RC_CONSOLE_NINTENDO:
       return rc_hash_nes(hash, buffer, buffer_size);
 
-    case RC_CONSOLE_NINTENDO_64:
-      return rc_hash_n64(hash, buffer, buffer_size);
-
     case RC_CONSOLE_PC_ENGINE: /* NOTE: does not support PCEngine CD */
       return rc_hash_pce(hash, buffer, buffer_size);
 
+    case RC_CONSOLE_SUPER_CASSETTEVISION:
+      return rc_hash_scv(hash, buffer, buffer_size);
+
     case RC_CONSOLE_SUPER_NINTENDO:
       return rc_hash_snes(hash, buffer, buffer_size);
+
+    case RC_CONSOLE_NINTENDO_64:
+    case RC_CONSOLE_NINTENDO_3DS:
+    case RC_CONSOLE_NINTENDO_DS:
+    case RC_CONSOLE_NINTENDO_DSI:
+      return rc_hash_file_from_buffer(hash, console_id, buffer, buffer_size);
   }
 }
 
@@ -1663,7 +3221,7 @@ static int rc_hash_whole_file(char hash[33], const char* path)
   return result;
 }
 
-static int rc_hash_buffered_file(char hash[33], int console_id, const char* path)
+static int rc_hash_buffered_file(char hash[33], uint32_t console_id, const char* path)
 {
   uint8_t* buffer;
   int64_t size;
@@ -1809,7 +3367,7 @@ static const char* rc_hash_get_first_item_from_playlist(const char* path)
   return disc_path;
 }
 
-static int rc_hash_generate_from_playlist(char hash[33], int console_id, const char* path)
+static int rc_hash_generate_from_playlist(char hash[33], uint32_t console_id, const char* path)
 {
   int result;
   const char* disc_path;
@@ -1831,7 +3389,7 @@ static int rc_hash_generate_from_playlist(char hash[33], int console_id, const c
   return result;
 }
 
-int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
+int rc_hash_generate_from_file(char hash[33], uint32_t console_id, const char* path)
 {
   switch (console_id)
   {
@@ -1842,31 +3400,42 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
       return rc_hash_error(buffer);
     }
 
-    case RC_CONSOLE_APPLE_II:
+    case RC_CONSOLE_ARCADIA_2001:
     case RC_CONSOLE_ATARI_2600:
     case RC_CONSOLE_ATARI_JAGUAR:
     case RC_CONSOLE_COLECOVISION:
+    case RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER:
+    case RC_CONSOLE_FAIRCHILD_CHANNEL_F:
     case RC_CONSOLE_GAMEBOY:
     case RC_CONSOLE_GAMEBOY_ADVANCE:
     case RC_CONSOLE_GAMEBOY_COLOR:
     case RC_CONSOLE_GAME_GEAR:
     case RC_CONSOLE_INTELLIVISION:
+    case RC_CONSOLE_INTERTON_VC_4000:
     case RC_CONSOLE_MAGNAVOX_ODYSSEY2:
     case RC_CONSOLE_MASTER_SYSTEM:
-    case RC_CONSOLE_MEGA_DRIVE:
+    case RC_CONSOLE_MEGADUCK:
     case RC_CONSOLE_NEOGEO_POCKET:
     case RC_CONSOLE_ORIC:
     case RC_CONSOLE_POKEMON_MINI:
     case RC_CONSOLE_SEGA_32X:
     case RC_CONSOLE_SG1000:
     case RC_CONSOLE_SUPERVISION:
+    case RC_CONSOLE_TI83:
     case RC_CONSOLE_TIC80:
+    case RC_CONSOLE_UZEBOX:
     case RC_CONSOLE_VECTREX:
     case RC_CONSOLE_VIRTUAL_BOY:
+    case RC_CONSOLE_WASM4:
     case RC_CONSOLE_WONDERSWAN:
+    case RC_CONSOLE_ZX_SPECTRUM:
       /* generic whole-file hash - don't buffer */
       return rc_hash_whole_file(hash, path);
 
+    case RC_CONSOLE_AMSTRAD_PC:
+    case RC_CONSOLE_APPLE_II:
+    case RC_CONSOLE_COMMODORE_64:
+    case RC_CONSOLE_MEGA_DRIVE:
     case RC_CONSOLE_MSX:
     case RC_CONSOLE_PC8800:
       /* generic whole-file hash with m3u support - don't buffer */
@@ -1875,9 +3444,12 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
 
       return rc_hash_whole_file(hash, path);
 
+    case RC_CONSOLE_ARDUBOY:
     case RC_CONSOLE_ATARI_7800:
     case RC_CONSOLE_ATARI_LYNX:
     case RC_CONSOLE_NINTENDO:
+    case RC_CONSOLE_PC_ENGINE:
+    case RC_CONSOLE_SUPER_CASSETTEVISION:
     case RC_CONSOLE_SUPER_NINTENDO:
       /* additional logic whole-file hash - buffer then call rc_hash_generate_from_buffer */
       return rc_hash_buffered_file(hash, console_id, path);
@@ -1891,13 +3463,35 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
     case RC_CONSOLE_ARCADE:
       return rc_hash_arcade(hash, path);
 
+    case RC_CONSOLE_ATARI_JAGUAR_CD:
+      return rc_hash_jaguar_cd(hash, path);
+
+    case RC_CONSOLE_DREAMCAST:
+      if (rc_path_compare_extension(path, "m3u"))
+        return rc_hash_generate_from_playlist(hash, console_id, path);
+
+      return rc_hash_dreamcast(hash, path);
+
+    case RC_CONSOLE_GAMECUBE:
+      return rc_hash_gamecube(hash, path);
+
+    case RC_CONSOLE_MS_DOS:
+      return rc_hash_ms_dos(hash, path);
+
+    case RC_CONSOLE_NEO_GEO_CD:
+      return rc_hash_neogeo_cd(hash, path);
+
     case RC_CONSOLE_NINTENDO_64:
-      return rc_hash_n64_file(hash, path);
+      return rc_hash_n64(hash, path);
+
+    case RC_CONSOLE_NINTENDO_3DS:
+      return rc_hash_nintendo_3ds(hash, path);
 
     case RC_CONSOLE_NINTENDO_DS:
+    case RC_CONSOLE_NINTENDO_DSI:
       return rc_hash_nintendo_ds(hash, path);
 
-    case RC_CONSOLE_PC_ENGINE:
+    case RC_CONSOLE_PC_ENGINE_CD:
       if (rc_path_compare_extension(path, "cue") || rc_path_compare_extension(path, "chd"))
         return rc_hash_pce_cd(hash, path);
 
@@ -1926,12 +3520,6 @@ int rc_hash_generate_from_file(char hash[33], int console_id, const char* path)
 
     case RC_CONSOLE_PSP:
       return rc_hash_psp(hash, path);
-
-    case RC_CONSOLE_DREAMCAST:
-      if (rc_path_compare_extension(path, "m3u"))
-        return rc_hash_generate_from_playlist(hash, console_id, path);
-
-      return rc_hash_dreamcast(hash, path);
 
     case RC_CONSOLE_SEGA_CD:
     case RC_CONSOLE_SATURN:
@@ -1986,6 +3574,9 @@ static void rc_hash_initialize_dsk_iterator(struct rc_hash_iterator* iterator, c
   {
     /* FAT-12 5.25" DD (512 byte sectors, 9 sectors per track, 40 tracks per side */
     iterator->consoles[0] = RC_CONSOLE_MSX;
+
+    /* AMSDOS 3" - 40 tracks */
+    iterator->consoles[1] = RC_CONSOLE_AMSTRAD_PC;
   }
   else if (size == 256 * 16 * 35) /* 140KB */
   {
@@ -2002,10 +3593,12 @@ static void rc_hash_initialize_dsk_iterator(struct rc_hash_iterator* iterator, c
 
   /* check MSX first, as Apple II isn't supported by RetroArch, and RAppleWin won't use the iterator */
   rc_hash_iterator_append_console(iterator, RC_CONSOLE_MSX);
+  rc_hash_iterator_append_console(iterator, RC_CONSOLE_AMSTRAD_PC);
+  rc_hash_iterator_append_console(iterator, RC_CONSOLE_ZX_SPECTRUM);
   rc_hash_iterator_append_console(iterator, RC_CONSOLE_APPLE_II);
 }
 
-void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, uint8_t* buffer, size_t buffer_size)
+void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, const uint8_t* buffer, size_t buffer_size)
 {
   int need_path = !buffer;
 
@@ -2027,6 +3620,14 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         break;
 
+      case '3':
+        if (rc_path_compare_extension(ext, "3ds") ||
+            rc_path_compare_extension(ext, "3dsx"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_NINTENDO_3DS;
+        }
+        break;
+
       case '7':
         if (rc_path_compare_extension(ext, "7z"))
         {
@@ -2036,10 +3637,24 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         break;
 
+      case '8':
+        /* http://tibasicdev.wikidot.com/file-extensions */
+        if (rc_path_compare_extension(ext, "83g") ||
+            rc_path_compare_extension(ext, "83p"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_TI83;
+        }
+        break;
+
       case 'a':
         if (rc_path_compare_extension(ext, "a78"))
         {
           iterator->consoles[0] = RC_CONSOLE_ATARI_7800;
+        }
+        else if (rc_path_compare_extension(ext, "app") ||
+                 rc_path_compare_extension(ext, "axf"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_NINTENDO_3DS;
         }
         break;
 
@@ -2065,14 +3680,15 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
                     iterator->consoles[2] = RC_CONSOLE_PLAYSTATION_2; /* PCSX2 supports directly opening the bin file*/
                     iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* Genesis Plus GX supports directly opening the bin file*/
 
-                    /* fallback to megadrive which just does a full hash */
+                    /* fallback to megadrive which just does a full hash. */
                     iterator->consoles[4] = RC_CONSOLE_MEGA_DRIVE;
                     break;
                  }
               }
            }
 
-          /* bin is associated with MegaDrive, Sega32X, Atari 2600, and Watara Supervision.
+          /* bin is associated with MegaDrive, Sega32X, Atari 2600, Watara Supervision, MegaDuck,
+           * Fairchild Channel F, Arcadia 2001, Interton VC 4000, and Super Cassette Vision.
            * Since they all use the same hashing algorithm, only specify one of them */
           iterator->consoles[0] = RC_CONSOLE_MEGA_DRIVE;
         }
@@ -2087,10 +3703,13 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_PLAYSTATION;
           iterator->consoles[1] = RC_CONSOLE_PLAYSTATION_2;
-          iterator->consoles[2] = RC_CONSOLE_PC_ENGINE;
-          iterator->consoles[3] = RC_CONSOLE_3DO;
-          iterator->consoles[4] = RC_CONSOLE_PCFX;
-          iterator->consoles[5] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
+          iterator->consoles[2] = RC_CONSOLE_DREAMCAST;
+          iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
+          iterator->consoles[4] = RC_CONSOLE_PC_ENGINE_CD;
+          iterator->consoles[5] = RC_CONSOLE_3DO;
+          iterator->consoles[6] = RC_CONSOLE_PCFX;
+          iterator->consoles[7] = RC_CONSOLE_NEO_GEO_CD;
+          iterator->consoles[8] = RC_CONSOLE_ATARI_JAGUAR_CD;
           need_path = 1;
         }
         else if (rc_path_compare_extension(ext, "chd"))
@@ -2098,10 +3717,12 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
           iterator->consoles[0] = RC_CONSOLE_PLAYSTATION;
           iterator->consoles[1] = RC_CONSOLE_PLAYSTATION_2;
           iterator->consoles[2] = RC_CONSOLE_DREAMCAST;
-          iterator->consoles[3] = RC_CONSOLE_PC_ENGINE;
-          iterator->consoles[4] = RC_CONSOLE_3DO;
-          iterator->consoles[5] = RC_CONSOLE_PCFX;
-          iterator->consoles[6] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
+          iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
+          iterator->consoles[4] = RC_CONSOLE_PSP;
+          iterator->consoles[5] = RC_CONSOLE_PC_ENGINE_CD;
+          iterator->consoles[6] = RC_CONSOLE_3DO;
+          iterator->consoles[7] = RC_CONSOLE_NEO_GEO_CD;
+          iterator->consoles[8] = RC_CONSOLE_PCFX;
           need_path = 1;
         }
         else if (rc_path_compare_extension(ext, "col"))
@@ -2112,6 +3733,24 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_MSX;
         }
+        else if (rc_path_compare_extension(ext, "chf"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_FAIRCHILD_CHANNEL_F;
+        }
+        else if (rc_path_compare_extension(ext, "cart"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_SUPER_CASSETTEVISION;
+        }
+        else if (rc_path_compare_extension(ext, "cci") ||
+                 rc_path_compare_extension(ext, "cia") ||
+                 rc_path_compare_extension(ext, "cxi"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_NINTENDO_3DS;
+        }
+        else if (rc_path_compare_extension(ext, "csw"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ZX_SPECTRUM;
+        }
         break;
 
       case 'd':
@@ -2119,10 +3758,27 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           rc_hash_initialize_dsk_iterator(iterator, path);
         }
+        else if (rc_path_compare_extension(ext, "d64"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_COMMODORE_64;
+        }
         else if (rc_path_compare_extension(ext, "d88"))
         {
           iterator->consoles[0] = RC_CONSOLE_PC8800;
           iterator->consoles[1] = RC_CONSOLE_SHARPX1;
+        }
+        else if (rc_path_compare_extension(ext, "dosz"))
+        {
+            iterator->consoles[0] = RC_CONSOLE_MS_DOS;
+        }
+        break;
+
+      case 'e':
+        if (rc_path_compare_extension(ext, "elf"))
+        {
+          /* This should probably apply to more consoles in the future */
+          /* Although in any case this just hashes the entire file */
+          iterator->consoles[0] = RC_CONSOLE_NINTENDO_3DS;
         }
         break;
 
@@ -2137,7 +3793,7 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         else if (rc_path_compare_extension(ext, "fd"))
         {
-            iterator->consoles[0] = RC_CONSOLE_THOMSONTO8; /* disk */
+          iterator->consoles[0] = RC_CONSOLE_THOMSONTO8; /* disk */
         }
         break;
 
@@ -2164,6 +3820,13 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         break;
 
+      case 'h':
+        if (rc_path_compare_extension(ext, "hex"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ARDUBOY;
+        }
+        break;
+
       case 'i':
         if (rc_path_compare_extension(ext, "iso"))
         {
@@ -2171,6 +3834,7 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
           iterator->consoles[1] = RC_CONSOLE_PSP;
           iterator->consoles[2] = RC_CONSOLE_3DO;
           iterator->consoles[3] = RC_CONSOLE_SEGA_CD; /* ASSERT: handles both Sega CD and Saturn */
+          iterator->consoles[4] = RC_CONSOLE_GAMECUBE;
           need_path = 1;
         }
         break;
@@ -2241,7 +3905,7 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         }
         else if (rc_path_compare_extension(ext, "nds"))
         {
-          iterator->consoles[0] = RC_CONSOLE_NINTENDO_DS;
+          iterator->consoles[0] = RC_CONSOLE_NINTENDO_DS; /* ASSERT: handles both DS and DSi */
         }
         else if (rc_path_compare_extension(ext, "n64") ||
                  rc_path_compare_extension(ext, "ndd"))
@@ -2252,6 +3916,11 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_NEOGEO_POCKET;
         }
+        else if (rc_path_compare_extension(ext, "nib"))
+        {
+            /* also Apple II, but both are full-file hashes */
+            iterator->consoles[0] = RC_CONSOLE_COMMODORE_64;
+        }
         break;
 
       case 'p':
@@ -2259,13 +3928,26 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_PC_ENGINE;
         }
+        else if (rc_path_compare_extension(ext, "pbp"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_PSP;
+        }
+        else if (rc_path_compare_extension(ext, "pgm"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER;
+        }
+        else if (rc_path_compare_extension(ext, "pzx"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ZX_SPECTRUM;
+        }
         break;
 
       case 'r':
         if (rc_path_compare_extension(ext, "rom"))
         {
+          /* rom is associated with MSX, Thomson TO-8, and Fairchild Channel F.
+           * Since they all use the same hashing algorithm, only specify one of them */
           iterator->consoles[0] = RC_CONSOLE_MSX;
-          iterator->consoles[1] = RC_CONSOLE_THOMSONTO8; /* cartridge */
         }
         if (rc_path_compare_extension(ext, "ri"))
         {
@@ -2296,16 +3978,37 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         {
           iterator->consoles[0] = RC_CONSOLE_THOMSONTO8; /* disk */
         }
+        else if (rc_path_compare_extension(ext, "scl"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ZX_SPECTRUM;
+        }
         break;
 
       case 't':
         if (rc_path_compare_extension(ext, "tap"))
         {
+          /* also Commodore 64 and ZX Spectrum, but all are full file hashes */
           iterator->consoles[0] = RC_CONSOLE_ORIC;
         }
         else if (rc_path_compare_extension(ext, "tic"))
         {
           iterator->consoles[0] = RC_CONSOLE_TIC80;
+        }
+        else if (rc_path_compare_extension(ext, "tvc"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER;
+        }
+        else if (rc_path_compare_extension(ext, "trd") ||
+                 rc_path_compare_extension(ext, "tzx"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_ZX_SPECTRUM;
+        }
+        break;
+
+      case 'u':
+        if (rc_path_compare_extension(ext, "uze"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_UZEBOX;
         }
         break;
 
@@ -2324,6 +4027,10 @@ void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* 
         if (rc_path_compare_extension(ext, "wsc"))
         {
           iterator->consoles[0] = RC_CONSOLE_WONDERSWAN;
+        }
+        else if (rc_path_compare_extension(ext, "wasm"))
+        {
+          iterator->consoles[0] = RC_CONSOLE_WASM4;
         }
         else if (rc_path_compare_extension(ext, "woz"))
         {

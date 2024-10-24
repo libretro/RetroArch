@@ -25,10 +25,6 @@
 #include "../common/egl_common.h"
 #endif
 
-#if defined(HAVE_OPENGLES)
-#include "../common/gl_common.h"
-#endif
-
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
 
@@ -76,7 +72,7 @@ static void *gfx_ctx_opendingux_init(void *video_driver)
       EGL_NONE
    };
 #endif
-   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)
+   opendingux_ctx_data_t *viv    = (opendingux_ctx_data_t*)
       calloc(1, sizeof(*viv));
 
    if (!viv)
@@ -105,9 +101,8 @@ static void gfx_ctx_opendingux_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
-
-   *width  = viv->width;
-   *height = viv->height;
+   *width                     = viv->width;
+   *height                    = viv->height;
 }
 
 static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
@@ -140,21 +135,20 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
       EGL_NONE
    };
 #endif
-   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
+   opendingux_ctx_data_t *viv    = (opendingux_ctx_data_t*)data;
 
    /* Pick some arbitrary default. */
    if (!width || !fullscreen)
-      width = 1280;
+      width                      = 1280;
    if (!height || !fullscreen)
-      height = 1024;
+      height                     = 1024;
 
-   viv->width    = width;
-   viv->height   = height;
+   viv->width                    = width;
+   viv->height                   = height;
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&viv->egl, attribs))
       goto error;
-
    viv->native_window = 0;
    if (!egl_create_surface(&viv->egl, viv->native_window))
       goto error;
@@ -195,9 +189,8 @@ static bool gfx_ctx_opendingux_suppress_screensaver(void *data, bool enable) { r
 
 static void gfx_ctx_opendingux_swap_buffers(void *data)
 {
-   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
    egl_swap_buffers(&viv->egl);
 #endif
 }
@@ -205,18 +198,16 @@ static void gfx_ctx_opendingux_swap_buffers(void *data)
 static void gfx_ctx_opendingux_set_swap_interval(
       void *data, int swap_interval)
 {
-   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
    egl_set_swap_interval(&viv->egl, swap_interval);
 #endif
 }
 
 static void gfx_ctx_opendingux_bind_hw_render(void *data, bool enable)
 {
-   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
-
 #ifdef HAVE_EGL
+   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
    egl_bind_hw_render(&viv->egl, enable);
 #endif
 }

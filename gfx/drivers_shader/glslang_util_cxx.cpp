@@ -41,11 +41,7 @@ static std::string build_stage_source(
    size_t i;
    std::string str;
    bool active = true;
-
-   if (!lines)
-      return "";
-
-   if (lines->size < 1)
+   if (!lines || lines->size < 1)
       return "";
    str.reserve(lines->size);
 
@@ -65,19 +61,15 @@ static std::string build_stage_source(
             if (!string_is_empty(stage))
             {
                char expected[128];
-
-               expected[0] = '\0';
-
-               strcpy_literal(expected, "#pragma stage ");
-               strlcat(expected, stage,            sizeof(expected));
-
+               size_t _len = strlcpy(expected, "#pragma stage ", sizeof(expected));
+               strlcpy(expected + _len, stage, sizeof(expected) - _len);
                active = string_is_equal(expected, line);
             }
          }
          else if (
-               !strncmp("#pragma name ", line,
-                  STRLEN_CONST("#pragma name ")) ||
-               !strncmp("#pragma format ", line,
+                  !strncmp("#pragma name ", line,
+                  STRLEN_CONST("#pragma name "))
+               || !strncmp("#pragma format ", line,
                   STRLEN_CONST("#pragma format ")))
          {
             /* Ignore */
@@ -164,14 +156,14 @@ bool glslang_parse_meta(const struct string_list *lines, glslang_meta *meta)
                 * if they are exactly the same. */
                if (parameter_found)
                {
-                  const glslang_parameter *parameter = 
+                  const glslang_parameter *parameter =
                      &meta->parameters[parameter_index];
 
-                  if (   parameter->desc    != desc    ||
-                        parameter->initial != initial ||
-                        parameter->minimum != minimum ||
-                        parameter->maximum != maximum ||
-                        parameter->step    != step
+                  if (     (parameter->desc    != desc)
+                        || (parameter->initial != initial)
+                        || (parameter->minimum != minimum)
+                        || (parameter->maximum != maximum)
+                        || (parameter->step    != step)
                      )
                   {
                      RARCH_ERR("[slang]: Duplicate parameters found for \"%s\", but arguments do not match.\n", id);
@@ -222,13 +214,13 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
 #if defined(HAVE_GLSLANG)
    struct string_list lines;
-   
+
    if (!string_list_initialize(&lines))
       return false;
 
-   RARCH_LOG("[slang]: Compiling shader \"%s\".\n", shader_path);
+   RARCH_LOG("[slang]: Compiling shader: \"%s\".\n", shader_path);
 
-   if (!glslang_read_shader_file(shader_path, &lines, true))
+   if (!glslang_read_shader_file(shader_path, &lines, true, false))
       goto error;
    output->meta = glslang_meta{};
    if (!glslang_parse_meta(&lines, &output->meta))
@@ -237,14 +229,14 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    if (!glslang::compile_spirv(build_stage_source(&lines, "vertex"),
             glslang::StageVertex, &output->vertex))
    {
-      RARCH_ERR("Failed to compile vertex shader stage.\n");
+      RARCH_ERR("[slang]: Failed to compile vertex shader stage.\n");
       goto error;
    }
 
    if (!glslang::compile_spirv(build_stage_source(&lines, "fragment"),
             glslang::StageFragment, &output->fragment))
    {
-      RARCH_ERR("Failed to compile fragment shader stage.\n");
+      RARCH_ERR("[slang]: Failed to compile fragment shader stage.\n");
       goto error;
    }
 

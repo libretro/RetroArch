@@ -29,7 +29,7 @@
 #endif
 
 #include "../content.h"
-#include "../core_type.h"
+#include "../retroarch_types.h"
 
 RETRO_BEGIN_DECLS
 
@@ -84,7 +84,6 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       void *user_data);
 
 #ifdef HAVE_MENU
-
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -100,20 +99,25 @@ bool task_push_load_content_from_playlist_from_menu(
       content_ctx_info_t *content_info,
       retro_task_callback_t cb,
       void *user_data);
+
+bool task_push_load_contentless_core_from_menu(
+      const char *core_path);
 #endif
 
-bool task_push_load_content_with_core_from_menu(
+bool task_push_load_content_with_core(
       const char *fullpath,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);
-bool task_push_load_subsystem_with_core_from_menu(
+
+bool task_push_load_subsystem_with_core(
       const char *fullpath,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);
+
 
 RETRO_END_DECLS
 

@@ -20,11 +20,9 @@
 #include <algorithm>
 #include <stdio.h>
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 #include "glslang_util.h"
 #include "../../verbosity.h"
-
-using namespace std;
-using namespace spirv_cross;
 
 static const char *texture_semantic_names[] = {
    "Original",
@@ -52,6 +50,9 @@ static const char *semantic_uniform_names[] = {
    "FinalViewportSize",
    "FrameCount",
    "FrameDirection",
+   "Rotation",
+   "TotalSubFrames",
+   "CurrentSubFrame",
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic(
@@ -170,7 +171,7 @@ static bool set_ubo_float_parameter_offset(
       }
    }
 
-   if (  (sem.num_components != num_components) && 
+   if (  (sem.num_components != num_components) &&
          (sem.uniform || sem.push_constant))
    {
       RARCH_ERR("[slang]: Vertex and fragment have different "
@@ -210,7 +211,7 @@ static bool set_ubo_offset(
 
    }
 
-   if (  (sem.num_components != num_components) && 
+   if (  (sem.num_components != num_components) &&
          (sem.uniform || sem.push_constant))
    {
       RARCH_ERR("[slang]: Vertex and fragment have different"
@@ -227,45 +228,73 @@ static bool set_ubo_offset(
    return true;
 }
 
-static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
+static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_semantic sem)
 {
    if (!type.array.empty())
       return false;
-   if (type.basetype != SPIRType::Float && type.basetype != SPIRType::Int && type.basetype != SPIRType::UInt)
+   if (     type.basetype != spirv_cross::SPIRType::Float
+         && type.basetype != spirv_cross::SPIRType::Int
+         && type.basetype != spirv_cross::SPIRType::UInt)
       return false;
 
    switch (sem)
    {
          /* mat4 */
       case SLANG_SEMANTIC_MVP:
-         return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 4;
+         return
+               type.basetype == spirv_cross::SPIRType::Float
+            && type.vecsize  == 4
+            && type.columns  == 4;
          /* uint */
       case SLANG_SEMANTIC_FRAME_COUNT:
-         return type.basetype == SPIRType::UInt  && type.vecsize == 1 && type.columns == 1;
+         return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+         /* int */
+      case SLANG_SEMANTIC_TOTAL_SUBFRAMES:
+         return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+         /* int */
+      case SLANG_SEMANTIC_CURRENT_SUBFRAME:
+         return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
          /* int */
       case SLANG_SEMANTIC_FRAME_DIRECTION:
-         return type.basetype == SPIRType::Int   && type.vecsize == 1 && type.columns == 1;
+         return type.basetype == spirv_cross::SPIRType::Int
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+         /* uint */
+      case SLANG_SEMANTIC_ROTATION:
+         return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:
-         return type.basetype == SPIRType::Float && type.vecsize == 1 && type.columns == 1;
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
          /* vec4 */
       default:
-         return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 1;
+         break;
    }
+   return type.basetype == spirv_cross::SPIRType::Float
+      &&  type.vecsize  == 4
+      &&  type.columns  == 1;
 }
 
-static bool validate_type_for_texture_semantic(const SPIRType &type)
+static bool validate_type_for_texture_semantic(const spirv_cross::SPIRType &type)
 {
-   if (!type.array.empty())
-      return false;
-   return (type.basetype == SPIRType::Float) && 
-          (type.vecsize  == 4)               && 
-          (type.columns  == 1);
+   return    (type.array.empty())
+          && (type.basetype == spirv_cross::SPIRType::Float)
+          && (type.vecsize  == 4)
+          && (type.columns  == 1);
 }
 
 static bool add_active_buffer_ranges(
-      const Compiler &compiler,
-      const Resource &resource,
+      const spirv_cross::Compiler &compiler,
+      const spirv_cross::Resource &resource,
       slang_reflection *reflection,
       bool push_constant)
 {
@@ -279,7 +308,7 @@ static bool add_active_buffer_ranges(
       unsigned tex_sem_index         = 0;
       const std::string &name        = compiler.get_member_name(
             resource.base_type_id, ranges[i].index);
-      const SPIRType &type           = compiler.get_type(
+      const spirv_cross::SPIRType &type = compiler.get_type(
             compiler.get_type(resource.base_type_id).member_types[
             ranges[i].index]);
       slang_semantic sem             = slang_uniform_name_to_semantic(
@@ -336,6 +365,7 @@ static bool add_active_buffer_ranges(
       }
       else
       {
+         /* TODO - Try to print name */
          RARCH_ERR("[slang]: Unknown semantic found.\n");
          return false;
       }
@@ -356,10 +386,10 @@ slang_reflection::slang_reflection()
 }
 
 bool slang_reflect(
-      const Compiler &vertex_compiler,
-      const Compiler &fragment_compiler,
-      const ShaderResources &vertex,
-      const ShaderResources &fragment,
+      const spirv_cross::Compiler &vertex_compiler,
+      const spirv_cross::Compiler &fragment_compiler,
+      const spirv_cross::ShaderResources &vertex,
+      const spirv_cross::ShaderResources &fragment,
       slang_reflection *reflection)
 {
    uint32_t location_mask = 0;
@@ -368,15 +398,15 @@ bool slang_reflect(
 
    /* Validate use of unexpected types. */
    if (
-         !vertex.sampled_images.empty()    ||
-         !vertex.storage_buffers.empty()   ||
-         !vertex.subpass_inputs.empty()    ||
-         !vertex.storage_images.empty()    ||
-         !vertex.atomic_counters.empty()   ||
-         !fragment.storage_buffers.empty() ||
-         !fragment.subpass_inputs.empty()  ||
-         !fragment.storage_images.empty()  ||
-         !fragment.atomic_counters.empty())
+            !vertex.sampled_images.empty()
+         || !vertex.storage_buffers.empty()
+         || !vertex.subpass_inputs.empty()
+         || !vertex.storage_images.empty()
+         || !vertex.atomic_counters.empty()
+         || !fragment.storage_buffers.empty()
+         || !fragment.subpass_inputs.empty()
+         || !fragment.storage_images.empty()
+         || !fragment.atomic_counters.empty())
    {
       RARCH_ERR("[slang]: Invalid resource type detected.\n");
       return false;
@@ -439,10 +469,10 @@ bool slang_reflect(
       return false;
    }
 
-   uint32_t vertex_ubo    = vertex.uniform_buffers.empty() ? 0 : vertex.uniform_buffers[0].id;
-   uint32_t fragment_ubo  = fragment.uniform_buffers.empty() ? 0 : fragment.uniform_buffers[0].id;
-   uint32_t vertex_push   = vertex.push_constant_buffers.empty() ? 0 : vertex.push_constant_buffers[0].id;
-   uint32_t fragment_push = fragment.push_constant_buffers.empty() ? 0 : fragment.push_constant_buffers[0].id;
+   uint32_t vertex_ubo    = vertex.uniform_buffers.empty() ? 0 : (uint32_t)vertex.uniform_buffers[0].id;
+   uint32_t fragment_ubo  = fragment.uniform_buffers.empty() ? 0 : (uint32_t)fragment.uniform_buffers[0].id;
+   uint32_t vertex_push   = vertex.push_constant_buffers.empty() ? 0 : (uint32_t)vertex.push_constant_buffers[0].id;
+   uint32_t fragment_push = fragment.push_constant_buffers.empty() ? 0 : (uint32_t)fragment.push_constant_buffers[0].id;
 
    if (vertex_ubo &&
          vertex_compiler.get_decoration(
@@ -460,11 +490,11 @@ bool slang_reflect(
       return false;
    }
 
-   unsigned vertex_ubo_binding   = vertex_ubo 
-      ? vertex_compiler.get_decoration(vertex_ubo, spv::DecorationBinding) 
+   unsigned vertex_ubo_binding   = vertex_ubo
+      ? vertex_compiler.get_decoration(vertex_ubo, spv::DecorationBinding)
       : -1u;
-   unsigned fragment_ubo_binding = fragment_ubo 
-      ? fragment_compiler.get_decoration(fragment_ubo, spv::DecorationBinding) 
+   unsigned fragment_ubo_binding = fragment_ubo
+      ? fragment_compiler.get_decoration(fragment_ubo, spv::DecorationBinding)
       : -1u;
    bool has_ubo                  = vertex_ubo || fragment_ubo;
 
@@ -477,7 +507,7 @@ bool slang_reflect(
    }
 
    unsigned ubo_binding = (vertex_ubo_binding != -1u)
-      ? vertex_ubo_binding 
+      ? vertex_ubo_binding
       : fragment_ubo_binding;
 
    if (has_ubo && ubo_binding >= SLANG_NUM_BINDINGS)
@@ -494,43 +524,47 @@ bool slang_reflect(
 
    if (vertex_ubo)
    {
+      size_t _y;
       reflection->ubo_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->ubo_size        = max(reflection->ubo_size,
-            vertex_compiler.get_declared_struct_size(
+      _y = vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
-                  vertex.uniform_buffers[0].base_type_id)));
+                  vertex.uniform_buffers[0].base_type_id));
+      reflection->ubo_size        = MAX(reflection->ubo_size, _y);
    }
 
    if (fragment_ubo)
    {
+      size_t _y;
       reflection->ubo_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->ubo_size        = max(reflection->ubo_size,
-            fragment_compiler.get_declared_struct_size(
+      _y = fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(
-                  fragment.uniform_buffers[0].base_type_id)));
+                  fragment.uniform_buffers[0].base_type_id));
+      reflection->ubo_size        = MAX(reflection->ubo_size, _y);
    }
 
    if (vertex_push)
    {
+      size_t _y;
       reflection->push_constant_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      reflection->push_constant_size        = max(
-            reflection->push_constant_size,
-            vertex_compiler.get_declared_struct_size(
+      _y = vertex_compiler.get_declared_struct_size(
                vertex_compiler.get_type(
-                  vertex.push_constant_buffers[0].base_type_id)));
+                  vertex.push_constant_buffers[0].base_type_id));
+      reflection->push_constant_size        = MAX(
+            reflection->push_constant_size, _y);
    }
 
    if (fragment_push)
    {
+      size_t _y;
       reflection->push_constant_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      reflection->push_constant_size        = max(
-            reflection->push_constant_size,
-            fragment_compiler.get_declared_struct_size(
+      _y = fragment_compiler.get_declared_struct_size(
                fragment_compiler.get_type(
-                  fragment.push_constant_buffers[0].base_type_id)));
+                  fragment.push_constant_buffers[0].base_type_id));
+      reflection->push_constant_size        = MAX(
+            reflection->push_constant_size, _y);
    }
 
-   /* Validate push constant size against Vulkan's 
+   /* Validate push constant size against Vulkan's
     * minimum spec to avoid cross-vendor issues. */
    if (reflection->push_constant_size > 128)
    {
@@ -602,13 +636,13 @@ bool slang_reflect(
       {
          RARCH_ERR("[slang]: Texture name '%s' not found in semantic map, "
                    "Probably the texture name or pass alias is not defined "
-                   "in the preset (Non-semantic textures not supported yet)\n", 
+                   "in the preset (Non-semantic textures not supported yet)\n",
                    fragment.sampled_images[i].name.c_str());
          return false;
       }
 
       resize_minimum(reflection->semantic_textures[index], array_index + 1);
-      slang_texture_semantic_meta &semantic = 
+      slang_texture_semantic_meta &semantic =
          reflection->semantic_textures[index][array_index];
       semantic.binding                      = binding;
       semantic.stage_mask                   = SLANG_STAGE_FRAGMENT_MASK;
@@ -682,9 +716,9 @@ bool slang_reflect(
 
    {
       char buf[64];
-      buf[0] = '\0';
-      snprintf(buf, sizeof(buf),
-            "[slang]:\n%s [slang]:   Parameters:\n", FILE_PATH_LOG_INFO);
+      size_t _len = strlcpy(buf, "[slang]:\n", sizeof(buf));
+      _len       += strlcpy(buf + _len, FILE_PATH_LOG_INFO, sizeof(buf) - _len);
+      strlcpy(buf + _len, " [slang]:   Parameters:\n", sizeof(buf) - _len);
       RARCH_LOG(buf);
    }
 
@@ -714,11 +748,11 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
 {
    try
    {
-      Compiler vertex_compiler(vertex);
-      Compiler fragment_compiler(fragment);
+      spirv_cross::Compiler vertex_compiler(vertex);
+      spirv_cross::Compiler fragment_compiler(fragment);
       spirv_cross::ShaderResources
          vertex_resources     = vertex_compiler.get_shader_resources();
-      spirv_cross::ShaderResources 
+      spirv_cross::ShaderResources
          fragment_resources   = fragment_compiler.get_shader_resources();
 
       if (!slang_reflect(vertex_compiler, fragment_compiler,

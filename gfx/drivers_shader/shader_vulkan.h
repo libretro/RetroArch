@@ -25,7 +25,9 @@
 
 #include "glslang_util.h"
 
-#include "../common/vulkan_common.h"
+#include "../include/vulkan/vulkan.h"
+
+#define VULKAN_ROLLING_SCANLINE_SIMULATION
 
 RETRO_BEGIN_DECLS
 
@@ -98,9 +100,9 @@ void vulkan_filter_chain_set_shader(vulkan_filter_chain_t *chain,
       const uint32_t *spirv,
       size_t spirv_words);
 
-void vulkan_filter_chain_set_pass_info(vulkan_filter_chain_t *chain,
-      unsigned pass,
-      const struct vulkan_filter_chain_pass_info *info);
+VkFormat vulkan_filter_chain_get_pass_rt_format(
+      vulkan_filter_chain_t *chain,
+      unsigned pass);      
 
 bool vulkan_filter_chain_update_swapchain_info(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_swapchain_info *info);
@@ -120,12 +122,22 @@ void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
       unsigned pass,
       unsigned period);
 
+void vulkan_filter_chain_set_shader_subframes(vulkan_filter_chain_t *chain,
+      uint32_t tot_subframes);
+
+void vulkan_filter_chain_set_current_shader_subframe(vulkan_filter_chain_t *chain,
+      uint32_t cur_subframe);
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+void vulkan_filter_chain_set_simulate_scanline(vulkan_filter_chain_t *chain,
+      bool simulate_scanline);
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);
 
-void vulkan_filter_chain_set_pass_name(vulkan_filter_chain_t *chain,
-      unsigned pass,
-      const char *name);
+void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *chain,
+      uint32_t rot);
 
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);
@@ -144,6 +156,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
 struct video_shader *vulkan_filter_chain_get_preset(
       vulkan_filter_chain_t *chain);
+
+bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain);
 
 RETRO_END_DECLS
 

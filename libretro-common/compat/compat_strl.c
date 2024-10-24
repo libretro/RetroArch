@@ -60,10 +60,3 @@ size_t strlcat(char *dest, const char *source, size_t size)
    return len + strlcpy(dest, source, size);
 }
 #endif
-
-char *strldup(const char *s, size_t n)
-{
-   char *dst = (char*)malloc(sizeof(char) * (n + 1));
-   strlcpy(dst, s, n);
-   return dst;
-}

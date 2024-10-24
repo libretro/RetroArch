@@ -19,7 +19,7 @@
 
 #include <boolean.h>
 
-#include "../retroarch.h"
+#include "audio_driver.h"
 
 /**
  * audio_init_thread:

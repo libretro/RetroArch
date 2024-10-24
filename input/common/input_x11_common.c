@@ -18,11 +18,18 @@
 
 #include "input_x11_common.h"
 
+enum x11_mouse_btn_flags
+{
+   X11_MOUSE_WU_BTN   = (1 << 0),
+   X11_MOUSE_WD_BTN   = (1 << 1),
+   X11_MOUSE_HWU_BTN  = (1 << 2),
+   X11_MOUSE_HWD_BTN  = (1 << 3),
+   X11_MOUSE_BTN_4    = (1 << 4),
+   X11_MOUSE_BTN_5    = (1 << 5)
+};
+
 /* TODO/FIXME - static globals */
-static bool x11_mouse_wu;
-static bool x11_mouse_wd;
-static bool x11_mouse_hwu;
-static bool x11_mouse_hwd;
+static uint8_t g_x11_mouse_flags = 0;
 
 int16_t x_mouse_state_wheel(unsigned id)
 {
@@ -31,21 +38,28 @@ int16_t x_mouse_state_wheel(unsigned id)
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         ret          = x11_mouse_wu;
-         x11_mouse_wu = 0;
+         ret                = (g_x11_mouse_flags & X11_MOUSE_WU_BTN);
+         g_x11_mouse_flags &= ~X11_MOUSE_WU_BTN;
          break;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         ret          = x11_mouse_wd;
-         x11_mouse_wd = 0;
+         ret                = (g_x11_mouse_flags & X11_MOUSE_WD_BTN);
+         g_x11_mouse_flags &= ~X11_MOUSE_WD_BTN;
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         ret           = x11_mouse_hwu;
-         x11_mouse_hwu = 0;
+         ret                = (g_x11_mouse_flags & X11_MOUSE_HWU_BTN);
+         g_x11_mouse_flags &= ~X11_MOUSE_HWU_BTN;
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         ret           = x11_mouse_hwd;
-         x11_mouse_hwd = 0;
+         ret                = (g_x11_mouse_flags & X11_MOUSE_HWD_BTN);
+         g_x11_mouse_flags &= ~X11_MOUSE_HWD_BTN;
          break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         ret                = (g_x11_mouse_flags & X11_MOUSE_BTN_4);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         ret                = (g_x11_mouse_flags & X11_MOUSE_BTN_5);
+         break;
+
    }
 
    return ret;
@@ -56,18 +70,44 @@ void x_input_poll_wheel(XButtonEvent *event, bool latch)
    switch (event->button)
    {
       case 4:
-         x11_mouse_wu = 1;
+         g_x11_mouse_flags |= X11_MOUSE_WU_BTN;
          break;
       case 5:
-         x11_mouse_wd = 1;
+         g_x11_mouse_flags |= X11_MOUSE_WD_BTN;
          break;
       case 6:
          /* Scroll wheel left == HORIZ_WHEELDOWN */
-         x11_mouse_hwd = 1;
+         g_x11_mouse_flags |= X11_MOUSE_HWD_BTN;
          break;
       case 7:
          /* Scroll wheel right == HORIZ_WHEELUP */
-         x11_mouse_hwu = 1;
+         g_x11_mouse_flags |= X11_MOUSE_HWU_BTN;
+         break;
+      case 8:
+         /* Extra buttons are regular press-release events,
+          * while scroll wheels do not stay pressed. */
+         /* Mouse button 4 */
+         switch (event->type)
+         {
+            case ButtonPress:
+               g_x11_mouse_flags |= X11_MOUSE_BTN_4;
+               break;
+            case ButtonRelease:
+               g_x11_mouse_flags &= ~X11_MOUSE_BTN_4;
+               break;
+         }
+         break;
+      case 9:
+         /* Mouse button 5 */
+         switch (event->type)
+         {
+            case ButtonPress:
+               g_x11_mouse_flags |= X11_MOUSE_BTN_5;
+               break;
+            case ButtonRelease:
+               g_x11_mouse_flags &= ~X11_MOUSE_BTN_5;
+               break;
+         }
          break;
    }
 }

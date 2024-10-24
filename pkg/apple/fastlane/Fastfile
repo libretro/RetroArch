@@ -1,0 +1,269 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :mac do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # this needs these environment variables set:
+    # APP_STORE_CONNECT_API_KEY_KEY_ID,
+    # APP_STORE_CONNECT_API_KEY_ISSUER_ID,
+    # APP_STORE_CONNECT_API_KEY_KEY_FILEPATH
+    app_store_connect_api_key
+
+    reset_git_repo(
+      force: true,
+      files: [
+        "./OSX/assets.zip",
+        "./OSX/Info_AppStore.plist"
+      ]
+    )
+    ensure_git_status_clean
+    git_pull
+    sh("git log -1")
+    begin
+      app_store_build_number(
+        app_identifier: "com.libretro.dist.RetroArch",
+        platform: "osx",
+        username: "libretro@gmail.com",
+        team_id: "118576492",
+        live: true
+      )
+      current_version_number = lane_context[SharedValues::LATEST_VERSION]
+    rescue => ex
+      current_version_number = "1.19.1"
+    end
+    begin
+      latest_testflight_build_number(
+        app_identifier: "com.libretro.dist.RetroArch",
+        platform: "osx",
+        username: "libretro@gmail.com",
+        team_id: "118576492"
+      )
+      next_version_number = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION]
+      next_build_number = lane_context[SharedValues::LATEST_TESTFLIGHT_BUILD_NUMBER]
+    rescue => ex
+      next_version_number = "1.19.2"
+      next_build_number = 45
+    end
+    next_version_number = "1.19.2"
+    if current_version_number == next_version_number
+      version_array = next_version_number.split(".").map(&:to_i)
+      version_array[-1] = version_array[-1] + 1
+      next_version_number = version_array.join(".")
+    end
+    # can't use update_build_number/agvtool to update this as it
+    # doesn't deal with multiple projects in the same folder
+    update_info_plist(
+      plist_path: "OSX/Info_AppStore.plist",
+      block: proc do |plist|
+        plist["CFBundleVersion"] = (next_build_number + 1).to_s
+        plist["CFBundleShortVersionString"] = next_version_number
+      end
+    )
+    build_mac_app(
+      workspace: "RetroArch.xcworkspace",
+      scheme: "RetroArch AppStore",
+      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+      buildlog_path: "buildlog",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.libretro.dist.RetroArch" => "macOS App Store"
+        }
+      }
+    )
+    upload_to_testflight(
+      distribute_external: true,
+      groups: ['Invaders', 'Patreons'],
+      changelog: "Rebuild frontend from latest master branch and take latest build of all cores."
+    )
+  end
+end
+
+platform :ios do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # this needs these environment variables set:
+    # APP_STORE_CONNECT_API_KEY_KEY_ID,
+    # APP_STORE_CONNECT_API_KEY_ISSUER_ID,
+    # APP_STORE_CONNECT_API_KEY_KEY_FILEPATH
+    app_store_connect_api_key
+
+    reset_git_repo(
+      force: true,
+      files: [
+        "./assets.zip",
+        "./iOS/Info.plist"
+      ]
+    )
+    ensure_git_status_clean
+    git_pull
+    sh("git log -1")
+    app_store_build_number(
+      app_identifier: "com.libretro.dist.RetroArch",
+      platform: "ios",
+      username: "libretro@gmail.com",
+      team_id: "118576492",
+      live: true
+    )
+    latest_testflight_build_number(
+      app_identifier: "com.libretro.dist.RetroArch",
+      platform: "ios",
+      username: "libretro@gmail.com",
+      team_id: "118576492"
+    )
+    next_version_number = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION]
+    if lane_context[SharedValues::LATEST_VERSION] == lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION]
+      version_array = next_version_number.split(".").map(&:to_i)
+      version_array[-1] = version_array[-1] + 1
+      next_version_number = version_array.join(".")
+    end
+    # can't use update_build_number/agvtool to update this as it
+    # doesn't deal with multiple projects in the same folder
+    update_info_plist(
+      plist_path: "iOS/Info.plist",
+      block: proc do |plist|
+        plist["CFBundleVersion"] = (lane_context[SharedValues::LATEST_TESTFLIGHT_BUILD_NUMBER] + 1).to_s
+        plist["CFBundleShortVersionString"] = next_version_number
+      end
+    )
+    update_code_signing_settings(
+      targets: "RetroArchiOS",
+      use_automatic_signing: false,
+      path: "RetroArch_iOS13.xcodeproj",
+      team_id: "UK699V5ZS8",
+      code_sign_identity: "iPhone Distribution",
+      sdk: "iphoneos*",
+      profile_name: "App Store Distribution"
+    )
+    update_code_signing_settings(
+      targets: "RetroArchWidgetExtensionExtension",
+      use_automatic_signing: false,
+      path: "RetroArch_iOS13.xcodeproj",
+      team_id: "UK699V5ZS8",
+      bundle_identifier: "com.libretro.dist.RetroArch.RetroArchWidgetExtension",
+      code_sign_identity: "iPhone Distribution",
+      sdk: "iphoneos*",
+      profile_name: "App Store Widget"
+    )
+    build_app(
+      workspace: "RetroArch.xcworkspace",
+      scheme: "RetroArch iOS Release",
+      xcconfig: "iOS/AppStore.xcconfig",
+      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+      buildlog_path: "buildlog",
+      export_options: {
+        provisioningProfiles: {
+          "com.libretro.dist.RetroArch" => "App Store Distribution",
+          "com.libretro.dist.RetroArch.RetroArchWidgetExtension" => "App Store Widget"
+        }
+      }
+    )
+    upload_to_testflight(
+      distribute_external: true,
+      groups: ['Invaders', 'Patreons'],
+      changelog: "Rebuild frontend from latest master branch and take latest build of all cores."
+    )
+  end
+end
+
+platform :appletvos do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    # this needs these environment variables set:
+    # APP_STORE_CONNECT_API_KEY_KEY_ID,
+    # APP_STORE_CONNECT_API_KEY_ISSUER_ID,
+    # APP_STORE_CONNECT_API_KEY_KEY_FILEPATH
+    app_store_connect_api_key
+
+    reset_git_repo(
+      force: true,
+      files: [
+        "./assets.zip",
+        "./tvOS/Info.plist"
+      ]
+    )
+    ensure_git_status_clean
+    git_pull
+    sh("git log -1")
+    app_store_build_number(
+      app_identifier: "com.libretro.dist.RetroArch",
+      platform: "appletvos",
+      username: "libretro@gmail.com",
+      team_id: "118576492",
+      live: true
+    )
+    latest_testflight_build_number(
+      app_identifier: "com.libretro.dist.RetroArch",
+      platform: "appletvos",
+      username: "libretro@gmail.com",
+      team_id: "118576492"
+    )
+    next_version_number = lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION]
+    if lane_context[SharedValues::LATEST_VERSION] == lane_context[SharedValues::LATEST_TESTFLIGHT_VERSION]
+      version_array = next_version_number.split(".").map(&:to_i)
+      version_array[-1] = version_array[-1] + 1
+      next_version_number = version_array.join(".")
+    end
+    # can't use update_build_number/agvtool to update this as it
+    # doesn't deal with multiple projects in the same folder
+    update_info_plist(
+      plist_path: "tvOS/Info.plist",
+      block: proc do |plist|
+        plist["CFBundleVersion"] = (lane_context[SharedValues::LATEST_TESTFLIGHT_BUILD_NUMBER] + 1).to_s
+        plist["CFBundleShortVersionString"] = next_version_number
+      end
+    )
+    update_code_signing_settings(
+      targets: "RetroArchTV",
+      use_automatic_signing: false,
+      path: "RetroArch_iOS13.xcodeproj",
+      team_id: "UK699V5ZS8",
+      code_sign_identity: "iPhone Distribution",
+      sdk: "appletvos*",
+      profile_name: "tvOS App Store"
+    )
+    update_code_signing_settings(
+      targets: "RetroArchTopShelfExtension",
+      use_automatic_signing: false,
+      path: "RetroArch_iOS13.xcodeproj",
+      team_id: "UK699V5ZS8",
+      bundle_identifier: "com.libretro.dist.RetroArch.RetroArchTopShelfExtension",
+      code_sign_identity: "iPhone Distribution",
+      sdk: "appletvos*",
+      profile_name: "tvOS Top Shelf App Store"
+    )
+    build_app(
+      workspace: "RetroArch.xcworkspace",
+      scheme: "RetroArch tvOS Release",
+      xcconfig: "iOS/AppStore.xcconfig",
+      xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+      buildlog_path: "buildlog",
+      export_options: {
+        provisioningProfiles: {
+          "com.libretro.dist.RetroArch" => "tvOS App Store",
+          "com.libretro.dist.RetroArch.RetroArchTopShelfExtension" => "tvOS Top Shelf App Store"
+        }
+      }
+    )
+    upload_to_testflight(
+      distribute_external: true,
+      groups: ['Invaders', 'Patreons'],
+      changelog: "Rebuild frontend from latest master branch and take latest build of all cores."
+    )
+  end
+end

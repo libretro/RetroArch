@@ -88,6 +88,9 @@ int intfstream_getc(intfstream_internal_t *intf);
 int64_t intfstream_seek(intfstream_internal_t *intf,
       int64_t offset, int whence);
 
+int64_t intfstream_truncate(intfstream_internal_t *intf,
+      uint64_t len);
+
 void intfstream_rewind(intfstream_internal_t *intf);
 
 int64_t intfstream_tell(intfstream_internal_t *intf);
@@ -105,6 +108,8 @@ int intfstream_flush(intfstream_internal_t *intf);
 uint32_t intfstream_get_offset_to_start(intfstream_internal_t *intf);
 
 uint32_t intfstream_get_frame_size(intfstream_internal_t *intf);
+
+uint32_t intfstream_get_first_sector(intfstream_internal_t* intf);
 
 bool intfstream_is_compressed(intfstream_internal_t *intf);
 

@@ -136,41 +136,43 @@ static void psp_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
-   int    val  = 0;
-   int    axis = -1;
-   bool is_neg = false;
-   bool is_pos = false;
-
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      axis   = AXIS_NEG_GET(joyaxis);
-      is_neg = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_NEG_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val < 0)
+         return val;
    }
    else if (AXIS_POS_GET(joyaxis) < 4)
    {
-      axis   = AXIS_POS_GET(joyaxis);
-      is_pos = true;
+      int16_t val  = 0;
+      int16_t axis = AXIS_POS_GET(joyaxis);
+      switch (axis)
+      {
+         case 0:
+         case 1:
+            val = analog_state[port][0][axis];
+            break;
+         case 2:
+         case 3:
+            val = analog_state[port][1][axis - 2];
+            break;
+      }
+      if (val > 0)
+         return val;
    }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-      case 1:
-         val = analog_state[port][0][axis];
-         break;
-      case 2:
-      case 3:
-         val = analog_state[port][1][axis - 2];
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   return val;
+   return 0;
 }
 
 static int16_t psp_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -322,10 +324,6 @@ static void psp_joypad_poll(void)
          }
       }
 #endif
-#ifdef HAVE_KERNEL_PRX
-      state_tmp.Buttons = (state_tmp.Buttons & 0x0000FFFF)
-         | (read_system_buttons() & 0xFFFF0000);
-#endif
 
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
@@ -352,12 +350,6 @@ static void psp_joypad_poll(void)
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGRX(state_tmp)-128) * 256;
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGRY(state_tmp)-128) * 256;
 #endif
-
-#ifdef HAVE_KERNEL_PRX
-      if (STATE_BUTTON(state_tmp) & PSP_CTRL_NOTE)
-         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
-#endif
-
       for (j = 0; j < 2; j++)
          for (k = 0; k < 2; k++)
             if (analog_state[i][j][k] == -0x8000)
@@ -376,7 +368,7 @@ static bool psp_joypad_rumble(unsigned pad,
 #ifdef VITA
    if (psp2_model != SCE_KERNEL_MODEL_VITATV)
       return false;
-   if(pad >= DEFAULT_MAX_PADS)
+   if (pad >= DEFAULT_MAX_PADS)
       return false;
    switch (effect)
    {
@@ -432,7 +424,9 @@ input_device_driver_t psp_joypad = {
    psp_joypad_axis,
    psp_joypad_poll,
    psp_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    psp_joypad_name,
 #ifdef VITA
    "vita",

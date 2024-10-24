@@ -30,10 +30,9 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../retroarch.h"
-#include "../file_path_special.h"
 #include "../gfx/font_driver.h"
 
-RETRO_BEGIN_DECLS
+#define GFX_SHADOW_ALPHA 0.75f
 
 /* Number of pixels corner-to-corner on a 1080p
  * display:
@@ -64,7 +63,17 @@ RETRO_BEGIN_DECLS
  * so that we don't have to render the display graphics per-frame
  * unless a change has happened.
  * */
-#define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || p_disp->framebuf_dirty)
+#define GFX_DISPLAY_GET_UPDATE_PENDING(p_anim, p_disp) (ANIM_IS_ACTIVE(p_anim) || (p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
+
+
+RETRO_BEGIN_DECLS
+
+enum gfx_display_flags
+{
+   GFX_DISP_FLAG_HAS_WINDOWED     = (1 << 0),
+   GFX_DISP_FLAG_MSG_FORCE        = (1 << 1),
+   GFX_DISP_FLAG_FB_DIRTY         = (1 << 2)
+};
 
 enum menu_driver_id_type
 {
@@ -72,11 +81,8 @@ enum menu_driver_id_type
    MENU_DRIVER_ID_RGUI,
    MENU_DRIVER_ID_OZONE,
    MENU_DRIVER_ID_GLUI,
-   MENU_DRIVER_ID_XMB,
-   MENU_DRIVER_ID_XUI,
-   MENU_DRIVER_ID_STRIPES
+   MENU_DRIVER_ID_XMB
 };
-
 
 enum gfx_display_prim_type
 {
@@ -94,7 +100,8 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_VULKAN,
    GFX_VIDEO_DRIVER_METAL,
    GFX_VIDEO_DRIVER_DIRECT3D8,
-   GFX_VIDEO_DRIVER_DIRECT3D9,
+   GFX_VIDEO_DRIVER_DIRECT3D9_CG,
+   GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    GFX_VIDEO_DRIVER_DIRECT3D10,
    GFX_VIDEO_DRIVER_DIRECT3D11,
    GFX_VIDEO_DRIVER_DIRECT3D12,
@@ -102,13 +109,9 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_CTR,
    GFX_VIDEO_DRIVER_WIIU,
    GFX_VIDEO_DRIVER_GDI,
-   GFX_VIDEO_DRIVER_SWITCH
+   GFX_VIDEO_DRIVER_SWITCH,
+   GFX_VIDEO_DRIVER_RSX
 };
-
-typedef struct gfx_display_frame_info
-{
-   bool shadows_enable;
-} gfx_display_frame_info_t;
 
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
 
@@ -133,11 +136,7 @@ typedef struct gfx_display_ctx_driver
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */
    const float *(*get_default_tex_coords)(void);
-   /* Initialize the first compatible font driver for this menu driver. */
-   bool (*font_init_first)(
-         void **font_handle, void *video_data,
-         const char *font_path, float font_size,
-         bool is_threaded);
+   enum font_driver_render_api  font_type;
    enum gfx_display_driver_type type;
    const char *ident;
    bool handles_transform;
@@ -170,16 +169,6 @@ struct gfx_display_ctx_draw
    enum gfx_display_prim_type prim_type;
    bool pipeline_active;
 };
-
-typedef struct gfx_display_ctx_rotate_draw
-{
-   math_matrix_4x4 *matrix;
-   float rotation;
-   float scale_x;
-   float scale_y;
-   float scale_z;
-   bool scale_enable;
-} gfx_display_ctx_rotate_draw_t;
 
 typedef struct gfx_display_ctx_coord_draw
 {
@@ -218,9 +207,7 @@ struct gfx_display
 
    enum menu_driver_id_type menu_driver_id;
 
-   bool has_windowed;
-   bool msg_force;
-   bool framebuf_dirty;
+   uint8_t flags;
 };
 
 void gfx_display_free(void);
@@ -243,12 +230,6 @@ void gfx_display_draw_text(
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
 
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float font_size,
-      bool video_is_threaded);
-
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,
@@ -256,15 +237,6 @@ void gfx_display_scissor_begin(
       unsigned video_height,
       int x, int y, unsigned width, unsigned height);
 
-void gfx_display_font_free(font_data_t *font);
-
-void gfx_display_set_width(unsigned width);
-void gfx_display_get_fb_size(unsigned *fb_width, unsigned *fb_height,
-      size_t *fb_pitch);
-void gfx_display_set_height(unsigned height);
-void gfx_display_set_framebuffer_pitch(size_t pitch);
-
-void gfx_display_set_msg_force(bool state);
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
@@ -296,18 +268,6 @@ void gfx_display_draw_quad(
       float *color,
       uintptr_t *texture);
 
-void gfx_display_draw_polygon(
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x1, int y1,
-      int x2, int y2,
-      int x3, int y3,
-      int x4, int y4,
-      unsigned width, unsigned height,
-      float *color);
-
 void gfx_display_draw_texture_slice(
       gfx_display_t *p_disp,
       void *userdata,
@@ -316,28 +276,40 @@ void gfx_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
-      float *color, unsigned offset, float scale_factor, uintptr_t texture);
+      float *color, unsigned offset, float scale_factor, uintptr_t texture,
+      math_matrix_4x4 *mymat);
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
-      gfx_display_ctx_rotate_draw_t *draw, void *data);
+      math_matrix_4x4 *matrix, float cosine, float sine, void *data);
 
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
       char* fontpath, float font_size, bool is_threaded);
 
 bool gfx_display_reset_textures_list(
-      const char *texture_path, const char *iconpath,
+      const char *texture_path,
+      const char *iconpath,
+      uintptr_t *item,
+      enum texture_filter_type filter_type,
+      unsigned *width,
+      unsigned *height);
+
+bool gfx_display_reset_icon_texture(
+      const char *texture_path,
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height);
+      
+bool gfx_display_reset_textures_list_buffer(
+        uintptr_t *item,
+        enum texture_filter_type filter_type,
+        void* buffer,
+        unsigned buffer_len,
+        enum image_type_enum image_type,
+        unsigned *width,
+        unsigned *height);
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
-
-float gfx_display_get_adjusted_scale(
-      gfx_display_t *p_disp,
-      float base_scale, float scale_factor, unsigned width);
-
-float gfx_display_get_dpi_scale_internal(unsigned width, unsigned height);
 
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
@@ -350,18 +322,17 @@ void gfx_display_deinit_white_texture(void);
 
 void gfx_display_init_white_texture(void);
 
-bool gfx_display_driver_exists(const char *s);
-
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 
 extern gfx_display_ctx_driver_t gfx_display_ctx_gl;
-extern gfx_display_ctx_driver_t gfx_display_ctx_gl_core;
+extern gfx_display_ctx_driver_t gfx_display_ctx_gl3;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gl1;
 extern gfx_display_ctx_driver_t gfx_display_ctx_vulkan;
 extern gfx_display_ctx_driver_t gfx_display_ctx_metal;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d8;
-extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9;
+extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg;
+extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d10;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d11;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d12;
@@ -370,6 +341,7 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_ctr;
 extern gfx_display_ctx_driver_t gfx_display_ctx_wiiu;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gdi;
 extern gfx_display_ctx_driver_t gfx_display_ctx_switch;
+extern gfx_display_ctx_driver_t gfx_display_ctx_rsx;
 
 RETRO_END_DECLS
 

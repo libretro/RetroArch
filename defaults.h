@@ -35,16 +35,16 @@ enum default_dirs
    DEFAULT_DIR_AUDIO_FILTER,
    DEFAULT_DIR_VIDEO_FILTER,
    DEFAULT_DIR_ASSETS,
+#ifdef _3DS
+   DEFAULT_DIR_BOTTOM_ASSETS,
+#endif
    DEFAULT_DIR_CORE,
    DEFAULT_DIR_CORE_INFO,
    DEFAULT_DIR_OVERLAY,
-#ifdef HAVE_VIDEO_LAYOUT
-   DEFAULT_DIR_VIDEO_LAYOUT,
-#endif
+   DEFAULT_DIR_OSK_OVERLAY,
    DEFAULT_DIR_PORT,
    DEFAULT_DIR_SHADER,
    DEFAULT_DIR_SAVESTATE,
-   DEFAULT_DIR_RESAMPLER,
    DEFAULT_DIR_SRAM,
    DEFAULT_DIR_SCREENSHOT,
    DEFAULT_DIR_SYSTEM,
@@ -59,7 +59,6 @@ enum default_dirs
    DEFAULT_DIR_WALLPAPERS,
    DEFAULT_DIR_THUMBNAILS,
    DEFAULT_DIR_DATABASE,
-   DEFAULT_DIR_CURSOR,
    DEFAULT_DIR_CHEATS,
    DEFAULT_DIR_RECORD_CONFIG,
    DEFAULT_DIR_RECORD_OUTPUT,
@@ -81,15 +80,16 @@ struct defaults
 #endif
 #endif
    int settings_out_latency;
+   int settings_in_latency;
 #ifdef HAVE_MENU
    unsigned menu_materialui_menu_color_theme;
 #endif
 
    float settings_video_refresh_rate;
 
-   char dirs [DEFAULT_DIR_LAST + 1][PATH_MAX_LENGTH];
+   char dirs [DEFAULT_DIR_LAST + 1][DIR_MAX_LENGTH];
    char path_config[PATH_MAX_LENGTH];
-   char path_buildbot_server_url[255];
+   char path_buildbot_server_url[NAME_MAX_LENGTH];
    char settings_menu[32];
 
 #ifdef HAVE_MENU

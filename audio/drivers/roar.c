@@ -17,13 +17,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <errno.h>
-
 #include <roaraudio.h>
 
 #include <boolean.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 typedef struct

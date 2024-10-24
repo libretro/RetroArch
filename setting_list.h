@@ -38,7 +38,6 @@ enum setting_type
    ST_DIR,
    ST_STRING,
    ST_STRING_OPTIONS,
-   ST_HEX,
    ST_BIND,
    ST_GROUP,
    ST_SUB_GROUP,
@@ -70,18 +69,23 @@ enum ui_setting_type
 
 enum setting_flags
 {
-   SD_FLAG_NONE           = 0,
-   SD_FLAG_PATH_DIR       = (1 << 0),
-   SD_FLAG_PATH_FILE      = (1 << 1),
-   SD_FLAG_ALLOW_EMPTY    = (1 << 2),
-   SD_FLAG_HAS_RANGE      = (1 << 3),
-   SD_FLAG_ALLOW_INPUT    = (1 << 4),
-   SD_FLAG_IS_DRIVER      = (1 << 5),
-   SD_FLAG_EXIT           = (1 << 6),
-   SD_FLAG_CMD_APPLY_AUTO = (1 << 7),
-   SD_FLAG_BROWSER_ACTION = (1 << 8),
-   SD_FLAG_ADVANCED       = (1 << 9),
-   SD_FLAG_LAKKA_ADVANCED = (1 << 10)
+   SD_FLAG_NONE             = 0,
+   SD_FLAG_PATH_DIR         = (1 << 0),
+   SD_FLAG_PATH_FILE        = (1 << 1),
+   SD_FLAG_ALLOW_EMPTY      = (1 << 2),
+   SD_FLAG_HAS_RANGE        = (1 << 3),
+   SD_FLAG_ALLOW_INPUT      = (1 << 4),
+   SD_FLAG_IS_DRIVER        = (1 << 5),
+   SD_FLAG_EXIT             = (1 << 6),
+   SD_FLAG_CMD_APPLY_AUTO   = (1 << 7),
+   SD_FLAG_BROWSER_ACTION   = (1 << 8),
+   SD_FLAG_ADVANCED         = (1 << 9),
+   SD_FLAG_LAKKA_ADVANCED   = (1 << 10),
+   SD_FLAG_ENFORCE_MINRANGE = (1 << 11),
+   SD_FLAG_ENFORCE_MAXRANGE = (1 << 12),
+   SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION = (1 << 13),
+   SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED      = (1 << 14),
+   SD_FLAG_DEFAULT_VALUE    = (1 << 15)
 };
 
 enum settings_free_flags
@@ -112,12 +116,9 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
-   double               min;
-   double               max;
 
-   uint64_t             flags;
-   uint64_t             free_flags;
-
+   float               min;
+   float               max;
    struct
    {
       const char     *off_label;
@@ -194,44 +195,12 @@ struct rarch_setting
    enum msg_hash_enums  enum_value_idx;
    enum setting_type    type;
 
+   uint16_t             flags;
+
    int16_t              offset_by;
+   uint8_t              free_flags;
    uint8_t              index;
-
-   bool                 cmd_trigger_event_triggered;
-   bool                 dont_use_enum_idx_representation;
-   bool                 enforce_minrange;
-   bool                 enforce_maxrange;
 };
-
-/**
- * setting_set_with_string_representation:
- * @setting            : pointer to setting
- * @value              : value for the setting (string)
- *
- * Set a settings' value with a string. It is assumed
- * that the string has been properly formatted.
- **/
-int setting_set_with_string_representation(
-      rarch_setting_t* setting, const char *value);
-
-unsigned setting_get_bind_type(rarch_setting_t *setting);
-
-int setting_string_action_start_generic(rarch_setting_t *setting);
-
-int setting_generic_action_ok_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-
-int setting_generic_action_start_default(rarch_setting_t *setting);
-
-void setting_get_string_representation_size_in_mb(rarch_setting_t *setting,
-      char *s, size_t len);
-
-int setting_uint_action_left_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_right_with_refresh(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_left_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-int setting_uint_action_right_default(rarch_setting_t *setting, size_t idx, bool wraparound);
-
-void setting_get_string_representation_uint(rarch_setting_t *setting, char *s, size_t len);
-void setting_get_string_representation_hex_and_uint(rarch_setting_t *setting, char *s, size_t len);
 
 RETRO_END_DECLS
 

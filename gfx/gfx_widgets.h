@@ -20,6 +20,7 @@
 #include "../config.h"
 #endif
 
+#include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
@@ -51,6 +52,8 @@
 #endif
 #define TEXT_COLOR_FAINT 0x878787FF
 
+RETRO_BEGIN_DECLS
+
 enum gfx_widgets_icon
 {
    MENU_WIDGETS_ICON_PAUSED = 0,
@@ -60,6 +63,8 @@ enum gfx_widgets_icon
 
    MENU_WIDGETS_ICON_HOURGLASS,
    MENU_WIDGETS_ICON_CHECK,
+   MENU_WIDGETS_ICON_ADD,
+   MENU_WIDGETS_ICON_EXIT,
 
    MENU_WIDGETS_ICON_INFO,
 
@@ -85,6 +90,45 @@ enum notification_show_screenshot_flash
    NOTIFICATION_SHOW_SCREENSHOT_FLASH_LAST
 };
 
+enum cheevos_appearance_anchor
+{
+   CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT = 0,
+   CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
+   CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
+   CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
+   CHEEVOS_APPEARANCE_ANCHOR_LAST
+};
+
+enum disp_widget_flags_enum
+{
+   DISPWIDG_FLAG_TASK_FINISHED             = (1 << 0),
+   DISPWIDG_FLAG_TASK_ERROR                = (1 << 1),
+   DISPWIDG_FLAG_TASK_CANCELLED            = (1 << 2),
+   DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED  = (1 << 3),
+   /* Is it currently doing the fade out animation ? */
+   DISPWIDG_FLAG_DYING                     = (1 << 4),
+   /* Has the timer expired ? if so, should be set to dying */
+   DISPWIDG_FLAG_EXPIRED                   = (1 << 5),
+   /* Unfold animation */
+   DISPWIDG_FLAG_UNFOLDED                  = (1 << 6),
+   DISPWIDG_FLAG_UNFOLDING                 = (1 << 7),
+   /* Color style */
+   DISPWIDG_FLAG_POSITIVE                  = (1 << 8),
+   DISPWIDG_FLAG_NEGATIVE                  = (1 << 9)
+};
+
+/* There can only be one message animation at a time to
+ * avoid confusing users */
+enum dispgfx_widget_flags
+{
+   DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS = (1 << 0),
+   DISPGFX_WIDGET_FLAG_PERSISTING          = (1 << 1),
+   DISPGFX_WIDGET_FLAG_MOVING              = (1 << 2),
+   DISPGFX_WIDGET_FLAG_INITED              = (1 << 3)
+};
+
 /* This structure holds all objects + metadata
  * corresponding to a particular font */
 typedef struct
@@ -107,22 +151,14 @@ typedef struct
    gfx_widget_font_data_t msg_queue;
 } gfx_widget_fonts_t;
 
-typedef struct cheevo_popup
-{
-   char* title;
-   uintptr_t badge;
-} cheevo_popup;
-
 typedef struct disp_widget_msg
 {
    char *msg;
    char *msg_new;
    retro_task_t *task_ptr;
-   /* Used to detect title change */
-   char *task_title_ptr;
 
    uint32_t task_ident;
-   unsigned msg_len;
+   size_t   msg_len;
    unsigned duration;
    unsigned text_height;
    unsigned width;
@@ -132,24 +168,13 @@ typedef struct disp_widget_msg
    float alpha;
    float unfold;
    float hourglass_rotation;
-   gfx_timer_t hourglass_timer; /* float alignment */
-   gfx_timer_t expiration_timer; /* float alignment */
+   float hourglass_timer; /* float alignment */
+   float expiration_timer; /* float alignment */
 
+   uint16_t flags;
    int8_t task_progress;
    /* How many tasks have used this notification? */
    uint8_t task_count;
-
-   bool task_finished;
-   bool task_error;
-   bool task_cancelled;
-   bool expiration_timer_started;
-   /* Is it currently doing the fade out animation ? */
-   bool dying;
-   /* Has the timer expired ? if so, should be set to dying */
-   bool expired;
-   /* Unfold animation */
-   bool unfolded;
-   bool unfolding;
 } disp_widget_msg_t;
 
 typedef struct dispgfx_widget
@@ -192,6 +217,7 @@ typedef struct dispgfx_widget
    unsigned generic_message_height;
 
    unsigned msg_queue_height;
+   unsigned msg_queue_padding;
    unsigned msg_queue_spacing;
    unsigned msg_queue_rect_start_x;
    unsigned msg_queue_internal_icon_size;
@@ -218,18 +244,23 @@ typedef struct dispgfx_widget
    unsigned ai_service_overlay_height;
 #endif
 
-   char gfx_widgets_status_text[255];
+   uint8_t flags;
 
-   /* There can only be one message animation at a time to 
-    * avoid confusing users */
-   bool widgets_moving;
-   bool widgets_inited;
-   bool msg_queue_has_icons;
+   char gfx_widgets_status_text[NAME_MAX_LENGTH];
+   char assets_pkg_dir[DIR_MAX_LENGTH];
+   char xmb_path[PATH_MAX_LENGTH];                /* TODO/FIXME - decouple from XMB */
+   char ozone_path[PATH_MAX_LENGTH];              /* TODO/FIXME - decouple from Ozone */
+   char ozone_regular_font_path[PATH_MAX_LENGTH]; /* TODO/FIXME - decouple from Ozone */
+   char ozone_bold_font_path[PATH_MAX_LENGTH];    /* TODO/FIXME - decouple from Ozone */
+
+   char monochrome_png_path[PATH_MAX_LENGTH];
+   char gfx_widgets_path[PATH_MAX_LENGTH];
+
+   bool active;
 } dispgfx_widget_t;
 
-
 /* A widget */
-/* TODO: cleanup all unused parameters */
+/* TODO/FIXME: cleanup all unused parameters */
 struct gfx_widget
 {
    /* called when the widgets system is initialized
@@ -287,7 +318,9 @@ void gfx_widgets_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      float rotation, float scale_factor,
+      float radians,
+      float cosine,
+      float sine,
       float *color);
 
 void gfx_widgets_draw_text(
@@ -306,7 +339,6 @@ void gfx_widgets_flush_text(
 typedef struct gfx_widget gfx_widget_t;
 
 bool gfx_widgets_init(
-      void *data,
       void *data_disp,
       void *data_anim,
       void *settings_data,
@@ -315,10 +347,9 @@ bool gfx_widgets_init(
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path);
 
-void gfx_widgets_deinit(void *data, bool widgets_persisting);
+void gfx_widgets_deinit(bool widgets_persisting);
 
 void gfx_widgets_msg_queue_push(
-      void *data,
       retro_task_t *task, const char *msg,
       unsigned duration,
       char *title,
@@ -331,7 +362,6 @@ void gfx_widget_volume_update_and_show(float new_volume,
       bool mute);
 
 void gfx_widgets_iterate(
-      void *data,
       void *data_disp,
       void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
@@ -344,35 +374,32 @@ void gfx_widget_screenshot_taken(void *data,
 /* AI Service functions */
 #ifdef HAVE_TRANSLATE
 bool gfx_widgets_ai_service_overlay_load(
-      dispgfx_widget_t *p_dispwidget,
       char* buffer, unsigned buffer_len,
       enum image_type_enum image_type);
 
-void gfx_widgets_ai_service_overlay_unload(dispgfx_widget_t *p_dispwidget);
+void gfx_widgets_ai_service_overlay_unload(void);
 #endif
 
 #ifdef HAVE_CHEEVOS
-void gfx_widgets_push_achievement(const char *title, const char *badge);
+void gfx_widgets_update_cheevos_appearance(void);
+void gfx_widgets_push_achievement(const char *title, const char* subtitle, const char *badge);
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value);
+void gfx_widgets_clear_leaderboard_displays(void);
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge);
+void gfx_widgets_clear_challenge_displays(void);
+void gfx_widget_set_achievement_progress(const char* badge, const char* progress);
+void gfx_widget_set_cheevos_disconnect(bool visible);
+void gfx_widget_set_cheevos_set_loading(bool visible);
 #endif
 
-/* Warning: not thread safe! */
+/* TODO/FIXME/WARNING: Not thread safe! */
 void gfx_widget_set_generic_message(
-      void *data,
       const char *message, unsigned duration);
-
-/* Warning: not thread safe! */
 void gfx_widget_set_libretro_message(
-      void *data,
       const char *message, unsigned duration);
-
-/* Warning: not thread safe! */
-void gfx_widget_set_progress_message(void *data,
+void gfx_widget_set_progress_message(
       const char *message, unsigned duration,
       unsigned priority, int8_t progress);
-
-/* Warning: not thread safe! */
 bool gfx_widget_start_load_content_animation(void);
 
 /* All the functions below should be called in
@@ -380,7 +407,9 @@ bool gfx_widget_start_load_content_animation(void);
  * enable_menu_widgets to true for that driver */
 void gfx_widgets_frame(void *data);
 
-void *dispwidget_get_ptr(void);
+bool gfx_widgets_ready(void);
+
+dispgfx_widget_t *dispwidget_get_ptr(void);
 
 extern const gfx_widget_t gfx_widget_screenshot;
 extern const gfx_widget_t gfx_widget_volume;
@@ -389,9 +418,16 @@ extern const gfx_widget_t gfx_widget_libretro_message;
 extern const gfx_widget_t gfx_widget_progress_message;
 extern const gfx_widget_t gfx_widget_load_content_animation;
 
+#ifdef HAVE_NETWORKING
+extern const gfx_widget_t gfx_widget_netplay_chat;
+extern const gfx_widget_t gfx_widget_netplay_ping;
+#endif
+
 #ifdef HAVE_CHEEVOS
 extern const gfx_widget_t gfx_widget_achievement_popup;
 extern const gfx_widget_t gfx_widget_leaderboard_display;
 #endif
+
+RETRO_END_DECLS
 
 #endif

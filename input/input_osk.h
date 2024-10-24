@@ -43,11 +43,10 @@ enum osk_type
    OSK_HIRAGANA_PAGE2,
    OSK_KATAKANA_PAGE1,
    OSK_KATAKANA_PAGE2,
+   OSK_KOREAN_PAGE1,
 #endif
    OSK_TYPE_LAST
 };
-
-int input_event_get_osk_ptr(void);
 
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
@@ -56,14 +55,13 @@ void input_event_osk_append(
       unsigned *osk_last_codepoint_len,
       int ptr,
       bool show_symbol_pages,
-      const char *word);
+      const char *word,
+      size_t word_len);
 
 void osk_update_last_codepoint(
       unsigned *last_codepoint,
       unsigned *last_codepoint_len,
       const char *word);
-
-char **input_event_get_osk_grid(void);
 
 RETRO_END_DECLS
 

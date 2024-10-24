@@ -32,11 +32,11 @@
 
 struct tremolo_core
 {
-      float freq;
-      float depth;
-	float* wavetable;
-      int index;
-	int maxindex;
+   float *wavetable;
+   float freq;
+   float depth;
+   int index;
+   int maxindex;
 };
 
 struct tremolo
@@ -54,24 +54,25 @@ static void tremolo_free(void *data)
 
 static void tremolocore_init(struct tremolo_core *core,float depth,int samplerate,float freq)
 {
-      const double offset = 1. - depth / 2.;
-      unsigned i;
-      double env;
-      core->index = 0;
-	core->maxindex = samplerate/freq;
-	core->wavetable = malloc(core->maxindex*sizeof(float));
-	memset(core->wavetable, 0, core->maxindex * sizeof(float));
-	for (i = 0; i < core->maxindex; i++) {
-	env = freq * i / samplerate;
-	env = sin((M_PI*2) * fmod(env + 0.25, 1.0));
-	core->wavetable[i] = env * (1 - fabs(offset)) + offset;
-      }
+   double env;
+   unsigned i;
+   const double offset = 1. - depth / 2.;
+   core->index     = 0;
+   core->maxindex  = samplerate / freq;
+   core->wavetable = malloc(core->maxindex   * sizeof(float));
+   memset(core->wavetable, 0, core->maxindex * sizeof(float));
+   for (i = 0; i < core->maxindex; i++)
+   {
+      env                = freq * i / samplerate;
+      env                = sin((M_PI*2) * fmod(env + 0.25, 1.0));
+      core->wavetable[i] = env * (1 - fabs(offset)) + offset;
+   }
 }
 
 float tremolocore_core(struct tremolo_core *core,float in)
 {
-      core->index = core->index % core->maxindex;
-      return in * core->wavetable[core->index++];
+   core->index = core->index % core->maxindex;
+   return in * core->wavetable[core->index++];
 }
 
 static void tremolo_process(void *data, struct dspfilter_output *output,
@@ -81,16 +82,15 @@ static void tremolo_process(void *data, struct dspfilter_output *output,
    float *out;
    struct tremolo *tre = (struct tremolo*)data;
 
-   output->samples         = input->samples;
-   output->frames          = input->frames;
-   out                     = output->samples;
+   output->samples     = input->samples;
+   output->frames      = input->frames;
+   out                 = output->samples;
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
-      float in[2] = { out[0], out[1] };
-
-      out[0] = tremolocore_core(&tre->left, in[0]);
-      out[1] = tremolocore_core(&tre->right, in[1]);
+      float in[2]      = { out[0], out[1] };
+      out[0]           = tremolocore_core(&tre->left, in[0]);
+      out[1]           = tremolocore_core(&tre->right, in[1]);
    }
 }
 
@@ -98,7 +98,7 @@ static void *tremolo_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    float freq, depth;
-   struct tremolo *tre   = (struct tremolo*)calloc(1, sizeof(*tre));
+   struct tremolo *tre = (struct tremolo*)calloc(1, sizeof(*tre));
    if (!tre)
       return NULL;
 
@@ -125,7 +125,6 @@ static const struct dspfilter_implementation tremolo_plug = {
 
 const struct dspfilter_implementation *dspfilter_get_implementation(dspfilter_simd_mask_t mask)
 {
-   (void)mask;
    return &tremolo_plug;
 }
 

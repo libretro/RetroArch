@@ -20,7 +20,7 @@
 #include <stdint.h>
 
 #include "switch_audio_compat.h"
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_LIBNX

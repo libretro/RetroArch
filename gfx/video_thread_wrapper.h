@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <rthreads/rthreads.h>
+#include <retro_miscellaneous.h>
 
 #include "font_driver.h"
 
@@ -60,7 +61,7 @@ enum thread_cmd
    CMD_POKE_SET_HDR_MAX_NITS,
    CMD_POKE_SET_HDR_PAPER_WHITE_NITS,
    CMD_POKE_SET_HDR_CONTRAST,
-   CMD_POKE_SET_HDR_EXPAND_GAMUT,   
+   CMD_POKE_SET_HDR_EXPAND_GAMUT,
 
    CMD_DUMMY = INT_MAX
 };
@@ -72,9 +73,7 @@ typedef bool (*custom_font_command_method_t)(const void **font_driver,
       float font_size, enum font_driver_render_api api,
       bool is_threaded);
 
-typedef struct thread_packet thread_packet_t;
-
-struct thread_packet
+typedef struct thread_packet
 {
    union
    {
@@ -165,7 +164,7 @@ struct thread_packet
       } hdr;
    } data;
    enum thread_cmd type;
-};
+} thread_packet_t;
 
 typedef struct thread_video
 {
@@ -190,7 +189,6 @@ typedef struct thread_video
 
    float *alpha_mod;
    slock_t *alpha_lock;
-   void (*send_and_wait)(struct thread_video *, thread_packet_t*);
 
    struct
    {
@@ -215,7 +213,6 @@ typedef struct thread_video
    thread_packet_t cmd_data;
    video_driver_t video_thread;
 
-
    enum thread_cmd send_cmd;
    enum thread_cmd reply_cmd;
 
@@ -229,11 +226,10 @@ typedef struct thread_video
       unsigned width;
       unsigned height;
       unsigned pitch;
-      char msg[255];
+      char msg[NAME_MAX_LENGTH];
       bool updated;
       bool within_thread;
    } frame;
-
 
    bool apply_state_changes;
 
@@ -274,7 +270,7 @@ bool video_thread_font_init(
       custom_font_command_method_t func,
       bool is_threaded);
 
-unsigned video_thread_texture_load(void *data,
+unsigned video_thread_texture_handle(void *data,
       custom_command_method_t func);
 
 RETRO_END_DECLS

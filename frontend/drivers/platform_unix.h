@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include "../../config.def.h"
 
@@ -144,7 +145,7 @@ struct android_app
    const ASensor* accelerometerSensor;
    const ASensor* gyroscopeSensor;
    uint64_t sensor_state_mask;
-   char current_ime[PATH_MAX_LENGTH];
+   char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
    int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
    int8_t hat_state[DEFAULT_MAX_PADS][2];
@@ -167,12 +168,20 @@ struct android_app
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
+   jmethodID doHapticFeedback;
 
    jmethodID isPlayStoreBuild;
    jmethodID getAvailableCores;
    jmethodID getInstalledCores;
    jmethodID downloadCore;
    jmethodID deleteCore;
+
+   jmethodID getVolumeCount;
+   jmethodID getVolumePath;
+   jmethodID inputGrabMouse;
+
+   jmethodID isScreenReaderEnabled;
+   jmethodID accessibilitySpeak;
 
    struct
    {
@@ -286,9 +295,7 @@ enum
     */
    APP_CMD_DESTROY,
 
-   APP_CMD_REINIT_DONE,
-
-   APP_CMD_VIBRATE_KEYPRESS
+   APP_CMD_REINIT_DONE
 };
 
 #define JNI_EXCEPTION(env) \
@@ -358,9 +365,10 @@ extern JNIEnv *jni_thread_getenv(void);
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
-void android_dpi_get_density(char *s, size_t len);
-
 extern struct android_app *g_android;
+
+bool is_screen_reader_enabled(void);
+
 #endif
 
 #endif

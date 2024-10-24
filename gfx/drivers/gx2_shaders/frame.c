@@ -31,7 +31,7 @@ static struct
       CALL_FS NO_BARRIER,
       ALU(32, 18) KCACHE0(CB1, _0_15),
       EXP_DONE(POS0,   _R1, _x, _y, _0, _1),
-      EXP_DONE(PARAM0, _R2, _x, _y, _z, _z) NO_BARRIER
+      (EXP_DONE(PARAM0, _R2, _x, _y, _z, _z) NO_BARRIER)
       END_OF_PROGRAM
    },
    {

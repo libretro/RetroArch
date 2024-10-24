@@ -52,6 +52,7 @@ typedef struct
    int16_t mouse_wd;
    int16_t mouse_wl;
    int16_t mouse_wr;
+   bool mouse_grabbed;
 } cocoa_input_data_t;
 
 #endif

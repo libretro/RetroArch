@@ -222,8 +222,19 @@ int ssl_socket_connect(void *state_data,
    struct ssl_state *state = (struct ssl_state*)state_data;
    unsigned bearstate;
 
-   if (socket_connect(state->fd, data, timeout_enable))
-      return -1;
+   if (timeout_enable)
+   {
+      if (!socket_connect_with_timeout(state->fd, data, 5000))
+         return -1;
+      /* socket_connect_with_timeout makes the socket non-blocking. */
+      if (!socket_set_block(state->fd, true))
+         return -1;
+   }
+   else
+   {
+      if (socket_connect(state->fd, data))
+         return -1;
+   }
 
    for (;;)
    {

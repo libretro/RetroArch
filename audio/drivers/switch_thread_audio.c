@@ -28,7 +28,8 @@
 #endif
 
 #include <queues/fifo_queue.h>
-#include "../../retroarch.h"
+
+#include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #include "../../tasks/tasks_internal.h"
@@ -273,7 +274,7 @@ fail_audio_output:
 fail_audio_ipc:
    switch_audio_ipc_finalize();
 fail:
-   free(swa); // freeing a null ptr is valid
+   free(swa); /* freeing a NULL ptr is valid */
    return NULL;
 }
 

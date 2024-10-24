@@ -16,8 +16,9 @@
 #ifndef _KEYBOARD_EVENT_ANDROID_H
 #define _KEYBOARD_EVENT_ANDROID_H
 
-// The list of defined Android keycodes is incomplete in SDK version 12 and lower.
-// If using an SDK lower than 13 then add missing keycodes here
+/* The list of defined Android keycodes is incomplete in SDK version 12
+ * and lower.
+ * If using an SDK lower than 13, add missing keycodes here */
 #if __ANDROID_API__ < 13
 
 /*
@@ -120,7 +121,7 @@ enum {
 };
 
 /*
- * Meta key / modifer state.
+ * Meta key / modifier state.
  */
 enum {
     AMETA_CTRL_ON = 0x1000,

@@ -31,7 +31,7 @@ static struct
       CALL_FS NO_BARRIER,
       ALU(32, 26) KCACHE0(CB1, _0_15) KCACHE1(CB2, _0_15),
       MEM_RING(WRITE( 0), _R1, _xyzw, ARRAY_SIZE(1), ELEM_SIZE(3)) BURSTCNT(1),
-      MEM_RING(WRITE(32), _R0, _xyzw, ARRAY_SIZE(0), ELEM_SIZE(3)) NO_BARRIER
+      (MEM_RING(WRITE(32), _R0, _xyzw, ARRAY_SIZE(0), ELEM_SIZE(3)) NO_BARRIER)
       END_OF_PROGRAM
    },
    {

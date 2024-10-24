@@ -5,7 +5,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.1.0'
+    classpath 'com.android.tools.build:gradle:4.2.0'
   }
 }
 
@@ -25,8 +25,8 @@ allprojects {
 apply plugin: 'com.android.application'
 
 android {
-  compileSdkVersion 29
-  buildToolsVersion "29.0.3"
+  compileSdkVersion 30
+  buildToolsVersion "30.0.3"
   ndkVersion "22.0.7026061"
 
   flavorDimensions "variant"
@@ -72,7 +72,7 @@ android {
     }
     playStoreNormal {
       minSdkVersion 21
-      targetSdkVersion 29
+      targetSdkVersion 30
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -83,7 +83,7 @@ android {
     }
     playStorePlus {
       minSdkVersion 26
-      targetSdkVersion 29
+      targetSdkVersion 30
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -104,8 +104,21 @@ android {
       jni.srcDirs = []
       res.srcDirs = ['res', '../phoenix-common/res']
     }
+    normal {
+      java.srcDirs += ['../play-core-stub']
+    }
     aarch64 {
+      java.srcDirs += ['../play-core-stub']
       res.srcDirs = ['res', 'res64']
+    }
+    ra32 {
+      java.srcDirs += ['../play-core-stub']
+    }
+    playStoreNormal {
+      java.srcDirs += ['../play-core-impl']
+    }
+    playStorePlus {
+      java.srcDirs += ['../play-core-impl']
     }
   }
 
@@ -140,8 +153,11 @@ android {
   }
 }
 
+def playCore = 'com.google.android.play:core:1.8.0'
+
 dependencies {
-  implementation 'com.google.android.play:core:1.8.0'
+  playStoreNormalImplementation playCore
+  playStorePlusImplementation playCore
 }
 
 def dynamicFeatures = file("dynamic_features.gradle")

@@ -19,48 +19,41 @@ cothread_t co_active()
 
 cothread_t co_create(unsigned int size, void (*entrypoint)(void))
 {
-  /* Similar scenario as with active_thread_id except there will only be one active_thread_id while there could be many
-   * new threads each with their own handle, so we create them on the heap instead and delete them manually when they're
-   * no longer needed in co_delete().
-   */
-  cothread_t handle = malloc(sizeof(cothread_t));
-  ee_thread_t thread;
+   /* Similar scenario as with active_thread_id except there will only be one active_thread_id while there could be many
+    * new threads each with their own handle, so we create them on the heap instead and delete them manually when they're
+    * no longer needed in co_delete().
+    */
+   ee_thread_t thread;
+   int32_t new_thread_id;
+   cothread_t handle       = malloc(sizeof(cothread_t));
+   void *threadStack       = (void *)malloc(size);
 
-  // u8 threadStack[size/8] __attribute__ ((aligned(16)));
-  void *threadStack = (void *)malloc(size);
+   if (!threadStack)
+      return -1;
 
-  if ( threadStack== NULL)
-	{
-		printf("libco: ERROR: creating threadStack\n");
-		return(-1);
-	}
+   thread.stack_size		   = size;
+   thread.gp_reg			   = &_gp;
+   thread.func				   = (void *)entrypoint;
+   thread.stack			   = threadStack;
+   thread.option			   = 0;
+   thread.initial_priority = 1;
 
-	thread.stack_size		= size;
-	thread.gp_reg			= &_gp;
-	thread.func				= (void *)entrypoint;
-	thread.stack			= threadStack;
-	thread.option			= 0;
-  thread.initial_priority = 1;
-
-  int32_t new_thread_id = CreateThread(&thread);
-	if (new_thread_id < 0)
-		printf("libco: ERROR: creating thread\n");
-
-  StartThread(new_thread_id, NULL);
-  *(uint32_t *)handle = new_thread_id;
-  return handle;
+   new_thread_id           = CreateThread(&thread);
+   StartThread(new_thread_id, NULL);
+   *(uint32_t *)handle     = new_thread_id;
+   return handle;
 }
 
 void co_delete(cothread_t handle)
 {
-  TerminateThread(*(uint32_t *)handle);
-	DeleteThread(*(uint32_t *)handle);
-  free(handle);
+   TerminateThread(*(uint32_t *)handle);
+   DeleteThread(*(uint32_t *)handle);
+   free(handle);
 }
 
 void co_switch(cothread_t handle)
 {
-  WakeupThread(*(uint32_t *)handle);
-  /* Sleep the currently active thread so the new thread can start */
-  SleepThread();
+   WakeupThread(*(uint32_t *)handle);
+   /* Sleep the currently active thread so the new thread can start */
+   SleepThread();
 }

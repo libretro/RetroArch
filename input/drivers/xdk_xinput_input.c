@@ -28,8 +28,6 @@
 #include <boolean.h>
 #include <libretro.h>
 
-#include "../../config.def.h"
-
 #include "../input_driver.h"
 
 static void xdk_input_free_input(void *data) { }
@@ -50,5 +48,6 @@ input_driver_t input_xinput = {
    xdk_input_get_capabilities,
    "xinput",
    NULL,                         /* grab_mouse */
+   NULL,
    NULL
 };

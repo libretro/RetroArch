@@ -57,7 +57,7 @@ int CALLBACK monitor_by_index(HMONITOR h_monitor, HDC, LPRECT, LPARAM data)
 	return true;
 }
 
-bool windows_display::init()
+bool windows_display::init(void*)
 {
 	char display[32] = {};
 

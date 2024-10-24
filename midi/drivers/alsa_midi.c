@@ -16,11 +16,11 @@
 #include <alsa/asoundlib.h>
 
 #include <libretro.h>
-#include <verbosity.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #include "../midi_driver.h"
+#include "../../verbosity.h"
 
 typedef struct
 {
@@ -157,7 +157,11 @@ static void alsa_midi_free(void *p)
    if (d)
    {
       if (d->seq)
+      {
+         snd_seq_drain_output(d->seq);
          snd_seq_close(d->seq);
+      }
+
       free(d);
    }
 }

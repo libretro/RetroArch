@@ -18,9 +18,8 @@
 #include <QAction>
 #include <QMenu>
 
-#include "filedropwidget.h"
-#include "settingswidgets.h"
-#include "playlistentrydialog.h"
+#include "qt_widgets.h"
+#include "qt_dialogs.h"
 #include "../ui_qt.h"
 
 #ifndef CXX_BUILD
@@ -33,6 +32,7 @@ extern "C" {
 #include "../../../config.h"
 #endif
 
+#include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
 #include "../../../configuration.h"
@@ -55,7 +55,7 @@ static inline void add_sublabel_and_whats_this(
 
    cbs.enum_idx = setting->enum_idx;
 
-   menu_cbs_init_bind_sublabel(&cbs, 0, 0, setting->type, setting->size);
+   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0, setting->type, setting->size);
 
    cbs.action_sublabel(0, 0, 0, 0, 0, tmp, sizeof(tmp));
 
@@ -290,11 +290,6 @@ CheckBox::CheckBox(rarch_setting_t *setting, QWidget *parent) :
    add_sublabel_and_whats_this(this, m_setting);
 }
 
-CheckBox::CheckBox(const char *setting, QWidget *parent) :
-   CheckBox(menu_setting_find(setting), parent)
-{
-}
-
 CheckBox::CheckBox(msg_hash_enums enum_idx, QWidget *parent) :
    CheckBox(menu_setting_find_enum(enum_idx), parent)
 {
@@ -340,11 +335,6 @@ CheckableSettingsGroup::CheckableSettingsGroup(rarch_setting_t *setting, QWidget
    }
 }
 
-CheckableSettingsGroup::CheckableSettingsGroup(const char *setting, QWidget *parent) :
-   CheckableSettingsGroup(menu_setting_find(setting), parent)
-{
-}
-
 CheckableSettingsGroup::CheckableSettingsGroup(msg_hash_enums enum_idx, QWidget *parent) :
    CheckableSettingsGroup(menu_setting_find_enum(enum_idx), parent)
 {
@@ -369,11 +359,6 @@ void CheckableSettingsGroup::paintEvent(QPaintEvent *event)
    }
 
    QGroupBox::paintEvent(event);
-}
-
-CheckableIcon::CheckableIcon(const char *setting, const QIcon &icon, QWidget *parent) :
-   CheckableIcon(menu_setting_find(setting), icon, parent)
-{
 }
 
 CheckableIcon::CheckableIcon(msg_hash_enums enum_idx, const QIcon &icon, QWidget *parent) :
@@ -429,11 +414,6 @@ StringLineEdit::StringLineEdit(rarch_setting_t *setting, QWidget *parent) :
    add_sublabel_and_whats_this(this, m_setting);
 }
 
-StringLineEdit::StringLineEdit(const char *setting, QWidget *parent) :
-   StringLineEdit(menu_setting_find(setting), parent)
-{
-}
-
 void StringLineEdit::onEditingFinished()
 {
    strlcpy(m_value, text().toUtf8().data(), m_setting->size);
@@ -472,11 +452,6 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
    add_sublabel_and_whats_this(this, m_setting);
 }
 
-StringComboBox::StringComboBox(const char *setting, QWidget *parent) :
-   StringComboBox(menu_setting_find(setting), parent)
-{
-}
-
 void StringComboBox::onCurrentTextChanged(const QString &text)
 {
    strlcpy(m_value, text.toUtf8().data(), sizeof(m_value));
@@ -495,8 +470,8 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.unsigned_integer)
 {
-   double min = setting->enforce_minrange ? setting->min : 0.00;
-   double max = setting->enforce_maxrange ? setting->max : 999.00;
+   float min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+   float max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 999.00f;
 
    populate(min, max);
 
@@ -529,7 +504,7 @@ void UIntComboBox::populate(double min, double max)
    {
       for (i = min; i <= max; i += step)
       {
-         char val_s[256];
+         char val_s[NAME_MAX_LENGTH];
          unsigned val = (unsigned)i;
 
          *m_setting->value.target.unsigned_integer = val;
@@ -562,11 +537,6 @@ UIntComboBox::UIntComboBox(msg_hash_enums enum_idx, double min, double max, QWid
 {
 }
 
-UIntComboBox::UIntComboBox(const char *setting, QWidget *parent) :
-   UIntComboBox(menu_setting_find(setting), parent)
-{
-}
-
 void UIntComboBox::onCurrentIndexChanged(int index)
 {
    Q_UNUSED(index);
@@ -587,8 +557,8 @@ UIntSpinBox::UIntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.unsigned_integer)
 {
-   setMinimum(setting->enforce_minrange ? setting->min : 0.00);
-   setMaximum(setting->enforce_maxrange ? setting->max : INT_MAX);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
 
    setSingleStep(setting->step);
 
@@ -628,8 +598,8 @@ SizeSpinBox::SizeSpinBox(rarch_setting_t *setting, unsigned scale, QWidget *pare
    ,m_value(setting->value.target.sizet)
    ,m_scale(scale)
 {
-   setMinimum(setting->enforce_minrange ? setting->min / m_scale : 0.00);
-   setMaximum(setting->enforce_maxrange ? setting->max / m_scale : INT_MAX);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min / m_scale : 0.00f);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max / m_scale : INT_MAX);
 
    setSingleStep(setting->step / m_scale);
 
@@ -671,7 +641,7 @@ UIntRadioButton::UIntRadioButton(msg_hash_enums enum_idx, unsigned value, QWidge
    ,m_target(m_setting->value.target.unsigned_integer)
    ,m_value(value)
 {
-   char val_s[256];
+   char val_s[NAME_MAX_LENGTH];
    unsigned orig_value = *m_setting->value.target.unsigned_integer;
 
    *m_setting->value.target.unsigned_integer = value;
@@ -724,16 +694,15 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    float i;
    unsigned orig_value = *setting->value.target.unsigned_integer;
    float          step = setting->step;
-   double          min = setting->enforce_minrange ? setting->min : 0.00;
-   double          max = setting->enforce_maxrange ? setting->max : UINT_MAX;
-
+   float           min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
+   float           max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : UINT_MAX;
    bool  checked_found = false;
 
    if (setting->get_string_representation)
    {
       for (i = min; i <= max; i += step)
       {
-         char val_s[256];
+         char val_s[NAME_MAX_LENGTH];
 
          *setting->value.target.unsigned_integer = i;
 
@@ -758,11 +727,6 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    connect(m_buttonGroup, SIGNAL(buttonClicked(int)), this, SLOT(onButtonClicked(int)));
 }
 
-UIntRadioButtons::UIntRadioButtons(const char *setting, QWidget *parent) :
-   UIntRadioButtons(menu_setting_find(setting), parent)
-{
-}
-
 UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
     UIntRadioButtons(menu_setting_find_enum(enum_idx), parent)
 {
@@ -780,8 +744,8 @@ IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.integer)
 {
-   setMinimum(setting->enforce_minrange ? setting->min : INT_MIN);
-   setMaximum(setting->enforce_maxrange ? setting->max : INT_MAX);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : INT_MIN);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
 
    setSingleStep(setting->step);
 
@@ -808,11 +772,6 @@ void IntSpinBox::paintEvent(QPaintEvent *event)
    QSpinBox::paintEvent(event);
 }
 
-FloatSpinBox::FloatSpinBox(const char *setting, QWidget *parent) :
-   FloatSpinBox(menu_setting_find(setting), parent)
-{
-}
-
 FloatSpinBox::FloatSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
     FloatSpinBox(menu_setting_find_enum(enum_idx), parent)
 {
@@ -830,8 +789,9 @@ FloatSpinBox::FloatSpinBox(rarch_setting_t *setting, QWidget *parent) :
    if (match.hasMatch())
       setDecimals(match.captured(1).toInt());
 
-   setMinimum(setting->enforce_minrange ? setting->min : 0.00);
-   setMaximum(setting->enforce_maxrange ? setting->max : 999.00);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max :
+         999.00f);
 
    setValue(*m_value);
    setSingleStep(setting->step);
@@ -873,11 +833,6 @@ PathButton::PathButton(rarch_setting_t *setting, QWidget *parent) :
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
 
    add_sublabel_and_whats_this(this, m_setting);
-}
-
-PathButton::PathButton(const char *setting, QWidget *parent) :
-   PathButton(menu_setting_find(setting), parent)
-{
 }
 
 QString PathButton::currentPath()
@@ -934,11 +889,6 @@ DirectorySelector::DirectorySelector(rarch_setting_t *setting, QWidget *parent) 
    connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
 }
 
-FileSelector::FileSelector(const char *setting, QWidget *parent) :
-   FileSelector(menu_setting_find(setting), parent)
-{
-}
-
 FileSelector::FileSelector(rarch_setting_t *setting, QWidget *parent) :
    QHBoxLayout(parent)
    ,m_lineEdit(new StringLineEdit(setting))
@@ -949,11 +899,6 @@ FileSelector::FileSelector(rarch_setting_t *setting, QWidget *parent) :
    addWidget(m_button);
 
    connect(m_button, SIGNAL(changed()), m_lineEdit, SLOT(update()));
-}
-
-FloatSlider::FloatSlider(const char *setting, QWidget *parent) :
-   FloatSlider(menu_setting_find(setting), parent)
-{
 }
 
 FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
@@ -967,10 +912,12 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
    if (match.hasMatch())
       m_precision = pow(10, match.captured(1).toInt());
    else
-      m_precision = pow(10, 3);
+      m_precision = 10 * 10 * 10;
 
-   setMinimum(setting->enforce_minrange ? setting->min * m_precision : 0.00 * m_precision);
-   setMaximum(setting->enforce_maxrange ? setting->max * m_precision : 999.00 * m_precision);
+   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min *
+         m_precision : 0.00f * m_precision);
+   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max *
+         m_precision : 999.00f * m_precision);
 
    setSingleStep(setting->step * m_precision);
 
@@ -1000,11 +947,6 @@ void FloatSlider::paintEvent(QPaintEvent *event)
    }
 
    QSlider::paintEvent(event);
-}
-
-FloatSliderAndSpinBox::FloatSliderAndSpinBox(const char *setting, QWidget *parent) :
-   FloatSliderAndSpinBox(menu_setting_find(setting), parent)
-{
 }
 
 FloatSliderAndSpinBox::FloatSliderAndSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
@@ -1042,7 +984,7 @@ BindButton::BindButton(rarch_setting_t *setting, QWidget *parent) :
    QPushButton(parent)
    ,m_setting(setting)
 {
-   char val_s[256];
+   char val_s[NAME_MAX_LENGTH];
 
    setting->get_string_representation(setting, val_s, sizeof(val_s));
 

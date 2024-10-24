@@ -29,6 +29,38 @@
 #include <stdlib.h>
 #include <encodings/base64.h>
 
+const static char* b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/* maps A=>0,B=>1.. */
+const static unsigned char unb64[]={
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,  62,   0,   0,   0,  63,  52,  53,
+ 54,  55,  56,  57,  58,  59,  60,  61,   0,   0,
+  0,   0,   0,   0,   0,   0,   1,   2,   3,   4,
+  5,   6,   7,   8,   9,  10,  11,  12,  13,  14,
+ 15,  16,  17,  18,  19,  20,  21,  22,  23,  24,
+ 25,   0,   0,   0,   0,   0,   0,  26,  27,  28,
+ 29,  30,  31,  32,  33,  34,  35,  36,  37,  38,
+ 39,  40,  41,  42,  43,  44,  45,  46,  47,  48,
+ 49,  50,  51,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+  0,   0,   0,   0,   0,   0,
+}; /* This array has 256 elements */
+
 /*
    Converts binary data of length=len to base64 characters.
    Length of the resultant string is stored in flen
@@ -36,24 +68,17 @@
 */
 char* base64(const void* binaryData, int len, int *flen)
 {
-   const unsigned char* bin          = (const unsigned char*) binaryData;
    char* res;
-  
-   int rc = 0; /* result counter */
    int byteNo; /* I need this after the loop */
-  
-   int modulusLen = len % 3 ;
-
+   const unsigned char* bin = (const unsigned char*) binaryData;
+   int rc                   = 0; /* result counter */
+   int modulusLen           = len % 3 ;
    /* 2 gives 1 and 1 gives 2, but 0 gives 0. */
-   int pad = ((modulusLen&1)<<1) + ((modulusLen&2)>>1);
+   int pad                  = ((modulusLen&1)<<1) + ((modulusLen&2)>>1);
 
-   *flen = 4*(len + pad)/3;
-   res = (char*) malloc(*flen + 1); /* and one for the null */
-   if (!res)
-   {
-      /* ERROR: base64 could not allocate enough memory. */
+   *flen                    = 4*(len + pad)/3;
+   if (!(res = (char*) malloc(*flen + 1))) /* and one for the NULL */
       return 0;
-   }
   
    for (byteNo=0; byteNo <= len-3; byteNo+=3)
    {
@@ -88,34 +113,29 @@ char* base64(const void* binaryData, int len, int *flen)
 
 unsigned char* unbase64(const char* ascii, int len, int *flen)
 {
-   const unsigned char *safeAsciiPtr = (const unsigned char*) ascii;
-   unsigned char *bin;
-   int cb                            = 0;
    int charNo;
+   unsigned char *bin;
+   const unsigned char *safeAsciiPtr = (const unsigned char*) ascii;
+   int cb                            = 0;
    int pad                           = 0;
 
-   if (len < 2) { /* 2 accesses below would be OOB. */
+   if (len < 2) /* 2 accesses below would be OOB (Out Of Bounds). */
+   {
       /* catch empty string, return NULL as result. */
-
       /* ERROR: You passed an invalid base64 string (too short). 
        * You get NULL back. */
       *flen = 0;
       return 0;
    }
 
-   if(safeAsciiPtr[len-1]=='=')
+   if (safeAsciiPtr[len-1]=='=')
       ++pad;
-   if(safeAsciiPtr[len-2]=='=')
+   if (safeAsciiPtr[len-2]=='=')
       ++pad;
   
    *flen = 3*len/4 - pad;
-   bin = (unsigned char*)malloc(*flen);
-
-   if (!bin)
-   {
-      /* ERROR: unbase64 could not allocate enough memory. */
+   if (!(bin = (unsigned char*)malloc(*flen)))
       return 0;
-   }
   
    for (charNo=0; charNo <= len-4-pad; charNo+=4)
    {

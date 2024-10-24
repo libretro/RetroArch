@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
        string_is_empty(out_file_path))
    {
       const char *in_file_name = path_basename(in_file_path);
-      char in_file_dir[PATH_MAX_LENGTH];
+      char in_file_dir[DIR_MAX_LENGTH];
 
       in_file_dir[0] = '\0';
 
@@ -157,10 +157,8 @@ int main(int argc, char *argv[])
          rand_str(tmp_str, sizeof(tmp_str) - 1);
          tmp_str[0] = '.';
 
-         out_file_path[0] = '\0';
-
          if (!string_is_empty(in_file_dir))
-            fill_pathname_join(out_file_path, in_file_dir,
+            fill_pathname_join_special(out_file_path, in_file_dir,
                   tmp_str, sizeof(out_file_path));
          else
             strlcpy(out_file_path, tmp_str, sizeof(out_file_path));

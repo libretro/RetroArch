@@ -18,6 +18,7 @@
 #define __COCOA_COMMON_SHARED_H
 
 #include <Foundation/Foundation.h>
+#include <QuartzCore/QuartzCore.h>
 
 #if defined(HAVE_COCOATOUCH)
 #include <UIKit/UIKit.h>
@@ -42,10 +43,39 @@
 #endif
 
 #if TARGET_OS_IOS
+@class EmulatorKeyboardController;
+
+#ifdef HAVE_IOS_TOUCHMOUSE
+@class EmulatorTouchMouseHandler;
+#endif
+
 @interface CocoaView : UIViewController
+
 #elif TARGET_OS_TV
 @interface CocoaView : GCEventViewController
 #endif
+
+#if TARGET_OS_IOS && defined(HAVE_IOS_CUSTOMKEYBOARD)
+@property(nonatomic,strong) EmulatorKeyboardController *keyboardController;
+@property(nonatomic,assign) unsigned int keyboardModifierState;
+-(void)toggleCustomKeyboard;
+#endif
+
+#ifdef HAVE_IOS_TOUCHMOUSE
+@property(nonatomic,strong) EmulatorTouchMouseHandler *mouseHandler;
+#endif
+
+#if defined(HAVE_IOS_SWIFT)
+@property(nonatomic,strong) UIView *helperBarView;
+#endif
+
+#if TARGET_OS_IOS
+@property(readwrite) BOOL shouldLockCurrentInterfaceOrientation;
+@property(readwrite) UIInterfaceOrientation lockInterfaceOrientation;
+#endif
+
+@property(nonatomic,readwrite) CADisplayLink *displayLink;
+
 + (CocoaView*)get;
 @end
 
@@ -58,6 +88,10 @@ void get_ios_version(int *major, int *minor);
 + (CocoaView*)get;
 #if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
 - (void)display;
+#endif
+
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+@property(nonatomic,readwrite) CADisplayLink *displayLink API_AVAILABLE(macos(14.0));
 #endif
 
 @end
@@ -111,7 +145,6 @@ void *cocoa_screen_get_chosen(void);
 float cocoa_screen_get_native_scale(void);
 #else
 float cocoa_screen_get_backing_scale_factor(void);
-void cocoa_update_title(void *data);
 #endif
 
 bool cocoa_get_metrics(

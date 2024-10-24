@@ -4,13 +4,14 @@
 #include <QButtonGroup>
 
 #include "qt_options.h"
-#include "viewoptionsdialog.h"
+#include "qt_dialogs.h"
 
 #ifndef CXX_BUILD
 extern "C" {
 #endif
 
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../../../gfx/video_display_server.h"
 #include "../../../input/input_driver.h"
@@ -48,35 +49,81 @@ AchievementsPage::AchievementsPage(QObject *parent) :
 QWidget *AchievementsPage::widget()
 {
    unsigned i;
-   QWidget               *widget     = new QWidget;
-   QVBoxLayout           *layout     = new QVBoxLayout;
-   enum msg_hash_enums check_setting = MENU_ENUM_LABEL_CHEEVOS_ENABLE;
-   CheckableSettingsGroup *group     = new CheckableSettingsGroup(check_setting);
-   settings_t *settings              = config_get_ptr();
-   file_list_t *list = (file_list_t*)calloc(1, sizeof(*list));
-   menu_displaylist_build_list(list, settings,
-         DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
+   QWidget             *widget = new QWidget;
+   QVBoxLayout         *layout = new QVBoxLayout;
+   settings_t*        settings = config_get_ptr();
+   CheckBox   *enabledCheckBox = new CheckBox(MENU_ENUM_LABEL_CHEEVOS_ENABLE);
+   file_list_t    *generalList = (file_list_t*)calloc(1, sizeof(*generalList));
+   file_list_t *appearanceList = (file_list_t*)calloc(1, sizeof(*appearanceList));
+   file_list_t *visibilityList = (file_list_t*)calloc(1, sizeof(*visibilityList));
 
-   for (i = 0; i < list->size; i++)
+   m_generalGroup              = new SettingsGroup("General");
+   m_appearanceGroup           = new SettingsGroup(msg_hash_to_str(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS));
+   m_visibilityGroup           = new SettingsGroup(msg_hash_to_str(
+      MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS));
+
+   menu_displaylist_build_list(generalList, settings,
+      DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST, true);
+
+   for (i = 0; i < generalList->size; i++)
    {
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-         file_list_get_actiondata_at_offset(list, i);
+         file_list_get_actiondata_at_offset(generalList, i);
 
-      if (cbs->enum_idx == check_setting)
+      if (cbs->enum_idx == MENU_ENUM_LABEL_CHEEVOS_ENABLE)
          continue;
 
-      group->add(cbs->enum_idx);
+      m_generalGroup->add(cbs->enum_idx);
    }
+   file_list_free(generalList);
 
-   file_list_free(list);
+   menu_displaylist_build_list(appearanceList, settings,
+      DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST, true);
 
-   layout->addWidget(group);
+   for (i = 0; i < appearanceList->size; i++)
+   {
+      menu_file_list_cbs_t* cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(appearanceList, i);
+
+      m_appearanceGroup->add(cbs->enum_idx);
+   }
+   file_list_free(appearanceList);
+
+   menu_displaylist_build_list(visibilityList, settings,
+      DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST, true);
+
+   for (i = 0; i < visibilityList->size; i++)
+   {
+      menu_file_list_cbs_t* cbs = (menu_file_list_cbs_t*)
+         file_list_get_actiondata_at_offset(visibilityList, i);
+
+      m_visibilityGroup->add(cbs->enum_idx);
+   }
+   file_list_free(visibilityList);
+
+   connect(enabledCheckBox, SIGNAL(stateChanged(int)),
+           this,            SLOT(onAchievementEnabledChanged(int)));
+
+   onAchievementEnabledChanged(enabledCheckBox->checkState());
+
+   layout->addWidget(enabledCheckBox);
+   layout->addWidget(m_generalGroup);
+   layout->addWidget(m_appearanceGroup);
+   layout->addWidget(m_visibilityGroup);
 
    layout->addStretch();
 
    widget->setLayout(layout);
 
    return widget;
+}
+
+void AchievementsPage::onAchievementEnabledChanged(int state)
+{
+   m_generalGroup->setDisabled(state == Qt::Unchecked);
+   m_appearanceGroup->setDisabled(state == Qt::Unchecked);
+   m_visibilityGroup->setDisabled(state == Qt::Unchecked);
 }
 
 AudioCategory::AudioCategory(QWidget *parent) :
@@ -210,7 +257,7 @@ QWidget *InputPage::widget()
       if (cbs->enum_idx == MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)
          break;
 
-      layout->add(cbs->enum_idx);
+      layout->add(menu_setting_find_enum(cbs->enum_idx));
    }
 
    file_list_free(list);
@@ -243,7 +290,7 @@ QWidget *HotkeyBindsPage::widget()
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
          file_list_get_actiondata_at_offset(list, i);
 
-      mainLayout->add(cbs->enum_idx);
+      mainLayout->add(menu_setting_find_enum(cbs->enum_idx));
    }
 
    file_list_free(list);
@@ -281,9 +328,9 @@ QWidget *UserBindsPage::widget()
       for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 20; retro_id++)
       {
          char descriptor[300];
-         const struct retro_keybind *keybind   = 
+         const struct retro_keybind *keybind   =
             &input_config_binds[p][retro_id];
-         const struct retro_keybind *auto_bind = 
+         const struct retro_keybind *auto_bind =
             (const struct retro_keybind*)
             input_config_get_bind_auto(p, retro_id);
 
@@ -338,11 +385,12 @@ LatencyPage::LatencyPage(QObject *parent) :
 
 QWidget *LatencyPage::widget()
 {
-   QWidget                         *widget = new QWidget;
-   FormLayout                      *layout = new FormLayout;
-   CheckableSettingsGroup *runAheadGpuSync = new CheckableSettingsGroup(MENU_ENUM_LABEL_RUN_AHEAD_ENABLED);
+   QWidget                       *widget = new QWidget;
+   FormLayout                    *layout = new FormLayout;
+   SettingsGroup *runAheadGroup          = new SettingsGroup(
+           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE));
 
-   rarch_setting_t *hardSyncSetting        = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
+   rarch_setting_t *hardSyncSetting      = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
 
    if (hardSyncSetting)
    {
@@ -353,16 +401,18 @@ QWidget *LatencyPage::widget()
       layout->addRow(hardSyncGroup);
    }
 
-   layout->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY));
 
-   layout->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
-   layout->add(MENU_ENUM_LABEL_AUDIO_LATENCY);
-   layout->add(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_AUDIO_LATENCY));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR));
 
-   runAheadGpuSync->add(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES);
-   runAheadGpuSync->add(MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE);
-   runAheadGpuSync->add(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS);
-   layout->addRow(runAheadGpuSync);
+   runAheadGroup->add(MENU_ENUM_LABEL_RUNAHEAD_MODE);
+   runAheadGroup->add(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES);
+   runAheadGroup->add(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS);
+   layout->addRow(runAheadGroup);
 
    widget->setLayout(layout);
 
@@ -410,15 +460,19 @@ QWidget *NetplayPage::widget()
    unsigned row               = 0;
    unsigned column            = 0;
 
-   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE);
-   checksLayout->add(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR);
-   checksLayout->add(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS);
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_START_AS_SPECTATOR));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_FADE_CHAT));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING));
+   checksLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS));
 
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_PASSWORD);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD);
-   serverForm->add(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL);
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MAX_PING));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_PASSWORD));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL));
 
    serverLayout->addWidget(createMitmServerGroup());
    serverLayout->addSpacing(30);
@@ -429,7 +483,6 @@ QWidget *NetplayPage::widget()
    slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES);
    slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES);
 
-   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_STATELESS_MODE);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE);
@@ -468,41 +521,43 @@ QWidget *NetplayPage::widget()
 
 QGroupBox *NetplayPage::createMitmServerGroup()
 {
-   unsigned i;
+   size_t i;
+   const char *netplay_mitm_server;
    CheckableSettingsGroup *groupBox = new CheckableSettingsGroup(
-         MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
+      MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
    QButtonGroup *buttonGroup        = new QButtonGroup(this);
-   unsigned list_len                = ARRAY_SIZE(netplay_mitm_server_list);
    rarch_setting_t *setting         = menu_setting_find_enum(
-         MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
+      MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
 
    if (!setting)
       return nullptr;
 
-   for (i = 0; i < list_len; i++)
-   {
-      QRadioButton *radioButton = new QRadioButton(
-            netplay_mitm_server_list[i].description);
+   netplay_mitm_server = setting->value.target.string;
 
-      /* find the currently selected server in the list */
-      if (string_is_equal(setting->value.target.string,
-               netplay_mitm_server_list[i].name))
+   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
+   {
+      const mitm_server_t *server      = &netplay_mitm_server_list[i];
+      QRadioButton        *radioButton = new QRadioButton(
+         msg_hash_to_str(server->description));
+
+      if (string_is_equal(server->name, netplay_mitm_server))
          radioButton->setChecked(true);
 
       buttonGroup->addButton(radioButton, i);
-
       groupBox->addRow(radioButton);
    }
 
-   connect(buttonGroup, SIGNAL(buttonClicked(int)),
-         this, SLOT(onRadioButtonClicked(int)));
+   groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
+
+   connect(buttonGroup, SIGNAL(buttonClicked(int)), this,
+      SLOT(onRadioButtonClicked(int)));
 
    return groupBox;
 }
 
 void NetplayPage::onRadioButtonClicked(int id)
 {
-   rarch_setting_t *setting = 
+   rarch_setting_t *setting =
       menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
 
    if (!setting)
@@ -559,15 +614,17 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL);
    notificationsGroup->add(MENU_ENUM_LABEL_STATISTICS_SHOW);
+   notificationsGroup->add(MENU_ENUM_LABEL_NETPLAY_PING_SHOW);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X);
    notificationsGroup->add(MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y);
+   /* TODO/FIXME - localize */
    notificationsGroup->addRow("Notification Color: ", new FloatColorButton(
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE));
-
+   /* TODO/FIXME - localize */
    bgGroup->addRow("Notification Background Color: ", new UIntColorButton(
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED,
       MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -587,12 +644,15 @@ QWidget *NotificationsPage::widget()
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REMAP_LOAD);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_FAST_FORWARD);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH);
    notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_REFRESH_RATE);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA);
+   notificationsGroup->add(MENU_ENUM_LABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE);
 
    layout->addWidget(notificationsGroup);
 
@@ -680,14 +740,16 @@ QWidget *PlaylistsPage::widget()
 
    layout->addRow(history);
 
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME);
-   /*layout->add(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE); TOFIX */
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_COMPRESSION);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS);
-   layout->add(MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH);
-   layout->add(MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME));
+#if 0
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE));
+#endif
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_SORT_ALPHABETICAL));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_USE_OLD_FORMAT));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_COMPRESSION));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_SCAN_WITHOUT_CORE_MATCH));
 
    widget->setLayout(layout);
 
@@ -941,8 +1003,8 @@ QWidget *ViewsPage::widget()
          menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
             file_list_get_actiondata_at_offset(list, i);
 
-         if (cbs->enum_idx == (kiosk_mode 
-                  ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS 
+         if (cbs->enum_idx == (kiosk_mode
+                  ? MENU_ENUM_LABEL_CONTENT_SHOW_SETTINGS
                   : MENU_ENUM_LABEL_CONTENT_SHOW_EXPLORE))
          {
             tabs_begin = i;
@@ -1005,7 +1067,7 @@ QWidget *ViewsPage::widget()
    leftLayout->addRow(mainMenu);
    leftLayout->addRow(settings);
    leftLayout->addRow(startScreen);
-   leftLayout->add(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS);
+   leftLayout->add(menu_setting_find_enum(MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS));
 
    rightLayout->addWidget(tabs);
    rightLayout->addWidget(quickMenu);
@@ -1048,8 +1110,8 @@ QWidget *AppearancePage::widget()
    menu_displaylist_build_list(
          list, settings, DISPLAYLIST_MENU_SETTINGS_LIST, true);
 
-   /* TODO/FIXME - we haven't yet figured out how to 
-    * put a radio button setting next to another radio 
+   /* TODO/FIXME - we haven't yet figured out how to
+    * put a radio button setting next to another radio
     * button on the same row */
 
    for (i = 0; i < list->size; i++)
@@ -1059,12 +1121,13 @@ QWidget *AppearancePage::widget()
 
       switch (cbs->enum_idx)
       {
-         /* TODO/FIXME - this is a dirty hack - if we 
+         /* TODO/FIXME - this is a dirty hack - if we
           * detect this setting, we instead replace it with a
-          * color button and ignore the other two font color 
+          * color button and ignore the other two font color
           * settings since they are already covered by this one
           * color button */
          case MENU_ENUM_LABEL_MENU_FONT_COLOR_RED:
+            /* TODO/FIXME - localize */
             layout->addUIntColorButton("Menu Font Color: ",
                   MENU_ENUM_LABEL_MENU_FONT_COLOR_RED,
                   MENU_ENUM_LABEL_MENU_FONT_COLOR_GREEN,
@@ -1074,7 +1137,7 @@ QWidget *AppearancePage::widget()
          case MENU_ENUM_LABEL_MENU_FONT_COLOR_BLUE:
             break;
          default:
-            layout->add(cbs->enum_idx);
+            layout->add(menu_setting_find_enum(cbs->enum_idx));
             break;
       }
    }
@@ -1135,8 +1198,8 @@ QWidget *UserPage::widget()
    QWidget *widget    = new QWidget;
    FormLayout *layout = new FormLayout;
 
-   layout->add(MENU_ENUM_LABEL_NETPLAY_NICKNAME);
-   layout->add(MENU_ENUM_LABEL_USER_LANGUAGE);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_NICKNAME));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_USER_LANGUAGE));
 
    widget->setLayout(layout);
 
@@ -1151,13 +1214,13 @@ AccountsPage::AccountsPage(QObject *parent) :
 
 QWidget *AccountsPage::widget()
 {
-   QWidget *widget             = new QWidget;
-   QVBoxLayout *layout         = new QVBoxLayout;
-   SettingsGroup *youtubeGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE));
-   SettingsGroup *twitchGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
+   QWidget *widget              = new QWidget;
+   QVBoxLayout *layout          = new QVBoxLayout;
+   SettingsGroup *youtubeGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE));
+   SettingsGroup *twitchGroup   = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH));
    SettingsGroup *facebookGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK));
 #ifdef HAVE_CHEEVOS
-   SettingsGroup *cheevosGroup = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS));
+   SettingsGroup *cheevosGroup  = new SettingsGroup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS));
 
    cheevosGroup->add(MENU_ENUM_LABEL_CHEEVOS_USERNAME);
    cheevosGroup->add(MENU_ENUM_LABEL_CHEEVOS_PASSWORD);
@@ -1255,7 +1318,7 @@ QWidget *VideoPage::widget()
    {
       for (i = 0; i < size; i++)
       {
-         char val_d[256], str[256];
+         char val_d[NAME_MAX_LENGTH], str[NAME_MAX_LENGTH];
          snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
          snprintf(val_d, sizeof(val_d), "%d", i);
 
@@ -1273,6 +1336,7 @@ QWidget *VideoPage::widget()
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_ROTATION);
    outputGroup->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION), m_resolutionCombo);
    outputGroup->add(MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE);
+   outputGroup->add(MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE);
 
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
    fullscreenGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN);
@@ -1288,7 +1352,7 @@ QWidget *VideoPage::widget()
    aspectGroup->add(MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER);
    aspectGroup->addRow(new AspectRatioGroup("Aspect Ratio"));
 
-   leftWindowedSizeForm->addRow("Scale:", new FloatSpinBox(MENU_ENUM_LABEL_VIDEO_SCALE));
+   leftWindowedSizeForm->addRow("Scale:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_SCALE));
    leftWindowedSizeForm->addRow("Max Width:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX));
 
    rightWindowedSizeForm->addRow("Opacity:", new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY));
@@ -1309,16 +1373,15 @@ QWidget *VideoPage::widget()
    windowedGroup->addRow(savePosGroup);
 
    windowedGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS);
-
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
-   hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
+   windowedGroup->add(MENU_ENUM_LABEL_UI_MENUBAR_ENABLE);
 
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_ADAPTIVE_VSYNC);
    vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY);
+   vSyncGroup->add(MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO);
    syncGroup->addRow(vSyncGroup);
 
    rarch_setting_t *hardSyncSetting = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
@@ -1333,16 +1396,27 @@ QWidget *VideoPage::widget()
    }
 
    syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES);
+   syncGroup->add(MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS);
+   syncGroup->add(MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY);
+   syncGroup->add(MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE);
 
    miscGroup->add(MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_THREADED);
-   miscGroup->add(MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SMOOTH);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_CTX_SCALING);
    miscGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_DELAY);
 
-   hdrLayout->addWidget(hdrGroup);
+   if (video_driver_supports_hdr())
+   {
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST);
+      hdrGroup->add(MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT);
+
+      hdrLayout->addWidget(hdrGroup);
+   }
 
    syncMiscLayout->addWidget(syncGroup);
    syncMiscLayout->addWidget(miscGroup);
@@ -1481,10 +1555,10 @@ QWidget *CrtSwitchresPage::widget()
    m_crtSuperResolutionCombo->addItem("2560", 2560);
    m_crtSuperResolutionCombo->addItem("3840", 3840);
 
-   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION));
    layout->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER), m_crtSuperResolutionCombo);
-   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING);
-   layout->add(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE);
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING));
+   layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE));
 
    connect(m_crtSuperResolutionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onCrtSuperResolutionComboIndexChanged(int)));
 
@@ -1505,7 +1579,7 @@ void CrtSwitchresPage::onCrtSuperResolutionComboIndexChanged(int index)
    settings_t *settings = config_get_ptr();
    Q_UNUSED(index)
 
-   settings->uints.crt_switch_resolution_super = 
+   settings->uints.crt_switch_resolution_super =
    m_crtSuperResolutionCombo->currentData().value<unsigned>();
 }
 

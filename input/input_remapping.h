@@ -23,23 +23,14 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-typedef struct input_mapper
-{
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog_value[MAX_USERS][8];
-   /* The whole keyboard state */
-   uint32_t keys[RETROK_LAST / 32 + 1];
-   /* RetroPad button state of remapped keyboard keys */
-   unsigned key_button[RETROK_LAST];
-   /* This is a bitmask of (1 << key_bind_id). */
-   input_bits_t buttons[MAX_USERS];
-} input_mapper_t;
+#include "input_defines.h"
+#include "input_types.h"
 
 RETRO_BEGIN_DECLS
 
 /**
  * Loads a remap file from disk to memory.
- * 
+ *
  * @param data Path to config file.
  *
  * @return true (1) if successful, otherwise false (0).
@@ -49,43 +40,34 @@ bool input_remapping_load_file(void *data, const char *path);
 /**
  * Saves remapping values to file.
  *
- * @param path Relative path to remapping file.
+ * @param path Path to remapping file.
  *
  * @return true (1) if successful, otherwise false (0).
  **/
 bool input_remapping_save_file(const char *path);
 
-bool input_remapping_remove_file(const char *path, 
-                                 const char *dir_input_remapping);
-
 /**
  * Caches any global configuration settings that should not be overwritten by
  * input remap changes made while content is running. Must be called on each
- * core init. 
+ * core init.
  */
 void input_remapping_cache_global_config(void);
 
 /**
- * Sets flags to enable the restoration of global configuration settings from
- * the internal cache. Should be called independently from 
- * `input_remapping_cache_global_config()`.
- * Must be called:
- *   - Whenever content is loaded
- *   - Whenever a remap file is loaded 
- */
-void input_remapping_enable_global_config_restore(void);
-
-/**
  * Restores any global configuration settings that were cached on the last core
- * init if `input_remapping_enable_global_config_restore()` has been called.
- * Must be called on core deinitialization. 
- * 
- * @param clear_cache  If true, function becomes a NOOP until the next time
- *                     `input_remapping_cache_global_config()` and 
- *                     `input_remapping_enable_global_config_restore()` are
- *                     called.
+ * init if INP_FLAG_REMAPPING_CACHE_ACTIVE is set.
+ * Must be called on core deinitialization.
+ *
+ * @param clear_cache               If true, function becomes a NOOP until the next time
+ *                                  `input_remapping_cache_global_config()` is called, and
+ *                                  INP_FLAG_REMAPPING_CACHE_ACTIVE is set.
+ * @param restore_analog_dpad_mode  Treat 'Analog to Digital Type' like a regular setting,
+ *                                  meaning this should be false when we're not using any
+ *                                  remap file so its value is saved globally on close/quit,
+ *                                  and it should be true when we're using a remap or if
+ *                                  we're resetting settings, to restore its global value.
  */
-void input_remapping_restore_global_config(bool clear_cache);
+void input_remapping_restore_global_config(bool clear_cache, bool restore_analog_dpad_mode);
 
 /**
  * Must be called whenever `settings->uints.input_remap_ports` is modified.
@@ -93,14 +75,18 @@ void input_remapping_restore_global_config(bool clear_cache);
 void input_remapping_update_port_map(void);
 
 /**
- * Frees global->name.remapfile and sets these runloop_state flags to false: 
+ * Frees runloop_st->name.remapfile and sets these runloop_state flags to false:
  * remaps_core_active, remaps_content_dir_active, and remaps_game_active.
+ *
+ * @param save_remap  If true, current remap settings will be saved to
+ *                    runloop_st->name.remapfile before performing
+ *                    deinitialisation.
  */
-void input_remapping_deinit(void);
+void input_remapping_deinit(bool save_remap);
 
 /**
  * Used to set the default mapping values within the `settings` struct
- * @param clear_cache  This value is passed to 
+ * @param clear_cache  This value is passed to
  *                     `input_remapping_restore_global_config()`. Please see
  *                     the documentation for that function for details.
  */
@@ -109,9 +95,9 @@ void input_remapping_set_defaults(bool clear_cache);
 /**
  * Checks `input_config_bind_map` for the requested `input_bind_map`, and if
  * the bind has been registered, returns its base.
- * 
+ *
  * @param index
- * 
+ *
  * @return the contents of the meta field, or NULL if there is no matching bind
  */
 const char *input_config_bind_map_get_base(unsigned bind_index);
@@ -129,9 +115,9 @@ unsigned input_config_bind_map_get_meta(unsigned bind_index);
 /**
  * Checks `input_config_bind_map` for the requested `input_bind_map`, and if
  * the bind has been registered, returns a pointer to its description field.
- * 
+ *
  * @param index
- * 
+ *
  * @return the contents of the description field, or NULL if there is no
  *         matching bind
  */
@@ -140,38 +126,25 @@ const char *input_config_bind_map_get_desc(unsigned index);
 /**
  * Checks `input_config_bind_map` for the requested `input_bind_map`, and if
  * the bind has been registered, returns the value of its retro_key field.
- * 
+ *
  * @param index
- * 
+ *
  * @return the value of the retro_key field, or 0 if there is no matching bind
  */
 uint8_t input_config_bind_map_get_retro_key(unsigned index);
 
 /**
- * Converts a retro_keybind to a human-readable string, optionally allowing a
- * fallback auto_bind to be used as the source for the string. 
- *
- * @param buf        A string which will be overwritten with the returned value
- * @param bind       A binding to convert to a string
- * @param auto_bind  A default binding which will be used after `bind`. Can be NULL.
- * @param size       The maximum length that will be written to `buf`
- */
-void input_config_get_bind_string(void *settings_data,
-      char *buf, const struct retro_keybind *bind,
-      const struct retro_keybind *auto_bind, size_t size);
-
-/**
  * Parses the string representation of a retro_key struct
- * 
+ *
  * @param str String to parse.
  *
  * @return Key identifier.
  **/
-enum retro_key input_config_translate_str_to_rk(const char *str);
+enum retro_key input_config_translate_str_to_rk(const char *str, size_t len);
 
 /**
  * Searches for a string among the "base" fields of the list of binds.
- * 
+ *
  * @param str String to search for among the binds
  *
  * @return Bind index value on success or RARCH_BIND_LIST_END if not found.
@@ -188,7 +161,7 @@ void config_read_keybinds_conf(void *data);
 
 /**
  * Apply autoconfig binds to the indicated control port.
- * 
+ *
  * @param port
  * @param data  An object of type config_file_t. We assume it is passed as a
  *              void pointer like this to avoid including config_file.h.

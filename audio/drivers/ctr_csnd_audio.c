@@ -19,7 +19,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 typedef struct
 {
@@ -170,14 +170,9 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    const uint16_t                         *src = buf;
    ctr_csnd_audio_t                       *ctr = (ctr_csnd_audio_t*)data;
 
-   (void)data;
-   (void)buf;
-   (void)samples_played;
-   (void)current_tick;
-
    ctr_csnd_audio_update_playpos(ctr);
 
-   if((((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 2)) ||
+   if ((((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 2)) ||
       (((ctr->pos - ctr->playpos ) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)) ||
       (((ctr->playpos  - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (size >> 2)))
    {

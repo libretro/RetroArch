@@ -22,36 +22,19 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 
-#include "core_type.h"
+#include "retroarch_types.h"
 
 RETRO_BEGIN_DECLS
 
-/**
- * libretro_free_system_info:
- * @info                         : Pointer to system info information.
- *
- * Frees system information.
- **/
-void libretro_free_system_info(struct retro_system_info *info);
-
-const struct retro_subsystem_info *libretro_find_subsystem_info(
-      const struct retro_subsystem_info *info,
-      unsigned num_info, const char *ident);
-
-/**
- * libretro_find_controller_description:
- * @info                         : Pointer to controller info handle.
- * @id                           : Identifier of controller to search
- *                                 for.
- *
- * Search for a controller of type @id in @info.
- *
- * Returns: controller description of found controller on success,
- * otherwise NULL.
- **/
-const struct retro_controller_description *
-   libretro_find_controller_description(
-         const struct retro_controller_info *info, unsigned id);
+enum retro_core_flags
+{
+   RETRO_CORE_FLAG_INITED                    = (1 << 0),
+   RETRO_CORE_FLAG_SYMBOLS_INITED            = (1 << 1),
+   RETRO_CORE_FLAG_GAME_LOADED               = (1 << 2),
+   RETRO_CORE_FLAG_INPUT_POLLED              = (1 << 3),
+   RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS        = (1 << 4),
+   RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS = (1 << 5)
+};
 
 struct retro_core_t
 {
@@ -84,24 +67,38 @@ struct retro_core_t
    size_t (*retro_get_memory_size)(unsigned);
 
    unsigned poll_type;
-   bool inited;
-   bool symbols_inited;
-   bool game_loaded;
-   bool input_polled;
-   bool has_set_subsystems;
-   bool has_set_input_descriptors;
+   uint8_t flags;
 };
 
-bool libretro_get_shared_context(void);
 
-/* Arbitrary twenty subsystems limite */
-#define SUBSYSTEM_MAX_SUBSYSTEMS 20
-/* Arbitrary 10 roms for each subsystem limit */
-#define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
+/**
+ * libretro_free_system_info:
+ * @info                         : Pointer to system info information.
+ *
+ * Frees system information.
+ **/
+void libretro_free_system_info(struct retro_system_info *info);
 
-/* TODO/FIXME - globals */
-extern struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
-extern unsigned subsystem_current_count;
+const struct retro_subsystem_info *libretro_find_subsystem_info(
+      const struct retro_subsystem_info *info,
+      unsigned num_info, const char *ident);
+
+/**
+ * libretro_find_controller_description:
+ * @info                         : Pointer to controller info handle.
+ * @id                           : Identifier of controller to search
+ *                                 for.
+ *
+ * Search for a controller of type @id in @info.
+ *
+ * Leaf function.
+ *
+ * @return controller description of found controller on success,
+ * otherwise NULL.
+ **/
+const struct retro_controller_description *
+   libretro_find_controller_description(
+         const struct retro_controller_info *info, unsigned id);
 
 RETRO_END_DECLS
 

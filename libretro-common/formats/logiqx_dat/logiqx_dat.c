@@ -254,7 +254,9 @@ static void logiqx_dat_sanitise_element_data(
       if (strstr(sanitised_data, find_string))
       {
          char *tmp = string_replace_substring(
-               sanitised_data, find_string, replace_string);
+               sanitised_data,
+               find_string,    strlen(find_string),
+               replace_string, strlen(replace_string));
 
          if (!string_is_empty(tmp))
             strlcpy(sanitised_data, tmp, sizeof(sanitised_data));

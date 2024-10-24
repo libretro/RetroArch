@@ -1,8 +1,8 @@
 #pragma once
 
-// These are copied from WindowsStorageCOM.h
-// You can remove this header file once the real file has been updated
-// to fix the WINAPI_PARTITION_DESKTOP block
+/* These are copied from WindowsStorageCOM.h
+ * You can remove this header file once the real file has been updated
+ * to fix the WINAPI_PARTITION_DESKTOP block */
 
 typedef interface IOplockBreakingHandler IOplockBreakingHandler;
 typedef interface IStorageItemHandleAccess IStorageItemHandleAccess;

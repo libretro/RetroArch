@@ -165,12 +165,12 @@ static void dump_content(RFILE *file, const void *frame,
          {
             /* BGR24 byte order input matches output. Can directly copy, but... need to make sure we pad it. */
             uint32_t zeros = 0;
-            int pad        = (int)(line_size-pitch);
+            int padding    = (int)(line_size-pitch);
             for (j = 0; j < height; j++, u.u8 += pitch)
             {
                filestream_write(file, u.u8, pitch);
-               if(pad != 0)
-                  filestream_write(file, &zeros, pad);
+               if (padding != 0)
+                  filestream_write(file, &zeros, padding);
             }
          }
          break;
@@ -184,8 +184,7 @@ static void dump_content(RFILE *file, const void *frame,
    }
 
    /* allocate line buffer, and initialize the final four bytes to zero, for deterministic padding */
-   line = (uint8_t*)malloc(line_size);
-   if (!line)
+   if (!(line = (uint8_t*)malloc(line_size)))
       return;
    *(uint32_t*)(line + line_size - 4) = 0;
 

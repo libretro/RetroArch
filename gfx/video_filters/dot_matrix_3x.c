@@ -87,9 +87,9 @@ static void dot_matrix_3x_initialize(struct filter_data *filt,
 
    /* Convert to RGB565 */
    filt->grid_color.rgb565 =
-         (((grid_color >> 19) & 0x1F) << 11) |
-         (((grid_color >> 11) & 0x1F) <<  6) |
-          ((grid_color >>  3) & 0x1F);
+         (  ((grid_color >> 19) & 0x1F) << 11)
+         | (((grid_color >> 11) & 0x1F) <<  6)
+         |  ((grid_color >>  3) & 0x1F);
 }
 
 static void *dot_matrix_3x_generic_create(const struct softfilter_config *config,
@@ -103,16 +103,16 @@ static void *dot_matrix_3x_generic_create(const struct softfilter_config *config
    if (!filt)
       return NULL;
 
-   /* Apparently the code is not thread-safe,
-    * so force single threaded operation... */
-   filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data));
-   filt->threads = 1;
-   filt->in_fmt  = in_fmt;
-   if (!filt->workers)
+   if (!(filt->workers = (struct softfilter_thread_data*)
+            calloc(1, sizeof(struct softfilter_thread_data))))
    {
       free(filt);
       return NULL;
    }
+   /* Apparently the code is not thread-safe,
+    * so force single threaded operation... */
+   filt->threads = 1;
+   filt->in_fmt  = in_fmt;
 
    /* Initialise colour lookup tables */
    dot_matrix_3x_initialize(filt, config, userdata);
@@ -131,9 +131,8 @@ static void dot_matrix_3x_generic_output(void *data,
 static void dot_matrix_3x_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   if (!filt) {
+   if (!filt)
       return;
-   }
    free(filt->workers);
    free(filt);
 }
@@ -290,22 +289,22 @@ static void dot_matrix_3x_generic_packets(void *data,
    /* We are guaranteed single threaded operation
     * (filt->threads = 1) so we don't need to loop
     * over threads and can cull some code */
-   struct filter_data *filt = (struct filter_data*)data;
+   struct filter_data *filt           = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
 
-   thr->out_data = (uint8_t*)output;
-   thr->in_data = (const uint8_t*)input;
-   thr->out_pitch = output_stride;
-   thr->in_pitch = input_stride;
-   thr->width = width;
-   thr->height = height;
+   thr->out_data                      = (uint8_t*)output;
+   thr->in_data                       = (const uint8_t*)input;
+   thr->out_pitch                     = output_stride;
+   thr->in_pitch                      = input_stride;
+   thr->width                         = width;
+   thr->height                        = height;
 
    if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-      packets[0].work = dot_matrix_3x_work_cb_rgb565;
+      packets[0].work                 = dot_matrix_3x_work_cb_rgb565;
    else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
-      packets[0].work = dot_matrix_3x_work_cb_xrgb8888;
+      packets[0].work                 = dot_matrix_3x_work_cb_xrgb8888;
 
-   packets[0].thread_data = thr;
+   packets[0].thread_data             = thr;
 }
 
 static const struct softfilter_implementation dot_matrix_3x_generic = {
@@ -327,7 +326,6 @@ static const struct softfilter_implementation dot_matrix_3x_generic = {
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &dot_matrix_3x_generic;
 }
 

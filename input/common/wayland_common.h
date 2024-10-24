@@ -13,8 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WAYLAND_INPUT_COMMON_H__
-#define WAYLAND_INPUT_COMMON_H__
+#ifndef _WAYLAND_COMMON_H
+#define _WAYLAND_COMMON_H
 
 #include <stdint.h>
 #include <boolean.h>
@@ -33,19 +33,20 @@
 #include "../../gfx/common/vulkan_common.h"
 #endif
 
-/* Generated from idle-inhibit-unstable-v1.xml */
+/* Generated from wayland protocol files by generate_wayland_protos.sh */
+#include "../../gfx/common/wayland/fractional-scale-v1.h"
+#include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
-
-/* Generated from xdg-shell-unstable-v6.xml */
-#include "../../gfx/common/wayland/xdg-shell-unstable-v6.h"
-
-/* Generated from xdg-shell.xml */
 #include "../../gfx/common/wayland/xdg-shell.h"
-
-/* Generated from xdg-decoration-unstable-v1.h */
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
+#include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
+#include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
 
-#define UDEV_KEY_MAX			     0x2ff
+#define FRACTIONAL_SCALE_V1_DEN 120
+#define FRACTIONAL_SCALE_MULT(v, scale_num) \
+   (((v) * (scale_num) + FRACTIONAL_SCALE_V1_DEN / 2) / FRACTIONAL_SCALE_V1_DEN)
+
+#define UDEV_KEY_MAX            0x2ff
 #define UDEV_MAX_KEYS           (UDEV_KEY_MAX + 7) / 8
 
 #define MAX_TOUCHES             16
@@ -54,6 +55,10 @@
 	for (pos = (type)(array)->data; \
 	     (const char *) pos < ((const char *) (array)->data + (array)->size); \
 	     (pos)++)
+
+#ifdef HAVE_LIBDECOR_H
+#include <libdecor.h>
+#endif
 
 typedef struct
 {
@@ -80,16 +85,29 @@ typedef struct output_info
    unsigned physical_width;
    unsigned physical_height;
    unsigned scale;
-   struct wl_list link; /* wl->all_outputs */
+   char *make;
+   char *model;
 } output_info_t;
 
-typedef struct gfx_ctx_wayland_data gfx_ctx_wayland_data_t;
+typedef struct display_output
+{
+   output_info_t *output;
+   struct wl_list link;
+} display_output_t;
+
+typedef struct surface_output
+{
+   output_info_t *output;
+   struct wl_list link;
+} surface_output_t;
+
+struct gfx_ctx_wayland_data;
 
 typedef struct input_ctx_wayland_data
 {
    struct wl_display *dpy;
    const input_device_driver_t *joypad;
-   gfx_ctx_wayland_data_t *gfx;
+   struct gfx_ctx_wayland_data *gfx;
 
    int fd;
 
@@ -99,17 +117,28 @@ typedef struct input_ctx_wayland_data
 
    struct
    {
+      struct wl_surface *surface;
       int last_x, last_y;
       int x, y;
       int delta_x, delta_y;
       bool last_valid;
       bool focus;
-      bool left, right, middle;
+      bool left, right, middle, side, extra;
+      bool wu, wd, wl, wr;
    } mouse;
 
    bool keyboard_focus;
    bool blocked;
 } input_ctx_wayland_data_t;
+
+typedef struct data_offer_ctx
+{
+  struct wl_data_offer *offer;
+  struct wl_data_device *data_device;
+  bool is_file_mime_type;
+  bool dropped;
+  enum wl_data_device_manager_dnd_action supported_actions;
+} data_offer_ctx;
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -119,28 +148,46 @@ typedef struct gfx_ctx_wayland_data
 #endif
    struct wl_registry *registry;
    struct wl_compositor *compositor;
+   struct wp_viewporter *viewporter;
+   struct wp_fractional_scale_manager_v1 *fractional_scale_manager;
    struct wl_surface *surface;
-   struct zxdg_surface_v6 *zxdg_surface;
-   struct zxdg_shell_v6 *zxdg_shell;
-   struct zxdg_toplevel_v6 *zxdg_toplevel;
    struct xdg_surface *xdg_surface;
+   struct wp_viewport *viewport;
+   struct wp_fractional_scale_v1 *fractional_scale;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
+   struct zwp_relative_pointer_v1 *wl_relative_pointer;
+   struct zwp_locked_pointer_v1 *locked_pointer;
    struct wl_touch *wl_touch;
    struct wl_seat *seat;
    struct wl_shm *shm;
+   struct wl_data_device_manager *data_device_manager;
+   struct wl_data_device *data_device;
+   data_offer_ctx *current_drag_offer;
+#ifdef HAVE_LIBDECOR_H
+   struct libdecor *libdecor_context;
+   struct libdecor_frame *libdecor_frame;
+#ifdef HAVE_DYLIB
+   dylib_t libdecor;
+#define RA_WAYLAND_SYM(rc,fn,params) rc (*fn) params;
+#include "../../gfx/common/wayland/libdecor_sym.h"
+#endif
+#endif
    struct zxdg_decoration_manager_v1 *deco_manager;
    struct zxdg_toplevel_decoration_v1 *deco;
    struct zwp_idle_inhibit_manager_v1 *idle_inhibit_manager;
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
+   struct zwp_pointer_constraints_v1 *pointer_constraints;
+   struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
    output_info_t *current_output;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
 #endif
    input_ctx_wayland_data_t input; /* ptr alignment */
    struct wl_list all_outputs;
+   struct wl_list current_outputs;
 
    struct
    {
@@ -154,19 +201,28 @@ typedef struct gfx_ctx_wayland_data
    int num_active_touches;
    int swap_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
-   unsigned prev_width;
-   unsigned prev_height;
    unsigned width;
    unsigned height;
+   unsigned buffer_width;
+   unsigned buffer_height;
+   unsigned floating_width;
+   unsigned floating_height;
    unsigned last_buffer_scale;
+   unsigned pending_buffer_scale;
    unsigned buffer_scale;
+   unsigned last_fractional_scale_num;
+   unsigned pending_fractional_scale_num;
+   unsigned fractional_scale_num;
 
    bool core_hw_context_enable;
    bool fullscreen;
    bool maximized;
    bool resize;
    bool configured;
+   bool ignore_configuration;
    bool activated;
+   bool reported_display_size;
+   bool swap_complete;
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON
@@ -180,21 +236,21 @@ void free_xkb(void);
 
 void gfx_ctx_wl_show_mouse(void *data, bool state);
 
-void handle_toplevel_close(void *data,
-      struct xdg_toplevel *xdg_toplevel);
-
-void handle_zxdg_toplevel_close(void *data,
-      struct zxdg_toplevel_v6 *zxdg_toplevel);
-
 void flush_wayland_fd(void *data);
 
 extern const struct wl_keyboard_listener keyboard_listener;
 
 extern const struct wl_pointer_listener pointer_listener;
 
+extern const struct zwp_relative_pointer_v1_listener relative_pointer_listener;
+
+extern const struct zwp_locked_pointer_v1_listener locked_pointer_listener;
+
 extern const struct wl_touch_listener touch_listener;
 
 extern const struct wl_seat_listener seat_listener;
+
+extern const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener;
 
 extern const struct wl_surface_listener wl_surface_listener;
 
@@ -202,12 +258,14 @@ extern const struct xdg_wm_base_listener xdg_shell_listener;
 
 extern const struct xdg_surface_listener xdg_surface_listener;
 
-extern const struct zxdg_shell_v6_listener zxdg_shell_v6_listener;
-
-extern const struct zxdg_surface_v6_listener zxdg_surface_v6_listener;
-
 extern const struct wl_output_listener output_listener;
 
 extern const struct wl_registry_listener registry_listener;
+
+extern const struct wl_buffer_listener shm_buffer_listener;
+
+extern const struct wl_data_device_listener data_device_listener;
+
+extern const struct wl_data_offer_listener data_offer_listener;
 
 #endif

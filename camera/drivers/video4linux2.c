@@ -20,7 +20,6 @@
 #include <malloc.h>
 #endif
 #include <string.h>
-#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -37,14 +36,15 @@
 
 #include <memmap.h>
 
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <file/file_path.h>
+#include <libretro.h>
 
 #include <compat/strl.h>
 
+#include "../camera_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -67,7 +67,7 @@ typedef struct video4linux
    uint32_t *buffer_output;
    bool ready;
 
-   char dev_name[255];
+   char dev_name[NAME_MAX_LENGTH];
 } video4linux_t;
 
 static int xioctl(int fd, unsigned long request, void *args)
@@ -377,8 +377,6 @@ static bool preprocess_image(void *data)
 
       return false;
    }
-
-   retro_assert(buf.index < v4l->n_buffers);
 
    ctx = &v4l->scaler;
 

@@ -105,7 +105,7 @@ rxml_document_t *rxml_load_document(const char *path)
       goto error;
 
    memory_buffer[len]      = '\0';
-   if (filestream_read(file, memory_buffer, len) != (size_t)len)
+   if (filestream_read(file, memory_buffer, len) != len)
       goto error;
 
    filestream_close(file);
@@ -118,7 +118,7 @@ rxml_document_t *rxml_load_document(const char *path)
 
 error:
    free(memory_buffer);
-   if(file)
+   if (file)
       filestream_close(file);
    return NULL;
 }
@@ -129,7 +129,7 @@ rxml_document_t *rxml_load_document_string(const char *str)
    rxml_document_t *doc          = NULL;
    size_t stack_i                = 0;
    size_t level                  = 0;
-   int c                         = 0;
+   int i                         = 0;
    char *valptr                  = NULL;
    rxml_node_t *node             = NULL;
    struct rxml_attrib_node *attr = NULL;
@@ -197,6 +197,7 @@ rxml_document_t *rxml_load_document_string(const char *str)
             node->name                     = strdup(x.elem);
 
             attr                           = NULL;
+            valptr                         = buf->val;
 
             ++level;
             break;
@@ -237,9 +238,9 @@ rxml_document_t *rxml_load_document_string(const char *str)
             break;
 
          case YXML_CONTENT:
-            for (c = 0; c < sizeof(x.data) && x.data[c]; ++c)
+            for (i = 0; i < (int)sizeof(x.data) && x.data[i]; i++)
             {
-               *valptr = x.data[c];
+               *valptr = x.data[i];
                ++valptr;
             }
             break;
@@ -259,9 +260,9 @@ rxml_document_t *rxml_load_document_string(const char *str)
             break;
 
          case YXML_ATTRVAL:
-            for (c = 0; c < sizeof(x.data) && x.data[c]; ++c)
+            for (i = 0; i < (int)sizeof(x.data) && x.data[i]; i++)
             {
-               *valptr = x.data[c];
+               *valptr = x.data[i];
                ++valptr;
             }
             break;

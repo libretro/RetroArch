@@ -22,166 +22,191 @@
 #include <stddef.h>
 
 #include <boolean.h>
-#include <libretro.h>
 
-#include "../../core.h"
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#include <retro_miscellaneous.h>
+
+#include <net/net_compat.h>
+
+#include "netplay_defines.h"
+
+#include "../../msg_hash.h"
+
+#include "../natt.h"
 
 typedef struct netplay netplay_t;
+
+typedef struct netplay_client_info
+{
+   uint32_t protocol;
+   uint32_t devices;
+   uint32_t slowdowns;
+   int32_t  ping;
+   int      id;
+   enum     rarch_netplay_connection_mode mode;
+   char     name[NETPLAY_NICK_LEN];
+} netplay_client_info_t;
 
 typedef struct mitm_server
 {
    const char *name;
-   const char *description;
+   enum msg_hash_enums description;
 } mitm_server_t;
 
-static const mitm_server_t netplay_mitm_server_list[] = {
-   { "nyc", "New York City, USA" },
-   { "madrid", "Madrid, Spain" },
-   { "montreal", "Montreal, Canada" },
-   { "saopaulo", "Sao Paulo, Brazil" },
-};
-
-enum rarch_netplay_ctl_state
+#ifndef HAVE_DYNAMIC
+struct netplay_fork_args
 {
-   RARCH_NETPLAY_CTL_NONE = 0,
-   RARCH_NETPLAY_CTL_GAME_WATCH,
-   RARCH_NETPLAY_CTL_POST_FRAME,
-   RARCH_NETPLAY_CTL_PRE_FRAME,
-   RARCH_NETPLAY_CTL_ENABLE_SERVER,
-   RARCH_NETPLAY_CTL_ENABLE_CLIENT,
-   RARCH_NETPLAY_CTL_DISABLE,
-   RARCH_NETPLAY_CTL_IS_ENABLED,
-   RARCH_NETPLAY_CTL_IS_REPLAYING,
-   RARCH_NETPLAY_CTL_IS_SERVER,
-   RARCH_NETPLAY_CTL_IS_CONNECTED,
-   RARCH_NETPLAY_CTL_IS_DATA_INITED,
-   RARCH_NETPLAY_CTL_PAUSE,
-   RARCH_NETPLAY_CTL_UNPAUSE,
-   RARCH_NETPLAY_CTL_LOAD_SAVESTATE,
-   RARCH_NETPLAY_CTL_RESET,
-   RARCH_NETPLAY_CTL_DISCONNECT,
-   RARCH_NETPLAY_CTL_FINISHED_NAT_TRAVERSAL,
-   RARCH_NETPLAY_CTL_DESYNC_PUSH,
-   RARCH_NETPLAY_CTL_DESYNC_POP
+   size_t size;
+   char   args[PATH_MAX_LENGTH];
 };
+#endif
 
-/* Preferences for sharing digital devices */
-enum rarch_netplay_share_digital_preference
+struct netplay_room
 {
-   RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING = 0,
-   RARCH_NETPLAY_SHARE_DIGITAL_NO_PREFERENCE,
-   RARCH_NETPLAY_SHARE_DIGITAL_OR,
-   RARCH_NETPLAY_SHARE_DIGITAL_XOR,
-   RARCH_NETPLAY_SHARE_DIGITAL_VOTE,
-   RARCH_NETPLAY_SHARE_DIGITAL_LAST
+   struct netplay_room *next;
+   int  id;
+   int  gamecrc;
+   int  port;
+   int  mitm_port;
+   int  host_method;
+   char nickname[NETPLAY_NICK_LEN];
+   char frontend[NETPLAY_HOST_STR_LEN];
+   char corename[NETPLAY_HOST_STR_LEN];
+   char coreversion[NETPLAY_HOST_STR_LEN];
+   char retroarch_version[NETPLAY_HOST_STR_LEN];
+   char gamename[NETPLAY_HOST_LONGSTR_LEN];
+   char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
+   char country[3];
+   char address[NETPLAY_HOST_LONGSTR_LEN];
+   char mitm_handle[NETPLAY_HOST_STR_LEN];
+   char mitm_address[NETPLAY_HOST_LONGSTR_LEN];
+   char mitm_session[NETPLAY_HOST_STR_LEN];
+   bool has_password;
+   bool has_spectate_password;
+   bool connectable;
+   bool is_retroarch;
+   bool lan;
 };
 
-/* Preferences for sharing analog devices */
-enum rarch_netplay_share_analog_preference
+struct netplay_rooms
 {
-   RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING = 0,
-   RARCH_NETPLAY_SHARE_ANALOG_NO_PREFERENCE,
-   RARCH_NETPLAY_SHARE_ANALOG_MAX,
-   RARCH_NETPLAY_SHARE_ANALOG_AVERAGE,
-   RARCH_NETPLAY_SHARE_ANALOG_LAST
+   struct netplay_room *head;
+   struct netplay_room *cur;
 };
 
-bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
+struct netplay_host
+{
+   int  content_crc;
+   int  port;
+   char address[16];
+   char nick[NETPLAY_NICK_LEN];
+   char frontend[NETPLAY_HOST_STR_LEN];
+   char core[NETPLAY_HOST_STR_LEN];
+   char core_version[NETPLAY_HOST_STR_LEN];
+   char retroarch_version[NETPLAY_HOST_STR_LEN];
+   char content[NETPLAY_HOST_LONGSTR_LEN];
+   char subsystem_name[NETPLAY_HOST_LONGSTR_LEN];
+   bool has_password;
+   bool has_spectate_password;
+};
 
-int netplay_rooms_parse(const char *buf);
+struct netplay_host_list
+{
+   struct netplay_host *hosts;
+   size_t allocated;
+   size_t size;
+};
 
-struct netplay_room* netplay_room_get(int index);
+struct netplay_chat_buffer
+{
+   struct
+   {
+      uint8_t alpha;
+      char    nick[NETPLAY_NICK_LEN];
+      char    msg[NETPLAY_CHAT_MAX_SIZE];
+   } messages[NETPLAY_CHAT_MAX_MESSAGES];
+   uint32_t color_name;
+   uint32_t color_msg;
+};
 
+typedef struct
+{
+#ifndef HAVE_DYNAMIC
+   struct netplay_fork_args fork_args;
+#endif
+   /* NAT traversal info (if NAT traversal is used and serving) */
+   struct nat_traversal_data nat_traversal_request;
+#ifdef HAVE_NETPLAYDISCOVERY
+   /* List of discovered hosts */
+   struct netplay_host_list discovered_hosts;
+#endif
+   struct netplay_chat_buffer chat_buffer;
+   struct netplay_room host_room;
+   struct netplay_room *room_list;
+   struct netplay_rooms *rooms_data;
+   struct retro_netpacket_callback *core_netpacket_interface;
+   /* Used while Netplay is running */
+   netplay_t *data;
+   netplay_client_info_t *client_info;
+   size_t client_info_count;
+#ifdef HAVE_NETPLAYDISCOVERY
+   /* LAN discovery sockets */
+   int lan_ad_server_fd;
+   int lan_ad_client_fd;
+#endif
+   int room_count;
+   int latest_ping;
+   unsigned server_port_deferred;
+   uint8_t flags;
+   char server_address_deferred[256];
+   char server_session_deferred[32];
+} net_driver_state_t;
+
+net_driver_state_t *networking_state_get_ptr(void);
+
+bool netplay_compatible_version(const char *version);
+bool netplay_decode_hostname(const char *hostname,
+   char *address, unsigned *port, char *session, size_t len);
+
+int netplay_rooms_parse(const char *buf, size_t len);
 int netplay_rooms_get_count(void);
-
+struct netplay_room *netplay_room_get(int index);
 void netplay_rooms_free(void);
 
 /**
-* netplay_frontend_paused
- * @netplay              : pointer to netplay object
- * @paused               : true if frontend is paused
+ * init_netplay
+ * @server               : server address to connect to (client only)
+ * @port                 : TCP port to host on/connect to
+ * @mitm_session         : Session id for MITM/tunnel (client only).
  *
- * Inform Netplay of the frontend's pause state (paused or otherwise)
- */
-void netplay_frontend_paused(netplay_t *netplay, bool paused);
-
-/**
- * netplay_toggle_play_spectate
+ * Initializes netplay.
  *
- * Toggle between play mode and spectate mode
- */
-void netplay_toggle_play_spectate(netplay_t *netplay);
-
-/**
- * netplay_load_savestate
- * @netplay              : pointer to netplay object
- * @serial_info          : the savestate being loaded, NULL means
- *                         "load it yourself"
- * @save                 : Whether to save the provided serial_info
- *                         into the frame buffer
- *
- * Inform Netplay of a savestate load and send it to the other side
- **/
-void netplay_load_savestate(netplay_t *netplay,
-      retro_ctx_serialize_info_t *serial_info, bool save);
-
-/**
- * netplay_core_reset
- * @netplay              : pointer to netplay object
- *
- * Indicate that the core has been reset to netplay peers
- **/
-void netplay_core_reset(netplay_t *netplay);
-
-int16_t netplay_input_state(netplay_t *netplay,
-      unsigned port, unsigned device,
-      unsigned idx, unsigned id);
-
-/**
- * netplay_poll:
- * @netplay              : pointer to netplay object
- *
- * Polls network to see if we have anything new. If our
- * network buffer is full, we simply have to block
- * for new input data.
+ * If netplay is already initialized, will return false (0).
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool netplay_poll(
-      bool block_libretro_input,
-      void *settings_data,
-      netplay_t *netplay);
+bool init_netplay(const char *server, unsigned port, const char *mitm_session);
+bool init_netplay_deferred(const char *server, unsigned port,
+   const char *mitm_session);
+void deinit_netplay(void);
 
-/**
- * netplay_is_alive:
- * @netplay              : pointer to netplay object
- *
- * Checks if input port/index is controlled by netplay or not.
- *
- * Returns: true (1) if alive, otherwise false (0).
- **/
-bool netplay_is_alive(netplay_t *netplay);
+bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
 
-/**
- * netplay_should_skip:
- * @netplay              : pointer to netplay object
- *
- * If we're fast-forward replaying to resync, check if we
- * should actually show frame.
- *
- * Returns: bool (1) if we should skip this frame, otherwise
- * false (0).
- **/
-bool netplay_should_skip(netplay_t *netplay);
+bool netplay_is_spectating(void);
 
-/**
- * netplay_post_frame:
- * @netplay              : pointer to netplay object
- *
- * Post-frame for Netplay.
- * We check if we have new input and replay from recorded input.
- * Call this after running retro_run().
- **/
-void netplay_post_frame(netplay_t *netplay);
+#ifdef HAVE_NETPLAYDISCOVERY
+/** Initialize Netplay discovery */
+bool init_netplay_discovery(void);
+/** Deinitialize and free Netplay discovery */
+void deinit_netplay_discovery(void);
 
+/** Discovery control */
+bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state,
+   void *data);
+#endif
+
+extern const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS];
 #endif

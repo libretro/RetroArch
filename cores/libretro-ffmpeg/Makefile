@@ -217,7 +217,7 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o)
+OBJECTS := $(SOURCES_C:.c=.o) $(SOURCES_CXX:.cpp=.o) ../../libretro-common/features/features_cpu.o
 
 all: $(TARGET)
 

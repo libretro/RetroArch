@@ -16,9 +16,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <ctype.h>
 #include <boolean.h>
 
@@ -35,6 +35,10 @@
 #include "../verbosity.h"
 #include "../core_info.h"
 #include "../core_backup.h"
+
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+#include "../menu/menu_driver.h"
+#endif
 
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.h"
@@ -181,17 +185,16 @@ static bool task_core_backup_finder(retro_task_t *task, void *user_data)
 
 static void task_core_backup_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_backup_handle_t *backup_handle = NULL;
 
    if (!task)
       goto task_finished;
 
    backup_handle = (core_backup_handle_t*)task->state;
+   flg           = task_get_flags(task);
 
-   if (!backup_handle)
-      goto task_finished;
-
-   if (task_get_cancelled(task))
+   if (!backup_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (backup_handle->status)
@@ -270,10 +273,10 @@ static void task_core_backup_handler(retro_task_t *task)
          break;
       case CORE_BACKUP_PRE_ITERATE:
          {
-            char task_title[PATH_MAX_LENGTH];
+            size_t _len;
+            char task_title[128];
             char backup_path[PATH_MAX_LENGTH];
 
-            task_title[0]  = '\0';
             backup_path[0] = '\0';
 
             /* Get backup path */
@@ -311,9 +314,11 @@ static void task_core_backup_handler(retro_task_t *task)
 
             /* Update task title */
             task_free_title(task);
-            strlcpy(task_title, msg_hash_to_str(MSG_BACKING_UP_CORE),
+            _len = strlcpy(task_title, msg_hash_to_str(MSG_BACKING_UP_CORE),
                   sizeof(task_title));
-            strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+            strlcpy(task_title       + _len,
+                  backup_handle->core_name,
+                  sizeof(task_title) - _len);
             task_set_title(task, strdup(task_title));
 
             /* Go to iteration phase */
@@ -409,9 +414,8 @@ static void task_core_backup_handler(retro_task_t *task)
              * history size limit */
             if (num_backups > backup_handle->auto_backup_history_size)
             {
-               char task_title[PATH_MAX_LENGTH];
-
-               task_title[0]  = '\0';
+               size_t _len;
+               char task_title[128];
 
                /* Get number of old backups to remove */
                backup_handle->num_auto_backups_to_remove = num_backups -
@@ -419,9 +423,12 @@ static void task_core_backup_handler(retro_task_t *task)
 
                /* Update task title */
                task_free_title(task);
-               strlcpy(task_title, msg_hash_to_str(MSG_PRUNING_CORE_BACKUP_HISTORY),
+               _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_PRUNING_CORE_BACKUP_HISTORY),
                      sizeof(task_title));
-               strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+               strlcpy(task_title       + _len,
+                     backup_handle->core_name,
+                     sizeof(task_title) - _len);
                task_set_title(task, strdup(task_title));
 
                /* Go to history clean-up phase */
@@ -478,27 +485,29 @@ static void task_core_backup_handler(retro_task_t *task)
          break;
       case CORE_BACKUP_END:
          {
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
-
+            size_t _len;
+            char task_title[128];
             /* Set final task title */
             task_free_title(task);
 
             if (backup_handle->success)
             {
                if (backup_handle->crc_match)
-                  strlcpy(task_title, msg_hash_to_str(MSG_CORE_BACKUP_ALREADY_EXISTS),
+                  _len = strlcpy(task_title,
+                        msg_hash_to_str(MSG_CORE_BACKUP_ALREADY_EXISTS),
                         sizeof(task_title));
                else
-                  strlcpy(task_title, msg_hash_to_str(MSG_CORE_BACKUP_COMPLETE),
+                  _len = strlcpy(task_title,
+                        msg_hash_to_str(MSG_CORE_BACKUP_COMPLETE),
                         sizeof(task_title));
             }
             else
-               strlcpy(task_title, msg_hash_to_str(MSG_CORE_BACKUP_FAILED),
+               _len = strlcpy(task_title, msg_hash_to_str(MSG_CORE_BACKUP_FAILED),
                      sizeof(task_title));
 
-            strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+            strlcpy(task_title       + _len,
+                  backup_handle->core_name,
+                  sizeof(task_title) - _len);
             task_set_title(task, strdup(task_title));
          }
          /* fall-through */
@@ -512,7 +521,7 @@ static void task_core_backup_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    free_core_backup_handle(backup_handle);
 }
@@ -530,17 +539,16 @@ void *task_push_core_backup(
       size_t auto_backup_history_size,
       const char *dir_core_assets, bool mute)
 {
+   size_t _len;
    task_finder_data_t find_data;
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
-   char task_title[PATH_MAX_LENGTH];
-
-   task_title[0] = '\0';
+   char task_title[128];
 
    /* Sanity check */
-   if (string_is_empty(core_path) ||
-       !path_is_valid(core_path))
+   if (    string_is_empty(core_path)
+       || !path_is_valid(core_path))
       goto error;
 
    /* Concurrent backup/restore tasks for the same core
@@ -559,8 +567,8 @@ void *task_push_core_backup(
       core_info_t *core_info = NULL;
 
       /* If core is found, use display name */
-      if (core_info_find(core_path, &core_info) &&
-          core_info->display_name)
+      if (   core_info_find(core_path, &core_info)
+          && core_info->display_name)
          core_name = core_info->display_name;
       else
       {
@@ -573,9 +581,8 @@ void *task_push_core_backup(
    }
 
    /* Configure handle */
-   backup_handle = (core_backup_handle_t*)calloc(1, sizeof(core_backup_handle_t));
-
-   if (!backup_handle)
+   if (!(backup_handle = (core_backup_handle_t*)calloc(1,
+               sizeof(core_backup_handle_t))))
       goto error;
 
    backup_handle->dir_core_assets            = string_is_empty(dir_core_assets) ? NULL : strdup(dir_core_assets);
@@ -600,23 +607,27 @@ void *task_push_core_backup(
    backup_handle->status                     = CORE_BACKUP_BEGIN;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Get initial task title */
-   strlcpy(task_title, msg_hash_to_str(MSG_CORE_BACKUP_SCANNING_CORE),
+   _len = strlcpy(task_title, msg_hash_to_str(MSG_CORE_BACKUP_SCANNING_CORE),
          sizeof(task_title));
-   strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+   strlcpy(task_title       + _len,
+         backup_handle->core_name,
+         sizeof(task_title) - _len);
 
    /* Configure task */
    task->handler          = task_core_backup_handler;
    task->state            = backup_handle;
-   task->mute             = mute;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
+
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
    task_queue_push(task);
@@ -649,63 +660,65 @@ static void cb_task_core_restore(
    /* Reload core info files
     * > This must be done on the main thread */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   /* Force reload of contentless cores icons */
+   menu_contentless_cores_free();
+#endif
 }
 
 static void task_core_restore_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_backup_handle_t *backup_handle = NULL;
 
    if (!task)
       goto task_finished;
 
    backup_handle = (core_backup_handle_t*)task->state;
+   flg           = task_get_flags(task);
 
-   if (!backup_handle)
-      goto task_finished;
-
-   if (task_get_cancelled(task))
+   if (!backup_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (backup_handle->status)
    {
       case CORE_RESTORE_GET_CORE_CRC:
+         /* If core file already exists, get its current
+          * CRC value */
+         if (path_is_valid(backup_handle->core_path))
          {
-            /* If core file already exists, get its current
-             * CRC value */
-            if (path_is_valid(backup_handle->core_path))
+            /* Open core file for reading */
+            backup_handle->core_file = intfstream_open_file(
+                  backup_handle->core_path, RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+            if (!backup_handle->core_file)
             {
-               /* Open core file for reading */
-               backup_handle->core_file = intfstream_open_file(
-                     backup_handle->core_path, RETRO_VFS_FILE_ACCESS_READ,
-                     RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-               if (!backup_handle->core_file)
-               {
-                  RARCH_ERR("[core restore] Failed to open core file: %s\n",
-                        backup_handle->core_path);
-                  backup_handle->status = CORE_RESTORE_END;
-                  break;
-               }
-
-               /* Get CRC value */
-               if (!intfstream_get_crc(backup_handle->core_file,
-                     &backup_handle->core_crc))
-               {
-                  RARCH_ERR("[core restore] Failed to determine CRC of core file: %s\n",
-                        backup_handle->core_path);
-                  backup_handle->status = CORE_RESTORE_END;
-                  break;
-               }
-
-               /* Close core file */
-               intfstream_close(backup_handle->core_file);
-               free(backup_handle->core_file);
-               backup_handle->core_file = NULL;
+               RARCH_ERR("[core restore] Failed to open core file: %s\n",
+                     backup_handle->core_path);
+               backup_handle->status = CORE_RESTORE_END;
+               break;
             }
 
-            /* Go to next CRC gathering phase */
-            backup_handle->status = CORE_RESTORE_GET_BACKUP_CRC;
+            /* Get CRC value */
+            if (!intfstream_get_crc(backup_handle->core_file,
+                     &backup_handle->core_crc))
+            {
+               RARCH_ERR("[core restore] Failed to determine CRC of core file: %s\n",
+                     backup_handle->core_path);
+               backup_handle->status = CORE_RESTORE_END;
+               break;
+            }
+
+            /* Close core file */
+            intfstream_close(backup_handle->core_file);
+            free(backup_handle->core_file);
+            backup_handle->core_file = NULL;
          }
+
+         /* Go to next CRC gathering phase */
+         backup_handle->status = CORE_RESTORE_GET_BACKUP_CRC;
          break;
       case CORE_RESTORE_GET_BACKUP_CRC:
          /* Get CRC value of backup file */
@@ -739,9 +752,8 @@ static void task_core_restore_handler(retro_task_t *task)
          break;
       case CORE_RESTORE_PRE_ITERATE:
          {
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
+            size_t _len;
+            char task_title[128];
 
             /* Open backup file */
 #if defined(HAVE_ZLIB)
@@ -807,11 +819,14 @@ static void task_core_restore_handler(retro_task_t *task)
 
             /* Update task title */
             task_free_title(task);
-            strlcpy(task_title, (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE) ?
-                        msg_hash_to_str(MSG_RESTORING_CORE) :
-                              msg_hash_to_str(MSG_INSTALLING_CORE),
+            _len = strlcpy(task_title,
+                  (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE)
+                  ? msg_hash_to_str(MSG_RESTORING_CORE)
+                  : msg_hash_to_str(MSG_INSTALLING_CORE),
                   sizeof(task_title));
-            strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+            strlcpy(task_title       + _len,
+                  backup_handle->core_name,
+                  sizeof(task_title) - _len);
             task_set_title(task, strdup(task_title));
 
             /* Go to iteration phase */
@@ -874,9 +889,8 @@ static void task_core_restore_handler(retro_task_t *task)
          break;
       case CORE_RESTORE_END:
          {
-            char task_title[PATH_MAX_LENGTH];
-
-            task_title[0] = '\0';
+            size_t _len;
+            char task_title[128];
 
             /* Set final task title */
             task_free_title(task);
@@ -884,23 +898,28 @@ static void task_core_restore_handler(retro_task_t *task)
             if (backup_handle->success)
             {
                if (backup_handle->crc_match)
-                  strlcpy(task_title, (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE) ?
-                              msg_hash_to_str(MSG_CORE_RESTORATION_ALREADY_INSTALLED) :
-                                    msg_hash_to_str(MSG_CORE_INSTALLATION_ALREADY_INSTALLED),
+                  _len = strlcpy(task_title,
+                        (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE)
+                        ? msg_hash_to_str(MSG_CORE_RESTORATION_ALREADY_INSTALLED)
+                        : msg_hash_to_str(MSG_CORE_INSTALLATION_ALREADY_INSTALLED),
                         sizeof(task_title));
                else
-                  strlcpy(task_title, (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE) ?
-                              msg_hash_to_str(MSG_CORE_RESTORATION_COMPLETE) :
-                                    msg_hash_to_str(MSG_CORE_INSTALLATION_COMPLETE),
+                  _len = strlcpy(task_title,
+                        (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE)
+                        ? msg_hash_to_str(MSG_CORE_RESTORATION_COMPLETE)
+                        : msg_hash_to_str(MSG_CORE_INSTALLATION_COMPLETE),
                         sizeof(task_title));
             }
             else
-               strlcpy(task_title, (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE) ?
-                           msg_hash_to_str(MSG_CORE_RESTORATION_FAILED) :
-                                 msg_hash_to_str(MSG_CORE_INSTALLATION_FAILED),
+               _len = strlcpy(task_title,
+                     (backup_handle->backup_type == CORE_BACKUP_TYPE_ARCHIVE)
+                     ? msg_hash_to_str(MSG_CORE_RESTORATION_FAILED)
+                     : msg_hash_to_str(MSG_CORE_INSTALLATION_FAILED),
                      sizeof(task_title));
 
-            strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+            strlcpy(task_title       + _len,
+                  backup_handle->core_name,
+                  sizeof(task_title) - _len);
             task_set_title(task, strdup(task_title));
          }
          /* fall-through */
@@ -914,7 +933,7 @@ static void task_core_restore_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    free_core_backup_handle(backup_handle);
 }
@@ -922,23 +941,23 @@ task_finished:
 bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       bool *core_loaded)
 {
+   size_t _len;
    task_finder_data_t find_data;
    enum core_backup_type backup_type;
    core_info_t *core_info              = NULL;
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
+   char task_title[128];
    char core_path[PATH_MAX_LENGTH];
-   char task_title[PATH_MAX_LENGTH];
 
    core_path[0]  = '\0';
-   task_title[0] = '\0';
 
    /* Sanity check */
-   if (string_is_empty(backup_path) ||
-       !path_is_valid(backup_path) ||
-       string_is_empty(dir_libretro) ||
-       !core_loaded)
+   if (    string_is_empty(backup_path)
+       || !path_is_valid(backup_path)
+       ||  string_is_empty(dir_libretro)
+       || !core_loaded)
       goto error;
 
    /* Ensure core directory is valid */
@@ -958,12 +977,14 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    if (backup_type == CORE_BACKUP_TYPE_INVALID)
    {
       const char *backup_filename = path_basename(backup_path);
-      char msg[PATH_MAX_LENGTH];
-
-      msg[0] = '\0';
-
-      strlcpy(msg, msg_hash_to_str(MSG_CORE_RESTORATION_INVALID_CONTENT), sizeof(msg));
-      strlcat(msg, backup_filename ? backup_filename : "", sizeof(msg));
+      char msg[128];
+      _len = strlcpy(msg,
+            msg_hash_to_str(MSG_CORE_RESTORATION_INVALID_CONTENT),
+            sizeof(msg));
+      if (backup_filename)
+         strlcpy(msg       + _len,
+               backup_filename,
+               sizeof(msg) - _len);
 
       RARCH_ERR("[core restore] Invalid core file selected: %s\n", backup_path);
       runloop_msg_queue_push(msg, 1, 100, true,
@@ -973,8 +994,8 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
 
    /* Get core name
     * > If core is found, use display name */
-   if (core_info_find(core_path, &core_info) &&
-       core_info->display_name)
+   if (   core_info_find(core_path, &core_info)
+       && core_info->display_name)
       core_name = core_info->display_name;
    else
    {
@@ -988,16 +1009,15 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    /* Check whether core is locked */
    if (core_info_get_core_lock(core_path, true))
    {
-      char msg[PATH_MAX_LENGTH];
-
-      msg[0] = '\0';
-
-      strlcpy(msg,
-            (backup_type == CORE_BACKUP_TYPE_ARCHIVE) ?
-                  msg_hash_to_str(MSG_CORE_RESTORATION_DISABLED) :
-                        msg_hash_to_str(MSG_CORE_INSTALLATION_DISABLED),
+      char msg[128];
+      _len = strlcpy(msg,
+            (backup_type == CORE_BACKUP_TYPE_ARCHIVE)
+            ? msg_hash_to_str(MSG_CORE_RESTORATION_DISABLED)
+            : msg_hash_to_str(MSG_CORE_INSTALLATION_DISABLED),
             sizeof(msg));
-      strlcat(msg, core_name, sizeof(msg));
+      strlcpy(msg       + _len,
+            core_name,
+            sizeof(msg) - _len);
 
       RARCH_ERR("[core restore] Restoration disabled - core is locked: %s\n", core_path);
       runloop_msg_queue_push(msg, 1, 100, true,
@@ -1014,9 +1034,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
       goto error;
 
    /* Configure handle */
-   backup_handle = (core_backup_handle_t*)calloc(1, sizeof(core_backup_handle_t));
-
-   if (!backup_handle)
+   if (!(backup_handle = (core_backup_handle_t*)calloc(1, sizeof(core_backup_handle_t))))
       goto error;
 
    backup_handle->dir_core_assets            = NULL;
@@ -1041,27 +1059,28 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    backup_handle->status                     = CORE_RESTORE_GET_CORE_CRC;
 
    /* Create task */
-   task = task_init();
-
-   if (!task)
+   if (!(task = task_init()))
       goto error;
 
    /* Get initial task title */
-   strlcpy(task_title, msg_hash_to_str(MSG_CORE_BACKUP_SCANNING_CORE),
+   _len = strlcpy(task_title,
+         msg_hash_to_str(MSG_CORE_BACKUP_SCANNING_CORE),
          sizeof(task_title));
-   strlcat(task_title, backup_handle->core_name, sizeof(task_title));
+   strlcpy(task_title       + _len,
+         backup_handle->core_name,
+         sizeof(task_title) - _len);
 
    /* Configure task */
    task->handler          = task_core_restore_handler;
    task->state            = backup_handle;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
    task->callback         = cb_task_core_restore;
+   task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* If core to be restored is currently loaded, must
     * unload it before pushing the task */
-   if (rarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
+   if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
    {
       command_event(CMD_EVENT_UNLOAD_CORE, NULL);
       *core_loaded = true;

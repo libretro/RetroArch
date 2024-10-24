@@ -264,17 +264,17 @@ const u8 GPU_TEVID[]={0xC0,0xC8,0xD0,0xD8,0xF0,0xF8};
 
 void GPU_SetTexEnv(u8 id, u16 rgbSources, u16 alphaSources, u16 rgbOperands, u16 alphaOperands, GPU_COMBINEFUNC rgbCombine, GPU_COMBINEFUNC alphaCombine, u32 constantColor)
 {
-	u32 param[0x5];
-	if(id > 6)
+   u32 param[0x5];
+   if (id > 6)
       return;
 
-	param[0x0] = (alphaSources  << 16) | (rgbSources);
-	param[0x1] = (alphaOperands << 12) | (rgbOperands);
-	param[0x2] = (alphaCombine  << 16) | (rgbCombine);
-	param[0x3] = constantColor;
-	param[0x4] = 0x00000000; /* ? */
+   param[0x0] = (alphaSources  << 16) | (rgbSources);
+   param[0x1] = (alphaOperands << 12) | (rgbOperands);
+   param[0x2] = (alphaCombine  << 16) | (rgbCombine);
+   param[0x3] = constantColor;
+   param[0x4] = 0x00000000; /* ? */
 
-	GPUCMD_AddIncrementalWrites(GPUREG_0000|GPU_TEVID[id], param, 0x00000005);
+   GPUCMD_AddIncrementalWrites(GPUREG_0000|GPU_TEVID[id], param, 0x00000005);
 }
 
 void GPU_DrawArray(GPU_Primitive_t primitive, u32 first, u32 count)

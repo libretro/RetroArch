@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_assert.h>
 #include <retro_inline.h>
 #include <boolean.h>
 #include <formats/image.h>
@@ -412,7 +411,6 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
 
    /* convert the huffman code to the symbol id */
    c = ((j->code_buffer >> (32 - k)) & rjpeg_bmask[k]) + h->delta[k];
-   retro_assert((((j->code_buffer) >> (32 - h->size[c])) & rjpeg_bmask[h->size[c]]) == h->code[c]);
 
    /* convert the id to a symbol */
    j->code_bits -= k;
@@ -432,9 +430,8 @@ static INLINE int rjpeg_extend_receive(rjpeg_jpeg *j, int n)
    if (j->code_bits < n)
       rjpeg_grow_buffer_unsafe(j);
 
-   sgn = (int32_t)j->code_buffer >> 31; /* sign bit is always in MSB */
-   k = RJPEG_LROT(j->code_buffer, n);
-   retro_assert(n >= 0 && n < (int) (sizeof(rjpeg_bmask)/sizeof(*rjpeg_bmask)));
+   sgn             = (int32_t)j->code_buffer >> 31; /* sign bit is always in MSB */
+   k               = RJPEG_LROT(j->code_buffer, n);
    j->code_buffer  = k & ~rjpeg_bmask[n];
    k              &= rjpeg_bmask[n];
    j->code_bits   -= n;
@@ -826,9 +823,9 @@ static void rjpeg_idct_block(uint8_t *out, int out_stride, short data[64])
    for (i = 0; i < 8; ++i,++d, ++v)
    {
       /* if all zeroes, shortcut -- this avoids dequantizing 0s and IDCTing */
-      if (     d[ 8] == 0 
-            && d[16] == 0 
-            && d[24] == 0 
+      if (     d[ 8] == 0
+            && d[16] == 0
+            && d[24] == 0
             && d[32] == 0
             && d[40] == 0
             && d[48] == 0
@@ -873,7 +870,7 @@ static void rjpeg_idct_block(uint8_t *out, int out_stride, short data[64])
        * we've got an extra 1<<3, so 1<<17 total we need to remove.
        * so we want to round that, which means adding 0.5 * 1<<17,
        * aka 65536. Also, we'll end up with -128 to 127 that we want
-       * to encode as 0..255 by adding 128, so we'll add that before the shift 
+       * to encode as 0..255 by adding 128, so we'll add that before the shift
        */
       x0 += 65536 + (128<<17);
       x1 += 65536 + (128<<17);
@@ -1325,7 +1322,7 @@ static void rjpeg_jpeg_reset(rjpeg_jpeg *j)
    j->todo                = j->restart_interval ? j->restart_interval : 0x7fffffff;
    j->eob_run             = 0;
 
-   /* no more than 1<<31 MCUs if no restart_interal? that's plenty safe,
+   /* no more than 1<<31 MCUs if no restart_interval? that's plenty safe,
     * since we don't even allow 1<<30 pixels */
 }
 

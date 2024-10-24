@@ -28,7 +28,7 @@
 #define IDI_ICON 1
 
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+#define _WIN32_WINNT 0x0500 /* _WIN32_WINNT_WIN2K */
 #endif
 
 #ifndef _WIN32_IE
@@ -49,7 +49,6 @@
 
 #include "../ui_companion_driver.h"
 #include "../../msg_hash.h"
-#include "../../driver.h"
 #include "../../paths.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -116,7 +115,14 @@ static void ui_window_win32_set_visible(void *data,
 static void ui_window_win32_set_title(void *data, char *buf)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   SetWindowText(window->hwnd, buf);
+#ifdef LEGACY_WIN32
+   char         *title_local = utf8_to_local_string_alloc(buf);
+   SetWindowText(window->hwnd, title_local);
+#else
+   wchar_t      *title_local = utf8_to_utf16_string_alloc(buf);
+   SetWindowTextW(window->hwnd, title_local);
+#endif
+   free(title_local);
 }
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
@@ -151,15 +157,15 @@ static enum ui_msg_window_response ui_msg_window_win32_response(
 	switch (response)
 	{
 	   case IDOK:
-		return UI_MSG_RESPONSE_OK;
+         return UI_MSG_RESPONSE_OK;
 	   case IDCANCEL:
-		return UI_MSG_RESPONSE_CANCEL;
+         return UI_MSG_RESPONSE_CANCEL;
 	   case IDYES:
-	    return UI_MSG_RESPONSE_YES;
+         return UI_MSG_RESPONSE_YES;
 	   case IDNO:
-        return UI_MSG_RESPONSE_NO;
+         return UI_MSG_RESPONSE_NO;
 	   default:
-		   break;
+         break;
 	}
 
 	switch (state->buttons)
@@ -228,7 +234,7 @@ static enum ui_msg_window_response ui_msg_window_win32_warning(
          MessageBoxA(NULL, (LPCSTR)state->text, (LPCSTR)state->title, flags));
 }
 
-static ui_msg_window_t ui_msg_window_win32 = {
+ui_msg_window_t ui_msg_window_win32 = {
    ui_msg_window_win32_error,
    ui_msg_window_win32_information,
    ui_msg_window_win32_question,
@@ -242,6 +248,7 @@ static bool ui_browser_window_win32_core(
    OPENFILENAME ofn;
    bool            okay  = true;
    settings_t *settings  = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
    bool video_fullscreen = settings->bools.video_fullscreen;
 
    ofn.lStructSize       = sizeof(OPENFILENAME);
@@ -274,7 +281,11 @@ static bool ui_browser_window_win32_core(
 
    /* Full Screen: Show mouse for the file dialog */
    if (video_fullscreen)
-      video_driver_show_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, true);
+   }
 
    if (!save && !GetOpenFileName(&ofn))
       okay = false;
@@ -283,7 +294,11 @@ static bool ui_browser_window_win32_core(
 
    /* Full screen: Hide mouse after the file dialog */
    if (video_fullscreen)
-      video_driver_hide_mouse();
+   {
+      if (     video_st->poke
+            && video_st->poke->show_mouse)
+         video_st->poke->show_mouse(video_st->data, false);
+   }
 
    return okay;
 }
@@ -306,26 +321,24 @@ static ui_browser_window_t ui_browser_window_win32 = {
 
 static void ui_companion_win32_deinit(void *data) { } 
 static void *ui_companion_win32_init(void) { return (void*)-1; }
-static void ui_companion_win32_notify_content_loaded(void *data) { }
 static void ui_companion_win32_toggle(void *data, bool force) { }
 static void ui_companion_win32_event_command(
       void *data, enum event_command cmd) { }
-static void ui_companion_win32_notify_list_pushed(void *data,
-        file_list_t *list, file_list_t *menu_list) { }
 
 ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
    ui_companion_win32_toggle,
    ui_companion_win32_event_command,
-   ui_companion_win32_notify_content_loaded,
-   ui_companion_win32_notify_list_pushed,
    NULL,
    NULL,
    NULL,
    NULL,
    NULL, /* log_msg */
    NULL, /* is_active */
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    &ui_browser_window_win32,
    &ui_msg_window_win32,
    &ui_window_win32,

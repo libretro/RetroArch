@@ -68,22 +68,17 @@ static void *upscale_1_5x_generic_create(const struct softfilter_config *config,
       unsigned threads, softfilter_simd_mask_t simd, void *userdata)
 {
    struct filter_data *filt = (struct filter_data*)calloc(1, sizeof(*filt));
-   (void)simd;
-   (void)config;
-   (void)userdata;
-
-   if (!filt) {
+   if (!filt)
+      return NULL;
+   if (!(filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data))))
+   {
+      free(filt);
       return NULL;
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->workers = (struct softfilter_thread_data*)calloc(1, sizeof(struct softfilter_thread_data));
    filt->threads = 1;
    filt->in_fmt  = in_fmt;
-   if (!filt->workers) {
-      free(filt);
-      return NULL;
-   }
    return filt;
 }
 
@@ -98,9 +93,8 @@ static void upscale_1_5x_generic_output(void *data,
 static void upscale_1_5x_generic_destroy(void *data)
 {
    struct filter_data *filt = (struct filter_data*)data;
-   if (!filt) {
+   if (!filt)
       return;
-   }
    free(filt->workers);
    free(filt);
 }
@@ -139,34 +133,34 @@ static void upscale_1_5x_work_cb_xrgb8888(void *data, void *thread_data)
          const uint32_t *in_line_ptr = input + (x << 1);
          uint32_t *out_line_ptr      = out_ptr;
 
-         color_a      = *in_line_ptr;
-         color_b      = *(in_line_ptr + 1);
-         in_line_ptr += in_stride;
+         color_a                     = *in_line_ptr;
+         color_b                     = *(in_line_ptr + 1);
+         in_line_ptr                += in_stride;
 
-         color_c      = *in_line_ptr;
-         color_d      = *(in_line_ptr + 1);
+         color_c                     = *in_line_ptr;
+         color_d                     = *(in_line_ptr + 1);
 
-         color_ab     = (color_a + color_b + ((color_a ^ color_b) & 0x1010101)) >> 1;
-         color_cd     = (color_c + color_d + ((color_c ^ color_d) & 0x1010101)) >> 1;
+         color_ab                    = (color_a + color_b + ((color_a ^ color_b) & 0x1010101)) >> 1;
+         color_cd                    = (color_c + color_d + ((color_c ^ color_d) & 0x1010101)) >> 1;
 
          /* Row 1 */
-         *out_line_ptr       = color_a;
-         *(out_line_ptr + 1) = color_ab;
-         *(out_line_ptr + 2) = color_b;
-         out_line_ptr       += out_stride;
+         *out_line_ptr               = color_a;
+         *(out_line_ptr + 1)         = color_ab;
+         *(out_line_ptr + 2)         = color_b;
+         out_line_ptr               += out_stride;
 
          /* Row 2 */
-         *out_line_ptr       = (color_a  + color_c  + ((color_a  ^ color_c)  & 0x1010101)) >> 1;
-         *(out_line_ptr + 1) = (color_ab + color_cd + ((color_ab ^ color_cd) & 0x1010101)) >> 1;
-         *(out_line_ptr + 2) = (color_b  + color_d  + ((color_b  ^ color_d)  & 0x1010101)) >> 1;
-         out_line_ptr       += out_stride;
+         *out_line_ptr               = (color_a  + color_c  + ((color_a  ^ color_c)  & 0x1010101)) >> 1;
+         *(out_line_ptr + 1)         = (color_ab + color_cd + ((color_ab ^ color_cd) & 0x1010101)) >> 1;
+         *(out_line_ptr + 2)         = (color_b  + color_d  + ((color_b  ^ color_d)  & 0x1010101)) >> 1;
+         out_line_ptr               += out_stride;
 
          /* Row 3 */
-         *out_line_ptr       = color_c;
-         *(out_line_ptr + 1) = color_cd;
-         *(out_line_ptr + 2) = color_d;
+         *out_line_ptr               = color_c;
+         *(out_line_ptr + 1)         = color_cd;
+         *(out_line_ptr + 2)         = color_d;
 
-         out_ptr += 3;
+         out_ptr                    += 3;
       }
 
       input  += in_stride << 1;
@@ -253,22 +247,21 @@ static void upscale_1_5x_generic_packets(void *data,
     * over threads and can cull some code. This only
     * makes the tiniest performance difference, but
     * every little helps when running on an o3DS... */
-   struct filter_data *filt = (struct filter_data*)data;
+   struct filter_data *filt           = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)&filt->workers[0];
 
-   thr->out_data = (uint8_t*)output;
-   thr->in_data = (const uint8_t*)input;
-   thr->out_pitch = output_stride;
-   thr->in_pitch = input_stride;
-   thr->width = width;
-   thr->height = height;
+   thr->out_data                      = (uint8_t*)output;
+   thr->in_data                       = (const uint8_t*)input;
+   thr->out_pitch                     = output_stride;
+   thr->in_pitch                      = input_stride;
+   thr->width                         = width;
+   thr->height                        = height;
 
-   if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888) {
-      packets[0].work = upscale_1_5x_work_cb_xrgb8888;
-   } else if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
-      packets[0].work = upscale_1_5x_work_cb_rgb565;
-   }
-   packets[0].thread_data = thr;
+   if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
+      packets[0].work                 = upscale_1_5x_work_cb_xrgb8888;
+   else if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
+      packets[0].work                 = upscale_1_5x_work_cb_rgb565;
+   packets[0].thread_data             = thr;
 }
 
 static const struct softfilter_implementation upscale_1_5x_generic = {
@@ -290,7 +283,6 @@ static const struct softfilter_implementation upscale_1_5x_generic = {
 const struct softfilter_implementation *softfilter_get_implementation(
       softfilter_simd_mask_t simd)
 {
-   (void)simd;
    return &upscale_1_5x_generic;
 }
 

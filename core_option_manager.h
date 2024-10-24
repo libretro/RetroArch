@@ -23,8 +23,10 @@
 #include <retro_common_api.h>
 #include <lists/string_list.h>
 #include <lists/nested_list.h>
+#include <file/config_file.h>
+#include <libretro.h>
 
-#include "retroarch.h"
+#include <retro_miscellaneous.h>
 
 RETRO_BEGIN_DECLS
 
@@ -49,7 +51,7 @@ struct core_option
    bool visible;
 };
 
-struct core_catagory
+struct core_category
 {
    char *key;
    char *desc;
@@ -66,7 +68,7 @@ struct core_option_manager
    config_file_t *conf;
    char conf_path[PATH_MAX_LENGTH];
 
-   struct core_catagory *cats;
+   struct core_category *cats;
    struct core_option *opts;
    nested_list_t *option_map;
 
@@ -250,7 +252,7 @@ const char *core_option_manager_get_category_info(core_option_manager_t *opt,
  * be visible if at least one of the options
  * in the category is visible)
  *
- * Returns: true if option category should be
+ * @return true if option category should be
  * displayed by the frontend, otherwise false.
  **/
 bool core_option_manager_get_category_visible(core_option_manager_t *opt,
@@ -272,11 +274,32 @@ bool core_option_manager_get_category_visible(core_option_manager_t *opt,
  * Fetches the index of the core option identified
  * by the specified @key.
  *
- * Returns: true if option matching the specified
+ * @return true if option matching the specified
  * key was found, otherwise false.
  **/
 bool core_option_manager_get_idx(core_option_manager_t *opt,
       const char *key, size_t *idx);
+
+/**
+ * core_option_manager_get_val_idx:
+ *
+ * @opt     : options manager handle
+ * @idx     : core option index
+ * @val     : string representation of the
+ *            core option value
+ * @val_idx : index of core option value
+ *            corresponding to @val
+ *
+ * Fetches the index of the core option value
+ * identified by the specified core option @idx
+ * and @val string.
+ *
+ * Returns: true if option value matching the
+ * specified option index and value string
+ * was found, otherwise false.
+ **/
+bool core_option_manager_get_val_idx(core_option_manager_t *opt,
+      size_t idx, const char *val, size_t *val_idx);
 
 /**
  * core_option_manager_get_desc:

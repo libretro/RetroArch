@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include "ctr_debug.h"
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
@@ -232,20 +231,7 @@ void __system_initArgv(void)
       for (i = 1; i < __system_argc; i++)
          __system_argv[i] = __system_argv[i - 1] + strlen(__system_argv[i - 1]) + 1;
 
-      i             = __system_argc - 1;
-      __system_argc = 1;
-
-      while (i)
-      {
-         if(__system_argv[i] && isalnum(__system_argv[i][0])
-               && strncmp(__system_argv[i], "3dslink:/", 9))
-         {
-            __system_argv[1] = __system_argv[i];
-            __system_argc = 2;
-            break;
-         }
-         i--;
-      }
+      __system_argv[__system_argc] = NULL;
    }
    else
    {

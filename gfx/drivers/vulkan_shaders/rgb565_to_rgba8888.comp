@@ -1,0 +1,40 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 8) in;
+
+layout(set = 0, binding = 3, rgba8) writeonly uniform image2D uImage;
+layout(set = 0, binding = 4, std430) readonly buffer SSBO
+{
+	uint packed_pixels[];
+};
+
+layout(set = 0, binding = 0, std140) uniform UBO
+{
+	uvec2 resolution;
+	uint word_stride;
+};
+
+vec3 rgb565_to_rgb888(uint word)
+{
+	return vec3((uvec3(word) >> uvec3(11, 5, 0)) & uvec3(31, 63, 31)) / vec3(31.0, 63.0, 31.0);
+}
+
+void main()
+{
+	// We work on two horizontal pixels in parallel since we cannot rely on 16-bit storage.
+	uvec2 first_input_pixel = gl_GlobalInvocationID.xy;
+	uvec2 first_output_pixel = first_input_pixel * uvec2(2, 1);
+
+	if (all(lessThan(first_output_pixel, resolution)))
+	{
+		uint word = packed_pixels[first_input_pixel.y * word_stride + first_input_pixel.x];
+		uint lo_word = word & 0xffffu;
+		uint hi_word = word >> 16u;
+		vec3 lo = rgb565_to_rgb888(lo_word);
+		vec3 hi = rgb565_to_rgb888(hi_word);
+
+		imageStore(uImage, ivec2(first_output_pixel), vec4(lo, 1.0));
+		if (first_output_pixel.x + 1u < resolution.x)
+			imageStore(uImage, ivec2(first_output_pixel) + ivec2(1, 0), vec4(hi, 1.0));
+	}
+}

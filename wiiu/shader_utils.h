@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _GX2_SHADER_UTILS_H
+#define _GX2_SHADER_UTILS_H
 
 #include <wiiu/gx2/shaders.h>
 
@@ -73,9 +74,6 @@ void GX2InitShader(GX2Shader* shader);
 void GX2DestroyShader(GX2Shader* shader);
 void GX2SetShader(GX2Shader* shader);
 
-void check_shader(const void* shader_, u32 shader_size, const void* org_, u32 org_size, const char* name);
-void check_shader_verbose(u32* shader, u32 shader_size, u32* org, u32 org_size, const char* name);
-
 typedef struct
 {
    GX2VertexShader* vs;
@@ -88,4 +86,6 @@ void gfd_free(GFDFile* gfd);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

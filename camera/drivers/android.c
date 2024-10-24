@@ -15,8 +15,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <libretro.h>
 #include <glsym/glsym.h>
 
+#include "../camera_driver.h"
 #include "../../retroarch.h"
 
 typedef struct android_camera

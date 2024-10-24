@@ -27,24 +27,13 @@
 
 #define WPAD_INVALID_CHANNEL -1
 
-typedef struct _drc_state drc_state;
-struct _drc_state
-{
-   uint64_t button_state;
-   int16_t  analog_state[3][2];
-};
-
-/* TODO/FIXME - static global variables */
-static drc_state gamepads[WIIU_GAMEPAD_CHANNELS]   = { 0 };
-static int channel_slot_map[WIIU_GAMEPAD_CHANNELS] = { WPAD_INVALID_CHANNEL, WPAD_INVALID_CHANNEL };
-
-static VPADChan to_gamepad_channel(unsigned pad)
+static VPADChan wpad_to_gamepad_channel(unsigned pad)
 {
    unsigned i;
 
    for (i = 0; i < WIIU_GAMEPAD_CHANNELS; i++)
    {
-      if (channel_slot_map[i] == pad)
+      if (joypad_state.wpad.channel_slot_map[i] == pad)
          return i;
    }
 
@@ -59,23 +48,23 @@ static void wpad_deregister(unsigned channel)
       return;
 
    /* See if Gamepad is already disconnected */
-   if (channel_slot_map[channel] == WPAD_INVALID_CHANNEL)
+   if (joypad_state.wpad.channel_slot_map[channel] == WPAD_INVALID_CHANNEL)
       return;
 
    /* Sanity check, about to use as unsigned */
-   if (channel_slot_map[channel] < 0)
+   if (joypad_state.wpad.channel_slot_map[channel] < 0)
    {
-      channel_slot_map[channel] = WPAD_INVALID_CHANNEL;
+      joypad_state.wpad.channel_slot_map[channel] = WPAD_INVALID_CHANNEL;
       return;
    }
 
-   slot = (unsigned)channel_slot_map[channel];
+   slot = (unsigned)joypad_state.wpad.channel_slot_map[channel];
    if (slot >= MAX_USERS)
       return;
 
    input_autoconfigure_disconnect(slot, wpad_driver.ident);
-   hid_instance.pad_list[slot].connected = false;
-   channel_slot_map[channel] = WPAD_INVALID_CHANNEL;
+   joypad_state.pads[slot].connected           = false;
+   joypad_state.wpad.channel_slot_map[channel] = WPAD_INVALID_CHANNEL;
 }
 
 static void wpad_register(unsigned channel)
@@ -87,25 +76,25 @@ static void wpad_register(unsigned channel)
 
    /* Check if gamepad is already handled
       Other checks not needed here - about to overwrite 
-      channel_slot_map entry*/
-   if (channel_slot_map[channel] != WPAD_INVALID_CHANNEL)
+      joypad_state.wpad.channel_slot_map entry*/
+   if (joypad_state.wpad.channel_slot_map[channel] != WPAD_INVALID_CHANNEL)
       return;
 
-   slot = pad_connection_find_vacant_pad(hid_instance.pad_list);
-   if(slot < 0)
+   if ((slot = pad_connection_find_vacant_pad(joypad_state.pads)) < 0)
       return;
 
-   hid_instance.pad_list[slot].connected = true;
+   joypad_state.pads[slot].connected = true;
+   joypad_state.pads[slot].input_driver = &wpad_driver;
    input_pad_connect(slot, &wpad_driver);
-   channel_slot_map[channel] = slot;
+   joypad_state.wpad.channel_slot_map[channel] = slot;
 }
 
-static void update_button_state(uint64_t *state, uint32_t held_buttons)
+static void wpad_update_button_state(uint64_t *state, uint32_t held_buttons)
 {
    *state = held_buttons & VPAD_MASK_BUTTONS;
 }
 
-static void update_analog_state(int16_t state[3][2], VPADStatus *vpad)
+static void wpad_update_analog_state(int16_t state[3][2], VPADStatus *vpad)
 {
    state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = WIIU_READ_STICK(vpad->leftStick.x);
    state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->leftStick.y);
@@ -113,7 +102,7 @@ static void update_analog_state(int16_t state[3][2], VPADStatus *vpad)
    state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->rightStick.y);
 }
 
-static int16_t scale_touchpad(int16_t from_min, int16_t from_max,
+static int16_t wpad_scale_touchpad(int16_t from_min, int16_t from_max,
       int16_t to_min,   int16_t to_max, int16_t value )
 {
    int32_t from_range = from_max - from_min;
@@ -122,17 +111,17 @@ static int16_t scale_touchpad(int16_t from_min, int16_t from_max,
    return (((value - from_min) * to_range) / from_range) + to_min;
 }
 
-static void get_calibrated_point(VPADTouchData *point,
+static void wpad_get_calibrated_point(VPADTouchData *point,
       struct video_viewport *viewport, VPADStatus *vpad, unsigned channel)
 {
    VPADTouchData calibrated720p = {0};
 
    VPADGetTPCalibratedPoint(channel, &calibrated720p, &(vpad->tpNormal));
-   point->x = scale_touchpad(12, 1268, 0, viewport->full_width, calibrated720p.x);
-   point->y = scale_touchpad(12, 708, 0, viewport->full_height, calibrated720p.y);
+   point->x = wpad_scale_touchpad(12, 1268, 0, viewport->full_width, calibrated720p.x);
+   point->y = wpad_scale_touchpad(12, 708, 0, viewport->full_height, calibrated720p.y);
 }
 
-static void apply_clamping(VPADTouchData *point, struct video_viewport *viewport, bool *clamped)
+static void wpad_apply_clamping(VPADTouchData *point, struct video_viewport *viewport, bool *clamped)
 {
    /* clamp the x domain to the viewport */
    if (point->x < viewport->x)
@@ -159,11 +148,11 @@ static void apply_clamping(VPADTouchData *point, struct video_viewport *viewport
    }
 }
 
-static void get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad,
+static void wpad_get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad,
       VPADChan channel, struct video_viewport *viewport, bool *clamped)
 {
-   get_calibrated_point(point, viewport, vpad, channel);
-   apply_clamping(point, viewport, clamped);
+   wpad_get_calibrated_point(point, viewport, vpad, channel);
+   wpad_apply_clamping(point, viewport, clamped);
 }
 
 #if 0
@@ -183,7 +172,7 @@ static int16_t bitwise_abs(int16_t value)
 /**
  * printf doesn't have a concept of a signed hex digit, so we fake it.
  */
-static void log_coords(int16_t x, int16_t y)
+static void wpad_log_coords(int16_t x, int16_t y)
 {
    bool x_negative = x & 0x8000;
    bool y_negative = y & 0x8000;
@@ -199,7 +188,7 @@ static void log_coords(int16_t x, int16_t y)
 }
 #endif
 
-static void update_touch_state(int16_t state[3][2],
+static void wpad_update_touch_state(int16_t state[3][2],
       uint64_t *buttons, VPADStatus *vpad, VPADChan channel)
 {
    VPADTouchData point            = {0};
@@ -213,15 +202,15 @@ static void update_touch_state(int16_t state[3][2],
    }
 
    video_driver_get_viewport_info(&viewport);
-   get_touch_coordinates(&point, vpad, channel, &viewport, &touch_clamped);
+   wpad_get_touch_coordinates(&point, vpad, channel, &viewport, &touch_clamped);
 
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = scale_touchpad(
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = wpad_scale_touchpad(
          viewport.x, viewport.x + viewport.width, -0x7fff, 0x7fff, point.x);
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = scale_touchpad(
+   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = wpad_scale_touchpad(
          viewport.y, viewport.y + viewport.height, -0x7fff, 0x7fff, point.y);
 
 #if 0
-   log_coords(state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X],
+   wpad_log_coords(state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X],
          state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y]);
 #endif
 
@@ -231,7 +220,7 @@ static void update_touch_state(int16_t state[3][2],
       *buttons &= ~VPAD_BUTTON_TOUCH;
 }
 
-static void check_panic_button(uint32_t held_buttons)
+static void wpad_check_panic_button(uint32_t held_buttons)
 {
    if ((held_buttons & PANIC_BUTTON_MASK) == PANIC_BUTTON_MASK)
       command_event(CMD_EVENT_QUIT, NULL);
@@ -255,16 +244,20 @@ static void wpad_poll(void)
 
       if (error == VPAD_READ_SUCCESS)
       {
-         update_button_state(&gamepads[channel].button_state, vpad.hold);
-         update_analog_state(gamepads[channel].analog_state, &vpad);
-         update_touch_state(gamepads[channel].analog_state, &gamepads[channel].button_state, &vpad, channel);
-         check_panic_button(vpad.hold);
+         wpad_update_button_state(&joypad_state.wpad.pads[channel].button_state, vpad.hold);
+         wpad_update_analog_state(joypad_state.wpad.pads[channel].analog_state, &vpad);
+         wpad_update_touch_state(joypad_state.wpad.pads[channel].analog_state, &joypad_state.wpad.pads[channel].button_state, &vpad, channel);
+         wpad_check_panic_button(vpad.hold);
       }
    }
 }
 
 static void *wpad_init(void *data)
 {
+   int i;
+   memset(&joypad_state.wpad, 0, sizeof(joypad_state.wpad));
+   for (i = 0; i < WIIU_GAMEPAD_CHANNELS; i++)
+      joypad_state.wpad.channel_slot_map[i] = WPAD_INVALID_CHANNEL;
    wpad_poll();
    return (void*)-1;
 }
@@ -272,20 +265,20 @@ static void *wpad_init(void *data)
 static bool wpad_query_pad(unsigned port)
 {
    return port < MAX_USERS && 
-      (to_gamepad_channel(port) != WPAD_INVALID_CHANNEL);
+      (wpad_to_gamepad_channel(port) != WPAD_INVALID_CHANNEL);
 }
 
 static void wpad_destroy(void) { }
 
 static int32_t wpad_button(unsigned port, uint16_t joykey)
 {
-   VPADChan channel;
-   if (!wpad_query_pad(port))
-      return 0;
-   channel = to_gamepad_channel(port);
-   if (channel < 0)
-      return 0;
-   return (gamepads[channel].button_state & (UINT64_C(1) << joykey));
+   if (wpad_query_pad(port))
+   {
+      VPADChan channel = wpad_to_gamepad_channel(port);
+      if (channel >= 0)
+         return (joypad_state.wpad.pads[channel].button_state & (UINT64_C(1) << joykey));
+   }
+   return 0;
 }
 
 static void wpad_get_buttons(unsigned port, input_bits_t *state)
@@ -298,14 +291,13 @@ static void wpad_get_buttons(unsigned port, input_bits_t *state)
       return;
    }
 
-   channel = to_gamepad_channel(port);
-   if (channel < 0)
+   if ((channel = wpad_to_gamepad_channel(port)) < 0)
    {
       BIT256_CLEAR_ALL_PTR(state);
       return;
    }
 
-   BITS_COPY32_PTR(state, gamepads[channel].button_state);
+   BITS_COPY32_PTR(state, joypad_state.wpad.pads[channel].button_state);
 }
 
 static int16_t wpad_axis(unsigned port, uint32_t axis)
@@ -316,13 +308,13 @@ static int16_t wpad_axis(unsigned port, uint32_t axis)
    if (!wpad_query_pad(port))
       return 0;
 
-   channel = to_gamepad_channel(port);
+   channel = wpad_to_gamepad_channel(port);
    if (channel < 0)
       return 0;
 
    pad_functions.read_axis_data(axis, &data);
    return pad_functions.get_axis_value(data.axis,
-         gamepads[channel].analog_state, data.is_negative);
+         joypad_state.wpad.pads[channel].analog_state, data.is_negative);
 }
 
 static int16_t wpad_state(
@@ -369,8 +361,10 @@ input_device_driver_t wpad_driver =
   wpad_get_buttons,
   wpad_axis,
   wpad_poll,
-  NULL,
-  NULL,
+  NULL, /* set_rumble */
+  NULL, /* set_rumble_gain */
+  NULL, /* set_sensor_state */
+  NULL, /* get_sensor_input */
   wpad_name,
   "gamepad",
 };

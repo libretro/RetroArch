@@ -32,8 +32,37 @@
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
-#include "../common/fpga_common.h"
 
+#define NUMBER_OF_WRITE_FRAMES 1 /* XPAR_AXIVDMA_0_NUM_FSTORES */
+#define STORAGE_SIZE NUMBER_OF_WRITE_FRAMES * ((1920*1080)<<2)
+#define FRAME_SIZE (STORAGE_SIZE / NUMBER_OF_WRITE_FRAMES)
+
+#define FB_WIDTH  1920
+#define FB_HEIGHT 1080
+
+typedef struct RegOp
+{
+   void *ptr;
+   int fd;
+   int only_mmap;
+   int only_munmap;
+} RegOp;
+
+typedef struct fpga
+{
+   RegOp regOp; /* ptr alignment */
+   volatile unsigned *framebuffer;
+   unsigned char *menu_frame;
+   unsigned menu_width;
+   unsigned menu_height;
+   unsigned menu_pitch;
+   unsigned video_width;
+   unsigned video_height;
+   unsigned video_pitch;
+   unsigned video_bits;
+   unsigned menu_bits;
+   bool rgb32;
+} fpga_t;
 
 static unsigned int get_memory_size(void)
 {
@@ -89,7 +118,7 @@ static void do_mmap_op(RegOp *regOp)
    return;
 }
 
-static void fpga_gfx_create(fpga_t *fpga)
+static void fpga_create(fpga_t *fpga)
 {
    memset(&fpga->regOp, 0, sizeof(fpga->regOp));
 
@@ -100,7 +129,7 @@ static void fpga_gfx_create(fpga_t *fpga)
    fpga->framebuffer = ((volatile unsigned*)fpga->regOp.ptr);
 }
 
-static void *fpga_gfx_init(const video_info_t *video,
+static void *fpga_init(const video_info_t *video,
       const input_driver_t **input, void **input_data)
 {
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
@@ -119,9 +148,7 @@ static void *fpga_gfx_init(const video_info_t *video,
    else
       fpga->video_pitch = video->width * 2;
 
-   fpga_gfx_create(fpga);
-
-   RARCH_LOG("[FPGA]: Init complete.\n");
+   fpga_create(fpga);
 
    return fpga;
 
@@ -131,7 +158,7 @@ error:
    return NULL;
 }
 
-static bool fpga_gfx_frame(void *data, const void *frame,
+static bool fpga_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
@@ -142,7 +169,7 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    fpga_t *fpga              = (fpga_t*)data;
    unsigned bits             = fpga->video_bits;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame || !frame_width || !frame_height)
@@ -152,9 +179,9 @@ static bool fpga_gfx_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  fpga->video_width  != frame_width  || 
-         fpga->video_height != frame_height || 
-         fpga->video_pitch  != pitch)
+   if (     (fpga->video_width  != frame_width)
+         || (fpga->video_height != frame_height)
+         || (fpga->video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
@@ -240,27 +267,24 @@ static bool fpga_gfx_frame(void *data, const void *frame,
             }
          }
       }
+#if 0
       else
       {
          /* TODO/FIXME: handle 32-bit core output */
       }
+#endif
    }
 
    return true;
 }
 
-static void fpga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static void fpga_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
+static bool fpga_alive(void *data) { return true; }
+static bool fpga_focus(void *data) { return true; }
+static bool fpga_suppress_screensaver(void *data, bool enable) { return false; }
+static bool fpga_has_windowed(void *data) { return true; }
 
-static bool fpga_gfx_alive(void *data)
-{
-   return true;
-}
-
-static bool fpga_gfx_focus(void *data) { return true; }
-static bool fpga_gfx_suppress_screensaver(void *data, bool enable) { return false; }
-static bool fpga_gfx_has_windowed(void *data) { return true; }
-
-static void fpga_gfx_free(void *data)
+static void fpga_free(void *data)
 {
    fpga_t *fpga = (fpga_t*)data;
 
@@ -279,37 +303,11 @@ static void fpga_gfx_free(void *data)
    do_mmap_op(&fpga->regOp);
 }
 
-static bool fpga_gfx_set_shader(void *data,
-      enum rarch_shader_type type, const char *path)
-{
-   (void)data;
-   (void)type;
-   (void)path;
-
-   return false;
-}
-
-static void fpga_gfx_set_rotation(void *data,
-      unsigned rotation)
-{
-   (void)data;
-   (void)rotation;
-}
-
-static void fpga_gfx_viewport_info(void *data,
-      struct video_viewport *vp)
-{
-   (void)data;
-   (void)vp;
-}
-
-static bool fpga_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
-{
-   (void)data;
-   (void)buffer;
-
-   return true;
-}
+/* TODO/FIXME - implement */
+static bool fpga_set_shader(void *data,
+      enum rarch_shader_type type, const char *path) { return false; }
+static void fpga_set_rotation(void *data,
+      unsigned rotation) { }
 
 static void fpga_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
@@ -325,9 +323,9 @@ static void fpga_set_texture_frame(void *data,
       free(fpga->menu_frame);
    fpga->menu_frame = NULL;
 
-   if (  !fpga->menu_frame           || 
-         fpga->menu_width  != width  || 
-         fpga->menu_height != height || 
+   if (  !fpga->menu_frame           ||
+         fpga->menu_width  != width  ||
+         fpga->menu_height != height ||
          fpga->menu_pitch != pitch)
       if (pitch && height)
          fpga->menu_frame = (unsigned char*)malloc(pitch * height);
@@ -342,87 +340,84 @@ static void fpga_set_texture_frame(void *data,
    }
 }
 
-static void fpga_set_osd_msg(void *data, 
-      const char *msg,
-      const void *params, void *font)
-{
-}
-
+/* TODO/FIXME - implement */
+static void fpga_set_osd_msg(void *data, const char *msg,
+      const struct font_params *params, void *font) { }
 static void fpga_get_video_output_size(void *data,
-      unsigned *width, unsigned *height) { }
+      unsigned *width, unsigned *height, char *desc, size_t desc_len) { }
 static void fpga_get_video_output_prev(void *data) { }
 static void fpga_get_video_output_next(void *data) { }
-
 static void fpga_set_video_mode(void *data, unsigned width, unsigned height,
-      bool fullscreen)
-{
-}
+      bool fullscreen) { }
 
 static const video_poke_interface_t fpga_poke_interface = {
-   NULL,
-   NULL,
+   NULL, /* get_flags */
+   NULL, /* load_texture */
+   NULL, /* unload_texture */
    fpga_set_video_mode,
-   NULL,
+   NULL, /* get_refresh_rate */
+   NULL, /* set_filtering */
    fpga_get_video_output_size,
    fpga_get_video_output_prev,
    fpga_get_video_output_next,
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#if defined(HAVE_MENU)
-   fpga_set_texture_frame,
-   NULL,
-   fpga_set_osd_msg,
-   NULL,
-#else
-   NULL,
-   NULL,
-   NULL,
-   NULL,
-#endif
-
-   NULL,
+   NULL, /* get_current_framebuffer */
+   NULL, /* get_proc_address */
+   NULL, /* set_aspect_ratio */
+   NULL, /* apply_state_changes */
 #ifdef HAVE_MENU
-   NULL,
+   fpga_set_texture_frame,
+   NULL, /* set_texture_enable */
+   fpga_set_osd_msg,
+   NULL, /* show_mouse */
+#else
+   NULL, /* set_texture_frame */
+   NULL, /* set_texture_enable */
+   NULL, /* set_osd_msg */
+   NULL, /* show_mouse */
 #endif
+   NULL, /* grab_mouse_toggle */
+   NULL, /* get_current_shader */
+   NULL, /* get_current_software_framebuffer */
+   NULL, /* get_hw_render_interface */
    NULL, /* set_hdr_max_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_contrast */
    NULL  /* set_hdr_expand_gamut */
 };
 
-static void fpga_gfx_get_poke_interface(void *data,
+static void fpga_get_poke_interface(void *data,
       const video_poke_interface_t **iface)
 {
    (void)data;
    *iface = &fpga_poke_interface;
 }
 
-static void fpga_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-}
+/* TODO/FIXME - implement */
+static void fpga_set_viewport(void *data, unsigned viewport_width,
+      unsigned viewport_height, bool force_full, bool allow_rotate) { }
 
 video_driver_t video_fpga = {
-   fpga_gfx_init,
-   fpga_gfx_frame,
-   fpga_gfx_set_nonblock_state,
-   fpga_gfx_alive,
-   fpga_gfx_focus,
-   fpga_gfx_suppress_screensaver,
-   fpga_gfx_has_windowed,
-   fpga_gfx_set_shader,
-   fpga_gfx_free,
+   fpga_init,
+   fpga_frame,
+   fpga_set_nonblock_state,
+   fpga_alive,
+   fpga_focus,
+   fpga_suppress_screensaver,
+   fpga_has_windowed,
+   fpga_set_shader,
+   fpga_free,
    "fpga",
-   fpga_gfx_set_viewport,
-   fpga_gfx_set_rotation,
-   fpga_gfx_viewport_info,
-   fpga_gfx_read_viewport,
+   fpga_set_viewport,
+   fpga_set_rotation,
+   NULL, /* viewport_info */
+   NULL, /* read_viewport */
    NULL, /* read_frame_raw */
-
 #ifdef HAVE_OVERLAY
-  NULL, /* overlay_interface */
+   NULL, /* get_overlay_interface */
 #endif
-  fpga_gfx_get_poke_interface,
+   fpga_get_poke_interface,
+   NULL, /* wrap_type_to_enum */
+#ifdef HAVE_GFX_WIDGETS
+   NULL  /* gfx_widgets_enabled */
+#endif
 };

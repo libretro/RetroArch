@@ -23,8 +23,6 @@
 
 #include <libretro.h>
 
-#include "../../config.def.h"
-
 #include "../input_driver.h"
 
 /* TODO/FIXME - add joypad driver */
@@ -80,5 +78,6 @@ input_driver_t input_xenon360 = {
    xenon360_input_get_capabilities,
    "xenon360",
    NULL,                            /* grab_mouse */
+   NULL,
    NULL
 };

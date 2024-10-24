@@ -21,7 +21,7 @@
 
 #include <retro_inline.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 #define SOUND_FREQUENCY 48000
 #define MAX_BUFFER 2048

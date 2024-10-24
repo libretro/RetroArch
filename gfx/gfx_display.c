@@ -16,9 +16,12 @@
  */
 #include "gfx_display.h"
 
-#include "video_coord_array.h"
 #include "../configuration.h"
 #include "../verbosity.h"
+
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
 
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
@@ -31,41 +34,13 @@
 /* Small 1x1 white texture used for blending purposes */
 static uintptr_t gfx_white_texture;
 
-static bool gfx_display_null_font_init_first(
-      void **font_handle, void *video_data,
-      const char *font_path, float font_size,
-      bool is_threaded)
-{
-   font_data_t **handle = (font_data_t**)font_handle;
-   if ((*handle = font_driver_init_first(video_data,
-         font_path, font_size, true,
-         is_threaded,
-         FONT_DRIVER_RENDER_DONT_CARE)))
-      return true;
-   return false;
-}
+/* ptr alignment */
+static gfx_display_t dispgfx_st = {0};
 
-static const float *null_get_default_matrix(void)
+gfx_display_t *disp_get_ptr(void)
 {
-   static float dummy[16] = {0.0f};
-   return &dummy[0];
+   return &dispgfx_st;
 }
-
-gfx_display_ctx_driver_t gfx_display_ctx_null = {
-   NULL,                                     /* draw            */
-   NULL,                                     /* draw_pipeline   */
-   NULL,                                     /* blend_begin     */
-   NULL,                                     /* blend_end       */
-   NULL,                                     /* get_default_mvp */
-   null_get_default_matrix,
-   null_get_default_matrix,
-   gfx_display_null_font_init_first,
-   GFX_VIDEO_DRIVER_GENERIC,
-   "null",
-   false,
-   NULL,
-   NULL
-};
 
 /* Menu display drivers */
 static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
@@ -73,7 +48,12 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_d3d8,
 #endif
 #ifdef HAVE_D3D9
-   &gfx_display_ctx_d3d9,
+#ifdef HAVE_HLSL
+   &gfx_display_ctx_d3d9_hlsl,
+#endif
+#ifdef HAVE_CG
+   &gfx_display_ctx_d3d9_cg,
+#endif
 #endif
 #ifdef HAVE_D3D10
    &gfx_display_ctx_d3d10,
@@ -91,7 +71,7 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_gl1,
 #endif
 #ifdef HAVE_OPENGL_CORE
-   &gfx_display_ctx_gl_core,
+   &gfx_display_ctx_gl3,
 #endif
 #ifdef HAVE_VULKAN
    &gfx_display_ctx_vulkan,
@@ -108,116 +88,18 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef WIIU
    &gfx_display_ctx_wiiu,
 #endif
+#ifdef HAVE_GCM
+   &gfx_display_ctx_rsx,
+#endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
    &gfx_display_ctx_gdi,
 #endif
 #endif
-   &gfx_display_ctx_null,
    NULL,
 };
 
-float gfx_display_get_adjusted_scale(
-      gfx_display_t *p_disp,
-      float base_scale, float scale_factor, unsigned width)
-{
-   /* Apply user-set scaling factor */
-   float adjusted_scale   = base_scale * scale_factor;
-#ifdef HAVE_OZONE
-   /* Ozone has a capped scale factor */
-   if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
-   {
-      float new_width    = (float)width * 0.3333333f;
-      if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
-            > new_width)
-         adjusted_scale  = (new_width / (float)OZONE_SIDEBAR_WIDTH);
-   }
-#endif
-
-   /* Ensure final scale is 'sane' */
-   if (adjusted_scale <= 0.0001f)
-      return 1.0f;
-   return adjusted_scale;
-}
-
-/* Check if the current menu driver is compatible
- * with your video driver. */
-static bool gfx_display_check_compatibility(
-      enum gfx_display_driver_type type,
-      bool video_is_threaded)
-{
-   const char *video_driver = video_driver_get_ident();
-
-   switch (type)
-   {
-      case GFX_VIDEO_DRIVER_GENERIC:
-         return true;
-      case GFX_VIDEO_DRIVER_OPENGL:
-         if (string_is_equal(video_driver, "gl"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_OPENGL1:
-         if (string_is_equal(video_driver, "gl1"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_OPENGL_CORE:
-         if (string_is_equal(video_driver, "glcore"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_VULKAN:
-         if (string_is_equal(video_driver, "vulkan"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_METAL:
-         if (string_is_equal(video_driver, "metal"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D8:
-         if (string_is_equal(video_driver, "d3d8"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D9:
-         if (string_is_equal(video_driver, "d3d9"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D10:
-         if (string_is_equal(video_driver, "d3d10"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D11:
-         if (string_is_equal(video_driver, "d3d11"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_DIRECT3D12:
-         if (string_is_equal(video_driver, "d3d12"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_VITA2D:
-         if (string_is_equal(video_driver, "vita2d"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_CTR:
-         if (string_is_equal(video_driver, "ctr"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_WIIU:
-         if (string_is_equal(video_driver, "gx2"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_GDI:
-         if (string_is_equal(video_driver, "gdi"))
-            return true;
-         break;
-      case GFX_VIDEO_DRIVER_SWITCH:
-         if (string_is_equal(video_driver, "switch"))
-            return true;
-         break;
-   }
-
-   return false;
-}
-
-float gfx_display_get_dpi_scale_internal(
+static float gfx_display_get_dpi_scale_internal(
       unsigned width, unsigned height)
 {
    float dpi;
@@ -229,9 +111,9 @@ float gfx_display_get_dpi_scale_internal(
    static bool scale_cached    = false;
    gfx_ctx_metrics_t metrics;
 
-   if (scale_cached &&
-       (width == last_width) &&
-       (height == last_height))
+   if (    scale_cached
+       && (width  == last_width)
+       && (height == last_height))
       return scale;
 
    /* Determine the diagonal 'size' of the display
@@ -256,7 +138,7 @@ float gfx_display_get_dpi_scale_internal(
 #endif
 
    /* Get pixel scale relative to baseline 1080p display */
-   pixel_scale = diagonal_pixels / DIAGONAL_PIXELS_1080P;
+   pixel_scale   = diagonal_pixels / DIAGONAL_PIXELS_1080P;
 
    /* Attempt to get display DPI */
    metrics.type  = DISPLAY_METRIC_DPI;
@@ -325,7 +207,7 @@ float gfx_display_get_dpi_scale_internal(
          fraction       -= 24.0f;
          fraction       /= (32.0f - 24.0f);
 
-         scale           =   ((1.0f - fraction) * dpi_scale) 
+         scale           =   ((1.0f - fraction) * dpi_scale)
                            + (fraction * pixel_scale);
       }
       else if (display_size < 12.0f)
@@ -341,7 +223,7 @@ float gfx_display_get_dpi_scale_internal(
           * to pixel scaling */
          float fraction = display_size / 12.0f;
 
-         scale          =   ((1.0f - fraction) * pixel_scale) 
+         scale          =   ((1.0f - fraction) * pixel_scale)
                           + (fraction * dpi_scale);
       }
       else
@@ -386,7 +268,7 @@ float gfx_display_get_dpi_scale(
    float menu_widget_scale_factor                      = fullscreen ?
          menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
 #endif
-   float menu_scale_factor                             = is_widget 
+   float menu_scale_factor                             = is_widget
       ? menu_widget_scale_factor
       : settings->floats.menu_scale_factor;
 #else
@@ -404,14 +286,10 @@ float gfx_display_get_dpi_scale(
           * > If we are not using a widget scale factor override,
           *   just set menu_scale_factor to 1.0 */
          if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
-            menu_scale_factor                             = 1.0f;
+            menu_scale_factor        = 1.0f;
          else
 #endif
-         {
-            float _menu_scale_factor                      = 
-               settings->floats.menu_scale_factor;
-            menu_scale_factor                             = _menu_scale_factor;
-         }
+            menu_scale_factor        = settings->floats.menu_scale_factor;
       }
    }
 #endif
@@ -420,9 +298,9 @@ float gfx_display_get_dpi_scale(
     * hardware property. To minimise performance overheads
     * we therefore only call video_context_driver_get_metrics()
     * on first run, or when the current video resolution changes */
-   if (!scale_cached ||
-       (width  != last_width) ||
-       (height != last_height))
+   if (   !scale_cached
+       || (width  != last_width)
+       || (height != last_height))
    {
       scale         = gfx_display_get_dpi_scale_internal(width, height);
       scale_cached  = true;
@@ -433,15 +311,24 @@ float gfx_display_get_dpi_scale(
 
    /* Adjusted scale calculation may also be slow, so
     * only update if something changes */
-   if (scale_updated ||
-       (menu_scale_factor != last_menu_scale_factor) ||
-       (p_disp->menu_driver_id != last_menu_driver_id))
+   if (    scale_updated
+       || (menu_scale_factor      != last_menu_scale_factor)
+       || (p_disp->menu_driver_id != last_menu_driver_id))
    {
-      adjusted_scale         = gfx_display_get_adjusted_scale(
-            p_disp,
-            scale, menu_scale_factor, width);
-      last_menu_scale_factor = menu_scale_factor;
-      last_menu_driver_id    = p_disp->menu_driver_id;
+      adjusted_scale            = scale * menu_scale_factor;
+#ifdef HAVE_OZONE
+      if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
+      {
+         /* Ozone has a capped scale factor */
+         float new_width        = (float)width * 0.3333333f;
+         if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
+               > new_width)
+            adjusted_scale      = (new_width / (float)OZONE_SIDEBAR_WIDTH);
+      }
+#endif
+      adjusted_scale            = (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
+      last_menu_scale_factor    = menu_scale_factor;
+      last_menu_driver_id       = p_disp->menu_driver_id;
    }
 
    return adjusted_scale;
@@ -461,33 +348,33 @@ void gfx_display_scissor_begin(
       if (y < 0)
       {
          if (height < (unsigned)(-y))
-            height = 0;
+            height  = 0;
          else
             height += y;
-         y = 0;
+         y          = 0;
       }
       if (x < 0)
       {
          if (width < (unsigned)(-x))
-            width = 0;
+            width   = 0;
          else
-            width += x;
-         x = 0;
+            width  += x;
+         x          = 0;
       }
       if (y >= (int)video_height)
       {
-         height = 0;
-         y = 0;
+         height     = 0;
+         y          = 0;
       }
       if (x >= (int)video_width)
       {
-         width = 0;
-         x = 0;
+         width      = 0;
+         x          = 0;
       }
       if ((y + height) > video_height)
-         height = video_height - y;
+         height     = video_height - y;
       if ((x + width) > video_width)
-         width = video_width - x;
+         width      = video_width - x;
 
       dispctx->scissor_begin(userdata,
             video_width, video_height,
@@ -499,25 +386,66 @@ font_data_t *gfx_display_font_file(
       gfx_display_t *p_disp,
       char* fontpath, float menu_font_size, bool is_threaded)
 {
-   font_data_t            *font_data = NULL;
-   float                  font_size  = menu_font_size;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   if (!dispctx)
-      return NULL;
+   if (dispctx)
+   {
+      font_data_t        *font_data  = NULL;
+      float               font_size  = menu_font_size;
+      /* Font size must be at least 2, or font_init_first()
+       * will generate a heap-buffer-overflow when using
+       * many font drivers */
+      if (font_size < 2.0f)
+         font_size = 2.0f;
+      if ((font_data = font_driver_init_first(video_driver_get_ptr(),
+                  fontpath, font_size, true, is_threaded,
+                  dispctx->font_type)))
+         return font_data;
+   }
+   return NULL;
+}
 
-   /* Font size must be at least 2, or font_init_first()
-    * will generate a heap-buffer-overflow when using
-    * many font drivers */
-   if (font_size < 2.0f)
-      font_size = 2.0f;
+/* Draw text on top of the screen */
+void gfx_display_draw_text(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, enum text_alignment text_align,
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
+{
+   struct font_params params;
+   video_driver_state_t *video_st = video_state_get_ptr();
 
-   if (!dispctx->font_init_first((void**)&font_data,
-            video_driver_get_ptr(),
-            fontpath, font_size, is_threaded))
-      return NULL;
+   if ((color & 0x000000FF) == 0)
+      return;
 
-   return font_data;
+   /* Don't draw outside of the screen */
+   if ( !draw_outside
+         && ((x < -64 || x > width  + 64)
+         ||  (y < -64 || y > height + 64))
+      )
+      return;
+
+   params.x           = x / width;
+   params.y           = 1.0f - y / height;
+   params.scale       = scale;
+   params.drop_mod    = 0.0f;
+   params.drop_x      = 0.0f;
+   params.drop_y      = 0.0f;
+   params.color       = color;
+   params.full_screen = true;
+   params.text_align  = text_align;
+
+   if (shadows_enable)
+   {
+      params.drop_x      = shadow_offset;
+      params.drop_y      = -shadow_offset;
+      params.drop_alpha  = GFX_SHADOW_ALPHA;
+   }
+
+   if (video_st->poke && video_st->poke->set_osd_msg)
+      video_st->poke->set_osd_msg(video_st->data,
+            text, &params, (void*)font);
 }
 
 void gfx_display_draw_bg(
@@ -578,7 +506,7 @@ void gfx_display_draw_quad(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t 
+   gfx_display_ctx_driver_t
       *dispctx             = p_disp->dispctx;
 
    if (w == 0 || h == 0)
@@ -598,8 +526,8 @@ void gfx_display_draw_quad(
    draw.height          = h;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture != 0) 
-      ? *texture 
+   draw.texture         = (texture != 0)
+      ? *texture
       : gfx_white_texture;
    draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
@@ -614,63 +542,6 @@ void gfx_display_draw_quad(
       dispctx->blend_end(data);
 }
 
-void gfx_display_draw_polygon(
-      gfx_display_t *p_disp,
-      void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x1, int y1,
-      int x2, int y2,
-      int x3, int y3,
-      int x4, int y4,
-      unsigned width, unsigned height,
-      float *color)
-{
-   float vertex[8];
-   gfx_display_ctx_draw_t draw;
-   struct video_coords coords;
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   if (width == 0 || height == 0)
-      return;
-   if (!dispctx)
-      return;
-
-   vertex[0]             = x1 / (float)width;
-   vertex[1]             = y1 / (float)height;
-   vertex[2]             = x2 / (float)width;
-   vertex[3]             = y2 / (float)height;
-   vertex[4]             = x3 / (float)width;
-   vertex[5]             = y3 / (float)height;
-   vertex[6]             = x4 / (float)width;
-   vertex[7]             = y4 / (float)height;
-
-   coords.vertices       = 4;
-   coords.vertex         = &vertex[0];
-   coords.tex_coord      = NULL;
-   coords.lut_tex_coord  = NULL;
-   coords.color          = color;
-
-   draw.x                = 0;
-   draw.y                = 0;
-   draw.width            = width;
-   draw.height           = height;
-   draw.coords           = &coords;
-   draw.matrix_data      = NULL;
-   draw.texture          = gfx_white_texture;
-   draw.prim_type        = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
-   draw.pipeline_id      = 0;
-   draw.scale_factor     = 1.0f;
-   draw.rotation         = 0.0f;
-
-   if (dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
-   if (dispctx->draw)
-      dispctx->draw(&draw, userdata, video_width, video_height);
-   if (dispctx->blend_end)
-      dispctx->blend_end(userdata);
-}
-
 /* Draw the texture split into 9 sections, without scaling the corners.
  * The middle sections will only scale in the X axis, and the side
  * sections will only scale in the Y axis. */
@@ -682,13 +553,13 @@ void gfx_display_draw_texture_slice(
       int x, int y, unsigned w, unsigned h,
       unsigned new_w, unsigned new_h,
       unsigned width, unsigned height,
-      float *color, unsigned offset, float scale_factor, uintptr_t texture)
+      float *color, unsigned offset, float scale_factor, uintptr_t texture,
+      math_matrix_4x4 *mymat
+)
 {
    gfx_display_ctx_draw_t draw;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
    struct video_coords coords;
-   math_matrix_4x4 mymat;
-   gfx_display_ctx_driver_t 
+   gfx_display_ctx_driver_t
       *dispctx              = p_disp->dispctx;
    float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
    /* To prevent visible seams between the corners and
@@ -706,7 +577,7 @@ void gfx_display_draw_texture_slice(
     *   [SIDE NOTE: this causes additional issues if the transparent
     *    pixels have the wrong colour - i.e. if they are black,
     *    every edge gets a nasty dark border...]
-    * > This burring is a problem because (by design) the corners
+    * > This blurring is a problem because (by design) the corners
     *   of the sliced texture are drawn at native resolution,
     *   whereas the middle segments are stretched to fit the
     *   requested dimensions. Consequently, the corners are sharp
@@ -731,11 +602,11 @@ void gfx_display_draw_texture_slice(
          (scale_factor < max_scale_h) ? scale_factor : max_scale_h :
          (max_scale_w  < max_scale_h) ? max_scale_w  : max_scale_h;
 
-   /* need space for the coordinates of two triangles in a strip,
+   /* Need space for the coordinates of two triangles in a strip,
     * so 8 vertices */
    float tex_coord[8];
    float vert_coord[8];
-   static float colors[16] = { 
+   static float colors[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
@@ -766,8 +637,13 @@ void gfx_display_draw_texture_slice(
    if (!dispctx || !dispctx->draw)
       return;
 
-   /* the four vertices of the top-left corner of the image,
-    * used as a starting point for all the other sections */
+   /* The four vertices of the top-left corner of the image,
+    * used as a starting point for all the other sections
+    * BL - Bottom Left
+    * BR - Bottom Right
+    * TL - Top Left
+    * TR - Top Right
+    */
    V_BL[0] = norm_x;
    V_BL[1] = norm_y;
    V_BR[0] = norm_x + vert_woff;
@@ -785,12 +661,6 @@ void gfx_display_draw_texture_slice(
    T_TR[0] = tex_woff;
    T_TR[1] = 0.0f;
 
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0;
-   rotate_draw.scale_x      = 1.0;
-   rotate_draw.scale_y      = 1.0;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
    coords.vertices          = 4;
    coords.vertex            = vert_coord;
    coords.tex_coord         = tex_coord;
@@ -798,24 +668,22 @@ void gfx_display_draw_texture_slice(
    draw.width               = width;
    draw.height              = height;
    draw.coords              = &coords;
-   draw.matrix_data         = &mymat;
+   draw.matrix_data         = mymat;
    draw.prim_type           = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    draw.texture             = texture;
    draw.x                   = 0;
    draw.y                   = 0;
 
-   /* vertex coords are specfied bottom-up in this order: BL BR TL TR */
-   /* texture coords are specfied top-down in this order: BL BR TL TR */
+   /* vertex coords are specified bottom-up in this order: BL BR TL TR */
+   /* texture coords are specified top-down in this order: BL BR TL TR */
 
    /* If someone wants to change this to not draw several times, the
     * coordinates will need to be modified because of the triangle strip usage. */
 
-   /* top-left corner */
+   /* Top Left corner */
    vert_coord[0] = V_BL[0];
    vert_coord[1] = V_BL[1];
    vert_coord[2] = V_BR[0];
@@ -836,7 +704,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* top-middle section */
+   /* Top Middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
    vert_coord[1] = V_BL[1];
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
@@ -857,7 +725,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* top-right corner */
+   /* Top Right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
    vert_coord[1] = V_BL[1];
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
@@ -878,7 +746,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* middle-left section */
+   /* Middle Left section */
    vert_coord[0] = V_BL[0];
    vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0];
@@ -920,7 +788,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* middle-right section */
+   /* Middle Right section */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
    vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0] + vert_woff + vert_scaled_mid_width;
@@ -941,7 +809,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* bottom-left corner */
+   /* Bottom Left corner */
    vert_coord[0] = V_BL[0];
    vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0];
@@ -962,7 +830,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* bottom-middle section */
+   /* Bottom Middle section */
    vert_coord[0] = V_BL[0] + vert_woff;
    vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
@@ -983,7 +851,7 @@ void gfx_display_draw_texture_slice(
 
    dispctx->draw(&draw, userdata, video_width, video_height);
 
-   /* bottom-right corner */
+   /* Bottom Right corner */
    vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
    vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
    vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
@@ -1006,34 +874,26 @@ void gfx_display_draw_texture_slice(
 }
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
-      gfx_display_ctx_rotate_draw_t *draw, void *data)
+      math_matrix_4x4 *matrix, float cosine, float sine, void *data)
 {
-   math_matrix_4x4 matrix_rotated, matrix_scaled;
-   math_matrix_4x4                *b = NULL;
-   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-
-   if (
-         !draw                       ||
-         !dispctx                  ||
-         !dispctx->get_default_mvp ||
-         dispctx->handles_transform
-      )
-      return;
-
-   b = (math_matrix_4x4*)dispctx->get_default_mvp(data);
-
-   if (!b)
-      return;
-
-   matrix_4x4_rotate_z(matrix_rotated, draw->rotation);
-   matrix_4x4_multiply(*draw->matrix, matrix_rotated, *b);
-
-   if (!draw->scale_enable)
-      return;
-
-   matrix_4x4_scale(matrix_scaled,
-         draw->scale_x, draw->scale_y, draw->scale_z);
-   matrix_4x4_multiply(*draw->matrix, matrix_scaled, *draw->matrix);
+   gfx_display_ctx_driver_t *dispctx  = p_disp->dispctx;
+   math_matrix_4x4 *b                 = (dispctx->get_default_mvp)
+      ? (math_matrix_4x4*)dispctx->get_default_mvp(data)
+      : NULL;
+   if (b)
+   {
+      static math_matrix_4x4 rot         = {
+         {  0.0f,          0.0f,          0.0f,          0.0f ,
+            0.0f,          0.0f,          0.0f,          0.0f ,
+            0.0f,          0.0f,          1.0f,          0.0f ,
+            0.0f,          0.0f,          0.0f,          1.0f }
+      };
+      MAT_ELEM_4X4(rot, 0, 0)            = cosine;
+      MAT_ELEM_4X4(rot, 0, 1)            = -sine;
+      MAT_ELEM_4X4(rot, 1, 0)            = sine;
+      MAT_ELEM_4X4(rot, 1, 1)            = cosine;
+      matrix_4x4_multiply(*matrix, rot, *b);
+   }
 }
 
 /*
@@ -1081,24 +941,6 @@ void gfx_display_draw_cursor(
       dispctx->blend_end(userdata);
 }
 
-/* Setup: Initializes the font associated
- * to the menu driver */
-font_data_t *gfx_display_font(
-      gfx_display_t *p_disp,
-      enum application_special_type type,
-      float menu_font_size,
-      bool is_threaded)
-{
-   char fontpath[PATH_MAX_LENGTH];
-
-   fontpath[0] = '\0';
-
-   fill_pathname_application_special(
-         fontpath, sizeof(fontpath), type);
-
-   return gfx_display_font_file(p_disp, fontpath, menu_font_size, is_threaded);
-}
-
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height)
@@ -1107,7 +949,7 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
    int ptr_width  = width / 11;
    int ptr_height = height / 10;
 
-   if (ptr_width >= ptr_height)
+   if (ptr_width > ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
@@ -1124,42 +966,6 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
    return -1;
 }
 
-/* Get the display framebuffer's size dimensions. */
-void gfx_display_get_fb_size(unsigned *fb_width,
-      unsigned *fb_height, size_t *fb_pitch)
-{
-   gfx_display_t *p_disp = disp_get_ptr();
-   *fb_width             = p_disp->framebuf_width;
-   *fb_height            = p_disp->framebuf_height;
-   *fb_pitch             = p_disp->framebuf_pitch;
-}
-
-/* Set the display framebuffer's width. */
-void gfx_display_set_width(unsigned width)
-{
-   gfx_display_t *p_disp  = disp_get_ptr();
-   p_disp->framebuf_width = width;
-}
-
-/* Set the display framebuffer's height. */
-void gfx_display_set_height(unsigned height)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   p_disp->framebuf_height = height;
-}
-
-void gfx_display_set_framebuffer_pitch(size_t pitch)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   p_disp->framebuf_pitch = pitch;
-}
-
-void gfx_display_set_msg_force(bool state)
-{
-   gfx_display_t *p_disp   = disp_get_ptr();
-   p_disp->msg_force       = state;
-}
-
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,
       void *userdata,
@@ -1174,7 +980,7 @@ void gfx_display_draw_keyboard(
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   static float white[16] =  {
+   static float white[16]    =  {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
@@ -1186,14 +992,11 @@ void gfx_display_draw_keyboard(
       0.00, 0.00, 0.00, 0.85,
       0.00, 0.00, 0.00, 0.85,
    };
-   math_matrix_4x4 mymat;
-   gfx_display_ctx_rotate_draw_t rotate_draw;
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0.0;
-   rotate_draw.scale_x      = 1.0;
-   rotate_draw.scale_y      = 1.0;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
+
+#ifdef HAVE_MIST
+   if (steam_has_osk_open())
+      return;
+#endif
 
    gfx_display_draw_quad(
          p_disp,
@@ -1212,10 +1015,8 @@ void gfx_display_draw_keyboard(
    ptr_width  = video_width  / 11;
    ptr_height = video_height / 10;
 
-   if (ptr_width >= ptr_height)
+   if (ptr_width > ptr_height)
       ptr_width = ptr_height;
-
-   gfx_display_rotate_z(p_disp, &rotate_draw, userdata);
 
    for (i = 0; i < 44; i++)
    {
@@ -1259,6 +1060,37 @@ void gfx_display_draw_keyboard(
    }
 }
 
+/* NOTE: Reads image from memory buffer */
+bool gfx_display_reset_textures_list_buffer(
+        uintptr_t *item, enum texture_filter_type filter_type,
+        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
+        unsigned *width, unsigned *height)
+{
+   struct texture_image ti;
+
+   ti.width         = 0;
+   ti.height        = 0;
+   ti.pixels        = NULL;
+   ti.supports_rgba = video_driver_supports_rgba();
+
+   if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
+   {
+      if (width)
+         *width     = ti.width;
+
+      if (height)
+         *height    = ti.height;
+
+      /* if the poke interface doesn't support texture load then return false */
+      if (video_driver_texture_load(&ti, filter_type, item))
+      {
+         image_texture_free(&ti);
+         return true;
+      }
+   }
+   return false;
+}
+
 /* NOTE: Reads image from file */
 bool gfx_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
@@ -1268,8 +1100,6 @@ bool gfx_display_reset_textures_list(
    char texpath[PATH_MAX_LENGTH];
    struct texture_image ti;
 
-   texpath[0]                    = '\0';
-
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
@@ -1278,7 +1108,8 @@ bool gfx_display_reset_textures_list(
    if (string_is_empty(texture_path))
       return false;
 
-   fill_pathname_join(texpath, iconpath, texture_path, sizeof(texpath));
+   fill_pathname_join_special(texpath,
+         iconpath, texture_path, sizeof(texpath));
 
    if (!image_texture_load(&ti, texpath))
       return false;
@@ -1296,11 +1127,37 @@ bool gfx_display_reset_textures_list(
    return true;
 }
 
-/* Teardown; deinitializes and frees all
- * fonts associated to the display driver */
-void gfx_display_font_free(font_data_t *font)
+bool gfx_display_reset_icon_texture(
+      const char *texture_path,
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height)
 {
-   font_driver_free(font);
+   char texpath[PATH_MAX_LENGTH];
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
+
+   if (string_is_empty(texture_path))
+      return false;
+
+   strlcpy(texpath, texture_path, sizeof(texpath));
+
+   if (!image_texture_load(&ti, texpath))
+      return false;
+
+   if (width)
+      *width = ti.width;
+
+   if (height)
+      *height = ti.height;
+
+   video_driver_texture_load(&ti, filter_type, item);
+   image_texture_free(&ti);
+
+   return true;
 }
 
 void gfx_display_deinit_white_texture(void)
@@ -1325,54 +1182,47 @@ void gfx_display_init_white_texture(void)
 
 void gfx_display_free(void)
 {
-   gfx_display_t           *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
-   p_disp->msg_force           = false;
+   p_disp->flags              &= ~(GFX_DISP_FLAG_MSG_FORCE
+                                 | GFX_DISP_FLAG_HAS_WINDOWED
+                                  );
    p_disp->header_height       = 0;
    p_disp->framebuf_width      = 0;
    p_disp->framebuf_height     = 0;
    p_disp->framebuf_pitch      = 0;
-   p_disp->has_windowed        = false;
    p_disp->dispctx             = NULL;
 }
 
 void gfx_display_init(void)
 {
-   gfx_display_t       *p_disp   = disp_get_ptr();
+   gfx_display_t *p_disp         = &dispgfx_st;
    video_coord_array_t *p_dispca = &p_disp->dispca;
 
-   p_disp->has_windowed          = video_driver_has_windowed();
+   if (video_driver_has_windowed())
+      p_disp->flags             |=  GFX_DISP_FLAG_HAS_WINDOWED;
+   else
+      p_disp->flags             &= ~GFX_DISP_FLAG_HAS_WINDOWED;
    p_dispca->allocated           =  0;
-}
-
-bool gfx_display_driver_exists(const char *s)
-{
-   unsigned i;
-   for (i = 0; i < ARRAY_SIZE(gfx_display_ctx_drivers); i++)
-   {
-      if (string_is_equal(s, gfx_display_ctx_drivers[i]->ident))
-         return true;
-   }
-
-   return false;
 }
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded)
 {
    unsigned i;
+   const char *video_driver = video_driver_get_ident();
 
    for (i = 0; gfx_display_ctx_drivers[i]; i++)
    {
-      if (!gfx_display_check_compatibility(
-               gfx_display_ctx_drivers[i]->type,
-               video_is_threaded))
+      gfx_display_ctx_driver_t *dispctx = gfx_display_ctx_drivers[i];
+      enum gfx_display_driver_type type = dispctx->type;
+      const char *ident                 = dispctx->ident;
+      if (     (type != GFX_VIDEO_DRIVER_GENERIC)
+            && (!string_is_equal(video_driver, ident)))
          continue;
-
-      RARCH_LOG("[Display]: Found display driver: \"%s\".\n",
-            gfx_display_ctx_drivers[i]->ident);
-      p_disp->dispctx = gfx_display_ctx_drivers[i];
+      RARCH_LOG("[Display]: Found display driver: \"%s\".\n", ident);
+      p_disp->dispctx = dispctx;
       return true;
    }
    return false;

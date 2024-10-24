@@ -1,12 +1,12 @@
 #version 310 es
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
+float _188;
+
 layout(binding = 0, std430) buffer SSBO
 {
     float data;
 } _11;
-
-float _183;
 
 void main()
 {
@@ -31,14 +31,14 @@ void main()
             break;
         }
     }
-    float _180;
-    _180 = _183;
-    for (int _179 = 0; _179 < 20; )
+    float _185;
+    _185 = _188;
+    for (int _184 = 0; _184 < 20; )
     {
-        _180 += 10.0;
-        _179++;
+        _185 += 10.0;
+        _184++;
         continue;
     }
-    _11.data = _180;
+    _11.data = _185;
 }
 

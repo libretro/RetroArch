@@ -7,9 +7,8 @@
 /* http://www.informit.com/articles/article.aspx?p=1613548 */
 
 ThumbnailDelegate::ThumbnailDelegate(const GridItem &gridItem, QObject* parent) :
-   QStyledItemDelegate(parent), m_style(gridItem)
-{
-}
+   QStyledItemDelegate(parent), m_style(gridItem) { }
+
 void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem &option, const QModelIndex& index) const
 {
    QStyleOptionViewItem opt = option;
@@ -112,7 +111,7 @@ void GridView::calculateRectsIfNecessary() const
             int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
             if (columns > 0)
             {
-               const int actualSpacing = (maxWidth - m_spacing - 
+               const int actualSpacing = (maxWidth - m_spacing -
                      m_size - (columns - 1) * m_size) / columns;
                for (row = 0; row < model()->rowCount(); ++row)
                {
@@ -134,7 +133,7 @@ void GridView::calculateRectsIfNecessary() const
             int columns = (maxWidth - m_spacing) / (m_size + m_spacing);
             if (columns > 0)
             {
-               const int actualSpacing = (maxWidth - columns * m_size) 
+               const int actualSpacing = (maxWidth - columns * m_size)
                   / (columns + 1);
                x                       = actualSpacing;
 

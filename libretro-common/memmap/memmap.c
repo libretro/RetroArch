@@ -21,6 +21,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <memmap.h>
 
 #ifndef PROT_READ

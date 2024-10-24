@@ -9,6 +9,7 @@ SRC(
       float max_nits;         /* 1000.0f;   */
       float expand_gamut;     /* 1.0f;      */ 
       float inverse_tonemap;
+      float hdr10;
    };
    uniform UBO global;
 
@@ -72,29 +73,29 @@ SRC(
                      color.z < 0.04045f ? scale.z : gamma.z);
    }
 
-   float4 Hdr(float4 sdr)
+   float3 Hdr(float3 sdr)
    {
       float3 hdr;
       
       if(global.inverse_tonemap)
       {
-         sdr.xyz = pow(abs(sdr.xyz), global.contrast / 2.2f );               /* Display Gamma - needs to be determined by calibration screen */
+         sdr = pow(abs(sdr), global.contrast / 2.2f );       /* Display Gamma - needs to be determined by calibration screen */
 
-         float luma = dot(sdr.xyz, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
+         float luma = dot(sdr, float3(0.2126, 0.7152, 0.0722));  /* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
 
          /* Inverse reinhard tonemap */
          float maxValue             = (global.max_nits / global.paper_white_nits) + kEpsilon;
-         float elbow                = maxValue / (maxValue - 1.0f);                          /* Convert (1.0 + epsilon) to infinite to range 1001 -> 1.0 */ 
-         float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              /* Convert 1001 to 1.0 to range 0.5 -> 1.0 */
+         float elbow                = maxValue / (maxValue - 1.0f);                          
+         float offset               = 1.0f - ((0.5f * elbow) / (elbow - 0.5f));              
          
          float hdrLumaInvTonemap    = offset + ((luma * elbow) / (elbow - luma));
          float sdrLumaInvTonemap    = luma / ((1.0f + kEpsilon) - luma);                     /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
 
          float lumaInvTonemap       = (luma > 0.5f) ? hdrLumaInvTonemap : sdrLumaInvTonemap;
-         float3 perLuma             = sdr.xyz / (luma + kEpsilon) * lumaInvTonemap;
+         float3 perLuma             = sdr / (luma + kEpsilon) * lumaInvTonemap;
 
-         float3 hdrInvTonemap       = offset + ((sdr.xyz * elbow) / (elbow - sdr.xyz));         
-         float3 sdrInvTonemap       = sdr.xyz / ((1.0f + kEpsilon) - sdr.xyz);               /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
+         float3 hdrInvTonemap       = offset + ((sdr * elbow) / (elbow - sdr));         
+         float3 sdrInvTonemap       = sdr / ((1.0f + kEpsilon) - sdr);               /* Convert the srd < 0.5 to 0.0 -> 1.0 range */
 
          float3 perChannel          = float3(sdr.x > 0.5f ? hdrInvTonemap.x : sdrInvTonemap.x,
                                              sdr.y > 0.5f ? hdrInvTonemap.y : sdrInvTonemap.y,
@@ -104,27 +105,37 @@ SRC(
       }
       else
       {
-         hdr = SRGBToLinear(sdr.xyz);
+         hdr = sdr;
       }
 
-      /* Now convert into HDR10 */
-      float3 rec2020 = mul(k709to2020, hdr);
+      float3 hdr10;
 
-      if(global.expand_gamut > 0.0f)
+      if(global.hdr10)
       {
-         rec2020 = mul( kExpanded709to2020, hdr);
+         /* Now convert into HDR10 */
+         float3 rec2020 = mul(k709to2020, hdr);
+
+         if(global.expand_gamut > 0.0f)
+         {
+            rec2020 = mul( kExpanded709to2020, hdr);
+         }
+
+         float3 linearColour  = rec2020 * (global.paper_white_nits / kMaxNitsFor2084);
+         
+         hdr10 = LinearToST2084(linearColour);
+      }
+      else
+      {
+         hdr10 = hdr;
       }
 
-      float3 linearColour  = rec2020 * (global.paper_white_nits / kMaxNitsFor2084);
-      float3 hdr10         = LinearToST2084(linearColour);
-
-      return float4(hdr10, sdr.w);
+      return hdr10;
    }
 
    float4 PSMain(PSInput input) : SV_TARGET
    {
       float4 sdr = input.color * t0.Sample(s0, input.texcoord);
    
-      return Hdr(sdr);
+      return float4(Hdr(sdr.rgb), sdr.a);
    };
 )

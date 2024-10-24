@@ -26,6 +26,7 @@
 #include <compat/strl.h>
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../connect/joypad_connection.h"
 #include "../input_defines.h"
@@ -63,8 +64,8 @@ struct libusb_adapter
    int endpoint_in_max_size;
    int endpoint_out_max_size;
 
-   uint8_t manufacturer_name[255];
-   uint8_t name[255];
+   uint8_t manufacturer_name[NAME_MAX_LENGTH];
+   uint8_t name[NAME_MAX_LENGTH];
    uint8_t data[2048];
 
    int slot;
@@ -113,12 +114,12 @@ static void adapter_thread(void *data)
       slock_unlock(adapter->send_control_lock);
 
       libusb_interrupt_transfer(adapter->handle,
-            adapter->endpoint_in, &adapter->data[1],
+            adapter->endpoint_in, &adapter->data[0],
             adapter->endpoint_in_max_size, &size, 1000);
 
       if (adapter && hid && hid->slots && size)
          pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
-               adapter->data, size+1);
+               adapter->data, size);
    }
 }
 
@@ -493,7 +494,7 @@ static int16_t libusb_hid_joypad_axis(void *data,
       if (val < 0)
          return val;
    }
-   else if(AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 4)
    {
       int16_t val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_POS_GET(joyaxis));
@@ -523,11 +524,11 @@ static int16_t libusb_hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && libusb_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(libusb_hid_joypad_axis(data, port_idx, joyaxis)) 
+            ((float)abs(libusb_hid_joypad_axis(data, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

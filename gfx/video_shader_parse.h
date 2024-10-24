@@ -26,8 +26,6 @@
 
 #include "../configuration.h"
 
-RETRO_BEGIN_DECLS
-
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 64
 #endif
@@ -43,6 +41,21 @@ RETRO_BEGIN_DECLS
 #ifndef GFX_MAX_FRAME_HISTORY
 #define GFX_MAX_FRAME_HISTORY 128
 #endif
+
+#define RARCH_WILDCARD_DELIMITER "$"
+
+/**
+ * video_shader_parse_type:
+ * @path              : Shader path.
+ *
+ * Parses type of shader.
+ *
+ * Returns: value of shader type if it could be determined,
+ * otherwise RARCH_SHADER_NONE.
+ **/
+#define video_shader_parse_type(path) video_shader_get_type_from_ext(path_get_extension((path)), NULL)
+
+RETRO_BEGIN_DECLS
 
 enum rarch_shader_type
 {
@@ -69,6 +82,15 @@ enum
    RARCH_FILTER_MAX
 };
 
+enum video_shader_flags
+{
+   SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
+   /* Indicative of whether shader was modified -
+    * for instance from the menus */
+   SHDR_FLAG_MODIFIED  = (1 << 1),
+   SHDR_FLAG_DISABLED  = (1 << 2)
+};
+
 enum gfx_wrap_type
 {
    RARCH_WRAP_BORDER = 0, /* Kinda deprecated, but keep as default.
@@ -80,6 +102,13 @@ enum gfx_wrap_type
    RARCH_WRAP_MAX
 };
 
+enum gfx_fbo_scale_flags
+{
+   FBO_SCALE_FLAG_FP_FBO   = (1 << 0),
+   FBO_SCALE_FLAG_SRGB_FBO = (1 << 1),
+   FBO_SCALE_FLAG_VALID    = (1 << 2)
+};
+
 struct gfx_fbo_scale
 {
    unsigned abs_x;
@@ -88,9 +117,7 @@ struct gfx_fbo_scale
    float scale_y;
    enum gfx_scale_type type_x;
    enum gfx_scale_type type_y;
-   bool fp_fbo;
-   bool srgb_fbo;
-   bool valid;
+   uint8_t flags;
 };
 
 struct video_shader_parameter
@@ -127,7 +154,7 @@ struct video_shader_pass
          char *vertex; /* Dynamically allocated. Must be free'd. */
          char *fragment; /* Dynamically allocated. Must be free'd. */
       } string;
-      char path[PATH_MAX_LENGTH];
+      char path[NAME_MAX_LENGTH*2];
    } source;
    char alias[64];
    bool mipmap;
@@ -139,7 +166,7 @@ struct video_shader_lut
    unsigned filter;
    enum gfx_wrap_type wrap;
    char id[64];
-   char path[PATH_MAX_LENGTH];
+   char path[NAME_MAX_LENGTH*2];
    bool mipmap;
 };
 
@@ -160,21 +187,18 @@ struct video_shader
    unsigned num_parameters;
    unsigned variables;
 
+   uint8_t flags;
+
    char prefix[64];
 
    /* Path to the root preset */
    char path[PATH_MAX_LENGTH];
 
-   /* Path to the original preset loaded, if this is a preset with the #reference
-    * directive then this will be different than the path*/
+   /* Path to the original preset loaded, if this is a preset
+    * with the #reference directive, then this will be different
+    * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
-
-   bool modern; /* Only used for XML shaders. */
-   /* indicative of whether shader was modified - 
-    * for instance from the menus */
-   bool modified;
 };
-
 
 /**
  * video_shader_resolve_parameters:
@@ -183,11 +207,8 @@ struct video_shader
  *
  * Resolves all shader parameters belonging to shaders
  * from the #pragma parameter lines in the shader for each pass.
- * 
- * Returns: true (1) if successful, otherwise false (0).
  **/
-bool video_shader_resolve_parameters(struct video_shader *shader);
-
+void video_shader_resolve_parameters(struct video_shader *shader);
 
 /**
  * video_shader_load_current_parameter_values:
@@ -200,7 +221,6 @@ bool video_shader_resolve_parameters(struct video_shader *shader);
  **/
 bool video_shader_load_current_parameter_values(config_file_t *conf, struct video_shader *shader);
 
-
 /**
  * video_shader_load_preset_into_shader:
  * @path              : Path to preset file, could be a Simple Preset (including a #reference) or Full Preset
@@ -212,7 +232,6 @@ bool video_shader_load_current_parameter_values(config_file_t *conf, struct vide
  **/
 bool video_shader_load_preset_into_shader(const char *path, struct video_shader *shader);
 
-
 /**
  * video_shader_write_preset:
  * @path              : File to write to
@@ -222,23 +241,10 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
  * Writes a preset to disk. Can be written as a simple preset (With the #reference directive in it) or a full preset.
  **/
 bool video_shader_write_preset(const char *path,
-                                 const char *shader_dir,
-                                 const struct video_shader *shader, 
-                                 bool reference);
-
+      const struct video_shader *shader,
+      bool reference);
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext, bool *is_preset);
-
-/**
- * video_shader_parse_type:
- * @path              : Shader path.
- *
- * Parses type of shader.
- *
- * Returns: value of shader type if it could be determined,
- * otherwise RARCH_SHADER_NONE.
- **/
-#define video_shader_parse_type(path) video_shader_get_type_from_ext(path_get_extension((path)), NULL)
 
 bool video_shader_is_supported(enum rarch_shader_type type);
 
@@ -248,17 +254,12 @@ bool video_shader_check_for_changes(void);
 
 const char *video_shader_type_to_str(enum rarch_shader_type type);
 
-void dir_free_shader(
+void video_shader_dir_free_shader(
       struct rarch_dir_shader_list *dir_list,
       bool shader_remember_last_dir);
 
-void dir_init_shader(
-      void *menu_driver_data_,
-      settings_t *settings,
-      struct rarch_dir_shader_list *dir_list);
-
 /**
- * dir_check_shader:
+ * video_shader_dir_check_shader:
  * @pressed_next         : Was next shader key pressed?
  * @pressed_prev         : Was previous shader key pressed?
  *
@@ -268,38 +269,30 @@ void dir_init_shader(
  *
  * Will also immediately apply the shader.
  **/
-void dir_check_shader(
+void video_shader_dir_check_shader(
       void *menu_driver_data_,
       settings_t *settings,
       struct rarch_dir_shader_list *dir_list,
       bool pressed_next,
       bool pressed_prev);
 
-/**
- * load_shader_preset:
- *
- * Tries to load a supported core-, game-, folder-specific or global
- * shader preset from its respective location:
- *
- * global:          $CONFIG_DIR/global.$PRESET_EXT
- * core-specific:   $CONFIG_DIR/$CORE_NAME/$CORE_NAME.$PRESET_EXT
- * folder-specific: $CONFIG_DIR/$CORE_NAME/$FOLDER_NAME.$PRESET_EXT
- * game-specific:   $CONFIG_DIR/$CORE_NAME/$GAME_NAME.$PRESET_EXT
- *
- * $CONFIG_DIR is expected to be Menu Config directory, or failing that, the
- * directory where retroarch.cfg is stored.
- *
- * For compatibility purposes with versions 1.8.7 and older, the presets
- * subdirectory on the Video Shader path is used as a fallback directory.
- *
- * Note: Uses video_shader_is_supported() which only works after
- *       context driver initialization.
- *
- * Returns: false if there was an error or no action was performed.
- */
-bool load_shader_preset(settings_t *settings, const char *core_name, char *s, size_t len);
+bool video_shader_combine_preset_and_apply(
+      settings_t *settings,
+      enum rarch_shader_type type,
+      struct video_shader *menu_shader,
+      const char *preset_path,
+      const char *temp_dir,
+      bool prepend,
+      bool message);
+
+bool video_shader_apply_shader(
+      settings_t *settings,
+      enum rarch_shader_type type,
+      const char *preset_path, bool message);
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
+
+void video_shader_toggle(settings_t *settings);
 
 RETRO_END_DECLS
 

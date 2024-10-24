@@ -174,9 +174,9 @@ chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
 	else
 		err = CHDERR_NONE;
 
-   /* handle an error */
-   if (err != CHDERR_NONE)
-      free(data);
+	/* handle an error */
+	if (err != CHDERR_NONE)
+		zlib_codec_free(data);
 
 	return err;
 }
@@ -194,7 +194,7 @@ void zlib_codec_free(void *codec)
 	if (data != NULL)
 	{
 		int i;
-      zlib_allocator alloc;
+		zlib_allocator alloc;
 
 		inflateEnd(&data->inflater);
 
@@ -229,7 +229,7 @@ chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 
 	/* do it */
 	zerr = inflate(&data->inflater, Z_FINISH);
-   (void)zerr;
+	(void)zerr;
 	if (data->inflater.total_out != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
 
@@ -270,7 +270,7 @@ voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size)
 	}
 
 	/* alloc a new one */
-    ptr = (UINT32 *)malloc(size + sizeof(UINT32) + ZLIB_MIN_ALIGNMENT_BYTES);
+	ptr = (UINT32 *)malloc(size + sizeof(UINT32) + ZLIB_MIN_ALIGNMENT_BYTES);
 	if (!ptr)
 		return NULL;
 

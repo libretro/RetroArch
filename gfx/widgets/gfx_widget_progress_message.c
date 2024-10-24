@@ -18,7 +18,6 @@
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
-#include "../../retroarch.h"
 
 /* Widget state */
 
@@ -35,7 +34,7 @@ struct gfx_widget_progress_message_state
 
    unsigned priority;
 
-   gfx_timer_t timer;      /* float alignment */
+   float timer;      /* float alignment */
    float alpha;
    float widget_x;
    float widget_y;
@@ -122,12 +121,13 @@ static void gfx_widget_progress_message_fadeout(void *userdata)
 
 /* Widget interface */
 
-void gfx_widget_set_progress_message(void *data,
+void gfx_widget_set_progress_message(
       const char *message, unsigned duration,
       unsigned priority, int8_t progress)
 {
+   size_t _len;
    gfx_timer_ctx_entry_t timer;
-   dispgfx_widget_t *p_dispwidget             = (dispgfx_widget_t*)data;
+   dispgfx_widget_t *p_dispwidget             = dispwidget_get_ptr();
    gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
    gfx_widget_font_data_t *font_regular       = &p_dispwidget->gfx_widget_fonts.regular;
    uintptr_t alpha_tag                        = (uintptr_t)&state->alpha;
@@ -143,15 +143,14 @@ void gfx_widget_set_progress_message(void *data,
       return;
 
    /* Cache message parameters */
-   strlcpy(state->message, message, sizeof(state->message));
+   _len              = strlcpy(state->message, message, sizeof(state->message));
    state->priority   = priority;
    state->progress   = progress;
 
    /* Cache text width */
    state->text_width = font_driver_get_message_width(
          font_regular->font,
-         state->message,
-         (unsigned)strlen(state->message),
+         state->message, _len,
          1.0f);
 
    /* Kill any existing timer/animation */

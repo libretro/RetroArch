@@ -31,28 +31,29 @@ struct main0_out
 struct main0_in
 {
     float4 vColor [[attribute(0)]];
-    float4 Block_a [[attribute(4)]];
-    float4 Block_b [[attribute(5)]];
-    float4 Foo_a [[attribute(14)]];
-    float4 Foo_b [[attribute(15)]];
+    float4 blocks_a [[attribute(4)]];
+    float4 blocks_b [[attribute(5)]];
+    float4 vFoos_a [[attribute(14)]];
+    float4 vFoos_b [[attribute(15)]];
 };
 
 struct main0_patchIn
 {
     float4 vColors [[attribute(1)]];
-    float4 PatchBlock_a [[attribute(6)]];
-    float4 PatchBlock_b [[attribute(7)]];
-    float4 Foo_a [[attribute(8)]];
-    float4 Foo_b [[attribute(9)]];
+    float4 patch_block_a [[attribute(6)]];
+    float4 patch_block_b [[attribute(7)]];
+    float4 vFoo_a [[attribute(8)]];
+    float4 vFoo_b [[attribute(9)]];
     patch_control_point<main0_in> gl_in;
 };
 
+static inline __attribute__((always_inline))
 void set_from_function(thread float4& gl_Position, thread patch_control_point<main0_in>& gl_in, thread PatchBlock& patch_block, thread float4& vColors, thread Foo& vFoo)
 {
-    gl_Position = gl_in[0].Block_a;
-    gl_Position += gl_in[0].Block_b;
-    gl_Position += gl_in[1].Block_a;
-    gl_Position += gl_in[1].Block_b;
+    gl_Position = gl_in[0].blocks_a;
+    gl_Position += gl_in[0].blocks_b;
+    gl_Position += gl_in[1].blocks_a;
+    gl_Position += gl_in[1].blocks_b;
     gl_Position += patch_block.a;
     gl_Position += patch_block.b;
     gl_Position += gl_in[0].vColor;
@@ -61,16 +62,12 @@ void set_from_function(thread float4& gl_Position, thread patch_control_point<ma
     Foo foo = vFoo;
     gl_Position += foo.a;
     gl_Position += foo.b;
-    Foo vFoos_105;
-    vFoos_105.a = gl_in[0].Foo_a;
-    vFoos_105.b = gl_in[0].Foo_b;
-    foo = vFoos_105;
+    Foo _106 = Foo{ gl_in[0].vFoos_a, gl_in[0].vFoos_b };
+    foo = _106;
     gl_Position += foo.a;
     gl_Position += foo.b;
-    Foo vFoos_119;
-    vFoos_119.a = gl_in[1].Foo_a;
-    vFoos_119.b = gl_in[1].Foo_b;
-    foo = vFoos_119;
+    Foo _120 = Foo{ gl_in[1].vFoos_a, gl_in[1].vFoos_b };
+    foo = _120;
     gl_Position += foo.a;
     gl_Position += foo.b;
 }
@@ -80,10 +77,10 @@ void set_from_function(thread float4& gl_Position, thread patch_control_point<ma
     main0_out out = {};
     PatchBlock patch_block = {};
     Foo vFoo = {};
-    patch_block.a = patchIn.PatchBlock_a;
-    patch_block.b = patchIn.PatchBlock_b;
-    vFoo.a = patchIn.Foo_a;
-    vFoo.b = patchIn.Foo_b;
+    patch_block.a = patchIn.patch_block_a;
+    patch_block.b = patchIn.patch_block_b;
+    vFoo.a = patchIn.vFoo_a;
+    vFoo.b = patchIn.vFoo_b;
     set_from_function(out.gl_Position, patchIn.gl_in, patch_block, patchIn.vColors, vFoo);
     return out;
 }

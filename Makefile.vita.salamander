@@ -43,6 +43,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/file/retro_dirent.o \
 		 libretro-common/encodings/encoding_utf.o \
 		 libretro-common/compat/compat_strl.o \
+		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/config_file.o \

@@ -21,7 +21,7 @@
 #include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 #include "rsound.h"
 
 typedef struct rsd

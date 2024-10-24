@@ -63,15 +63,12 @@ typedef struct mode_result
 {
 	int     weight;
 	int     scan_penalty;
-	int     x_scale;
-	int     y_scale;
-	int     v_scale;
+	double  x_scale;
+	double  y_scale;
+	double  v_scale;
 	double  x_diff;
 	double  y_diff;
 	double  v_diff;
-	double  x_ratio;
-	double  y_ratio;
-	double  v_ratio;
 } mode_result;
 
 typedef struct modeline
@@ -98,6 +95,7 @@ typedef struct modeline
 	int    refresh;
 	int    refresh_label;
 	//
+	int    id;
 	int    type;
 	int    range;
 	uint64_t platform_data;
@@ -110,13 +108,16 @@ typedef struct generator_settings
 	int      interlace;
 	int      doublescan;
 	uint64_t pclock_min;
-	bool     rotation;
 	double   monitor_aspect;
 	double   refresh_tolerance;
 	int      super_width;
+	double   h_size;
+	int      h_shift;
+	int      v_shift;
 	int      v_shift_correct;
 	int      pixel_precision;
 	int      interlace_force_even;
+	int      scale_proportional;
 } generator_settings;
 
 //============================================================
@@ -130,9 +131,13 @@ char * modeline_result(modeline *mode, char *result);
 int modeline_vesa_gtf(modeline *m);
 int modeline_parse(const char *user_modeline, modeline *mode);
 int modeline_to_monitor_range(monitor_range *range, modeline *mode);
+int modeline_adjust(modeline *mode, double hfreq_max, generator_settings *cs);
 int modeline_is_different(modeline *n, modeline *p);
+void modeline_copy_timings(modeline *n, modeline *p);
 
 int round_near(double number);
+int round_near_odd(double number);
+int round_near_even(double number);
 int normalize(int a, int b);
 int real_res(int x);
 

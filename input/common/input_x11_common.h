@@ -19,9 +19,9 @@
 
 #include <stdint.h>
 
-#include <X11/Xlib.h>
-
 #include <boolean.h>
+
+#include <X11/Xlib.h>
 
 #include "../../driver.h"
 

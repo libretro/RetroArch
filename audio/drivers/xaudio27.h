@@ -107,14 +107,14 @@ typedef enum XAUDIO2_DEVICE_ROLE
 #ifdef _XBOX
 typedef enum XAUDIO2_XBOX_HWTHREAD_SPECIFIER
 {
-	XboxThread0 = 0x01,
-	XboxThread1 = 0x02,
-	XboxThread2 = 0x04,
-	XboxThread3 = 0x08,
-	XboxThread4 = 0x10,
-	XboxThread5 = 0x20,
-	XAUDIO2_ANY_PROCESSOR = XboxThread4,
-	XAUDIO2_DEFAULT_PROCESSOR = XAUDIO2_ANY_PROCESSOR
+   XboxThread0 = 0x01,
+   XboxThread1 = 0x02,
+   XboxThread2 = 0x04,
+   XboxThread3 = 0x08,
+   XboxThread4 = 0x10,
+   XboxThread5 = 0x20,
+   XAUDIO2_ANY_PROCESSOR = XboxThread4,
+   XAUDIO2_DEFAULT_PROCESSOR = XAUDIO2_ANY_PROCESSOR
 } XAUDIO2_XBOX_HWTHREAD_SPECIFIER, XAUDIO2_PROCESSOR;
 #else
 typedef enum XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER
@@ -128,7 +128,8 @@ typedef enum XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER
 } XAUDIO2_WINDOWS_PROCESSOR_SPECIFIER, XAUDIO2_PROCESSOR;
 #endif
 
-typedef enum XAUDIO2_FILTER_TYPE {
+typedef enum XAUDIO2_FILTER_TYPE
+{
    LowPassFilter,
    BandPassFilter,
    HighPassFilter
@@ -335,7 +336,7 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
 
 #ifdef _XBOX
 STDAPI XAudio2Create(__deref_out IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
-		XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
+      XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
 #else
 static INLINE HRESULT XAudio2Create(IXAudio2 **ppXAudio2, UINT32 flags, XAUDIO2_PROCESSOR proc)
 {

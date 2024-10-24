@@ -104,7 +104,7 @@ static bool linuxraw_joypad_init_pad(const char *path,
 
       event.events             = EPOLLIN;
       event.data.ptr           = pad;
-
+      RARCH_LOG("[linuxraw]: device name is \"%s\".\n",pad->ident);
       if (epoll_ctl(linuxraw_epoll, EPOLL_CTL_ADD, pad->fd, &event) >= 0)
          return true;
    }
@@ -170,8 +170,12 @@ retry:
                   if (linuxraw_pads[idx].fd >= 0)
                   {
                      if (linuxraw_hotplug)
+                     {
                         input_autoconfigure_disconnect(idx,
                               linuxraw_pads[idx].ident);
+                        RARCH_LOG("[linuxraw]: disconnected \"%s\".\n",
+                              linuxraw_pads[idx].ident);
+                     }
 
                      close(linuxraw_pads[idx].fd);
                      linuxraw_pads[idx].buttons = 0;
@@ -183,7 +187,7 @@ retry:
                      input_autoconfigure_connect(
                            NULL,
                            NULL,
-                           linuxraw_joypad_name(idx),
+                           "linuxraw",
                            idx,
                            0,
                            0);
@@ -193,21 +197,23 @@ retry:
                 * access to it is established. */
                else if (event->mask & (IN_CREATE | IN_ATTRIB))
                {
-                  char path[PATH_MAX_LENGTH];
+                  char path[256];
+                  size_t _len = strlcpy(path, "/dev/input/", sizeof(path));
+                  strlcpy(path + _len, event->name, sizeof(path) - _len);
+                  RARCH_DBG("[linuxraw]: reconnecting \"%s\".\n",path);
 
-                  path[0] = '\0';
-
-                  snprintf(path, sizeof(path), "/dev/input/%s", event->name);
-
-                  if (     !string_is_empty(linuxraw_pads[idx].ident)
+                  if (     string_is_empty(linuxraw_pads[idx].ident)
                         && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
+                  {
                      input_autoconfigure_connect(
                            linuxraw_pads[idx].ident,
                            NULL,
-                           linuxraw_joypad.ident,
+                           "linuxraw",
                            idx,
                            0,
                            0);
+                     RARCH_LOG("[linuxraw]: reconnected \"%s\".\n",linuxraw_pads[idx].ident);
+                  }
                }
             }
          }
@@ -219,35 +225,33 @@ retry:
 
 static void *linuxraw_joypad_init(void *data)
 {
-   unsigned i;
-   int fd = epoll_create(32);
+   size_t i, _len;
+   char path[PATH_MAX_LENGTH];
+   int fd      = epoll_create(32);
+   bool init_ok;
 
    if (fd < 0)
       return NULL;
 
    linuxraw_epoll = fd;
+   _len           = strlcpy(path, "/dev/input/js", sizeof(path));
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      char path[PATH_MAX_LENGTH];
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
 
-      path[0]                     = '\0';
+      pad->fd    = -1;
+      pad->ident = input_config_get_device_name_ptr(i);
 
-      pad->fd                     = -1;
-      pad->ident                  = input_config_get_device_name_ptr(i);
+      snprintf(path + _len, sizeof(path) - _len, "%u", (uint32_t)i);
 
-      snprintf(path, sizeof(path), "/dev/input/js%u", i);
+      init_ok = linuxraw_joypad_init_pad(path, pad);
 
-      input_autoconfigure_connect(
-            pad->ident,
-            NULL,
-            "linuxraw",
-            i,
-            0,
-            0);
+      RARCH_DBG("[linuxraw]: scanning path \"%s\", ident \"%s\".\n",path,pad->ident);
+      input_autoconfigure_connect(pad->ident, NULL, "linuxraw",
+            i, 0, 0);
 
-      if (linuxraw_joypad_init_pad(path, pad))
+      if (init_ok)
          linuxraw_poll_pad(pad);
    }
 
@@ -306,7 +310,7 @@ static int32_t linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port];
-   if (port >= DEFAULT_MAX_PADS)
+   if (port >= MAX_USERS)
       return 0;
    if (joykey < NUM_BUTTONS)
       return (BIT32_GET(pad->buttons, joykey));
@@ -364,7 +368,7 @@ static int16_t linuxraw_joypad_state(
    const struct linuxraw_joypad    *pad = (const struct linuxraw_joypad*)
       &linuxraw_pads[port_idx];
 
-   if (port_idx >= DEFAULT_MAX_PADS)
+   if (port_idx >= MAX_USERS)
       return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -374,12 +378,12 @@ static int16_t linuxraw_joypad_state(
          ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if ((uint16_t)joykey != NO_BTN && 
+      if ((uint16_t)joykey != NO_BTN &&
             (joykey < NUM_BUTTONS)   &&
             (BIT32_GET(pad->buttons, joykey)))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(linuxraw_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(linuxraw_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -401,8 +405,10 @@ input_device_driver_t linuxraw_joypad = {
    linuxraw_joypad_get_buttons,
    linuxraw_joypad_axis,
    linuxraw_joypad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    linuxraw_joypad_name,
    "linuxraw",
 };

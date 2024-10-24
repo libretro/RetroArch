@@ -1,8 +1,8 @@
 #version 450
 
-layout(location = 0) out vec4 _3;
-
 float _49;
+
+layout(location = 0) out vec4 _3;
 
 void main()
 {

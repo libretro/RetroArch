@@ -7,15 +7,42 @@
    Switchres   Modeline generation engine for emulation
 
    License     GPL-2.0+
-   Copyright   2010-2021 Chris Kennedy, Antonio Giner,
-                         Alexandre Wodarczyk, Gil Delescluse
+   Copyright   2010-2022 Chris Kennedy, Antonio Giner,
+                         Alexandre Wodarczyk, Gil Delescluse,
+                         Radek Dutkiewicz
 
  **************************************************************/
+
+// To add additional text lines:
+// export GRID_TEXT="$(echo -e "\nArrows - screen position, Page Up/Down - H size\n\nH size: 1.0\nH position: 0\nV position: 0")"
+
+// To remove additional lines:
+// unset GRID_TEXT
+
 
 #define SDL_MAIN_HANDLED
 #define NUM_GRIDS 2
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+#include "font.h"
+#include <string.h>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <math.h>
+
+#define FONT_SIZE 11
+
+enum GRID_ADJUST
+{
+	LEFT = 64,
+	RIGHT,
+	UP,
+	DOWN,
+	H_SIZE_INC,
+	H_SIZE_DEC
+};
 
 typedef struct grid_display
 {
@@ -25,13 +52,19 @@ typedef struct grid_display
 
 	SDL_Window *window;
 	SDL_Renderer *renderer;
+	std::vector<SDL_Texture*> textures;
 } GRID_DISPLAY;
+
+SDL_Surface *surface;
+TTF_Font *font;
+std::vector<std::string> grid_texts;
+
 
 //============================================================
 //  draw_grid
 //============================================================
 
-void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
+void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer, std::vector<SDL_Texture*> textures)
 {
 	// Clean the surface
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
@@ -109,6 +142,60 @@ void draw_grid(int num_grid, int width, int height, SDL_Renderer *renderer)
 			break;
 	}
 
+	// Compute text scaling factors
+	int text_scale_w = std::max(1, (int)floor(width / 320 + 0.5));
+	int text_scale_h = std::max(1, (int)floor(height / 240 + 0.5));
+
+	SDL_Rect text_frame = {0, 0, 0, 0};
+
+	// Compute text frame size
+	for (SDL_Texture *t : textures)
+	{
+		int texture_width = 0;
+		int texture_height = 0;
+
+		SDL_QueryTexture(t, NULL, NULL, &texture_width, &texture_height);
+
+		text_frame.w = std::max(text_frame.w, texture_width);
+		text_frame.h += texture_height;
+	}
+
+	text_frame.w *= text_scale_w;
+	text_frame.h *= text_scale_h;
+
+	text_frame.w += FONT_SIZE * text_scale_w; // margin x
+	text_frame.h += FONT_SIZE * text_scale_h; // margin y
+
+	text_frame.x = ceil((width - text_frame.w ) / 2);
+	text_frame.y = ceil((height - text_frame.h ) / 2);
+
+	// Draw Text background
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderFillRect(renderer, &text_frame);
+
+	// Draw Text frame
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+	SDL_RenderDrawRect(renderer, &text_frame);
+
+	// Draw text lines
+	SDL_Rect text_rect = {0, text_frame.y + FONT_SIZE * text_scale_h / 2, 0, 0};
+
+	for (SDL_Texture *t : textures)
+	{
+		int texture_width = 0;
+		int texture_height = 0;
+
+		SDL_QueryTexture(t, NULL, NULL, &texture_width, &texture_height);
+
+		text_rect.w = texture_width *= text_scale_w;
+		text_rect.h = texture_height *= text_scale_h;
+		text_rect.x = ceil((width - text_rect.w ) / 2);
+
+		SDL_RenderCopy(renderer, t, NULL, &text_rect);
+
+		text_rect.y += text_rect.h;
+	}
+
 	SDL_RenderPresent(renderer);
 }
 
@@ -157,6 +244,25 @@ int main(int argc, char **argv)
 		display_total = 1;
 	}
 
+	// Initialize text
+	TTF_Init();
+	SDL_RWops* font_resource = SDL_RWFromConstMem(ATTRACTPLUS_TTF, (sizeof(ATTRACTPLUS_TTF)) / (sizeof(ATTRACTPLUS_TTF[0])));
+	font = TTF_OpenFontRW(font_resource, 1, FONT_SIZE);
+
+	grid_texts.push_back(" "); // empty line for screen resolution
+
+	char *grid_text = getenv("GRID_TEXT");
+
+	if ( grid_text != NULL )
+	{
+		char* p = strtok(grid_text, "\n");
+		while(p)
+		{
+			grid_texts.push_back(p);
+			p = strtok(NULL, "\n");
+		}
+	}
+
 	// Create windows
 	for (int disp = 0; disp < display_total; disp++)
 	{
@@ -177,14 +283,29 @@ int main(int argc, char **argv)
 
 		// Create renderer
 		display_array[disp].renderer = SDL_CreateRenderer(display_array[disp].window, -1, SDL_RENDERER_ACCELERATED);
+		SDL_RenderPresent(display_array[disp].renderer);
+
+		// Render first text
+		grid_texts[0] = "Mode: " + std::to_string(dm.w) + " x " + std::to_string(dm.h) + " @ " + std::to_string(dm.refresh_rate);
+
+		for ( int i = 0; i < grid_texts.size(); i++ )
+		{
+			surface = TTF_RenderText_Solid(font, grid_texts[i].c_str(), {255, 255, 255});
+			display_array[disp].textures.push_back(SDL_CreateTextureFromSurface(display_array[disp].renderer, surface));
+		}
 
 		// Draw grid
-		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
+		draw_grid(0, display_array[disp].width, display_array[disp].height, display_array[disp].renderer, display_array[disp].textures);
 	}
+
+
+
 
 	// Wait for escape key
 	bool close = false;
 	int  num_grid = 0;
+	int return_code = 0;
+	int CTRL_modifier = 0;
 
 	while (!close)
 	{
@@ -199,30 +320,91 @@ int main(int argc, char **argv)
 					break;
 
 				case SDL_KEYDOWN:
+					if (event.key.keysym.mod & KMOD_LCTRL || event.key.keysym.mod & KMOD_RCTRL)
+						CTRL_modifier = 1<<7;
+
 					switch (event.key.keysym.scancode)
 					{
 						case SDL_SCANCODE_ESCAPE:
+						case SDL_SCANCODE_Q:
+							close = true;
+							return_code = 1;
+							break;
+
+						case SDL_SCANCODE_BACKSPACE:
+						case SDL_SCANCODE_DELETE:
+							close = true;
+							return_code = 2;
+							break;
+
+						case SDL_SCANCODE_R:
+							close = true;
+							return_code = 3;
+							break;
+
+						case SDL_SCANCODE_RETURN:
+						case SDL_SCANCODE_KP_ENTER:
 							close = true;
 							break;
 
 						case SDL_SCANCODE_TAB:
 							num_grid ++;
 							for (int disp = 0; disp < display_total; disp++)
-								draw_grid(num_grid % NUM_GRIDS, display_array[disp].width, display_array[disp].height, display_array[disp].renderer);
+								draw_grid(num_grid % NUM_GRIDS, display_array[disp].width, display_array[disp].height, display_array[disp].renderer, display_array[disp].textures);
+							break;
+
+						case SDL_SCANCODE_LEFT:
+							close = true;
+							return_code = GRID_ADJUST::LEFT;
+							break;
+
+						case SDL_SCANCODE_RIGHT:
+							close = true;
+							return_code = GRID_ADJUST::RIGHT;
+							break;
+
+						case SDL_SCANCODE_UP:
+							close = true;
+							return_code = GRID_ADJUST::UP;
+							break;
+
+						case SDL_SCANCODE_DOWN:
+							close = true;
+							return_code = GRID_ADJUST::DOWN;
+							break;
+
+						case SDL_SCANCODE_PAGEUP:
+							close = true;
+							return_code = GRID_ADJUST::H_SIZE_INC;
+							break;
+
+						case SDL_SCANCODE_PAGEDOWN:
+							close = true;
+							return_code = GRID_ADJUST::H_SIZE_DEC;
 							break;
 
 						default:
 							break;
 					}
+
 			}
 		}
 	}
 
+	// Destroy font
+	SDL_FreeSurface(surface);
+	TTF_CloseFont(font);
+	TTF_Quit();
+
 	// Destroy all windows
 	for (int disp = 0; disp < display_total; disp++)
+	{
+		for (SDL_Texture *t : display_array[disp].textures)
+			SDL_DestroyTexture(t);
 		SDL_DestroyWindow(display_array[disp].window);
+	}
 
 	SDL_Quit();
 
-	return 0;
+	return return_code | CTRL_modifier;
 }

@@ -1,3 +1,178 @@
+# v11.6.0
+* backdate retried unlocks in rc_client
+* add memory map and hash method for RC_CONSOLE_ZX_SPECTRUM
+* add RC_CONSOLE_GAMECUBE to supported consoles for iso file extension
+* add DTCM to RC_CONSOLE_NINTENDO_DS and RC_CONSOLE_NINTENDO_DSI memory maps
+* don't report conflict if last conditions of OrNext chain conflict
+* don't report conflict if last conditions of AddSource chain conflict
+* fix hits not being reset on leaderboard value when start and submit are both true in a single frame
+* fix crash when multiple items in a CSV lookup overlap
+* fix crash if game is unloaded while activating achievements
+
+# v11.5.0
+* add total_entries to rc_api_fetch_leaderboard_info_response_t
+* add RC_CLIENT_RAINTEGRATION_EVENT_MENU_CHANGED event
+* modify rc_client_begin_identify_and_load_game and rc_client_begin_change_media to use locally
+  registered filereader/cdreader for hash resolution when using rc_client_raintegration
+* add support for ISO-8601 timestamps in JSON responses
+* update RC_CONSOLE_MS_DOS hash logic to support parent archives
+* fix infinite loop that sometimes occurs when resetting while progress tracker is onscreen
+
+# v11.4.0
+* add RC_CONDITION_REMEMBER and RC_OPERAND_RECALL
+* add RC_OPERATOR_ADD and RC_OPERATOR_SUB
+* add scratch pad memory to PSX memory map
+* add Super Game Module memory to Colecovision memory map
+* add rapi function fetch_game_titles
+* modify progress functions to return RC_NO_GAME_LOADED when "Unknown Game" is loaded
+* update subsystem list for arcade hash
+* fix exception if server sends null as achievement.author
+
+# v11.3.0
+* add RC_OPERATOR_MOD
+* add cartridge RAM to Game Gear and Master System memory maps
+* add extended cartridge RAM to Gameboy and Gameboy Color memory maps
+* add rc_client_is_game_loaded helper function
+* add rc_client_raintegration_set_console_id to specify console in case game resolution fails
+* add rc_client_raintegration_get_achievement_state to detect local unlocks
+* report validation errors on multi-condition logic
+* hash whole file for PSP homebrew files (eboot.pbp)
+* call DrawMenuBar in rc_client_raintegration_rebuild_submenu if menu changes
+* fix file sharing issue using default filereader on Windows
+* fix exception calling rc_client_get_game_summary with an unidentified game loaded
+
+# v11.2.0
+* add alternate methods for state serialization/deserialization that accept a buffer_size parameter
+* add RC_CLIENT_SUPPORTS_HASH compile flag
+  - allows rc_client code to build without the rhash files (except md5.c)
+  - must be explicitly defined to use rc_client_begin_identify_and_load_game
+* add rc_client_get_load_game_state
+* add rc_client_raintegration_set_get_game_name_function
+* add RC_MEMSIZE_DOUBLE32 and RC_MEMSIZE_DOUBLE32_BE
+* exclude directory records from ZIP hash algorithm
+* fix media host when explicitly setting host to production server
+* fix potential out-of-bounds read looking for error message in non-JSON response
+
+# v11.1.0
+* add rc_client_get_user_agent_clause to generate substring to include in client User-Agents
+* add rc_client_can_pause function to control pause spam
+* add achievement type and rarity to rc_api_fetch_game_data_response_t and rc_client_achievement_t
+* add RC_CLIENT_ACHIEVEMENT_BUCKET_UNSYNCED for achievements that have been unlocked locally but not synced to the server
+* add RC_CONSOLE_NEO_GEO_CD to supported consoles for chd file extension
+* add hash logic for RC_CONSOLE_NINTENDO_3DS (note: added new file rhash/aes.c to support this)
+* add hash logic for RC_CONSOLE_MS_DOS
+* add game_hash and hardcore fields to rc_api_start_session_request_t and rc_api_ping_request_t
+* add RC_FORMAT_FIXED1/2/3, RC_FORMAT_TENS, RC_FORMAT_HUNDREDS, RC_FORMAT_THOUSANDS, and RC_FORMAT_UNSIGNED_VALUE
+* add RC_CONSOLE_STANDALONE
+* add extern "C" and __cdecl attributes to public functions
+* add __declspec(dllexport/dllimport) attributes to public functions via #define enablement
+* add rc_version and rc_version_string functions for accessing version from external linkage
+* add unicode path support to default filereader (Windows builds)
+* add rc_mutex support for GEKKO (libogc)
+* fix async_handle being returned when rc_client_begin_login is aborted synchronously
+* fix logic error hashing CD files smaller than one sector
+* fix read across region boundary in rc_libretro_memory_read
+* fix RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_SHOW event not being raised if achievement is reset in the same frame that it's primed
+* moved rc_util.h from src/ to include/
+* initial (incomplete) support for rc_client_external_t and rc_client_raintegration_t
+
+# v11.0.0
+* add rc_client_t and related functions
+* add RC_MEMSIZE_FLOAT_BE
+* add Game Pak SRAM to GBA memory map
+* add hash method for Super Cassettevision
+* add PSP to potential consoles for chd iterator
+* add content_type to rc_api_request_t for client to pass to server
+* add rc_api_process_X_server_response methods to pass status_code and body_length to response processing functions
+* add additional error codes to rc_api_process_login_response: RC_INVALID_CREDENTIALS, RC_EXPIRED_TOKEN, RC_ACCESS_DENIED
+* rc_api_start_session now also returns unlocks without having to explicitly call rc_api_fetch_user_unlocks separately
+* add validation warning for using hit target of 1 on ResetIf condition
+* move compat.c up a directory and rename to rc_compat.c as it's shared by all subfolders
+* move rc_libretro.c up a directory as it uses files from all subfolders
+* convert loosely sized types to strongly sized types (unsigned -> uint32t, unsigned char -> uint8_t, etc)
+
+# v10.7.1
+* add rc_runtime_alloc
+* add rc_libretro_memory_find_avail
+* extract nginx errors from HTML returned for JSON endpoints
+* fix real address for 32X extension RAM
+* fix crash attempting to calculate gamecube hash for non-existent file
+
+# v10.7.0
+* add hash method and memory map for Gamecube
+* add console enum, hash method, and memory map for DSi
+* add console enum, hash method, and memory map for TI-83
+* add console enum, hash method, and memory map for Uzebox
+* add constant for rcheevos version; include in start session server API call
+* fix SubSource calculations using float values
+* fix game identification for homebrew Jaguar CD games
+* fix game identification for CD with many files at root directory
+* address _CRT_SECURE_NO_WARNINGS warnings
+
+# v10.6.0
+* add RC_RUNTIME_EVENT_ACHIEVEMENT_PROGRESS_UPDATED
+* use optimized comparators for most common condition logic
+* fix game identification of psx ISOs that have extra slashes in their boot path
+* fix game identification of ndd files
+
+# v10.5.0
+* add RC_MEMSIZE_MBF32_LE
+* add RC_OPERATOR_XOR
+* add RC_CONSOLE_ATARI_JAGUAR_CD and hash/memory map for Atari Jaguar CD
+* add RC_CONSOLE_ARCADIA_2001 and hash/memory map for Arcadia 2001
+* add RC_CONSOLE_INTERTON_VC_4000 and hash/memory map for Interton VC 4000
+* add RC_CONSOLE_ELEKTOR_TV_GAMES_COMPUTER and hash/memory map for Elektor TV Games Computer
+* split RC_CONSOLE_PC_ENGINE_CD off of RC_CONSOLE_PC_ENGINE
+* add hash/memory map for RC_CONSOLE_NEO_GEO_CD
+* add additional 256KB of RAM to memory map for RC_CONSOLE_SEGA_32X
+* validation: don't report redundancy between trigger and non-trigger conditions
+* validation: don't report range validation errors for float comparisons
+* change default image host to media.retroachievements.org
+* fix decoding of denormalized floats
+* fix full line comments in the middle of Display: section causing RC_MISSING_DISPLAY_STRING
+
+# v10.4.0
+* add rc_libretro_hash_set_t with support for #SAVEDISK: m3u extension
+* add rc_libretro_is_system_allowed for finer-grain control over core support
+* fix measured value from hitcount not resetting while paused
+* add RC_CONSOLE_WASM and hash/memory map for WASM-4
+* add scratchpad memory to RC_CONSOLE_PLAYSTATION_2 memory map
+* add hash/memory map for RC_CONSOLE_FAIRCHILD_CHANNEL_F
+* add hash/memory map for RC_CONSOLE_COMMODORE_64
+* add memory map for RC_CONSOLE_AMIGA
+
+# v10.3.3
+* add RC_CONSOLE_ARDUBOY and hash/memory map for Arduboy
+* add display_name to rc_api_login_response_t
+* detect logical conflicts and redundancies in validator
+* fix tab sequences in JSON responses being turned into t
+* fix overflow when float value has more than 9 digits after the decimal
+* fix libretro memory mapping when disconnect mask breaks a region into multiple blocks
+* fix non-virtualized file system call when reading some iso files
+
+# v10.3.2
+* fix RC_OPERAND_PRIOR for bit sizes other than RC_MEMSIZE_BIT_0
+* add memory map and hash for Amstrad CPC
+* fix an issue where fetch_game_data and fetch_user_unlocks could return RC_MISSING_VALUE instead of acknowledging a server error
+
+# v10.3.1
+* allow empty description in rc_api_init_update_leaderboard_request
+* fix buffered n64 hash when no filereader is registered
+* add memory map and hash for Mega Duck
+
+# v10.3.0
+* support for floating point memory sizes and logic
+* add built-in macros for rich presence: @Number, @Score, @Centisecs, @Seconds, @Minutes, @ASCIIChar, @UnicodeChar
+* add rapi functions for fetch_code_notes, update_code_note, upload_achievement, update_leaderboard, fetch_badge_range, and add_game_hash
+* add lower_is_better and hidden flags to leaderboards in rc_api_fetch_game_data_response_t
+* add achievements_remaining to rc_api_award_achievement_response_t
+* add console enums for PC6000, PICO, MEGADUCK and ZEEBO
+* add memory map for Dreamcast
+* capture leaderboard/rich presence state in rc_runtime_progress data
+* support for hashing Dreamcast bin/cues
+* support for hashing buffered NDS ROMs
+* fix prior for sizes smaller than a byte sometimes returning current value
+
 # v10.2.0
 
 * add RC_MEMSIZE_16_BITS_BE, RC_MEMSIZE_24_BITS_BE, and RC_MEMSIZE_32_BITS_BE

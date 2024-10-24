@@ -13,16 +13,13 @@
  */
 
 #include <string.h>
-#include <errno.h>
 #include <compat/strl.h>
-#include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
 
 #include "../msg_hash.h"
-#include "../verbosity.h"
 #include "../bluetooth/bluetooth_driver.h"
 
 static void task_bluetooth_scan_handler(retro_task_t *task)
@@ -32,7 +29,7 @@ static void task_bluetooth_scan_handler(retro_task_t *task)
    task_set_progress(task, 100);
    task_free_title(task);
    task_set_title(task, strdup(msg_hash_to_str(MSG_BLUETOOTH_SCAN_COMPLETE)));
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 bool task_push_bluetooth_scan(retro_task_callback_t cb)

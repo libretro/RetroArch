@@ -29,7 +29,7 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 #endif
 #include <string/stdstring.h>
@@ -279,16 +279,16 @@ BTDIMPORT const hci_cmd_t* l2cap_decline_connection_ptr;
 
 /* RFCOMM EVENTS */
 
-// data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+/* data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16) */
 #define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                  0x80
 
-// data: event(8), len(8), rfcomm_cid(16)
+/* data: event(8), len(8), rfcomm_cid(16) */
 #define RFCOMM_EVENT_CHANNEL_CLOSED                         0x81
 
-// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+/* data: event (8), len(8), address(48), channel (8), rfcomm_cid (16) */
 #define RFCOMM_EVENT_INCOMING_CONNECTION                    0x82
 
-// data: event (8), len(8), rfcommid (16), ...
+/* data: event (8), len(8), rfcommid (16), ... */
 #define RFCOMM_EVENT_REMOTE_LINE_STATUS                     0x83
 
 /* data: event(8), len(8), rfcomm_cid(16), credits(8) */
@@ -454,7 +454,7 @@ extern const hci_cmd_t rfcomm_register_service;
 extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
 /* unregister rfcomm service, @param service_channel(16) */
 extern const hci_cmd_t rfcomm_unregister_service;
-/* request persisten rfcomm channel for service name: serive name (char*)  */
+/* request persistent rfcomm channel for service name: serive name (char*)  */
 extern const hci_cmd_t rfcomm_persistent_channel_for_service;
 
 /* linked_list.h */
@@ -751,13 +751,12 @@ static CFRunLoopSourceRef btstack_quit_source;
 
 static void *btstack_get_handle(void)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    void *handle = dylib_load("/usr/lib/libBTstack.dylib");
 
    if (handle)
       return handle;
 #endif
-
    return NULL;
 }
 
@@ -977,6 +976,7 @@ static void btpad_queue_reset(void)
    can_run         = 1;
 }
 
+#if 0
 static void btpad_queue_btstack_set_power_mode(
       struct btpad_queue_command *cmd, uint8_t on)
 {
@@ -989,6 +989,7 @@ static void btpad_queue_btstack_set_power_mode(
    btpad_increment_position(&insert_position);
    btpad_queue_process();
 }
+#endif
 
 static void btpad_set_inquiry_state(bool on)
 {
@@ -1246,7 +1247,7 @@ static void btpad_packet_handler(uint8_t packet_type,
 
 static bool btstack_try_load(void)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    unsigned i;
 #endif
    void *handle   = NULL;
@@ -1262,7 +1263,7 @@ static bool btstack_try_load(void)
    if (!handle)
       return false;
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    for (i = 0; grabbers[i].name; i ++)
    {
       *grabbers[i].target = dylib_proc(handle, grabbers[i].name);
@@ -1380,7 +1381,6 @@ static int16_t btstack_hid_joypad_button(void *data,
 static int16_t btstack_hid_joypad_axis(void *data,
       unsigned port, uint32_t joyaxis)
 {
-   btstack_hid_t         *hid = (btstack_hid_t*)data;
 
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
@@ -1390,7 +1390,7 @@ static int16_t btstack_hid_joypad_axis(void *data,
       if (val < 0)
          return val;
    }
-   else if(AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 4)
    {
       int16_t val = pad_connection_get_axis(
             &slots[port], port, AXIS_POS_GET(joyaxis));
@@ -1411,7 +1411,6 @@ static int16_t btstack_hid_joypad_state(
    unsigned i;
    int16_t ret                          = 0;
    const struct retro_keybind *binds    = (const struct retro_keybind*)binds_data;
-   btstack_hid_t         *hid            = (btstack_hid_t*)data;
    uint16_t port_idx                     = joypad_info->joy_idx;
    joypad_connection_t              *pad = &slots[port_idx];
 
@@ -1426,11 +1425,11 @@ static int16_t btstack_hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && btstack_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(btstack_hid_joypad_axis(data, port_idx, joyaxis)) 
+            ((float)abs(btstack_hid_joypad_axis(data, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -1458,7 +1457,6 @@ static void btstack_hid_free(const void *data)
    btpad_set_inquiry_state(true);
    btstack_set_poweron(false);
 
-   free(slots);
    if (hid)
       free(hid);
 }

@@ -49,16 +49,14 @@
 #include "../common/egl_common.h"
 #endif
 
-#include "../common/gl_common.h"
-
 #ifdef HAVE_ANGLE
 #include "../common/angle_common.h"
 #endif
 
 /* TODO/FIXME - static globals */
 static egl_ctx_data_t uwp_egl;
-#ifdef HAVE_DYNAMIC
-static dylib_t          dll_handle = NULL; /* Handle to libGLESv2.dll */
+#ifdef HAVE_DYLIB
+static dylib_t  dll_handle     = NULL; /* Handle to libGLESv2.dll */
 #endif
 
 typedef struct gfx_ctx_cgl_data
@@ -70,7 +68,7 @@ bool create_gles_context(void* corewindow)
 {
    EGLint n, major, minor;
    EGLint format;
-   EGLint attribs[] = {
+   EGLint attribs[]            = {
    EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
    EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
    EGL_BLUE_SIZE, 8,
@@ -95,25 +93,22 @@ bool create_gles_context(void* corewindow)
 #endif
    {
       egl_report_error();
-      goto error;
+      return false;
    }
 
    if (!egl_get_native_visual_id(&uwp_egl, &format))
-      goto error;
+      return false;
 
    if (!egl_create_context(&uwp_egl, context_attributes))
    {
       egl_report_error();
-      goto error;
+      return false;
    }
 
    if (!egl_create_surface(&uwp_egl, uwp_get_corewindow()))
-      goto error;
+      return false;
 
    return true;
-
-error:
-   return false;
 }
 
 static void gfx_ctx_uwp_swap_interval(void *data, int interval)
@@ -129,7 +124,7 @@ static void gfx_ctx_uwp_swap_interval(void *data, int interval)
 
 static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 {
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 #else
    return NULL;
@@ -145,9 +140,15 @@ static bool gfx_ctx_uwp_set_resize(void *data,
 static void gfx_ctx_uwp_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   bool quit;
-   bool resize;
+   bool quit   = false;
+   bool resize = false;
    win32_check_window(NULL, &quit, &resize, width, height);
+   if (is_running_on_xbox())
+   {
+      /* Match the output res to the display resolution */
+      width    = uwp_get_width();
+      height   = uwp_get_height();
+   }
 }
 
 static void *gfx_ctx_uwp_init(void *video_driver)
@@ -157,7 +158,7 @@ static void *gfx_ctx_uwp_init(void *video_driver)
    if (!uwp)
       return NULL;
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    dll_handle = dylib_load("libGLESv2.dll");
 #endif
 
@@ -173,7 +174,7 @@ static void gfx_ctx_uwp_destroy(void *data)
 
    egl_destroy(&uwp_egl);
 
-#ifdef HAVE_DYNAMIC
+#ifdef HAVE_DYLIB
    dylib_close(dll_handle);
 #endif
 }
@@ -192,15 +193,12 @@ static bool gfx_ctx_uwp_set_video_mode(void *data,
    if (!create_gles_context(uwp_get_corewindow()))
    {
       RARCH_ERR("[UWP EGL]: create_gles_context failed.\n");
-      goto error;
+      gfx_ctx_uwp_destroy(data);
+      return false;
    }
 
    gfx_ctx_uwp_swap_interval(data, uwp->interval);
    return true;
-
-error:
-   gfx_ctx_uwp_destroy(data);
-   return false;
 }
 
 static void gfx_ctx_uwp_input_driver(void *data,
@@ -233,9 +231,7 @@ static enum gfx_ctx_api gfx_ctx_uwp_get_api(void *data)
 static bool gfx_ctx_uwp_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   if (api == GFX_CTX_OPENGL_ES_API)
-      return true;
-   return false;
+   return (api == GFX_CTX_OPENGL_ES_API);
 }
 
 static void gfx_ctx_uwp_bind_hw_render(void *data, bool enable)

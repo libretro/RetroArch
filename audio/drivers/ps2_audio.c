@@ -20,7 +20,7 @@
 #include <kernel.h>
 #include <audsrv.h>
 
-#include "../../retroarch.h"
+#include "../audio_driver.h"
 
 #define AUDIO_BUFFER 128 * 1024
 #define AUDIO_CHANNELS 2

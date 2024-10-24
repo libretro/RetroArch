@@ -7,14 +7,12 @@ layout(location = 0) in float vColor;
 #line 8 "test.frag"
 void main()
 {
-    float _80;
 #line 8 "test.frag"
     FragColor = 1.0;
 #line 9 "test.frag"
     FragColor = 2.0;
 #line 10 "test.frag"
-    _80 = vColor;
-    if (_80 < 0.0)
+    if (vColor < 0.0)
     {
 #line 12 "test.frag"
         FragColor = 3.0;
@@ -24,16 +22,19 @@ void main()
 #line 16 "test.frag"
         FragColor = 4.0;
     }
-    for (int _126 = 0; float(_126) < (40.0 + _80); )
+#line 19 "test.frag"
+    for (int _127 = 0; float(_127) < (40.0 + vColor); )
     {
 #line 21 "test.frag"
         FragColor += 0.20000000298023223876953125;
 #line 22 "test.frag"
         FragColor += 0.300000011920928955078125;
-        _126 += (int(_80) + 5);
+#line 19 "test.frag"
+        _127 += (int(vColor) + 5);
         continue;
     }
-    switch (int(_80))
+#line 25 "test.frag"
+    switch (int(vColor))
     {
         case 0:
         {
@@ -59,7 +60,8 @@ void main()
     }
     for (;;)
     {
-        FragColor += (10.0 + _80);
+#line 42 "test.frag"
+        FragColor += (10.0 + vColor);
 #line 43 "test.frag"
         if (FragColor < 100.0)
         {
@@ -69,5 +71,6 @@ void main()
             break;
         }
     }
+#line 48 "test.frag"
 }
 

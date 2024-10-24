@@ -1,9 +1,9 @@
 #version 450
 
-layout(location = 0) out vec4 _entryPointOutput;
-
 vec4 _38;
 vec4 _47;
+
+layout(location = 0) out vec4 _entryPointOutput;
 
 void main()
 {

@@ -5,9 +5,7 @@ import com.retroarch.browser.retroactivity.RetroActivityFuture;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
 import android.media.AudioManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceActivity;
@@ -91,13 +89,10 @@ public final class MainMenuActivity extends PreferenceActivity
 							{
 								if (which == AlertDialog.BUTTON_POSITIVE)
 								{
-									if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
-									{
-										requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
+									requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
 											REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
 
-										Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
-									}
+									Log.i("MainMenuActivity", "User accepted request for external storage permissions.");
 								}
 							}
 						});

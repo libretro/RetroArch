@@ -30,11 +30,11 @@ void main()
 {
     vec2 off = vec2(1.0) / vec2(textureSize(SPIRV_Cross_CombineduTextureuSampler[1], 0));
     vec2 off2 = vec2(1.0) / vec2(textureSize(SPIRV_Cross_CombineduTextureuSampler[2], 1));
-    highp vec2 param = (vTex + off) + off2;
+    vec2 param = (vTex + off) + off2;
     vec4 c0 = sample_func(param, SPIRV_Cross_CombineduTextureuSampler);
-    highp vec2 param_1 = (vTex + off) + off2;
+    vec2 param_1 = (vTex + off) + off2;
     vec4 c1 = sample_func_dual(param_1, SPIRV_Cross_CombineduTextureuSampler[1]);
-    highp vec2 param_2 = (vTex + off) + off2;
+    vec2 param_2 = (vTex + off) + off2;
     vec4 c2 = sample_func_dual_array(param_2, SPIRV_Cross_CombineduTextureuSampler);
     vec4 c3 = texture(SPIRV_Cross_CombineduTextureArrayuSampler[3], vTex3);
     vec4 c4 = texture(SPIRV_Cross_CombineduTextureCubeuSampler[1], vTex3);

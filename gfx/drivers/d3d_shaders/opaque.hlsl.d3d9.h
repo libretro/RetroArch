@@ -3,18 +3,18 @@
 static const char *stock_hlsl_program = CG(
       void main_vertex
       (
-         float4 position : POSITION,
+         float3 position : POSITION,
          float4 color    : COLOR,
+         float2 texCoord : TEXCOORD0,
 
          uniform float4x4 modelViewProj,
 
-         float4 texCoord : TEXCOORD0,
          out float4 oPosition : POSITION,
          out float4 oColor : COLOR,
          out float2 otexCoord : TEXCOORD
       )
       {
-         oPosition = mul(modelViewProj, position);
+         oPosition = mul(modelViewProj, float4(position, 1.0f));
          oColor = color;
          otexCoord = texCoord;
       }

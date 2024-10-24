@@ -212,9 +212,8 @@ WRes File_Seek(CSzFile *p, int64_t *pos, ESzSeek origin)
 WRes File_GetLength(CSzFile *p, uint64_t *length)
 {
   #ifdef USE_WINDOWS_FILE
-  
-  DWORD sizeHigh;
-  DWORD sizeLow = GetFileSize(p->handle, &sizeHigh);
+  DWORD sizeHigh = 0;
+  DWORD sizeLow  = GetFileSize(p->handle, &sizeHigh);
   if (sizeLow == 0xFFFFFFFF)
   {
     DWORD res = GetLastError();

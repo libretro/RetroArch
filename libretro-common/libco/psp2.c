@@ -45,24 +45,21 @@ extern "C" {
       if (block < 0)
          return;
 
-      /* get base address */
-      ret = sceKernelGetMemBlockBase(block, &base);
-      if (ret < 0)
+      /* Get base address */
+      if ((ret = sceKernelGetMemBlockBase(block, &base)) < 0)
          return;
 
-      /* set domain to be writable by user */
-      ret = sceKernelOpenVMDomain();
-      if (ret < 0)
+      /* Set domain to be writable by user */
+      if ((ret = sceKernelOpenVMDomain()) < 0)
          return;
 
       memcpy(base, co_swap_function, sizeof co_swap_function);
 
-      /* set domain back to read-only */
-      ret = sceKernelCloseVMDomain();
-      if (ret < 0)
+      /* Set domain back to read-only */
+      if ((ret = sceKernelCloseVMDomain()) < 0)
          return;
 
-      /* flush icache */
+      /* Flush icache */
       ret = sceKernelSyncVMDomain(block, base,
             MB_ALIGN(FOUR_KB_ALIGN(sizeof co_swap_function)));
       if (ret < 0)
@@ -73,7 +70,8 @@ extern "C" {
 
    cothread_t co_active(void)
    {
-      if (!co_active_handle) co_active_handle = &co_active_buffer;
+      if (!co_active_handle)
+         co_active_handle = &co_active_buffer;
       return co_active_handle;
    }
 
@@ -82,15 +80,16 @@ extern "C" {
       unsigned long* handle = 0;
       if (!co_swap)
          co_init();
-      if (!co_active_handle) co_active_handle = &co_active_buffer;
-      size += 256;
-      size &= ~15;
+      if (!co_active_handle)
+         co_active_handle   = &co_active_buffer;
+      size                 += 256;
+      size                 &= ~15;
 
       if ((handle = (unsigned long*)malloc(size)))
       {
-         unsigned long* p = (unsigned long*)((unsigned char*)handle + size);
-         handle[8] = (unsigned long)p;
-         handle[9] = (unsigned long)entrypoint;
+         unsigned long *p   = (unsigned long*)((unsigned char*)handle + size);
+         handle[8]          = (unsigned long)p;
+         handle[9]          = (unsigned long)entrypoint;
       }
 
       return handle;

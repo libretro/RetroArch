@@ -7,77 +7,75 @@
 
 #include "rc_consoles.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RC_BEGIN_C_DECLS
 
   /* ===================================================== */
 
   /* generates a hash from a block of memory.
    * returns non-zero on success, or zero on failure.
    */
-  int rc_hash_generate_from_buffer(char hash[33], int console_id, const uint8_t* buffer, size_t buffer_size);
+  RC_EXPORT int RC_CCONV rc_hash_generate_from_buffer(char hash[33], uint32_t console_id, const uint8_t* buffer, size_t buffer_size);
 
   /* generates a hash from a file.
    * returns non-zero on success, or zero on failure.
    */
-  int rc_hash_generate_from_file(char hash[33], int console_id, const char* path);
+  RC_EXPORT int RC_CCONV rc_hash_generate_from_file(char hash[33], uint32_t console_id, const char* path);
 
   /* ===================================================== */
 
   /* data for rc_hash_iterate
    */
-  struct rc_hash_iterator
+  typedef struct rc_hash_iterator
   {
-    uint8_t* buffer;
+    const uint8_t* buffer;
     size_t buffer_size;
     uint8_t consoles[12];
     int index;
     const char* path;
-  };
+  } rc_hash_iterator_t;
 
   /* initializes a rc_hash_iterator
    * - path must be provided
    * - if buffer and buffer_size are provided, path may be a filename (i.e. for something extracted from a zip file)
    */
-  void rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, uint8_t* buffer, size_t buffer_size);
+  RC_EXPORT void RC_CCONV rc_hash_initialize_iterator(struct rc_hash_iterator* iterator, const char* path, const uint8_t* buffer, size_t buffer_size);
 
   /* releases resources associated to a rc_hash_iterator
    */
-  void rc_hash_destroy_iterator(struct rc_hash_iterator* iterator);
+  RC_EXPORT void RC_CCONV rc_hash_destroy_iterator(struct rc_hash_iterator* iterator);
 
   /* generates the next hash for the data in the rc_hash_iterator.
    * returns non-zero if a hash was generated, or zero if no more hashes can be generated for the data.
    */
-  int rc_hash_iterate(char hash[33], struct rc_hash_iterator* iterator);
+  RC_EXPORT int RC_CCONV rc_hash_iterate(char hash[33], struct rc_hash_iterator* iterator);
 
   /* ===================================================== */
 
   /* specifies a function to call when an error occurs to display the error message */
-  typedef void (*rc_hash_message_callback)(const char*);
-  void rc_hash_init_error_message_callback(rc_hash_message_callback callback);
+  typedef void (RC_CCONV *rc_hash_message_callback)(const char*);
+  RC_EXPORT void RC_CCONV rc_hash_init_error_message_callback(rc_hash_message_callback callback);
 
   /* specifies a function to call for verbose logging */
-  void rc_hash_init_verbose_message_callback(rc_hash_message_callback callback);
+  RC_EXPORT void rc_hash_init_verbose_message_callback(rc_hash_message_callback callback);
 
   /* ===================================================== */
 
   /* opens a file */
-  typedef void* (*rc_hash_filereader_open_file_handler)(const char* path_utf8);
+  typedef void* (RC_CCONV *rc_hash_filereader_open_file_handler)(const char* path_utf8);
 
   /* moves the file pointer - standard fseek parameters */
-  typedef void (*rc_hash_filereader_seek_handler)(void* file_handle, int64_t offset, int origin);
+  typedef void (RC_CCONV *rc_hash_filereader_seek_handler)(void* file_handle, int64_t offset, int origin);
 
   /* locates the file pointer */
-  typedef int64_t (*rc_hash_filereader_tell_handler)(void* file_handle);
+  typedef int64_t (RC_CCONV *rc_hash_filereader_tell_handler)(void* file_handle);
 
   /* reads the specified number of bytes from the file starting at the read pointer.
    * returns the number of bytes actually read.
    */
-  typedef size_t (*rc_hash_filereader_read_handler)(void* file_handle, void* buffer, size_t requested_bytes);
+  typedef size_t (RC_CCONV *rc_hash_filereader_read_handler)(void* file_handle, void* buffer, size_t requested_bytes);
 
   /* closes the file */
-  typedef void (*rc_hash_filereader_close_file_handler)(void* file_handle);
+  typedef void (RC_CCONV *rc_hash_filereader_close_file_handler)(void* file_handle);
 
   struct rc_hash_filereader
   {
@@ -88,45 +86,67 @@ extern "C" {
     rc_hash_filereader_close_file_handler     close;
   };
 
-  void rc_hash_init_custom_filereader(struct rc_hash_filereader* reader);
+  RC_EXPORT void RC_CCONV rc_hash_init_custom_filereader(struct rc_hash_filereader* reader);
 
   /* ===================================================== */
 
-  #define RC_HASH_CDTRACK_FIRST_DATA ((uint32_t)-1)
-  #define RC_HASH_CDTRACK_LAST ((uint32_t)-2)
-  #define RC_HASH_CDTRACK_LARGEST ((uint32_t)-3)
+  #define RC_HASH_CDTRACK_FIRST_DATA ((uint32_t)-1) /* the first data track (skip audio tracks) */
+  #define RC_HASH_CDTRACK_LAST ((uint32_t)-2) /* the last data/audio track */
+  #define RC_HASH_CDTRACK_LARGEST ((uint32_t)-3) /* the largest data/audio track */
+  #define RC_HASH_CDTRACK_FIRST_OF_SECOND_SESSION ((uint32_t)-4) /* the first data/audio track of the second session */
 
-  /* opens a track from the specified file. track 0 indicates the largest data track should be opened.
+  /* opens a track from the specified file. see the RC_HASH_CDTRACK_ defines for special tracks.
    * returns a handle to be passed to the other functions, or NULL if the track could not be opened.
    */
-  typedef void* (*rc_hash_cdreader_open_track_handler)(const char* path, uint32_t track);
+  typedef void* (RC_CCONV *rc_hash_cdreader_open_track_handler)(const char* path, uint32_t track);
 
-  /* attempts to read the specified number of bytes from the file starting at the read pointer.
+  /* attempts to read the specified number of bytes from the file starting at the specified absolute sector.
    * returns the number of bytes actually read.
    */
-  typedef size_t (*rc_hash_cdreader_read_sector_handler)(void* track_handle, uint32_t sector, void* buffer, size_t requested_bytes);
+  typedef size_t (RC_CCONV *rc_hash_cdreader_read_sector_handler)(void* track_handle, uint32_t sector, void* buffer, size_t requested_bytes);
 
   /* closes the track handle */
-  typedef void (*rc_hash_cdreader_close_track_handler)(void* track_handle);
+  typedef void (RC_CCONV *rc_hash_cdreader_close_track_handler)(void* track_handle);
 
-  /* convert absolute sector to track sector */
-  typedef uint32_t(*rc_hash_cdreader_absolute_sector_to_track_sector)(void* track_handle, uint32_t sector);
+  /* gets the absolute sector index for the first sector of a track */
+  typedef uint32_t(RC_CCONV *rc_hash_cdreader_first_track_sector_handler)(void* track_handle);
 
   struct rc_hash_cdreader
   {
     rc_hash_cdreader_open_track_handler              open_track;
     rc_hash_cdreader_read_sector_handler             read_sector;
     rc_hash_cdreader_close_track_handler             close_track;
-    rc_hash_cdreader_absolute_sector_to_track_sector absolute_sector_to_track_sector;
+    rc_hash_cdreader_first_track_sector_handler      first_track_sector;
   };
 
-  void rc_hash_init_default_cdreader(void);
-  void rc_hash_init_custom_cdreader(struct rc_hash_cdreader* reader);
+  RC_EXPORT void RC_CCONV rc_hash_get_default_cdreader(struct rc_hash_cdreader* cdreader);
+  RC_EXPORT void RC_CCONV rc_hash_init_default_cdreader(void);
+  RC_EXPORT void RC_CCONV rc_hash_init_custom_cdreader(struct rc_hash_cdreader* reader);
+
+  /* specifies a function called to obtain a 3DS CIA decryption normal key.
+   * this key would be derived from slot0x3DKeyX and the common key specified by the passed index.
+   * the normal key should be written in big endian format
+   * returns non-zero on success, or zero on failure.
+   */
+  typedef int (RC_CCONV *rc_hash_3ds_get_cia_normal_key_func)(uint8_t common_key_index, uint8_t out_normal_key[16]);
+  RC_EXPORT void RC_CCONV rc_hash_init_3ds_get_cia_normal_key_func(rc_hash_3ds_get_cia_normal_key_func func);
+
+  /* specifies a function called to obtain 3DS NCCH decryption normal keys.
+   * the primary key will always use slot0x2CKeyX and the passed primary KeyY.
+   * the secondary key will use the KeyX slot passed
+   * the secondary KeyY will be identical to the primary keyY if the passed program id is NULL
+   * if the program id is not null, then the secondary KeyY will be obtained with "seed crypto"
+   * with "seed crypto" the 8 byte program id can be used to obtain a 16 byte "seed" within the seeddb.bin firmware file
+   * the primary KeyY then the seed will then be hashed with SHA256, and the upper 16 bytes of the digest will be the secondary KeyY used
+   * the normal keys should be written in big endian format
+   * returns non-zero on success, or zero on failure.
+   */
+  typedef int (RC_CCONV *rc_hash_3ds_get_ncch_normal_keys_func)(uint8_t primary_key_y[16], uint8_t secondary_key_x_slot, uint8_t* optional_program_id,
+                                                                uint8_t out_primary_key[16], uint8_t out_secondary_key[16]);
+  RC_EXPORT void RC_CCONV rc_hash_init_3ds_get_ncch_normal_keys_func(rc_hash_3ds_get_ncch_normal_keys_func func);
 
   /* ===================================================== */
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_HASH_H */

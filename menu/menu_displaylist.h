@@ -27,6 +27,10 @@
 #include "../msg_hash.h"
 #include "../setting_list.h"
 
+#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
+
+#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
+
 RETRO_BEGIN_DECLS
 
 /* NOTE: Order matters - only add new entries at
@@ -45,7 +49,6 @@ enum menu_displaylist_parse_type
    PARSE_ONLY_STRING,
    PARSE_ONLY_PATH,
    PARSE_ONLY_STRING_OPTIONS,
-   PARSE_ONLY_HEX,
    PARSE_ONLY_DIR,
    PARSE_SUB_GROUP,
    PARSE_ONLY_SIZE
@@ -57,6 +60,10 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_DROPDOWN_LIST,
    DISPLAYLIST_DROPDOWN_LIST_SPECIAL,
    DISPLAYLIST_DROPDOWN_LIST_RESOLUTION,
+   DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE,
+#ifdef HAVE_MICROPHONE
+   DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE,
+#endif
    DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PARAMETER,
    DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_PRESET_PARAMETER,
    DISPLAYLIST_DROPDOWN_LIST_VIDEO_SHADER_NUM_PASSES,
@@ -69,9 +76,15 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_DROPDOWN_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,
    DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX,
    DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE,
-   DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_INDEX,
    DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION,
    DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION_KBD,
+   DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_RESERVED_DEVICE,
+#ifdef ANDROID
+    DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
+#ifdef HAVE_NETWORKING
+   DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER,
+#endif
    DISPLAYLIST_CDROM_DETAIL_INFO,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
@@ -83,6 +96,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS,
    DISPLAYLIST_HISTORY,
    DISPLAYLIST_EXPLORE,
+   DISPLAYLIST_CONTENTLESS_CORES,
    DISPLAYLIST_FAVORITES,
    DISPLAYLIST_PLAYLIST,
    DISPLAYLIST_VIDEO_HISTORY,
@@ -102,10 +116,19 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CORES_COLLECTION_SUPPORTED,
    DISPLAYLIST_CORES_UPDATER,
    DISPLAYLIST_CORE_MANAGER_LIST,
+#ifdef HAVE_MIST
+   DISPLAYLIST_STEAM_SETTINGS_LIST,
+   DISPLAYLIST_CORE_MANAGER_STEAM_LIST,
+   DISPLAYLIST_CORE_INFORMATION_STEAM_LIST,
+#endif
+#if 0
+/* Thumbnailpack removal */
    DISPLAYLIST_THUMBNAILS_UPDATER,
+#endif
    DISPLAYLIST_PL_THUMBNAILS_UPDATER,
    DISPLAYLIST_LAKKA,
    DISPLAYLIST_CORES_DETECTED,
+   DISPLAYLIST_SAVESTATE_LIST,
    DISPLAYLIST_CORE_OPTIONS,
    DISPLAYLIST_CORE_OPTION_OVERRIDE_LIST,
    DISPLAYLIST_CORE_INFO,
@@ -115,7 +138,6 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_SHADER_PASS,
    DISPLAYLIST_SHADER_PRESET,
    DISPLAYLIST_DATABASES,
-   DISPLAYLIST_DATABASE_CURSORS,
    DISPLAYLIST_DATABASE_PLAYLISTS,
    DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL,
    DISPLAYLIST_DATABASE_QUERY,
@@ -123,6 +145,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_AUDIO_FILTERS,
    DISPLAYLIST_VIDEO_FILTERS,
    DISPLAYLIST_CHEAT_FILES,
+   DISPLAYLIST_REMAP_FILE_MANAGER,
    DISPLAYLIST_REMAP_FILES,
    DISPLAYLIST_RECORD_CONFIG_FILES,
    DISPLAYLIST_STREAM_CONFIG_FILES,
@@ -134,10 +157,11 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_VIDEO_FONTS,
    DISPLAYLIST_LOAD_DISC,
    DISPLAYLIST_DUMP_DISC,
-   DISPLAYLIST_OVERLAYS,
-#ifdef HAVE_VIDEO_LAYOUT
-   DISPLAYLIST_VIDEO_LAYOUT_PATH,
+#ifdef HAVE_LAKKA
+   DISPLAYLIST_EJECT_DISC,
 #endif
+   DISPLAYLIST_OVERLAYS,
+   DISPLAYLIST_OSK_OVERLAYS,
    DISPLAYLIST_SHADER_PARAMETERS,
    DISPLAYLIST_SHADER_PARAMETERS_PRESET,
    DISPLAYLIST_SHADER_PRESET_SAVE,
@@ -161,6 +185,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_VIDEO_SETTINGS_LIST,
    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST,
    DISPLAYLIST_SAVING_SETTINGS_LIST,
+   DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST,
    DISPLAYLIST_LOGGING_SETTINGS_LIST,
    DISPLAYLIST_FRAME_THROTTLE_SETTINGS_LIST,
    DISPLAYLIST_FRAME_TIME_COUNTER_SETTINGS_LIST,
@@ -168,8 +193,10 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST,
    DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST,
    DISPLAYLIST_AUDIO_SETTINGS_LIST,
-   DISPLAYLIST_AUDIO_RESAMPLER_SETTINGS_LIST,
    DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST,
+#ifdef HAVE_MICROPHONE
+   DISPLAYLIST_MICROPHONE_SETTINGS_LIST,
+#endif
    DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST,
    DISPLAYLIST_AUDIO_MIXER_SETTINGS_LIST,
    DISPLAYLIST_CORE_SETTINGS_LIST,
@@ -178,15 +205,16 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST,
    DISPLAYLIST_INPUT_MENU_SETTINGS_LIST,
    DISPLAYLIST_LATENCY_SETTINGS_LIST,
+   DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST,
    DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST,
 #if defined(HAVE_OVERLAY)
    DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST,
+   DISPLAYLIST_OSK_OVERLAY_SETTINGS_LIST,
+   DISPLAYLIST_OVERLAY_LIGHTGUN_SETTINGS_LIST,
+   DISPLAYLIST_OVERLAY_MOUSE_SETTINGS_LIST,
 #endif
    DISPLAYLIST_AI_SERVICE_SETTINGS_LIST,
    DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST,
-#ifdef HAVE_VIDEO_LAYOUT
-   DISPLAYLIST_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
-#endif
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST,
@@ -195,17 +223,28 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_QUICK_MENU_VIEWS_SETTINGS_LIST,
    DISPLAYLIST_SETTINGS_VIEWS_SETTINGS_LIST,
    DISPLAYLIST_MENU_SETTINGS_LIST,
+#ifdef _3DS
+   DISPLAYLIST_MENU_BOTTOM_SETTINGS_LIST,
+#endif
    DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST,
    DISPLAYLIST_POWER_MANAGEMENT_SETTINGS_LIST,
    DISPLAYLIST_MENU_SOUNDS_LIST,
    DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
+   DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST,
+   DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST,
    DISPLAYLIST_UPDATER_SETTINGS_LIST,
    DISPLAYLIST_BLUETOOTH_SETTINGS_LIST,
    DISPLAYLIST_WIFI_SETTINGS_LIST,
    DISPLAYLIST_NETWORK_SETTINGS_LIST,
    DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST,
+   DISPLAYLIST_NETPLAY_KICK_LIST,
+   DISPLAYLIST_NETPLAY_BAN_LIST,
+   DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST,
    DISPLAYLIST_NETPLAY_LAN_SCAN_SETTINGS_LIST,
    DISPLAYLIST_LAKKA_SERVICES_LIST,
+#ifdef HAVE_LAKKA_SWITCH
+   DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST,
+#endif
    DISPLAYLIST_USER_SETTINGS_LIST,
    DISPLAYLIST_DIRECTORY_SETTINGS_LIST,
    DISPLAYLIST_PRIVACY_SETTINGS_LIST,
@@ -213,6 +252,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_RECORDING_SETTINGS_LIST,
    DISPLAYLIST_PLAYLIST_SETTINGS_LIST,
    DISPLAYLIST_PLAYLIST_MANAGER_LIST,
+   DISPLAYLIST_ADD_TO_PLAYLIST_LIST,
    DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS,
    DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST,
    DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST,
@@ -243,10 +283,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CORE_CONTENT,
    DISPLAYLIST_CORE_CONTENT_DIRS,
    DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR,
-#ifdef HAVE_LAKKA_SWITCH
-   DISPLAYLIST_SWITCH_GPU_PROFILE,
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+   DISPLAYLIST_CORE_SYSTEM_FILES,
+#if defined(HAVE_LIBNX)
    DISPLAYLIST_SWITCH_CPU_PROFILE,
 #endif
    DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST,
@@ -258,7 +296,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CPU_PERFPOWER_LIST,
    DISPLAYLIST_CPU_POLICY_LIST,
 #endif
-   DISPLAYLIST_PENDING_CLEAR
+   DISPLAYLIST_PENDING_CLEAR,
+   DISPLAYLIST_SHADER_PRESET_PREPEND,
+   DISPLAYLIST_SHADER_PRESET_APPEND
 };
 
 enum filebrowser_enums
@@ -275,6 +315,24 @@ enum filebrowser_enums
    FILEBROWSER_SELECT_COLLECTION
 };
 
+enum menu_dl_flags
+{
+   MD_FLAG_NONE                          = 0,
+   MD_FLAG_NEED_SORT                     = (1 << 0), /* Should the displaylist be sorted by alphabet? */
+   MD_FLAG_NEED_REFRESH                  = (1 << 1),
+   MD_FLAG_NEED_ENTRIES_REFRESH          = (1 << 2),
+   MD_FLAG_NEED_PUSH                     = (1 << 3),
+   MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES = (1 << 4),
+   MD_FLAG_NEED_CLEAR                    = (1 << 5), /* Should we clear the displaylist before we push
+						      * entries onto it? */
+   MD_FLAG_PUSH_BUILTIN_CORES            = (1 << 6),
+   MD_FLAG_DOWNLOAD_CORE                 = (1 << 7), /* Should a 'download core' entry be pushed onto the list?
+						      * This will be set to true in case there are no currently
+						      * installed cores. */
+   MD_FLAG_NEED_NAVIGATION_CLEAR         = (1 << 8)  /* Does the navigation index need to be cleared 
+                                                      * to 0 (first entry) ? */
+};
+
 typedef struct menu_displaylist_info
 {
    char *path;
@@ -283,39 +341,16 @@ typedef struct menu_displaylist_info
    char *exts;
    char *label;
    file_list_t *list;
-   file_list_t *menu_list;
    rarch_setting_t *setting;
 
    size_t directory_ptr;
 
-   unsigned count;
+   uint32_t flags;
 
    unsigned type;
    unsigned type_default;
-   unsigned flags;
-
    enum msg_hash_enums enum_idx;
-   /* should the displaylist be sorted by alphabet? */
-   bool need_sort;
-   bool need_refresh;
-   bool need_entries_refresh;
-   bool need_push;
-   bool need_push_no_playlist_entries;
-   /* should we clear the displaylist before we push
-    * entries onto it? */
-   bool need_clear;
-   bool push_builtin_cores;
-   /* Should a 'download core' entry be pushed onto the list?
-    * This will be set to true in case there are no currently
-    * installed cores. */
-   bool download_core;
-   /* does the navigation index need to be cleared to 0 (first entry) ? */
-   bool need_navigation_clear;
 } menu_displaylist_info_t;
-
-#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
-
-#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
 
 bool menu_displaylist_process(menu_displaylist_info_t *info);
 
@@ -331,15 +366,12 @@ void menu_displaylist_info_init(menu_displaylist_info_t *info);
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info, settings_t *settings);
 
-#ifdef HAVE_NETWORKING
-unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list);
-#endif
-
 bool menu_displaylist_has_subsystems(void);
 
 #if defined(HAVE_LIBRETRODB)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
 #endif
+unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *settings);
 
 enum filebrowser_enums filebrowser_get_type(void);
 

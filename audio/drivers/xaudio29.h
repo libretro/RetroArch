@@ -80,13 +80,13 @@
  /* XAudio 2.9 */
 interface __declspec(uuid("2B02E3CF-2E0B-4ec3-BE45-1B2A3FE7210D")) IXAudio2;
 #else
- /* XAudio 2.8 */
+/* XAudio 2.8 */
 interface __declspec(uuid("60d8dac8-5aa1-4e8e-b597-2f5e2883d484")) IXAudio2;
 #endif
 
 #else
 
- /* Modified for C support */
+/* Modified for C support */
 #define DEFINE_GUID_X(n, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
    static const GUID n = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 #define DEFINE_CLSID_X(className, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
@@ -119,7 +119,7 @@ DEFINE_IID_X(IXAudio2, 60d8dac8, 5aa1, 4e8e, b5, 97, 2f, 5e, 28, 83, d4, 84);
  *
  **************************************************************************/
 
- /* Numeric boundary values */
+/* Numeric boundary values */
 #define XAUDIO2_MAX_BUFFER_BYTES        0x80000000    /* Maximum bytes allowed in a source buffer */
 #define XAUDIO2_MAX_QUEUED_BUFFERS      64            /* Maximum buffers allowed in a voice queue */
 #define XAUDIO2_MAX_BUFFERS_SYSTEM      2             /* Maximum buffers allowed for system threads (Xbox 360 only) */
@@ -209,7 +209,7 @@ FWD_DECLARE(IXAudio2VoiceCallback);
  *
  **************************************************************************/
 
- /* Used in XAudio2Create, specifies which CPU(s) to use. */
+/* Used in XAudio2Create, specifies which CPU(s) to use. */
 typedef UINT32 XAUDIO2_PROCESSOR;
 #define Processor1  0x00000001
 #define Processor2  0x00000002
@@ -300,12 +300,12 @@ typedef struct XAUDIO2_FILTER_PARAMETERS
 {
    XAUDIO2_FILTER_TYPE Type;           /* Filter type. */
    float Frequency;                    /* Filter coefficient. */
-                                       /*  must be >= 0 and <= XAUDIO2_MAX_FILTER_FREQUENCY */
-                                       /*  See XAudio2CutoffFrequencyToRadians() for state-variable filter types and */
-                                       /*  XAudio2CutoffFrequencyToOnePoleCoefficient() for one-pole filter types. */
+   /*  must be >= 0 and <= XAUDIO2_MAX_FILTER_FREQUENCY */
+   /*  See XAudio2CutoffFrequencyToRadians() for state-variable filter types and */
+   /*  XAudio2CutoffFrequencyToOnePoleCoefficient() for one-pole filter types. */
    float OneOverQ;                     /* Reciprocal of the filter's quality factor Q; */
-                                       /*  must be > 0 and <= XAUDIO2_MAX_FILTER_ONEOVERQ. */
-                                       /*  Has no effect for one-pole filters. */
+   /*  must be > 0 and <= XAUDIO2_MAX_FILTER_ONEOVERQ. */
+   /*  Has no effect for one-pole filters. */
 } XAUDIO2_FILTER_PARAMETERS;
 
 /* Used in IXAudio2SourceVoice::SubmitSourceBuffer */
@@ -316,12 +316,12 @@ typedef struct XAUDIO2_BUFFER
    const BYTE* pAudioData;             /* Pointer to the audio data buffer. */
    UINT32 PlayBegin;                   /* First sample in this buffer to be played. */
    UINT32 PlayLength;                  /* Length of the region to be played in samples, */
-                                       /*  or 0 to play the whole buffer. */
+   /*  or 0 to play the whole buffer. */
    UINT32 LoopBegin;                   /* First sample of the region to be looped. */
    UINT32 LoopLength;                  /* Length of the desired loop region in samples, */
-                                       /*  or 0 to loop the entire buffer. */
+   /*  or 0 to loop the entire buffer. */
    UINT32 LoopCount;                   /* Number of times to repeat the loop region, */
-                                       /*  or XAUDIO2_LOOP_INFINITE to loop forever. */
+   /*  or XAUDIO2_LOOP_INFINITE to loop forever. */
    void* pContext;                     /* Context value to be passed back in callbacks. */
 } XAUDIO2_BUFFER;
 
@@ -340,17 +340,17 @@ typedef struct XAUDIO2_BUFFER_WMA
                                                  *  when the corresponding XWMA packet is decoded in
                                                  *  order.  The array must have PacketCount elements. */
    UINT32 PacketCount;                          /* Number of XWMA packets submitted. Must be >= 1 and */
-                                                /*  divide evenly into XAUDIO2_BUFFER.AudioBytes. */
+   /*  divide evenly into XAUDIO2_BUFFER.AudioBytes. */
 } XAUDIO2_BUFFER_WMA;
 
 /* Returned by IXAudio2SourceVoice::GetState */
 typedef struct XAUDIO2_VOICE_STATE
 {
    void* pCurrentBufferContext;        /* The pContext value provided in the XAUDIO2_BUFFER */
-                                       /*  that is currently being processed, or NULL if */
-                                       /*  there are no buffers in the queue. */
+   /*  that is currently being processed, or NULL if */
+   /*  there are no buffers in the queue. */
    UINT32 BuffersQueued;               /* Number of buffers currently queued on the voice */
-                                       /*  (including the one that is being processed). */
+   /*  (including the one that is being processed). */
    UINT64 SamplesPlayed;               /* Total number of samples produced by the voice since 
                                         *  it began processing the current audio stream.
                                         *  If XAUDIO2_VOICE_NOSAMPLESPLAYED is specified
@@ -376,7 +376,7 @@ typedef struct XAUDIO2_PERFORMANCE_DATA
 
    /* Audio latency and glitching information */
    UINT32 CurrentLatencyInSamples;     /* Minimum delay from when a sample is read from a */
-                                       /*  source buffer to when it reaches the speakers. */
+   /*  source buffer to when it reaches the speakers. */
    UINT32 GlitchesSinceEngineStarted;  /* Audio dropouts since the engine was started. */
 
    /* Data about XAudio2's current workload */
@@ -403,28 +403,13 @@ typedef struct XAUDIO2_DEBUG_CONFIGURATION
    BOOL LogTiming;                     /* Whether to log message timestamps. */
 } XAUDIO2_DEBUG_CONFIGURATION;
 
-/* Values for the TraceMask and BreakMask bitmaps.  Only ERRORS and WARNINGS
- * are valid in BreakMask.  WARNINGS implies ERRORS, DETAIL implies INFO, and
- * FUNC_CALLS implies API_CALLS.  By default, TraceMask is ERRORS and WARNINGS
- * and all the other settings are zero. */
-#define XAUDIO2_LOG_ERRORS     0x0001   /* For handled errors with serious effects. */
-#define XAUDIO2_LOG_WARNINGS   0x0002   /* For handled errors that may be recoverable. */
-#define XAUDIO2_LOG_INFO       0x0004   /* Informational chit-chat (e.g. state changes). */
-#define XAUDIO2_LOG_DETAIL     0x0008   /* More detailed chit-chat. */
-#define XAUDIO2_LOG_API_CALLS  0x0010   /* Public API function entries and exits. */
-#define XAUDIO2_LOG_FUNC_CALLS 0x0020   /* Internal function entries and exits. */
-#define XAUDIO2_LOG_TIMING     0x0040   /* Delays detected and other timing data. */
-#define XAUDIO2_LOG_LOCKS      0x0080   /* Usage of critical sections and mutexes. */
-#define XAUDIO2_LOG_MEMORY     0x0100   /* Memory heap usage information. */
-#define XAUDIO2_LOG_STREAMING  0x1000   /* Audio streaming information. */
-
 /**************************************************************************
  *
  * IXAudio2: Top-level XAudio2 COM interface.
  *
  **************************************************************************/
 
- /* Use default arguments if compiling as C++ */
+/* Use default arguments if compiling as C++ */
 #ifdef __cplusplus
 #define X2DEFAULT(x) =x
 #else
@@ -441,29 +426,29 @@ DECLARE_INTERFACE_(IXAudio2, IUnknown)
    STDMETHOD(RegisterForCallbacks) (_In_ IXAudio2EngineCallback* pCallback) PURE;
    STDMETHOD_(void, UnregisterForCallbacks) (_In_ IXAudio2EngineCallback* pCallback) PURE;
    STDMETHOD(CreateSourceVoice) (THIS_ _Outptr_ IXAudio2SourceVoice** ppSourceVoice,
-      _In_ const WAVEFORMATEX* pSourceFormat,
-      UINT32 Flags X2DEFAULT(0),
-      float MaxFrequencyRatio X2DEFAULT(XAUDIO2_DEFAULT_FREQ_RATIO),
-      _In_opt_ IXAudio2VoiceCallback* pCallback X2DEFAULT(NULL),
-      _In_opt_ const XAUDIO2_VOICE_SENDS* pSendList X2DEFAULT(NULL),
-      _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain X2DEFAULT(NULL)) PURE;
+         _In_ const WAVEFORMATEX* pSourceFormat,
+         UINT32 Flags X2DEFAULT(0),
+         float MaxFrequencyRatio X2DEFAULT(XAUDIO2_DEFAULT_FREQ_RATIO),
+         _In_opt_ IXAudio2VoiceCallback* pCallback X2DEFAULT(NULL),
+         _In_opt_ const XAUDIO2_VOICE_SENDS* pSendList X2DEFAULT(NULL),
+         _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain X2DEFAULT(NULL)) PURE;
    STDMETHOD(CreateSubmixVoice) (THIS_ _Outptr_ IXAudio2SubmixVoice** ppSubmixVoice,
-      UINT32 InputChannels, UINT32 InputSampleRate,
-      UINT32 Flags X2DEFAULT(0), UINT32 ProcessingStage X2DEFAULT(0),
-      _In_opt_ const XAUDIO2_VOICE_SENDS* pSendList X2DEFAULT(NULL),
-      _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain X2DEFAULT(NULL)) PURE;
+         UINT32 InputChannels, UINT32 InputSampleRate,
+         UINT32 Flags X2DEFAULT(0), UINT32 ProcessingStage X2DEFAULT(0),
+         _In_opt_ const XAUDIO2_VOICE_SENDS* pSendList X2DEFAULT(NULL),
+         _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain X2DEFAULT(NULL)) PURE;
    STDMETHOD(CreateMasteringVoice) (THIS_ _Outptr_ IXAudio2MasteringVoice** ppMasteringVoice,
-      UINT32 InputChannels X2DEFAULT(XAUDIO2_DEFAULT_CHANNELS),
-      UINT32 InputSampleRate X2DEFAULT(XAUDIO2_DEFAULT_SAMPLERATE),
-      UINT32 Flags X2DEFAULT(0), _In_opt_z_ LPCWSTR szDeviceId X2DEFAULT(NULL),
-      _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain X2DEFAULT(NULL),
-      _In_ AUDIO_STREAM_CATEGORY StreamCategory X2DEFAULT(AudioCategory_GameEffects)) PURE;
+         UINT32 InputChannels X2DEFAULT(XAUDIO2_DEFAULT_CHANNELS),
+         UINT32 InputSampleRate X2DEFAULT(XAUDIO2_DEFAULT_SAMPLERATE),
+         UINT32 Flags X2DEFAULT(0), _In_opt_z_ LPCWSTR szDeviceId X2DEFAULT(NULL),
+         _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain X2DEFAULT(NULL),
+         _In_ AUDIO_STREAM_CATEGORY StreamCategory X2DEFAULT(AudioCategory_GameEffects)) PURE;
    STDMETHOD(StartEngine) (THIS) PURE;
    STDMETHOD_(void, StopEngine) (THIS) PURE;
    STDMETHOD(CommitChanges) (THIS_ UINT32 OperationSet) PURE;
    STDMETHOD_(void, GetPerformanceData) (THIS_ _Out_ XAUDIO2_PERFORMANCE_DATA* pPerfData) PURE;
    STDMETHOD_(void, SetDebugConfiguration) (THIS_ _In_opt_ const XAUDIO2_DEBUG_CONFIGURATION* pDebugConfiguration,
-      _Reserved_ void* pReserved X2DEFAULT(NULL)) PURE;
+         _Reserved_ void* pReserved X2DEFAULT(NULL)) PURE;
 };
 
 /**************************************************************************
@@ -482,38 +467,38 @@ DECLARE_INTERFACE(IXAudio2Voice)
    STDMETHOD(SetOutputVoices) (THIS_ _In_opt_ const XAUDIO2_VOICE_SENDS* pSendList) PURE; \
    STDMETHOD(SetEffectChain) (THIS_ _In_opt_ const XAUDIO2_EFFECT_CHAIN* pEffectChain) PURE; \
    STDMETHOD(EnableEffect) (THIS_ UINT32 EffectIndex, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD(DisableEffect) (THIS_ UINT32 EffectIndex, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetEffectState) (THIS_ UINT32 EffectIndex, _Out_ BOOL* pEnabled) PURE; \
    STDMETHOD(SetEffectParameters) (THIS_ UINT32 EffectIndex, \
-      _In_reads_bytes_(ParametersByteSize) const void* pParameters, \
-      UINT32 ParametersByteSize, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         _In_reads_bytes_(ParametersByteSize) const void* pParameters, \
+         UINT32 ParametersByteSize, \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD(GetEffectParameters) (THIS_ UINT32 EffectIndex, \
-      _Out_writes_bytes_(ParametersByteSize) void* pParameters, \
-      UINT32 ParametersByteSize) PURE; \
+         _Out_writes_bytes_(ParametersByteSize) void* pParameters, \
+         UINT32 ParametersByteSize) PURE; \
    STDMETHOD(SetFilterParameters) (THIS_ _In_ const XAUDIO2_FILTER_PARAMETERS* pParameters, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetFilterParameters) (THIS_ _Out_ XAUDIO2_FILTER_PARAMETERS* pParameters) PURE; \
    STDMETHOD(SetOutputFilterParameters) (THIS_ _In_opt_ IXAudio2Voice* pDestinationVoice, \
-      _In_ const XAUDIO2_FILTER_PARAMETERS* pParameters, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         _In_ const XAUDIO2_FILTER_PARAMETERS* pParameters, \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetOutputFilterParameters) (THIS_ _In_opt_ IXAudio2Voice* pDestinationVoice, \
-      _Out_ XAUDIO2_FILTER_PARAMETERS* pParameters) PURE; \
+         _Out_ XAUDIO2_FILTER_PARAMETERS* pParameters) PURE; \
    STDMETHOD(SetVolume) (THIS_ float Volume, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetVolume) (THIS_ _Out_ float* pVolume) PURE; \
    STDMETHOD(SetChannelVolumes) (THIS_ UINT32 Channels, _In_reads_(Channels) const float* pVolumes, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetChannelVolumes) (THIS_ UINT32 Channels, _Out_writes_(Channels) float* pVolumes) PURE; \
    STDMETHOD(SetOutputMatrix) (THIS_ _In_opt_ IXAudio2Voice* pDestinationVoice, \
-      UINT32 SourceChannels, UINT32 DestinationChannels, \
-      _In_reads_(SourceChannels * DestinationChannels) const float* pLevelMatrix, \
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
+         UINT32 SourceChannels, UINT32 DestinationChannels, \
+         _In_reads_(SourceChannels * DestinationChannels) const float* pLevelMatrix, \
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE; \
    STDMETHOD_(void, GetOutputMatrix) (THIS_ _In_opt_ IXAudio2Voice* pDestinationVoice, \
-      UINT32 SourceChannels, UINT32 DestinationChannels, \
-      _Out_writes_(SourceChannels * DestinationChannels) float* pLevelMatrix) PURE; \
+         UINT32 SourceChannels, UINT32 DestinationChannels, \
+         _Out_writes_(SourceChannels * DestinationChannels) float* pLevelMatrix) PURE; \
    STDMETHOD_(void, DestroyVoice) (THIS) PURE
 
    Declare_IXAudio2Voice_Methods();
@@ -538,7 +523,7 @@ DECLARE_INTERFACE_(IXAudio2SourceVoice, IXAudio2Voice)
    STDMETHOD(ExitLoop) (THIS_ UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE;
    STDMETHOD_(void, GetState) (THIS_ _Out_ XAUDIO2_VOICE_STATE* pVoiceState, UINT32 Flags X2DEFAULT(0)) PURE;
    STDMETHOD(SetFrequencyRatio) (THIS_ float Ratio,
-      UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE;
+         UINT32 OperationSet X2DEFAULT(XAUDIO2_COMMIT_NOW)) PURE;
    STDMETHOD_(void, GetFrequencyRatio) (THIS_ _Out_ float* pRatio) PURE;
    STDMETHOD(SetSourceSampleRate) (THIS_ UINT32 NewSourceSampleRate) PURE;
 };
@@ -623,7 +608,7 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
 
 #ifndef __cplusplus
 
- /* IXAudio2 */
+/* IXAudio2 */
 #define IXAudio2_QueryInterface(This,riid,ppvInterface) ((This)->lpVtbl->QueryInterface(This,riid,ppvInterface))
 #define IXAudio2_AddRef(This) ((This)->lpVtbl->AddRef(This))
 #define IXAudio2_Release(This) ((This)->lpVtbl->Release(This))
@@ -735,85 +720,6 @@ DECLARE_INTERFACE(IXAudio2VoiceCallback)
 
 /**************************************************************************
  *
- * Utility functions used to convert from pitch in semitones and volume
- * in decibels to the frequency and amplitude ratio units used by XAudio2.
- * These are only defined if the client #defines XAUDIO2_HELPER_FUNCTIONS
- * prior to #including xaudio2.h.
- *
- **************************************************************************/
-
-#ifdef XAUDIO2_HELPER_FUNCTIONS
-
-#define _USE_MATH_DEFINES   /* Make math.h define M_PI */
-#include <math.h>           /* For powf, log10f, sinf and asinf */
-
-/* Calculate the argument to SetVolume from a decibel value */
-static INLINE float XAudio2DecibelsToAmplitudeRatio(float Decibels)
-{
-   return powf(10.0f, Decibels / 20.0f);
-}
-
-/* Recover a volume in decibels from an amplitude factor */
-static INLINE float XAudio2AmplitudeRatioToDecibels(float Volume)
-{
-   if (Volume == 0)
-      return -3.402823466e+38f; /* Smallest float value (-FLT_MAX) */
-   return 20.0f * log10f(Volume);
-}
-
-/* Calculate the argument to SetFrequencyRatio from a semitone value */
-static INLINE float XAudio2SemitonesToFrequencyRatio(float Semitones)
-{
-   /* FrequencyRatio = 2 ^ Octaves
-    *                = 2 ^ (Semitones / 12)
-    */
-   return powf(2.0f, Semitones / 12.0f);
-}
-
-/* Recover a pitch in semitones from a frequency ratio */
-static INLINE float XAudio2FrequencyRatioToSemitones(float FrequencyRatio)
-{
-   /* Semitones = 12 * log2(FrequencyRatio)
-    *           = 12 * log2(10) * log10(FrequencyRatio)
-    */
-   return 39.86313713864835f * log10f(FrequencyRatio);
-}
-
-/* Convert from filter cutoff frequencies expressed in Hertz to the radian
- * frequency values used in XAUDIO2_FILTER_PARAMETERS.Frequency, state-variable
- * filter types only.  Use XAudio2CutoffFrequencyToOnePoleCoefficient() for one-pole filter types.
- * Note that the highest CutoffFrequency supported is SampleRate/6.
- * Higher values of CutoffFrequency will return XAUDIO2_MAX_FILTER_FREQUENCY.
- */
-static INLINE float XAudio2CutoffFrequencyToRadians(float CutoffFrequency, UINT32 SampleRate)
-{
-   if ((UINT32)(CutoffFrequency * 6.0f) >= SampleRate)
-      return XAUDIO2_MAX_FILTER_FREQUENCY;
-   return 2.0f * sinf((float)M_PI * CutoffFrequency / SampleRate);
-}
-
-/* Convert from radian frequencies back to absolute frequencies in Hertz */
-static INLINE float XAudio2RadiansToCutoffFrequency(float Radians, float SampleRate)
-{
-   return SampleRate * asinf(Radians / 2.0f) / (float)M_PI;
-}
-
-/* Convert from filter cutoff frequencies expressed in Hertz to the filter
- * coefficients used with XAUDIO2_FILTER_PARAMETERS.Frequency,
- * LowPassOnePoleFilter and HighPassOnePoleFilter filter types only.
- * Use XAudio2CutoffFrequencyToRadians() for state-variable filter types.
- */
-static INLINE float XAudio2CutoffFrequencyToOnePoleCoefficient(float CutoffFrequency, UINT32 SampleRate)
-{
-   if ((UINT32)CutoffFrequency >= SampleRate)
-      return XAUDIO2_MAX_FILTER_FREQUENCY;
-   return (1.0f - powf(1.0f - 2.0f * CutoffFrequency / SampleRate, 2.0f));
-}
-
-#endif /* #ifdef XAUDIO2_HELPER_FUNCTIONS */
-
-/**************************************************************************
- *
  * XAudio2Create: Top-level function that creates an XAudio2 instance.
  *
  * ARGUMENTS:
@@ -832,37 +738,27 @@ static INLINE float XAudio2CutoffFrequencyToOnePoleCoefficient(float CutoffFrequ
 
 #ifdef __cplusplus__
 
-#if (defined XAUDIO2_EXPORT)
- /* We're building xaudio2.dll */
-#define XAUDIO2_STDAPI extern "C" __declspec(dllexport) HRESULT __stdcall
-#else
- /* We're an xaudio2 client */
+/* We're an xaudio2 client */
 #define XAUDIO2_STDAPI extern "C" __declspec(dllimport) HRESULT __stdcall
-#endif
 
 #else
 
- /* Modified for C support */
+/* Modified for C support */
 
-#if (defined XAUDIO2_EXPORT)
-    /* We're building xaudio2.dll */
-#define XAUDIO2_STDAPI __declspec(dllexport) HRESULT __stdcall
-#else
-    /* We're an xaudio2 client */
+/* We're an xaudio2 client */
 #define XAUDIO2_STDAPI __declspec(dllimport) HRESULT __stdcall
-#endif
 
 #endif
 
 #if (NTDDI_VERSION >= NTDDI_WIN10_RS5) && WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 XAUDIO2_STDAPI XAudio2CreateWithVersionInfo(_Outptr_ IXAudio2** ppXAudio2,
-   UINT32 Flags X2DEFAULT(0),
-   XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR),
-   DWORD ntddiVersion X2DEFAULT(NTDDI_VERSION));
+      UINT32 Flags X2DEFAULT(0),
+      XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR),
+      DWORD ntddiVersion X2DEFAULT(NTDDI_VERSION));
 
 static INLINE HRESULT XAudio2Create(_Outptr_ IXAudio2** ppXAudio2,
-   UINT32 Flags X2DEFAULT(0),
-   XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR))
+      UINT32 Flags X2DEFAULT(0),
+      XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR))
 {
    /* When compiled for RS5 or later, try to invoke XAudio2CreateWithVersionInfo.
     * Need to use LoadLibrary in case the app is running on an older OS. */
@@ -876,15 +772,11 @@ static INLINE HRESULT XAudio2Create(_Outptr_ IXAudio2** ppXAudio2,
 
    if (!s_dllInstance)
    {
-      s_dllInstance = LoadLibraryEx(XAUDIO2_DLL, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-      if (!s_dllInstance)
+      if (!(s_dllInstance = LoadLibraryEx(XAUDIO2_DLL, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32)))
          return HRESULT_FROM_WIN32(GetLastError());
-
-      s_pfnAudio2CreateWithVersion = (XAudio2CreateWithVersionInfoFunc)(void*)GetProcAddress(s_dllInstance, "XAudio2CreateWithVersionInfo");
-      if (!s_pfnAudio2CreateWithVersion)
+      if (!(s_pfnAudio2CreateWithVersion = (XAudio2CreateWithVersionInfoFunc)(void*)GetProcAddress(s_dllInstance, "XAudio2CreateWithVersionInfo")))
       {
-         s_pfnAudio2Create = (XAudio2CreateInfoFunc)(void*)GetProcAddress(s_dllInstance, "XAudio2Create");
-         if (!s_pfnAudio2Create)
+         if (!(s_pfnAudio2Create = (XAudio2CreateInfoFunc)(void*)GetProcAddress(s_dllInstance, "XAudio2Create")))
             return HRESULT_FROM_WIN32(GetLastError());
       }
    }
@@ -896,7 +788,7 @@ static INLINE HRESULT XAudio2Create(_Outptr_ IXAudio2** ppXAudio2,
 #else
 /* RS4 or older, or not a desktop app */
 XAUDIO2_STDAPI XAudio2Create(_Outptr_ IXAudio2** ppXAudio2, UINT32 Flags X2DEFAULT(0),
-   XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
+      XAUDIO2_PROCESSOR XAudio2Processor X2DEFAULT(XAUDIO2_DEFAULT_PROCESSOR));
 #endif
 
 /* Undo the #pragma pack(push, 1) directive at the top of this file */

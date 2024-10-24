@@ -11,19 +11,15 @@ all: $(BINDIR)/retroarch
 
 pnd: retroarch.pnd
 
-install: all $(BINDIR)/retroarch-joyconfig $(BINDIR)/retroarch-zip $(PNDDIR)/readme.html
+install: all $(BINDIR)/retroarch-zip $(PNDDIR)/readme.html
 
 retroarch:
-	./configure --prefix=$PND_BASEDIR/$PRJ --disable-ffmpeg --disable-cg --disable-python --disable-libpng --disable-pulse --disable-jack --enable-gles --enable-xml
+	./configure --prefix=$PND_BASEDIR/$PRJ --disable-ffmpeg --disable-cg --disable-pulse --disable-jack --enable-opengles
 	make -f Makefile
 
 $(BINDIR)/retroarch: retroarch
 	mkdir -p $(BINDIR)
 	cp retroarch $(BINDIR)/retroarch
-
-$(BINDIR)/retroarch-joyconfig: tools/retroarch-joyconfig
-	mkdir -p $(BINDIR)
-	cp tools/retroarch-joyconfig $(BINDIR)/retroarch-joyconfig
 
 $(BINDIR)/retroarch-zip: retroarch-zip
 	mkdir -p $(BINDIR)
@@ -49,6 +45,5 @@ clean:
 	rm -f input/*.o
 	rm -f tools/*.o
 	rm -f $(BINDIR)/retroarch
-	rm -f $(BINDIR)/retroarch-joyconfig
 	rm -f $(PNDDIR)/readme.html
 	rm -f retroarch

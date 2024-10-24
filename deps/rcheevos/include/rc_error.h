@@ -1,9 +1,9 @@
 #ifndef RC_ERROR_H
 #define RC_ERROR_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "rc_export.h"
+
+RC_BEGIN_C_DECLS
 
 /*****************************************************************************\
 | Return values                                                               |
@@ -36,13 +36,23 @@ enum {
   RC_INVALID_MEASURED_TARGET = -23,
   RC_INVALID_COMPARISON = -24,
   RC_INVALID_STATE = -25,
-  RC_INVALID_JSON = -26
+  RC_INVALID_JSON = -26,
+  RC_API_FAILURE = -27,
+  RC_LOGIN_REQUIRED = -28,
+  RC_NO_GAME_LOADED = -29,
+  RC_HARDCORE_DISABLED = -30,
+  RC_ABORTED = -31,
+  RC_NO_RESPONSE = -32,
+  RC_ACCESS_DENIED = -33,
+  RC_INVALID_CREDENTIALS = -34,
+  RC_EXPIRED_TOKEN = -35,
+  RC_INSUFFICIENT_BUFFER = -36,
+  RC_INVALID_VARIABLE_NAME = -37,
+  RC_UNKNOWN_VARIABLE_NAME = -38
 };
 
-const char* rc_error_str(int ret);
+RC_EXPORT const char* RC_CCONV rc_error_str(int ret);
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_ERROR_H */

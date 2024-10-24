@@ -29,19 +29,17 @@
 
 #include "../../defaults.h"
 #include "../../dynamic.h"
-#include "../../verbosity.h"
 #include "../../paths.h"
+#include "../../verbosity.h"
 
 static void frontend_qnx_init(void *data)
 {
-   (void)data;
    verbosity_enable();
    bps_initialize();
 }
 
 static void frontend_qnx_shutdown(bool unused)
 {
-   (void)unused;
    bps_shutdown();
 }
 
@@ -56,17 +54,21 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
       void *data, void *params_data)
 {
    unsigned i;
-   char data_assets_path[PATH_MAX] = {0};
-   char assets_path[PATH_MAX]      = {0};
-   char data_path[PATH_MAX]        = {0};
-   char user_path[PATH_MAX]        = {0};
-   char tmp_path[PATH_MAX]         = {0};
+   char assets_path[PATH_MAX];
+   char data_path[PATH_MAX];
+   char user_path[PATH_MAX];
+   char tmp_path[PATH_MAX];
+   char data_assets_path[PATH_MAX];
    char workdir[PATH_MAX]          = {0};
 
    getcwd(workdir, sizeof(workdir));
 
-   if(!string_is_empty(workdir))
+   if (!string_is_empty(workdir))
    {
+      assets_path[0]               = '\0';
+      data_path[0]                 = '\0';
+      user_path[0]                 = '\0';
+      tmp_path[0]                  = '\0';
       snprintf(assets_path, sizeof(data_path),
             "%s/app/native/assets", workdir);
       snprintf(data_path, sizeof(data_path),
@@ -78,10 +80,10 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
    }
    else
    {
-      snprintf(assets_path, sizeof(data_path), "app/native/assets");
-      snprintf(data_path, sizeof(data_path), "data");
-      snprintf(user_path, sizeof(user_path), "shared/misc/retroarch");
-      snprintf(tmp_path, sizeof(user_path), "tmp");
+      strlcpy(assets_path, "app/native/assets", sizeof(assets_path));
+      strlcpy(data_path, "data", sizeof(data_path));
+      strlcpy(user_path, "shared/misc/retroarch", sizeof(user_path));
+      strlcpy(tmp_path, "tmp", sizeof(user_path));
    }
 
    /* app data */
@@ -91,19 +93,14 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
          "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], data_path,
          "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CURSOR], data_path,
-         "database/cursors", sizeof(g_defaults.dirs[DEFAULT_DIR_CURSOR]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], data_path,
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], data_path,
          "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], data_path,
          "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
-#ifdef HAVE_VIDEO_LAYOUT
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT], data_path,
-         "layouts", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_LAYOUT]));
-#endif
-
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], data_path,
+         "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    /* user data */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
          "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
@@ -117,7 +114,7 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
          "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], user_path,
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
          "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SRAM], user_path,
          "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
@@ -143,28 +140,25 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
          FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
    /* bundle copy */
-   snprintf(data_assets_path,
-         sizeof(data_assets_path),
-         "%s/%s", data_path, "assets");
+   fill_pathname_join_special(data_assets_path,
+		   data_path, "assets", sizeof(data_assets_path));
 
    if (!filestream_exists(data_assets_path))
    {
       char copy_command[PATH_MAX] = {0};
 
-      RARCH_LOG( "Copying application assets to data directory...\n" );
-
       snprintf(copy_command,
             sizeof(copy_command),
             "cp -r %s/. %s", assets_path, data_path);
 
-      if(system(copy_command) == -1)
-         RARCH_LOG( "Asset copy failed: Shell could not be run.\n" );
+      if (system(copy_command) == -1)
+         RARCH_ERR("Asset copy failed: Shell could not be run.\n" );
       else
          RARCH_LOG( "Asset copy successful.\n");
    }
 
    /* set GLUI as default menu */
-   snprintf(g_defaults.settings_menu, sizeof(g_defaults.settings_menu), "glui");
+   strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
@@ -209,6 +203,7 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
+   NULL,                         /* set_gamemode        */
    "qnx",                        /* ident               */
    NULL                          /* get_video_driver    */
 };

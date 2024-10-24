@@ -25,6 +25,11 @@
 
 #define	FNM_NOMATCH	1
 
+/**
+ * Portable implementation of \c fnmatch(3),
+ * except \c flags is not implemented.
+ * @see https://man7.org/linux/man-pages/man3/fnmatch.3.html
+ */
 int rl_fnmatch(const char *pattern, const char *string, int flags);
 
 #endif
