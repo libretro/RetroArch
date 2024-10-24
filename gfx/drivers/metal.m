@@ -1588,7 +1588,7 @@ typedef struct MTLALIGN(16)
       float core_aspect_rot = video_driver_get_core_aspect();
       if (rot == 1 || rot == 3)
          core_aspect_rot = 1/core_aspect_rot;
-      _engine.pass[i].core_aspect_rot  = video_driver_get_core_aspect();
+      _engine.pass[i].core_aspect_rot  = core_aspect_rot;
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
