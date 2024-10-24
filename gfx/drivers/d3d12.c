@@ -1725,8 +1725,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->pass[i].frame_count,     /* FrameCount */
             &d3d12->pass[i].frame_direction, /* FrameDirection */
             &d3d12->pass[i].rotation,        /* Rotation */
-            &d3d12->pass[i].core_aspect,     /* CoreAspect */
-            &d3d12->pass[i].core_aspect_rot, /* CoreAspectRot */
+            &d3d12->pass[i].core_aspect,     /* OriginalAspect */
+            &d3d12->pass[i].core_aspect_rot, /* OriginalAspectRot */
             &d3d12->pass[i].total_subframes, /* TotalSubFrames */
             &d3d12->pass[i].current_subframe,/* CurrentSubFrame */
          }
@@ -3599,7 +3599,7 @@ static bool d3d12_gfx_frame(
 
          d3d12->pass[i].core_aspect = video_driver_get_core_aspect();
 
-         /* CoreAspectRot: return 1/aspect for 90 and 270 rotated content */
+         /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
          d3d12->pass[i].core_aspect_rot = video_driver_get_core_aspect();
          uint32_t rot = video_driver_get_core_aspect();
          if (rot == 1 || rot == 3)

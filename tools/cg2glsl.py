@@ -50,8 +50,8 @@ def replace_global_in(source):
         ('IN.frame_count', 'FrameCount'),
         ('IN.frame_direction', 'FrameDirection'),
         ('IN.rotation', 'Rotation'),
-        ('IN.core_aspect', 'CoreAspect'),
-        ('IN.core_aspect_rot', 'CoreAspectRot'),
+        ('IN.core_aspect', 'OriginalAspect'),
+        ('IN.core_aspect_rot', 'OriginalAspectRot'),
     ]
 
     for line in source.splitlines():

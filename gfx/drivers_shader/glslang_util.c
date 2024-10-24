@@ -178,7 +178,7 @@ bool glslang_read_shader_file(const char *path,
    }
 
    /* Add defines about supported retroarch features */
-   if (!string_list_append(output, "#define _HAS_COREASPECT_UNIFORMS", attr))
+   if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr))
       goto error;
 
    /* At least VIM treats the first line as line #1,

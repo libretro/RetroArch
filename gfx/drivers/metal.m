@@ -1583,7 +1583,7 @@ typedef struct MTLALIGN(16)
 
       _engine.pass[i].core_aspect = video_driver_get_core_aspect();
 
-      /* CoreAspectRot: return 1/aspect for 90 and 270 rotated content */
+      /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
       int rot = retroarch_get_rotation();
       float core_aspect_rot = video_driver_get_core_aspect();
       if (rot == 1 || rot == 3)
@@ -1847,8 +1847,8 @@ typedef struct MTLALIGN(16)
                &_engine.pass[i].frame_count,     /* FrameCount */
                &_engine.pass[i].frame_direction, /* FrameDirection */
                &_engine.pass[i].rotation,        /* Rotation */
-               &_engine.pass[i].core_aspect,     /* CoreAspect */
-               &_engine.pass[i].core_aspect_rot, /* CoreAspectRot */
+               &_engine.pass[i].core_aspect,     /* OriginalAspect */
+               &_engine.pass[i].core_aspect_rot, /* OriginalAspectRot */
             }
          };
          /* clang-format on */

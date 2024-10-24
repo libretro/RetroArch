@@ -2746,7 +2746,7 @@ static bool gl3_frame(void *data, const void *frame,
 
    gl3_filter_chain_set_core_aspect(gl->filter_chain, video_driver_get_core_aspect());
 
-   /* CoreAspectRot: return 1/aspect for 90 and 270 rotated content */
+   /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
    uint32_t rot = retroarch_get_rotation();
    float core_aspect_rot = video_driver_get_core_aspect();
    if (rot == 1 || rot == 3)

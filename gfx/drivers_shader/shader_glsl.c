@@ -489,7 +489,7 @@ static bool gl_glsl_compile_program(
       if (!gl_glsl_compile_shader(
                glsl,
                program->vprg,
-               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_COREASPECT_UNIFORMS\n",
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n",
                program_info->vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
@@ -504,7 +504,7 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL]: Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_COREASPECT_UNIFORMS\n",
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n",
                program_info->fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", idx);
@@ -754,8 +754,8 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->frame_count     = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
    uni->rotation        = gl_glsl_get_uniform(glsl, prog, "Rotation");
-   uni->core_aspect     = gl_glsl_get_uniform(glsl, prog, "CoreAspect");
-   uni->core_aspect_rot = gl_glsl_get_uniform(glsl, prog, "CoreAspectRot");
+   uni->core_aspect     = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
+   uni->core_aspect_rot = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRot");
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -1368,7 +1368,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
 
   if (uni->core_aspect_rot >= 0) {
-      /* CoreAspectRot: return 1/aspect for 90 and 270 rotated content */
+      /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
       float core_aspect_rot = video_driver_get_core_aspect();
       uint32_t rot = retroarch_get_rotation();
       if (rot == 1 || rot == 3)

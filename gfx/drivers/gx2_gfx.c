@@ -1723,13 +1723,13 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
          continue;
       }
 
-      if (string_is_equal(id, "CoreAspect"))
+      if (string_is_equal(id, "OriginalAspect"))
       {
          *dst        = core_aspect;
          continue;
       }
 
-      if (string_is_equal(id, "CoreAspectRot"))
+      if (string_is_equal(id, "OriginalAspectRot"))
       {
          *dst        = core_aspect_rot;
          continue;
@@ -1954,7 +1954,7 @@ static bool gx2_frame(void *data, const void *frame,
 
       float core_aspect = video_driver_get_core_aspect();
 
-      /* CoreAspectRot: return 1/aspect for 90 and 270 rotated content */
+      /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
       float core_aspect_rot = core_aspect;
       if (rotation == 1 || rotation == 3)
          core_aspect_rot = 1/core_aspect;
