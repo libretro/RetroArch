@@ -213,6 +213,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
    "結束復古電玩應用程式, 「結束時儲存設定檔」已關閉。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "結束復古電玩。\n以任何強制方式終止應用程式(SIGKILL等), 將會無法儲存設定檔的情況下結束復古電玩。\n在類Unix系統上有開啟儲存設定檔的情況下, 允許使用SIGINT/SIGTERM終止應用程式。"
+   )
 
 /* Main Menu > Load Core */
 
@@ -4327,12 +4331,20 @@ MSG_HASH(
    "不支援儲存狀態功能, 此核心和超前執行不相容。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "超前執行"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "超前執行幀數"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "設定超前執行的幀數, 如果超過遊戲內設定的延遲幀數, 會導致遊戲畫面發生錯誤。"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "執行額外的核心邏輯用於降低按鍵輸入延遲, 單一實例是提前執行之後的幀數在接收輸入時載入, \n第二實例是將純影像的核心提前用於避免音訊問題狀況, 搶占幀數為需要處理新輸入時執行之前的幀數以提高效率。"
    )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 #endif
@@ -7704,6 +7716,14 @@ MSG_HASH(
    "開啟時「匯入遊戲」忽略支援核心的資訊, 允許未安裝核心時掃描檔案並建立列表。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "掃描校驗避免重複"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   "ISO映像檔有時會使用重複產品序號, 尤其是PSP和PSN的作品。僅依靠產品序號掃描檔案, 可能會導致將項目加入到錯誤的系統中。\n開啟時增加了循環冗餘校驗(CRC), 會嚴重降低掃描速度, 但可能會更準確。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
    "管理列表"
    )
@@ -7734,6 +7754,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
    "開啟時復古電玩所有支援的圖像格式(例如JPEG), 可用於預覽縮圖使用, 但可能對效能產生輕微的影響。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANAGE,
+   "管理"
    )
 
 /* Settings > Playlists > Playlist Management */
@@ -10464,6 +10488,10 @@ MSG_HASH(
    "標題"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "商標圖示"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "正常"
    )
@@ -10827,6 +10855,10 @@ MSG_HASH(
    "設定選單主題的配色, 設定<自訂>時可自訂選單預設主題。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "自訂預設主題"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "透明度"
    )
@@ -10992,6 +11024,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
    "16:10 (置中)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   "21:9 (置中)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
@@ -12455,6 +12491,10 @@ MSG_HASH(
 /* Unsorted */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+   "核心更新設定"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS,
    "Cheevos 帳號"
    )
@@ -12565,6 +12605,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
    "手動搜尋金手指"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+   "使用媒體播放器播放"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SECONDS,
@@ -13562,6 +13606,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CONTENT_CRC32S_DIFFER,
    "檔案不同驗證碼(CRC32), 無法使用不同的檔案。"
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "主機正在執行不同的遊戲。"
    )
 MSG_HASH(
    MSG_PING_TOO_HIGH,
@@ -15317,6 +15365,10 @@ MSG_HASH(
    "顯示可使用的時區選項, 依選擇的時區自動設定日期和時間。\n此為假設系統和硬體的時間與世界協調時間一致。"
    )
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Nintendo Switch 選項"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
    "CPU超頻"
