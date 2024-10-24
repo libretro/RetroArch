@@ -1345,9 +1345,9 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
       if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
       {
          if (refl.location.ubo_vertex >= 0)
-            glUniform1i(refl.location.ubo_vertex, value);
+            glUniform1f(refl.location.ubo_vertex, value);
          if (refl.location.ubo_fragment >= 0)
-            glUniform1i(refl.location.ubo_fragment, value);
+            glUniform1f(refl.location.ubo_fragment, value);
       }
       else
          *reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset) = value;
@@ -1358,9 +1358,9 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
       if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
       {
          if (refl.location.push_vertex >= 0)
-            glUniform1i(refl.location.push_vertex, value);
+            glUniform1f(refl.location.push_vertex, value);
          if (refl.location.push_fragment >= 0)
-            glUniform1i(refl.location.push_fragment, value);
+            glUniform1f(refl.location.push_fragment, value);
       }
       else
          *reinterpret_cast<float *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
