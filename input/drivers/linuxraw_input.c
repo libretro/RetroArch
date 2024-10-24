@@ -32,9 +32,6 @@
 #include "../input_keymaps.h"
 #include "../input_driver.h"
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
 typedef struct linuxraw_input
 {
    bool state[0x80];
@@ -94,15 +91,16 @@ static int16_t linuxraw_input_state(
             unsigned i;
             int16_t ret = 0;
 
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (!keyboard_mapping_blocked)
             {
-               if (binds[port][i].valid)
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (
-                        linuxraw->state[rarch_keysym_lut[
-                        (enum retro_key)binds[port][i].key]]
-                        )
-                     ret |= (1 << i);
+                  if (binds[port][i].valid)
+                  {
+                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                           && linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]])
+                        ret |= (1 << i);
+                  }
                }
             }
 
@@ -113,9 +111,10 @@ static int16_t linuxraw_input_state(
          {
             if (binds[port][id].valid)
             {
-               if ((linuxraw->state[rarch_keysym_lut
-                        [(enum retro_key)binds[port][id].key]]
-                   ))
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && linuxraw->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]]
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
                   return 1;
             }
          }
@@ -138,13 +137,13 @@ static int16_t linuxraw_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
                if (linuxraw->state[sym] & 0x80)
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
                if (linuxraw->state[sym] & 0x80)

@@ -518,7 +518,7 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
  * @address   : a delimited list of item identifiers,
  *              corresponding to item 'levels'
  * @len       : length of supplied @address char array
- 
+
  * Fetches a compound @address string corresponding to
  * the specified item's 'position' in the top level
  * nested list of which it is a member. The resultant
@@ -577,14 +577,15 @@ bool nested_list_item_get_address(nested_list_item_t *list_item,
    /* Build address string */
    for (i = id_list.size; i > 0; i--)
    {
+      size_t _len;
       const char *id = id_list.elems[i - 1].data;
 
       if (string_is_empty(id))
          goto end;
 
-      strlcat(address, id, len);
+      _len = strlcat(address, id, len);
       if (i > 1)
-         strlcat(address, delim, len);
+         strlcpy(address + _len, delim, len - _len);
    }
 
    success = true;

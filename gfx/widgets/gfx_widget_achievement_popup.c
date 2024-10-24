@@ -18,7 +18,7 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/cheevos.h"
+#include "../../cheevos/cheevos.h"
 
 #define CHEEVO_NOTIFICATION_DURATION      4000
 
@@ -171,8 +171,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* Calculate padding in screen space */
       if (state->padding_auto)
       {
-         screen_padding_x = p_dispwidget->msg_queue_rect_start_x -
-            p_dispwidget->msg_queue_icon_size_x;
+         screen_padding_x = p_dispwidget->msg_queue_rect_start_x;
          screen_padding_y = screen_padding_x;
       }
       else

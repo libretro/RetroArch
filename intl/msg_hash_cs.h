@@ -135,7 +135,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Zakázat režim prodejna (Nutný restart)"
+   "Zakázat režim prodejna (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
@@ -191,23 +191,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Restartovat RetroArch"
+   "Restartovat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Restartuje program."
+   "Restartovat RetroArchovou aplikaci."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Ukončit RetroArch"
+   "Ukončit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Ukončí program."
+   "Ukončit RetroArchovou aplikaci. Uložení nastavení po ukončení je povoleno."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Ukončit RetroArchovou aplikaci. Uložení nastavení po ukončení je zakázáno."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Ukončete aplikaci RetroArch. Ukončení programu jakýmkoli tvrdým způsobem (SIGKILL atd.) ukončí RetroArch bez uložení konfigurace atd. V systémech podobných Unixu umožňuje SIGINT/SIGTERM čistou deinicializaci."
+   "Ukončit RetroArch. Ukončení programu tvrdým způsobem (SIGKILL, atd.) ukončí RetroArch bez uložení nastavení v každém případě. Na systémech odvezené od Unixu se možné SIGINT/SIGTERM, což povolí čistou deinicializaci, která zahrnuje uložení nastavení, pokud je povoleno."
    )
 
 /* Main Menu > Load Core */
@@ -496,6 +500,10 @@ MSG_HASH(
    "Požadované grafické rozhraní"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Úplná cesta k jádru"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Podpora uložení pozice"
    )
@@ -514,6 +522,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
    "Deterministické (Uložit/Načíst, Přetočit, Předběžné spuštění, Síťové přehrávání)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Poznámka: Položka \"Systémové soubory jsou v adresáři s obsahem\" je v současné době povolena."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Při pohledu dovnitř: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -613,6 +629,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Jádra CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT je dostupný"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1230,7 +1250,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Změnit nastavení správce souborů."
+   "Změna nastavení prohlížeče souborů."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -1482,7 +1502,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Ovladač řadiče k použití."
+   "Ovladač řídicí jednotky, který se má použít. (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1733,7 +1753,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Používaný ovladač menu."
+   "Použití ovladače menu. (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1848,15 +1868,163 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Mezi snímky se vloží černý rámeček. Užitečné na některých obrazovkách s vysokou obnovovací frekvencí k odstranění duchů."
+   "Vkládá mezi snímky černý rámeček (rámečky). Může výrazně snížit rozmazání pohybu napodobením vnějšího skenu CRT, ale za cenu snížení jasu. Nekombinujte s intervalem výměny > 1, dílčími snímky, zpožděním snímků nebo synchronizací s přesnou snímkovou frekvencí obsahu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Vloží černý rámeček mezi snímky. Užitečné pro 120 Hz monitory k přehrávání 60 Hz materiálu s eliminací duchů. Obnovovací frekvence videa by měla být stále nastavena jako u 60 Hz monitoru (vydělte obnovovací frekvenci dvěma)."
+   "Vkládá mezi snímky černý rámeček (rámečky) pro lepší zřetelnost pohybu. Použijte pouze možnost určenou pro aktuální obnovovací frekvenci displeje. Nelze použít při obnovovací frekvenci, která není násobkem 60 Hz, jako je 144 Hz, 165 Hz atd. Nekombinujte s funkcemi Výměna intervalu > 1, dílčími snímky, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu. Ponechání zapnutého systémového VRR je v pořádku, jen ne toto nastavení. Pokud zaznamen[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - pro displeje s zobrazovací frekvenci 120Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - pro displeje s zobrazovací frekvenci 180Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - pro displeje s zobrazovací frekvenci 240Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - pro displeje s zobrazovací frekvenci 300Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - pro displeje s zobrazovací frekvenci 360Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - pro displeje s zobrazovací frekvenci 420Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - pro displeje s zobrazovací frekvenci 480Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - pro displeje s zobrazovací frekvenci 540Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - pro displeje s zobrazovací frekvenci 600Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - pro displeje s zobrazovací frekvenci 660Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - pro displeje s zobrazovací frekvenci 720Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - pro displeje s zobrazovací frekvenci 780Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - pro displeje s zobrazovací frekvenci 840Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - pro displeje s zobrazovací frekvenci 900Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - pro displeje s zobrazovací frekvenci 960Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Vložení černého rámečku - tmavé rámečky"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Nastavení počtu černých snímků v celkové sekvenci vnějšího skenu BFI. Více znamená vyšší čistotu pohybu, méně vyšší jas. Nelze použít při 120hz, protože je k dispozici pouze 1 snímek BFI, se kterým lze pracovat. Nastavení vyšší než možné vás omezí na maximum možné pro zvolenou obnovovací frekvenci."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Upravuje počet snímků zobrazených v bfi sekvenci, které jsou černé. Více černých snímků zvyšuje zřetelnost pohybu, ale snižuje jas. Nelze použít při 120hz, protože je zde pouze jeden celkový snímek 60hz navíc, takže musí být černý, jinak by BFI nebylo aktivní."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Dílčí snímky shaderu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Vložení dalších snímků shaderu mezi snímky. Umožňuje shaderům provádět efekty, které běží při vyšší rychlosti snímků za sekundu, než je skutečná rychlost obsahu. Mělo by být nastaveno na aktuální Hz obrazovky. Nekombinujte s funkcemi Interval výměny > 1, BFI, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Vkládá mezi snímky další snímky shaderu pro případné efekty shaderu, které jsou navrženy tak, aby běžely rychleji než rychlost obsahu. Použijte pouze možnost určenou pro aktuální obnovovací frekvenci displeje. Není určeno pro použití při obnovovacích frekvencích, které nejsou násobkem 60 Hz, například 144 Hz, 165 Hz atd. Nekombinujte s funkcemi Interval výměny > 1, BFI, zpoždění snímku nebo Sync do přesné snímkové frekvence obsahu. Ponechání zapnutého [...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - pro displeje s zobrazovací frekvenci 120Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - pro displeje s zobrazovací frekvenci 180Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - pro displeje s zobrazovací frekvenci 240Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - pro displeje s zobrazovací frekvenci 300Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - pro displeje s zobrazovací frekvenci 360Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - pro displeje s zobrazovací frekvenci 420Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - pro displeje s zobrazovací frekvenci 480Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - pro displeje s zobrazovací frekvenci 540Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - pro displeje s zobrazovací frekvenci 600Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - pro displeje s zobrazovací frekvenci 660Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - pro displeje s zobrazovací frekvenci 720Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - pro displeje s zobrazovací frekvenci 780Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - pro displeje s zobrazovací frekvenci 840Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - pro displeje s zobrazovací frekvenci 900Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - pro displeje s zobrazovací frekvenci 960Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "GPU snímek obrazovky"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Simulace valivé skenovací linie"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -2015,7 +2183,7 @@ MSG_HASH(
 #if defined (WIIU)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimalizace pro Wii U GamePad (Vyžaduje Restart)"
+   "Optimalizace pro Wii U GamePad (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
@@ -2266,16 +2434,8 @@ MSG_HASH(
    "Celočíselné škálování"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Škálování videa pouze v celočíselných krocích. Základní velikost závisí na geometrii hlášené systémem a poměru stran. Pokud není nastavena možnost 'Force Aspect Ratio', budou X/Y škálovány nezávisle na celočíselném měřítku."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Nadměrné celočíselné škálování"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Vynutí zaokrouhlování celých čísel nahoru na nejbližší větší celé číslo namísto zaokrouhlování dolů."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Chytrá"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2324,17 +2484,11 @@ MSG_HASH(
    "Vlastní poměr stran (poloha X)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Vlastní posun zobrazení, který se používá k určení polohy zobrazení v ose X.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Vlastní poměr stran (poloha Y)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Vlastní posun zobrazení, který se používá k určení polohy osy Y zobrazení.\nTyto údaje jsou ignorovány, pokud je povoleno 'Celočíselné Škálování'."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Vlastní poměr stran (na šířku)"
@@ -2353,7 +2507,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Přesah oříznutí (nutný restart)"
+   "Overscan oříznutí (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
@@ -2430,28 +2584,8 @@ MSG_HASH(
    "Funkce VSync je povolena, dokud výkon neklesne pod cílovou obnovovací frekvenci. Může minimalizovat zadrhávání při poklesu výkonu pod reálný čas a být energeticky úspornější."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Zpoždění snímku (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Snižuje latenci za cenu vyššího rizika zadrhávání videa. Přidává zpoždění v milisekundách po prezentaci videa a před hlavní snímek."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Nastavuje, kolik milisekund se má odložit prezentace videa před spuštěním jádra. Může snížit latenci za cenu vyššího rizika zadrhávání. Maximum je %d."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "Automatické zpoždění snímků"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Dočasně snižte efektivní 'Zpoždění snímků', abyste zabránili budoucím výpadkům snímků. Výchozím bodem je polovina času snímku, když je hodnota 'Zpoždění snímků' 0."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Dočasně sníží efektivní 'Zpoždění snímků', dokud není cílová obnovovací frekvence stabilní. Měření začíná od poloviny doby snímku, když je 'Zpoždění snímků' 0. Např. 8 pro NTSC a 10 pro PAL."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -2984,6 +3118,14 @@ MSG_HASH(
    "Přepsat vstupní vazby přemapovanými vazbami nastavenými pro aktuální jádro."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Autokonfigurace"
    )
@@ -2994,7 +3136,7 @@ MSG_HASH(
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Zakázání Hotkeys v systému Windows (nutný restart)"
+   "Zakázání horkých kláves systému Windows (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
@@ -3144,6 +3286,10 @@ MSG_HASH(
    "Klasické"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasické (přepínání)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
    "Jedno tlačítko (přepínání)"
    )
@@ -3154,6 +3300,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    "Klasický režim, ovládání dvěma tlačítky. Podržením tlačítka a klepnutím na tlačítko Turbo aktivujete sekvenci stisknutí a uvolnění.\nTlačítko Turbo lze přiřadit v nabídce Nastavení/Vstup/Port 1 Ovládání."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klasický přepínací režim, ovládání dvěma tlačítky. Podržením tlačítka a klepnutím na tlačítko Turbo aktivujete turbo pro dané tlačítko. Chcete-li turbo vypnout: podržte tlačítko a znovu stiskněte tlačítko Turbo.\nTlačítko Turbo lze přiřadit v menu Nastavení/Vstup/Ovládače Port1."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -3170,6 +3320,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
    "Výchozí aktivní tlačítko pro režim Turbo 'Jedno Tlačítko'."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
+   "Povolit Turbo D-Pad směry"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   "Jsou-li povoleny, mohou být digitální směrové vstupy (známé také jako d-pad nebo \"hatswitch\") turbo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3228,8 +3386,8 @@ MSG_HASH(
    "Řešení odpojení Androidu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Řešení pro odpojení a opětovné připojení ovládačů. Impeduje 2 hráče se stejnými ovladači."
+   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   "Řešení pro odpojování a opětovné připojování ovladačů. Impeduje 2 hráče se stejnými ovladači."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_PRESS_TWICE,
@@ -3331,6 +3489,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    "Přidání prodlevy ve snímcích před zablokováním běžného vstupu po stisknutí přiřazené klávesy \"Hotkey Povoleno\". Umožňuje zachytit běžný vstup z klávesy \"Hotkey Povoleno\", pokud je namapována na jinou akci (např. RetroPad \"Select\")."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
+   "Sloučení typů zařízení s klávesovou zkratkou"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -3985,14 +4147,6 @@ MSG_HASH(
    "Současné jádro je nekompatibilní s run-ahead kvůli chybějící podpoře deterministického ukládání pozic."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Run-Ahead pro snížení zpoždění"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Spusťte logiku jádra o jeden nebo více snímků dopředu a poté načtěte stav zpět, abyste snížili vnímané zpoždění vstupu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Počet snímků do režimu Run-Ahead"
    )
@@ -4000,14 +4154,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Počet snímků, které se mají spustit dopředu. Způsobuje problémy s hraním, například trhání, pokud je překročen počet interních zpožděných snímků."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Použít druhý stupeň Run-Ahead"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Použijte druhou instanci jádra RetroArch pro run-ahead. Zabraňuje problémům se zvukem způsobeným stavem načítání."
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Skryt varování Run-Ahead"
@@ -4017,36 +4165,12 @@ MSG_HASH(
    "Skrytí varovné zprávy, která se zobrazí při použití funkce Run-Ahead a jádro nepodporuje uložení pozice."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Preemptivní snímky nejsou k dispozici]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Současné jádro není kompatibilní s preemptivními rámci kvůli chybějící podpoře deterministického stavu ukládání."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Spuštění preemptivních snímků"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Znovu spustit logiku jádra s posledním vstupem, když se změní stav regulátoru. Rychlejší než Run-Ahead, ale nezabrání problémům se zvukem, které mohou jádra mít s načítáním stavů."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Počet preemptivních snímků"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Počet snímků, které se mají znovu spustit. Způsobuje problémy s hraním, například trhání, pokud je překročen počet zpožděných snímků interně ve hře."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Skrytí varování před preventivními snímky"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Skrytí varovné zprávy, která se zobrazí, když je jádro nekompatibilní s preemptivními snímky."
    )
 
 /* Settings > Core */
@@ -4416,10 +4540,6 @@ MSG_HASH(
    "Systémové soubory jsou v adresáři obsahu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Použijte adresář s obsahem jako systémový adresář."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
    "Zapsat snímky obrazovky do adresáře obsahu"
    )
@@ -4518,16 +4638,8 @@ MSG_HASH(
    "Zobrazit skryté soubory a adresáře"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Zobrazení skrytých souborů a adresářů v prohlížeči souborů."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Filtrování neznámých rozšíření"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Filtrování souborů zobrazovaných v prohlížeči souborů podle podporovaných přípon."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4540,10 +4652,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "Zapamatovat si naposledy použitý úvodní adresář"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "Při načítání obsahu z úvodního adresáře otevřete prohlížeč souborů v posledním použitém umístění. Poznámka: Umístění se po restartu aplikace RetroArch obnoví na výchozí."
    )
 
 /* Settings > Frame Throttle */
@@ -4935,10 +5043,6 @@ MSG_HASH(
    "Předvolba překrytí"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "V prohlížeči souborů vyberte překryvnou vrstvu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
    "Měřítko překrytí (krajina)"
    )
@@ -5050,10 +5154,6 @@ MSG_HASH(
    "Předvolba překrytí klávesnice"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "V prohlížeči souborů vyberte překryv klávesnice."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    "Překrytí klávesnice v automatickém měřítku"
    )
@@ -5068,6 +5168,48 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
    "Neprůhlednost všech prvků uživatelského rozhraní překryvu klávesnice."
+   )
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
+
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "Dlouhým stisknutím obrazovky začnete držet tlačítko."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Prahová hodnota dlouhého stisku (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "Nastavte dobu podržení potřebnou pro dlouhé stisknutí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Přetažení dvojitým klepnutím"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "Dvojitým klepnutím na obrazovku začnete při druhém klepnutí držet tlačítko. Přidává zpoždění při kliknutí myší."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Prahová hodnota dvojitého poklepání (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "Nastavení přípustné doby mezi klepnutími při detekci dvojitého klepnutí."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Práh přejetí prstem"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "Nastavte povolený rozsah driftu při detekci dlouhého stisku nebo klepnutí. Vyjadřuje se v procentech menšího rozměru obrazovky."
    )
 
 /* Settings > On-Screen Display > Video Layout */
@@ -5086,7 +5228,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_PATH,
-   "V prohlížeči souborů vyberte rozvržení videa."
+   "V Průzkumníku souborů vyberte rozvržení videa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_SELECTED_VIEW,
@@ -5250,6 +5392,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "Zobrazení zprávy na obrazovce při automatickém obnovení posledního použitého disku vícediskového obsahu načteného prostřednictvím seznamů skladeb M3U."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Oznámení o kontrole disku"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "Zobrazení zprávy na obrazovce při vkládání a vysouvání disků."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
@@ -5453,6 +5603,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    "Změna nastavení vzhledu obrazovky nabídky."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   "Ikona aplikace"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   "Změnit ikonu aplikace."
    )
 #ifdef _3DS
 MSG_HASH(
@@ -5771,7 +5929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Zobrazení nabídky 'Nastavení'. (u zařízení Ozone/XMB je vyžadován restart)"
+   "Zobrazte menu \"Nastavení\". (U zařízení Ozone/XMB je nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
@@ -5787,55 +5945,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Zobrazení nabídky 'Oblíbené'. (Ozone/XMB Vyžaduje restart)"
+   "Zobrazení menu \"Oblíbené\". (V systému Ozone/XMB je nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
    "Zobrazit 'Obrázky'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Zobrazit nabídku 'Obrázky'. (Ozone/XMB Vyžaduje restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
    "Zobrazit 'Hudbu'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Zobrazení nabídky 'Hudba'. (Ozone/XMB Vyžaduje restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
    "Zobrazit 'Videa'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Zobrazit menu 'Videa'. (Vyžaduje restartování v Ozonu/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
    "Zobrazit 'Netplay'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_NETPLAY,
-   "Zobrazení nabídky 'Netplay'. (Ozone/XMB Vyžaduje restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
    "Zobrazení 'Historie'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Zobrazení nabídky nedávné historie. (Ozone/XMB Vyžaduje restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD,
    "Zobrazit 'Importovat obsah'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD,
-   "Zobrazte nabídku 'Importovat obsah'. (Ozone/XMB Vyžaduje restart)"
    )
 MSG_HASH( /* FIXME can now be replaced with MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD */
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
@@ -5858,24 +5992,12 @@ MSG_HASH(
    "Zobrazit 'Seznamy skladeb'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Zobrazit seznamy skladeb. (Ozone/XMB vyžaduje restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Zobrazit 'Prozkoumat'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Zobrazit možnost průzkumníka obsahu. (Ozone/XMB Vyžaduje restart)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
    "Zobrazit 'Jádra bez obsahu'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Zadejte typ jádra (pokud existuje), které se má zobrazit v nabídce 'Jádra bez obsahu'. Pokud je nastavena hodnota 'Vlastní', lze viditelnost jednotlivých jader přepínat prostřednictvím nabídky 'Spravovat jádra'. (V systému Ozone/XMB je vyžadován restart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
@@ -6463,10 +6585,6 @@ MSG_HASH(
    "AI výstup služby"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Zobrazit překlad jako překrytí obrázku (Režim obrázku), jako přímý zvuk (Řeč), převod textu na řeč (Vypravěč) nebo jako překrytí textu (Text)."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
    "AI služba URL"
    )
@@ -6505,30 +6623,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
    "Jazyk, do kterého bude služba překládána. Výchozí hodnota je angličtina."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_POLL_DELAY,
-   "Zpoždění automatického dotazování služby AI"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_POLL_DELAY,
-   "Minimální prodleva v ms mezi automatickými voláními. Snižuje reaktivitu, ale zvyšuje výkon procesoru."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION,
-   "Přepsání polohy textu služby AI"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_POSITION,
-   "Přepsání pozice překryvu, když je služba v režimu Text."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_PADDING,
-   "Výplň textu služby AI (%)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TEXT_PADDING,
-   "Vertikální výplň, která se použije na překrytí textu, když je služba v režimu Text. Větší výplň posune text směrem ke středu obrazovky."
    )
 
 /* Settings > Accessibility */
@@ -7329,7 +7423,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    "Je-li tato funkce povolena, vyhledá náhledy podle názvu souboru, nikoli podle jeho popisku."
    )
-   MSG_HASH(
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Správa"
    )
@@ -7561,16 +7655,8 @@ MSG_HASH( /* FIXME Not RGUI specific */
    "Správce souborů"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Nastavení počátečního adresáře pro prohlížeč souborů."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Konfigurace"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Nastavení počátečního adresáře pro prohlížeč konfigurace nabídky."
+   "Konfigurační soubory"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -9164,10 +9250,6 @@ MSG_HASH(
    "Zapamatování naposledy použitého adresáře shaderů"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Při načítání předvoleb a průchodů shaderů otevřete prohlížeč souborů v posledním použitém adresáři."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
    "Načtení předvolby"
    )
@@ -9497,10 +9579,6 @@ MSG_HASH(
    "Server Retroúspěchů je nedostupný. Pokusy se opakují, dokud nejsou úspěšné nebo dokud není aplikace ukončena."
 )
 MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Všechny nevyřízené žádosti byly úspěšně synchronizovány se serverem Retroúspěchů."
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Nepřihášen"
 )
@@ -9716,26 +9794,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
    "Režim vypravěče"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_MODE,
-   "Textový režim"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_NARRATOR_MODE,
-   "Text + Vypravěč"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_NARRATOR_MODE,
-   "Obrázek + Vypravěč"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_BOTTOM,
-   "Spodní"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TEXT_POSITION_TOP,
-   "Nahoře"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
@@ -10325,10 +10383,6 @@ MSG_HASH(
    "Vlastní předvolba motivu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "V prohlížeči souborů vyberte předvolbu motivu nabídky."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "Průhlednost"
    )
@@ -10803,10 +10857,6 @@ MSG_HASH(
    "Vodorovný posun okraje názvu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Povolit tabulku nastavení (nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    "Zobrazí tabulku nastavení obsahující nastavení programu."
    )
@@ -10848,14 +10898,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
    "Systematické"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_NEOACTIVE,
-   "Neo Aktivní"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROACTIVE,
-   "Retroaktivní"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
@@ -10957,16 +10999,8 @@ MSG_HASH(
    "Levý postranní panel je vždy sbalený."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Zkrátit názvy playlistu (nutný restart)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
    "Odstranění názvů výrobců z playlistu. Například z 'Sony - PlayStation' se stane 'PlayStation'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "Řazení playlistu po odstranění názvu (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
@@ -11070,10 +11104,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    "Použít ikony namísto zapnutého/vypnutého textu pro zobrazení položek v menu 'Přepnout přepínač'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "Ikony playlistu (nutný restart)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
@@ -12513,22 +12543,6 @@ MSG_HASH( /* FIXME Should be MSG_ */
    "Instalace jádra selhala"
    )
 MSG_HASH(
-   MSG_AI_VIDEO_DRIVER_NOT_SUPPORTED,
-   "Ovladač videa není podporován pro službu AI."
-   )
-MSG_HASH(
-   MSG_AI_AUTO_MODE_ENABLED,
-   "Automatický překlad povolen."
-   )
-MSG_HASH(
-   MSG_AI_AUTO_MODE_DISABLED,
-   "Automatický překlad vypnut."
-   )
-MSG_HASH(
-   MSG_AI_NOTHING_TO_TRANSLATE,
-   "Není co překládat."
-   )
-MSG_HASH(
    MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
    "Pětkrát stiskněte pravé tlačítko a smažte všechny cheaty."
    )
@@ -12960,10 +12974,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Nelze odvodit cestu k nové konfiguraci. Použijte aktuální čas."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Úspěchy hardcore módu povoleny, ukládání a přetáčení bylo zakázáno."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -13662,10 +13672,6 @@ MSG_HASH(
    "Vyhledávání"
    )
 MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Vyhledávání adresáře dokončeno"
-   )
-MSG_HASH(
    MSG_SENDING_COMMAND,
    "Odesílání příkazu"
    )
@@ -14018,44 +14024,8 @@ MSG_HASH(
    "Nepodařilo se načíst stav. Preemptivní rámce byly zakázány."
    )
 MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Skenování souboru dokončeno"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "Vyhledávání cheatu úspěšně spuštěno"
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "Nepodařilo se spustit vyhledávání cheatu"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Hledání nebylo inicializováno/spuštěno"
-   )
-MSG_HASH(
    MSG_CHEAT_SEARCH_FOUND_MATCHES,
    "Počet nových shod = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Přidáno %u shod"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Přidání shody se nezdařilo"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Vytvořený kód od shody"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Nepodařilo se vytvořit kód"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Smazaná shoda"
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -14095,31 +14065,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_DISK,
-   "Nepodařilo se nastavit disk"
+   "Nepodařilo se nastavit disk."
    )
 MSG_HASH(
    MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Nepodařilo se nastavit naposledy použitý disk..."
+   "Nepodařilo se nastavit poslední použitý disk."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Nepodařilo se připojit k klientovi"
+   "Nepodařilo se připojit ke klientovi."
    )
 MSG_HASH(
    MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Nepodařilo se připojit k hostiteli"
+   "Nepodařilo se připojit k hostiteli."
    )
 MSG_HASH(
    MSG_NETPLAY_HOST_FULL,
-   "Hostitel netplay je plný"
+   "Hostitel sítě Netplay je plný."
    )
 MSG_HASH(
    MSG_NETPLAY_BANNED,
-   "Jste zabanován u tohoto hostitele"
+   "Tento hostitel je vám zakázán."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Nepodařilo se získat hlavičku od hostitele"
+   "Nepodařilo se přijmout hlavičku od hostitele."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -14140,6 +14110,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Dokončeno %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Úspěchy hardcore módu povoleny, ukládání a přetáčení bylo zakázáno."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -14163,15 +14137,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
-   "Varování: Chybějící aktiva, použijte online aktualizátor, pokud je k dispozici"
+   "Varování: Chybějící aktiva, použijte online aktualizátor, pokud je k dispozici."
    )
 MSG_HASH(
    MSG_RGUI_MISSING_FONTS,
-   "Varování: Chybějící písma pro vybraný jazyk, použijte online aktualizátor, pokud je k dispozici"
+   "Varování: Chybějící písma pro vybraný jazyk, použijte online updater, pokud je k dispozici."
    )
 MSG_HASH(
    MSG_RGUI_INVALID_LANGUAGE,
-   "Varování: Nepodporovaný jazyk - používá se angličtina"
+   "Varování: Upozornění: Nepodporovaný jazyk - používá se angličtina."
    )
 MSG_HASH(
    MSG_DUMPING_DISC,
@@ -14207,11 +14181,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Vybrán nesprávný soubor arcade DAT"
+   "Vybrán nesprávný soubor arcade DAT."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Vybraný soubor arcade DAT je příliš velký (nedostatek volné paměti)"
+   "Vybraný soubor arcade DAT je příliš velký (nedostatek volné paměti)."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
@@ -14219,11 +14193,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Neplatná konfigurace ručního skenování"
+   "Neplatná konfigurace ručního skenování."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Nebyl zjištěn žádný platný obsah"
+   "Nebyl zjištěn žádný platný obsah."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
@@ -14630,14 +14604,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
    "Zapnutím režimu Linux GameMode lze zlepšit latenci, odstranit problémy s praskáním zvuku a maximalizovat celkový výkon automatickou konfigurací CPU a GPU pro nejlepší výkon.\nPro fungování tohoto režimu je třeba nainstalovat software Herní mód. Informace o instalaci Herní mód naleznete na adrese https://github.com/FeralInteractive/gamemode."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Snímkový odpočinek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Pokuste se snížit využití procesoru vsync tím, že po prezentaci snímku co nejvíce uspíte. Určeno především pro synchronizaci skenovací linie třetích stran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
@@ -15061,4 +15027,12 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Dotyková myš je zakázána"
+   )
+MSG_HASH(
+   MSG_ACCESSIBILITY_STARTUP,
+   "Aktivována přístupnost RetroArch. Hlavní menu načtení jádra."
+   )
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "zastaveno."
    )

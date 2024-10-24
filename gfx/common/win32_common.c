@@ -877,17 +877,27 @@ static void win32_save_position(void)
    placement.rcNormalPosition.right  = 0;
    placement.rcNormalPosition.bottom = 0;
 
-   if (GetWindowPlacement(main_window.hwnd, &placement))
+   /* If SETTINGS_FLG_SKIP_WINDOW_POSITIONS is set, it means we've
+    * just unloaded an override that had fullscreen mode
+    * enabled while we have windowed mode set globally,
+    * in this case we skip the following blocks to not
+    * end up with fullscreen size and position. */
+   if (!(settings->flags & SETTINGS_FLG_SKIP_WINDOW_POSITIONS))
    {
-      g_win32->pos_x      = placement.rcNormalPosition.left;
-      g_win32->pos_y      = placement.rcNormalPosition.top;
-   }
+      if (GetWindowPlacement(main_window.hwnd, &placement))
+      {
+         g_win32->pos_x      = placement.rcNormalPosition.left;
+         g_win32->pos_y      = placement.rcNormalPosition.top;
+      }
 
-   if (GetWindowRect(main_window.hwnd, &rect))
-   {
-      g_win32->pos_width  = rect.right  - rect.left;
-      g_win32->pos_height = rect.bottom - rect.top;
+      if (GetWindowRect(main_window.hwnd, &rect))
+      {
+         g_win32->pos_width  = rect.right  - rect.left;
+         g_win32->pos_height = rect.bottom - rect.top;
+      }
    }
+   else
+      settings->flags &= ~SETTINGS_FLG_SKIP_WINDOW_POSITIONS;
 
    if (window_save_positions)
    {
@@ -977,6 +987,8 @@ static LRESULT CALLBACK wnd_proc_common(
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1051,9 +1063,7 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
-            if (ui_menubar_enable)
-               win32_menu_loop(main_window.hwnd, wparam);
+            win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
    }
@@ -1083,14 +1093,12 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             unsigned keysym       = (lparam >> 16) & 0xff;
             bool extended         = (lparam >> 24) & 0x1;
 
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
+
             /* extended keys will map to dinput if the high bit is set */
             if (extended)
-               keysym |= 0x80;
-
-            /* NumLock vs Pause correction */
-            if (GetKeyState(VK_NUMLOCK) & 0x80 && extended)
-               keysym &= ~0x80;
-            else if (GetKeyState(VK_PAUSE) & 0x80 && !extended)
                keysym |= 0x80;
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
@@ -1105,6 +1113,8 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1336,14 +1346,12 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             unsigned keysym       = (lparam >> 16) & 0xff;
             bool extended         = (lparam >> 24) & 0x1;
 
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
+
             /* extended keys will map to dinput if the high bit is set */
             if (extended)
-               keysym |= 0x80;
-
-            /* NumLock vs Pause correction */
-            if (GetKeyState(VK_NUMLOCK) & 0x80 && extended)
-               keysym &= ~0x80;
-            else if (GetKeyState(VK_PAUSE) & 0x80 && !extended)
                keysym |= 0x80;
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
@@ -1365,6 +1373,8 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1950,11 +1960,11 @@ void win32_clip_window(bool state)
          free(info);
       }
       info = NULL;
+
+      ClipCursor(&clip_rect);
    }
    else
-      GetWindowRect(GetDesktopWindow(), &clip_rect);
-
-   ClipCursor(&clip_rect);
+      ClipCursor(NULL);
 }
 #endif
 
@@ -2318,7 +2328,7 @@ bool win32_suspend_screensaver(void *data, bool enable)
 
 static bool win32_monitor_set_fullscreen(
       unsigned width, unsigned height,
-      unsigned refresh, char *dev_name)
+      unsigned refresh, bool interlaced, char *dev_name)
 {
    DEVMODE devmode;
    memset(&devmode, 0, sizeof(devmode));
@@ -2329,6 +2339,11 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmFields           = DM_PELSWIDTH
                               | DM_PELSHEIGHT
                               | DM_DISPLAYFREQUENCY;
+#if !(_MSC_VER && (_MSC_VER < 1600))
+   devmode.dmDisplayFlags     = interlaced ? DM_INTERLACED : 0;
+   if (interlaced)
+      devmode.dmFields       |= DM_DISPLAYFLAGS;
+#endif
    return win32_change_display_settings(dev_name, &devmode,
          CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 }
@@ -2345,10 +2360,21 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
-      float video_refresh    = settings->floats.video_refresh_rate;
+      float refresh_rate     = settings->floats.video_refresh_rate;
       unsigned bfi           = settings->uints.video_black_frame_insertion;
-      float refresh_mod      = bfi + 1.0f;
-      float refresh_rate     = video_refresh * refresh_mod;
+      unsigned swap_interval = settings->uints.video_swap_interval;
+      unsigned
+         shader_subframes    = settings->uints.video_shader_subframes;
+
+      /* if refresh_rate is <=60hz, adjust for modifiers, if it is higher
+         assume modifiers already factored into setting. Multiplying by
+         modifiers will still leave result at original value when they
+         are not set. Swap interval 0 is automatic, but at automatic
+         we should default to checking for normal SI 1 for rate change*/
+      if (swap_interval == 0)
+        ++swap_interval;
+      if ((int)refresh_rate <= 60)
+         refresh_rate     = refresh_rate * (bfi + 1) * swap_interval * shader_subframes;
 
       if (windowed_full)
       {
@@ -2361,7 +2387,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          *style          = WS_POPUP | WS_VISIBLE;
 
          if (win32_monitor_set_fullscreen(*width, *height,
-               (int)refresh_rate, current_mon->szDevice))
+               (int)refresh_rate, false, current_mon->szDevice))
          {
             RARCH_LOG("[Video]: Fullscreen set to %ux%u @ %uHz on device %s.\n",
                   *width, *height, (int)refresh_rate, current_mon->szDevice);

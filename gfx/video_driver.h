@@ -405,6 +405,8 @@ typedef struct video_frame_info
    unsigned crt_switch_resolution_super;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
    unsigned xmb_theme;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
@@ -415,6 +417,9 @@ typedef struct video_frame_info
    unsigned custom_vp_full_width;
    unsigned custom_vp_full_height;
    unsigned black_frame_insertion;
+   unsigned bfi_dark_frames;
+   unsigned shader_subframes;
+   unsigned current_subframe;
    unsigned fps_update_interval;
    unsigned memory_update_interval;
    unsigned msg_queue_delay;
@@ -453,6 +458,8 @@ typedef struct video_frame_info
    uint32_t video_st_flags;
    uint16_t menu_st_flags;
 
+   uint16_t frame_time_target;
+
    char stat_text[1024];
 
    bool widgets_active;
@@ -482,11 +489,11 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool fastforward_frameskip;
-   bool frame_rest;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
    bool overlay_behind_menu;
+   bool scan_subframes;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -571,7 +578,7 @@ typedef struct gfx_ctx_driver
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
    /* Returns true if this context supports EGLImage buffers for
-    * screen drawing and was initalized correctly. */
+    * screen drawing and was initialized correctly. */
    bool (*image_buffer_init)(void*, const video_info_t*);
 
    /* Writes the frame to the EGLImage and sets image_handle to it.
@@ -775,7 +782,6 @@ typedef struct
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
    uint64_t frame_time_count;
    uint64_t frame_count;
-   uint64_t frame_rest_time_count;
    uint8_t *record_gpu_buffer;
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *state_filter;
@@ -833,6 +839,8 @@ typedef struct
    unsigned frame_cache_height;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
 
    float core_hz;
    float aspect_ratio;
@@ -861,7 +869,8 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
-   uint8_t frame_rest;
+   uint16_t frame_drop_count;
+   uint16_t frame_time_reserve;
    uint8_t frame_delay_target;
    uint8_t frame_delay_effective;
    bool frame_delay_pause;
@@ -987,18 +996,49 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 
 /**
  * video_viewport_get_scaled_integer:
- * @vp            : Viewport handle
+ * @vp            : Viewport handle.
  * @width         : Width.
  * @height        : Height.
  * @aspect_ratio  : Aspect ratio (in float).
  * @keep_aspect   : Preserve aspect ratio?
+ * @ydown         : Positive y goes "down".
  *
  * Gets viewport scaling dimensions based on
  * scaled integer aspect ratio.
  **/
 void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
-      float aspect_ratio, bool keep_aspect);
+      float aspect_ratio, bool keep_aspect,
+      bool ydown);
+
+/**
+ * video_viewport_get_scaled_aspect:
+ * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
+ * @width         : Viewport width.
+ * @height        : Viewport height.
+ * @ydown         : Positive y goes "down".
+ *
+ * Gets viewport scaling dimensions based on
+ * scaled non-integer aspect ratio.
+ **/
+void video_viewport_get_scaled_aspect(struct video_viewport *vp,
+      unsigned width, unsigned height, bool ydown);
+
+/**
+ * video_viewport_get_scaled_aspect2:
+ * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
+ * @width         : Viewport width.
+ * @height        : Viewport height.
+ * @ydown         : Positive y goes "down".
+ * @device_aspect : Device aspect ratio.
+ * @desired_aspect: Target aspect ratio.
+ *
+ * Gets viewport scaling dimensions based on
+ * scaled non-integer aspect ratio.
+ **/
+void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
+      unsigned width, unsigned height, bool ydown,
+      float device_aspect, float desired_aspect);
 
 /**
  * video_monitor_set_refresh_rate:
@@ -1007,14 +1047,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
  * Sets monitor refresh rate to new value.
  **/
 void video_monitor_set_refresh_rate(float hz);
-
-/**
- * video_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-void video_monitor_compute_fps_statistics(uint64_t
-      frame_time_count);
 
 /**
  * video_monitor_fps_statistics
@@ -1091,15 +1123,10 @@ bool *video_driver_get_threaded(void);
 void video_driver_set_threaded(bool val);
 
 void video_frame_delay(video_driver_state_t *video_st,
-      settings_t *settings,
-      bool core_paused);
+      settings_t *settings);
 
 void video_frame_delay_auto(video_driver_state_t *video_st,
       video_frame_delay_auto_t *vfda);
-
-void video_frame_rest(video_driver_state_t *video_st,
-      settings_t *settings,
-      retro_time_t current_time);
 
 /**
  * video_context_driver_init:

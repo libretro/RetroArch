@@ -289,10 +289,11 @@ void gfx_thumbnail_request(
             /* Handle on demand thumbnail downloads */
             else if (network_on_demand_thumbnails)
             {
+               enum playlist_thumbnail_name_flags curr_flag;
                const char *system                         = NULL;
                const char *img_name                       = NULL;
-               static char last_img_name[PATH_MAX_LENGTH] = {0};
-               enum playlist_thumbnail_name_flags next_flag;
+               static char last_img_name[NAME_MAX_LENGTH] = {0};
+               settings_t *settings                       = config_get_ptr();
                if (!playlist)
                   goto end;
 
@@ -321,15 +322,20 @@ void gfx_thumbnail_request(
                if (!gfx_thumbnail_get_system(path_data, &system))
                   goto end;
 
-               /* Apply flexible thumbnail naming: ROM file name - database name - short name */
-               next_flag = playlist_get_next_thumbnail_name_flag(playlist,idx);
-               if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
+               /* Since task_push_pl_entry_download will shift the flag, do not attempt if it is already
+                * at second to last option. */
+               curr_flag = playlist_get_curr_thumbnail_name_flag(playlist,idx);
+               if (curr_flag & PLAYLIST_THUMBNAIL_FLAG_NONE || curr_flag & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
                   goto end;
+               /* Do not try to fetch full names here, if it is not explicitly wanted */
+               if (!settings->bools.playlist_use_filename &&
+                   !playlist_thumbnail_match_with_filename(playlist) &&
+                   curr_flag == PLAYLIST_THUMBNAIL_FLAG_INVALID)
+                    playlist_update_thumbnail_name_flag(playlist, idx, PLAYLIST_THUMBNAIL_FLAG_FULL_NAME);
 
                /* Trigger thumbnail download *
                 * Note: download will grab all 3 possible thumbnails, no matter
                 * what left/right thumbnails are set at the moment */
-               playlist_update_thumbnail_name_flag(playlist, idx, next_flag);
                task_push_pl_entry_thumbnail_download(
                      system, playlist, (unsigned)idx,
                      false, true);

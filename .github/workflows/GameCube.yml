@@ -9,16 +9,19 @@ on:
 permissions:
   contents: read
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: 
+    container:
       image: git.libretro.com:5050/libretro-infrastructure/libretro-build-devkitpro:latest
       options: --user root
 
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Compile RA
       run: |
         make -f Makefile.ngc -j$(getconf _NPROCESSORS_ONLN) clean
@@ -26,7 +29,7 @@ jobs:
     - name: Get short SHA
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
-    
+
     - uses: actions/upload-artifact@v3
       with:
         name: RA-GameCube-dummy-${{ steps.slug.outputs.sha8 }}

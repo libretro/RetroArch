@@ -112,51 +112,77 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
 {
-   int tmp_int         = 0;
-   uint16_t config_vid = 0;
-   uint16_t config_pid = 0;
-   bool pid_match      = false;
-   unsigned affinity   = 0;
-   struct config_entry_list
-      *entry           = NULL;
+   int i, tmp_int;
+   uint16_t config_vid;
+   uint16_t config_pid;
+   bool pid_match                  = false;
+   unsigned affinity;
+   unsigned max_affinity           = 0;
+   struct config_entry_list *entry = NULL;
+   char config_key[30];
+   char config_key_postfix[7];
 
-   /* Parse config file */
-   if (config_get_int(config, "input_vendor_id", &tmp_int))
-      config_vid = (uint16_t)tmp_int;
+   /* One main entry and up to 9 alternatives */
+   for (i=0 ; i < 10; i++)
+   {
+      config_vid = 0;
+      config_pid = 0;
+      tmp_int    = 0;
+      affinity   = 0;
 
-   if (config_get_int(config, "input_product_id", &tmp_int))
-      config_pid = (uint16_t)tmp_int;
+      if (i == 0)
+         config_key_postfix[0] = '\0';
+      else
+         snprintf(config_key_postfix, sizeof(config_key_postfix),
+                  "_alt%d",i);
+      
+      /* Parse config file */
+      snprintf(config_key, sizeof(config_key),
+                  "input_vendor_id%s",config_key_postfix);
+      if (config_get_int(config, config_key, &tmp_int))
+         config_vid = (uint16_t)tmp_int;
+
+      snprintf(config_key, sizeof(config_key),
+                  "input_product_id%s",config_key_postfix);
+      if (config_get_int(config, config_key, &tmp_int))
+         config_pid = (uint16_t)tmp_int;
 
    /* > Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
-   if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
-      config_pid = BLISSBOX_PID;
+      if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
+         config_pid = BLISSBOX_PID;
 #endif
 
-   /* Check for matching VID+PID */
-   pid_match = (autoconfig_handle->device_info.vid == config_vid) &&
-               (autoconfig_handle->device_info.pid == config_pid) &&
-               (autoconfig_handle->device_info.vid != 0)          &&
-               (autoconfig_handle->device_info.pid != 0);
+      /* Check for matching VID+PID */
+      pid_match =    (autoconfig_handle->device_info.vid == config_vid)
+                  && (autoconfig_handle->device_info.pid == config_pid)
+                  && (autoconfig_handle->device_info.vid != 0)
+                  && (autoconfig_handle->device_info.pid != 0);
 
-   /* > More Bliss-Box shenanigans... */
+      /* > More Bliss-Box shenanigans... */
 #ifdef HAVE_BLISSBOX
-   pid_match = pid_match &&
-               (autoconfig_handle->device_info.vid != BLISSBOX_VID) &&
-               (autoconfig_handle->device_info.pid != BLISSBOX_PID);
+      pid_match =     pid_match
+                  && (autoconfig_handle->device_info.vid != BLISSBOX_VID)
+                  && (autoconfig_handle->device_info.pid != BLISSBOX_PID);
 #endif
 
-   if (pid_match)
-      affinity += 3;
+      if (pid_match)
+         affinity += 3;
 
-   /* Check for matching device name */
-   if (      (entry  = config_get_entry(config, "input_device"))
-         && !string_is_empty(entry->value)
-         &&  string_is_equal(entry->value,
-             autoconfig_handle->device_info.name))
-      affinity += 2;
+      /* Check for matching device name */
+      snprintf(config_key, sizeof(config_key),
+                  "input_device%s",config_key_postfix);
+      if (     (entry  = config_get_entry(config, config_key))
+            && !string_is_empty(entry->value)
+            &&  string_is_equal(entry->value,
+                autoconfig_handle->device_info.name))
+         affinity += 2;
 
-   return affinity;
+      if (max_affinity < affinity)
+         max_affinity = affinity;
+   }
+
+   return max_affinity;
 }
 
 /* 'Attaches' specified autoconfig file to autoconfig
@@ -354,6 +380,171 @@ static bool input_autoconfigure_scan_config_files_internal(
    return false;
 }
 
+/* Reallocate the automatically assigned player <-> port mapping if needed.
+ * Objectives:
+ * - if there is reservation for the device, assign it to the reserved player
+ * - when assigning a new device to a reserved port, move the previous entry
+ *      to first free slot if it was occupied
+ * - use first free player port by default for new entries (overriding saved
+ *      input_joypad_index, as it can
+ *      get quite messy if reservations are done, due to the swaps above)
+ * - do not consider "reserved" ports free
+ * - if there is no reservation, do not change anything
+ *      (not even the assignment to first free player port)
+ */
+static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
+      int product_id, const char *device_name, const char *device_display_name)
+{
+
+   unsigned player;
+   char settings_value[NAME_MAX_LENGTH];
+   char settings_value_device_name[NAME_MAX_LENGTH];
+   unsigned prev_assigned_player_slots[MAX_USERS];
+   int  settings_value_vendor_id;
+   int  settings_value_product_id;
+   unsigned first_free_player_slot = MAX_USERS + 1;
+   bool device_has_reserved_slot   = false;
+   bool no_reservation_at_all      = true;
+   settings_t *settings            = config_get_ptr();
+
+   for (player = 0; player < MAX_USERS; player++)
+   {
+      if (first_free_player_slot > MAX_USERS &&
+            (   detected_port == settings->uints.input_joypad_index[player]
+            || !input_config_get_device_name(settings->uints.input_joypad_index[player]))
+            && settings->uints.input_device_reservation_type[player]
+            != INPUT_DEVICE_RESERVATION_RESERVED )
+      {
+         first_free_player_slot = player;
+         RARCH_DBG("[Autoconf]: First unconfigured / unreserved player is %d\n",
+                   player+1);
+      }
+      prev_assigned_player_slots[settings->uints.input_joypad_index[player]] = player;
+      if (settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_NONE)
+         no_reservation_at_all = false;
+   }
+   if (first_free_player_slot > settings->uints.input_max_users) {
+      RARCH_ERR( "[Autoconf]: No free and unreserved player slots found for adding new device"
+                 " \"%s\"! Detected port %d, max_users: %d, first free slot %d\n",
+                 device_name, detected_port,
+                 settings->uints.input_max_users,
+                 first_free_player_slot+1);
+      RARCH_WARN("[Autoconf]: Leaving detected player slot in place: %d\n",
+                 prev_assigned_player_slots[detected_port]);
+      return;
+   }
+
+   for (player = 0; player < MAX_USERS; player++)
+   {
+      if (settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_NONE)
+         strlcpy(settings_value, settings->arrays.input_reserved_devices[player],
+                 sizeof(settings_value));
+      else
+         settings_value[0] = '\0';
+
+      if (!string_is_empty(settings_value))
+      {
+         RARCH_DBG("[Autoconf]: Examining reserved device for player %d "
+                   "type %d: %s against %04x:%04x\n",
+                   player+1,
+                   settings->uints.input_device_reservation_type[player],
+                   settings_value, vendor_id, product_id);
+
+         if (sscanf(settings_value, "%04x:%04x ",
+             &settings_value_vendor_id,
+             &settings_value_product_id) != 2)
+         {
+            strlcpy(settings_value_device_name, settings_value,
+                    sizeof(settings_value_device_name));
+            device_has_reserved_slot =
+               string_is_equal(device_name, settings_value_device_name) ||
+               string_is_equal(device_display_name, settings_value_device_name);
+         }
+         else
+            device_has_reserved_slot = (vendor_id == settings_value_vendor_id &&
+                                       product_id == settings_value_product_id);
+
+         if (device_has_reserved_slot)
+         {
+            unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
+            if ( detected_port != prev_assigned_port &&
+                 !string_is_empty(input_config_get_device_name(prev_assigned_port)) &&
+                 (( settings_value_vendor_id  == input_config_get_device_vid(prev_assigned_port) &&
+                    settings_value_product_id == input_config_get_device_pid(prev_assigned_port)) ||
+                  strcmp(input_config_get_device_name(prev_assigned_port), settings_value_device_name) == 0))
+            {
+               RARCH_DBG("[Autoconf]: Same type of device already took this slot, continuing search\n");
+               device_has_reserved_slot = false;
+            }
+            else
+            {
+               RARCH_DBG("[Autoconf]: Reserved device matched\n");
+               break;
+            }
+         }
+      }
+   }
+
+   if (device_has_reserved_slot)
+   {
+      unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
+      if(detected_port != prev_assigned_port)
+      {
+         RARCH_LOG("[Autoconf]: Device \"%s\" (%x:%x) is reserved "
+                   "for player %d, updating.\n",
+                   device_name, vendor_id, product_id, player+1);
+
+         /* todo: fix the pushed info message */
+         settings->uints.input_joypad_index[player] = detected_port;
+
+         RARCH_LOG("[Autoconf]: Preferred slot was taken earlier by "
+                   "\"%s\", reassigning that to %d\n",
+                    input_config_get_device_name(prev_assigned_port),
+                    prev_assigned_player_slots[detected_port]+1);
+         settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port;
+         if (input_config_get_device_name(prev_assigned_port))
+         {
+            unsigned prev_assigned_port_l2 = settings->uints.input_joypad_index[first_free_player_slot];
+
+            RARCH_LOG("[Autoconf]: 2nd level reassignment, moving "
+                      "previously assigned port %d to first free player %d\n",
+                      prev_assigned_port_l2, first_free_player_slot+1);
+            settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port_l2;
+            settings->uints.input_joypad_index[first_free_player_slot]                    = prev_assigned_port;
+         }
+      }
+      else
+      {
+         RARCH_DBG("[Autoconf]: Device \"%s\" (%x:%x) is reserved for "
+                   "player %d, same as default assignment.\n",
+                   device_name, vendor_id, product_id, player+1);
+      }
+      return;
+   }
+   else
+   {
+      RARCH_DBG("[Autoconf]: Device \"%s\" (%x:%x) is not reserved for "
+                "any player slot.\n",
+                device_name, vendor_id, product_id);
+      /* Fallback in case no reservation is set up at all - to preserve any previous setup where input_joypad_index may have been customized. */
+      if (no_reservation_at_all ||
+          prev_assigned_player_slots[detected_port] == first_free_player_slot)
+      {
+         return;
+      }
+      else
+      {
+         unsigned prev_assigned_port = settings->uints.input_joypad_index[first_free_player_slot];
+         settings->uints.input_joypad_index[first_free_player_slot] = detected_port;
+         settings->uints.input_joypad_index[prev_assigned_player_slots[detected_port]] = prev_assigned_port;
+         RARCH_DBG("[Autoconf]: Earlier free player slot found, "
+                   "reassigning to player %d.\n",
+                   first_free_player_slot+1);
+      }
+   }
+   return;
+}
+
 /*************************/
 /* Autoconfigure Connect */
 /*************************/
@@ -427,14 +618,19 @@ static void cb_input_autoconfigure_connect(
    if (autoconfig_handle->device_info.autoconfigured)
       input_config_set_autoconfig_binds(port,
             autoconfig_handle->autoconfig_file);
+
+   reallocate_port_if_needed(port,autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
+      autoconfig_handle->device_info.name,
+      autoconfig_handle->device_info.display_name);
+
 }
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
 {
+   char task_title[NAME_MAX_LENGTH + 16];
    autoconfig_handle_t *autoconfig_handle = NULL;
    bool match_found                       = false;
    const char *device_display_name        = NULL;
-   char task_title[NAME_MAX_LENGTH + 16];
 
    task_title[0] = '\0';
 
@@ -481,7 +677,11 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
             "sdl2"))
          fallback_device_name = "Standard Gamepad";
-
+#ifdef HAVE_TEST_DRIVERS
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "test"))
+         fallback_device_name = "Test Gamepad";
+#endif
       if (!string_is_empty(fallback_device_name) &&
           !string_is_equal(autoconfig_handle->device_info.name,
                fallback_device_name))
@@ -518,8 +718,12 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
     * > Note that 'connection successful' messages
     *   may be suppressed, but error messages are
     *   always shown */
+   task->style = TASK_STYLE_NEGATIVE;
    if (autoconfig_handle->device_info.autoconfigured)
    {
+      /* Successful addition style */
+      task->style = TASK_STYLE_POSITIVE;
+
       if (match_found)
       {
          /* A valid autoconfig was applied */
@@ -557,7 +761,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool autoconfigure_connect_finder(retro_task_t *task, void *user_data)
@@ -612,7 +816,7 @@ bool input_autoconfigure_connect(
 
    /* Configure handle */
    if (!(autoconfig_handle = (autoconfig_handle_t*)
-            malloc(sizeof(autoconfig_handle_t))))
+            calloc(1, sizeof(autoconfig_handle_t))))
       goto error;
 
    autoconfig_handle->port                         = port;
@@ -657,7 +861,7 @@ bool input_autoconfigure_connect(
 
       if (driver_valid)
       {
-         char dir_driver_autoconfig[PATH_MAX_LENGTH];
+         char dir_driver_autoconfig[DIR_MAX_LENGTH];
          /* Generate driver-specific autoconfig directory */
          fill_pathname_join_special(dir_driver_autoconfig,
                dir_autoconfig,
@@ -711,10 +915,10 @@ bool input_autoconfigure_connect(
 
    task->handler  = input_autoconfigure_connect_handler;
    task->state    = autoconfig_handle;
-   task->mute     = false;
    task->title    = NULL;
    task->callback = cb_input_autoconfigure_connect;
    task->cleanup  = input_autoconfigure_free;
+   task->flags   &= ~RETRO_TASK_FLG_MUTE;
 
    task_queue_push(task);
 
@@ -766,9 +970,9 @@ static void cb_input_autoconfigure_disconnect(
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 {
+   char task_title[NAME_MAX_LENGTH + 16];
    autoconfig_handle_t *autoconfig_handle = NULL;
    const char *device_display_name        = NULL;
-   char task_title[NAME_MAX_LENGTH + 16];
 
    task_title[0] = '\0';
 
@@ -777,6 +981,9 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       goto task_finished;
+
+   /* Removal style */
+   task->style = TASK_STYLE_NEGATIVE;
 
    /* Get display name for task status message */
    device_display_name = autoconfig_handle->device_info.display_name;
@@ -800,7 +1007,7 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool autoconfigure_disconnect_finder(retro_task_t *task, void *user_data)

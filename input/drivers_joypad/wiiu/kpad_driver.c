@@ -292,8 +292,10 @@ input_device_driver_t kpad_driver =
    kpad_get_buttons,
    kpad_axis,
    kpad_poll,
-   NULL,
-   NULL,
+   NULL, /* set_rumble */
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    kpad_name,
    "wiimote",
 };

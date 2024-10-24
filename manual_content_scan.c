@@ -42,11 +42,11 @@ typedef struct
    enum manual_content_scan_system_name_type system_name_type;
    enum manual_content_scan_core_type core_type;
 
-   char content_dir[PATH_MAX_LENGTH];
-   char system_name_content_dir[PATH_MAX_LENGTH];
-   char system_name_database[PATH_MAX_LENGTH];
-   char system_name_custom[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
+   char core_name[NAME_MAX_LENGTH];
+   char system_name_database[NAME_MAX_LENGTH];
+   char system_name_custom[NAME_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
+   char system_name_content_dir[DIR_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char file_exts_core[PATH_MAX_LENGTH];
    char file_exts_custom[PATH_MAX_LENGTH];
@@ -523,7 +523,7 @@ enum manual_content_scan_playlist_refresh_status
          core_type              = MANUAL_CONTENT_SCAN_CORE_DETECT;
    enum manual_content_scan_playlist_refresh_status
          playlist_status        = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
-   char system_name[PATH_MAX_LENGTH];
+   char system_name[NAME_MAX_LENGTH];
 
    system_name[0] = '\0';
 
@@ -593,9 +593,7 @@ enum manual_content_scan_playlist_refresh_status
       {
          const char *rdb_path = rdb_list->elems[i].data;
          const char *rdb_file = NULL;
-         char rdb_name[PATH_MAX_LENGTH];
-
-         rdb_name[0] = '\0';
+         char rdb_name[NAME_MAX_LENGTH];
 
          /* Sanity check */
          if (string_is_empty(rdb_path))
@@ -856,9 +854,7 @@ struct string_list *manual_content_scan_get_menu_system_name_list(
          {
             const char *rdb_path = rdb_list->elems[i].data;
             const char *rdb_file = NULL;
-            char rdb_name[PATH_MAX_LENGTH];
-
-            rdb_name[0] = '\0';
+            char rdb_name[NAME_MAX_LENGTH];
 
             /* Sanity check */
             if (string_is_empty(rdb_path))
@@ -1360,7 +1356,7 @@ void manual_content_scan_add_content_to_playlist(
    if (!playlist_entry_exists(playlist, playlist_content_path))
    {
       struct playlist_entry entry = {0};
-      char label[PATH_MAX_LENGTH];
+      char label[NAME_MAX_LENGTH];
 
       label[0] = '\0';
 

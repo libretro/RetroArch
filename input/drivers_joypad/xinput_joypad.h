@@ -78,9 +78,4 @@ typedef struct
 #define ERROR_DEVICE_NOT_CONNECTED 1167
 #endif
 
-
-RETRO_BEGIN_DECLS
-
-RETRO_END_DECLS
-
 #endif

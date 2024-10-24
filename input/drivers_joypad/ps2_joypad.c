@@ -264,7 +264,9 @@ input_device_driver_t ps2_joypad = {
    ps2_joypad_axis,
    ps2_joypad_poll,
    ps2_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    ps2_joypad_name,
    "ps2",
 };

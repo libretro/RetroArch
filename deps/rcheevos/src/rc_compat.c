@@ -85,7 +85,8 @@ struct tm* rc_gmtime_s(struct tm* buf, const time_t* timer)
 #endif
 
 #ifndef RC_NO_THREADS
-#ifdef _WIN32
+
+#if defined(_WIN32)
 
 /* https://gist.github.com/roxlu/1c1af99f92bafff9d8d9 */
 
@@ -111,6 +112,30 @@ void rc_mutex_lock(rc_mutex_t* mutex)
 void rc_mutex_unlock(rc_mutex_t* mutex)
 {
   ReleaseMutex(mutex->handle);
+}
+
+#elif defined(GEKKO)
+
+/* https://github.com/libretro/RetroArch/pull/16116 */
+
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  LWP_MutexInit(mutex, NULL);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  LWP_MutexDestroy(mutex);
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  LWP_MutexLock(mutex);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  LWP_MutexUnlock(mutex);
 }
 
 #else

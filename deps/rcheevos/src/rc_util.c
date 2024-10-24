@@ -35,7 +35,7 @@ void rc_buffer_destroy(rc_buffer_t* buffer)
   {
     rc_buffer_chunk_t* next = chunk->next;
 #ifdef DEBUG_BUFFERS
-    total += (int)(chunk->end - chunk->data);
+    total += (int)(chunk->end - chunk->start);
     wasted += (int)(chunk->end - chunk->write);
     ++count;
 #endif
@@ -183,6 +183,9 @@ const char* rc_error_str(int ret)
     case RC_ACCESS_DENIED: return "Access denied";
     case RC_INVALID_CREDENTIALS: return "Invalid credentials";
     case RC_EXPIRED_TOKEN: return "Expired token";
+    case RC_INSUFFICIENT_BUFFER: return "Buffer not large enough";
+    case RC_INVALID_VARIABLE_NAME: return "Invalid variable name";
+    case RC_UNKNOWN_VARIABLE_NAME: return "Unknown variable name";
     default: return "Unknown error";
   }
 }

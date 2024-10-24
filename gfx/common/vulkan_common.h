@@ -294,6 +294,8 @@ enum vulkan_context_flags
    VK_CTX_FLAG_SWAPCHAIN_IS_SRGB            = (1 << 2),
    VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK = (1 << 3),
    VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN       = (1 << 4),
+   /* Whether HDR colorspaces are supported by the instance */
+   VK_CTX_FLAG_HDR_SUPPORT                  = (1 << 5),
 };
 
 enum vulkan_emulated_mailbox_flags
@@ -366,7 +368,7 @@ typedef struct vulkan_context
    VkFormat swapchain_format;
 #ifdef VULKAN_HDR_SWAPCHAIN
    VkColorSpaceKHR swapchain_colour_space;
-#endif /* VULKAN_HDR_SWAPCHAIN */  
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_acquire_semaphore;
@@ -554,7 +556,9 @@ typedef struct vk
    struct vk_per_frame *chain;
    struct vk_image *backbuffer;
 #ifdef VULKAN_HDR_SWAPCHAIN
+   VkRenderPass readback_render_pass;
    struct vk_image main_buffer;
+   struct vk_image readback_image;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    unsigned video_width;
@@ -573,6 +577,8 @@ typedef struct vk
    VkViewport vk_vp;
    VkRenderPass render_pass;
    struct video_viewport vp;
+   float translate_x;
+   float translate_y;
    struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vk_image backbuffers[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vk_texture default_texture;
@@ -603,6 +609,7 @@ typedef struct vk
       VkPipeline rgb565_to_rgba8888;
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline hdr;
+      VkPipeline hdr_to_sdr; /* for readback */
 #endif /* VULKAN_HDR_SWAPCHAIN */
       VkDescriptorSetLayout set_layout;
       VkPipelineLayout layout;
@@ -727,6 +734,28 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+bool vulkan_is_hdr10_format(VkFormat format);
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
+void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
+      VkRenderPass *render_pass);
+
+void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
+
+void vulkan_framebuffer_generate_mips(
+      VkFramebuffer framebuffer,
+      VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      unsigned levels
+      );
+
+void vulkan_framebuffer_copy(VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout);
 
 RETRO_END_DECLS
 

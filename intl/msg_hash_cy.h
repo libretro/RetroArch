@@ -114,10 +114,6 @@ MSG_HASH(
    "Agor y dewislen bwrdd gwaith traddodiadol."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Analluogi mod Kiosk (Ailgychwyn yn angenrheidiol)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Dangoswch yr holl gosodiadau sy'n gysylltiedig â chyfluniad."
    )
@@ -170,20 +166,8 @@ MSG_HASH(
    "Dysgu mwy am sut mae'r rhaglen yn gweithio."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Ailgychwyn RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Ailgychwyn y rhaglen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Gadael RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Gadael’r rhaglen."
+   "Cau"
    )
 
 /* Main Menu > Load Core */
@@ -1031,6 +1015,8 @@ MSG_HASH(
 
 #if defined(DINGUX)
 #endif
+#if defined(RARCH_MOBILE)
+#endif
 
 /* Settings > Video > HDR */
 
@@ -1083,6 +1069,14 @@ MSG_HASH(
 
 /* Settings > Input */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #endif
 #ifdef ANDROID
@@ -1128,6 +1122,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
@@ -1180,6 +1176,12 @@ MSG_HASH(
 #endif
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -1261,7 +1263,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Craidd:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

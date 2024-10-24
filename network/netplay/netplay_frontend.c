@@ -205,6 +205,7 @@ const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
    { "madrid",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2 },
    { "saopaulo",  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3 },
    { "singapore", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4 },
+   { "chuncheon", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5 },
    { "custom",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM }
 };
 
@@ -572,8 +573,16 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          frontend_driver_get_cpu_architecture_str(frontend_architecture_tmp,
             sizeof(frontend_architecture_tmp));
       if (frontend_drv)
-         snprintf(ad_packet_buffer.frontend, sizeof(ad_packet_buffer.frontend),
-            "%s %s", frontend_drv->ident, frontend_architecture_tmp);
+      {
+         size_t _len = strlcpy(ad_packet_buffer.frontend, frontend_drv->ident,
+               sizeof(ad_packet_buffer.frontend));
+         _len += strlcpy(ad_packet_buffer.frontend + _len,
+               " ",
+               sizeof(ad_packet_buffer.frontend)   - _len);
+         strlcpy(ad_packet_buffer.frontend         + _len,
+               frontend_architecture_tmp,
+               sizeof(ad_packet_buffer.frontend)   - _len);
+      }
       else
          strlcpy(ad_packet_buffer.frontend, "N/A",
             sizeof(ad_packet_buffer.frontend));
@@ -709,7 +718,7 @@ static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_i,
       const void* buf, size_t len, uint16_t client_id);
 static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
       const void* buf, size_t len, uint16_t client_id);
-static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb();
+static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb(void);
 
 /*
  * netplay_init_socket_buffer
@@ -1152,9 +1161,12 @@ static void netplay_handshake_ready(netplay_t *netplay,
       netplay->force_send_savestate = true;
    }
    else
-      snprintf(msg, sizeof(msg), "%s: \"%s\"",
-         msg_hash_to_str(MSG_CONNECTED_TO),
-         connection->nick);
+   {
+      size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONNECTED_TO),
+            sizeof(msg));
+      snprintf(msg + _len, sizeof(msg) - _len, ": \"%s\"",
+            connection->nick);
+   }
 
    RARCH_LOG("[Netplay] %s\n", msg);
    /* Useful notification to the client in figuring out
@@ -3221,10 +3233,10 @@ static int handle_connection(netplay_t *netplay, netplay_address_t *addr,
 
 #define INET_TO_NETPLAY(in_addr, out_addr) \
    { \
-      uint16_t *preffix = (uint16_t*)&(out_addr)->addr[10]; \
+      uint16_t *prefix = (uint16_t*)&(out_addr)->addr[10]; \
       uint32_t *addr4   = (uint32_t*)&(out_addr)->addr[12]; \
       memset(&(out_addr)->addr[0], 0, 10); \
-      *preffix = 0xffff; \
+      *prefix = 0xffff; \
       memcpy(addr4, &((struct sockaddr_in*)(in_addr))->sin_addr, \
          sizeof(*addr4)); \
    }
@@ -4206,8 +4218,8 @@ static void netplay_hangup(netplay_t *netplay,
 
          if (netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
          {
-            /* This special mode keeps the connection object 
-               alive long enough to send the disconnection 
+            /* This special mode keeps the connection object
+               alive long enough to send the disconnection
                message at the correct time */
             connection->mode         = NETPLAY_CONNECTION_DELAYED_DISCONNECT;
             connection->delay_frame  = netplay->read_frame_count[client_num];
@@ -9555,7 +9567,7 @@ static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
    }
 }
 
-static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb()
+static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb(void)
 {
    net_driver_state_t *net_st = &networking_driver_st;
    netplay_t *netplay         = net_st->data;

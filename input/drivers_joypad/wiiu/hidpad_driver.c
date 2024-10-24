@@ -117,6 +117,8 @@ input_device_driver_t hidpad_driver =
   hidpad_poll,
   NULL, /* set_rumble */
   NULL, /* set_rumble_gain */
+  NULL, /* set_sensor_state */
+  NULL, /* get_sensor_input */
   hidpad_name,
   "hid"
 };

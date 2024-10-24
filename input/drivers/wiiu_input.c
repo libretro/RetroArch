@@ -60,7 +60,7 @@ static void kb_key_callback(KBDKeyEvent *key)
 
    code                    = input_keymaps_translate_keysym_to_rk(
          key->scancode);
-   if (code < RETROK_LAST)
+   if (code && code < RETROK_LAST)
       keyboard_state[code] = pressed;
 
    if (key->modifier & KBD_WIIU_SHIFT)
@@ -106,14 +106,14 @@ static int16_t wiiu_input_state(
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
-         if (id < RETROK_LAST && keyboard_state[id] && (keyboard_channel > 0))
+         if (id && id < RETROK_LAST && keyboard_state[id] && (keyboard_channel > 0))
             return 1;
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         /* TODO: Emulate a relative mouse. 
-          * This is suprisingly hard to get working nicely.
-            */
+         /* TODO: Emulate a relative mouse.
+          * This is surprisingly hard to get working nicely.
+          */
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_PRESSED:

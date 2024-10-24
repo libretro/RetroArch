@@ -454,7 +454,7 @@ extern const hci_cmd_t rfcomm_register_service;
 extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
 /* unregister rfcomm service, @param service_channel(16) */
 extern const hci_cmd_t rfcomm_unregister_service;
-/* request persisten rfcomm channel for service name: serive name (char*)  */
+/* request persistent rfcomm channel for service name: serive name (char*)  */
 extern const hci_cmd_t rfcomm_persistent_channel_for_service;
 
 /* linked_list.h */
@@ -1425,11 +1425,11 @@ static int16_t btstack_hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && btstack_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(btstack_hid_joypad_axis(data, port_idx, joyaxis)) 
+            ((float)abs(btstack_hid_joypad_axis(data, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

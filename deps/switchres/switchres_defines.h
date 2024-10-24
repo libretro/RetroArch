@@ -33,6 +33,7 @@
 #define  SR_OPT_V_SHIFT                 "v_shift"
 #define  SR_OPT_PIXEL_PRECISION         "pixel_precision"
 #define  SR_OPT_INTERLACE_FORCE_EVEN    "interlace_force_even"
+#define  SR_OPT_SCALE_PROPORTIONAL      "scale_proportional"
 #define  SR_OPT_SCREEN_COMPOSITING      "screen_compositing"
 #define  SR_OPT_SCREEN_REORDERING       "screen_reordering"
 #define  SR_OPT_ALLOW_HARDWARE_REFRESH  "allow_hardware_refresh"

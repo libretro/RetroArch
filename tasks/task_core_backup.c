@@ -185,17 +185,16 @@ static bool task_core_backup_finder(retro_task_t *task, void *user_data)
 
 static void task_core_backup_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_backup_handle_t *backup_handle = NULL;
 
    if (!task)
       goto task_finished;
 
    backup_handle = (core_backup_handle_t*)task->state;
+   flg           = task_get_flags(task);
 
-   if (!backup_handle)
-      goto task_finished;
-
-   if (task_get_cancelled(task))
+   if (!backup_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (backup_handle->status)
@@ -522,7 +521,7 @@ static void task_core_backup_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    free_core_backup_handle(backup_handle);
 }
@@ -621,10 +620,14 @@ void *task_push_core_backup(
    /* Configure task */
    task->handler          = task_core_backup_handler;
    task->state            = backup_handle;
-   task->mute             = mute;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
+
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
    task_queue_push(task);
@@ -666,57 +669,56 @@ static void cb_task_core_restore(
 
 static void task_core_restore_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_backup_handle_t *backup_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(backup_handle = (core_backup_handle_t*)task->state))
-      goto task_finished;
+   backup_handle = (core_backup_handle_t*)task->state;
+   flg           = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!backup_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (backup_handle->status)
    {
       case CORE_RESTORE_GET_CORE_CRC:
+         /* If core file already exists, get its current
+          * CRC value */
+         if (path_is_valid(backup_handle->core_path))
          {
-            /* If core file already exists, get its current
-             * CRC value */
-            if (path_is_valid(backup_handle->core_path))
+            /* Open core file for reading */
+            backup_handle->core_file = intfstream_open_file(
+                  backup_handle->core_path, RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+            if (!backup_handle->core_file)
             {
-               /* Open core file for reading */
-               backup_handle->core_file = intfstream_open_file(
-                     backup_handle->core_path, RETRO_VFS_FILE_ACCESS_READ,
-                     RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-               if (!backup_handle->core_file)
-               {
-                  RARCH_ERR("[core restore] Failed to open core file: %s\n",
-                        backup_handle->core_path);
-                  backup_handle->status = CORE_RESTORE_END;
-                  break;
-               }
-
-               /* Get CRC value */
-               if (!intfstream_get_crc(backup_handle->core_file,
-                     &backup_handle->core_crc))
-               {
-                  RARCH_ERR("[core restore] Failed to determine CRC of core file: %s\n",
-                        backup_handle->core_path);
-                  backup_handle->status = CORE_RESTORE_END;
-                  break;
-               }
-
-               /* Close core file */
-               intfstream_close(backup_handle->core_file);
-               free(backup_handle->core_file);
-               backup_handle->core_file = NULL;
+               RARCH_ERR("[core restore] Failed to open core file: %s\n",
+                     backup_handle->core_path);
+               backup_handle->status = CORE_RESTORE_END;
+               break;
             }
 
-            /* Go to next CRC gathering phase */
-            backup_handle->status = CORE_RESTORE_GET_BACKUP_CRC;
+            /* Get CRC value */
+            if (!intfstream_get_crc(backup_handle->core_file,
+                     &backup_handle->core_crc))
+            {
+               RARCH_ERR("[core restore] Failed to determine CRC of core file: %s\n",
+                     backup_handle->core_path);
+               backup_handle->status = CORE_RESTORE_END;
+               break;
+            }
+
+            /* Close core file */
+            intfstream_close(backup_handle->core_file);
+            free(backup_handle->core_file);
+            backup_handle->core_file = NULL;
          }
+
+         /* Go to next CRC gathering phase */
+         backup_handle->status = CORE_RESTORE_GET_BACKUP_CRC;
          break;
       case CORE_RESTORE_GET_BACKUP_CRC:
          /* Get CRC value of backup file */
@@ -931,7 +933,7 @@ static void task_core_restore_handler(retro_task_t *task)
 task_finished:
 
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    free_core_backup_handle(backup_handle);
 }
@@ -946,7 +948,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    const char *core_name               = NULL;
    retro_task_t *task                  = NULL;
    core_backup_handle_t *backup_handle = NULL;
-   char task_title[256];
+   char task_title[128];
    char core_path[PATH_MAX_LENGTH];
 
    core_path[0]  = '\0';
@@ -1072,9 +1074,9 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    task->handler          = task_core_restore_handler;
    task->state            = backup_handle;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
    task->callback         = cb_task_core_restore;
+   task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* If core to be restored is currently loaded, must
     * unload it before pushing the task */

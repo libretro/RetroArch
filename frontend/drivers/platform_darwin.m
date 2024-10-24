@@ -26,6 +26,7 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
+#import <AVFoundation/AVFoundation.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -54,6 +55,7 @@
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
+#include <lists/dir_list.h>
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
@@ -104,7 +106,7 @@ typedef enum
 {
    CFUserDomainMask     = 1,       /* user's home directory --- place to install user's personal items (~) */
    CFLocalDomainMask    = 2,       /* local to the current machine --- place to install items available to everyone on this machine (/Library) */
-   CFNetworkDomainMask  = 4,       /* publically available location in the local area network --- place to install items available on the network (/Network) */
+   CFNetworkDomainMask  = 4,       /* publicly available location in the local area network --- place to install items available on the network (/Network) */
    CFSystemDomainMask   = 8,       /* provided by Apple, unmodifiable (/System) */
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
@@ -129,7 +131,7 @@ static void CFSearchPathForDirectoriesInDomains(
             NSUserDomainMask, YES) firstObject];
 #else
    CFStringRef array_val     = nil;
-   NSArray *arr              = 
+   NSArray *arr              =
       NSSearchPathForDirectoriesInDomains(dir,
             NSUserDomainMask, YES);
    if ([arr count] != 0)
@@ -158,7 +160,7 @@ void get_ios_version(int *major, int *minor);
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
 
-/* Note that AC power sources also include a 
+/* Note that AC power sources also include a
  * laptop battery it is charging. */
 static void darwin_check_power_source(
       CFDictionaryRef dict,
@@ -339,9 +341,9 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    char assets_zip_path[PATH_MAX_LENGTH];
    CFURLRef bundle_url;
    CFStringRef bundle_path;
-   char temp_dir[PATH_MAX_LENGTH]          = {0};
+   char temp_dir[DIR_MAX_LENGTH]           = {0};
    char bundle_path_buf[PATH_MAX_LENGTH]   = {0};
-   char documents_dir_buf[PATH_MAX_LENGTH] = {0};
+   char documents_dir_buf[DIR_MAX_LENGTH]  = {0};
    char application_data[PATH_MAX_LENGTH]  = {0};
    CFBundleRef bundle                      = CFBundleGetMainBundle();
 
@@ -353,30 +355,36 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFStringGetCString(bundle_path, bundle_path_buf, sizeof(bundle_path_buf), kCFStringEncodingUTF8);
    CFRelease(bundle_path);
    CFRelease(bundle_url);
-
-#if HAVE_STEAM
-   /* For Steam, we're going to put everything next to the .app */
-   fill_pathname_application_data(documents_dir_buf, sizeof(documents_dir_buf));
-#else
-   CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
-#if TARGET_OS_IPHONE
-   char resolved_documents_dir_buf[PATH_MAX_LENGTH] = {0};
-   char resolved_bundle_dir_buf[PATH_MAX_LENGTH] = {0};
-   if (realpath(documents_dir_buf, resolved_documents_dir_buf))
-      strlcpy(documents_dir_buf,
-               resolved_documents_dir_buf,
-               sizeof(documents_dir_buf));
-   if (realpath(bundle_path_buf, resolved_bundle_dir_buf))
-      strlcpy(bundle_path_buf,
-            resolved_bundle_dir_buf,
-            sizeof(bundle_path_buf));
-#endif
-   strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
-#endif
+   path_resolve_realpath(bundle_path_buf, sizeof(bundle_path_buf), true);
 
 #if defined(OSX)
    fill_pathname_application_data(application_data, sizeof(application_data));
+
+   BOOL portable; /* steam || RAPortableInstall || portable.txt */
+#if HAVE_STEAM
+   /* For Steam, we're going to put everything next to the .app */
+   portable = YES;
 #else
+   portable = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"RAPortableInstall"] boolValue];
+   if (!portable)
+   {
+      char portable_buf[PATH_MAX_LENGTH] = {0};
+      fill_pathname_join(portable_buf, application_data, "portable.txt", sizeof(portable_buf));
+      portable = path_is_valid(portable_buf);
+   }
+#endif
+   if (portable)
+      strncpy(documents_dir_buf, application_data, sizeof(documents_dir_buf));
+   else
+   {
+      CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
+      path_resolve_realpath(documents_dir_buf, sizeof(documents_dir_buf), true);
+      strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
+   }
+#else
+   CFSearchPathForDirectoriesInDomains(documents_dir_buf, sizeof(documents_dir_buf));
+   path_resolve_realpath(documents_dir_buf, sizeof(documents_dir_buf), true);
+   strlcat(documents_dir_buf, "/RetroArch", sizeof(documents_dir_buf));
    /* iOS and tvOS are going to put everything in the documents dir */
    strncpy(application_data, documents_dir_buf, sizeof(application_data));
 #endif
@@ -403,8 +411,10 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 #if defined(HAVE_UPDATE_CORES) || defined(HAVE_STEAM)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #else
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
@@ -426,18 +436,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], application_data, "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], application_data, "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
 
-#if TARGET_OS_IOS
-    {
-       int major, minor;
-       get_ios_version(&major, &minor);
-       if (major > 8)
-          strlcpy(g_defaults.path_buildbot_server_url,
-                "http://buildbot.libretro.com/nightly/apple/ios9/latest/",
-                sizeof(g_defaults.path_buildbot_server_url));
-    }
-#endif
-
-#if TARGET_OS_IOS
+#if TARGET_OS_IPHONE
     fill_pathname_join_special(assets_zip_path,
           bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
 #else
@@ -474,9 +473,8 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
          temp_dir,
          sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
-#ifndef IS_SALAMANDER
-   dir_check_defaults("custom.ini");
-#endif
+   if (!path_is_directory(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]))
+      path_mkdir(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]);
 }
 
 static int frontend_darwin_get_rating(void)
@@ -686,7 +684,7 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
 
     if (uname(&buffer) != 0)
        return FRONTEND_ARCH_NONE;
-    
+
    if (string_is_equal(buffer.machine, "x86_64"))
       return FRONTEND_ARCH_X86_64;
    if (string_is_equal(buffer.machine, "x86"))
@@ -700,7 +698,7 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
    size_t size = sizeof(type);
 
    sysctlbyname("hw.cputype", &type, &size, NULL, 0);
-    
+
    if (type == CPU_TYPE_X86_64)
       return FRONTEND_ARCH_X86_64;
    else if (type == CPU_TYPE_X86)
@@ -718,36 +716,45 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    int ret = -1;
 #if TARGET_OS_IPHONE
 #ifdef HAVE_MENU
+   struct string_list *str_list          = NULL;
    file_list_t *list                     = (file_list_t*)data;
-   char bundle_path_buf[PATH_MAX_LENGTH] = {0};
-   char home_dir_buf[PATH_MAX_LENGTH]    = {0};
-   CFBundleRef bundle                    = CFBundleGetMainBundle();
-   enum msg_hash_enums enum_idx          = load_content 
-      ? MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR 
+   enum msg_hash_enums enum_idx          = load_content
+      ? MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR
       : MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY;
-   CFURLRef bundle_url                   = CFBundleCopyBundleURL(bundle);
-   CFStringRef bundle_path               = CFURLCopyPath(bundle_url);
 
-   CFStringGetCString(bundle_path, bundle_path_buf,
-         sizeof(bundle_path_buf), kCFStringEncodingUTF8);
+   if (list->size == 0)
+      menu_entries_append(list,
+#if TARGET_OS_TV
+            "~/Library/Caches/RetroArch",
+#else
+            "~/Documents/RetroArch",
+#endif
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   CFSearchPathForDirectoriesInDomains(
-         home_dir_buf, sizeof(home_dir_buf));
+   str_list = string_list_new();
+   // only add / if it's jailbroken
+   dir_list_append(str_list, "/private/var", NULL, true, false, false, false);
+   if (str_list->size > 0)
+      menu_entries_append(list, "/",
+            msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+            enum_idx,
+            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   string_list_free(str_list);
 
-   menu_entries_append(list,
-         home_dir_buf,
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   menu_entries_append(list, "/",
-         msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
-         enum_idx,
-        FILE_TYPE_DIRECTORY, 0, 0, NULL);
+#if TARGET_OS_IOS
+   if (   filebrowser_get_type() == FILEBROWSER_NONE ||
+          filebrowser_get_type() == FILEBROWSER_SCAN_FILE ||
+          filebrowser_get_type() == FILEBROWSER_SELECT_FILE)
+      menu_entries_append(list,
+                          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER),
+                          msg_hash_to_str(MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER),
+                          MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,
+                          MENU_SETTING_ACTION, 0, 0, NULL);
+#endif
 
    ret = 0;
-
-   CFRelease(bundle_path);
-   CFRelease(bundle_url);
 #endif
 #endif
    return ret;
@@ -766,7 +773,7 @@ static uint64_t frontend_darwin_get_total_mem(void)
     task_vm_info_data_t vmInfo;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-       return vmInfo.resident_size_peak;
+       return vmInfo.phys_footprint + vmInfo.limit_bytes_remaining;
 #endif
     return 0;
 }
@@ -793,7 +800,7 @@ static uint64_t frontend_darwin_get_free_mem(void)
     task_vm_info_data_t vmInfo;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
     if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-        return vmInfo.resident_size_peak - vmInfo.resident_size;
+        return vmInfo.limit_bytes_remaining;
 #endif
     return 0;
 }
@@ -805,7 +812,18 @@ static const char* frontend_darwin_get_cpu_model_name(void)
    return darwin_cpu_model_name;
 }
 
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
+static enum retro_language frontend_darwin_get_user_language(void)
+{
+   char s[128];
+   CFArrayRef langs = CFLocaleCopyPreferredLanguages();
+   CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
+   CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
+   /* iOS and OS X only support the language ID syntax consisting of a language designator and optional region or script designator. */
+   string_replace_all_chars(s, '-', '_');
+   return retroarch_get_language_from_iso(s);
+}
+
+#if defined(OSX)
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -830,7 +848,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "Ioana";
    else if (string_is_equal(language,"pt_pt"))
       return "Joana";
-   else if (string_is_equal(language,"pt_bt") 
+   else if (string_is_equal(language,"pt_bt")
          || string_is_equal(language,"pt"))
       return "Luciana";
    else if (string_is_equal(language,"th"))
@@ -845,7 +863,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "Maged";
    else if (string_is_equal(language,"hu"))
       return "Mariska";
-   else if (string_is_equal(language,"zh_tw") 
+   else if (string_is_equal(language,"zh_tw")
          || string_is_equal(language,"zh"))
       return "Mei-Jia";
    else if (string_is_equal(language,"el"))
@@ -868,7 +886,7 @@ static char* accessibility_mac_language_code(const char* language)
       return "Yuna";
    else if (string_is_equal(language,"pl"))
       return "Zosia";
-   else if (string_is_equal(language,"cs")) 
+   else if (string_is_equal(language,"cs"))
       return "Zuzana";
    return "";
 }
@@ -886,10 +904,6 @@ static bool accessibility_speak_macos(int speed,
    char* language_speaker = accessibility_mac_language_code(voice);
    char* speeds[10]       = {"80",  "100", "125", "150", "170", "210",
                              "260", "310", "380", "450"};
-   if (speed < 1)
-      speed               = 1;
-   else if (speed > 10)
-      speed               = 10;
 
    if (priority < 10 && speak_pid > 0)
    {
@@ -913,16 +927,16 @@ static bool accessibility_speak_macos(int speed,
       /* parent process */
       speak_pid = pid;
 
-      /* Tell the system that we'll ignore the exit status of the child 
+      /* Tell the system that we'll ignore the exit status of the child
        * process.  This prevents zombie processes. */
       signal(SIGCHLD,SIG_IGN);
    }
    else
-   { 
-      /* child process: replace process with the say command */ 
+   {
+      /* child process: replace process with the say command */
       if (language_speaker && language_speaker[0] != '\0')
       {
-         char* cmd[] = {"say", "-v", NULL, 
+         char* cmd[] = {"say", "-v", NULL,
                         NULL, "-r", NULL, NULL};
          cmd[2]      = language_speaker;
          cmd[3]      = (char *) speak_text;
@@ -939,7 +953,59 @@ static bool accessibility_speak_macos(int speed,
    }
    return true;
 }
+
 #endif
+
+static bool frontend_darwin_is_narrator_running(void)
+{
+   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+      return true;
+#if OSX
+   return is_narrator_running_macos();
+#else
+   return false;
+#endif
+}
+
+static bool frontend_darwin_accessibility_speak(int speed,
+      const char* speak_text, int priority)
+{
+   if (speed < 1)
+      speed               = 1;
+   else if (speed > 10)
+      speed               = 10;
+
+   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+   {
+      static dispatch_once_t once;
+      static AVSpeechSynthesizer *synth;
+      dispatch_once(&once, ^{
+         synth = [[AVSpeechSynthesizer alloc] init];
+      });
+      if ([synth isSpeaking])
+      {
+         if (priority < 10)
+            return true;
+         else
+            [synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+      }
+
+      AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:[NSString stringWithUTF8String:speak_text]];
+      if (!utterance)
+         return false;
+      utterance.rate = (float)speed / 10.0f;
+      const char *language = get_user_language_iso639_1(false);
+      utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:[NSString stringWithUTF8String:language]];
+      [synth speakUtterance:utterance];
+      return true;
+   }
+
+#if defined(OSX)
+   return accessibility_speak_macos(speed, speak_text, priority);
+#else
+   return false;
+#endif
+}
 
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_env,         /* get_env */
@@ -971,14 +1037,9 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
-   NULL,                            /* get_user_language   */
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-   is_narrator_running_macos,       /* is_narrator_running */
-   accessibility_speak_macos,       /* accessibility_speak */
-#else
-   NULL,                            /* is_narrator_running */
-   NULL,                            /* accessibility_speak */
-#endif
+   frontend_darwin_get_user_language, /* get_user_language   */
+   frontend_darwin_is_narrator_running, /* is_narrator_running */
+   frontend_darwin_accessibility_speak, /* accessibility_speak */
    NULL,                            /* set_gamemode        */
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */

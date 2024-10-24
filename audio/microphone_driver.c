@@ -19,6 +19,7 @@
 #include <audio/conversion/float_to_s16.h>
 #include <retro_assert.h>
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 #include <audio/conversion/dual_mono.h>
 
 #include "microphone_driver.h"
@@ -560,7 +561,7 @@ static size_t microphone_driver_flush(
       /* If this mic provides floating-point samples... */
       if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
       {
-         convert_float_to_s16(mic_st->final_frames, mic_st->input_frames, resampler_data.input_frames);
+         convert_float_to_s16(mic_st->final_frames, (const float*)mic_st->input_frames, resampler_data.input_frames);
          fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
       }
       else
@@ -574,11 +575,12 @@ static size_t microphone_driver_flush(
    /* If this mic provides floating-point samples... */
    if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
       /* Samples are already in floating-point, so we just need to up-channel them. */
-      convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->input_frames, resampler_data.input_frames);
+      convert_to_dual_mono_float(mic_st->dual_mono_frames,
+            (const float*)mic_st->input_frames, resampler_data.input_frames);
    else
    {
       /* Samples are 16-bit, so we need to convert them first. */
-      convert_s16_to_float(mic_st->converted_input_frames, mic_st->input_frames, resampler_data.input_frames, 1.0f);
+      convert_s16_to_float(mic_st->converted_input_frames, (const int16_t*)mic_st->input_frames, resampler_data.input_frames, 1.0f);
       convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->converted_input_frames, resampler_data.input_frames);
    }
 

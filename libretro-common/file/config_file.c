@@ -255,7 +255,7 @@ static char *config_file_extract_value(char *line)
          return strdup(value);
    }
 
-   /* Note 2: This is an unrolled strldup call 
+   /* Note 2: This is an unrolled strldup call
     * to avoid an unnecessary dependency -
     * call is strldup("", sizeof(""))
     **/
@@ -411,7 +411,7 @@ size_t config_file_add_reference(config_file_t *conf, char *path)
 {
    size_t len;
    /* It is expected that the conf has it's path already set */
-   char short_path[PATH_MAX_LENGTH];
+   char short_path[NAME_MAX_LENGTH];
    if (!conf->references)
       conf->references = path_linked_list_new();
    len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
@@ -464,8 +464,8 @@ static int config_file_load_internal(
          continue;
       }
 
-      if ( 
-              !string_is_empty(line) 
+      if (
+              !string_is_empty(line)
             && config_file_parse_line(conf, list, line, cb))
       {
          if (conf->entries)
@@ -522,7 +522,7 @@ static bool config_file_parse_line(config_file_t *conf,
       bool reference_found     = string_starts_with_size(comment,
             "reference ", STRLEN_CONST("reference "));
 
-      /* All comments except those starting with the include or 
+      /* All comments except those starting with the include or
        * reference directive are ignored */
       if (!include_found && !reference_found)
          return false;
@@ -708,7 +708,7 @@ static int config_file_from_string_internal(
       /* Get next line of config file */
       line = strtok_r(NULL, "\n", &save_ptr);
    }
-   
+
    return 0;
 }
 
@@ -826,7 +826,7 @@ config_file_t *config_file_new_from_string(char *from_string,
       const char *path)
 {
    struct config_file *conf      = config_file_new_alloc();
-   if (     conf 
+   if (     conf
          && config_file_from_string_internal(
             conf, from_string, path) != -1)
       return conf;
@@ -934,8 +934,7 @@ void config_file_initialize(struct config_file *conf)
    conf->references               = NULL;
    conf->includes                 = NULL;
    conf->include_depth            = 0;
-   conf->guaranteed_no_duplicates = false;
-   conf->modified                 = false;
+   conf->flags                    = 0;
 }
 
 config_file_t *config_file_new_alloc(void)
@@ -1195,7 +1194,7 @@ bool config_get_path(config_file_t *conf, const char *key,
 
 /**
  * config_get_bool:
- * 
+ *
  * Extracts a boolean from config.
  * Valid boolean true are "true" and "1". Valid false are "false" and "0".
  * Other values will be treated as an error.
@@ -1241,7 +1240,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
    last                            = conf->entries;
 
-   if (conf->guaranteed_no_duplicates)
+   if (conf->flags & CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES)
    {
       if (conf->last)
          last                      = conf->last;
@@ -1268,7 +1267,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
           *   is no longer considered 'read only' */
          entry->value    = strdup(val);
          entry->readonly = false;
-         conf->modified  = true;
+         conf->flags    |= CONF_FILE_FLG_MODIFIED;
          return;
       }
    }
@@ -1282,7 +1281,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    entry->key       = strdup(key);
    entry->value     = strdup(val);
    entry->next      = NULL;
-   conf->modified   = true;
+   conf->flags     |= CONF_FILE_FLG_MODIFIED;
 
    if (last)
       last->next    = entry;
@@ -1317,7 +1316,7 @@ void config_unset(config_file_t *conf, const char *key)
 
    entry->key     = NULL;
    entry->value   = NULL;
-   conf->modified = true;
+   conf->flags   |= CONF_FILE_FLG_MODIFIED;
 }
 
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
@@ -1403,7 +1402,7 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
    if (!conf)
       return false;
 
-   if (conf->modified)
+   if (conf->flags & CONF_FILE_FLG_MODIFIED)
    {
       if (string_is_empty(path))
          config_file_dump(conf, stdout, sort);
@@ -1426,7 +1425,7 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 
          /* Only update modified flag if config file
           * is actually written to disk */
-         conf->modified = false;
+         conf->flags &= ~CONF_FILE_FLG_MODIFIED;
       }
    }
 

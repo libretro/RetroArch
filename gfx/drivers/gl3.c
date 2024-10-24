@@ -94,6 +94,195 @@ static void gl3_set_viewport(gl3_t *gl,
  * GL3 COMMON
  */
 
+void gl3_framebuffer_copy(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLuint quad_vbo,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image)
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      static float mvp[16] = {
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+
+   /* Draw quad */
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void gl3_framebuffer_copy_partial(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image,
+      float rx, float ry)
+{
+   GLuint vbo;
+   const float quad_data[16] = {
+      0.0f, 0.0f, 0.0f, 0.0f,
+      1.0f, 0.0f, rx,   0.0f,
+      0.0f, 1.0f, 0.0f, ry,
+      1.0f, 1.0f, rx,   ry,
+   };
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      static float mvp[16] = {
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+
+   /* A bit crude, but heeeey. */
+   glGenBuffers(1, &vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDeleteBuffers(1, &vbo);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+GLuint gl3_compile_shader(GLenum stage, const char *source)
+{
+   GLint status;
+   GLuint shader   = glCreateShader(stage);
+   const char *ptr = source;
+
+   glShaderSource(shader, 1, &ptr, NULL);
+   glCompileShader(shader);
+
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
+   if (!status)
+   {
+      GLint length;
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+      if (length > 0)
+      {
+         char *info_log = (char*)malloc(length);
+
+         if (info_log)
+         {
+            glGetShaderInfoLog(shader, length, &length, info_log);
+            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
+            free(info_log);
+            glDeleteShader(shader);
+            return 0;
+         }
+      }
+   }
+
+   return shader;
+}
+
+uint32_t gl3_get_cross_compiler_target_version(void)
+{
+   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned major      = 0;
+   unsigned minor      = 0;
+
+#ifdef HAVE_OPENGLES3
+   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+      return 300;
+
+   if (major == 2 && minor == 0)
+      return 100;
+#else
+   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
+      return 150;
+
+   if (major == 3)
+   {
+      switch (minor)
+      {
+         case 2:
+            return 150;
+         case 1:
+            return 140;
+         case 0:
+            return 130;
+      }
+   }
+   else if (major == 2)
+   {
+      switch (minor)
+      {
+         case 1:
+            return 120;
+         case 0:
+            return 110;
+      }
+   }
+#endif
+
+   return 100 * major + 10 * minor;
+}
+
 static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
 {
    if (!gl->scratch_vbos[gl->scratch_vbo_index])
@@ -1379,13 +1568,9 @@ static void gl3_set_viewport(gl3_t *gl,
       unsigned viewport_height,
       bool force_full, bool allow_rotate)
 {
-   unsigned height                 = gl->video_height;
-   int x                           = 0;
-   int y                           = 0;
    settings_t *settings            = config_get_ptr();
    float device_aspect             = (float)viewport_width / viewport_height;
    bool video_scale_integer        = settings->bools.video_scale_integer;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
@@ -1396,54 +1581,17 @@ static void gl3_set_viewport(gl3_t *gl,
       video_viewport_get_scaled_integer(&gl->vp,
             viewport_width, viewport_height,
             video_driver_get_aspect_ratio(),
-            (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false);
+            (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false,
+            false);
       viewport_width  = gl->vp.width;
       viewport_height = gl->vp.height;
    }
    else if ((gl->flags & GL3_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* OpenGL has bottom-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = height - custom_vp->y - custom_vp->height;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl->vp.x      = x;
-      gl->vp.y      = y;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.full_height = gl->video_height;
+      video_viewport_get_scaled_aspect2(&gl->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
+      viewport_width  = gl->vp.width;
+      viewport_height = gl->vp.height;
    }
    else
    {
@@ -1451,12 +1599,6 @@ static void gl3_set_viewport(gl3_t *gl,
       gl->vp.width  = viewport_width;
       gl->vp.height = viewport_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl->vp.y *= 2;
-#endif
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl3_set_projection(gl, &gl3_default_ortho, allow_rotate);
@@ -1770,6 +1912,7 @@ static void *gl3_init(const video_info_t *video,
    unsigned full_x, full_y;
    settings_t *settings                 = config_get_ptr();
    bool video_gpu_record                = settings->bools.video_gpu_record;
+   bool force_fullscreen                = false;
    int interval                         = 0;
    unsigned mode_width                  = 0;
    unsigned mode_height                 = 0;
@@ -1799,6 +1942,13 @@ static void *gl3_init(const video_info_t *video,
       gl->ctx_driver->get_video_size(gl->ctx_data,
                &mode_width, &mode_height);
 
+   if (!video->fullscreen && !gl->ctx_driver->has_windowed)
+   {
+      RARCH_DBG("[GLCore]: Config requires windowed mode, but context driver does not support it. "
+                "Forcing fullscreen for this session.\n");
+      force_fullscreen = true;
+   }
+
    full_x      = mode_width;
    full_y      = mode_height;
    mode_width  = 0;
@@ -1827,10 +1977,16 @@ static void *gl3_init(const video_info_t *video,
       win_width  = full_x;
       win_height = full_y;
    }
+   /* If fullscreen had to be forced, video->width/height is incorrect */
+   else if (force_fullscreen)
+   {
+      win_width  = settings->uints.video_fullscreen_x;
+      win_height = settings->uints.video_fullscreen_y;
+   }
 
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, video->fullscreen))
+            win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
@@ -1889,7 +2045,7 @@ static void *gl3_init(const video_info_t *video,
 
    if (video->vsync)
       gl->flags   |= GL3_FLAG_VSYNC;
-   if (video->fullscreen)
+   if (video->fullscreen || force_fullscreen)
       gl->flags   |= GL3_FLAG_FULLSCREEN;
    if (video->force_aspect)
       gl->flags   |= GL3_FLAG_KEEP_ASPECT;
@@ -2190,8 +2346,11 @@ static bool gl3_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
-      temp_width = 1920;
+      /* We can set it to 1920x1080 as xbox uwp windowsize is guaranteed
+       * to be 1920x1080 and currently there is now way to set ANGLE to
+       * use a variable resolution swapchain so regardless of the size
+       * the window is always 1080p */
+      temp_width  = 1920;
       temp_height = 1080;
    }
 #endif
@@ -2503,11 +2662,10 @@ static bool gl3_frame(void *data, const void *frame,
 #if 0
    bool msg_bgcolor_enable                 = video_info->msg_bgcolor_enable;
 #endif
-   unsigned black_frame_insertion          = video_info->black_frame_insertion;
-
+   int bfi_light_frames;
+   int i;
+   unsigned n;
    unsigned hard_sync_frames               = video_info->hard_sync_frames;
-   bool runloop_is_paused                  = video_info->runloop_is_paused;
-   bool runloop_is_slowmotion              = video_info->runloop_is_slowmotion;
    bool input_driver_nonblock_state        = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
    bool menu_is_alive                      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -2585,6 +2743,41 @@ static bool gl3_frame(void *data, const void *frame,
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
+
+   /* Sub-frame info for multiframe shaders (per real content frame).
+      Should always be 1 for non-use of subframes*/
+   if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+   {
+     if (     video_info->black_frame_insertion
+           || video_info->input_driver_nonblock_state
+           || video_info->runloop_is_slowmotion
+           || video_info->runloop_is_paused
+           || (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+        gl3_filter_chain_set_shader_subframes(
+           gl->filter_chain, 1);
+     else
+        gl3_filter_chain_set_shader_subframes(
+           gl->filter_chain, video_info->shader_subframes);
+
+     gl3_filter_chain_set_current_shader_subframe(
+           gl->filter_chain, 1);
+   }
+
+#ifdef GL3_ROLLING_SCANLINE_SIMULATION
+   if (      (video_info->shader_subframes > 1)
+         &&  (video_info->scan_subframes)
+         &&  !video_info->black_frame_insertion
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
+      gl3_filter_chain_set_simulate_scanline(
+            gl->filter_chain, true);
+   else
+      gl3_filter_chain_set_simulate_scanline(
+            gl->filter_chain, false);
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
+
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
          &gl->filter_chain_vp);
@@ -2672,24 +2865,81 @@ static bool gl3_frame(void *data, const void *frame,
 #ifndef EMSCRIPTEN
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
-    if (
-         black_frame_insertion
-         && !input_driver_nonblock_state
-         && !runloop_is_slowmotion
-         && !runloop_is_paused
-         && (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
-    {
-        size_t n;
-        for (n = 0; n < black_frame_insertion; ++n)
-        {
-          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);
+   if (
+         video_info->black_frame_insertion
+         && !video_info->input_driver_nonblock_state
+         && !video_info->runloop_is_slowmotion
+         && !video_info->runloop_is_paused
+         && !(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+   {
 
-          if (gl->ctx_driver->swap_buffers)
-            gl->ctx_driver->swap_buffers(gl->ctx_data);
-        }
-    }
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+      video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+      {
+         gl->flags |= GL3_FLAG_FRAME_DUPE_LOCK;
+
+         while (bfi_light_frames > 0)
+         {
+            if (!(gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK))
+         {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (gl->ctx_driver->swap_buffers)
+               gl->ctx_driver->swap_buffers(gl->ctx_data);
+         }
+      }
+   }
 #endif
+
+   /* Frame duping for Shader Subframes, don't combine with swap_interval > 1, BFI.
+      Also, a major logical use of shader sub-frames will still be shader implemented BFI
+      or even rolling scan bfi, so we need to protect the menu/ff/etc from bad flickering
+      from improper settings, and unnecessary performance overhead for ff, screenshots etc. */
+   if (      (video_info->shader_subframes > 1)
+         &&  !video_info->black_frame_insertion
+         &&  !video_info->input_driver_nonblock_state
+         &&  !video_info->runloop_is_slowmotion
+         &&  !video_info->runloop_is_paused
+         &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+         &&  (!(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK)))
+   {
+      gl->flags |= GL3_FLAG_FRAME_DUPE_LOCK;
+      for (i = 1; i < (int) video_info->shader_subframes; i++)
+      {
+         gl3_filter_chain_set_shader_subframes(
+            gl->filter_chain, video_info->shader_subframes);
+         gl3_filter_chain_set_current_shader_subframe(
+            gl->filter_chain, i+1);
+
+         if (!gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg,
+                  video_info))
+         {
+            gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+            return false;
+         }
+      }
+      gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
+   }
 
    if (    hard_sync
        && !input_driver_nonblock_state
@@ -2711,6 +2961,7 @@ static uint32_t gl3_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
 
    return flags;
 }
@@ -2749,23 +3000,43 @@ static struct video_shader *gl3_get_current_shader(void *data)
 static int video_texture_load_wrap_gl3_mipmap(void *data)
 {
    GLuint id = 0;
+   gl3_t *gl = (gl3_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl3((struct texture_image*)data,
-         TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl3((struct texture_image*)data,
+            TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
 
 static int video_texture_load_wrap_gl3(void *data)
 {
    GLuint id = 0;
+   gl3_t *gl = (gl3_t*)video_driver_get_ptr();
 
-   if (!data)
-      return 0;
-   video_texture_load_gl3((struct texture_image*)data,
-         TEXTURE_FILTER_LINEAR, &id);
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl3((struct texture_image*)data,
+            TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
+}
+
+static int video_texture_unload_wrap_gl3(void *data)
+{
+   GLuint  glid;
+   uintptr_t id = (uintptr_t)data;
+   gl3_t    *gl = (gl3_t*)video_driver_get_ptr();
+
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
+   return 0;
 }
 #endif
 
@@ -2777,12 +3048,7 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      gl3_t                    *gl = (gl3_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl3;
-
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
-
       switch (filter_type)
       {
          case TEXTURE_FILTER_MIPMAP_LINEAR:
@@ -2792,7 +3058,7 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return video_thread_texture_load(data, func);
+      return video_thread_texture_handle(data, func);
    }
 #endif
 
@@ -2804,15 +3070,15 @@ static void gl3_unload_texture(void *data, bool threaded,
       uintptr_t id)
 {
    GLuint glid;
-   gl3_t                *gl = (gl3_t*)data;
    if (!id)
       return;
 
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      if (gl->ctx_driver->make_current)
-         gl->ctx_driver->make_current(false);
+      custom_command_method_t func = video_texture_unload_wrap_gl3;
+      video_thread_texture_handle((void *)id, func);
+      return;
    }
 #endif
 

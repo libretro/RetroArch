@@ -104,7 +104,6 @@ void display_manager::parse_options()
 
 void display_manager::set_preset(const char *preset)
 {
-	strncpy(m_ds.monitor, preset, sizeof(m_ds.monitor)-1);
 	for (size_t i = 0; i < strlen(m_ds.monitor); i++) m_ds.monitor[i] = tolower(m_ds.monitor[i]);
 
 	memset(&range[0], 0, sizeof(struct monitor_range) * MAX_RANGES);

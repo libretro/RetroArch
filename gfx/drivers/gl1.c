@@ -1227,54 +1227,16 @@ static void gl1_set_viewport(gl1_t *gl1,
       video_viewport_get_scaled_integer(&gl1->vp,
             viewport_width, viewport_height,
             video_driver_get_aspect_ratio(),
-            gl1->flags & GL1_FLAG_KEEP_ASPECT);
+            gl1->flags & GL1_FLAG_KEEP_ASPECT, false);
       viewport_width  = gl1->vp.width;
       viewport_height = gl1->vp.height;
    }
    else if ((gl1->flags & GL1_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* OpenGL has bottom-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = height - custom_vp->y - custom_vp->height;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl1->vp.x      = x;
-      gl1->vp.y      = y;
-      gl1->vp.width  = viewport_width;
-      gl1->vp.height = viewport_height;
+      gl1->vp.full_height = gl1->video_height;
+      video_viewport_get_scaled_aspect2(&gl1->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
+      viewport_width  = gl1->vp.width;
+      viewport_height = gl1->vp.height;
    }
    else
    {
@@ -1282,12 +1244,6 @@ static void gl1_set_viewport(gl1_t *gl1,
       gl1->vp.width  = viewport_width;
       gl1->vp.height = viewport_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl1->vp.y *= 2;
-#endif
 
    glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
@@ -1481,6 +1437,8 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned pot_height              = 0;
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
+   int bfi_light_frames;
+   unsigned n;
 #ifdef HAVE_MENU
    bool menu_is_alive               = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -1715,22 +1673,51 @@ static bool gl1_frame(void *data, const void *frame,
          && !video_info->runloop_is_paused
          && !(gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE))
    {
-        int n;
-        for (n = 0; n < (int)video_info->black_frame_insertion; ++n)
-        {
-          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);
 
-          if (gl1->ctx_driver->swap_buffers)
-            gl1->ctx_driver->swap_buffers(gl1->ctx_data);
-        }
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+      video_info->bfi_dark_frames = video_info->black_frame_insertion;
+
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(gl1->flags & GL1_FLAG_FRAME_DUPE_LOCK))
+      {
+         gl1->flags |= GL1_FLAG_FRAME_DUPE_LOCK;
+
+         while (bfi_light_frames > 0)
+         {
+            if (!(gl1_frame(gl1, frame, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               gl1->flags &= ~GL1_FLAG_FRAME_DUPE_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         gl1->flags &= ~GL1_FLAG_FRAME_DUPE_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(gl1->flags & GL1_FLAG_FRAME_DUPE_LOCK))
+         {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (gl1->ctx_driver->swap_buffers)
+               gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+         }
+      }
    }
 #endif
+
 
    /* check if we are fast forwarding or in menu,
       if we are ignore hard sync */
    if (      hard_sync
          && !video_info->input_driver_nonblock_state
+
       )
    {
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1742,7 +1729,6 @@ static bool gl1_frame(void *data, const void *frame,
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }
-
    return true;
 }
 
@@ -2100,11 +2086,29 @@ static void video_texture_load_gl1(
 static int video_texture_load_wrap_gl1(void *data)
 {
    uintptr_t id = 0;
-   if (!data)
-      return 0;
-   video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_NEAREST, &id);
+   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+
+   if (gl1->ctx_driver->make_current)
+      gl1->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl1((struct texture_image*)data,
+            TEXTURE_FILTER_NEAREST, &id);
    return (int)id;
+}
+
+static int video_texture_unload_wrap_gl1(void *data)
+{
+   GLuint  glid;
+   uintptr_t id = (uintptr_t)data;
+   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+
+   if (gl1 && gl1->ctx_driver->make_current)
+      gl1->ctx_driver->make_current(false);
+
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
+   return 0;
 }
 #endif
 
@@ -2119,10 +2123,7 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
       gl1_t                   *gl1 = (gl1_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl1;
 
-      if (gl1->ctx_driver->make_current)
-         gl1->ctx_driver->make_current(false);
-
-      return video_thread_texture_load(data, func);
+      return video_thread_texture_handle(data, func);
    }
 #endif
 
@@ -2141,15 +2142,15 @@ static void gl1_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;
-   gl1_t *gl1 = (gl1_t*)data;
    if (!id)
       return;
 
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      if (gl1->ctx_driver->make_current)
-         gl1->ctx_driver->make_current(false);
+      custom_command_method_t func = video_texture_unload_wrap_gl1;
+      video_thread_texture_handle((void *)id, func);
+      return;
    }
 #endif
 

@@ -13,7 +13,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
@@ -107,7 +106,7 @@ static void action_get_title_fill_search_filter_default(
 static void action_get_title_fill_path_search_filter_default(
       const char *path, enum msg_hash_enums lbl, char *s, size_t len)
 {
-   size_t _len       = 0; 
+   size_t _len       = 0;
    const char *title = msg_hash_to_str(lbl);
    if (!string_is_empty(title))
       _len           = strlcpy(s, title, len);
@@ -147,6 +146,24 @@ static int action_get_title_remap_port(
          atoi(path) + 1);
    SANITIZE_TO_STRING(s, lbl, len);
    return 1;
+}
+
+static int action_get_title_icon_thumbnails(
+      const char *path, const char *label, unsigned menu_type,
+      char *s, size_t len)
+{
+   const char *title               = NULL;
+   enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS;
+
+   title = msg_hash_to_str(label_value);
+
+   if (s && !string_is_empty(title))
+   {
+      SANITIZE_TO_STRING(s, title, len);
+      return 1;
+   }
+
+   return 0;
 }
 
 static int action_get_title_thumbnails(
@@ -255,35 +272,25 @@ static int action_get_title_dropdown_item(
 				   STRLEN_CONST("core_option_")))
 	   {
 		   /* This is a core options item */
-		   struct string_list tmp_str_list = {0};
 		   core_option_manager_t *coreopts = NULL;
-
-		   string_list_initialize(&tmp_str_list);
-		   string_split_noalloc(&tmp_str_list, path, "_");
-
-		   if (tmp_str_list.size > 0)
+         const char *opt = strrchr(path, '_');
+		   if (opt)
 		   {
 			   retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
 			   if (coreopts)
 			   {
-				   unsigned option_index = string_to_unsigned(
-						   tmp_str_list.elems[(unsigned)tmp_str_list.size - 1].data);
+				   unsigned option_index = string_to_unsigned(opt+1);
 				   const char *title     = core_option_manager_get_desc(
 						   coreopts, option_index, true);
 
 				   if (s && !string_is_empty(title))
 				   {
 					   strlcpy(s, title, len);
-                  /* Clean up before returning */
-                  string_list_deinitialize(&tmp_str_list);
                   return 1;
 				   }
 			   }
 		   }
-
-		   /* Clean up */
-		   string_list_deinitialize(&tmp_str_list);
 	   }
 	   else
 	   {
@@ -333,6 +340,16 @@ static int action_get_title_dropdown_item(
 						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX) &&
 								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST))
 							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX;
+
+						   /* Device Reservation Type */
+						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE) &&
+								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_LAST))
+							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE;
+
+						   /* Reserved Device Name */
+						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME) &&
+								   (enum_idx <= MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME_LAST))
+							   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME;
 
 						   /* Mouse Index */
 						   if ((enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX) &&
@@ -396,7 +413,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
       /* Handle collection playlists */
       else
       {
-         char playlist_name[PATH_MAX_LENGTH];
+         char playlist_name[NAME_MAX_LENGTH];
          strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
          path_remove_extension(playlist_name);
 
@@ -517,7 +534,7 @@ static int action_get_title_dropdown_input_description_common(
 {
    size_t _len;
    const char *input_label_ptr = input_name;
-   char input_label[256];
+   char input_label[NAME_MAX_LENGTH];
 
    if (!string_is_empty(input_label_ptr))
    {
@@ -588,7 +605,10 @@ DEFAULT_TITLE_MACRO(action_get_user_accounts_list,              MENU_ENUM_LABEL_
 DEFAULT_TITLE_MACRO(action_get_core_list,                       MENU_ENUM_LABEL_VALUE_CORE_LIST)
 DEFAULT_TITLE_MACRO(action_get_online_updater_list,             MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER)
 DEFAULT_TITLE_MACRO(action_get_netplay_list,                    MENU_ENUM_LABEL_VALUE_NETPLAY)
+#if 0
+/* Thumbnailpack removal */
 DEFAULT_TITLE_MACRO(action_get_online_thumbnails_updater_list,  MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST)
+#endif
 DEFAULT_TITLE_MACRO(action_get_online_pl_thumbnails_updater_list, MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST)
 DEFAULT_TITLE_MACRO(action_get_add_content_list,                MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST)
 DEFAULT_TITLE_MACRO(action_get_configurations_list,             MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST)
@@ -641,6 +661,8 @@ DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_settings_list, MENU_ENUM_L
 DEFAULT_TITLE_MACRO(action_get_onscreen_notifications_views_settings_list, MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_onscreen_overlay_settings_list,  MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_osk_overlay_settings_list,       MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_overlay_lightgun_settings_list,  MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS)
+DEFAULT_TITLE_MACRO(action_get_overlay_mouse_settings_list,     MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_menu_views_settings_list,        MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_settings_views_settings_list,    MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS)
 DEFAULT_TITLE_MACRO(action_get_quick_menu_views_settings_list,  MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS)
@@ -744,7 +766,6 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_browser_directory,     MENU_ENUM_LABEL
 DEFAULT_FILL_TITLE_MACRO(action_get_title_use_last_start_directory,     MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_content_directory,     MENU_ENUM_LABEL_VALUE_CONTENT_DIR)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_screenshot_directory,  MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY)
-DEFAULT_FILL_TITLE_MACRO(action_get_title_cursor_directory,      MENU_ENUM_LABEL_VALUE_CURSOR_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_onscreen_overlay_keyboard_directory, MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_recording_config_directory, MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY)
 DEFAULT_FILL_TITLE_MACRO(action_get_title_recording_output_directory, MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY)
@@ -804,28 +825,24 @@ static int action_get_title_generic(char *s, size_t len,
 {
    if (!string_is_empty(path))
    {
-      struct string_list list_path = {0};
-      string_list_initialize(&list_path);
-      if (string_split_noalloc(&list_path, path, "|"))
+      char *tok, *save;
+      char *path_cpy = strdup(path);
+
+      if ((tok = strtok_r(path_cpy, "|", &save)))
       {
          size_t _len;
-         char elem0_path[255];
-         if (list_path.size > 0)
-            strlcpy(elem0_path, list_path.elems[0].data,
-                  sizeof(elem0_path));
-         string_list_deinitialize(&list_path);
-
+         char elem0_path[NAME_MAX_LENGTH];
+         strlcpy(elem0_path, tok, sizeof(elem0_path));
          _len      = strlcpy(s, text, len);
-         if (!string_is_empty(elem0_path))
-         {
-            path_remove_extension(elem0_path);
-            s[  _len] = ':';
-            s[++_len] = ' ';
-            s[++_len] = '\0';
-            strlcpy(s + _len, path_basename(elem0_path), len - _len);
-         }
+         path_remove_extension(elem0_path);
+         s[  _len] = ':';
+         s[++_len] = ' ';
+         s[++_len] = '\0';
+         strlcpy(s + _len, path_basename(elem0_path), len - _len);
+         free(path_cpy);
          return 0;
       }
+      free(path_cpy);
    }
 
    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
@@ -872,7 +889,11 @@ static int action_get_title_default(const char *path, const char *label,
       s[  _len] = ':';
       s[++_len] = ' ';
       s[++_len] = '\0';
+#if IOS
+      fill_pathname_abbreviate_special(s + _len, path, len - _len);
+#else
       strlcpy(s + _len, path, len - _len);
+#endif
    }
 
    menu_entries_search_append_terms_string(s, len);
@@ -884,7 +905,7 @@ static int action_get_title_group_settings(const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
 {
    unsigned i;
-   typedef struct title_info_list 
+   typedef struct title_info_list
    {
       enum msg_hash_enums type;
       enum msg_hash_enums val;
@@ -924,30 +945,22 @@ static int action_get_title_group_settings(const char *path, const char *label,
    }
 
    {
-      size_t _len;
-      char elem0[255];
-      char elem1[255];
-      struct string_list list_label = {0};
-      string_list_initialize(&list_label);
-      string_split_noalloc(&list_label, label, "|");
+      char *tok, *save = NULL;
+      char *label_cpy  = strdup(label);
 
-      if (list_label.size > 0)
+      if ((tok = strtok_r(label_cpy, "|", &save)))
       {
-         strlcpy(elem0, list_label.elems[0].data, sizeof(elem0));
-         if (list_label.size > 1)
-            strlcpy(elem1, list_label.elems[1].data, sizeof(elem1));
+         size_t _len = strlcpy(s, tok, len);
+         if ((tok = strtok_r(NULL, "|", &save)))
+         {
+            s[  _len] = ' ';
+            s[++_len] = '-';
+            s[++_len] = ' ';
+            s[++_len] = '\0';
+            strlcpy(s + _len, tok, len - _len);
+         }
       }
-      string_list_deinitialize(&list_label);
-
-      _len = strlcpy(s, elem0, len);
-      if (!string_is_empty(elem1))
-      {
-         s[  _len] = ' ';
-         s[++_len] = '-';
-         s[++_len] = ' ';
-         s[++_len] = '\0';
-         strlcpy(s + _len, elem1, len - _len);
-      }
+      free(label_cpy);
    }
 
    return 0;
@@ -966,7 +979,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
    unsigned i;
-   typedef struct title_info_list 
+   typedef struct title_info_list
    {
       enum msg_hash_enums type;
       int (*cb)(const char *path, const char *label,
@@ -1001,6 +1014,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST, action_get_onscreen_notifications_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST,       action_get_onscreen_overlay_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST,            action_get_osk_overlay_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_OVERLAY_LIGHTGUN_SETTINGS_LIST,       action_get_overlay_lightgun_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_OVERLAY_MOUSE_SETTINGS_LIST,          action_get_overlay_mouse_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MENU_VIEWS_SETTINGS_LIST,             action_get_menu_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_SETTINGS_VIEWS_SETTINGS_LIST,         action_get_settings_views_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_QUICK_MENU_VIEWS_SETTINGS_LIST,       action_get_quick_menu_views_settings_list},
@@ -1084,7 +1099,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST, action_get_title_deferred_cursor_manager_list},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_DEVELOPER, action_get_title_list_rdb_entry_developer},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_PUBLISHER, action_get_title_list_rdb_entry_publisher},
-      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN, 
+      {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_ORIGIN,
          action_get_title_list_rdb_entry_origin},
       {MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST_RDB_ENTRY_FRANCHISE,
             action_get_title_list_rdb_entry_franchise},
@@ -1144,8 +1159,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_video_filter_directory},
       {MENU_ENUM_LABEL_AUDIO_FILTER_DIR,
          action_get_title_audio_filter_directory},
-      {MENU_ENUM_LABEL_CURSOR_DIRECTORY,
-         action_get_title_cursor_directory},
       {MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY,
          action_get_title_recording_config_directory},
       {MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY,
@@ -1228,8 +1241,11 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_frontend_counters_list},
       {MENU_ENUM_LABEL_CORE_COUNTERS,
          action_get_core_counters_list},
+#if 0
+/* Thumbnailpack removal */
       {MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
          action_get_online_thumbnails_updater_list},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST,
          action_get_online_pl_thumbnails_updater_list},
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
@@ -1451,9 +1467,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_AUDIO_FILTER_DIR:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_audio_filter_directory);
             break;
-         case MENU_ENUM_LABEL_CURSOR_DIRECTORY:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_cursor_directory);
-            break;
          case MENU_ENUM_LABEL_RECORDING_CONFIG_DIRECTORY:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_recording_config_directory);
             break;
@@ -1514,9 +1527,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETPLAY:
             BIND_ACTION_GET_TITLE(cbs, action_get_netplay_list);
             break;
+#if 0
+/* Thumbnailpack removal */
          case MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_online_thumbnails_updater_list);
             break;
+#endif
          case MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_online_pl_thumbnails_updater_list);
             break;
@@ -1621,6 +1637,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_OSK_OVERLAY_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_osk_overlay_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_OVERLAY_LIGHTGUN_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_overlay_lightgun_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_OVERLAY_MOUSE_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_overlay_mouse_settings_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_core_settings_list);
             break;
@@ -1695,7 +1717,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_FACEBOOK_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_facebook_list);
-            break;            
+            break;
          case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST:
          case MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_download_core_content_list);
@@ -1781,7 +1803,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx)
 {
    unsigned i;
-   typedef struct title_info_list 
+   typedef struct title_info_list
    {
       enum msg_hash_enums type;
       int (*cb)(const char *path, const char *label,
@@ -1809,12 +1831,14 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE,                       action_get_title_dropdown_playlist_sort_mode_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE,            action_get_title_thumbnails},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE,             action_get_title_left_thumbnails},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_ICON_THUMBNAIL_MODE,             action_get_title_icon_thumbnails},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,          action_get_title_dropdown_manual_content_scan_system_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,            action_get_title_dropdown_manual_content_scan_core_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,                               action_get_title_dropdown_disk_index},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,                        action_get_title_dropdown_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION,                        action_get_title_dropdown_input_description},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,                    action_get_title_dropdown_input_description_kbd},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE,             action_get_title_dropdown_item},
 #ifdef ANDROID
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD,           action_get_title_dropdown_item},
 #endif

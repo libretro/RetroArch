@@ -220,6 +220,7 @@ typedef struct rcheevos_locals_t
 
 #ifdef HAVE_RC_CLIENT
    bool hardcore_allowed;             /* prevents enabling hardcore if illegal settings detected */
+   bool hardcore_being_enabled;       /* allows callers to detect hardcore mode while it's being enabled */
 #else
 
 #ifdef HAVE_GFX_WIDGETS
@@ -229,6 +230,8 @@ typedef struct rcheevos_locals_t
 #endif
 
    rcheevos_load_info_t load_info;    /* load info */
+
+   uint32_t unpaused_frames;          /* number of unpaused frames before next pause is allowed */
 
    bool hardcore_active;              /* hardcore functionality is active */
    bool loaded;                       /* load task has completed */

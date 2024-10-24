@@ -153,7 +153,7 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
 #endif
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
 
-   for (i = 0; i < deviceCount; i ++)
+   for (i = 0; i < (int)deviceCount; i ++)
    {
       char device_name[1024];
       device_name[0] = 0;

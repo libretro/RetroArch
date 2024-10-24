@@ -1,8 +1,15 @@
-/* Copyright (C) 2010-2020 The RetroArch team
+/*!
+ * libretro.h is a simple API that allows for the creation of games and emulators.
  *
- * ---------------------------------------------------------------------------------------
+ * @file libretro.h
+ * @version 1
+ * @author libretro
+ * @copyright Copyright (C) 2010-2023 The RetroArch team
+ *
+ * @paragraph LICENSE
  * The following license statement only applies to this libretro API header (libretro.h).
- * ---------------------------------------------------------------------------------------
+ *
+ * Copyright (C) 2010-2023 The RetroArch team
  *
  * Permission is hereby granted, free of charge,
  * to any person obtaining a copy of this software and associated documentation files (the "Software"),
@@ -77,78 +84,185 @@ extern "C" {
 #  endif
 #endif
 
-/* Used for checking API/ABI mismatches that can break libretro
- * implementations.
- * It is not incremented for compatible changes to the API.
+/**
+ * The major version of the libretro API and ABI.
+ * Cores may support multiple versions,
+ * or they may reject cores with unsupported versions.
+ * It is only incremented for incompatible API/ABI changes;
+ * this generally implies a function was removed or changed,
+ * or that a \c struct had fields removed or changed.
+ * @note A design goal of libretro is to avoid having to increase this value at all costs.
+ * This is why there are APIs that are "extended" or "V2".
  */
 #define RETRO_API_VERSION         1
 
-/*
- * Libretro's fundamental device abstractions.
+/**
+ * @defgroup RETRO_DEVICE Input Devices
+ * @brief Libretro's fundamental device abstractions.
  *
- * Libretro's input system consists of some standardized device types,
- * such as a joypad (with/without analog), mouse, keyboard, lightgun
- * and a pointer.
- *
- * The functionality of these devices are fixed, and individual cores
- * map their own concept of a controller to libretro's abstractions.
- * This makes it possible for frontends to map the abstract types to a
- * real input device, and not having to worry about binding input
- * correctly to arbitrary controller layouts.
+ * Libretro's input system consists of abstractions over standard device types,
+ * such as a joypad (with or without analog), mouse, keyboard, light gun, or an abstract pointer.
+ * Instead of managing input devices themselves,
+ * cores need only to map their own concept of a controller to libretro's abstractions.
+ * This makes it possible for frontends to map the abstract types to a real input device
+ * without having to worry about the correct use of arbitrary (real) controller layouts.
+ * @{
  */
 
 #define RETRO_DEVICE_TYPE_SHIFT         8
 #define RETRO_DEVICE_MASK               ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
+
+/**
+ * Defines an ID for a subclass of a known device type.
+ *
+ * To define a subclass ID, use this macro like so:
+ * @code{c}
+ * #define RETRO_DEVICE_SUPER_SCOPE RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 1)
+ * #define RETRO_DEVICE_JUSTIFIER RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_LIGHTGUN, 2)
+ * @endcode
+ *
+ * Correct use of this macro allows a frontend to select a suitable physical device
+ * to map to the emulated device.
+ *
+ * @note Cores must use the base ID when polling for input,
+ * and frontends must only accept the base ID for this purpose.
+ * Polling for input using subclass IDs is reserved for future definition.
+ *
+ * @param base One of the \ref RETRO_DEVICE "base device types".
+ * @param id A unique ID, with respect to \c base.
+ * Must be a non-negative integer.
+ * @return A unique subclass ID.
+ * @see retro_controller_description
+ * @see retro_set_controller_port_device
+ */
 #define RETRO_DEVICE_SUBCLASS(base, id) (((id + 1) << RETRO_DEVICE_TYPE_SHIFT) | base)
 
-/* Input disabled. */
+/**
+ * @defgroup RETRO_DEVICE Input Device Classes
+ * @{
+ */
+
+/**
+ * Indicates no input.
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * all other arguments are ignored and zero is returned.
+ *
+ * @see retro_input_state_t
+ */
 #define RETRO_DEVICE_NONE         0
 
-/* The JOYPAD is called RetroPad. It is essentially a Super Nintendo
- * controller, but with additional L2/R2/L3/R3 buttons, similar to a
- * PS1 DualShock. */
+/**
+ * An abstraction around a game controller, known as a "RetroPad".
+ *
+ * The RetroPad is modelled after a SNES controller,
+ * but with additional L2/R2/L3/R3 buttons
+ * (similar to a PlayStation controller).
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes the button (including D-Pad directions) to query.
+ * The result of said query will be 1 if the button is down, 0 if not.
+ *
+ * There is one exception; if \c RETRO_DEVICE_ID_JOYPAD_MASK is queried
+ * (and the frontend supports this query),
+ * the result will be a bitmask of all pressed buttons.
+ *
+ * @see retro_input_state_t
+ * @see RETRO_DEVICE_ANALOG
+ * @see RETRO_DEVICE_ID_JOYPAD
+ * @see RETRO_DEVICE_ID_JOYPAD_MASK
+ * @see RETRO_ENVIRONMENT_GET_INPUT_BITMASKS
+ */
 #define RETRO_DEVICE_JOYPAD       1
 
-/* The mouse is a simple mouse, similar to Super Nintendo's mouse.
- * X and Y coordinates are reported relatively to last poll (poll callback).
- * It is up to the libretro implementation to keep track of where the mouse
- * pointer is supposed to be on the screen.
- * The frontend must make sure not to interfere with its own hardware
- * mouse pointer.
+/**
+ * An abstraction around a mouse, similar to the SNES Mouse but with more buttons.
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes the button or axis to query.
+ * For buttons, the result of said query
+ * will be 1 if the button is down or 0 if not.
+ * For mouse wheel axes, the result
+ * will be 1 if the wheel was rotated in that direction and 0 if not.
+ * For the mouse pointer axis, the result will be thee mouse's movement
+ * relative to the last poll.
+ * The core is responsible for tracking the mouse's position,
+ * and the frontend is responsible for preventing interference
+ * by the real hardware pointer (if applicable).
+ *
+ * @note This should only be used for cores that emulate mouse input,
+ * such as for home computers
+ * or consoles with mouse attachments.
+ * Cores that emulate light guns should use \c RETRO_DEVICE_LIGHTGUN,
+ * and cores that emulate touch screens should use \c RETRO_DEVICE_POINTER.
+ *
+ * @see RETRO_DEVICE_POINTER
+ * @see RETRO_DEVICE_LIGHTGUN
  */
 #define RETRO_DEVICE_MOUSE        2
 
-/* KEYBOARD device lets one poll for raw key pressed.
- * It is poll based, so input callback will return with the current
- * pressed state.
- * For event/text based keyboard input, see
- * RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK.
+/**
+ * An abstraction around a keyboard.
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes the key to poll.
+ *
+ * @note This should only be used for cores that emulate keyboard input,
+ * such as for home computers
+ * or consoles with keyboard attachments.
+ * Cores that emulate gamepads should use \c RETRO_DEVICE_JOYPAD or \c RETRO_DEVICE_ANALOG,
+ * and leave keyboard compatibility to the frontend.
+ *
+ * @see RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK
+ * @see retro_key
  */
 #define RETRO_DEVICE_KEYBOARD     3
 
-/* LIGHTGUN device is similar to Guncon-2 for PlayStation 2.
- * It reports X/Y coordinates in screen space (similar to the pointer)
- * in the range [-0x8000, 0x7fff] in both axes, with zero being center and
- * -0x8000 being out of bounds.
- * As well as reporting on/off screen state. It features a trigger,
- * start/select buttons, auxiliary action buttons and a
- * directional pad. A forced off-screen shot can be requested for
- * auto-reloading function in some games.
+/**
+ * An abstraction around a light gun, similar to the PlayStation's Guncon.
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes one of several possible inputs.
+ *
+ * The gun's coordinates are reported in screen space (similar to the pointer)
+ * in the range of [-0x8000, 0x7fff].
+ * Zero is the center of the game's screen
+ * and -0x8000 represents out-of-bounds.
+ * The trigger and various auxiliary buttons are also reported.
+ *
+ * @note A forced off-screen shot can be requested for auto-reloading
+ * function in some games.
+ *
+ * @see RETRO_DEVICE_POINTER
  */
 #define RETRO_DEVICE_LIGHTGUN     4
 
-/* The ANALOG device is an extension to JOYPAD (RetroPad).
- * Similar to DualShock2 it adds two analog sticks and all buttons can
- * be analog. This is treated as a separate device type as it returns
- * axis values in the full analog range of [-0x7fff, 0x7fff],
- * although some devices may return -0x8000.
- * Positive X axis is right. Positive Y axis is down.
- * Buttons are returned in the range [0, 0x7fff].
- * Only use ANALOG type when polling for analog values.
+/**
+ * An extension of the RetroPad that supports analog input.
+ *
+ * The analog RetroPad provides two virtual analog sticks (similar to DualShock controllers)
+ * and allows any button to be treated as analog (similar to Xbox shoulder triggers).
+ *
+ * When provided as the \c device argument to \c retro_input_state_t,
+ * the \c id argument denotes an analog axis or an analog button.
+ *
+ * Analog axes are reported in the range of [-0x8000, 0x7fff],
+ * with the X axis being positive towards the right
+ * and the Y axis being positive towards the bottom.
+ *
+ * Analog buttons are reported in the range of [0, 0x7fff],
+ * where 0 is unpressed and 0x7fff is fully pressed.
+ *
+ * @note Cores should only use this type if they need analog input.
+ * Otherwise, \c RETRO_DEVICE_JOYPAD should be used.
+ * @see RETRO_DEVICE_JOYPAD
  */
 #define RETRO_DEVICE_ANALOG       5
 
-/* Abstracts the concept of a pointing mechanism, e.g. touch.
+/**
+ * Input Device: Pointer.
+ *
+ * Abstracts the concept of a pointing mechanism, e.g. touch.
  * This allows libretro to query in absolute coordinates where on the
  * screen a mouse (or something similar) is being placed.
  * For a touch centric device, coordinates reported are the coordinates
@@ -165,44 +279,108 @@ extern "C" {
  * game image, etc.
  *
  * To check if the pointer coordinates are valid (e.g. a touch display
- * actually being touched), PRESSED returns 1 or 0.
+ * actually being touched), \c RETRO_DEVICE_ID_POINTER_PRESSED returns 1 or 0.
  *
- * If using a mouse on a desktop, PRESSED will usually correspond to the
- * left mouse button, but this is a frontend decision.
- * PRESSED will only return 1 if the pointer is inside the game screen.
+ * If using a mouse on a desktop, \c RETRO_DEVICE_ID_POINTER_PRESSED will
+ * usually correspond to the left mouse button, but this is a frontend decision.
+ * \c RETRO_DEVICE_ID_POINTER_PRESSED will only return 1 if the pointer is
+ * inside the game screen.
  *
  * For multi-touch, the index variable can be used to successively query
  * more presses.
- * If index = 0 returns true for _PRESSED, coordinates can be extracted
- * with _X, _Y for index = 0. One can then query _PRESSED, _X, _Y with
+ * If index = 0 returns true for \c _PRESSED, coordinates can be extracted
+ * with \c _X, \c _Y for index = 0. One can then query \c _PRESSED, \c _X, \c _Y with
  * index = 1, and so on.
- * Eventually _PRESSED will return false for an index. No further presses
- * are registered at this point. */
+ * Eventually \c _PRESSED will return false for an index. No further presses
+ * are registered at this point.
+ *
+ * @see RETRO_DEVICE_MOUSE
+ * @see RETRO_DEVICE_ID_POINTER_X
+ * @see RETRO_DEVICE_ID_POINTER_Y
+ * @see RETRO_DEVICE_ID_POINTER_PRESSED
+ */
 #define RETRO_DEVICE_POINTER      6
 
-/* Buttons for the RetroPad (JOYPAD).
- * The placement of these is equivalent to placements on the
- * Super Nintendo controller.
- * L2/R2/L3/R3 buttons correspond to the PS1 DualShock.
- * Also used as id values for RETRO_DEVICE_INDEX_ANALOG_BUTTON */
+/** @} */
+
+/** @defgroup RETRO_DEVICE_ID_JOYPAD RetroPad Input
+ * @brief Digital buttons for the RetroPad.
+ *
+ * Button placement is comparable to that of a SNES controller,
+ * combined with the shoulder buttons of a PlayStation controller.
+ * These values can also be used for the \c id field of \c RETRO_DEVICE_INDEX_ANALOG_BUTTON
+ * to represent analog buttons (usually shoulder triggers).
+ * @{
+ */
+
+/** The equivalent of the SNES controller's south face button. */
 #define RETRO_DEVICE_ID_JOYPAD_B        0
+
+/** The equivalent of the SNES controller's west face button. */
 #define RETRO_DEVICE_ID_JOYPAD_Y        1
+
+/** The equivalent of the SNES controller's left-center button. */
 #define RETRO_DEVICE_ID_JOYPAD_SELECT   2
+
+/** The equivalent of the SNES controller's right-center button. */
 #define RETRO_DEVICE_ID_JOYPAD_START    3
+
+/** Up on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_UP       4
+
+/** Down on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_DOWN     5
+
+/** Left on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_LEFT     6
+
+/** Right on the RetroPad's D-pad. */
 #define RETRO_DEVICE_ID_JOYPAD_RIGHT    7
+
+/** The equivalent of the SNES controller's east face button. */
 #define RETRO_DEVICE_ID_JOYPAD_A        8
+
+/** The equivalent of the SNES controller's north face button. */
 #define RETRO_DEVICE_ID_JOYPAD_X        9
+
+/** The equivalent of the SNES controller's left shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_L       10
+
+/** The equivalent of the SNES controller's right shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_R       11
+
+/** The equivalent of the PlayStation's rear left shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_L2      12
+
+/** The equivalent of the PlayStation's rear right shoulder button. */
 #define RETRO_DEVICE_ID_JOYPAD_R2      13
+
+/**
+ * The equivalent of the PlayStation's left analog stick button,
+ * although the actual button need not be in this position.
+ */
 #define RETRO_DEVICE_ID_JOYPAD_L3      14
+
+/**
+ * The equivalent of the PlayStation's right analog stick button,
+ * although the actual button need not be in this position.
+ */
 #define RETRO_DEVICE_ID_JOYPAD_R3      15
 
+/**
+ * Represents a bitmask that describes the state of all \c RETRO_DEVICE_ID_JOYPAD button constants,
+ * rather than the state of a single button.
+ *
+ * @see RETRO_ENVIRONMENT_GET_INPUT_BITMASKS
+ * @see RETRO_DEVICE_JOYPAD
+ */
 #define RETRO_DEVICE_ID_JOYPAD_MASK    256
+
+/** @} */
+
+/** @defgroup RETRO_DEVICE_ID_ANALOG Analog RetroPad Input
+ * @{
+ */
 
 /* Index / Id values for ANALOG device. */
 #define RETRO_DEVICE_INDEX_ANALOG_LEFT       0
@@ -210,6 +388,8 @@ extern "C" {
 #define RETRO_DEVICE_INDEX_ANALOG_BUTTON     2
 #define RETRO_DEVICE_ID_ANALOG_X             0
 #define RETRO_DEVICE_ID_ANALOG_Y             1
+
+/** @} */
 
 /* Id values for MOUSE. */
 #define RETRO_DEVICE_ID_MOUSE_X                0
@@ -252,11 +432,16 @@ extern "C" {
 #define RETRO_DEVICE_ID_POINTER_PRESSED   2
 #define RETRO_DEVICE_ID_POINTER_COUNT     3
 
+/** @} */
+
 /* Returned from retro_get_region(). */
 #define RETRO_REGION_NTSC  0
 #define RETRO_REGION_PAL   1
 
-/* Id values for LANGUAGE */
+/**
+ * Identifiers for supported languages.
+ * @see RETRO_ENVIRONMENT_GET_LANGUAGE
+ */
 enum retro_language
 {
    RETRO_LANGUAGE_ENGLISH             = 0,
@@ -292,11 +477,17 @@ enum retro_language
    RETRO_LANGUAGE_BRITISH_ENGLISH     = 30,
    RETRO_LANGUAGE_HUNGARIAN           = 31,
    RETRO_LANGUAGE_BELARUSIAN          = 32,
+   RETRO_LANGUAGE_GALICIAN            = 33,
+   RETRO_LANGUAGE_NORWEGIAN           = 34,
    RETRO_LANGUAGE_LAST,
 
-   /* Ensure sizeof(enum) == sizeof(int) */
+   /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
    RETRO_LANGUAGE_DUMMY          = INT_MAX
 };
+
+/** @defgroup RETRO_MEMORY Memory Types
+ * @{
+ */
 
 /* Passed to retro_get_memory_data/size().
  * If the memory type doesn't apply to the
@@ -321,6 +512,8 @@ enum retro_language
 
 /* Video ram lets a frontend peek into a game systems video RAM (VRAM). */
 #define RETRO_MEMORY_VIDEO_RAM   3
+
+/** @} */
 
 /* Keysyms used for ID in input state callback when polling RETRO_KEYBOARD. */
 enum retro_key
@@ -473,6 +666,25 @@ enum retro_key
    RETROK_UNDO           = 322,
    RETROK_OEM_102        = 323,
 
+   RETROK_BROWSER_BACK      = 324,
+   RETROK_BROWSER_FORWARD   = 325,
+   RETROK_BROWSER_REFRESH   = 326,
+   RETROK_BROWSER_STOP      = 327,
+   RETROK_BROWSER_SEARCH    = 328,
+   RETROK_BROWSER_FAVORITES = 329,
+   RETROK_BROWSER_HOME      = 330,
+   RETROK_VOLUME_MUTE       = 331,
+   RETROK_VOLUME_DOWN       = 332,
+   RETROK_VOLUME_UP         = 333,
+   RETROK_MEDIA_NEXT        = 334,
+   RETROK_MEDIA_PREV        = 335,
+   RETROK_MEDIA_STOP        = 336,
+   RETROK_MEDIA_PLAY_PAUSE  = 337,
+   RETROK_LAUNCH_MAIL       = 338,
+   RETROK_LAUNCH_MEDIA      = 339,
+   RETROK_LAUNCH_APP1       = 340,
+   RETROK_LAUNCH_APP2       = 341,
+
    RETROK_LAST,
 
    RETROK_DUMMY          = INT_MAX /* Ensure sizeof(enum) == sizeof(int) */
@@ -494,914 +706,1467 @@ enum retro_mod
    RETROKMOD_DUMMY = INT_MAX /* Ensure sizeof(enum) == sizeof(int) */
 };
 
-/* If set, this call is not part of the public libretro API yet. It can
- * change or be removed at any time. */
+/**
+ * @defgroup RETRO_ENVIRONMENT Environment Callbacks
+ * @{
+ */
+
+/**
+ * This bit indicates that the associated environment call is experimental,
+ * and may be changed or removed in the future.
+ * Frontends should mask out this bit before handling the environment call.
+ */
 #define RETRO_ENVIRONMENT_EXPERIMENTAL 0x10000
-/* Environment callback to be used internally in frontend. */
+
+/** Frontend-internal environment callbacks should include this bit. */
 #define RETRO_ENVIRONMENT_PRIVATE 0x20000
 
 /* Environment commands. */
-#define RETRO_ENVIRONMENT_SET_ROTATION  1  /* const unsigned * --
-                                            * Sets screen rotation of graphics.
-                                            * Valid values are 0, 1, 2, 3, which rotates screen by 0, 90, 180,
-                                            * 270 degrees counter-clockwise respectively.
-                                            */
-#define RETRO_ENVIRONMENT_GET_OVERSCAN  2  /* bool * --
-                                            * NOTE: As of 2019 this callback is considered deprecated in favor of
-                                            * using core options to manage overscan in a more nuanced, core-specific way.
-                                            *
-                                            * Boolean value whether or not the implementation should use overscan,
-                                            * or crop away overscan.
-                                            */
-#define RETRO_ENVIRONMENT_GET_CAN_DUPE  3  /* bool * --
-                                            * Boolean value whether or not frontend supports frame duping,
-                                            * passing NULL to video frame callback.
-                                            */
+/**
+ * Requests the frontend to set the screen rotation.
+ *
+ * @param[in] data <tt>const unsigned*</tt>.
+ * Valid values are 0, 1, 2, and 3.
+ * These numbers respectively set the screen rotation to 0, 90, 180, and 270 degrees counter-clockwise.
+ * @returns \c true if the screen rotation was set successfully.
+ */
+#define RETRO_ENVIRONMENT_SET_ROTATION  1
 
-                                           /* Environ 4, 5 are no longer supported (GET_VARIABLE / SET_VARIABLES),
-                                            * and reserved to avoid possible ABI clash.
-                                            */
+/**
+ * Queries whether the core should use overscan or not.
+ *
+ * @param[out] data <tt>bool*</tt>.
+ * Set to \c true if the core should use overscan,
+ * \c false if it should be cropped away.
+ * @returns \c true if the environment call is available.
+ * Does \em not indicate whether overscan should be used.
+ * @deprecated As of 2019 this callback is considered deprecated in favor of
+ * using core options to manage overscan in a more nuanced, core-specific way.
+ */
+#define RETRO_ENVIRONMENT_GET_OVERSCAN  2
 
-#define RETRO_ENVIRONMENT_SET_MESSAGE   6  /* const struct retro_message * --
-                                            * Sets a message to be displayed in implementation-specific manner
-                                            * for a certain amount of 'frames'.
-                                            * Should not be used for trivial messages, which should simply be
-                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a
-                                            * fallback, stderr).
-                                            */
-#define RETRO_ENVIRONMENT_SHUTDOWN      7  /* N/A (NULL) --
-                                            * Requests the frontend to shutdown.
-                                            * Should only be used if game has a specific
-                                            * way to shutdown the game from a menu item or similar.
-                                            */
+/**
+ * Queries whether the frontend supports frame duping,
+ * in the form of passing \c NULL to the video frame callback.
+ *
+ * @param[out] data <tt>bool*</tt>.
+ * Set to \c true if the frontend supports frame duping.
+ * @returns \c true if the environment call is available.
+ * @see retro_video_refresh_t
+ */
+#define RETRO_ENVIRONMENT_GET_CAN_DUPE  3
+
+/*
+ * Environ 4, 5 are no longer supported (GET_VARIABLE / SET_VARIABLES),
+ * and reserved to avoid possible ABI clash.
+ */
+
+/**
+ * @brief Displays a user-facing message for a short time.
+ *
+ * Use this callback to convey important status messages,
+ * such as errors or the result of long-running operations.
+ * For trivial messages or logging, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr.
+ *
+ * \code{.c}
+ * void set_message_example(void)
+ * {
+ *    struct retro_message msg;
+ *    msg.frames = 60 * 5; // 5 seconds
+ *    msg.msg = "Hello world!";
+ *
+ *    environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+ * }
+ * \endcode
+ *
+ * @deprecated Prefer using \c RETRO_ENVIRONMENT_SET_MESSAGE_EXT for new code,
+ * as it offers more features.
+ * Only use this environment call for compatibility with older cores or frontends.
+ *
+ * @param[in] data <tt>const struct retro_message*</tt>.
+ * Details about the message to show to the user.
+ * Behavior is undefined if <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see retro_message
+ * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE
+ * @see RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION
+ * @note The frontend must make its own copy of the message and the underlying string.
+ */
+#define RETRO_ENVIRONMENT_SET_MESSAGE   6
+
+/**
+ * Requests the frontend to shutdown the core.
+ * Should only be used if the core can exit on its own,
+ * such as from a menu item in a game
+ * or an emulated power-off in an emulator.
+ *
+ * @param data Ignored.
+ * @returns \c true if the environment call is available.
+ */
+#define RETRO_ENVIRONMENT_SHUTDOWN      7
+
+/**
+ * Gives a hint to the frontend of how demanding this core is on the system.
+ * For example, reporting a level of 2 means that
+ * this implementation should run decently on frontends
+ * of level 2 and above.
+ *
+ * It can be used by the frontend to potentially warn
+ * about too demanding implementations.
+ *
+ * The levels are "floating".
+ *
+ * This function can be called on a per-game basis,
+ * as a core may have different demands for different games or settings.
+ * If called, it should be called in <tt>retro_load_game()</tt>.
+ * @param[in] data <tt>const unsigned*</tt>.
+*/
 #define RETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL 8
-                                           /* const unsigned * --
-                                            * Gives a hint to the frontend how demanding this implementation
-                                            * is on a system. E.g. reporting a level of 2 means
-                                            * this implementation should run decently on all frontends
-                                            * of level 2 and up.
-                                            *
-                                            * It can be used by the frontend to potentially warn
-                                            * about too demanding implementations.
-                                            *
-                                            * The levels are "floating".
-                                            *
-                                            * This function can be called on a per-game basis,
-                                            * as certain games an implementation can play might be
-                                            * particularly demanding.
-                                            * If called, it should be called in retro_load_game().
-                                            */
+
+/**
+ * Returns the path to the frontend's system directory,
+ * which can be used to store system-specific configuration
+ * such as BIOS files or cached data.
+ *
+ * @param[out] data <tt>const char**</tt>.
+ * Pointer to the \c char* in which the system directory will be saved.
+ * The string is managed by the frontend and must not be modified or freed by the core.
+ * May be \c NULL if no system directory is defined,
+ * in which case the core should find an alternative directory.
+ * @return \c true if the environment call is available,
+ * even if the value returned in \c data is <tt>NULL</tt>.
+ * @note Historically, some cores would use this folder for save data such as memory cards or SRAM.
+ * This is now discouraged in favor of \c RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY.
+ * @see RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
+ */
 #define RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY 9
-                                           /* const char ** --
-                                            * Returns the "system" directory of the frontend.
-                                            * This directory can be used to store system specific
-                                            * content such as BIOSes, configuration data, etc.
-                                            * The returned value can be NULL.
-                                            * If so, no such directory is defined,
-                                            * and it's up to the implementation to find a suitable directory.
-                                            *
-                                            * NOTE: Some cores used this folder also for "save" data such as
-                                            * memory cards, etc, for lack of a better place to put it.
-                                            * This is now discouraged, and if possible, cores should try to
-                                            * use the new GET_SAVE_DIRECTORY.
-                                            */
+
+/**
+ * Sets the internal pixel format used by the frontend for rendering.
+ * The default pixel format is \c RETRO_PIXEL_FORMAT_0RGB1555 for compatibility reasons,
+ * although it's considered deprecated and shouldn't be used by new code.
+ *
+ * @param[in] data <tt>const enum retro_pixel_format *</tt>.
+ * Pointer to the pixel format to use.
+ * @returns \c true if the pixel format was set successfully,
+ * \c false if it's not supported or this callback is unavailable.
+ * @note This function should be called inside \c retro_load_game()
+ * or <tt>retro_get_system_av_info()</tt>.
+ * @see retro_pixel_format
+ */
 #define RETRO_ENVIRONMENT_SET_PIXEL_FORMAT 10
-                                           /* const enum retro_pixel_format * --
-                                            * Sets the internal pixel format used by the implementation.
-                                            * The default pixel format is RETRO_PIXEL_FORMAT_0RGB1555.
-                                            * This pixel format however, is deprecated (see enum retro_pixel_format).
-                                            * If the call returns false, the frontend does not support this pixel
-                                            * format.
-                                            *
-                                            * This function should be called inside retro_load_game() or
-                                            * retro_get_system_av_info().
-                                            */
+
+/**
+ * Sets an array of input descriptors for the frontend
+ * to present to the user for configuring the core's controls.
+ *
+ * This function can be called at any time,
+ * preferably early in the core's life cycle.
+ * Ideally, no later than \c retro_load_game().
+ *
+ * @param[in] data <tt>const struct retro_input_descriptor *</tt>.
+ * An array of input descriptors terminated by one whose
+ * \c retro_input_descriptor::description field is set to \c NULL.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if the environment call is recognized.
+ * @see retro_input_descriptor
+ */
 #define RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS 11
-                                           /* const struct retro_input_descriptor * --
-                                            * Sets an array of retro_input_descriptors.
-                                            * It is up to the frontend to present this in a usable way.
-                                            * The array is terminated by retro_input_descriptor::description
-                                            * being set to NULL.
-                                            * This function can be called at any time, but it is recommended
-                                            * to call it as early as possible.
-                                            */
+
+/**
+ * Sets a callback function used to notify the core about keyboard events.
+ * This should only be used for cores that specifically need keyboard input,
+ * such as for home computer emulators or games with text entry.
+ *
+ * @param[in] data <tt>const struct retro_keyboard_callback *</tt>.
+ * Pointer to the callback function.
+ * Behavior is undefined if <tt>NULL</tt>.
+ * @return \c true if the environment call is recognized.
+ * @see retro_keyboard_callback
+ * @see retro_key
+ */
 #define RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK 12
-                                           /* const struct retro_keyboard_callback * --
-                                            * Sets a callback function used to notify core about keyboard events.
-                                            */
+
+/**
+ * Sets an interface that the frontend can use to insert and remove disks
+ * from the emulated console's disk drive.
+ * Can be used for optical disks, floppy disks, or any other game storage medium
+ * that can be swapped at runtime.
+ *
+ * This is intended for multi-disk games that expect the player
+ * to manually swap disks at certain points in the game.
+ *
+ * @deprecated Prefer using \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ * over this environment call, as it supports additional features.
+ * Only use this callback to maintain compatibility
+ * with older cores or frontends.
+ *
+ * @param[in] data <tt>const struct retro_disk_control_callback *</tt>.
+ * Pointer to the callback functions to use.
+ * May be \c NULL, in which case the existing disk callback is deregistered.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_disk_control_callback
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ */
 #define RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE 13
-                                           /* const struct retro_disk_control_callback * --
-                                            * Sets an interface which frontend can use to eject and insert
-                                            * disk images.
-                                            * This is used for games which consist of multiple images and
-                                            * must be manually swapped out by the user (e.g. PSX).
-                                            */
+
+/**
+ * Requests that a frontend enable a particular hardware rendering API.
+ *
+ * If successful, the frontend will create a context (and other related resources)
+ * that the core can use for rendering.
+ * The framebuffer will be at least as large as
+ * the maximum dimensions provided in <tt>retro_get_system_av_info</tt>.
+ *
+ * @param[in, out] data <tt>struct retro_hw_render_callback *</tt>.
+ * Pointer to the hardware render callback struct.
+ * Used to define callbacks for the hardware-rendering life cycle,
+ * as well as to request a particular rendering API.
+ * @return \c true if the environment call is recognized
+ * and the requested rendering API is supported.
+ * \c false if \c data is \c NULL
+ * or the frontend can't provide the requested rendering API.
+ * @see retro_hw_render_callback
+ * @see retro_video_refresh_t
+ * @see RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER
+ * @note Should be called in <tt>retro_load_game()</tt>.
+ * @note If HW rendering is used, pass only \c RETRO_HW_FRAME_BUFFER_VALID or
+ * \c NULL to <tt>retro_video_refresh_t</tt>.
+ */
 #define RETRO_ENVIRONMENT_SET_HW_RENDER 14
-                                           /* struct retro_hw_render_callback * --
-                                            * Sets an interface to let a libretro core render with
-                                            * hardware acceleration.
-                                            * Should be called in retro_load_game().
-                                            * If successful, libretro cores will be able to render to a
-                                            * frontend-provided framebuffer.
-                                            * The size of this framebuffer will be at least as large as
-                                            * max_width/max_height provided in get_av_info().
-                                            * If HW rendering is used, pass only RETRO_HW_FRAME_BUFFER_VALID or
-                                            * NULL to retro_video_refresh_t.
-                                            */
+
+/**
+ * Retrieves a core option's value from the frontend.
+ * \c retro_variable::key should be set to an option key
+ * that was previously set in \c RETRO_ENVIRONMENT_SET_VARIABLES
+ * (or a similar environment call).
+ *
+ * @param[in,out] data <tt>struct retro_variable *</tt>.
+ * Pointer to a single \c retro_variable struct.
+ * See the documentation for \c retro_variable for details
+ * on which fields are set by the frontend or core.
+ * May be \c NULL.
+ * @returns \c true if the environment call is available,
+ * even if \c data is \c NULL or the key it specifies is not found.
+ * @note Passing \c NULL in to \c data can be useful to
+ * test for support of this environment call without looking up any variables.
+ * @see retro_variable
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+ */
 #define RETRO_ENVIRONMENT_GET_VARIABLE 15
-                                           /* struct retro_variable * --
-                                            * Interface to acquire user-defined information from environment
-                                            * that cannot feasibly be supported in a multi-system way.
-                                            * 'key' should be set to a key which has already been set by
-                                            * SET_VARIABLES.
-                                            * 'data' will be set to a value or NULL.
-                                            */
+
+/**
+ * Notifies the frontend of the core's available options.
+ *
+ * The core may check these options later using \c RETRO_ENVIRONMENT_GET_VARIABLE.
+ * The frontend may also present these options to the user
+ * in its own configuration UI.
+ *
+ * This should be called the first time as early as possible,
+ * ideally in \c retro_set_environment.
+ * The core may later call this function again
+ * to communicate updated options to the frontend,
+ * but the number of core options must not change.
+ *
+ * Here's an example that sets two options.
+ *
+ * @code
+ * void set_variables_example(void)
+ * {
+ *    struct retro_variable options[] = {
+ *        { "foo_speedhack", "Speed hack; false|true" }, // false by default
+ *        { "foo_displayscale", "Display scale factor; 1|2|3|4" }, // 1 by default
+ *        { NULL, NULL },
+ *    };
+ *
+ *    environ_cb(RETRO_ENVIRONMENT_SET_VARIABLES, &options);
+ * }
+ * @endcode
+ *
+ * The possible values will generally be displayed and stored as-is by the frontend.
+ *
+ * @deprecated Prefer using \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 for new code,
+ * as it offers more features such as categories and translation.
+ * Only use this environment call to maintain compatibility
+ * with older frontends or cores.
+ * @note Keep the available options (and their possible values) as low as possible;
+ * it should be feasible to cycle through them without a keyboard.
+ * @param[in] data <tt>const struct retro_variable *</tt>.
+ * Pointer to an array of \c retro_variable structs that define available core options,
+ * terminated by a <tt>{ NULL, NULL }</tt> element.
+ * The frontend must maintain its own copy of this array.
+ *
+ * @returns \c true if the environment call is available,
+ * even if \c data is <tt>NULL</tt>.
+ * @see retro_variable
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 #define RETRO_ENVIRONMENT_SET_VARIABLES 16
-                                           /* const struct retro_variable * --
-                                            * Allows an implementation to signal the environment
-                                            * which variables it might want to check for later using
-                                            * GET_VARIABLE.
-                                            * This allows the frontend to present these variables to
-                                            * a user dynamically.
-                                            * This should be called the first time as early as
-                                            * possible (ideally in retro_set_environment).
-                                            * Afterward it may be called again for the core to communicate
-                                            * updated options to the frontend, but the number of core
-                                            * options must not change from the number in the initial call.
-                                            *
-                                            * 'data' points to an array of retro_variable structs
-                                            * terminated by a { NULL, NULL } element.
-                                            * retro_variable::key should be namespaced to not collide
-                                            * with other implementations' keys. E.g. A core called
-                                            * 'foo' should use keys named as 'foo_option'.
-                                            * retro_variable::value should contain a human readable
-                                            * description of the key as well as a '|' delimited list
-                                            * of expected values.
-                                            *
-                                            * The number of possible options should be very limited,
-                                            * i.e. it should be feasible to cycle through options
-                                            * without a keyboard.
-                                            *
-                                            * First entry should be treated as a default.
-                                            *
-                                            * Example entry:
-                                            * { "foo_option", "Speed hack coprocessor X; false|true" }
-                                            *
-                                            * Text before first ';' is description. This ';' must be
-                                            * followed by a space, and followed by a list of possible
-                                            * values split up with '|'.
-                                            *
-                                            * Only strings are operated on. The possible values will
-                                            * generally be displayed and stored as-is by the frontend.
-                                            */
+
+/**
+ * Queries whether at least one core option was updated by the frontend
+ * since the last call to \ref RETRO_ENVIRONMENT_GET_VARIABLE.
+ * This typically means that the user opened the core options menu and made some changes.
+ *
+ * Cores usually call this each frame before the core's main emulation logic.
+ * Specific options can then be queried with \ref RETRO_ENVIRONMENT_GET_VARIABLE.
+ *
+ * @param[out] data <tt>bool *</tt>.
+ * Set to \c true if at least one core option was updated
+ * since the last call to \ref RETRO_ENVIRONMENT_GET_VARIABLE.
+ * Behavior is undefined if this pointer is \c NULL.
+ * @returns \c true if the environment call is available.
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 #define RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE 17
-                                           /* bool * --
-                                            * Result is set to true if some variables are updated by
-                                            * frontend since last call to RETRO_ENVIRONMENT_GET_VARIABLE.
-                                            * Variables should be queried with GET_VARIABLE.
-                                            */
+
+/**
+ * Notifies the frontend that this core can run without loading any content,
+ * such as when emulating a console that has built-in software.
+ * When a core is loaded without content,
+ * \c retro_load_game receives an argument of <tt>NULL</tt>.
+ * This should be called within \c retro_set_environment() only.
+ *
+ * @param[in] data <tt>const bool *</tt>.
+ * Pointer to a single \c bool that indicates whether this frontend can run without content.
+ * Can point to a value of \c false but this isn't necessary,
+ * as contentless support is opt-in.
+ * The behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see retro_load_game
+ */
 #define RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME 18
-                                           /* const bool * --
-                                            * If true, the libretro implementation supports calls to
-                                            * retro_load_game() with NULL as argument.
-                                            * Used by cores which can run without particular game data.
-                                            * This should be called within retro_set_environment() only.
-                                            */
+
+/**
+ * Retrieves the absolute path from which this core was loaded.
+ * Useful when loading assets from paths relative to the core,
+ * as is sometimes the case when using <tt>RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME</tt>.
+ *
+ * @param[out] data <tt>const char **</tt>.
+ * Pointer to a string in which the core's path will be saved.
+ * The string is managed by the frontend and must not be modified or freed by the core.
+ * May be \c NULL if the core is statically linked to the frontend
+ * or if the core's path otherwise cannot be determined.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ */
 #define RETRO_ENVIRONMENT_GET_LIBRETRO_PATH 19
-                                           /* const char ** --
-                                            * Retrieves the absolute path from where this libretro
-                                            * implementation was loaded.
-                                            * NULL is returned if the libretro was loaded statically
-                                            * (i.e. linked statically to frontend), or if the path cannot be
-                                            * determined.
-                                            * Mostly useful in cooperation with SET_SUPPORT_NO_GAME as assets can
-                                            * be loaded without ugly hacks.
-                                            */
 
-                                           /* Environment 20 was an obsolete version of SET_AUDIO_CALLBACK.
-                                            * It was not used by any known core at the time,
-                                            * and was removed from the API. */
+/* Environment call 20 was an obsolete version of SET_AUDIO_CALLBACK.
+ * It was not used by any known core at the time, and was removed from the API.
+ * The number 20 is reserved to prevent ABI clashes.
+ */
+
+/**
+ * Sets a callback that notifies the core of how much time has passed
+ * since the last iteration of <tt>retro_run</tt>.
+ * If the frontend is not running the core in real time
+ * (e.g. it's frame-stepping or running in slow motion),
+ * then the reference value will be provided to the callback instead.
+ *
+ * @param[in] data <tt>const struct retro_frame_time_callback *</tt>.
+ * Pointer to a single \c retro_frame_time_callback struct.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @note Frontends may disable this environment call in certain situations.
+ * It will return \c false in those cases.
+ * @see retro_frame_time_callback
+ */
 #define RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK 21
-                                           /* const struct retro_frame_time_callback * --
-                                            * Lets the core know how much time has passed since last
-                                            * invocation of retro_run().
-                                            * The frontend can tamper with the timing to fake fast-forward,
-                                            * slow-motion, frame stepping, etc.
-                                            * In this case the delta time will use the reference value
-                                            * in frame_time_callback..
-                                            */
+
+/**
+ * Registers a set of functions that the frontend can use
+ * to tell the core it's ready for audio output.
+ *
+ * It is intended for games that feature asynchronous audio.
+ * It should not be used for emulators unless their audio is asynchronous.
+ *
+ *
+ * The callback only notifies about writability; the libretro core still
+ * has to call the normal audio callbacks
+ * to write audio. The audio callbacks must be called from within the
+ * notification callback.
+ * The amount of audio data to write is up to the core.
+ * Generally, the audio callback will be called continuously in a loop.
+ *
+ * A frontend may disable this callback in certain situations.
+ * The core must be able to render audio with the "normal" interface.
+ *
+ * @param[in] data <tt>const struct retro_audio_callback *</tt>.
+ * Pointer to a set of functions that the frontend will call to notify the core
+ * when it's ready to receive audio data.
+ * May be \c NULL, in which case the frontend will return
+ * whether this environment callback is available.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ * @warning The provided callbacks can be invoked from any thread,
+ * so their implementations \em must be thread-safe.
+ * @note If a core uses this callback,
+ * it should also use <tt>RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK</tt>.
+ * @see retro_audio_callback
+ * @see retro_audio_sample_t
+ * @see retro_audio_sample_batch_t
+ * @see RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK
+ */
 #define RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK 22
-                                           /* const struct retro_audio_callback * --
-                                            * Sets an interface which is used to notify a libretro core about audio
-                                            * being available for writing.
-                                            * The callback can be called from any thread, so a core using this must
-                                            * have a thread safe audio implementation.
-                                            * It is intended for games where audio and video are completely
-                                            * asynchronous and audio can be generated on the fly.
-                                            * This interface is not recommended for use with emulators which have
-                                            * highly synchronous audio.
-                                            *
-                                            * The callback only notifies about writability; the libretro core still
-                                            * has to call the normal audio callbacks
-                                            * to write audio. The audio callbacks must be called from within the
-                                            * notification callback.
-                                            * The amount of audio data to write is up to the implementation.
-                                            * Generally, the audio callback will be called continously in a loop.
-                                            *
-                                            * Due to thread safety guarantees and lack of sync between audio and
-                                            * video, a frontend  can selectively disallow this interface based on
-                                            * internal configuration. A core using this interface must also
-                                            * implement the "normal" audio interface.
-                                            *
-                                            * A libretro core using SET_AUDIO_CALLBACK should also make use of
-                                            * SET_FRAME_TIME_CALLBACK.
-                                            */
+
+/**
+ * Gets an interface that a core can use to access a controller's rumble motors.
+ *
+ * The interface supports two independently-controlled motors,
+ * one strong and one weak.
+ *
+ * Should be called from either \c retro_init() or \c retro_load_game(),
+ * but not from \c retro_set_environment().
+ *
+ * @param[out] data <tt>struct retro_rumble_interface *</tt>.
+ * Pointer to the interface struct.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available,
+ * even if the current device doesn't support vibration.
+ * @see retro_rumble_interface
+ * @defgroup GET_RUMBLE_INTERFACE Rumble Interface
+ */
 #define RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE 23
-                                           /* struct retro_rumble_interface * --
-                                            * Gets an interface which is used by a libretro core to set
-                                            * state of rumble motors in controllers.
-                                            * A strong and weak motor is supported, and they can be
-                                            * controlled indepedently.
-                                            * Should be called from either retro_init() or retro_load_game().
-                                            * Should not be called from retro_set_environment().
-                                            * Returns false if rumble functionality is unavailable.
-                                            */
+
+/**
+ * Returns the frontend's supported input device types.
+ *
+ * The supported device types are returned as a bitmask,
+ * with each value of \ref RETRO_DEVICE corresponding to a bit.
+ *
+ * Should only be called in \c retro_run().
+ *
+ * @code
+ * #define REQUIRED_DEVICES ((1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG))
+ * void get_input_device_capabilities_example(void)
+ * {
+ *    uint64_t capabilities;
+ *    environ_cb(RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES, &capabilities);
+ *    if ((capabilities & REQUIRED_DEVICES) == REQUIRED_DEVICES)
+ *      printf("Joypad and analog device types are supported");
+ * }
+ * @endcode
+ *
+ * @param[out] data <tt>uint64_t *</tt>.
+ * Pointer to a bitmask of supported input device types.
+ * If the frontend supports a particular \c RETRO_DEVICE_* type,
+ * then the bit <tt>(1 << RETRO_DEVICE_*)</tt> will be set.
+ *
+ * Each bit represents a \c RETRO_DEVICE constant,
+ * e.g. bit 1 represents \c RETRO_DEVICE_JOYPAD,
+ * bit 2 represents \c RETRO_DEVICE_MOUSE, and so on.
+ *
+ * Bits that do not correspond to known device types will be set to zero
+ * and are reserved for future use.
+ *
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available.
+ * @note If the frontend supports multiple input drivers,
+ * availability of this environment call (and the reported capabilities)
+ * may depend on the active driver.
+ * @see RETRO_DEVICE
+ */
 #define RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES 24
-                                           /* uint64_t * --
-                                            * Gets a bitmask telling which device type are expected to be
-                                            * handled properly in a call to retro_input_state_t.
-                                            * Devices which are not handled or recognized always return
-                                            * 0 in retro_input_state_t.
-                                            * Example bitmask: caps = (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG).
-                                            * Should only be called in retro_run().
-                                            */
+
+/**
+ * Returns an interface that the core can use to access and configure available sensors,
+ * such as an accelerometer or gyroscope.
+ *
+ * @param[out] data <tt>struct retro_sensor_interface *</tt>.
+ * Pointer to the sensor interface that the frontend will populate.
+ * Behavior is undefined if is \c NULL.
+ * @returns \c true if the environment call is available,
+ * even if the device doesn't have any supported sensors.
+ * @see retro_sensor_interface
+ * @see retro_sensor_action
+ * @see RETRO_SENSOR
+ * @addtogroup RETRO_SENSOR
+ */
 #define RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE (25 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_sensor_interface * --
-                                            * Gets access to the sensor interface.
-                                            * The purpose of this interface is to allow
-                                            * setting state related to sensors such as polling rate,
-                                            * enabling/disable it entirely, etc.
-                                            * Reading sensor state is done via the normal
-                                            * input_state_callback API.
-                                            */
+
+/**
+ * Gets an interface to the device's video camera.
+ *
+ * The frontend delivers new video frames via a user-defined callback
+ * that runs in the same thread as \c retro_run().
+ * Should be called in \c retro_load_game().
+ *
+ * @param[in,out] data <tt>struct retro_camera_callback *</tt>.
+ * Pointer to the camera driver interface.
+ * Some fields in the struct must be filled in by the core,
+ * others are provided by the frontend.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available,
+ * even if an actual camera isn't.
+ * @note This API only supports one video camera at a time.
+ * If the device provides multiple cameras (e.g. inner/outer cameras on a phone),
+ * the frontend will choose one to use.
+ * @see retro_camera_callback
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ */
 #define RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE (26 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_camera_callback * --
-                                            * Gets an interface to a video camera driver.
-                                            * A libretro core can use this interface to get access to a
-                                            * video camera.
-                                            * New video frames are delivered in a callback in same
-                                            * thread as retro_run().
-                                            *
-                                            * GET_CAMERA_INTERFACE should be called in retro_load_game().
-                                            *
-                                            * Depending on the camera implementation used, camera frames
-                                            * will be delivered as a raw framebuffer,
-                                            * or as an OpenGL texture directly.
-                                            *
-                                            * The core has to tell the frontend here which types of
-                                            * buffers can be handled properly.
-                                            * An OpenGL texture can only be handled when using a
-                                            * libretro GL core (SET_HW_RENDER).
-                                            * It is recommended to use a libretro GL core when
-                                            * using camera interface.
-                                            *
-                                            * The camera is not started automatically. The retrieved start/stop
-                                            * functions must be used to explicitly
-                                            * start and stop the camera driver.
-                                            */
+
+/**
+ * Gets an interface that the core can use for cross-platform logging.
+ * Certain platforms don't have a console or <tt>stderr</tt>,
+ * or they have their own preferred logging methods.
+ * The frontend itself may also display log output.
+ *
+ * @attention This should not be used for information that the player must immediately see,
+ * such as major errors or warnings.
+ * In most cases, this is best for information that will help you (the developer)
+ * identify problems when debugging or providing support.
+ * Unless a core or frontend is intended for advanced users,
+ * the player might not check (or even know about) their logs.
+ *
+ * @param[out] data <tt>struct retro_log_callback *</tt>.
+ * Pointer to the callback where the function pointer will be saved.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see retro_log_callback
+ * @note Cores can fall back to \c stderr if this interface is not available.
+ */
 #define RETRO_ENVIRONMENT_GET_LOG_INTERFACE 27
-                                           /* struct retro_log_callback * --
-                                            * Gets an interface for logging. This is useful for
-                                            * logging in a cross-platform way
-                                            * as certain platforms cannot use stderr for logging.
-                                            * It also allows the frontend to
-                                            * show logging information in a more suitable way.
-                                            * If this interface is not used, libretro cores should
-                                            * log to stderr as desired.
-                                            */
+
+/**
+ * Returns an interface that the core can use for profiling code
+ * and to access performance-related information.
+ *
+ * This callback supports performance counters, a high-resolution timer,
+ * and listing available CPU features (mostly SIMD instructions).
+ *
+ * @param[out] data <tt>struct retro_perf_callback *</tt>.
+ * Pointer to the callback interface.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available.
+ * @see retro_perf_callback
+ */
 #define RETRO_ENVIRONMENT_GET_PERF_INTERFACE 28
-                                           /* struct retro_perf_callback * --
-                                            * Gets an interface for performance counters. This is useful
-                                            * for performance logging in a cross-platform way and for detecting
-                                            * architecture-specific features, such as SIMD support.
-                                            */
+
+/**
+ * Returns an interface that the core can use to retrieve the device's location,
+ * including its current latitude and longitude.
+ *
+ * @param[out] data <tt>struct retro_location_callback *</tt>.
+ * Pointer to the callback interface.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if the environment call is available,
+ * even if there's no location information available.
+ * @see retro_location_callback
+ */
 #define RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE 29
-                                           /* struct retro_location_callback * --
-                                            * Gets access to the location interface.
-                                            * The purpose of this interface is to be able to retrieve
-                                            * location-based information from the host device,
-                                            * such as current latitude / longitude.
-                                            */
-#define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30 /* Old name, kept for compatibility. */
+
+/**
+ * @deprecated An obsolete alias to \c RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY kept for compatibility.
+ * @see RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY
+ **/
+#define RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY 30
+
+/**
+ * Returns the frontend's "core assets" directory,
+ * which can be used to store assets that the core needs
+ * such as art assets or level data.
+ *
+ * @param[out] data <tt>const char **</tt>.
+ * Pointer to a string in which the core assets directory will be saved.
+ * This string is managed by the frontend and must not be modified or freed by the core.
+ * May be \c NULL if no core assets directory is defined,
+ * in which case the core should find an alternative directory.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available,
+ * even if the value returned in \c data is <tt>NULL</tt>.
+ */
 #define RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY 30
-                                           /* const char ** --
-                                            * Returns the "core assets" directory of the frontend.
-                                            * This directory can be used to store specific assets that the
-                                            * core relies upon, such as art assets,
-                                            * input data, etc etc.
-                                            * The returned value can be NULL.
-                                            * If so, no such directory is defined,
-                                            * and it's up to the implementation to find a suitable directory.
-                                            */
+
+/**
+ * Returns the frontend's save data directory, if available.
+ * This directory should be used to store game-specific save data,
+ * including memory card images.
+ *
+ * Although libretro provides an interface for cores to expose SRAM to the frontend,
+ * not all cores can support it correctly.
+ * In this case, cores should use this environment callback
+ * to save their game data to disk manually.
+ *
+ * Cores that use this environment callback
+ * should flush their save data to disk periodically and when unloading.
+ *
+ * @param[out] data <tt>const char **</tt>.
+ * Pointer to the string in which the save data directory will be saved.
+ * This string is managed by the frontend and must not be modified or freed by the core.
+ * May return \c NULL if no save data directory is defined.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available,
+ * even if the value returned in \c data is <tt>NULL</tt>.
+ * @note Early libretro cores used \c RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY for save data.
+ * This is still supported for backwards compatibility,
+ * but new cores should use this environment call instead.
+ * \c RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY should be used for game-agnostic data
+ * such as BIOS files or core-specific configuration.
+ * @note The returned directory may or may not be the same
+ * as the one used for \c retro_get_memory_data.
+ *
+ * @see retro_get_memory_data
+ * @see RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
+ */
 #define RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY 31
-                                           /* const char ** --
-                                            * Returns the "save" directory of the frontend, unless there is no
-                                            * save directory available. The save directory should be used to
-                                            * store SRAM, memory cards, high scores, etc, if the libretro core
-                                            * cannot use the regular memory interface (retro_get_memory_data()).
-                                            *
-                                            * If the frontend cannot designate a save directory, it will return
-                                            * NULL to indicate that the core should attempt to operate without a
-                                            * save directory set.
-                                            *
-                                            * NOTE: early libretro cores used the system directory for save
-                                            * files. Cores that need to be backwards-compatible can still check
-                                            * GET_SYSTEM_DIRECTORY.
-                                            */
+
+/**
+ * Sets new video and audio parameters for the core.
+ * This can only be called from within <tt>retro_run</tt>.
+ *
+ * This environment call may entail a full reinitialization of the frontend's audio/video drivers,
+ * hence it should \em only be used if the core needs to make drastic changes
+ * to audio/video parameters.
+ *
+ * This environment call should \em not be used when:
+ * <ul>
+ * <li>Changing the emulated system's internal resolution,
+ * within the limits defined by the existing values of \c max_width and \c max_height.
+ * Use \c RETRO_ENVIRONMENT_SET_GEOMETRY instead,
+ * and adjust \c retro_get_system_av_info to account for
+ * supported scale factors and screen layouts
+ * when computing \c max_width and \c max_height.
+ * Only use this environment call if \c max_width or \c max_height needs to increase.
+ * <li>Adjusting the screen's aspect ratio,
+ * e.g. when changing the layout of the screen(s).
+ * Use \c RETRO_ENVIRONMENT_SET_GEOMETRY or \c RETRO_ENVIRONMENT_SET_ROTATION instead.
+ * </ul>
+ *
+ * The frontend will reinitialize its audio and video drivers within this callback;
+ * after that happens, audio and video callbacks will target the newly-initialized driver,
+ * even within the same \c retro_run call.
+ *
+ * This callback makes it possible to support configurable resolutions
+ * while avoiding the need to compute the "worst case" values of \c max_width and \c max_height.
+ *
+ * @param[in] data <tt>const struct retro_system_av_info *</tt>.
+ * Pointer to the new video and audio parameters that the frontend should adopt.
+ * @returns \c true if the environment call is available
+ * and the new av_info struct was accepted.
+ * \c false if the environment call is unavailable or \c data is <tt>NULL</tt>.
+ * @see retro_system_av_info
+ * @see RETRO_ENVIRONMENT_SET_GEOMETRY
+ */
 #define RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO 32
-                                           /* const struct retro_system_av_info * --
-                                            * Sets a new av_info structure. This can only be called from
-                                            * within retro_run().
-                                            * This should *only* be used if the core is completely altering the
-                                            * internal resolutions, aspect ratios, timings, sampling rate, etc.
-                                            * Calling this can require a full reinitialization of video/audio
-                                            * drivers in the frontend,
-                                            *
-                                            * so it is important to call it very sparingly, and usually only with
-                                            * the users explicit consent.
-                                            * An eventual driver reinitialize will happen so that video and
-                                            * audio callbacks
-                                            * happening after this call within the same retro_run() call will
-                                            * target the newly initialized driver.
-                                            *
-                                            * This callback makes it possible to support configurable resolutions
-                                            * in games, which can be useful to
-                                            * avoid setting the "worst case" in max_width/max_height.
-                                            *
-                                            * ***HIGHLY RECOMMENDED*** Do not call this callback every time
-                                            * resolution changes in an emulator core if it's
-                                            * expected to be a temporary change, for the reasons of possible
-                                            * driver reinitialization.
-                                            * This call is not a free pass for not trying to provide
-                                            * correct values in retro_get_system_av_info(). If you need to change
-                                            * things like aspect ratio or nominal width/height,
-                                            * use RETRO_ENVIRONMENT_SET_GEOMETRY, which is a softer variant
-                                            * of SET_SYSTEM_AV_INFO.
-                                            *
-                                            * If this returns false, the frontend does not acknowledge a
-                                            * changed av_info struct.
-                                            */
+
+/**
+ * Provides an interface that a frontend can use
+ * to get function pointers from the core.
+ *
+ * This allows cores to define their own extensions to the libretro API,
+ * or to expose implementations of a frontend's libretro extensions.
+ *
+ * @param[in] data <tt>const struct retro_get_proc_address_interface *</tt>.
+ * Pointer to the interface that the frontend can use to get function pointers from the core.
+ * The frontend must maintain its own copy of this interface.
+ * @returns \c true if the environment call is available
+ * and the returned interface was accepted.
+ * @note The provided interface may be called at any time,
+ * even before this environment call returns.
+ * @note Extensions should be prefixed with the name of the frontend or core that defines them.
+ * For example, a frontend named "foo" that defines a debugging extension
+ * should expect the core to define functions prefixed with "foo_debug_".
+ * @warning If a core wants to use this environment call,
+ * it \em must do so from within \c retro_set_environment().
+ * @see retro_get_proc_address_interface
+ */
 #define RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK 33
-                                           /* const struct retro_get_proc_address_interface * --
-                                            * Allows a libretro core to announce support for the
-                                            * get_proc_address() interface.
-                                            * This interface allows for a standard way to extend libretro where
-                                            * use of environment calls are too indirect,
-                                            * e.g. for cases where the frontend wants to call directly into the core.
-                                            *
-                                            * If a core wants to expose this interface, SET_PROC_ADDRESS_CALLBACK
-                                            * **MUST** be called from within retro_set_environment().
-                                            */
+
+/**
+ * Registers a core's ability to handle "subsystems",
+ * which are secondary platforms that augment a core's primary emulated hardware.
+ *
+ * A core doesn't need to emulate a secondary platform
+ * in order to use it as a subsystem;
+ * as long as it can load a secondary file for some practical use,
+ * then this environment call is most likely suitable.
+ *
+ * Possible use cases of a subsystem include:
+ *
+ * \li Installing software onto an emulated console's internal storage,
+ * such as the Nintendo DSi.
+ * \li Emulating accessories that are used to support another console's games,
+ * such as the Super Game Boy or the N64 Transfer Pak.
+ * \li Inserting a secondary ROM into a console
+ * that features multiple cartridge ports,
+ * such as the Nintendo DS's Slot-2.
+ * \li Loading a save data file created and used by another core.
+ *
+ * Cores should \em not use subsystems for:
+ *
+ * \li Emulators that support multiple "primary" platforms,
+ * such as a Game Boy/Game Boy Advance core
+ * or a Sega Genesis/Sega CD/32X core.
+ * Use \c retro_system_content_info_override, \c retro_system_info,
+ * and/or runtime detection instead.
+ * \li Selecting different memory card images.
+ * Use dynamically-populated core options instead.
+ * \li Different variants of a single console,
+ * such the Game Boy vs. the Game Boy Color.
+ * Use core options or runtime detection instead.
+ * \li Games that span multiple disks.
+ * Use \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ * and m3u-formatted playlists instead.
+ * \li Console system files (BIOS, firmware, etc.).
+ * Use \c RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
+ * and a common naming convention instead.
+ *
+ * When the frontend loads a game via a subsystem,
+ * it must call \c retro_load_game_special() instead of \c retro_load_game().
+ *
+ * @param[in] data <tt>const struct retro_subsystem_info *</tt>.
+ * Pointer to an array of subsystem descriptors,
+ * terminated by a zeroed-out \c retro_subsystem_info struct.
+ * The frontend should maintain its own copy
+ * of this array and the strings within it.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @note This environment call \em must be called from within \c retro_set_environment(),
+ * as frontends may need the registered information before loading a game.
+ * @see retro_subsystem_info
+ * @see retro_load_game_special
+ */
 #define RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO 34
-                                           /* const struct retro_subsystem_info * --
-                                            * This environment call introduces the concept of libretro "subsystems".
-                                            * A subsystem is a variant of a libretro core which supports
-                                            * different kinds of games.
-                                            * The purpose of this is to support e.g. emulators which might
-                                            * have special needs, e.g. Super Nintendo's Super GameBoy, Sufami Turbo.
-                                            * It can also be used to pick among subsystems in an explicit way
-                                            * if the libretro implementation is a multi-system emulator itself.
-                                            *
-                                            * Loading a game via a subsystem is done with retro_load_game_special(),
-                                            * and this environment call allows a libretro core to expose which
-                                            * subsystems are supported for use with retro_load_game_special().
-                                            * A core passes an array of retro_game_special_info which is terminated
-                                            * with a zeroed out retro_game_special_info struct.
-                                            *
-                                            * If a core wants to use this functionality, SET_SUBSYSTEM_INFO
-                                            * **MUST** be called from within retro_set_environment().
-                                            */
+
+/**
+ * Declares one or more types of controllers supported by this core.
+ * The frontend may then allow the player to select one of these controllers in its menu.
+ *
+ * Many consoles had controllers that came in different versions,
+ * were extensible with peripherals,
+ * or could be held in multiple ways;
+ * this environment call can be used to represent these differences
+ * and adjust the core's behavior to match.
+ *
+ * Possible use cases include:
+ *
+ * \li Supporting different classes of a single controller that supported their own sets of games.
+ *     For example, the SNES had two different lightguns (the Super Scope and the Justifier)
+ *     whose games were incompatible with each other.
+ * \li Representing a platform's alternative controllers.
+ *     For example, several platforms had music/rhythm games that included controllers
+ *     shaped like musical instruments.
+ * \li Representing variants of a standard controller with additional inputs.
+ *     For example, numerous consoles in the 90's introduced 6-button controllers for fighting games,
+ *     steering wheels for racing games,
+ *     or analog sticks for 3D platformers.
+ * \li Representing add-ons for consoles or standard controllers.
+ *     For example, the 3DS had a Circle Pad Pro attachment that added a second analog stick.
+ * \li Selecting different configurations for a single controller.
+ *     For example, the Wii Remote could be held sideways like a traditional game pad
+ *     or in one hand like a wand.
+ * \li Providing multiple ways to simulate the experience of using a particular controller.
+ *     For example, the Game Boy Advance featured several games
+ *     with motion or light sensors in their cartridges;
+ *     a core could provide controller configurations
+ *     that allow emulating the sensors with either analog axes
+ *     or with their host device's sensors.
+ *
+ * Should be called in retro_load_game.
+ * The frontend must maintain its own copy of the provided array,
+ * including all strings and subobjects.
+ * A core may exclude certain controllers for known incompatible games.
+ *
+ * When the frontend changes the active device for a particular port,
+ * it must call \c retro_set_controller_port_device() with that port's index
+ * and one of the IDs defined in its retro_controller_info::types field.
+ *
+ * Input ports are generally associated with different players
+ * (and the frontend's UI may reflect this with "Player 1" labels),
+ * but this is not required.
+ * Some games use multiple controllers for a single player,
+ * or some cores may use port indexes to represent an emulated console's
+ * alternative input peripherals.
+ *
+ * @param[in] data <tt>const struct retro_controller_info *</tt>.
+ * Pointer to an array of controller types defined by this core,
+ * terminated by a zeroed-out \c retro_controller_info.
+ * Each element of this array represents a controller port on the emulated device.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @see retro_controller_info
+ * @see retro_set_controller_port_device
+ * @see RETRO_DEVICE_SUBCLASS
+ */
 #define RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
-                                           /* const struct retro_controller_info * --
-                                            * This environment call lets a libretro core tell the frontend
-                                            * which controller subclasses are recognized in calls to
-                                            * retro_set_controller_port_device().
-                                            *
-                                            * Some emulators such as Super Nintendo support multiple lightgun
-                                            * types which must be specifically selected from. It is therefore
-                                            * sometimes necessary for a frontend to be able to tell the core
-                                            * about a special kind of input device which is not specifcally
-                                            * provided by the Libretro API.
-                                            *
-                                            * In order for a frontend to understand the workings of those devices,
-                                            * they must be defined as a specialized subclass of the generic device
-                                            * types already defined in the libretro API.
-                                            *
-                                            * The core must pass an array of const struct retro_controller_info which
-                                            * is terminated with a blanked out struct. Each element of the
-                                            * retro_controller_info struct corresponds to the ascending port index
-                                            * that is passed to retro_set_controller_port_device() when that function
-                                            * is called to indicate to the core that the frontend has changed the
-                                            * active device subclass. SEE ALSO: retro_set_controller_port_device()
-                                            *
-                                            * The ascending input port indexes provided by the core in the struct
-                                            * are generally presented by frontends as ascending User # or Player #,
-                                            * such as Player 1, Player 2, Player 3, etc. Which device subclasses are
-                                            * supported can vary per input port.
-                                            *
-                                            * The first inner element of each entry in the retro_controller_info array
-                                            * is a retro_controller_description struct that specifies the names and
-                                            * codes of all device subclasses that are available for the corresponding
-                                            * User or Player, beginning with the generic Libretro device that the
-                                            * subclasses are derived from. The second inner element of each entry is the
-                                            * total number of subclasses that are listed in the retro_controller_description.
-                                            *
-                                            * NOTE: Even if special device types are set in the libretro core,
-                                            * libretro should only poll input based on the base input device types.
-                                            */
+
+/**
+ * Notifies the frontend of the address spaces used by the core's emulated hardware,
+ * and of the memory maps within these spaces.
+ * This can be used by the frontend to provide cheats, achievements, or debugging capabilities.
+ * Should only be used by emulators, as it makes little sense for game engines.
+ *
+ * @note Cores should also expose these address spaces
+ * through retro_get_memory_data and \c retro_get_memory_size if applicable;
+ * this environment call is not intended to replace those two functions,
+ * as the emulated hardware may feature memory regions outside of its own address space
+ * that are nevertheless useful for the frontend.
+ *
+ * @param[in] data <tt>const struct retro_memory_map *</tt>.
+ * Pointer to a single memory-map listing.
+ * The frontend must maintain its own copy of this object and its contents,
+ * including strings and nested objects.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @see retro_memory_map
+ * @see retro_get_memory_data
+ * @see retro_memory_descriptor
+ */
 #define RETRO_ENVIRONMENT_SET_MEMORY_MAPS (36 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_memory_map * --
-                                            * This environment call lets a libretro core tell the frontend
-                                            * about the memory maps this core emulates.
-                                            * This can be used to implement, for example, cheats in a core-agnostic way.
-                                            *
-                                            * Should only be used by emulators; it doesn't make much sense for
-                                            * anything else.
-                                            * It is recommended to expose all relevant pointers through
-                                            * retro_get_memory_* as well.
-                                            */
+
+/**
+ * Resizes the viewport without reinitializing the video driver.
+ *
+ * Similar to \c RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO,
+ * but any changes that would require video reinitialization will not be performed.
+ * Can only be called from within \c retro_run().
+ *
+ * This environment call allows a core to revise the size of the viewport at will,
+ * which can be useful for emulated platforms that support dynamic resolution changes
+ * or for cores that support multiple screen layouts.
+ *
+ * A frontend must guarantee that this environment call completes in
+ * constant time.
+ *
+ * @param[in] data <tt>const struct retro_game_geometry *</tt>.
+ * Pointer to the new video parameters that the frontend should adopt.
+ * \c retro_game_geometry::max_width and \c retro_game_geometry::max_height
+ * will be ignored.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @return \c true if the environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ */
 #define RETRO_ENVIRONMENT_SET_GEOMETRY 37
-                                           /* const struct retro_game_geometry * --
-                                            * This environment call is similar to SET_SYSTEM_AV_INFO for changing
-                                            * video parameters, but provides a guarantee that drivers will not be
-                                            * reinitialized.
-                                            * This can only be called from within retro_run().
-                                            *
-                                            * The purpose of this call is to allow a core to alter nominal
-                                            * width/heights as well as aspect ratios on-the-fly, which can be
-                                            * useful for some emulators to change in run-time.
-                                            *
-                                            * max_width/max_height arguments are ignored and cannot be changed
-                                            * with this call as this could potentially require a reinitialization or a
-                                            * non-constant time operation.
-                                            * If max_width/max_height are to be changed, SET_SYSTEM_AV_INFO is required.
-                                            *
-                                            * A frontend must guarantee that this environment call completes in
-                                            * constant time.
-                                            */
+
+/**
+ * Returns the name of the user, if possible.
+ * This callback is suitable for cores that offer personalization,
+ * such as online facilities or user profiles on the emulated system.
+ * @param[out] data <tt>const char **</tt>.
+ * Pointer to the user name string.
+ * May be \c NULL, in which case the core should use a default name.
+ * The returned pointer is owned by the frontend and must not be modified or freed by the core.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available,
+ * even if the frontend couldn't provide a name.
+ */
 #define RETRO_ENVIRONMENT_GET_USERNAME 38
-                                           /* const char **
-                                            * Returns the specified username of the frontend, if specified by the user.
-                                            * This username can be used as a nickname for a core that has online facilities
-                                            * or any other mode where personalization of the user is desirable.
-                                            * The returned value can be NULL.
-                                            * If this environ callback is used by a core that requires a valid username,
-                                            * a default username should be specified by the core.
-                                            */
+
+/**
+ * Returns the frontend's configured language.
+ * It can be used to localize the core's UI,
+ * or to customize the emulated firmware if applicable.
+ *
+ * @param[out] data <tt>retro_language *</tt>.
+ * Pointer to the language identifier.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available.
+ * @note The returned language may not be the same as the operating system's language.
+ * Cores should fall back to the operating system's language (or to English)
+ * if the environment call is unavailable or the returned language is unsupported.
+ * @see retro_language
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+ */
 #define RETRO_ENVIRONMENT_GET_LANGUAGE 39
-                                           /* unsigned * --
-                                            * Returns the specified language of the frontend, if specified by the user.
-                                            * It can be used by the core for localization purposes.
-                                            */
+
+/**
+ * Returns a frontend-managed framebuffer
+ * that the core may render directly into
+ *
+ * This environment call is provided as an optimization
+ * for cores that use software rendering
+ * (i.e. that don't use \refitem RETRO_ENVIRONMENT_SET_HW_RENDER "a graphics hardware API");
+ * specifically, the intended use case is to allow a core
+ * to render directly into frontend-managed video memory,
+ * avoiding the bandwidth use that copying a whole framebuffer from core to video memory entails.
+ *
+ * Must be called every frame if used,
+ * as this may return a different framebuffer each frame
+ * (e.g. for swap chains).
+ * However, a core may render to a different buffer even if this call succeeds.
+ *
+ * @param[in,out] data <tt>struct retro_framebuffer *</tt>.
+ * Pointer to a frontend's frame buffer and accompanying data.
+ * Some fields are set by the core, others are set by the frontend.
+ * Only guaranteed to be valid for the duration of the current \c retro_run call,
+ * and must not be used afterwards.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if the environment call was recognized
+ * and the framebuffer was successfully returned.
+ * @see retro_framebuffer
+ */
 #define RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER (40 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_framebuffer * --
-                                            * Returns a preallocated framebuffer which the core can use for rendering
-                                            * the frame into when not using SET_HW_RENDER.
-                                            * The framebuffer returned from this call must not be used
-                                            * after the current call to retro_run() returns.
-                                            *
-                                            * The goal of this call is to allow zero-copy behavior where a core
-                                            * can render directly into video memory, avoiding extra bandwidth cost by copying
-                                            * memory from core to video memory.
-                                            *
-                                            * If this call succeeds and the core renders into it,
-                                            * the framebuffer pointer and pitch can be passed to retro_video_refresh_t.
-                                            * If the buffer from GET_CURRENT_SOFTWARE_FRAMEBUFFER is to be used,
-                                            * the core must pass the exact
-                                            * same pointer as returned by GET_CURRENT_SOFTWARE_FRAMEBUFFER;
-                                            * i.e. passing a pointer which is offset from the
-                                            * buffer is undefined. The width, height and pitch parameters
-                                            * must also match exactly to the values obtained from GET_CURRENT_SOFTWARE_FRAMEBUFFER.
-                                            *
-                                            * It is possible for a frontend to return a different pixel format
-                                            * than the one used in SET_PIXEL_FORMAT. This can happen if the frontend
-                                            * needs to perform conversion.
-                                            *
-                                            * It is still valid for a core to render to a different buffer
-                                            * even if GET_CURRENT_SOFTWARE_FRAMEBUFFER succeeds.
-                                            *
-                                            * A frontend must make sure that the pointer obtained from this function is
-                                            * writeable (and readable).
-                                            */
+
+/**
+ * Returns an interface for accessing the data of specific rendering APIs.
+ * Not all hardware rendering APIs support or need this.
+ *
+ * The details of these interfaces are specific to each rendering API.
+ *
+ * @note \c retro_hw_render_callback::context_reset must be called by the frontend
+ * before this environment call can be used.
+ * Additionally, the contents of the returned interface are invalidated
+ * after \c retro_hw_render_callback::context_destroyed has been called.
+ * @param[out] data <tt>const struct retro_hw_render_interface **</tt>.
+ * The render interface for the currently-enabled hardware rendering API, if any.
+ * The frontend will store a pointer to the interface at the address provided here.
+ * The returned interface is owned by the frontend and must not be modified or freed by the core.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available,
+ * the active graphics API has a libretro rendering interface,
+ * and the frontend is able to return said interface.
+ * \c false otherwise.
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see retro_hw_render_interface
+ * @note Since not every libretro-supported hardware rendering API
+ * has a \c retro_hw_render_interface implementation,
+ * a result of \c false is not necessarily an error.
+ */
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_hw_render_interface ** --
-                                            * Returns an API specific rendering interface for accessing API specific data.
-                                            * Not all HW rendering APIs support or need this.
-                                            * The contents of the returned pointer is specific to the rendering API
-                                            * being used. See the various headers like libretro_vulkan.h, etc.
-                                            *
-                                            * GET_HW_RENDER_INTERFACE cannot be called before context_reset has been called.
-                                            * Similarly, after context_destroyed callback returns,
-                                            * the contents of the HW_RENDER_INTERFACE are invalidated.
-                                            */
+
+/**
+ * Explicitly notifies the frontend of whether this core supports achievements.
+ * The core must expose its emulated address space via
+ * \c retro_get_memory_data or \c RETRO_ENVIRONMENT_GET_MEMORY_MAPS.
+ * Must be called before the first call to <tt>retro_run</tt>.
+ *
+ * If \ref retro_get_memory_data returns a valid address
+ * but this environment call is not used,
+ * the frontend (at its discretion) may or may not opt in the core to its achievements support.
+ * whether this core is opted in to the frontend's achievement support
+ * is left to the frontend's discretion.
+ * @param[in] data <tt>const bool *</tt>.
+ * Pointer to a single \c bool that indicates whether this core supports achievements.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
+ * @see retro_get_memory_data
+ */
 #define RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS (42 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const bool * --
-                                            * If true, the libretro implementation supports achievements
-                                            * either via memory descriptors set with RETRO_ENVIRONMENT_SET_MEMORY_MAPS
-                                            * or via retro_get_memory_data/retro_get_memory_size.
-                                            *
-                                            * This must be called before the first call to retro_run.
-                                            */
+
+/**
+ * Defines an interface that the frontend can use
+ * to ask the core for the parameters it needs for a hardware rendering context.
+ * The exact semantics depend on \ref RETRO_ENVIRONMENT_SET_HW_RENDER "the active rendering API".
+ * Will be used some time after \c RETRO_ENVIRONMENT_SET_HW_RENDER is called,
+ * but before \c retro_hw_render_callback::context_reset is called.
+ *
+ * @param[in] data <tt>const struct retro_hw_render_context_negotiation_interface *</tt>.
+ * Pointer to the context negotiation interface.
+ * Will be populated by the frontend.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is supported,
+ * even if the current graphics API doesn't use
+ * a context negotiation interface (in which case the argument is ignored).
+ * @see retro_hw_render_context_negotiation_interface
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ */
 #define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* const struct retro_hw_render_context_negotiation_interface * --
-                                            * Sets an interface which lets the libretro core negotiate with frontend how a context is created.
-                                            * The semantics of this interface depends on which API is used in SET_HW_RENDER earlier.
-                                            * This interface will be used when the frontend is trying to create a HW rendering context,
-                                            * so it will be used after SET_HW_RENDER, but before the context_reset callback.
-                                            */
+
+/**
+ * Notifies the frontend of any quirks associated with serialization.
+ *
+ * Should be set in either \c retro_init or \c retro_load_game, but not both.
+ * @param[in, out] data <tt>uint64_t *</tt>.
+ * Pointer to the core's serialization quirks.
+ * The frontend will set the flags of the quirks it supports
+ * and clear the flags of those it doesn't.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is supported.
+ * @see retro_serialize
+ * @see retro_unserialize
+ * @see RETRO_SERIALIZATION_QUIRK
+ */
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
-                                           /* uint64_t * --
-                                            * Sets quirk flags associated with serialization. The frontend will zero any flags it doesn't
-                                            * recognize or support. Should be set in either retro_init or retro_load_game, but not both.
-                                            */
+
+/**
+ * The frontend will try to use a "shared" context when setting up a hardware context.
+ * Mostly applicable to OpenGL.
+ *
+ * In order for this to have any effect,
+ * the core must call \c RETRO_ENVIRONMENT_SET_HW_RENDER at some point
+ * if it hasn't already.
+ *
+ * @param data Ignored.
+ * @returns \c true if the environment call is available
+ * and the frontend supports shared hardware contexts.
+ */
 #define RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT (44 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* N/A (null) * --
-                                            * The frontend will try to use a 'shared' hardware context (mostly applicable
-                                            * to OpenGL) when a hardware context is being set up.
-                                            *
-                                            * Returns true if the frontend supports shared hardware contexts and false
-                                            * if the frontend does not support shared hardware contexts.
-                                            *
-                                            * This will do nothing on its own until SET_HW_RENDER env callbacks are
-                                            * being used.
-                                            */
+
+/**
+ * Returns an interface that the core can use to access the file system.
+ * Should be called as early as possible.
+ *
+ * @param[in,out] data <tt>struct retro_vfs_interface_info *</tt>.
+ * Information about the desired VFS interface,
+ * as well as the interface itself.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available
+ * and the frontend can provide a VFS interface of the requested version or newer.
+ * @see retro_vfs_interface_info
+ * @see file_path
+ * @see retro_dirent
+ * @see file_stream
+ */
 #define RETRO_ENVIRONMENT_GET_VFS_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_vfs_interface_info * --
-                                            * Gets access to the VFS interface.
-                                            * VFS presence needs to be queried prior to load_game or any
-                                            * get_system/save/other_directory being called to let front end know
-                                            * core supports VFS before it starts handing out paths.
-                                            * It is recomended to do so in retro_set_environment
-                                            */
+
+/**
+ * Returns an interface that the core can use
+ * to set the state of any accessible device LEDs.
+ *
+ * @param[out] data <tt>struct retro_led_interface *</tt>.
+ * Pointer to the LED interface that the frontend will populate.
+ * May be \c NULL, in which case the frontend will only return
+ * whether this environment callback is available.
+ * @returns \c true if the environment call is available,
+ * even if \c data is \c NULL
+ * or no LEDs are accessible.
+ * @see retro_led_interface
+ */
 #define RETRO_ENVIRONMENT_GET_LED_INTERFACE (46 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_led_interface * --
-                                            * Gets an interface which is used by a libretro core to set
-                                            * state of LEDs.
-                                            */
+
+/**
+ * Returns hints about certain steps that the core may skip for this frame.
+ *
+ * A frontend may not need a core to generate audio or video in certain situations;
+ * this environment call sets a bitmask that indicates
+ * which steps the core may skip for this frame.
+ *
+ * This can be used to increase performance for some frontend features.
+ *
+ * @note Emulation accuracy should not be compromised;
+ * for example, if a core emulates a platform that supports display capture
+ * (i.e. looking at its own VRAM), then it should perform its rendering as normal
+ * unless it can prove that the emulated game is not using display capture.
+ *
+ * @param[out] data <tt>retro_av_enable_flags *</tt>.
+ * Pointer to the bitmask of steps that the frontend will skip.
+ * Other bits are set to zero and are reserved for future use.
+ * If \c NULL, the frontend will only return whether this environment callback is available.
+ * @returns \c true if the environment call is available,
+ * regardless of the value output to \c data.
+ * If \c false, the core should assume that the frontend will not skip any steps.
+ * @see retro_av_enable_flags
+ */
 #define RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* int * --
-                                            * Tells the core if the frontend wants audio or video.
-                                            * If disabled, the frontend will discard the audio or video,
-                                            * so the core may decide to skip generating a frame or generating audio.
-                                            * This is mainly used for increasing performance.
-                                            * Bit 0 (value 1): Enable Video
-                                            * Bit 1 (value 2): Enable Audio
-                                            * Bit 2 (value 4): Use Fast Savestates.
-                                            * Bit 3 (value 8): Hard Disable Audio
-                                            * Other bits are reserved for future use and will default to zero.
-                                            * If video is disabled:
-                                            * * The frontend wants the core to not generate any video,
-                                            *   including presenting frames via hardware acceleration.
-                                            * * The frontend's video frame callback will do nothing.
-                                            * * After running the frame, the video output of the next frame should be
-                                            *   no different than if video was enabled, and saving and loading state
-                                            *   should have no issues.
-                                            * If audio is disabled:
-                                            * * The frontend wants the core to not generate any audio.
-                                            * * The frontend's audio callbacks will do nothing.
-                                            * * After running the frame, the audio output of the next frame should be
-                                            *   no different than if audio was enabled, and saving and loading state
-                                            *   should have no issues.
-                                            * Fast Savestates:
-                                            * * Guaranteed to be created by the same binary that will load them.
-                                            * * Will not be written to or read from the disk.
-                                            * * Suggest that the core assumes loading state will succeed.
-                                            * * Suggest that the core updates its memory buffers in-place if possible.
-                                            * * Suggest that the core skips clearing memory.
-                                            * * Suggest that the core skips resetting the system.
-                                            * * Suggest that the core may skip validation steps.
-                                            * Hard Disable Audio:
-                                            * * Used for a secondary core when running ahead.
-                                            * * Indicates that the frontend will never need audio from the core.
-                                            * * Suggests that the core may stop synthesizing audio, but this should not
-                                            *   compromise emulation accuracy.
-                                            * * Audio output for the next frame does not matter, and the frontend will
-                                            *   never need an accurate audio state in the future.
-                                            * * State will never be saved when using Hard Disable Audio.
-                                            */
+
+/**
+ * Gets an interface that the core can use for raw MIDI I/O.
+ *
+ * @param[out] data <tt>struct retro_midi_interface *</tt>.
+ * Pointer to the MIDI interface.
+ * May be \c NULL.
+ * @return \c true if the environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_midi_interface
+ */
 #define RETRO_ENVIRONMENT_GET_MIDI_INTERFACE (48 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_midi_interface ** --
-                                            * Returns a MIDI interface that can be used for raw data I/O.
-                                            */
 
+/**
+ * Asks the frontend if it's currently in fast-forward mode.
+ * @param[out] data <tt>bool *</tt>.
+ * Set to \c true if the frontend is currently fast-forwarding its main loop.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @returns \c true if this environment call is available,
+ * regardless of the value returned in \c data.
+ *
+ * @see RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
+ */
 #define RETRO_ENVIRONMENT_GET_FASTFORWARDING (49 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                            /* bool * --
-                                            * Boolean value that indicates whether or not the frontend is in
-                                            * fastforwarding mode.
-                                            */
 
+/**
+ * Returns the refresh rate the frontend is targeting, in Hz.
+ * The intended use case is for the core to use the result to select an ideal refresh rate.
+ *
+ * @param[out] data <tt>float *</tt>.
+ * Pointer to the \c float in which the frontend will store its target refresh rate.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @return \c true if this environment call is available,
+ * regardless of the value returned in \c data.
+*/
 #define RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE (50 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                            /* float * --
-                                            * Float value that lets us know what target refresh rate
-                                            * is curently in use by the frontend.
-                                            *
-                                            * The core can use the returned value to set an ideal
-                                            * refresh rate/framerate.
-                                            */
 
+/**
+ * Returns whether the frontend can return the state of all buttons at once as a bitmask,
+ * rather than requiring a series of individual calls to \c retro_input_state_t.
+ *
+ * If this callback returns \c true,
+ * you can get the state of all buttons by passing \c RETRO_DEVICE_ID_JOYPAD_MASK
+ * as the \c id parameter to \c retro_input_state_t.
+ * Bit #N represents the RETRO_DEVICE_ID_JOYPAD constant of value N,
+ * e.g. <tt>(1 << RETRO_DEVICE_ID_JOYPAD_A)</tt> represents the A button.
+ *
+ * @param data Ignored.
+ * @returns \c true if the frontend can report the complete digital joypad state as a bitmask.
+ * @see retro_input_state_t
+ * @see RETRO_DEVICE_JOYPAD
+ * @see RETRO_DEVICE_ID_JOYPAD_MASK
+ */
 #define RETRO_ENVIRONMENT_GET_INPUT_BITMASKS (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                            /* bool * --
-                                            * Boolean value that indicates whether or not the frontend supports
-                                            * input bitmasks being returned by retro_input_state_t. The advantage
-                                            * of this is that retro_input_state_t has to be only called once to
-                                            * grab all button states instead of multiple times.
-                                            *
-                                            * If it returns true, you can pass RETRO_DEVICE_ID_JOYPAD_MASK as 'id'
-                                            * to retro_input_state_t (make sure 'device' is set to RETRO_DEVICE_JOYPAD).
-                                            * It will return a bitmask of all the digital buttons.
-                                            */
 
+/**
+ * Returns the version of the core options API supported by the frontend.
+ *
+ * Over the years, libretro has used several interfaces
+ * for allowing cores to define customizable options.
+ * \ref SET_CORE_OPTIONS_V2 "Version 2 of the interface"
+ * is currently preferred due to its extra features,
+ * but cores and frontends should strive to support
+ * versions \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS "1"
+ * and \ref RETRO_ENVIRONMENT_SET_VARIABLES "0" as well.
+ * This environment call provides the information that cores need for that purpose.
+ *
+ * If this environment call returns \c false,
+ * then the core should assume version 0 of the core options API.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the integer that will store the frontend's
+ * supported core options API version.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if the environment call is available,
+ * \c false otherwise.
+ * @see RETRO_ENVIRONMENT_SET_VARIABLES
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 #define RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION 52
-                                           /* unsigned * --
-                                            * Unsigned value is the API version number of the core options
-                                            * interface supported by the frontend. If callback return false,
-                                            * API version is assumed to be 0.
-                                            *
-                                            * In legacy code, core options are set by passing an array of
-                                            * retro_variable structs to RETRO_ENVIRONMENT_SET_VARIABLES.
-                                            * This may be still be done regardless of the core options
-                                            * interface version.
-                                            *
-                                            * If version is >= 1 however, core options may instead be set by
-                                            * passing an array of retro_core_option_definition structs to
-                                            * RETRO_ENVIRONMENT_SET_CORE_OPTIONS, or a 2D array of
-                                            * retro_core_option_definition structs to RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.
-                                            * This allows the core to additionally set option sublabel information
-                                            * and/or provide localisation support.
-                                            *
-                                            * If version is >= 2, core options may instead be set by passing
-                                            * a retro_core_options_v2 struct to RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
-                                            * or an array of retro_core_options_v2 structs to
-                                            * RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL. This allows the core
-                                            * to additionally set optional core option category information
-                                            * for frontends with core option category support.
-                                            */
 
+/**
+ * @copybrief RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ *
+ * @deprecated This environment call has been superseded
+ * by RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
+ * which supports categorizing options into groups.
+ * This environment call should only be used to maintain compatibility
+ * with older cores and frontends.
+ *
+ * This environment call is intended to replace \c RETRO_ENVIRONMENT_SET_VARIABLES,
+ * and should only be called if \c RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION
+ * returns an API version of at least 1.
+ *
+ * This should be called the first time as early as possible,
+ * ideally in \c retro_set_environment (but \c retro_load_game is acceptable).
+ * It may then be called again later to update
+ * the core's options and their associated values,
+ * as long as the number of options doesn't change
+ * from the number given in the first call.
+ *
+ * The core can retrieve option values at any time with \c RETRO_ENVIRONMENT_GET_VARIABLE.
+ * If a saved value for a core option doesn't match the option definition's values,
+ * the frontend may treat it as incorrect and revert to the default.
+ *
+ * Core options and their values are usually defined in a large static array,
+ * but they may be generated at runtime based on the loaded game or system state.
+ * Here are some use cases for that:
+ *
+ * @li Selecting a particular file from one of the
+ *     \ref RETRO_ENVIRONMENT_GET_ASSET_DIRECTORY "frontend's"
+ *     \ref RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY "content"
+ *     \ref RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY "directories",
+ *     such as a memory card image or figurine data file.
+ * @li Excluding options that are not relevant to the current game,
+ *     for cores that define a large number of possible options.
+ * @li Choosing a default value at runtime for a specific game,
+ *     such as a BIOS file whose region matches that of the loaded content.
+ *
+ * @note A guiding principle of libretro's API design is that
+ * all common interactions (gameplay, menu navigation, etc.)
+ * should be possible without a keyboard.
+ * This implies that cores should keep the number of options and values
+ * as low as possible.
+ *
+ * Example entry:
+ * @code
+ * {
+ *     "foo_option",
+ *     "Speed hack coprocessor X",
+ *     "Provides increased performance at the expense of reduced accuracy",
+ *     {
+ *         { "false",    NULL },
+ *         { "true",     NULL },
+ *         { "unstable", "Turbo (Unstable)" },
+ *         { NULL, NULL },
+ *     },
+ *     "false"
+ * }
+ * @endcode
+ *
+ * @param[in] data <tt>const struct retro_core_option_definition *</tt>.
+ * Pointer to one or more core option definitions,
+ * terminated by a \ref retro_core_option_definition whose values are all zero.
+ * May be \c NULL, in which case the frontend will remove all existing core options.
+ * The frontend must maintain its own copy of this object,
+ * including all strings and subobjects.
+ * @return \c true if this environment call is available.
+ *
+ * @see retro_core_option_definition
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS 53
-                                           /* const struct retro_core_option_definition ** --
-                                            * Allows an implementation to signal the environment
-                                            * which variables it might want to check for later using
-                                            * GET_VARIABLE.
-                                            * This allows the frontend to present these variables to
-                                            * a user dynamically.
-                                            * This should only be called if RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION
-                                            * returns an API version of >= 1.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_VARIABLES.
-                                            * This should be called the first time as early as
-                                            * possible (ideally in retro_set_environment).
-                                            * Afterwards it may be called again for the core to communicate
-                                            * updated options to the frontend, but the number of core
-                                            * options must not change from the number in the initial call.
-                                            *
-                                            * 'data' points to an array of retro_core_option_definition structs
-                                            * terminated by a { NULL, NULL, NULL, {{0}}, NULL } element.
-                                            * retro_core_option_definition::key should be namespaced to not collide
-                                            * with other implementations' keys. e.g. A core called
-                                            * 'foo' should use keys named as 'foo_option'.
-                                            * retro_core_option_definition::desc should contain a human readable
-                                            * description of the key.
-                                            * retro_core_option_definition::info should contain any additional human
-                                            * readable information text that a typical user may need to
-                                            * understand the functionality of the option.
-                                            * retro_core_option_definition::values is an array of retro_core_option_value
-                                            * structs terminated by a { NULL, NULL } element.
-                                            * > retro_core_option_definition::values[index].value is an expected option
-                                            *   value.
-                                            * > retro_core_option_definition::values[index].label is a human readable
-                                            *   label used when displaying the value on screen. If NULL,
-                                            *   the value itself is used.
-                                            * retro_core_option_definition::default_value is the default core option
-                                            * setting. It must match one of the expected option values in the
-                                            * retro_core_option_definition::values array. If it does not, or the
-                                            * default value is NULL, the first entry in the
-                                            * retro_core_option_definition::values array is treated as the default.
-                                            *
-                                            * The number of possible option values should be very limited,
-                                            * and must be less than RETRO_NUM_CORE_OPTION_VALUES_MAX.
-                                            * i.e. it should be feasible to cycle through options
-                                            * without a keyboard.
-                                            *
-                                            * Example entry:
-                                            * {
-                                            *     "foo_option",
-                                            *     "Speed hack coprocessor X",
-                                            *     "Provides increased performance at the expense of reduced accuracy",
-                                            * 	  {
-                                            *         { "false",    NULL },
-                                            *         { "true",     NULL },
-                                            *         { "unstable", "Turbo (Unstable)" },
-                                            *         { NULL, NULL },
-                                            *     },
-                                            *     "false"
-                                            * }
-                                            *
-                                            * Only strings are operated on. The possible values will
-                                            * generally be displayed and stored as-is by the frontend.
-                                            */
 
+/**
+ * A variant of \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+ * that supports internationalization.
+ *
+ * @deprecated This environment call has been superseded
+ * by \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL,
+ * which supports categorizing options into groups
+ * (plus translating the groups themselves).
+ * Only use this environment call to maintain compatibility
+ * with older cores and frontends.
+ *
+ * This should be called instead of \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+ * if the core provides translations for its options.
+ * General use is largely the same,
+ * but see \ref retro_core_options_intl for some important details.
+ *
+ * @param[in] data <tt>const struct retro_core_options_intl *</tt>.
+ * Pointer to a core's option values and their translations.
+ * @see retro_core_options_intl
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL 54
-                                           /* const struct retro_core_options_intl * --
-                                            * Allows an implementation to signal the environment
-                                            * which variables it might want to check for later using
-                                            * GET_VARIABLE.
-                                            * This allows the frontend to present these variables to
-                                            * a user dynamically.
-                                            * This should only be called if RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION
-                                            * returns an API version of >= 1.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_VARIABLES.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_CORE_OPTIONS.
-                                            * This should be called the first time as early as
-                                            * possible (ideally in retro_set_environment).
-                                            * Afterwards it may be called again for the core to communicate
-                                            * updated options to the frontend, but the number of core
-                                            * options must not change from the number in the initial call.
-                                            *
-                                            * This is fundamentally the same as RETRO_ENVIRONMENT_SET_CORE_OPTIONS,
-                                            * with the addition of localisation support. The description of the
-                                            * RETRO_ENVIRONMENT_SET_CORE_OPTIONS callback should be consulted
-                                            * for further details.
-                                            *
-                                            * 'data' points to a retro_core_options_intl struct.
-                                            *
-                                            * retro_core_options_intl::us is a pointer to an array of
-                                            * retro_core_option_definition structs defining the US English
-                                            * core options implementation. It must point to a valid array.
-                                            *
-                                            * retro_core_options_intl::local is a pointer to an array of
-                                            * retro_core_option_definition structs defining core options for
-                                            * the current frontend language. It may be NULL (in which case
-                                            * retro_core_options_intl::us is used by the frontend). Any items
-                                            * missing from this array will be read from retro_core_options_intl::us
-                                            * instead.
-                                            *
-                                            * NOTE: Default core option values are always taken from the
-                                            * retro_core_options_intl::us array. Any default values in
-                                            * retro_core_options_intl::local array will be ignored.
-                                            */
 
+/**
+ * Notifies the frontend that it should show or hide the named core option.
+ *
+ * Some core options aren't relevant in all scenarios,
+ * such as a submenu for hardware rendering flags
+ * when the software renderer is configured.
+ * This environment call asks the frontend to stop (or start)
+ * showing the named core option to the player.
+ * This is only a hint, not a requirement;
+ * the frontend may ignore this environment call.
+ * By default, all core options are visible.
+ *
+ * @note This environment call must \em only affect a core option's visibility,
+ * not its functionality or availability.
+ * \ref RETRO_ENVIRONMENT_GET_VARIABLE "Getting an invisible core option"
+ * must behave normally.
+ *
+ * @param[in] data <tt>const struct retro_core_option_display *</tt>.
+ * Pointer to a descriptor for the option that the frontend should show or hide.
+ * May be \c NULL, in which case the frontend will only return
+ * whether this environment callback is available.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL
+ * or the specified option doesn't exist.
+ * @see retro_core_option_display
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY 55
-                                           /* struct retro_core_option_display * --
-                                            *
-                                            * Allows an implementation to signal the environment to show
-                                            * or hide a variable when displaying core options. This is
-                                            * considered a *suggestion*. The frontend is free to ignore
-                                            * this callback, and its implementation not considered mandatory.
-                                            *
-                                            * 'data' points to a retro_core_option_display struct
-                                            *
-                                            * retro_core_option_display::key is a variable identifier
-                                            * which has already been set by SET_VARIABLES/SET_CORE_OPTIONS.
-                                            *
-                                            * retro_core_option_display::visible is a boolean, specifying
-                                            * whether variable should be displayed
-                                            *
-                                            * Note that all core option variables will be set visible by
-                                            * default when calling SET_VARIABLES/SET_CORE_OPTIONS.
-                                            */
 
+/**
+ * Returns the frontend's preferred hardware rendering API.
+ * Cores should use this information to decide which API to use with \c RETRO_ENVIRONMENT_SET_HW_RENDER.
+ * @param[out] data <tt>retro_hw_context_type *</tt>.
+ * Pointer to the hardware context type.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * This value will be set even if the environment call returns <tt>false</tt>,
+ * unless the frontend doesn't implement it.
+ * @returns \c true if the environment call is available
+ * and the frontend is able to use a hardware rendering API besides the one returned.
+ * If \c false is returned and the core cannot use the preferred rendering API,
+ * then it should exit or fall back to software rendering.
+ * @note The returned value does not indicate which API is currently in use.
+ * For example, the frontend may return \c RETRO_HW_CONTEXT_OPENGL
+ * while a Direct3D context from a previous session is active;
+ * this would signal that the frontend's current preference is for OpenGL,
+ * possibly because the user changed their frontend's video driver while a game is running.
+ * @see retro_hw_context_type
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ */
 #define RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER 56
-                                           /* unsigned * --
-                                            *
-                                            * Allows an implementation to ask frontend preferred hardware
-                                            * context to use. Core should use this information to deal
-                                            * with what specific context to request with SET_HW_RENDER.
-                                            *
-                                            * 'data' points to an unsigned variable
-                                            */
 
+/**
+ * Returns the minimum version of the disk control interface supported by the frontend.
+ *
+ * If this environment call returns \c false or \c data is 0 or greater,
+ * then cores may use disk control callbacks
+ * with \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE.
+ * If the reported version is 1 or greater,
+ * then cores should use \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE instead.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the unsigned integer that the frontend's supported disk control interface version will be stored in.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ */
 #define RETRO_ENVIRONMENT_GET_DISK_CONTROL_INTERFACE_VERSION 57
-                                           /* unsigned * --
-                                            * Unsigned value is the API version number of the disk control
-                                            * interface supported by the frontend. If callback return false,
-                                            * API version is assumed to be 0.
-                                            *
-                                            * In legacy code, the disk control interface is defined by passing
-                                            * a struct of type retro_disk_control_callback to
-                                            * RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE.
-                                            * This may be still be done regardless of the disk control
-                                            * interface version.
-                                            *
-                                            * If version is >= 1 however, the disk control interface may
-                                            * instead be defined by passing a struct of type
-                                            * retro_disk_control_ext_callback to
-                                            * RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE.
-                                            * This allows the core to provide additional information about
-                                            * disk images to the frontend and/or enables extra
-                                            * disk control functionality by the frontend.
-                                            */
 
+/**
+ * @copybrief RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE
+ *
+ * This is intended for multi-disk games that expect the player
+ * to manually swap disks at certain points in the game.
+ * This version of the disk control interface provides
+ * more information about disk images.
+ * Should be called in \c retro_init.
+ *
+ * @param[in] data <tt>const struct retro_disk_control_ext_callback *</tt>.
+ * Pointer to the callback functions to use.
+ * May be \c NULL, in which case the existing disk callback is deregistered.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_disk_control_ext_callback
+ */
 #define RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE 58
-                                           /* const struct retro_disk_control_ext_callback * --
-                                            * Sets an interface which frontend can use to eject and insert
-                                            * disk images, and also obtain information about individual
-                                            * disk image files registered by the core.
-                                            * This is used for games which consist of multiple images and
-                                            * must be manually swapped out by the user (e.g. PSX, floppy disk
-                                            * based systems).
-                                            */
 
+/**
+ * Returns the version of the message interface supported by the frontend.
+ *
+ * A version of 0 indicates that the frontend
+ * only supports the legacy \c RETRO_ENVIRONMENT_SET_MESSAGE interface.
+ * A version of 1 indicates that the frontend
+ * supports \c RETRO_ENVIRONMENT_SET_MESSAGE_EXT as well.
+ * If this environment call returns \c false,
+ * the core should behave as if it had returned 0.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the result returned by the frontend.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available.
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE
+ */
 #define RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION 59
-                                           /* unsigned * --
-                                            * Unsigned value is the API version number of the message
-                                            * interface supported by the frontend. If callback returns
-                                            * false, API version is assumed to be 0.
-                                            *
-                                            * In legacy code, messages may be displayed in an
-                                            * implementation-specific manner by passing a struct
-                                            * of type retro_message to RETRO_ENVIRONMENT_SET_MESSAGE.
-                                            * This may be still be done regardless of the message
-                                            * interface version.
-                                            *
-                                            * If version is >= 1 however, messages may instead be
-                                            * displayed by passing a struct of type retro_message_ext
-                                            * to RETRO_ENVIRONMENT_SET_MESSAGE_EXT. This allows the
-                                            * core to specify message logging level, priority and
-                                            * destination (OSD, logging interface or both).
-                                            */
 
+/**
+ * Displays a user-facing message for a short time.
+ *
+ * Use this callback to convey important status messages,
+ * such as errors or the result of long-running operations.
+ * For trivial messages or logging, use \c RETRO_ENVIRONMENT_GET_LOG_INTERFACE or \c stderr.
+ *
+ * This environment call supersedes \c RETRO_ENVIRONMENT_SET_MESSAGE,
+ * as it provides many more ways to customize
+ * how a message is presented to the player.
+ * However, a frontend that supports this environment call
+ * must still support \c RETRO_ENVIRONMENT_SET_MESSAGE.
+ *
+ * @param[in] data <tt>const struct retro_message_ext *</tt>.
+ * Pointer to the message to display to the player.
+ * Behavior is undefined if \c NULL.
+ * @returns \c true if this environment call is available.
+ * @see retro_message_ext
+ * @see RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION
+ */
 #define RETRO_ENVIRONMENT_SET_MESSAGE_EXT 60
-                                           /* const struct retro_message_ext * --
-                                            * Sets a message to be displayed in an implementation-specific
-                                            * manner for a certain amount of 'frames'. Additionally allows
-                                            * the core to specify message logging level, priority and
-                                            * destination (OSD, logging interface or both).
-                                            * Should not be used for trivial messages, which should simply be
-                                            * logged via RETRO_ENVIRONMENT_GET_LOG_INTERFACE (or as a
-                                            * fallback, stderr).
-                                            */
 
+/**
+ * Returns the number of active input devices currently provided by the frontend.
+ *
+ * This may change between frames,
+ * but will remain constant for the duration of each frame.
+ *
+ * If this callback returns \c true,
+ * a core need not poll any input device
+ * with an index greater than or equal to the returned value.
+ *
+ * If callback returns \c false,
+ * the number of active input devices is unknown.
+ * In this case, all input devices should be considered active.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the result returned by the frontend.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is available.
+ */
 #define RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS 61
-                                           /* unsigned * --
-                                            * Unsigned value is the number of active input devices
-                                            * provided by the frontend. This may change between
-                                            * frames, but will remain constant for the duration
-                                            * of each frame.
-                                            * If callback returns true, a core need not poll any
-                                            * input device with an index greater than or equal to
-                                            * the number of active devices.
-                                            * If callback returns false, the number of active input
-                                            * devices is unknown. In this case, all input devices
-                                            * should be considered active.
-                                            */
 
+/**
+ * Registers a callback that the frontend can use to notify the core
+ * of the audio output buffer's occupancy.
+ * Can be used by a core to attempt frame-skipping to avoid buffer under-runs
+ * (i.e. "crackling" sounds).
+ *
+ * @param[in] data <tt>const struct retro_audio_buffer_status_callback *</tt>.
+ * Pointer to the the buffer status callback,
+ * or \c NULL to unregister any existing callback.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ *
+ * @see retro_audio_buffer_status_callback
+ */
 #define RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK 62
-                                           /* const struct retro_audio_buffer_status_callback * --
-                                            * Lets the core know the occupancy level of the frontend
-                                            * audio buffer. Can be used by a core to attempt frame
-                                            * skipping in order to avoid buffer under-runs.
-                                            * A core may pass NULL to disable buffer status reporting
-                                            * in the frontend.
-                                            */
 
+/**
+ * Requests a minimum frontend audio latency in milliseconds.
+ *
+ * This is a hint; the frontend may assign a different audio latency
+ * to accommodate hardware limits,
+ * although it should try to honor requests up to 512ms.
+ *
+ * This callback has no effect if the requested latency
+ * is less than the frontend's current audio latency.
+ * If value is zero or \c data is \c NULL,
+ * the frontend should set its default audio latency.
+ *
+ * May be used by a core to increase audio latency and
+ * reduce the risk of buffer under-runs (crackling)
+ * when performing 'intensive' operations.
+ *
+ * A core using RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK
+ * to implement audio-buffer-based frame skipping can get good results
+ * by setting the audio latency to a high (typically 6x or 8x)
+ * integer multiple of the expected frame time.
+ *
+ * This can only be called from within \c retro_run().
+ *
+ * @warning This environment call may require the frontend to reinitialize its audio system.
+ * This environment call should be used sparingly.
+ * If the driver is reinitialized,
+ * \ref retro_audio_callback_t "all audio callbacks" will be updated
+ * to target the newly-initialized driver.
+ *
+ * @param[in] data <tt>const unsigned *</tt>.
+ * Minimum audio latency, in milliseconds.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ *
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK
+ */
 #define RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY 63
-                                           /* const unsigned * --
-                                            * Sets minimum frontend audio latency in milliseconds.
-                                            * Resultant audio latency may be larger than set value,
-                                            * or smaller if a hardware limit is encountered. A frontend
-                                            * is expected to honour requests up to 512 ms.
-                                            *
-                                            * - If value is less than current frontend
-                                            *   audio latency, callback has no effect
-                                            * - If value is zero, default frontend audio
-                                            *   latency is set
-                                            *
-                                            * May be used by a core to increase audio latency and
-                                            * therefore decrease the probability of buffer under-runs
-                                            * (crackling) when performing 'intensive' operations.
-                                            * A core utilising RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK
-                                            * to implement audio-buffer-based frame skipping may achieve
-                                            * optimal results by setting the audio latency to a 'high'
-                                            * (typically 6x or 8x) integer multiple of the expected
-                                            * frame time.
-                                            *
-                                            * WARNING: This can only be called from within retro_run().
-                                            * Calling this can require a full reinitialization of audio
-                                            * drivers in the frontend, so it is important to call it very
-                                            * sparingly, and usually only with the users explicit consent.
-                                            * An eventual driver reinitialize will happen so that audio
-                                            * callbacks happening after this call within the same retro_run()
-                                            * call will target the newly initialized driver.
-                                            */
 
+/**
+ * Allows the core to tell the frontend when it should enable fast-forwarding,
+ * rather than relying solely on the frontend and user interaction.
+ *
+ * Possible use cases include:
+ *
+ * \li Temporarily disabling a core's fastforward support
+ *     while investigating a related bug.
+ * \li Disabling fastforward during netplay sessions,
+ *     or when using an emulated console's network features.
+ * \li Automatically speeding up the game when in a loading screen
+ *     that cannot be shortened with high-level emulation.
+ *
+ * @param[in] data <tt>const struct retro_fastforwarding_override *</tt>.
+ * Pointer to the parameters that decide when and how
+ * the frontend is allowed to enable fast-forward mode.
+ * May be \c NULL, in which case the frontend will return \c true
+ * without updating the fastforward state,
+ * which can be used to detect support for this environment call.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ *
+ * @see retro_fastforwarding_override
+ * @see RETRO_ENVIRONMENT_GET_FASTFORWARDING
+ */
 #define RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE 64
-                                           /* const struct retro_fastforwarding_override * --
-                                            * Used by a libretro core to override the current
-                                            * fastforwarding mode of the frontend.
-                                            * If NULL is passed to this function, the frontend
-                                            * will return true if fastforwarding override
-                                            * functionality is supported (no change in
-                                            * fastforwarding state will occur in this case).
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE 65
                                            /* const struct retro_system_content_info_override * --
@@ -1508,251 +2273,136 @@ enum retro_mod
                                             *   retro_load_game_special()
                                             */
 
+/**
+ * Defines a set of core options that can be shown and configured by the frontend,
+ * so that the player may customize their gameplay experience to their liking.
+ *
+ * @note This environment call is intended to replace
+ * \c RETRO_ENVIRONMENT_SET_VARIABLES and \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS,
+ * and should only be called if \c RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION
+ * returns an API version of at least 2.
+ *
+ * This should be called the first time as early as possible,
+ * ideally in \c retro_set_environment (but \c retro_load_game is acceptable).
+ * It may then be called again later to update
+ * the core's options and their associated values,
+ * as long as the number of options doesn't change
+ * from the number given in the first call.
+ *
+ * The core can retrieve option values at any time with \c RETRO_ENVIRONMENT_GET_VARIABLE.
+ * If a saved value for a core option doesn't match the option definition's values,
+ * the frontend may treat it as incorrect and revert to the default.
+ *
+ * Core options and their values are usually defined in a large static array,
+ * but they may be generated at runtime based on the loaded game or system state.
+ * Here are some use cases for that:
+ *
+ * @li Selecting a particular file from one of the
+ *     \ref RETRO_ENVIRONMENT_GET_ASSET_DIRECTORY "frontend's"
+ *     \ref RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY "content"
+ *     \ref RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY "directories",
+ *     such as a memory card image or figurine data file.
+ * @li Excluding options that are not relevant to the current game,
+ *     for cores that define a large number of possible options.
+ * @li Choosing a default value at runtime for a specific game,
+ *     such as a BIOS file whose region matches that of the loaded content.
+ *
+ * @note A guiding principle of libretro's API design is that
+ * all common interactions (gameplay, menu navigation, etc.)
+ * should be possible without a keyboard.
+ * This implies that cores should keep the number of options and values
+ * as low as possible.
+ *
+ * @param[in] data <tt>const struct retro_core_options_v2 *</tt>.
+ * Pointer to a core's options and their associated categories.
+ * May be \c NULL, in which case the frontend will remove all existing core options.
+ * The frontend must maintain its own copy of this object,
+ * including all strings and subobjects.
+ * @return \c true if this environment call is available
+ * and the frontend supports categories.
+ * Note that this environment call is guaranteed to successfully register
+ * the provided core options,
+ * so the return value does not indicate success or failure.
+ *
+ * @see retro_core_options_v2
+ * @see retro_core_option_v2_category
+ * @see retro_core_option_v2_definition
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 67
-                                           /* const struct retro_core_options_v2 * --
-                                            * Allows an implementation to signal the environment
-                                            * which variables it might want to check for later using
-                                            * GET_VARIABLE.
-                                            * This allows the frontend to present these variables to
-                                            * a user dynamically.
-                                            * This should only be called if RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION
-                                            * returns an API version of >= 2.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_VARIABLES.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_CORE_OPTIONS.
-                                            * This should be called the first time as early as
-                                            * possible (ideally in retro_set_environment).
-                                            * Afterwards it may be called again for the core to communicate
-                                            * updated options to the frontend, but the number of core
-                                            * options must not change from the number in the initial call.
-                                            * If RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION returns an API
-                                            * version of >= 2, this callback is guaranteed to succeed
-                                            * (i.e. callback return value does not indicate success)
-                                            * If callback returns true, frontend has core option category
-                                            * support.
-                                            * If callback returns false, frontend does not have core option
-                                            * category support.
-                                            *
-                                            * 'data' points to a retro_core_options_v2 struct, containing
-                                            * of two pointers:
-                                            * - retro_core_options_v2::categories is an array of
-                                            *   retro_core_option_v2_category structs terminated by a
-                                            *   { NULL, NULL, NULL } element. If retro_core_options_v2::categories
-                                            *   is NULL, all core options will have no category and will be shown
-                                            *   at the top level of the frontend core option interface. If frontend
-                                            *   does not have core option category support, categories array will
-                                            *   be ignored.
-                                            * - retro_core_options_v2::definitions is an array of
-                                            *   retro_core_option_v2_definition structs terminated by a
-                                            *   { NULL, NULL, NULL, NULL, NULL, NULL, {{0}}, NULL }
-                                            *   element.
-                                            *
-                                            * >> retro_core_option_v2_category notes:
-                                            *
-                                            * - retro_core_option_v2_category::key should contain string
-                                            *   that uniquely identifies the core option category. Valid
-                                            *   key characters are [a-z, A-Z, 0-9, _, -]
-                                            *   Namespace collisions with other implementations' category
-                                            *   keys are permitted.
-                                            * - retro_core_option_v2_category::desc should contain a human
-                                            *   readable description of the category key.
-                                            * - retro_core_option_v2_category::info should contain any
-                                            *   additional human readable information text that a typical
-                                            *   user may need to understand the nature of the core option
-                                            *   category.
-                                            *
-                                            * Example entry:
-                                            * {
-                                            *     "advanced_settings",
-                                            *     "Advanced",
-                                            *     "Options affecting low-level emulation performance and accuracy."
-                                            * }
-                                            *
-                                            * >> retro_core_option_v2_definition notes:
-                                            *
-                                            * - retro_core_option_v2_definition::key should be namespaced to not
-                                            *   collide with other implementations' keys. e.g. A core called
-                                            *   'foo' should use keys named as 'foo_option'. Valid key characters
-                                            *   are [a-z, A-Z, 0-9, _, -].
-                                            * - retro_core_option_v2_definition::desc should contain a human readable
-                                            *   description of the key. Will be used when the frontend does not
-                                            *   have core option category support. Examples: "Aspect Ratio" or
-                                            *   "Video > Aspect Ratio".
-                                            * - retro_core_option_v2_definition::desc_categorized should contain a
-                                            *   human readable description of the key, which will be used when
-                                            *   frontend has core option category support. Example: "Aspect Ratio",
-                                            *   where associated retro_core_option_v2_category::desc is "Video".
-                                            *   If empty or NULL, the string specified by
-                                            *   retro_core_option_v2_definition::desc will be used instead.
-                                            *   retro_core_option_v2_definition::desc_categorized will be ignored
-                                            *   if retro_core_option_v2_definition::category_key is empty or NULL.
-                                            * - retro_core_option_v2_definition::info should contain any additional
-                                            *   human readable information text that a typical user may need to
-                                            *   understand the functionality of the option.
-                                            * - retro_core_option_v2_definition::info_categorized should contain
-                                            *   any additional human readable information text that a typical user
-                                            *   may need to understand the functionality of the option, and will be
-                                            *   used when frontend has core option category support. This is provided
-                                            *   to accommodate the case where info text references an option by
-                                            *   name/desc, and the desc/desc_categorized text for that option differ.
-                                            *   If empty or NULL, the string specified by
-                                            *   retro_core_option_v2_definition::info will be used instead.
-                                            *   retro_core_option_v2_definition::info_categorized will be ignored
-                                            *   if retro_core_option_v2_definition::category_key is empty or NULL.
-                                            * - retro_core_option_v2_definition::category_key should contain a
-                                            *   category identifier (e.g. "video" or "audio") that will be
-                                            *   assigned to the core option if frontend has core option category
-                                            *   support. A categorized option will be shown in a subsection/
-                                            *   submenu of the frontend core option interface. If key is empty
-                                            *   or NULL, or if key does not match one of the
-                                            *   retro_core_option_v2_category::key values in the associated
-                                            *   retro_core_option_v2_category array, option will have no category
-                                            *   and will be shown at the top level of the frontend core option
-                                            *   interface.
-                                            * - retro_core_option_v2_definition::values is an array of
-                                            *   retro_core_option_value structs terminated by a { NULL, NULL }
-                                            *   element.
-                                            * --> retro_core_option_v2_definition::values[index].value is an
-                                            *     expected option value.
-                                            * --> retro_core_option_v2_definition::values[index].label is a
-                                            *     human readable label used when displaying the value on screen.
-                                            *     If NULL, the value itself is used.
-                                            * - retro_core_option_v2_definition::default_value is the default
-                                            *   core option setting. It must match one of the expected option
-                                            *   values in the retro_core_option_v2_definition::values array. If
-                                            *   it does not, or the default value is NULL, the first entry in the
-                                            *   retro_core_option_v2_definition::values array is treated as the
-                                            *   default.
-                                            *
-                                            * The number of possible option values should be very limited,
-                                            * and must be less than RETRO_NUM_CORE_OPTION_VALUES_MAX.
-                                            * i.e. it should be feasible to cycle through options
-                                            * without a keyboard.
-                                            *
-                                            * Example entries:
-                                            *
-                                            * - Uncategorized:
-                                            *
-                                            * {
-                                            *     "foo_option",
-                                            *     "Speed hack coprocessor X",
-                                            *     NULL,
-                                            *     "Provides increased performance at the expense of reduced accuracy.",
-                                            *     NULL,
-                                            *     NULL,
-                                            * 	  {
-                                            *         { "false",    NULL },
-                                            *         { "true",     NULL },
-                                            *         { "unstable", "Turbo (Unstable)" },
-                                            *         { NULL, NULL },
-                                            *     },
-                                            *     "false"
-                                            * }
-                                            *
-                                            * - Categorized:
-                                            *
-                                            * {
-                                            *     "foo_option",
-                                            *     "Advanced > Speed hack coprocessor X",
-                                            *     "Speed hack coprocessor X",
-                                            *     "Setting 'Advanced > Speed hack coprocessor X' to 'true' or 'Turbo' provides increased performance at the expense of reduced accuracy",
-                                            *     "Setting 'Speed hack coprocessor X' to 'true' or 'Turbo' provides increased performance at the expense of reduced accuracy",
-                                            *     "advanced_settings",
-                                            * 	  {
-                                            *         { "false",    NULL },
-                                            *         { "true",     NULL },
-                                            *         { "unstable", "Turbo (Unstable)" },
-                                            *         { NULL, NULL },
-                                            *     },
-                                            *     "false"
-                                            * }
-                                            *
-                                            * Only strings are operated on. The possible values will
-                                            * generally be displayed and stored as-is by the frontend.
-                                            */
 
+/**
+ * A variant of \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * that supports internationalization.
+ *
+ * This should be called instead of \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * if the core provides translations for its options.
+ * General use is largely the same,
+ * but see \ref retro_core_options_v2_intl for some important details.
+ *
+ * @param[in] data <tt>const struct retro_core_options_v2_intl *</tt>.
+ * Pointer to a core's option values and categories,
+ * plus a translation for each option and category.
+ * @see retro_core_options_v2_intl
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL 68
-                                           /* const struct retro_core_options_v2_intl * --
-                                            * Allows an implementation to signal the environment
-                                            * which variables it might want to check for later using
-                                            * GET_VARIABLE.
-                                            * This allows the frontend to present these variables to
-                                            * a user dynamically.
-                                            * This should only be called if RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION
-                                            * returns an API version of >= 2.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_VARIABLES.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_CORE_OPTIONS.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL.
-                                            * This should be called instead of RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2.
-                                            * This should be called the first time as early as
-                                            * possible (ideally in retro_set_environment).
-                                            * Afterwards it may be called again for the core to communicate
-                                            * updated options to the frontend, but the number of core
-                                            * options must not change from the number in the initial call.
-                                            * If RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION returns an API
-                                            * version of >= 2, this callback is guaranteed to succeed
-                                            * (i.e. callback return value does not indicate success)
-                                            * If callback returns true, frontend has core option category
-                                            * support.
-                                            * If callback returns false, frontend does not have core option
-                                            * category support.
-                                            *
-                                            * This is fundamentally the same as RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
-                                            * with the addition of localisation support. The description of the
-                                            * RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 callback should be consulted
-                                            * for further details.
-                                            *
-                                            * 'data' points to a retro_core_options_v2_intl struct.
-                                            *
-                                            * - retro_core_options_v2_intl::us is a pointer to a
-                                            *   retro_core_options_v2 struct defining the US English
-                                            *   core options implementation. It must point to a valid struct.
-                                            *
-                                            * - retro_core_options_v2_intl::local is a pointer to a
-                                            *   retro_core_options_v2 struct defining core options for
-                                            *   the current frontend language. It may be NULL (in which case
-                                            *   retro_core_options_v2_intl::us is used by the frontend). Any items
-                                            *   missing from this struct will be read from
-                                            *   retro_core_options_v2_intl::us instead.
-                                            *
-                                            * NOTE: Default core option values are always taken from the
-                                            * retro_core_options_v2_intl::us struct. Any default values in
-                                            * the retro_core_options_v2_intl::local struct will be ignored.
-                                            */
 
+/**
+ * Registers a callback that the frontend can use
+ * to notify the core that at least one core option
+ * should be made hidden or visible.
+ * Allows a frontend to signal that a core must update
+ * the visibility of any dynamically hidden core options,
+ * and enables the frontend to detect visibility changes.
+ * Used by the frontend to update the menu display status
+ * of core options without requiring a call of retro_run().
+ * Must be called in retro_set_environment().
+ *
+ * @param[in] data <tt>const struct retro_core_options_update_display_callback *</tt>.
+ * The callback that the frontend should use.
+ * May be \c NULL, in which case the frontend will unset any existing callback.
+ * Can be used to query visibility support.
+ * @return \c true if this environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_core_options_update_display_callback
+ */
 #define RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK 69
-                                           /* const struct retro_core_options_update_display_callback * --
-                                            * Allows a frontend to signal that a core must update
-                                            * the visibility of any dynamically hidden core options,
-                                            * and enables the frontend to detect visibility changes.
-                                            * Used by the frontend to update the menu display status
-                                            * of core options without requiring a call of retro_run().
-                                            * Must be called in retro_set_environment().
-                                            */
 
+/**
+ * Forcibly sets a core option's value.
+ *
+ * After changing a core option value with this callback,
+ * it will be reflected in the frontend
+ * and \ref RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE will return \c true.
+ * \ref retro_variable::key must match
+ * a \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 "previously-set core option",
+ * and \ref retro_variable::value must match one of its defined values.
+ *
+ * Possible use cases include:
+ *
+ * @li Allowing the player to set certain core options
+ *     without entering the frontend's option menu,
+ *     using an in-core hotkey.
+ * @li Adjusting invalid combinations of settings.
+ * @li Migrating settings from older releases of a core.
+ *
+ * @param[in] data <tt>const struct retro_variable *</tt>.
+ * Pointer to a single option that the core is changing.
+ * May be \c NULL, in which case the frontend will return \c true
+ * to indicate that this environment call is available.
+ * @return \c true if this environment call is available
+ * and the option named by \c key was successfully
+ * set to the given \c value.
+ * \c false if the \c key or \c value fields are \c NULL, empty,
+ * or don't match a previously set option.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
+ */
 #define RETRO_ENVIRONMENT_SET_VARIABLE 70
-                                           /* const struct retro_variable * --
-                                            * Allows an implementation to notify the frontend
-                                            * that a core option value has changed.
-                                            *
-                                            * retro_variable::key and retro_variable::value
-                                            * must match strings that have been set previously
-                                            * via one of the following:
-                                            *
-                                            * - RETRO_ENVIRONMENT_SET_VARIABLES
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
-                                            * - RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
-                                            *
-                                            * After changing a core option value via this
-                                            * callback, RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
-                                            * will return true.
-                                            *
-                                            * If data is NULL, no changes will be registered
-                                            * and the callback will return true; an
-                                            * implementation may therefore pass NULL in order
-                                            * to test whether the callback is supported.
-                                            */
 
 #define RETRO_ENVIRONMENT_GET_THROTTLE_STATE (71 | RETRO_ENVIRONMENT_EXPERIMENTAL)
                                            /* struct retro_throttle_state * --
@@ -1760,74 +2410,92 @@ enum retro_mod
                                             * the frontend is attempting to call retro_run().
                                             */
 
+/**
+ * Returns information about how the frontend will use savestates.
+ *
+ * @param[out] data <tt>retro_savestate_context *</tt>.
+ * Pointer to the current savestate context.
+ * May be \c NULL, in which case the environment call
+ * will return \c true to indicate its availability.
+ * @returns \c true if the environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_savestate_context
+ */
 #define RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT (72 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* int * --
-                                            * Tells the core about the context the frontend is asking for savestate.
-                                            * (see enum retro_savestate_context)
-                                            */
 
+/**
+ * Before calling \c SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE, will query which interface is supported.
+ *
+ * Frontend looks at \c retro_hw_render_interface_type and returns the maximum supported
+ * context negotiation interface version. If the \c retro_hw_render_interface_type is not
+ * supported or recognized by the frontend, a version of 0 must be returned in
+ * \c retro_hw_render_interface's \c interface_version and \c true is returned by frontend.
+ *
+ * If this environment call returns true with a \c interface_version greater than 0,
+ * a core can always use a negotiation interface version larger than what the frontend returns,
+ * but only earlier versions of the interface will be used by the frontend.
+ *
+ * A frontend must not reject a negotiation interface version that is larger than what the
+ * frontend supports. Instead, the frontend will use the older entry points that it recognizes.
+ * If this is incompatible with a particular core's requirements, it can error out early.
+ *
+ * @note Regarding backwards compatibility, this environment call was introduced after Vulkan v1
+ * context negotiation. If this environment call is not supported by frontend, i.e. the environment
+ * call returns \c false , only Vulkan v1 context negotiation is supported (if Vulkan HW rendering
+ * is supported at all). If a core uses Vulkan negotiation interface with version > 1, negotiation
+ * may fail unexpectedly. All future updates to the context negotiation interface implies that
+ * frontend must support this environment call to query support.
+ *
+ * @param[out] data <tt>struct retro_hw_render_context_negotiation_interface *</tt>.
+ * @return \c true if the environment call is available.
+ * @see SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE
+ * @see retro_hw_render_interface_type
+ * @see retro_hw_render_context_negotiation_interface
+ */
 #define RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT (73 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                            /* struct retro_hw_render_context_negotiation_interface * --
-                                             * Before calling SET_HW_RNEDER_CONTEXT_NEGOTIATION_INTERFACE, a core can query
-                                             * which version of the interface is supported.
-                                             *
-                                             * Frontend looks at interface_type and returns the maximum supported
-                                             * context negotiation interface version.
-                                             * If the interface_type is not supported or recognized by the frontend, a version of 0
-                                             * must be returned in interface_version and true is returned by frontend.
-                                             *
-                                             * If this environment call returns true with interface_version greater than 0,
-                                             * a core can always use a negotiation interface version larger than what the frontend returns, but only
-                                             * earlier versions of the interface will be used by the frontend.
-                                             * A frontend must not reject a negotiation interface version that is larger than
-                                             * what the frontend supports. Instead, the frontend will use the older entry points that it recognizes.
-                                             * If this is incompatible with a particular core's requirements, it can error out early.
-                                             *
-                                             * Backwards compatibility note:
-                                             * This environment call was introduced after Vulkan v1 context negotiation.
-                                             * If this environment call is not supported by frontend - i.e. the environment call returns false -
-                                             * only Vulkan v1 context negotiation is supported (if Vulkan HW rendering is supported at all).
-                                             * If a core uses Vulkan negotiation interface with version > 1, negotiation may fail unexpectedly.
-                                             * All future updates to the context negotiation interface implies that frontend must support
-                                             * this environment call to query support.
-                                             */
 
+/**
+ * Asks the frontend whether JIT compilation can be used.
+ * Primarily used by iOS and tvOS.
+ * @param[out] data <tt>bool *</tt>.
+ * Set to \c true if the frontend has verified that JIT compilation is possible.
+ * @return \c true if the environment call is available.
+ */
 #define RETRO_ENVIRONMENT_GET_JIT_CAPABLE 74
-                                           /* bool * --
-                                            * Result is set to true if the frontend has already verified JIT can be
-                                            * used, mainly for use iOS/tvOS. On other platforms the result is true.
-                                            */
 
+/**
+ * Returns an interface that the core can use to receive microphone input.
+ *
+ * @param[out] data <tt>retro_microphone_interface *</tt>.
+ * Pointer to the microphone interface.
+ * @return \true if microphone support is available,
+ * even if no microphones are plugged in.
+ * \c false if microphone support is disabled unavailable,
+ * or if \c data is \c NULL.
+ * @see retro_microphone_interface
+ */
 #define RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE (75 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_microphone_interface * --
-                                            * Returns an interface that can be used to receive input from the microphone driver.
-                                            *
-                                            * Returns true if microphone support is available,
-                                            * even if no microphones are plugged in.
-                                            * Returns false if mic support is disabled or unavailable.
-                                            *
-                                            * This callback can be invoked at any time,
-                                            * even before the microphone driver is ready.
-                                            */
 
-                                           /* Environment 76 was an obsolete version of RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.
-                                            * It was not used by any known core at the time, and was removed from the API. */
+/* Environment 76 was an obsolete version of RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.
+* It was not used by any known core at the time, and was removed from the API. */
 
+/**
+ * Returns the device's current power state as reported by the frontend.
+ *
+ * This is useful for emulating the battery level in handheld consoles,
+ * or for reducing power consumption when on battery power.
+ *
+ * @note This environment call describes the power state for the entire device,
+ * not for individual peripherals like controllers.
+ *
+ * @param[out] data <struct retro_device_power *>.
+ * Indicates whether the frontend can provide this information, even if the parameter
+ * is \c NULL. If the frontend does not support this functionality, then the provided
+ * argument will remain unchanged.
+ * @return \c true if the environment call is available.
+ * @see retro_device_power
+ */
 #define RETRO_ENVIRONMENT_GET_DEVICE_POWER (77 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-                                           /* struct retro_device_power * --
-                                            * Returns the device's current power state as reported by the frontend.
-                                            * This is useful for emulating the battery level in handheld consoles,
-                                            * or for reducing power consumption when on battery power.
-                                            *
-                                            * The return value indicates whether the frontend can provide this information,
-                                            * even if the parameter is NULL.
-                                            *
-                                            * If the frontend does not support this functionality,
-                                            * then the provided argument will remain unchanged.
-                                            *
-                                            * Note that this environment call describes the power state for the entire device,
-                                            * not for individual peripherals like controllers.
-                                            */
 
 #define RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE 78
                                            /* const struct retro_netpacket_callback * --
@@ -1853,356 +2521,1155 @@ enum retro_mod
                                             * input devices does not need to take any action on its own.
                                             */
 
-/* VFS functionality */
+/**
+ * Returns the device's current power state as reported by the frontend.
+ * This is useful for emulating the battery level in handheld consoles,
+ * or for reducing power consumption when on battery power.
+ *
+ * The return value indicates whether the frontend can provide this information,
+ * even if the parameter is \c NULL.
+ *
+ * If the frontend does not support this functionality,
+ * then the provided argument will remain unchanged.
+ * @param[out] data <tt>retro_device_power *</tt>.
+ * Pointer to the information that the frontend returns about its power state.
+ * May be \c NULL.
+ * @return \c true if the environment call is available,
+ * even if \c data is \c NULL.
+ * @see retro_device_power
+ * @note This environment call describes the power state for the entire device,
+ * not for individual peripherals like controllers.
+*/
+#define RETRO_ENVIRONMENT_GET_DEVICE_POWER (77 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
-/* File paths:
- * File paths passed as parameters when using this API shall be well formed UNIX-style,
- * using "/" (unquoted forward slash) as directory separator regardless of the platform's native separator.
- * Paths shall also include at least one forward slash ("game.bin" is an invalid path, use "./game.bin" instead).
- * Other than the directory separator, cores shall not make assumptions about path format:
- * "C:/path/game.bin", "http://example.com/game.bin", "#game/game.bin", "./game.bin" (without quotes) are all valid paths.
+/**
+ * Returns the "playlist" directory of the frontend.
+ *
+ * This directory can be used to store core generated playlists, in case
+ * this internal functionality is available (e.g. internal core game detection
+ * engine).
+ *
+ * @param[out] data <tt>const char **</tt>.
+ * May be \c NULL. If so, no such directory is defined, and it's up to the
+ * implementation to find a suitable directory.
+ * @return \c true if the environment call is available.
+ */
+#define RETRO_ENVIRONMENT_GET_PLAYLIST_DIRECTORY 79
+
+/**
+ * Returns the "file browser" start directory of the frontend.
+ *
+ * This directory can serve as a start directory for the core in case it
+ * provides an internal way of loading content.
+ *
+ * @param[out] data <tt>const char **</tt>.
+ * May be \c NULL. If so, no such directory is defined, and it's up to the
+ * implementation to find a suitable directory.
+ * @return \c true if the environment call is available.
+ */
+#define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
+
+/**@}*/
+
+/**
+ * @defgroup GET_VFS_INTERFACE File System Interface
+ * @brief File system functionality.
+ *
+ * @section File Paths
+ * File paths passed to all libretro filesystem APIs shall be well formed UNIX-style,
+ * using "/" (unquoted forward slash) as the directory separator
+ * regardless of the platform's native separator.
+ *
+ * Paths shall also include at least one forward slash
+ * (e.g. use "./game.bin" instead of "game.bin").
+ *
+ * Other than the directory separator, cores shall not make assumptions about path format.
+ * The following paths are all valid:
+ * @li \c C:/path/game.bin
+ * @li \c http://example.com/game.bin
+ * @li \c #game/game.bin
+ * @li \c ./game.bin
+ *
  * Cores may replace the basename or remove path components from the end, and/or add new components;
- * however, cores shall not append "./", "../" or multiple consecutive forward slashes ("//") to paths they request to front end.
- * The frontend is encouraged to make such paths work as well as it can, but is allowed to give up if the core alters paths too much.
- * Frontends are encouraged, but not required, to support native file system paths (modulo replacing the directory separator, if applicable).
- * Cores are allowed to try using them, but must remain functional if the front rejects such requests.
+ * however, cores shall not append "./", "../" or multiple consecutive forward slashes ("//") to paths they request from the front end.
+ *
+ * The frontend is encouraged to do the best it can when given an ill-formed path,
+ * but it is allowed to give up.
+ *
+ * Frontends are encouraged, but not required, to support native file system paths
+ * (including replacing the directory separator, if applicable).
+ *
+ * Cores are allowed to try using them, but must remain functional if the frontend rejects such requests.
+ *
  * Cores are encouraged to use the libretro-common filestream functions for file I/O,
- * as they seamlessly integrate with VFS, deal with directory separator replacement as appropriate
- * and provide platform-specific fallbacks in cases where front ends do not support VFS. */
+ * as they seamlessly integrate with VFS,
+ * deal with directory separator replacement as appropriate
+ * and provide platform-specific fallbacks
+ * in cases where front ends do not provide their own VFS interface.
+ *
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ * @see retro_vfs_interface_info
+ * @see file_path
+ * @see retro_dirent
+ * @see file_stream
+ *
+ * @{
+ */
 
-/* Opaque file handle
- * Introduced in VFS API v1 */
+/**
+ * Opaque file handle.
+ * @since VFS API v1
+ */
 struct retro_vfs_file_handle;
 
-/* Opaque directory handle
- * Introduced in VFS API v3 */
+/**
+ * Opaque directory handle.
+ * @since VFS API v3
+ */
 struct retro_vfs_dir_handle;
 
-/* File open flags
- * Introduced in VFS API v1 */
-#define RETRO_VFS_FILE_ACCESS_READ            (1 << 0) /* Read only mode */
-#define RETRO_VFS_FILE_ACCESS_WRITE           (1 << 1) /* Write only mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified */
-#define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE) /* Read-write mode, discard contents and overwrites existing file unless RETRO_VFS_FILE_ACCESS_UPDATE is also specified*/
+/** @defgroup RETRO_VFS_FILE_ACCESS File Access Flags
+ * File access flags.
+ * @since VFS API v1
+ * @{
+ */
+
+/** Opens a file for read-only access. */
+#define RETRO_VFS_FILE_ACCESS_READ            (1 << 0)
+
+/**
+ * Opens a file for write-only access.
+ * Any existing file at this path will be discarded and overwritten
+ * unless \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is also specified.
+ */
+#define RETRO_VFS_FILE_ACCESS_WRITE           (1 << 1)
+
+/**
+ * Opens a file for reading and writing.
+ * Any existing file at this path will be discarded and overwritten
+ * unless \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is also specified.
+ */
+#define RETRO_VFS_FILE_ACCESS_READ_WRITE      (RETRO_VFS_FILE_ACCESS_READ | RETRO_VFS_FILE_ACCESS_WRITE)
+
+/**
+ * Opens a file without discarding its existing contents.
+ * Only meaningful if \c RETRO_VFS_FILE_ACCESS_WRITE is specified.
+ */
 #define RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING (1 << 2) /* Prevents discarding content of existing files opened for writing */
 
-/* These are only hints. The frontend may choose to ignore them. Other than RAM/CPU/etc use,
-   and how they react to unlikely external interference (for example someone else writing to that file,
-   or the file's server going down), behavior will not change. */
+/** @} */
+
+/** @defgroup RETRO_VFS_FILE_ACCESS_HINT File Access Hints
+ *
+ * Hints to the frontend for how a file will be accessed.
+ * The VFS implementation may use these to optimize performance,
+ * react to external interference (such as concurrent writes),
+ * or it may ignore them entirely.
+ *
+ * Hint flags do not change the behavior of each VFS function
+ * unless otherwise noted.
+ * @{
+ */
+
+/** No particular hints are given. */
 #define RETRO_VFS_FILE_ACCESS_HINT_NONE              (0)
-/* Indicate that the file will be accessed many times. The frontend should aggressively cache everything. */
+
+/**
+ * Indicates that the file will be accessed frequently.
+ *
+ * The frontend should cache it or map it into memory.
+ */
 #define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
 
-/* Seek positions */
+/** @} */
+
+/** @defgroup RETRO_VFS_SEEK_POSITION File Seek Positions
+ * File access flags and hints.
+ * @{
+ */
+
+/**
+ * Indicates a seek relative to the start of the file.
+ */
 #define RETRO_VFS_SEEK_POSITION_START    0
+
+/**
+ * Indicates a seek relative to the current stream position.
+ */
 #define RETRO_VFS_SEEK_POSITION_CURRENT  1
+
+/**
+ * Indicates a seek relative to the end of the file.
+ * @note The offset passed to \c retro_vfs_seek_t should be negative.
+ */
 #define RETRO_VFS_SEEK_POSITION_END      2
 
-/* stat() result flags
- * Introduced in VFS API v3 */
+/** @} */
+
+/** @defgroup RETRO_VFS_STAT File Status Flags
+ * File stat flags.
+ * @see retro_vfs_stat_t
+ * @since VFS API v3
+ * @{
+ */
+
+/** Indicates that the given path refers to a valid file. */
 #define RETRO_VFS_STAT_IS_VALID               (1 << 0)
+
+/** Indicates that the given path refers to a directory. */
 #define RETRO_VFS_STAT_IS_DIRECTORY           (1 << 1)
+
+/**
+ * Indicates that the given path refers to a character special file,
+ * such as \c /dev/null.
+ */
 #define RETRO_VFS_STAT_IS_CHARACTER_SPECIAL   (1 << 2)
 
-/* Get path from opaque handle. Returns the exact same path passed to file_open when getting the handle
- * Introduced in VFS API v1 */
+/** @} */
+
+/**
+ * Returns the path that was used to open this file.
+ *
+ * @param stream The opened file handle to get the path of.
+ * Behavior is undefined if \c NULL or closed.
+ * @return The path that was used to open \c stream.
+ * The string is owned by \c stream and must not be modified.
+ * @since VFS API v1
+ * @see filestream_get_path
+ */
 typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file_handle *stream);
 
-/* Open a file for reading or writing. If path points to a directory, this will
- * fail. Returns the opaque file handle, or NULL for error.
- * Introduced in VFS API v1 */
+/**
+ * Open a file for reading or writing.
+ *
+ * @param path The path to open.
+ * @param mode A bitwise combination of \c RETRO_VFS_FILE_ACCESS flags.
+ * At a minimum, one of \c RETRO_VFS_FILE_ACCESS_READ or \c RETRO_VFS_FILE_ACCESS_WRITE must be specified.
+ * @param hints A bitwise combination of \c RETRO_VFS_FILE_ACCESS_HINT flags.
+ * @return A handle to the opened file,
+ * or \c NULL upon failure.
+ * Note that this will return \c NULL if \c path names a directory.
+ * The returned file handle must be closed with \c retro_vfs_close_t.
+ * @since VFS API v1
+ * @see File Paths
+ * @see RETRO_VFS_FILE_ACCESS
+ * @see RETRO_VFS_FILE_ACCESS_HINT
+ * @see retro_vfs_close_t
+ * @see filestream_open
+ */
 typedef struct retro_vfs_file_handle *(RETRO_CALLCONV *retro_vfs_open_t)(const char *path, unsigned mode, unsigned hints);
 
-/* Close the file and release its resources. Must be called if open_file returns non-NULL. Returns 0 on success, -1 on failure.
- * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
- * Introduced in VFS API v1 */
+/**
+ * Close the file and release its resources.
+ * All files returned by \c retro_vfs_open_t must be closed with this function.
+ *
+ * @param stream The file handle to close.
+ * Behavior is undefined if already closed.
+ * Upon completion of this function, \c stream is no longer valid
+ * (even if it returns failure).
+ * @return 0 on success, -1 on failure or if \c stream is \c NULL.
+ * @see retro_vfs_open_t
+ * @see filestream_close
+ * @since VFS API v1
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_close_t)(struct retro_vfs_file_handle *stream);
 
-/* Return the size of the file in bytes, or -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Return the size of the file in bytes.
+ *
+ * @param stream The file to query the size of.
+ * @return Size of the file in bytes, or -1 if there was an error.
+ * @see filestream_get_size
+ * @since VFS API v1
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_size_t)(struct retro_vfs_file_handle *stream);
 
-/* Truncate file to specified size. Returns 0 on success or -1 on error
- * Introduced in VFS API v2 */
+/**
+ * Set the file's length.
+ *
+ * @param stream The file whose length will be adjusted.
+ * @param length The new length of the file, in bytes.
+ * If shorter than the original length, the extra bytes will be discarded.
+ * If longer, the file's padding is unspecified (and likely platform-dependent).
+ * @return 0 on success,
+ * -1 on failure.
+ * @see filestream_truncate
+ * @since VFS API v2
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_truncate_t)(struct retro_vfs_file_handle *stream, int64_t length);
 
-/* Get the current read / write position for the file. Returns -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Gets the given file's current read/write position.
+ * This position is advanced with each call to \c retro_vfs_read_t or \c retro_vfs_write_t.
+ *
+ * @param stream The file to query the position of.
+ * @return The current stream position in bytes
+ * or -1 if there was an error.
+ * @see filestream_tell
+ * @since VFS API v1
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle *stream);
 
-/* Set the current read/write position for the file. Returns the new position, -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Sets the given file handle's current read/write position.
+ *
+ * @param stream The file to set the position of.
+ * @param offset The new position, in bytes.
+ * @param seek_position The position to seek from.
+ * @return The new position,
+ * or -1 if there was an error.
+ * @since VFS API v1
+ * @see File Seek Positions
+ * @see filestream_seek
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_seek_t)(struct retro_vfs_file_handle *stream, int64_t offset, int seek_position);
 
-/* Read data from a file. Returns the number of bytes read, or -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Read data from a file, if it was opened for reading.
+ *
+ * @param stream The file to read from.
+ * @param s The buffer to read into.
+ * @param len The number of bytes to read.
+ * The buffer pointed to by \c s must be this large.
+ * @return The number of bytes read,
+ * or -1 if there was an error.
+ * @since VFS API v1
+ * @see filestream_read
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_read_t)(struct retro_vfs_file_handle *stream, void *s, uint64_t len);
 
-/* Write data to a file. Returns the number of bytes written, or -1 for error.
- * Introduced in VFS API v1 */
+/**
+ * Write data to a file, if it was opened for writing.
+ *
+ * @param stream The file handle to write to.
+ * @param s The buffer to write from.
+ * @param len The number of bytes to write.
+ * The buffer pointed to by \c s must be this large.
+ * @return The number of bytes written,
+ * or -1 if there was an error.
+ * @since VFS API v1
+ * @see filestream_write
+ */
 typedef int64_t (RETRO_CALLCONV *retro_vfs_write_t)(struct retro_vfs_file_handle *stream, const void *s, uint64_t len);
 
-/* Flush pending writes to file, if using buffered IO. Returns 0 on sucess, or -1 on failure.
- * Introduced in VFS API v1 */
+/**
+ * Flush pending writes to the file, if applicable.
+ *
+ * This does not mean that the changes will be immediately persisted to disk;
+ * that may be scheduled for later, depending on the platform.
+ *
+ * @param stream The file handle to flush.
+ * @return 0 on success, -1 on failure.
+ * @since VFS API v1
+ * @see filestream_flush
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_flush_t)(struct retro_vfs_file_handle *stream);
 
-/* Delete the specified file. Returns 0 on success, -1 on failure
- * Introduced in VFS API v1 */
+/**
+ * Deletes the file at the given path.
+ *
+ * @param path The path to the file that will be deleted.
+ * @return 0 on success, -1 on failure.
+ * @see filestream_delete
+ * @since VFS API v1
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_remove_t)(const char *path);
 
-/* Rename the specified file. Returns 0 on success, -1 on failure
- * Introduced in VFS API v1 */
+/**
+ * Rename the specified file.
+ *
+ * @param old_path Path to an existing file.
+ * @param new_path The destination path.
+ * Must not name an existing file.
+ * @return 0 on success, -1 on failure
+ * @see filestream_rename
+ * @since VFS API v1
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const char *new_path);
 
-/* Stat the specified file. Retruns a bitmask of RETRO_VFS_STAT_* flags, none are set if path was not valid.
- * Additionally stores file size in given variable, unless NULL is given.
- * Introduced in VFS API v3 */
+/**
+ * Gets information about the given file.
+ *
+ * @param path The path to the file to query.
+ * @param[out] size The reported size of the file in bytes.
+ * May be \c NULL, in which case this value is ignored.
+ * @return A bitmask of \c RETRO_VFS_STAT flags,
+ * or 0 if \c path doesn't refer to a valid file.
+ * @see path_stat
+ * @see path_get_size
+ * @see RETRO_VFS_STAT
+ * @since VFS API v3
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
 
-/* Create the specified directory. Returns 0 on success, -1 on unknown failure, -2 if already exists.
- * Introduced in VFS API v3 */
+/**
+ * Creates a directory at the given path.
+ *
+ * @param dir The desired location of the new directory.
+ * @return 0 if the directory was created,
+ * -2 if the directory already exists,
+ * or -1 if some other error occurred.
+ * @see path_mkdir
+ * @since VFS API v3
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_mkdir_t)(const char *dir);
 
-/* Open the specified directory for listing. Returns the opaque dir handle, or NULL for error.
- * Support for the include_hidden argument may vary depending on the platform.
- * Introduced in VFS API v3 */
+/**
+ * Opens a handle to a directory so its contents can be inspected.
+ *
+ * @param dir The path to the directory to open.
+ * Must be an existing directory.
+ * @param include_hidden Whether to include hidden files in the directory listing.
+ * The exact semantics of this flag will depend on the platform.
+ * @return A handle to the opened directory,
+ * or \c NULL if there was an error.
+ * @see retro_opendir
+ * @since VFS API v3
+ */
 typedef struct retro_vfs_dir_handle *(RETRO_CALLCONV *retro_vfs_opendir_t)(const char *dir, bool include_hidden);
 
-/* Read the directory entry at the current position, and move the read pointer to the next position.
- * Returns true on success, false if already on the last entry.
- * Introduced in VFS API v3 */
+/**
+ * Gets the next dirent ("directory entry")
+ * within the given directory.
+ *
+ * @param[in,out] dirstream The directory to read from.
+ * Updated to point to the next file, directory, or other path.
+ * @return \c true when the next dirent was retrieved,
+ * \c false if there are no more dirents to read.
+ * @note This API iterates over all files and directories within \c dirstream.
+ * Remember to check what the type of the current dirent is.
+ * @note This function does not recurse,
+ * i.e. it does not return the contents of subdirectories.
+ * @note This may include "." and ".." on Unix-like platforms.
+ * @see retro_readdir
+ * @see retro_vfs_dirent_is_dir_t
+ * @since VFS API v3
+ */
 typedef bool (RETRO_CALLCONV *retro_vfs_readdir_t)(struct retro_vfs_dir_handle *dirstream);
 
-/* Get the name of the last entry read. Returns a string on success, or NULL for error.
- * The returned string pointer is valid until the next call to readdir or closedir.
- * Introduced in VFS API v3 */
+/**
+ * Gets the filename of the current dirent.
+ *
+ * The returned string pointer is valid
+ * until the next call to \c retro_vfs_readdir_t or \c retro_vfs_closedir_t.
+ *
+ * @param dirstream The directory to read from.
+ * @return The current dirent's name,
+ * or \c NULL if there was an error.
+ * @note This function only returns the file's \em name,
+ * not a complete path to it.
+ * @see retro_dirent_get_name
+ * @since VFS API v3
+ */
 typedef const char *(RETRO_CALLCONV *retro_vfs_dirent_get_name_t)(struct retro_vfs_dir_handle *dirstream);
 
-/* Check if the last entry read was a directory. Returns true if it was, false otherwise (or on error).
- * Introduced in VFS API v3 */
+/**
+ * Checks whether the current dirent names a directory.
+ *
+ * @param dirstream The directory to read from.
+ * @return \c true if \c dirstream's current dirent points to a directory,
+ * \c false if not or if there was an error.
+ * @see retro_dirent_is_dir
+ * @since VFS API v3
+ */
 typedef bool (RETRO_CALLCONV *retro_vfs_dirent_is_dir_t)(struct retro_vfs_dir_handle *dirstream);
 
-/* Close the directory and release its resources. Must be called if opendir returns non-NULL. Returns 0 on success, -1 on failure.
- * Whether the call succeeds ot not, the handle passed as parameter becomes invalid and should no longer be used.
- * Introduced in VFS API v3 */
+/**
+ * Closes the given directory and release its resources.
+ *
+ * Must be called on any \c retro_vfs_dir_handle returned by \c retro_vfs_open_t.
+ *
+ * @param dirstream The directory to close.
+ * When this function returns (even failure),
+ * \c dirstream will no longer be valid and must not be used.
+ * @return 0 on success, -1 on failure.
+ * @see retro_closedir
+ * @since VFS API v3
+ */
 typedef int (RETRO_CALLCONV *retro_vfs_closedir_t)(struct retro_vfs_dir_handle *dirstream);
 
+/**
+ * File system interface exposed by the frontend.
+ *
+ * @see dirent_vfs_init
+ * @see filestream_vfs_init
+ * @see path_vfs_init
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ */
 struct retro_vfs_interface
 {
    /* VFS API v1 */
+   /** @copydoc retro_vfs_get_path_t */
 	retro_vfs_get_path_t get_path;
+
+   /** @copydoc retro_vfs_open_t */
 	retro_vfs_open_t open;
+
+   /** @copydoc retro_vfs_close_t */
 	retro_vfs_close_t close;
+
+   /** @copydoc retro_vfs_size_t */
 	retro_vfs_size_t size;
+
+   /** @copydoc retro_vfs_tell_t */
 	retro_vfs_tell_t tell;
+
+   /** @copydoc retro_vfs_seek_t */
 	retro_vfs_seek_t seek;
+
+   /** @copydoc retro_vfs_read_t */
 	retro_vfs_read_t read;
+
+   /** @copydoc retro_vfs_write_t */
 	retro_vfs_write_t write;
+
+   /** @copydoc retro_vfs_flush_t */
 	retro_vfs_flush_t flush;
+
+   /** @copydoc retro_vfs_remove_t */
 	retro_vfs_remove_t remove;
+
+   /** @copydoc retro_vfs_rename_t */
 	retro_vfs_rename_t rename;
    /* VFS API v2 */
+
+   /** @copydoc retro_vfs_truncate_t */
    retro_vfs_truncate_t truncate;
    /* VFS API v3 */
+
+   /** @copydoc retro_vfs_stat_t */
    retro_vfs_stat_t stat;
+
+   /** @copydoc retro_vfs_mkdir_t */
    retro_vfs_mkdir_t mkdir;
+
+   /** @copydoc retro_vfs_opendir_t */
    retro_vfs_opendir_t opendir;
+
+   /** @copydoc retro_vfs_readdir_t */
    retro_vfs_readdir_t readdir;
+
+   /** @copydoc retro_vfs_dirent_get_name_t */
    retro_vfs_dirent_get_name_t dirent_get_name;
+
+   /** @copydoc retro_vfs_dirent_is_dir_t */
    retro_vfs_dirent_is_dir_t dirent_is_dir;
+
+   /** @copydoc retro_vfs_closedir_t */
    retro_vfs_closedir_t closedir;
 };
 
+/**
+ * Represents a request by the core for the frontend's file system interface,
+ * as well as the interface itself returned by the frontend.
+ *
+ * You do not need to use these functions directly;
+ * you may pass this struct to \c dirent_vfs_init,
+ * \c filestream_vfs_init, or \c path_vfs_init
+ * so that you can use the wrappers provided by these modules.
+ *
+ * @see dirent_vfs_init
+ * @see filestream_vfs_init
+ * @see path_vfs_init
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ */
 struct retro_vfs_interface_info
 {
-   /* Set by core: should this be higher than the version the front end supports,
-    * front end will return false in the RETRO_ENVIRONMENT_GET_VFS_INTERFACE call
-    * Introduced in VFS API v1 */
+   /**
+    * The minimum version of the VFS API that the core requires.
+    * libretro-common's wrapper API initializers will check this value as well.
+    *
+    * Set to the core's desired VFS version when requesting an interface,
+    * and set by the frontend to indicate its actual API version.
+    *
+    * If the core asks for a newer VFS API version than the frontend supports,
+    * the frontend must return \c false within the \c RETRO_ENVIRONMENT_GET_VFS_INTERFACE call.
+    * @since VFS API v1
+    */
    uint32_t required_interface_version;
 
-   /* Frontend writes interface pointer here. The frontend also sets the actual
-    * version, must be at least required_interface_version.
-    * Introduced in VFS API v1 */
+   /**
+    * Set by the frontend.
+    * The frontend will set this to the VFS interface it provides.
+    *
+    * The interface is owned by the frontend
+    * and must not be modified or freed by the core.
+    * @since VFS API v1 */
    struct retro_vfs_interface *iface;
 };
 
+/** @} */
+
+/** @defgroup GET_HW_RENDER_INTERFACE Hardware Rendering Interface
+ * @{
+ */
+
+/**
+ * Describes the hardware rendering API supported by
+ * a particular subtype of \c retro_hw_render_interface.
+ *
+ * Not every rendering API supported by libretro has its own interface,
+ * or even needs one.
+ *
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ */
 enum retro_hw_render_interface_type
 {
+   /**
+    * Indicates a \c retro_hw_render_interface for Vulkan.
+    * @see retro_hw_render_interface_vulkan
+    */
    RETRO_HW_RENDER_INTERFACE_VULKAN     = 0,
+
+   /** Indicates a \c retro_hw_render_interface for Direct3D 9. */
    RETRO_HW_RENDER_INTERFACE_D3D9       = 1,
+
+   /** Indicates a \c retro_hw_render_interface for Direct3D 10. */
    RETRO_HW_RENDER_INTERFACE_D3D10      = 2,
+
+   /**
+    * Indicates a \c retro_hw_render_interface for Direct3D 11.
+    * @see retro_hw_render_interface_d3d11
+    */
    RETRO_HW_RENDER_INTERFACE_D3D11      = 3,
+
+   /**
+    * Indicates a \c retro_hw_render_interface for Direct3D 12.
+    * @see retro_hw_render_interface_d3d12
+    */
    RETRO_HW_RENDER_INTERFACE_D3D12      = 4,
+
+   /**
+    * Indicates a \c retro_hw_render_interface for
+    * the PlayStation's 2 PSKit API.
+    * @see retro_hw_render_interface_gskit_ps2
+    */
    RETRO_HW_RENDER_INTERFACE_GSKIT_PS2  = 5,
+
+   /** @private Defined to ensure <tt>sizeof(retro_hw_render_interface_type) == sizeof(int)</tt>.
+    * Do not use. */
    RETRO_HW_RENDER_INTERFACE_DUMMY      = INT_MAX
 };
 
-/* Base struct. All retro_hw_render_interface_* types
- * contain at least these fields. */
+/**
+ * Base render interface type.
+ * All \c retro_hw_render_interface implementations
+ * will start with these two fields set to particular values.
+ *
+ * @see retro_hw_render_interface_type
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ */
 struct retro_hw_render_interface
 {
+   /**
+    * Denotes the particular rendering API that this interface is for.
+    * Each interface requires this field to be set to a particular value.
+    * Use it to cast this interface to the appropriate pointer.
+    */
    enum retro_hw_render_interface_type interface_type;
+
+   /**
+    * The version of this rendering interface.
+    * @note This is not related to the version of the API itself.
+    */
    unsigned interface_version;
 };
 
+/** @} */
+
+/**
+ * @defgroup GET_LED_INTERFACE LED Interface
+ * @{
+ */
+
+/** @copydoc retro_led_interface::set_led_state */
 typedef void (RETRO_CALLCONV *retro_set_led_state_t)(int led, int state);
+
+/**
+ * Interface that the core can use to set the state of available LEDs.
+ * @see RETRO_ENVIRONMENT_GET_LED_INTERFACE
+ */
 struct retro_led_interface
 {
-    retro_set_led_state_t set_led_state;
+   /**
+    * Sets the state of an LED.
+    *
+    * @param led The LED to set the state of.
+    * @param state The state to set the LED to.
+    * \c true to enable, \c false to disable.
+    */
+   retro_set_led_state_t set_led_state;
 };
 
-/* Retrieves the current state of the MIDI input.
- * Returns true if it's enabled, false otherwise. */
+/** @} */
+
+/** @defgroup GET_AUDIO_VIDEO_ENABLE Skipped A/V Steps
+ * @{
+ */
+
+/**
+ * Flags that define A/V steps that the core may skip for this frame.
+ *
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE
+ */
+enum retro_av_enable_flags
+{
+   /**
+    * If set, the core should render video output with \c retro_video_refresh_t as normal.
+    *
+    * Otherwise, the frontend will discard any video data received this frame,
+    * including frames presented via hardware acceleration.
+    * \c retro_video_refresh_t will do nothing.
+    *
+    * @note After running the frame, the video output of the next frame
+    * should be no different than if video was enabled,
+    * and saving and loading state should have no issues.
+    * This implies that the emulated console's graphics pipeline state
+    * should not be affected by this flag.
+    *
+    * @note If emulating a platform that supports display capture
+    * (i.e. reading its own VRAM),
+    * the core may not be able to completely skip rendering,
+    * as the VRAM is part of the graphics pipeline's state.
+    */
+   RETRO_AV_ENABLE_VIDEO = (1 << 0),
+
+   /**
+    * If set, the core should render audio output
+    * with \c retro_audio_sample_t or \c retro_audio_sample_batch_t as normal.
+    *
+    * Otherwise, the frontend will discard any audio data received this frame.
+    * The core should skip audio rendering if possible.
+    *
+    * @note After running the frame, the audio output of the next frame
+    * should be no different than if audio was enabled,
+    * and saving and loading state should have no issues.
+    * This implies that the emulated console's audio pipeline state
+    * should not be affected by this flag.
+    */
+   RETRO_AV_ENABLE_AUDIO = (1 << 1),
+
+   /**
+    * If set, indicates that any savestates taken this frame
+    * are guaranteed to be created by the same binary that will load them,
+    * and will not be written to or read from the disk.
+    *
+    * The core may use these guarantees to:
+    *
+    * @li Assume that loading state will succeed.
+    * @li Update its memory buffers in-place if possible.
+    * @li Skip clearing memory.
+    * @li Skip resetting the system.
+    * @li Skip validation steps.
+    *
+    * @deprecated Use \c RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT instead,
+    * except for compatibility purposes.
+    */
+   RETRO_AV_ENABLE_FAST_SAVESTATES = (1 << 2),
+
+   /**
+    * If set, indicates that the frontend will never need audio from the core.
+    * Used by a frontend for implementing runahead via a secondary core instance.
+    *
+    * The core may stop synthesizing audio if it can do so
+    * without compromising emulation accuracy.
+    *
+    * Audio output for the next frame does not matter,
+    * and the frontend will never need an accurate audio state in the future.
+    *
+    * State will never be saved while this flag is set.
+    */
+   RETRO_AV_ENABLE_HARD_DISABLE_AUDIO = (1 << 3),
+
+   /**
+    * @private Defined to ensure <tt>sizeof(retro_av_enable_flags) == sizeof(int)</tt>.
+    * Do not use.
+    */
+   RETRO_AV_ENABLE_DUMMY = INT_MAX
+};
+
+/** @} */
+
+/**
+ * @defgroup GET_MIDI_INTERFACE MIDI Interface
+ * @{
+ */
+
+/** @copydoc retro_midi_interface::input_enabled */
 typedef bool (RETRO_CALLCONV *retro_midi_input_enabled_t)(void);
 
-/* Retrieves the current state of the MIDI output.
- * Returns true if it's enabled, false otherwise */
+/** @copydoc retro_midi_interface::output_enabled */
 typedef bool (RETRO_CALLCONV *retro_midi_output_enabled_t)(void);
 
-/* Reads next byte from the input stream.
- * Returns true if byte is read, false otherwise. */
+/** @copydoc retro_midi_interface::read */
 typedef bool (RETRO_CALLCONV *retro_midi_read_t)(uint8_t *byte);
 
-/* Writes byte to the output stream.
- * 'delta_time' is in microseconds and represent time elapsed since previous write.
- * Returns true if byte is written, false otherwise. */
+/** @copydoc retro_midi_interface::write */
 typedef bool (RETRO_CALLCONV *retro_midi_write_t)(uint8_t byte, uint32_t delta_time);
 
-/* Flushes previously written data.
- * Returns true if successful, false otherwise. */
+/** @copydoc retro_midi_interface::flush */
 typedef bool (RETRO_CALLCONV *retro_midi_flush_t)(void);
 
+/**
+ * Interface that the core can use for raw MIDI I/O.
+ */
 struct retro_midi_interface
 {
+   /**
+    * Retrieves the current state of MIDI input.
+    *
+    * @return \c true if MIDI input is enabled.
+    */
    retro_midi_input_enabled_t input_enabled;
+
+   /**
+    * Retrieves the current state of MIDI output.
+    * @return \c true if MIDI output is enabled.
+    */
    retro_midi_output_enabled_t output_enabled;
+
+   /**
+    * Reads a byte from the MIDI input stream.
+    *
+    * @param[out] byte The byte received from the input stream.
+    * @return \c true if a byte was read,
+    * \c false if MIDI input is disabled or \c byte is \c NULL.
+    */
    retro_midi_read_t read;
+
+   /**
+    * Writes a byte to the output stream.
+    *
+    * @param byte The byte to write to the output stream.
+    * @param delta_time Time since the previous write, in microseconds.
+    * @return \c true if c\ byte was written, false otherwise.
+    */
    retro_midi_write_t write;
+
+   /**
+    * Flushes previously-written data.
+    *
+    * @return \c true if successful.
+    */
    retro_midi_flush_t flush;
 };
 
+/** @} */
+
+/** @defgroup SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE Render Context Negotiation
+ * @{
+ */
+
+/**
+ * Describes the hardware rendering API used by
+ * a particular subtype of \c retro_hw_render_context_negotiation_interface.
+ *
+ * Not every rendering API supported by libretro has a context negotiation interface,
+ * or even needs one.
+ *
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ */
 enum retro_hw_render_context_negotiation_interface_type
 {
+   /**
+    * Denotes a context negotiation interface for Vulkan.
+    * @see retro_hw_render_context_negotiation_interface_vulkan
+    */
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN = 0,
+
+   /**
+    * @private Defined to ensure <tt>sizeof(retro_hw_render_context_negotiation_interface_type) == sizeof(int)</tt>.
+    * Do not use.
+    */
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_DUMMY = INT_MAX
 };
 
-/* Base struct. All retro_hw_render_context_negotiation_interface_* types
- * contain at least these fields. */
+/**
+ * Base context negotiation interface type.
+ * All \c retro_hw_render_context_negotiation_interface implementations
+ * will start with these two fields set to particular values.
+ *
+ * @see retro_hw_render_interface_type
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER
+ * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
+ * @see RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE
+ */
 struct retro_hw_render_context_negotiation_interface
 {
+   /**
+    * Denotes the particular rendering API that this interface is for.
+    * Each interface requires this field to be set to a particular value.
+    * Use it to cast this interface to the appropriate pointer.
+    */
    enum retro_hw_render_context_negotiation_interface_type interface_type;
+
+   /**
+    * The version of this negotiation interface.
+    * @note This is not related to the version of the API itself.
+    */
    unsigned interface_version;
 };
 
-/* Serialized state is incomplete in some way. Set if serialization is
- * usable in typical end-user cases but should not be relied upon to
- * implement frame-sensitive frontend features such as netplay or
- * rerecording. */
+/** @} */
+
+/** @defgroup RETRO_SERIALIZATION_QUIRK Serialization Quirks
+ * @{
+ */
+
+/**
+ * Indicates that serialized state is incomplete in some way.
+ *
+ * Set if serialization is usable for the common case of saving and loading game state,
+ * but should not be relied upon for frame-sensitive frontend features
+ * such as netplay or rerecording.
+ */
 #define RETRO_SERIALIZATION_QUIRK_INCOMPLETE (1 << 0)
-/* The core must spend some time initializing before serialization is
- * supported. retro_serialize() will initially fail; retro_unserialize()
- * and retro_serialize_size() may or may not work correctly either. */
+
+/**
+ * Indicates that core must spend some time initializing before serialization can be done.
+ *
+ * \c retro_serialize(), \c retro_unserialize(), and \c retro_serialize_size() will initially fail.
+ */
 #define RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE (1 << 1)
-/* Serialization size may change within a session. */
+
+/** Set by the core to indicate that serialization size may change within a session. */
 #define RETRO_SERIALIZATION_QUIRK_CORE_VARIABLE_SIZE (1 << 2)
-/* Set by the frontend to acknowledge that it supports variable-sized
- * states. */
+
+/** Set by the frontend to acknowledge that it supports variable-sized states. */
 #define RETRO_SERIALIZATION_QUIRK_FRONT_VARIABLE_SIZE (1 << 3)
-/* Serialized state can only be loaded during the same session. */
+
+/** Serialized state can only be loaded during the same session. */
 #define RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION (1 << 4)
-/* Serialized state cannot be loaded on an architecture with a different
- * endianness from the one it was saved on. */
+
+/**
+ * Serialized state cannot be loaded on an architecture
+ * with a different endianness from the one it was saved on.
+ */
 #define RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT (1 << 5)
-/* Serialized state cannot be loaded on a different platform from the one it
- * was saved on for reasons other than endianness, such as word size
- * dependence */
+
+/**
+ * Serialized state cannot be loaded on a different platform
+ * from the one it was saved on for reasons other than endianness,
+ * such as word size dependence.
+ */
 #define RETRO_SERIALIZATION_QUIRK_PLATFORM_DEPENDENT (1 << 6)
 
-#define RETRO_MEMDESC_CONST      (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
-#define RETRO_MEMDESC_BIGENDIAN  (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
-#define RETRO_MEMDESC_SYSTEM_RAM (1 << 2)   /* The memory area is system RAM.  This is main RAM of the gaming system. */
-#define RETRO_MEMDESC_SAVE_RAM   (1 << 3)   /* The memory area is save RAM. This RAM is usually found on a game cartridge, backed up by a battery. */
-#define RETRO_MEMDESC_VIDEO_RAM  (1 << 4)   /* The memory area is video RAM (VRAM) */
-#define RETRO_MEMDESC_ALIGN_2    (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
+/** @} */
+
+/** @defgroup SET_MEMORY_MAPS Memory Descriptors
+ * @{
+ */
+
+/** @defgroup RETRO_MEMDESC Memory Descriptor Flags
+ * Information about how the emulated hardware uses this portion of its address space.
+ * @{
+ */
+
+/**
+ * Indicates that this memory area won't be modified
+ * once \c retro_load_game has returned.
+ */
+#define RETRO_MEMDESC_CONST      (1 << 0)
+
+/**
+ * Indicates a memory area with big-endian byte ordering,
+ * as opposed to the default of little-endian.
+ */
+#define RETRO_MEMDESC_BIGENDIAN  (1 << 1)
+
+/**
+ * Indicates a memory area that is used for the emulated system's main RAM.
+ */
+#define RETRO_MEMDESC_SYSTEM_RAM (1 << 2)
+
+/**
+ * Indicates a memory area that is used for the emulated system's save RAM,
+ * usually found on a game cartridge as battery-backed RAM or flash memory.
+ */
+#define RETRO_MEMDESC_SAVE_RAM   (1 << 3)
+
+/**
+ * Indicates a memory area that is used for the emulated system's video RAM,
+ * usually found on a console's GPU (or local equivalent).
+ */
+#define RETRO_MEMDESC_VIDEO_RAM  (1 << 4)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be aligned to 2 bytes or their own size
+ * (whichever is smaller).
+ */
+#define RETRO_MEMDESC_ALIGN_2    (1 << 16)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be aligned to 4 bytes or their own size
+ * (whichever is smaller).
+ */
 #define RETRO_MEMDESC_ALIGN_4    (2 << 16)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be aligned to 8 bytes or their own size
+ * (whichever is smaller).
+ */
 #define RETRO_MEMDESC_ALIGN_8    (3 << 16)
-#define RETRO_MEMDESC_MINSIZE_2  (1 << 24)  /* All memory in this region is accessed at least 2 bytes at the time. */
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be at least 2 bytes long.
+ */
+#define RETRO_MEMDESC_MINSIZE_2  (1 << 24)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be at least 4 bytes long.
+ */
 #define RETRO_MEMDESC_MINSIZE_4  (2 << 24)
+
+/**
+ * Indicates a memory area that requires all accesses
+ * to be at least 8 bytes long.
+ */
 #define RETRO_MEMDESC_MINSIZE_8  (3 << 24)
+
+/** @} */
+
+/**
+ * A mapping from a region of the emulated console's address space
+ * to the host's address space.
+ *
+ * Can be used to map an address in the console's address space
+ * to the host's address space, like so:
+ *
+ * @code
+ * void* emu_to_host(void* addr, struct retro_memory_descriptor* descriptor)
+ * {
+ *     return descriptor->ptr + (addr & ~descriptor->disconnect) - descriptor->start;
+ * }
+ * @endcode
+ *
+ * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
+ */
 struct retro_memory_descriptor
 {
+   /**
+    * A bitwise \c OR of one or more \ref RETRO_MEMDESC "flags"
+    * that describe how the emulated system uses this descriptor's address range.
+    *
+    * @note If \c ptr is \c NULL,
+    * then no flags should be set.
+    * @see RETRO_MEMDESC
+    */
    uint64_t flags;
 
-   /* Pointer to the start of the relevant ROM or RAM chip.
-    * It's strongly recommended to use 'offset' if possible, rather than
-    * doing math on the pointer.
+   /**
+    * Pointer to the start of this memory region's buffer
+    * within the \em host's address space.
+    * The address listed here must be valid for the duration of the session;
+    * it must not be freed or modified by the frontend
+    * and it must not be moved by the core.
     *
-    * If the same byte is mapped my multiple descriptors, their descriptors
-    * must have the same pointer.
-    * If 'start' does not point to the first byte in the pointer, put the
-    * difference in 'offset' instead.
+    * May be \c NULL to indicate a lack of accessible memory
+    * at the emulated address given in \c start.
     *
-    * May be NULL if there's nothing usable here (e.g. hardware registers and
-    * open bus). No flags should be set if the pointer is NULL.
-    * It's recommended to minimize the number of descriptors if possible,
-    * but not mandatory. */
+    * @note Overlapping descriptors that include the same byte
+    * must have the same \c ptr value.
+    */
    void *ptr;
+
+   /**
+    * The offset of this memory region,
+    * relative to the address given by \c ptr.
+    *
+    * @note It is recommended to use this field for address calculations
+    * instead of performing arithmetic on \c ptr.
+    */
    size_t offset;
 
-   /* This is the location in the emulated address space
-    * where the mapping starts. */
+   /**
+    * The starting address of this memory region
+    * <em>within the emulated hardware's address space</em>.
+    *
+    * @note Not represented as a pointer
+    * because it's unlikely to be valid on the host device.
+    */
    size_t start;
 
-   /* Which bits must be same as in 'start' for this mapping to apply.
-    * The first memory descriptor to claim a certain byte is the one
-    * that applies.
-    * A bit which is set in 'start' must also be set in this.
-    * Can be zero, in which case each byte is assumed mapped exactly once.
-    * In this case, 'len' must be a power of two. */
+   /**
+    * A bitmask that specifies which bits of an address must match
+    * the bits of the \ref start address.
+    *
+    * Combines with \c disconnect to map an address to a memory block.
+    *
+    * If multiple memory descriptors can claim a particular byte,
+    * the first one defined in the \ref retro_memory_descriptor array applies.
+    * A bit which is set in \c start must also be set in this.
+    *
+    * Can be zero, in which case \c start and \c len represent
+    * the complete mapping for this region of memory
+    * (i.e. each byte is mapped exactly once).
+    * In this case, \c len must be a power of two.
+    */
    size_t select;
 
-   /* If this is nonzero, the set bits are assumed not connected to the
-    * memory chip's address pins. */
+   /**
+    * A bitmask of bits that are \em not used for addressing.
+    *
+    * Any set bits are assumed to be disconnected from
+    * the emulated memory chip's address pins,
+    * and are therefore ignored when memory-mapping.
+    */
    size_t disconnect;
 
-   /* This one tells the size of the current memory area.
-    * If, after start+disconnect are applied, the address is higher than
-    * this, the highest bit of the address is cleared.
+   /**
+    * The length of this memory region, in bytes.
+    *
+    * If applying \ref start and \ref disconnect to an address
+    * results in a value higher than this,
+    * the highest bit of the address is cleared.
     *
     * If the address is still too high, the next highest bit is cleared.
-    * Can be zero, in which case it's assumed to be infinite (as limited
-    * by 'select' and 'disconnect'). */
+    * Can be zero, in which case it's assumed to be
+    * bounded only by \ref select and \ref disconnect.
+    */
    size_t len;
 
-   /* To go from emulated address to physical address, the following
-    * order applies:
-    * Subtract 'start', pick off 'disconnect', apply 'len', add 'offset'. */
-
-   /* The address space name must consist of only a-zA-Z0-9_-,
-    * should be as short as feasible (maximum length is 8 plus the NUL),
-    * and may not be any other address space plus one or more 0-9A-F
-    * at the end.
-    * However, multiple memory descriptors for the same address space is
-    * allowed, and the address space name can be empty. NULL is treated
-    * as empty.
+   /**
+    * A short name for this address space.
     *
-    * Address space names are case sensitive, but avoid lowercase if possible.
-    * The same pointer may exist in multiple address spaces.
+    * Names must meet the following requirements:
     *
-    * Examples:
-    * blank+blank - valid (multiple things may be mapped in the same namespace)
-    * 'Sp'+'Sp' - valid (multiple things may be mapped in the same namespace)
-    * 'A'+'B' - valid (neither is a prefix of each other)
-    * 'S'+blank - valid ('S' is not in 0-9A-F)
-    * 'a'+blank - valid ('a' is not in 0-9A-F)
-    * 'a'+'A' - valid (neither is a prefix of each other)
-    * 'AR'+blank - valid ('R' is not in 0-9A-F)
-    * 'ARB'+blank - valid (the B can't be part of the address either, because
-    *                      there is no namespace 'AR')
-    * blank+'B' - not valid, because it's ambigous which address space B1234
-    *             would refer to.
-    * The length can't be used for that purpose; the frontend may want
-    * to append arbitrary data to an address, without a separator. */
+    * \li Characters must be in the set <tt>[a-zA-Z0-9_-]</tt>.
+    * \li No more than 8 characters, plus a \c NULL terminator.
+    * \li Names are case-sensitive, but lowercase characters are discouraged.
+    * \li A name must not be the same as another name plus a character in the set \c [A-F0-9]
+    *     (i.e. if an address space named "RAM" exists,
+    *     then the names "RAM0", "RAM1", ..., "RAMF" are forbidden).
+    *     This is to allow addresses to be named by each descriptor unambiguously,
+    *     even if the areas overlap.
+    * \li May be \c NULL or empty (both are considered equivalent).
+    *
+    * Here are some examples of pairs of address space names:
+    *
+    * \li \em blank + \em blank: valid (multiple things may be mapped in the same namespace)
+    * \li \c Sp + \c Sp: valid (multiple things may be mapped in the same namespace)
+    * \li \c SRAM + \c VRAM: valid (neither is a prefix of the other)
+    * \li \c V + \em blank: valid (\c V is not in \c [A-F0-9])
+    * \li \c a + \em blank: valid but discouraged (\c a is not in \c [A-F0-9])
+    * \li \c a + \c A: valid but discouraged (neither is a prefix of the other)
+    * \li \c AR + \em blank: valid (\c R is not in \c [A-F0-9])
+    * \li \c ARB + \em blank: valid (there's no \c AR namespace,
+    *     so the \c B doesn't cause ambiguity).
+    * \li \em blank + \c B: invalid, because it's ambiguous which address space \c B1234 would refer to.
+    *
+    * The length of the address space's name can't be used to disambugiate,
+    * as extra information may be appended to it without a separator.
+    */
    const char *addrspace;
 
    /* TODO: When finalizing this one, add a description field, which should be
@@ -2237,534 +3704,1324 @@ struct retro_memory_descriptor
     * them up. */
 };
 
-/* The frontend may use the largest value of 'start'+'select' in a
- * certain namespace to infer the size of the address space.
+/**
+ * A list of regions within the emulated console's address space.
  *
- * If the address space is larger than that, a mapping with .ptr=NULL
- * should be at the end of the array, with .select set to all ones for
- * as long as the address space is big.
+ * The frontend may use the largest value of
+ * \ref retro_memory_descriptor::start + \ref retro_memory_descriptor::select
+ * in a certain namespace to infer the overall size of the address space.
+ * If the address space is larger than that,
+ * the last mapping in \ref descriptors should have \ref retro_memory_descriptor::ptr set to \c NULL
+ * and \ref retro_memory_descriptor::select should have all bits used in the address space set to 1.
  *
- * Sample descriptors (minus .ptr, and RETRO_MEMFLAG_ on the flags):
- * SNES WRAM:
- * .start=0x7E0000, .len=0x20000
- * (Note that this must be mapped before the ROM in most cases; some of the
- * ROM mappers
- * try to claim $7E0000, or at least $7E8000.)
- * SNES SPC700 RAM:
- * .addrspace="S", .len=0x10000
- * SNES WRAM mirrors:
- * .flags=MIRROR, .start=0x000000, .select=0xC0E000, .len=0x2000
- * .flags=MIRROR, .start=0x800000, .select=0xC0E000, .len=0x2000
- * SNES WRAM mirrors, alternate equivalent descriptor:
- * .flags=MIRROR, .select=0x40E000, .disconnect=~0x1FFF
- * (Various similar constructions can be created by combining parts of
- * the above two.)
- * SNES LoROM (512KB, mirrored a couple of times):
- * .flags=CONST, .start=0x008000, .select=0x408000, .disconnect=0x8000, .len=512*1024
- * .flags=CONST, .start=0x400000, .select=0x400000, .disconnect=0x8000, .len=512*1024
- * SNES HiROM (4MB):
- * .flags=CONST,                 .start=0x400000, .select=0x400000, .len=4*1024*1024
- * .flags=CONST, .offset=0x8000, .start=0x008000, .select=0x408000, .len=4*1024*1024
- * SNES ExHiROM (8MB):
- * .flags=CONST, .offset=0,                  .start=0xC00000, .select=0xC00000, .len=4*1024*1024
- * .flags=CONST, .offset=4*1024*1024,        .start=0x400000, .select=0xC00000, .len=4*1024*1024
- * .flags=CONST, .offset=0x8000,             .start=0x808000, .select=0xC08000, .len=4*1024*1024
- * .flags=CONST, .offset=4*1024*1024+0x8000, .start=0x008000, .select=0xC08000, .len=4*1024*1024
- * Clarify the size of the address space:
- * .ptr=NULL, .select=0xFFFFFF
- * .len can be implied by .select in many of them, but was included for clarity.
+ * Here's an example set of descriptors for the SNES.
+ *
+ * @code{.c}
+ * struct retro_memory_map snes_descriptors = retro_memory_map
+ * {
+ *    .descriptors = (struct retro_memory_descriptor[])
+ *    {
+ *       // WRAM; must usually be mapped before the ROM,
+ *       // as some SNES ROM mappers try to claim 0x7E0000
+ *       { .addrspace="WRAM", .start=0x7E0000, .len=0x20000 },
+ *
+ *       // SPC700 RAM
+ *       { .addrspace="SPC700", .len=0x10000 },
+ *
+ *       // WRAM mirrors
+ *       { .addrspace="WRAM", .start=0x000000, .select=0xC0E000, .len=0x2000 },
+ *       { .addrspace="WRAM", .start=0x800000, .select=0xC0E000, .len=0x2000 },
+ *
+ *       // WRAM mirror, alternate equivalent descriptor
+ *       // (Various similar constructions can be created by combining parts of the above two.)
+ *       { .addrspace="WRAM", .select=0x40E000, .disconnect=~0x1FFF },
+ *
+ *       // LoROM (512KB, mirrored a couple of times)
+ *       { .addrspace="LoROM", .start=0x008000, .select=0x408000, .disconnect=0x8000, .len=512*1024, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="LoROM", .start=0x400000, .select=0x400000, .disconnect=0x8000, .len=512*1024, .flags=RETRO_MEMDESC_CONST },
+ *
+ *       // HiROM (4MB)
+ *       { .addrspace="HiROM", .start=0x400000, .select=0x400000, .len=4*1024*1024, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="HiROM", .start=0x008000, .select=0x408000, .len=4*1024*1024, .offset=0x8000, .flags=RETRO_MEMDESC_CONST },
+ *
+ *       // ExHiROM (8MB)
+ *       { .addrspace="ExHiROM", .start=0xC00000, .select=0xC00000, .len=4*1024*1024, .offset=0, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="ExHiROM", .start=0x400000, .select=0xC00000, .len=4*1024*1024, .offset=4*1024*1024, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="ExHiROM", .start=0x808000, .select=0xC08000, .len=4*1024*1024, .offset=0x8000, .flags=RETRO_MEMDESC_CONST },
+ *       { .addrspace="ExHiROM", .start=0x008000, .select=0xC08000, .len=4*1024*1024, .offset=4*1024*1024+0x8000, .flags=RETRO_MEMDESC_CONST },
+ *
+ *       // Clarifying the full size of the address space
+ *       { .select=0xFFFFFF, .ptr=NULL },
+ *    },
+ *    .num_descriptors = 14,
+ * };
+ * @endcode
+ *
+ * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
  */
-
 struct retro_memory_map
 {
+   /**
+    * Pointer to an array of memory descriptors,
+    * each of which describes part of the emulated console's address space.
+    */
    const struct retro_memory_descriptor *descriptors;
+
+   /** The number of descriptors in \c descriptors. */
    unsigned num_descriptors;
 };
 
+/** @} */
+
+/** @defgroup SET_CONTROLLER_INFO Controller Info
+ * @{
+ */
+
+/**
+ * Details about a controller (or controller configuration)
+ * supported by one of a core's emulated input ports.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
+ */
 struct retro_controller_description
 {
-   /* Human-readable description of the controller. Even if using a generic
-    * input device type, this can be set to the particular device type the
-    * core uses. */
+   /**
+    * A human-readable label for the controller or configuration
+    * represented by this device type.
+    * Most likely the device's original brand name.
+    */
    const char *desc;
 
-   /* Device type passed to retro_set_controller_port_device(). If the device
-    * type is a sub-class of a generic input device type, use the
-    * RETRO_DEVICE_SUBCLASS macro to create an ID.
+   /**
+    * A unique identifier that will be passed to \c retro_set_controller_port_device()'s \c device parameter.
+    * May be the ID of one of \ref RETRO_DEVICE "the generic controller types",
+    * or a subclass ID defined with \c RETRO_DEVICE_SUBCLASS.
     *
-    * E.g. RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1). */
+    * @see RETRO_DEVICE_SUBCLASS
+    */
    unsigned id;
 };
 
+/**
+ * Lists the types of controllers supported by
+ * one of core's emulated input ports.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
+ */
 struct retro_controller_info
 {
+
+   /**
+    * A pointer to an array of device types supported by this controller port.
+    *
+    * @note Ports that support the same devices
+    * may share the same underlying array.
+    */
    const struct retro_controller_description *types;
+
+   /** The number of elements in \c types. */
    unsigned num_types;
 };
 
+/** @} */
+
+/** @defgroup SET_SUBSYSTEM_INFO Subsystems
+ * @{
+ */
+
+/**
+ * Information about a type of memory associated with a subsystem.
+ * Usually used for SRAM (save RAM).
+ *
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
+ * @see retro_get_memory_data
+ * @see retro_get_memory_size
+ */
 struct retro_subsystem_memory_info
 {
-   /* The extension associated with a memory type, e.g. "psram". */
+   /**
+    * The file extension the frontend should use
+    * to save this memory region to disk, e.g. "srm" or "sav".
+    */
    const char *extension;
 
-   /* The memory type for retro_get_memory(). This should be at
-    * least 0x100 to avoid conflict with standardized
-    * libretro memory types. */
+   /**
+    * A constant that identifies this type of memory.
+    * Should be at least 0x100 (256) to avoid conflict
+    * with the standard libretro memory types,
+    * unless a subsystem uses the main platform's memory region.
+    * @see RETRO_MEMORY
+    */
    unsigned type;
 };
 
+/**
+ * Information about a type of ROM that a subsystem may use.
+ * Subsystems may use one or more ROMs at once,
+ * possibly of different types.
+ *
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
+ * @see retro_subsystem_info
+ */
 struct retro_subsystem_rom_info
 {
-   /* Describes what the content is (SGB BIOS, GB ROM, etc). */
+   /**
+    * Human-readable description of what the content represents,
+    * e.g. "Game Boy ROM".
+    */
    const char *desc;
 
-   /* Same definition as retro_get_system_info(). */
+   /** @copydoc retro_system_info::valid_extensions */
    const char *valid_extensions;
 
-   /* Same definition as retro_get_system_info(). */
+   /** @copydoc retro_system_info::need_fullpath */
    bool need_fullpath;
 
-   /* Same definition as retro_get_system_info(). */
+   /** @copydoc retro_system_info::block_extract */
    bool block_extract;
 
-   /* This is set if the content is required to load a game.
-    * If this is set to false, a zeroed-out retro_game_info can be passed. */
+   /**
+    * Indicates whether this particular subsystem ROM is required.
+    * If \c true and the user doesn't provide a ROM,
+    * the frontend should not load the core.
+    * If \c false and the user doesn't provide a ROM,
+    * the frontend should pass a zeroed-out \c retro_game_info
+    * to the corresponding entry in \c retro_load_game_special().
+    */
    bool required;
 
-   /* Content can have multiple associated persistent
-    * memory types (retro_get_memory()). */
+   /**
+    * Pointer to an array of memory descriptors that this subsystem ROM type uses.
+    * Useful for secondary cartridges that have their own save data.
+    * May be \c NULL, in which case this subsystem ROM's memory is not persisted by the frontend
+    * and \c num_memory should be zero.
+    */
    const struct retro_subsystem_memory_info *memory;
+
+   /** The number of elements in the array pointed to by \c memory. */
    unsigned num_memory;
 };
 
+/**
+ * Information about a secondary platform that a core supports.
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
+ */
 struct retro_subsystem_info
 {
-   /* Human-readable string of the subsystem type, e.g. "Super GameBoy" */
+   /**
+    * A human-readable description of the subsystem type,
+    * usually the brand name of the original platform
+    * (e.g. "Super Game Boy").
+    */
    const char *desc;
 
-   /* A computer friendly short string identifier for the subsystem type.
-    * This name must be [a-z].
-    * E.g. if desc is "Super GameBoy", this can be "sgb".
-    * This identifier can be used for command-line interfaces, etc.
+   /**
+    * A short machine-friendly identifier for the subsystem,
+    * usually an abbreviation of the platform name.
+    * For example, a Super Game Boy subsystem for a SNES core
+    * might use an identifier of "sgb".
+    * This identifier can be used for command-line interfaces,
+    * configuration, or other purposes.
+    * Must use lower-case alphabetical characters only (i.e. from a-z).
     */
    const char *ident;
 
-   /* Infos for each content file. The first entry is assumed to be the
-    * "most significant" content for frontend purposes.
+   /**
+    * The list of ROM types that this subsystem may use.
+    *
+    * The first entry is considered to be the "most significant" content,
+    * for the purposes of the frontend's categorization.
     * E.g. with Super GameBoy, the first content should be the GameBoy ROM,
     * as it is the most "significant" content to a user.
-    * If a frontend creates new file paths based on the content used
-    * (e.g. savestates), it should use the path for the first ROM to do so. */
+    *
+    * If a frontend creates new files based on the content used (e.g. for savestates),
+    * it should derive the filenames from the name of the first ROM in this list.
+    *
+    * @note \c roms can have a single element,
+    * but this is usually a sign that the core should broaden its
+    * primary system info instead.
+    *
+    * @see \c retro_system_info
+    */
    const struct retro_subsystem_rom_info *roms;
 
-   /* Number of content files associated with a subsystem. */
+   /** The length of the array given in \c roms. */
    unsigned num_roms;
 
-   /* The type passed to retro_load_game_special(). */
+   /** A unique identifier passed to retro_load_game_special(). */
    unsigned id;
 };
 
+/** @} */
+
+/** @defgroup SET_PROC_ADDRESS_CALLBACK Core Function Pointers
+ * @{ */
+
+/**
+ * The function pointer type that \c retro_get_proc_address_t returns.
+ *
+ * Despite the signature shown here, the original function may include any parameters and return type
+ * that respects the calling convention and C ABI.
+ *
+ * The frontend is expected to cast the function pointer to the correct type.
+ */
 typedef void (RETRO_CALLCONV *retro_proc_address_t)(void);
 
-/* libretro API extension functions:
- * (None here so far).
- *
+/**
  * Get a symbol from a libretro core.
- * Cores should only return symbols which are actual
- * extensions to the libretro API.
  *
- * Frontends should not use this to obtain symbols to standard
- * libretro entry points (static linking or dlsym).
+ * Cores should only return symbols that serve as libretro extensions.
+ * Frontends should not use this to obtain symbols to standard libretro entry points;
+ * instead, they should link to the core statically or use \c dlsym (or local equivalent).
  *
- * The symbol name must be equal to the function name,
- * e.g. if void retro_foo(void); exists, the symbol must be called "retro_foo".
+ * The symbol name must be equal to the function name.
+ * e.g. if <tt>void retro_foo(void);</tt> exists, the symbol in the compiled library must be called \c retro_foo.
  * The returned function pointer must be cast to the corresponding type.
+ *
+ * @param \c sym The name of the symbol to look up.
+ * @return Pointer to the exposed function with the name given in \c sym,
+ * or \c NULL if one couldn't be found.
+ * @note The frontend is expected to know the returned pointer's type in advance
+ * so that it can be cast correctly.
+ * @note The core doesn't need to expose every possible function through this interface.
+ * It's enough to only expose the ones that it expects the frontend to use.
+ * @note The functions exposed through this interface
+ * don't need to be publicly exposed in the compiled library
+ * (e.g. via \c __declspec(dllexport)).
+ * @see RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK
  */
 typedef retro_proc_address_t (RETRO_CALLCONV *retro_get_proc_address_t)(const char *sym);
 
+/**
+ * An interface that the frontend can use to get function pointers from the core.
+ *
+ * @note The returned function pointer will be invalidated once the core is unloaded.
+ * How and when that happens is up to the frontend.
+ *
+ * @see retro_get_proc_address_t
+ * @see RETRO_ENVIRONMENT_SET_PROC_ADDRESS_CALLBACK
+ */
 struct retro_get_proc_address_interface
 {
+   /** Set by the core. */
    retro_get_proc_address_t get_proc_address;
 };
 
+/** @} */
+
+/** @defgroup GET_LOG_INTERFACE Logging
+ * @{
+ */
+
+/**
+ * The severity of a given message.
+ * The frontend may log messages differently depending on the level.
+ * It may also ignore log messages of a certain level.
+ * @see retro_log_callback
+ */
 enum retro_log_level
 {
+   /** The logged message is most likely not interesting to the user. */
    RETRO_LOG_DEBUG = 0,
+
+   /** Information about the core operating normally. */
    RETRO_LOG_INFO,
+
+   /** Indicates a potential problem, possibly one that the core can recover from. */
    RETRO_LOG_WARN,
+
+   /** Indicates a degraded experience, if not failure. */
    RETRO_LOG_ERROR,
 
+   /** Defined to ensure that sizeof(enum retro_log_level) == sizeof(int). Do not use. */
    RETRO_LOG_DUMMY = INT_MAX
 };
 
-/* Logging function. Takes log level argument as well. */
+/**
+ * Logs a message to the frontend.
+ *
+ * @param level The log level of the message.
+ * @param fmt The format string to log.
+ * Same format as \c printf.
+ * Behavior is undefined if this is \c NULL.
+ * @param ... Zero or more arguments used by the format string.
+ * Behavior is undefined if these don't match the ones expected by \c fmt.
+ * @see retro_log_level
+ * @see retro_log_callback
+ * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
+ * @see printf
+ */
 typedef void (RETRO_CALLCONV *retro_log_printf_t)(enum retro_log_level level,
       const char *fmt, ...);
 
+/**
+ * Details about how to make log messages.
+ *
+ * @see retro_log_printf_t
+ * @see RETRO_ENVIRONMENT_GET_LOG_INTERFACE
+ */
 struct retro_log_callback
 {
+   /**
+    * Called when logging a message.
+    *
+    * @note Set by the frontend.
+    */
    retro_log_printf_t log;
 };
 
-/* Performance related functions */
+/** @} */
 
-/* ID values for SIMD CPU features */
+/** @defgroup GET_PERF_INTERFACE Performance Interface
+ * @{
+ */
+
+/** @defgroup RETRO_SIMD CPU Features
+ * @{
+ */
+
+/**
+ * Indicates CPU support for the SSE instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE
+ */
 #define RETRO_SIMD_SSE      (1 << 0)
+
+/**
+ * Indicates CPU support for the SSE2 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE2
+ */
 #define RETRO_SIMD_SSE2     (1 << 1)
+
+/** Indicates CPU support for the AltiVec (aka VMX or Velocity Engine) instruction set. */
 #define RETRO_SIMD_VMX      (1 << 2)
+
+/** Indicates CPU support for the VMX128 instruction set. Xbox 360 only. */
 #define RETRO_SIMD_VMX128   (1 << 3)
+
+/**
+ * Indicates CPU support for the AVX instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#avxnewtechs=AVX
+ */
 #define RETRO_SIMD_AVX      (1 << 4)
+
+/**
+ * Indicates CPU support for the NEON instruction set.
+ * @see https://developer.arm.com/architectures/instruction-sets/intrinsics/#f:@navigationhierarchiessimdisa=[Neon]
+ */
 #define RETRO_SIMD_NEON     (1 << 5)
+
+/**
+ * Indicates CPU support for the SSE3 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE3
+ */
 #define RETRO_SIMD_SSE3     (1 << 6)
+
+/**
+ * Indicates CPU support for the SSSE3 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSSE3
+ */
 #define RETRO_SIMD_SSSE3    (1 << 7)
+
+/**
+ * Indicates CPU support for the MMX instruction set.
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#techs=MMX
+ */
 #define RETRO_SIMD_MMX      (1 << 8)
+
+/** Indicates CPU support for the MMXEXT instruction set. */
 #define RETRO_SIMD_MMXEXT   (1 << 9)
+
+/**
+ * Indicates CPU support for the SSE4 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE4_1
+ */
 #define RETRO_SIMD_SSE4     (1 << 10)
+
+/**
+ * Indicates CPU support for the SSE4.2 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#ssetechs=SSE4_2
+ */
 #define RETRO_SIMD_SSE42    (1 << 11)
+
+/**
+ * Indicates CPU support for the AVX2 instruction set.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#avxnewtechs=AVX2
+ */
 #define RETRO_SIMD_AVX2     (1 << 12)
+
+/** Indicates CPU support for the VFPU instruction set. PS2 and PSP only.
+ *
+ * @see https://pspdev.github.io/vfpu-docs
+ */
 #define RETRO_SIMD_VFPU     (1 << 13)
+
+/**
+ * Indicates CPU support for Gekko SIMD extensions. GameCube only.
+ */
 #define RETRO_SIMD_PS       (1 << 14)
+
+/**
+ * Indicates CPU support for AES instructions.
+ *
+ * @see https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#aestechs=AES&othertechs=AES
+ */
 #define RETRO_SIMD_AES      (1 << 15)
+
+/**
+ * Indicates CPU support for the VFPv3 instruction set.
+ */
 #define RETRO_SIMD_VFPV3    (1 << 16)
+
+/**
+ * Indicates CPU support for the VFPv4 instruction set.
+ */
 #define RETRO_SIMD_VFPV4    (1 << 17)
+
+/** Indicates CPU support for the POPCNT instruction. */
 #define RETRO_SIMD_POPCNT   (1 << 18)
+
+/** Indicates CPU support for the MOVBE instruction. */
 #define RETRO_SIMD_MOVBE    (1 << 19)
+
+/** Indicates CPU support for the CMOV instruction. */
 #define RETRO_SIMD_CMOV     (1 << 20)
+
+/** Indicates CPU support for the ASIMD instruction set. */
 #define RETRO_SIMD_ASIMD    (1 << 21)
 
+/** @} */
+
+/**
+ * An abstract unit of ticks.
+ *
+ * Usually nanoseconds or CPU cycles,
+ * but it depends on the platform and the frontend.
+ */
 typedef uint64_t retro_perf_tick_t;
+
+/** Time in microseconds. */
 typedef int64_t retro_time_t;
 
+/**
+ * A performance counter.
+ *
+ * Use this to measure the execution time of a region of code.
+ * @see retro_perf_callback
+ */
 struct retro_perf_counter
 {
+   /**
+    * A human-readable identifier for the counter.
+    *
+    * May be displayed by the frontend.
+    * Behavior is undefined if this is \c NULL.
+    */
    const char *ident;
+
+   /**
+    * The time of the most recent call to \c retro_perf_callback::perf_start
+    * on this performance counter.
+    *
+    * @see retro_perf_start_t
+    */
    retro_perf_tick_t start;
+
+   /**
+    * The total time spent within this performance counter's measured code,
+    * i.e. between calls to \c retro_perf_callback::perf_start and \c retro_perf_callback::perf_stop.
+    *
+    * Updated after each call to \c retro_perf_callback::perf_stop.
+    * @see retro_perf_stop_t
+    */
    retro_perf_tick_t total;
+
+   /**
+    * The number of times this performance counter has been started.
+    *
+    * Updated after each call to \c retro_perf_callback::perf_start.
+    * @see retro_perf_start_t
+    */
    retro_perf_tick_t call_cnt;
 
+   /**
+    * \c true if this performance counter has been registered by the frontend.
+    * Must be initialized to \c false by the core before registering it.
+    * @see retro_perf_register_t
+    */
    bool registered;
 };
 
-/* Returns current time in microseconds.
- * Tries to use the most accurate timer available.
+/**
+ * @returns The current system time in microseconds.
+ * @note Accuracy may vary by platform.
+ * The frontend should use the most accurate timer possible.
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
  */
 typedef retro_time_t (RETRO_CALLCONV *retro_perf_get_time_usec_t)(void);
 
-/* A simple counter. Usually nanoseconds, but can also be CPU cycles.
- * Can be used directly if desired (when creating a more sophisticated
- * performance counter system).
- * */
+/**
+ * @returns The number of ticks since some unspecified epoch.
+ * The exact meaning of a "tick" depends on the platform,
+ * but it usually refers to nanoseconds or CPU cycles.
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
+ */
 typedef retro_perf_tick_t (RETRO_CALLCONV *retro_perf_get_counter_t)(void);
 
-/* Returns a bit-mask of detected CPU features (RETRO_SIMD_*). */
+/**
+ * Returns a bitmask of detected CPU features.
+ *
+ * Use this for runtime dispatching of CPU-specific code.
+ *
+ * @returns A bitmask of detected CPU features.
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
+ * @see RETRO_SIMD
+ */
 typedef uint64_t (RETRO_CALLCONV *retro_get_cpu_features_t)(void);
 
-/* Asks frontend to log and/or display the state of performance counters.
- * Performance counters can always be poked into manually as well.
+/**
+ * Asks the frontend to log or display the state of performance counters.
+ * How this is done depends on the frontend.
+ * Performance counters can be reviewed manually as well.
+ *
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
+ * @see retro_perf_counter
  */
 typedef void (RETRO_CALLCONV *retro_perf_log_t)(void);
 
-/* Register a performance counter.
- * ident field must be set with a discrete value and other values in
- * retro_perf_counter must be 0.
- * Registering can be called multiple times. To avoid calling to
- * frontend redundantly, you can check registered field first. */
+/**
+ * Registers a new performance counter.
+ *
+ * If \c counter has already been registered beforehand,
+ * this function does nothing.
+ *
+ * @param counter The counter to register.
+ * \c counter::ident must be set to a unique identifier,
+ * and all other values in \c counter must be set to zero or \c false.
+ * Behavior is undefined if \c NULL.
+ * @post If \c counter is successfully registered,
+ * then \c counter::registered will be set to \c true.
+ * Otherwise, it will be set to \c false.
+ * Registration may fail if the frontend's maximum number of counters (if any) has been reached.
+ * @note The counter is owned by the core and must not be freed by the frontend.
+ * The frontend must also clean up any references to a core's performance counters
+ * before unloading it, otherwise undefined behavior may occur.
+ * @see retro_perf_start_t
+ * @see retro_perf_stop_t
+ */
 typedef void (RETRO_CALLCONV *retro_perf_register_t)(struct retro_perf_counter *counter);
 
-/* Starts a registered counter. */
+/**
+ * Starts a registered performance counter.
+ *
+ * Call this just before the code you want to measure.
+ *
+ * @param counter The counter to start.
+ * Behavior is undefined if \c NULL.
+ * @see retro_perf_stop_t
+ */
 typedef void (RETRO_CALLCONV *retro_perf_start_t)(struct retro_perf_counter *counter);
 
-/* Stops a registered counter. */
+/**
+ * Stops a registered performance counter.
+ *
+ * Call this just after the code you want to measure.
+ *
+ * @param counter The counter to stop.
+ * Behavior is undefined if \c NULL.
+ * @see retro_perf_start_t
+ * @see retro_perf_stop_t
+ */
 typedef void (RETRO_CALLCONV *retro_perf_stop_t)(struct retro_perf_counter *counter);
 
-/* For convenience it can be useful to wrap register, start and stop in macros.
- * E.g.:
- * #ifdef LOG_PERFORMANCE
+/**
+ * An interface that the core can use to get performance information.
+ *
+ * Here's a usage example:
+ *
+ * @code{.c}
+ * #ifdef PROFILING
+ * // Wrapper macros to simplify using performance counters.
+ * // Optional; tailor these to your project's needs.
  * #define RETRO_PERFORMANCE_INIT(perf_cb, name) static struct retro_perf_counter name = {#name}; if (!name.registered) perf_cb.perf_register(&(name))
  * #define RETRO_PERFORMANCE_START(perf_cb, name) perf_cb.perf_start(&(name))
  * #define RETRO_PERFORMANCE_STOP(perf_cb, name) perf_cb.perf_stop(&(name))
  * #else
- * ... Blank macros ...
+ * // Exclude the performance counters if profiling is disabled.
+ * #define RETRO_PERFORMANCE_INIT(perf_cb, name) ((void)0)
+ * #define RETRO_PERFORMANCE_START(perf_cb, name) ((void)0)
+ * #define RETRO_PERFORMANCE_STOP(perf_cb, name) ((void)0)
  * #endif
  *
- * These can then be used mid-functions around code snippets.
+ * // Defined somewhere else in the core.
+ * extern struct retro_perf_callback perf_cb;
  *
- * extern struct retro_perf_callback perf_cb;  * Somewhere in the core.
- *
- * void do_some_heavy_work(void)
+ * void retro_run(void)
  * {
- *    RETRO_PERFORMANCE_INIT(cb, work_1;
- *    RETRO_PERFORMANCE_START(cb, work_1);
- *    heavy_work_1();
- *    RETRO_PERFORMANCE_STOP(cb, work_1);
+ *    RETRO_PERFORMANCE_INIT(cb, interesting);
+ *    RETRO_PERFORMANCE_START(cb, interesting);
+ *    interesting_work();
+ *    RETRO_PERFORMANCE_STOP(cb, interesting);
  *
- *    RETRO_PERFORMANCE_INIT(cb, work_2);
- *    RETRO_PERFORMANCE_START(cb, work_2);
- *    heavy_work_2();
- *    RETRO_PERFORMANCE_STOP(cb, work_2);
+ *    RETRO_PERFORMANCE_INIT(cb, maybe_slow);
+ *    RETRO_PERFORMANCE_START(cb, maybe_slow);
+ *    more_interesting_work();
+ *    RETRO_PERFORMANCE_STOP(cb, maybe_slow);
  * }
  *
  * void retro_deinit(void)
  * {
- *    perf_cb.perf_log();  * Log all perf counters here for example.
+ *    // Asks the frontend to log the results of all performance counters.
+ *    perf_cb.perf_log();
  * }
+ * @endcode
+ *
+ * All functions are set by the frontend.
+ *
+ * @see RETRO_ENVIRONMENT_GET_PERF_INTERFACE
  */
-
 struct retro_perf_callback
 {
+   /** @copydoc retro_perf_get_time_usec_t */
    retro_perf_get_time_usec_t    get_time_usec;
+
+   /** @copydoc retro_perf_get_counter_t */
    retro_get_cpu_features_t      get_cpu_features;
 
+   /** @copydoc retro_perf_get_counter_t */
    retro_perf_get_counter_t      get_perf_counter;
+
+   /** @copydoc retro_perf_register_t */
    retro_perf_register_t         perf_register;
+
+   /** @copydoc retro_perf_start_t */
    retro_perf_start_t            perf_start;
+
+   /** @copydoc retro_perf_stop_t */
    retro_perf_stop_t             perf_stop;
+
+   /** @copydoc retro_perf_log_t */
    retro_perf_log_t              perf_log;
 };
 
-/* FIXME: Document the sensor API and work out behavior.
- * It will be marked as experimental until then.
+/** @} */
+
+/**
+ * @defgroup RETRO_SENSOR Sensor Interface
+ * @{
+ */
+
+/**
+ * Defines actions that can be performed on sensors.
+ * @note Cores should only enable sensors while they're actively being used;
+ * depending on the frontend and platform,
+ * enabling these sensors may impact battery life.
+ *
+ * @see RETRO_ENVIRONMENT_GET_SENSOR_INTERFACE
+ * @see retro_sensor_interface
+ * @see retro_set_sensor_state_t
  */
 enum retro_sensor_action
 {
+   /** Enables accelerometer input, if one exists. */
    RETRO_SENSOR_ACCELEROMETER_ENABLE = 0,
+
+   /** Disables accelerometer input, if one exists. */
    RETRO_SENSOR_ACCELEROMETER_DISABLE,
+
+   /** Enables gyroscope input, if one exists. */
    RETRO_SENSOR_GYROSCOPE_ENABLE,
+
+   /** Disables gyroscope input, if one exists. */
    RETRO_SENSOR_GYROSCOPE_DISABLE,
+
+   /** Enables ambient light input, if a luminance sensor exists. */
    RETRO_SENSOR_ILLUMINANCE_ENABLE,
+
+   /** Disables ambient light input, if a luminance sensor exists. */
    RETRO_SENSOR_ILLUMINANCE_DISABLE,
 
+   /** @private Defined to ensure <tt>sizeof(enum retro_sensor_action) == sizeof(int)</tt>. Do not use. */
    RETRO_SENSOR_DUMMY = INT_MAX
 };
 
+/** @defgroup RETRO_SENSOR_ID Sensor Value IDs
+ * @{
+ */
 /* Id values for SENSOR types. */
-#define RETRO_SENSOR_ACCELEROMETER_X 0
-#define RETRO_SENSOR_ACCELEROMETER_Y 1
-#define RETRO_SENSOR_ACCELEROMETER_Z 2
-#define RETRO_SENSOR_GYROSCOPE_X 3
-#define RETRO_SENSOR_GYROSCOPE_Y 4
-#define RETRO_SENSOR_GYROSCOPE_Z 5
-#define RETRO_SENSOR_ILLUMINANCE 6
 
+/**
+ * Returns the device's acceleration along its local X axis minus the effect of gravity, in m/s^2.
+ *
+ * Positive values mean that the device is accelerating to the right.
+ * assuming the user is looking at it head-on.
+ */
+#define RETRO_SENSOR_ACCELEROMETER_X 0
+
+/**
+ * Returns the device's acceleration along its local Y axis minus the effect of gravity, in m/s^2.
+ *
+ * Positive values mean that the device is accelerating upwards,
+ * assuming the user is looking at it head-on.
+ */
+#define RETRO_SENSOR_ACCELEROMETER_Y 1
+
+/**
+ * Returns the the device's acceleration along its local Z axis minus the effect of gravity, in m/s^2.
+ *
+ * Positive values indicate forward acceleration towards the user,
+ * assuming the user is looking at the device head-on.
+ */
+#define RETRO_SENSOR_ACCELEROMETER_Z 2
+
+/**
+ * Returns the angular velocity of the device around its local X axis, in radians per second.
+ *
+ * Positive values indicate counter-clockwise rotation.
+ *
+ * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
+ * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
+ * for guidance on using this value to derive a device's orientation.
+ */
+#define RETRO_SENSOR_GYROSCOPE_X 3
+
+/**
+ * Returns the angular velocity of the device around its local Z axis, in radians per second.
+ *
+ * Positive values indicate counter-clockwise rotation.
+ *
+ * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
+ * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
+ * for guidance on using this value to derive a device's orientation.
+ */
+#define RETRO_SENSOR_GYROSCOPE_Y 4
+
+/**
+ * Returns the angular velocity of the device around its local Z axis, in radians per second.
+ *
+ * Positive values indicate counter-clockwise rotation.
+ *
+ * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
+ * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
+ * for guidance on using this value to derive a device's orientation.
+ */
+#define RETRO_SENSOR_GYROSCOPE_Z 5
+
+/**
+ * Returns the ambient illuminance (light intensity) of the device's environment, in lux.
+ *
+ * @see https://en.wikipedia.org/wiki/Lux for a table of common lux values.
+ */
+#define RETRO_SENSOR_ILLUMINANCE 6
+/** @} */
+
+/**
+ * Adjusts the state of a sensor.
+ *
+ * @param port The device port of the controller that owns the sensor given in \c action.
+ * @param action The action to perform on the sensor.
+ * Different devices support different sensors.
+ * @param rate The rate at which the underlying sensor should be updated, in Hz.
+ * This should be treated as a hint,
+ * as some device sensors may not support the requested rate
+ * (if it's configurable at all).
+ * @returns \c true if the sensor state was successfully adjusted, \c false otherwise.
+ * @note If one of the \c RETRO_SENSOR_*_ENABLE actions fails,
+ * this likely means that the given sensor is not available
+ * on the provided \c port.
+ * @see retro_sensor_action
+ */
 typedef bool (RETRO_CALLCONV *retro_set_sensor_state_t)(unsigned port,
       enum retro_sensor_action action, unsigned rate);
 
+/**
+ * Retrieves the current value reported by sensor.
+ * @param port The device port of the controller that owns the sensor given in \c id.
+ * @param id The sensor value to query.
+ * @returns The current sensor value.
+ * Exact semantics depend on the value given in \c id,
+ * but will return 0 for invalid arguments.
+ *
+ * @see RETRO_SENSOR_ID
+ */
 typedef float (RETRO_CALLCONV *retro_sensor_get_input_t)(unsigned port, unsigned id);
 
+/**
+ * An interface that cores can use to access device sensors.
+ *
+ * All function pointers are set by the frontend.
+ */
 struct retro_sensor_interface
 {
+   /** @copydoc retro_set_sensor_state_t */
    retro_set_sensor_state_t set_sensor_state;
+
+   /** @copydoc retro_sensor_get_input_t */
    retro_sensor_get_input_t get_sensor_input;
 };
 
+/** @} */
+
+/** @defgroup GET_CAMERA_INTERFACE Camera Interface
+ * @{
+ */
+
+/**
+ * Denotes the type of buffer in which the camera will store its input.
+ *
+ * Different camera drivers may support different buffer types.
+ *
+ * @see RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
+ * @see retro_camera_callback
+ */
 enum retro_camera_buffer
 {
+   /**
+    * Indicates that camera frames should be delivered to the core as an OpenGL texture.
+    *
+    * Requires that the core is using an OpenGL context via \c RETRO_ENVIRONMENT_SET_HW_RENDER.
+    *
+    * @see retro_camera_frame_opengl_texture_t
+    */
    RETRO_CAMERA_BUFFER_OPENGL_TEXTURE = 0,
+
+   /**
+    * Indicates that camera frames should be delivered to the core as a raw buffer in memory.
+    *
+    * @see retro_camera_frame_raw_framebuffer_t
+    */
    RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER,
 
+   /**
+    * @private Defined to ensure <tt>sizeof(enum retro_camera_buffer) == sizeof(int)</tt>.
+    * Do not use.
+    */
    RETRO_CAMERA_BUFFER_DUMMY = INT_MAX
 };
 
-/* Starts the camera driver. Can only be called in retro_run(). */
+/**
+ * Starts an initialized camera.
+ * The camera is disabled by default,
+ * and must be enabled with this function before being used.
+ *
+ * Set by the frontend.
+ *
+ * @returns \c true if the camera was successfully started, \c false otherwise.
+ * Failure may occur if no actual camera is available,
+ * or if the frontend doesn't have permission to access it.
+ * @note Must be called in \c retro_run().
+ * @see retro_camera_callback
+ */
 typedef bool (RETRO_CALLCONV *retro_camera_start_t)(void);
 
-/* Stops the camera driver. Can only be called in retro_run(). */
+/**
+ * Stops the running camera.
+ *
+ * Set by the frontend.
+ *
+ * @note Must be called in \c retro_run().
+ * @warning The frontend may close the camera on its own when unloading the core,
+ * but this behavior is not guaranteed.
+ * Cores should clean up the camera before exiting.
+ * @see retro_camera_callback
+ */
 typedef void (RETRO_CALLCONV *retro_camera_stop_t)(void);
 
-/* Callback which signals when the camera driver is initialized
- * and/or deinitialized.
- * retro_camera_start_t can be called in initialized callback.
+/**
+ * Called by the frontend to report the state of the camera driver.
+ *
+ * @see retro_camera_callback
  */
 typedef void (RETRO_CALLCONV *retro_camera_lifetime_status_t)(void);
 
-/* A callback for raw framebuffer data. buffer points to an XRGB8888 buffer.
- * Width, height and pitch are similar to retro_video_refresh_t.
- * First pixel is top-left origin.
+/**
+ * Called by the frontend to report a new camera frame,
+ * delivered as a raw buffer in memory.
+ *
+ * Set by the core.
+ *
+ * @param buffer Pointer to the camera's most recent video frame.
+ * Each pixel is in XRGB8888 format.
+ * The first pixel represents the top-left corner of the image
+ * (i.e. the Y axis goes downward).
+ * @param width The width of the frame given in \c buffer, in pixels.
+ * @param height The height of the frame given in \c buffer, in pixels.
+ * @param pitch The width of the frame given in \c buffer, in bytes.
+ * @warning \c buffer may be invalidated when this function returns,
+ * so the core should make its own copy of \c buffer if necessary.
+ * @see RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER
  */
 typedef void (RETRO_CALLCONV *retro_camera_frame_raw_framebuffer_t)(const uint32_t *buffer,
       unsigned width, unsigned height, size_t pitch);
 
-/* A callback for when OpenGL textures are used.
+/**
+ * Called by the frontend to report a new camera frame,
+ * delivered as an OpenGL texture.
  *
- * texture_id is a texture owned by camera driver.
- * Its state or content should be considered immutable, except for things like
- * texture filtering and clamping.
+ * @param texture_id The ID of the OpenGL texture that represents the camera's most recent frame.
+ * Owned by the frontend, and must not be modified by the core.
+ * @param texture_target The type of the texture given in \c texture_id.
+ * Usually either \c GL_TEXTURE_2D or \c GL_TEXTURE_RECTANGLE,
+ * but other types are allowed.
+ * @param affine A pointer to a 3x3 column-major affine matrix
+ * that can be used to transform pixel coordinates to texture coordinates.
+ * After transformation, the bottom-left corner should have coordinates of <tt>(0, 0)</tt>
+ * and the top-right corner should have coordinates of <tt>(1, 1)</tt>
+ * (or <tt>(width, height)</tt> for \c GL_TEXTURE_RECTANGLE).
  *
- * texture_target is the texture target for the GL texture.
- * These can include e.g. GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE, and possibly
- * more depending on extensions.
- *
- * affine points to a packed 3x3 column-major matrix used to apply an affine
- * transform to texture coordinates. (affine_matrix * vec3(coord_x, coord_y, 1.0))
- * After transform, normalized texture coord (0, 0) should be bottom-left
- * and (1, 1) should be top-right (or (width, height) for RECTANGLE).
- *
- * GL-specific typedefs are avoided here to avoid relying on gl.h in
- * the API definition.
+ * @note GL-specific typedefs (e.g. \c GLfloat and \c GLuint) are avoided here
+ * so that the API doesn't rely on gl.h.
+ * @warning \c texture_id and \c affine may be invalidated when this function returns,
+ * so the core should make its own copy of them if necessary.
  */
 typedef void (RETRO_CALLCONV *retro_camera_frame_opengl_texture_t)(unsigned texture_id,
       unsigned texture_target, const float *affine);
 
+/**
+ * An interface that the core can use to access a device's camera.
+ *
+ * @see RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
+ */
 struct retro_camera_callback
 {
-   /* Set by libretro core.
-    * Example bitmask: caps = (1 << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE) | (1 << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER).
+   /**
+    * Requested camera capabilities,
+    * given as a bitmask of \c retro_camera_buffer values.
+    * Set by the core.
+    *
+    * Here's a usage example:
+    * @code
+    * // Requesting support for camera data delivered as both an OpenGL texture and a pixel buffer:
+    * struct retro_camera_callback callback;
+    * callback.caps = (1 << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE) | (1 << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER);
+    * @endcode
     */
    uint64_t caps;
 
-   /* Desired resolution for camera. Is only used as a hint. */
+   /**
+    * The desired width of the camera frame, in pixels.
+    * This is only a hint; the frontend may provide a different size.
+    * Set by the core.
+    * Use zero to let the frontend decide.
+    */
    unsigned width;
+
+   /**
+    * The desired height of the camera frame, in pixels.
+    * This is only a hint; the frontend may provide a different size.
+     * Set by the core.
+    * Use zero to let the frontend decide.
+    */
    unsigned height;
 
-   /* Set by frontend. */
+   /**
+    * @copydoc retro_camera_start_t
+    * @see retro_camera_callback
+    */
    retro_camera_start_t start;
+
+   /**
+    * @copydoc retro_camera_stop_t
+    * @see retro_camera_callback
+    */
    retro_camera_stop_t stop;
 
-   /* Set by libretro core if raw framebuffer callbacks will be used. */
+   /**
+    * @copydoc retro_camera_frame_raw_framebuffer_t
+    * @note If \c NULL, this function will not be called.
+    */
    retro_camera_frame_raw_framebuffer_t frame_raw_framebuffer;
 
-   /* Set by libretro core if OpenGL texture callbacks will be used. */
+   /**
+    * @copydoc retro_camera_frame_opengl_texture_t
+    * @note If \c NULL, this function will not be called.
+    */
    retro_camera_frame_opengl_texture_t frame_opengl_texture;
 
-   /* Set by libretro core. Called after camera driver is initialized and
-    * ready to be started.
-    * Can be NULL, in which this callback is not called.
+   /**
+    * Core-defined callback invoked by the frontend right after the camera driver is initialized
+    * (\em not when calling \c start).
+    * May be \c NULL, in which case this function is skipped.
     */
    retro_camera_lifetime_status_t initialized;
 
-   /* Set by libretro core. Called right before camera driver is
-    * deinitialized.
-    * Can be NULL, in which this callback is not called.
+   /**
+    * Core-defined callback invoked by the frontend
+    * right before the video camera driver is deinitialized
+    * (\em not when calling \c stop).
+    * May be \c NULL, in which case this function is skipped.
     */
    retro_camera_lifetime_status_t deinitialized;
 };
 
-/* Sets the interval of time and/or distance at which to update/poll
- * location-based data.
- *
- * To ensure compatibility with all location-based implementations,
- * values for both interval_ms and interval_distance should be provided.
- *
- * interval_ms is the interval expressed in milliseconds.
- * interval_distance is the distance interval expressed in meters.
+/** @} */
+
+/** @defgroup GET_LOCATION_INTERFACE Location Interface
+ * @{
  */
+
+/** @copydoc retro_location_callback::set_interval */
 typedef void (RETRO_CALLCONV *retro_location_set_interval_t)(unsigned interval_ms,
       unsigned interval_distance);
 
-/* Start location services. The device will start listening for changes to the
- * current location at regular intervals (which are defined with
- * retro_location_set_interval_t). */
+/** @copydoc retro_location_callback::start */
 typedef bool (RETRO_CALLCONV *retro_location_start_t)(void);
 
-/* Stop location services. The device will stop listening for changes
- * to the current location. */
+/** @copydoc retro_location_callback::stop */
 typedef void (RETRO_CALLCONV *retro_location_stop_t)(void);
 
-/* Get the position of the current location. Will set parameters to
- * 0 if no new  location update has happened since the last time. */
+/** @copydoc retro_location_callback::get_position */
 typedef bool (RETRO_CALLCONV *retro_location_get_position_t)(double *lat, double *lon,
       double *horiz_accuracy, double *vert_accuracy);
 
-/* Callback which signals when the location driver is initialized
- * and/or deinitialized.
- * retro_location_start_t can be called in initialized callback.
- */
+/** Function type that reports the status of the location service. */
 typedef void (RETRO_CALLCONV *retro_location_lifetime_status_t)(void);
 
+/**
+ * An interface that the core can use to access a device's location.
+ *
+ * @note It is the frontend's responsibility to request the necessary permissions
+ * from the operating system.
+ * @see RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE
+ */
 struct retro_location_callback
 {
+   /**
+    * Starts listening the device's location service.
+    *
+    * The frontend will report changes to the device's location
+    * at the interval defined by \c set_interval.
+    * Set by the frontend.
+    *
+    * @return true if location services were successfully started, false otherwise.
+    * Note that this will return \c false if location services are disabled
+    * or the frontend doesn't have permission to use them.
+    * @note The device's location service may or may not have been enabled
+    * before the core calls this function.
+    */
    retro_location_start_t         start;
+
+   /**
+    * Stop listening to the device's location service.
+    *
+    * Set by the frontend.
+    *
+    * @note The location service itself may or may not
+    * be turned off by this function,
+    * depending on the platform and the frontend.
+    * @post The core will stop receiving location service updates.
+    */
    retro_location_stop_t          stop;
+
+   /**
+    * Returns the device's current coordinates.
+    *
+    * Set by the frontend.
+    *
+    * @param[out] lat Pointer to latitude, in degrees.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    * @param[out] lon Pointer to longitude, in degrees.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    * @param[out] horiz_accuracy Pointer to horizontal accuracy.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    * @param[out] vert_accuracy Pointer to vertical accuracy.
+    * Will be set to 0 if no change has occurred since the last call.
+    * Behavior is undefined if \c NULL.
+    */
    retro_location_get_position_t  get_position;
+
+   /**
+    * Sets the rate at which the location service should report updates.
+    *
+    * This is only a hint; the actual rate may differ.
+    * Sets the interval of time and/or distance at which to update/poll
+    * location-based data.
+    *
+    * Some platforms may only support one of the two parameters;
+    * cores should provide both to ensure compatibility.
+    *
+    * Set by the frontend.
+    *
+    * @param interval_ms The desired period of time between location updates, in milliseconds.
+    * @param interval_distance The desired distance between location updates, in meters.
+    */
    retro_location_set_interval_t  set_interval;
 
+   /** Called when the location service is initialized. Set by the core. Optional. */
    retro_location_lifetime_status_t initialized;
+
+   /** Called when the location service is deinitialized. Set by the core. Optional. */
    retro_location_lifetime_status_t deinitialized;
 };
 
+/** @} */
+
+/** @addtogroup GET_RUMBLE_INTERFACE
+ * @{ */
+
+/**
+ * The type of rumble motor in a controller.
+ *
+ * Both motors can be controlled independently,
+ * and the strong motor does not override the weak motor.
+ * @see RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
+ */
 enum retro_rumble_effect
 {
    RETRO_RUMBLE_STRONG = 0,
    RETRO_RUMBLE_WEAK = 1,
 
+   /** @private Defined to ensure <tt>sizeof(enum retro_rumble_effect) == sizeof(int)</tt>. Do not use. */
    RETRO_RUMBLE_DUMMY = INT_MAX
 };
 
-/* Sets rumble state for joypad plugged in port 'port'.
- * Rumble effects are controlled independently,
- * and setting e.g. strong rumble does not override weak rumble.
- * Strength has a range of [0, 0xffff].
+/**
+ * Requests a rumble state change for a controller.
+ * Set by the frontend.
  *
- * Returns true if rumble state request was honored.
- * Calling this before first retro_run() is likely to return false. */
+ * @param port The controller port to set the rumble state for.
+ * @param effect The rumble motor to set the strength of.
+ * @param strength The desired intensity of the rumble motor, ranging from \c 0 to \c 0xffff (inclusive).
+ * @return \c true if the requested rumble state was honored.
+ * If the controller doesn't support rumble, will return \c false.
+ * @note Calling this before the first \c retro_run() may return \c false.
+ * @see RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
+ */
 typedef bool (RETRO_CALLCONV *retro_set_rumble_state_t)(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
+/**
+ * An interface that the core can use to set the rumble state of a controller.
+ * @see RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE
+ */
 struct retro_rumble_interface
 {
+   /** @copydoc retro_set_rumble_state_t */
    retro_set_rumble_state_t set_rumble_state;
 };
 
-/* Notifies libretro that audio data should be written. */
+/** @} */
+
+/**
+ * Called by the frontend to request audio samples.
+ * The core should render audio within this function
+ * using the callback provided by \c retro_set_audio_sample or \c retro_set_audio_sample_batch.
+ *
+ * @warning This function may be called by any thread,
+ * therefore it must be thread-safe.
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
+ * @see retro_audio_callback
+ * @see retro_audio_sample_batch_t
+ * @see retro_audio_sample_t
+ */
 typedef void (RETRO_CALLCONV *retro_audio_callback_t)(void);
 
-/* True: Audio driver in frontend is active, and callback is
- * expected to be called regularily.
- * False: Audio driver in frontend is paused or inactive.
- * Audio callback will not be called until set_state has been
- * called with true.
- * Initial state is false (inactive).
+/**
+ * Called by the frontend to notify the core that it should pause or resume audio rendering.
+ * The initial state of the audio driver after registering this callback is \c false (inactive).
+ *
+ * @param enabled \c true if the frontend's audio driver is active.
+ * If so, the registered audio callback will be called regularly.
+ * If not, the audio callback will not be invoked until the next time
+ * the frontend calls this function with \c true.
+ * @warning This function may be called by any thread,
+ * therefore it must be thread-safe.
+ * @note Even if no audio samples are rendered,
+ * the core should continue to update its emulated platform's audio engine if necessary.
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
+ * @see retro_audio_callback
+ * @see retro_audio_callback_t
  */
 typedef void (RETRO_CALLCONV *retro_audio_set_state_callback_t)(bool enabled);
 
+/**
+ * An interface that the frontend uses to request audio samples from the core.
+ * @note To unregister a callback, pass a \c retro_audio_callback_t
+ * with both fields set to <tt>NULL</tt>.
+ * @see RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK
+ */
 struct retro_audio_callback
 {
+   /** @see retro_audio_callback_t */
    retro_audio_callback_t callback;
+
+   /** @see retro_audio_set_state_callback_t */
    retro_audio_set_state_callback_t set_state;
 };
 
-/* Notifies a libretro core of time spent since last invocation
- * of retro_run() in microseconds.
- *
- * It will be called right before retro_run() every frame.
- * The frontend can tamper with timing to support cases like
- * fast-forward, slow-motion and framestepping.
- *
- * In those scenarios the reference frame time value will be used. */
 typedef int64_t retro_usec_t;
+
+/**
+ * Called right before each iteration of \c retro_run
+ * if registered via <tt>RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK</tt>.
+ *
+ * @param usec Time since the last call to <tt>retro_run</tt>, in microseconds.
+ * If the frontend is manipulating the frame time
+ * (e.g. via fast-forward or slow motion),
+ * this value will be the reference value initially provided to the environment call.
+ * @see RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK
+ * @see retro_frame_time_callback
+ */
 typedef void (RETRO_CALLCONV *retro_frame_time_callback_t)(retro_usec_t usec);
+
+/**
+ * @see RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK
+ */
 struct retro_frame_time_callback
 {
+   /**
+    * Called to notify the core of the current frame time.
+    * If <tt>NULL</tt>, the frontend will clear its registered callback.
+    */
    retro_frame_time_callback_t callback;
-   /* Represents the time of one frame. It is computed as
-    * 1000000 / fps, but the implementation will resolve the
-    * rounding to ensure that framestepping, etc is exact. */
+
+   /**
+    * The ideal duration of one frame, in microseconds.
+    * Compute it as <tt>1000000 / fps</tt>.
+    * The frontend will resolve rounding to ensure that framestepping, etc is exact.
+    */
    retro_usec_t reference;
 };
 
-/* Notifies a libretro core of the current occupancy
- * level of the frontend audio buffer.
+/** @defgroup SET_AUDIO_BUFFER_STATUS_CALLBACK Audio Buffer Occupancy
+ * @{
+ */
+
+/**
+ * Notifies a libretro core of how full the frontend's audio buffer is.
+ * Set by the core, called by the frontend.
+ * It will be called right before \c retro_run() every frame.
  *
- * - active: 'true' if audio buffer is currently
- *           in use. Will be 'false' if audio is
- *           disabled in the frontend
- *
- * - occupancy: Given as a value in the range [0,100],
- *              corresponding to the occupancy percentage
- *              of the audio buffer
- *
- * - underrun_likely: 'true' if the frontend expects an
- *                    audio buffer underrun during the
- *                    next frame (indicates that a core
- *                    should attempt frame skipping)
- *
- * It will be called right before retro_run() every frame. */
+ * @param active \c true if the frontend's audio buffer is currently in use,
+ * \c false if audio is disabled in the frontend.
+ * @param occupancy A value between 0 and 100 (inclusive),
+ * corresponding to the frontend's audio buffer occupancy percentage.
+ * @param underrun_likely \c true if the frontend expects an audio buffer underrun
+ * during the next frame, which indicates that a core should attempt frame-skipping.
+ */
 typedef void (RETRO_CALLCONV *retro_audio_buffer_status_callback_t)(
       bool active, unsigned occupancy, bool underrun_likely);
+
+/**
+ * A callback to register with the frontend to receive audio buffer occupancy information.
+ */
 struct retro_audio_buffer_status_callback
 {
+   /** @copydoc retro_audio_buffer_status_callback_t */
    retro_audio_buffer_status_callback_t callback;
 };
+
+/** @} */
 
 /* Pass this to retro_video_refresh_t if rendering to hardware.
  * Passing NULL to retro_video_refresh_t is still a frame dupe as normal.
@@ -2821,6 +5078,7 @@ enum retro_hw_context_type
    /* Direct3D9, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE */
    RETRO_HW_CONTEXT_D3D9             = 10,
 
+   /** Dummy value to ensure sizeof(enum retro_hw_context_type) == sizeof(int). Do not use. */
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
 
@@ -2916,14 +5174,14 @@ struct retro_hw_render_callback
  * character is the text character of the pressed key. (UTF-32).
  * key_modifiers is a set of RETROKMOD values or'ed together.
  *
- * The pressed/keycode state can be indepedent of the character.
+ * The pressed/keycode state can be independent of the character.
  * It is also possible that multiple characters are generated from a
  * single keypress.
  * Keycode events should be treated separately from character events.
  * However, when possible, the frontend should try to synchronize these.
  * If only a character is posted, keycode should be RETROK_UNKNOWN.
  *
- * Similarily if only a keycode event is generated with no corresponding
+ * Similarly if only a keycode event is generated with no corresponding
  * character, character should be 0.
  */
 typedef void (RETRO_CALLCONV *retro_keyboard_event_t)(bool down, unsigned keycode,
@@ -2934,145 +5192,296 @@ struct retro_keyboard_callback
    retro_keyboard_event_t callback;
 };
 
-/* Callbacks for RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE &
- * RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE.
- * Should be set for implementations which can swap out multiple disk
- * images in runtime.
+/** @defgroup SET_DISK_CONTROL_INTERFACE Disk Control
  *
- * If the implementation can do this automatically, it should strive to do so.
- * However, there are cases where the user must manually do so.
+ * Callbacks for inserting and removing disks from the emulated console at runtime.
+ * Should be provided by cores that support doing so.
+ * Cores should automate this process if possible,
+ * but some cases require the player's manual input.
  *
- * Overview: To swap a disk image, eject the disk image with
- * set_eject_state(true).
- * Set the disk index with set_image_index(index). Insert the disk again
- * with set_eject_state(false).
+ * The steps for swapping disk images are generally as follows:
+ *
+ * \li Eject the emulated console's disk drive with \c set_eject_state(true).
+ * \li Insert the new disk image with \c set_image_index(index).
+ * \li Close the virtual disk tray with \c set_eject_state(false).
+ *
+ * @{
  */
 
-/* If ejected is true, "ejects" the virtual disk tray.
- * When ejected, the disk image index can be set.
+/**
+ * Called by the frontend to open or close the emulated console's virtual disk tray.
+ *
+ * The frontend may only set the disk image index
+ * while the emulated tray is opened.
+ *
+ * If the emulated console's disk tray is already in the state given by \c ejected,
+ * then this function should return \c true without doing anything.
+ * The core should return \c false if it couldn't change the disk tray's state;
+ * this may happen if the console itself limits when the disk tray can be open or closed
+ * (e.g. to wait for the disc to stop spinning).
+ *
+ * @param ejected \c true if the virtual disk tray should be "ejected",
+ * \c false if it should be "closed".
+ * @return \c true if the virtual disk tray's state has been set to the given state,
+ * false if there was an error.
+ * @see retro_get_eject_state_t
  */
 typedef bool (RETRO_CALLCONV *retro_set_eject_state_t)(bool ejected);
 
-/* Gets current eject state. The initial state is 'not ejected'. */
+/**
+ * Gets the current ejected state of the disk drive.
+ * The initial state is closed, i.e. \c false.
+ *
+ * @return \c true if the virtual disk tray is "ejected",
+ * i.e. it's open and a disk can be inserted.
+ * @see retro_set_eject_state_t
+ */
 typedef bool (RETRO_CALLCONV *retro_get_eject_state_t)(void);
 
-/* Gets current disk index. First disk is index 0.
- * If return value is >= get_num_images(), no disk is currently inserted.
+/**
+ * Gets the index of the current disk image,
+ * as determined by however the frontend orders disk images
+ * (such as m3u-formatted playlists or special directories).
+ *
+ * @return The index of the current disk image
+ * (starting with 0 for the first disk),
+ * or a value greater than or equal to \c get_num_images() if no disk is inserted.
+ * @see retro_get_num_images_t
  */
 typedef unsigned (RETRO_CALLCONV *retro_get_image_index_t)(void);
 
-/* Sets image index. Can only be called when disk is ejected.
- * The implementation supports setting "no disk" by using an
- * index >= get_num_images().
+/**
+ * Inserts the disk image at the given index into the emulated console's drive.
+ * Can only be called while the disk tray is ejected
+ * (i.e. \c retro_get_eject_state_t returns \c true).
+ *
+ * If the emulated disk tray is ejected
+ * and already contains the disk image named by \c index,
+ * then this function should do nothing and return \c true.
+ *
+ * @param index The index of the disk image to insert,
+ * starting from 0 for the first disk.
+ * A value greater than or equal to \c get_num_images()
+ * represents the frontend removing the disk without inserting a new one.
+ * @return \c true if the disk image was successfully set.
+ * \c false if the disk tray isn't ejected or there was another error
+ * inserting a new disk image.
  */
 typedef bool (RETRO_CALLCONV *retro_set_image_index_t)(unsigned index);
 
-/* Gets total number of images which are available to use. */
+/**
+ * @return The number of disk images which are available to use.
+ * These are most likely defined in a playlist file.
+ */
 typedef unsigned (RETRO_CALLCONV *retro_get_num_images_t)(void);
 
 struct retro_game_info;
 
-/* Replaces the disk image associated with index.
+/**
+ * Replaces the disk image at the given index with a new disk.
+ *
+ * Replaces the disk image associated with index.
  * Arguments to pass in info have same requirements as retro_load_game().
  * Virtual disk tray must be ejected when calling this.
  *
- * Replacing a disk image with info = NULL will remove the disk image
- * from the internal list.
- * As a result, calls to get_image_index() can change.
+ * Passing \c NULL to this function indicates
+ * that the frontend has removed this disk image from its internal list.
+ * As a result, calls to this function can change the number of available disk indexes.
  *
- * E.g. replace_image_index(1, NULL), and previous get_image_index()
- * returned 4 before.
- * Index 1 will be removed, and the new index is 3.
+ * For example, calling <tt>replace_image_index(1, NULL)</tt>
+ * will remove the disk image at index 1,
+ * and the disk image at index 2 (if any)
+ * will be moved to the newly-available index 1.
+ *
+ * @param index The index of the disk image to replace.
+ * @param info Details about the new disk image,
+ * or \c NULL if the disk image at the given index should be discarded.
+ * The semantics of each field are the same as in \c retro_load_game.
+ * @return \c true if the disk image was successfully replaced
+ * or removed from the playlist,
+ * \c false if the tray is not ejected
+ * or if there was an error.
  */
 typedef bool (RETRO_CALLCONV *retro_replace_image_index_t)(unsigned index,
       const struct retro_game_info *info);
 
-/* Adds a new valid index (get_num_images()) to the internal disk list.
- * This will increment subsequent return values from get_num_images() by 1.
+/**
+ * Adds a new index to the core's internal disk list.
+ * This will increment the return value from \c get_num_images() by 1.
  * This image index cannot be used until a disk image has been set
- * with replace_image_index. */
+ * with \c replace_image_index.
+ *
+ * @return \c true if the core has added space for a new disk image
+ * and is ready to receive one.
+ */
 typedef bool (RETRO_CALLCONV *retro_add_image_index_t)(void);
 
-/* Sets initial image to insert in drive when calling
- * core_load_game().
- * Since we cannot pass the initial index when loading
- * content (this would require a major API change), this
- * is set by the frontend *before* calling the core's
- * retro_load_game()/retro_load_game_special() implementation.
- * A core should therefore cache the index/path values and handle
- * them inside retro_load_game()/retro_load_game_special().
- * - If 'index' is invalid (index >= get_num_images()), the
- *   core should ignore the set value and instead use 0
- * - 'path' is used purely for error checking - i.e. when
- *   content is loaded, the core should verify that the
- *   disk specified by 'index' has the specified file path.
- *   This is to guard against auto selecting the wrong image
- *   if (for example) the user should modify an existing M3U
- *   playlist. We have to let the core handle this because
- *   set_initial_image() must be called before loading content,
- *   i.e. the frontend cannot access image paths in advance
- *   and thus cannot perform the error check itself.
- *   If set path and content path do not match, the core should
- *   ignore the set 'index' value and instead use 0
- * Returns 'false' if index or 'path' are invalid, or core
- * does not support this functionality
+/**
+ * Sets the disk image that will be inserted into the emulated disk drive
+ * before \c retro_load_game is called.
+ *
+ * \c retro_load_game does not provide a way to ensure
+ * that a particular disk image in a playlist is inserted into the console;
+ * this function makes up for that.
+ * Frontends should call it immediately before \c retro_load_game,
+ * and the core should use the arguments
+ * to validate the disk image in \c retro_load_game.
+ *
+ * When content is loaded, the core should verify that the
+ * disk specified by \c index can be found at \c path.
+ * This is to guard against auto-selecting the wrong image
+ * if (for example) the user should modify an existing M3U playlist.
+ * We have to let the core handle this because
+ * \c set_initial_image() must be called before loading content,
+ * i.e. the frontend cannot access image paths in advance
+ * and thus cannot perform the error check itself.
+ * If \c index is invalid (i.e. <tt>index >= get_num_images()</tt>)
+ * or the disk image doesn't match the value given in \c path,
+ * the core should ignore the arguments
+ * and insert the disk at index 0 into the virtual disk tray.
+ *
+ * @warning If \c RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE is called within \c retro_load_game,
+ * then this function may not be executed.
+ * Set the disk control interface in \c retro_init if possible.
+ *
+ * @param index The index of the disk image within the playlist to set.
+ * @param path The path of the disk image to set as the first.
+ * The core should not load this path immediately;
+ * instead, it should use it within \c retro_load_game
+ * to verify that the correct disk image was loaded.
+ * @return \c true if the initial disk index was set,
+ * \c false if the arguments are invalid
+ * or the core doesn't support this function.
  */
 typedef bool (RETRO_CALLCONV *retro_set_initial_image_t)(unsigned index, const char *path);
 
-/* Fetches the path of the specified disk image file.
- * Returns 'false' if index is invalid (index >= get_num_images())
- * or path is otherwise unavailable.
+/**
+ * Returns the path of the disk image at the given index
+ * on the host's file system.
+ *
+ * @param index The index of the disk image to get the path of.
+ * @param path A buffer to store the path in.
+ * @param len The size of \c path, in bytes.
+ * @return \c true if the disk image's location was successfully
+ * queried and copied into \c path,
+ * \c false if the index is invalid
+ * or the core couldn't locate the disk image.
  */
 typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path, size_t len);
 
-/* Fetches a core-provided 'label' for the specified disk
- * image file. In the simplest case this may be a file name
- * (without extension), but for cores with more complex
- * content requirements information may be provided to
- * facilitate user disk swapping - for example, a core
- * running floppy-disk-based content may uniquely label
- * save disks, data disks, level disks, etc. with names
- * corresponding to in-game disk change prompts (so the
- * frontend can provide better user guidance than a 'dumb'
- * disk index value).
- * Returns 'false' if index is invalid (index >= get_num_images())
- * or label is otherwise unavailable.
+/**
+ * Returns a friendly label for the given disk image.
+ *
+ * In the simplest case, this may be the disk image's file name
+ * with the extension omitted.
+ * For cores or games with more complex content requirements,
+ * the label can be used to provide information to help the player
+ * select a disk image to insert;
+ * for example, a core may label different kinds of disks
+ * (save data, level disk, installation disk, bonus content, etc.).
+ * with names that correspond to in-game prompts,
+ * so that the frontend can provide better guidance to the player.
+ *
+ * @param index The index of the disk image to return a label for.
+ * @param label A buffer to store the resulting label in.
+ * @param len The length of \c label, in bytes.
+ * @return \c true if the disk image at \c index is valid
+ * and a label was copied into \c label.
  */
 typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *label, size_t len);
 
+/**
+ * An interface that the frontend can use to exchange disks
+ * within the emulated console's disk drive.
+ *
+ * All function pointers are required.
+ *
+ * @deprecated This struct is superseded by \ref retro_disk_control_ext_callback.
+ * Only use this one to maintain compatibility
+ * with older cores and frontends.
+ *
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ * @see retro_disk_control_ext_callback
+ */
 struct retro_disk_control_callback
 {
+   /** @copydoc retro_set_eject_state_t */
    retro_set_eject_state_t set_eject_state;
+
+   /** @copydoc retro_get_eject_state_t */
    retro_get_eject_state_t get_eject_state;
 
+   /** @copydoc retro_get_image_index_t */
    retro_get_image_index_t get_image_index;
+
+   /** @copydoc retro_set_image_index_t */
    retro_set_image_index_t set_image_index;
+
+   /** @copydoc retro_get_num_images_t */
    retro_get_num_images_t  get_num_images;
 
+   /** @copydoc retro_replace_image_index_t */
    retro_replace_image_index_t replace_image_index;
+
+   /** @copydoc retro_add_image_index_t */
    retro_add_image_index_t add_image_index;
 };
 
+/**
+ * @copybrief retro_disk_control_callback
+ *
+ * All function pointers are required unless otherwise noted.
+ *
+ * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
+ */
 struct retro_disk_control_ext_callback
 {
+   /** @copydoc retro_set_eject_state_t */
    retro_set_eject_state_t set_eject_state;
+
+   /** @copydoc retro_get_eject_state_t */
    retro_get_eject_state_t get_eject_state;
 
+   /** @copydoc retro_get_image_index_t */
    retro_get_image_index_t get_image_index;
+
+   /** @copydoc retro_set_image_index_t */
    retro_set_image_index_t set_image_index;
+
+   /** @copydoc retro_get_num_images_t */
    retro_get_num_images_t  get_num_images;
 
+   /** @copydoc retro_replace_image_index_t */
    retro_replace_image_index_t replace_image_index;
+
+   /** @copydoc retro_add_image_index_t */
    retro_add_image_index_t add_image_index;
 
-   /* NOTE: Frontend will only attempt to record/restore
-    * last used disk index if both set_initial_image()
-    * and get_image_path() are implemented */
-   retro_set_initial_image_t set_initial_image; /* Optional - may be NULL */
+   /** @copydoc retro_set_initial_image_t
+    *
+    * Optional; not called if \c NULL.
+    *
+    * @note The frontend will only try to record/restore the last-used disk index
+    * if both \c set_initial_image and \c get_image_path are implemented.
+    */
+   retro_set_initial_image_t set_initial_image;
 
-   retro_get_image_path_t get_image_path;       /* Optional - may be NULL */
-   retro_get_image_label_t get_image_label;     /* Optional - may be NULL */
+   /**
+    * @copydoc retro_get_image_path_t
+    *
+    * Optional; not called if \c NULL.
+    */
+   retro_get_image_path_t get_image_path;
+
+   /**
+    * @copydoc retro_get_image_label_t
+    *
+    * Optional; not called if \c NULL.
+    */
+   retro_get_image_label_t get_image_label;
 };
+
+/** @} */
 
 /* Definitions for RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE.
  * A core can set it if sending and receiving custom network packets
@@ -3118,7 +5527,7 @@ typedef void (RETRO_CALLCONV *retro_netpacket_send_t)(int flags, const void* buf
  * This function is not guaranteed to be thread-safe and must be called during
  * retro_run or any of the netpacket callbacks passed with this interface.
  */
-typedef void (RETRO_CALLCONV *retro_netpacket_poll_receive_t)();
+typedef void (RETRO_CALLCONV *retro_netpacket_poll_receive_t)(void);
 
 /* Called by the frontend to signify that a multiplayer session has started.
  * If client_id is 0 the local player is the host of the session and at this
@@ -3186,162 +5595,349 @@ struct retro_netpacket_callback
    const char* protocol_version; /* Optional - if not NULL will be used instead of core version to decide if communication is compatible */
 };
 
+/**
+ * The pixel format used for rendering.
+ * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+ */
 enum retro_pixel_format
 {
-   /* 0RGB1555, native endian.
-    * 0 bit must be set to 0.
-    * This pixel format is default for compatibility concerns only.
-    * If a 15/16-bit pixel format is desired, consider using RGB565. */
+   /**
+    * 0RGB1555, native endian.
+    * Used as the default if \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT is not called.
+    * The most significant bit must be set to 0.
+    * @deprecated This format remains supported to maintain compatibility.
+    * New code should use <tt>RETRO_PIXEL_FORMAT_RGB565</tt> instead.
+    * @see RETRO_PIXEL_FORMAT_RGB565
+    */
    RETRO_PIXEL_FORMAT_0RGB1555 = 0,
 
-   /* XRGB8888, native endian.
-    * X bits are ignored. */
+   /**
+    * XRGB8888, native endian.
+    * The most significant byte (the <tt>X</tt>) is ignored.
+    */
    RETRO_PIXEL_FORMAT_XRGB8888 = 1,
 
-   /* RGB565, native endian.
-    * This pixel format is the recommended format to use if a 15/16-bit
-    * format is desired as it is the pixel format that is typically
-    * available on a wide range of low-power devices.
-    *
-    * It is also natively supported in APIs like OpenGL ES. */
+   /**
+    * RGB565, native endian.
+    * This format is recommended if 16-bit pixels are desired,
+    * as it is available on a variety of devices and APIs.
+    */
    RETRO_PIXEL_FORMAT_RGB565   = 2,
 
-   /* Ensure sizeof() == sizeof(int). */
+   /** Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>. Do not use. */
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
+/** @defgroup GET_SAVESTATE_CONTEXT Savestate Context
+ * @{
+ */
+
+/**
+ * Details about how the frontend will use savestates.
+ *
+ * @see RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT
+ * @see retro_serialize
+ */
 enum retro_savestate_context
 {
-   /* Standard savestate written to disk. */
+   /**
+    * Standard savestate written to disk.
+    * May be loaded at any time,
+    * even in a separate session or on another device.
+    *
+    * Should not contain any pointers to code or data.
+    */
    RETRO_SAVESTATE_CONTEXT_NORMAL                 = 0,
 
-   /* Savestate where you are guaranteed that the same instance will load the save state.
-    * You can store internal pointers to code or data.
-    * It's still a full serialization and deserialization, and could be loaded or saved at any time. 
-    * It won't be written to disk or sent over the network.
+   /**
+    * The savestate is guaranteed to be loaded
+    * within the same session, address space, and binary.
+    * Will not be written to disk or sent over the network;
+    * therefore, internal pointers to code or data are acceptable.
+    * May still be loaded or saved at any time.
+    *
+    * @note This context generally implies the use of runahead or rewinding,
+    * which may work by taking savestates multiple times per second.
+    * Savestate code that runs in this context should be fast.
     */
    RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_INSTANCE = 1,
 
-   /* Savestate where you are guaranteed that the same emulator binary will load that savestate.
-    * You can skip anything that would slow down saving or loading state but you can not store internal pointers. 
-    * It won't be written to disk or sent over the network.
-    * Example: "Second Instance" runahead
+   /**
+    * The savestate is guaranteed to be loaded
+    * in the same session and by the same binary,
+    * but possibly by a different address space
+    * (e.g. for "second instance" runahead)
+    *
+    * Will not be written to disk or sent over the network,
+    * but may be loaded in a different address space.
+    * Therefore, the savestate <em>must not</em> contain pointers.
     */
    RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY   = 2,
 
-   /* Savestate used within a rollback netplay feature.
-    * You should skip anything that would unnecessarily increase bandwidth usage.
-    * It won't be written to disk but it will be sent over the network.
+   /**
+    * The savestate will not be written to disk,
+    * but no other guarantees are made.
+    * The savestate will almost certainly be loaded
+    * by a separate binary, device, and address space.
+    *
+    * This context is intended for use with frontends that support rollback netplay.
+    * Serialized state should omit any data that would unnecessarily increase bandwidth usage.
+    * Must not contain pointers, and integers must be saved in big-endian format.
+    * @see retro_endianness.h
+    * @see network_stream
     */
    RETRO_SAVESTATE_CONTEXT_ROLLBACK_NETPLAY       = 3,
 
-   /* Ensure sizeof() == sizeof(int). */
+   /**
+    * @private Defined to ensure <tt>sizeof(retro_savestate_context) == sizeof(int)</tt>.
+    * Do not use.
+    */
    RETRO_SAVESTATE_CONTEXT_UNKNOWN                = INT_MAX
 };
 
+/** @} */
+
+/** @defgroup SET_MESSAGE User-Visible Messages
+ *
+ * @{
+ */
+
+/**
+ * Defines a message that the frontend will display to the user,
+ * as determined by <tt>RETRO_ENVIRONMENT_SET_MESSAGE</tt>.
+ *
+ * @deprecated This struct is superseded by \ref retro_message_ext,
+ * which provides more control over how a message is presented.
+ * Only use it for compatibility with older cores and frontends.
+ *
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE
+ * @see retro_message_ext
+ */
 struct retro_message
 {
-   const char *msg;        /* Message to be displayed. */
-   unsigned    frames;     /* Duration in frames of message. */
+   /**
+    * Null-terminated message to be displayed.
+    * If \c NULL or empty, the message will be ignored.
+    */
+   const char *msg;
+
+   /** Duration to display \c msg in frames. */
+   unsigned    frames;
 };
 
+/**
+ * The method that the frontend will use to display a message to the player.
+ * @see retro_message_ext
+ */
 enum retro_message_target
 {
+   /**
+    * Indicates that the frontend should display the given message
+    * using all other targets defined by \c retro_message_target at once.
+    */
    RETRO_MESSAGE_TARGET_ALL = 0,
+
+   /**
+    * Indicates that the frontend should display the given message
+    * using the frontend's on-screen display, if available.
+    *
+    * @attention If the frontend allows players to customize or disable notifications,
+    * then they may not see messages sent to this target.
+    */
    RETRO_MESSAGE_TARGET_OSD,
+
+   /**
+    * Indicates that the frontend should log the message
+    * via its usual logging mechanism, if available.
+    *
+    * This is not intended to be a substitute for \c RETRO_ENVIRONMENT_SET_LOG_INTERFACE.
+    * It is intended for the common use case of
+    * logging a player-facing message.
+    *
+    * This target should not be used for messages
+    * of type \c RETRO_MESSAGE_TYPE_STATUS or \c RETRO_MESSAGE_TYPE_PROGRESS,
+    * as it may add unnecessary noise to a log file.
+    *
+    * @see RETRO_ENVIRONMENT_SET_LOG_INTERFACE
+    */
    RETRO_MESSAGE_TARGET_LOG
 };
 
+/**
+ * A broad category for the type of message that the frontend will display.
+ *
+ * Each message type has its own use case,
+ * therefore the frontend should present each one differently.
+ *
+ * @note This is a hint that the frontend may ignore.
+ * The frontend should fall back to \c RETRO_MESSAGE_TYPE_NOTIFICATION
+ * for message types that it doesn't support.
+ */
 enum retro_message_type
 {
+   /**
+    * A standard on-screen message.
+    *
+    * Suitable for a variety of use cases,
+    * such as messages about errors
+    * or other important events.
+    *
+    * Frontends that display their own messages
+    * should display this type of core-generated message the same way.
+    */
    RETRO_MESSAGE_TYPE_NOTIFICATION = 0,
+
+   /**
+    * An on-screen message that should be visually distinct
+    * from \c RETRO_MESSAGE_TYPE_NOTIFICATION messages.
+    *
+    * The exact meaning of "visually distinct" is left to the frontend,
+    * but this usually implies that the frontend shows the message
+    * in a way that it doesn't typically use for its own notices.
+    */
    RETRO_MESSAGE_TYPE_NOTIFICATION_ALT,
+
+   /**
+    * Indicates a frequently-updated status display,
+    * rather than a standard notification.
+    * Status messages are intended to be displayed permanently while a core is running
+    * in a way that doesn't suggest user action is required.
+    *
+    * Here are some possible use cases for status messages:
+    *
+    * @li An internal framerate counter.
+    * @li Debugging information.
+    *     Remember to let the player disable it in the core options.
+    * @li Core-specific state, such as when a microphone is active.
+    *
+    * The status message is displayed for the given duration,
+    * unless another status message of equal or greater priority is shown.
+    */
    RETRO_MESSAGE_TYPE_STATUS,
+
+   /**
+    * Denotes a message that reports the progress
+    * of a long-running asynchronous task,
+    * such as when a core loads large files from disk or the network.
+    *
+    * The frontend should display messages of this type as a progress bar
+    * (or a progress spinner for indefinite tasks),
+    * where \c retro_message_ext::msg is the progress bar's title
+    * and \c retro_message_ext::progress sets the progress bar's length.
+    *
+    * This message type shouldn't be used for tasks that are expected to complete quickly.
+    */
    RETRO_MESSAGE_TYPE_PROGRESS
 };
 
+/**
+ * A core-provided message that the frontend will display to the player.
+ *
+ * @note The frontend is encouraged store these messages in a queue.
+ * However, it should not empty the queue of core-submitted messages upon exit;
+ * if a core exits with an error, it may want to use this API
+ * to show an error message to the player.
+ *
+ * The frontend should maintain its own copy of the submitted message
+ * and all subobjects, including strings.
+ *
+ * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
+ */
 struct retro_message_ext
 {
-   /* Message string to be displayed/logged */
+   /**
+    * The \c NULL-terminated text of a message to show to the player.
+    * Must not be \c NULL.
+    *
+    * @note The frontend must honor newlines in this string
+    * when rendering text to \c RETRO_MESSAGE_TARGET_OSD.
+    */
    const char *msg;
-   /* Duration (in ms) of message when targeting the OSD */
+
+   /**
+    * The duration that \c msg will be displayed on-screen, in milliseconds.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG.
+    */
    unsigned duration;
-   /* Message priority when targeting the OSD
-    * > When multiple concurrent messages are sent to
-    *   the frontend and the frontend does not have the
-    *   capacity to display them all, messages with the
-    *   *highest* priority value should be shown
-    * > There is no upper limit to a message priority
-    *   value (within the bounds of the unsigned data type)
-    * > In the reference frontend (RetroArch), the same
-    *   priority values are used for frontend-generated
-    *   notifications, which are typically assigned values
-    *   between 0 and 3 depending upon importance */
+
+   /**
+    * The relative importance of this message
+    * when targeting \c RETRO_MESSAGE_TARGET_OSD.
+    * Higher values indicate higher priority.
+    *
+    * The frontend should use this to prioritize messages
+    * when it can't show all active messages at once,
+    * or to remove messages from its queue if it's full.
+    *
+    * The relative display order of messages with the same priority
+    * is left to the frontend's discretion,
+    * although we suggest breaking ties
+    * in favor of the most recently-submitted message.
+    *
+    * Frontends may handle deprioritized messages at their discretion;
+    * such messages may have their \c duration altered,
+    * be hidden without being delayed,
+    * or even be discarded entirely.
+    *
+    * @note In the reference frontend (RetroArch),
+    * the same priority values are used for frontend-generated notifications,
+    * which are typically between 0 and 3 depending upon importance.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG.
+    */
    unsigned priority;
-   /* Message logging level (info, warn, error, etc.) */
+
+   /**
+    * The severity level of this message.
+    *
+    * The frontend may use this to filter or customize messages
+    * depending on the player's preferences.
+    * Here are some ideas:
+    *
+    * @li Use this to prioritize errors and warnings
+    *     over higher-ranking info and debug messages.
+    * @li Render warnings or errors with extra visual feedback,
+    *     e.g. with brighter colors or accompanying sound effects.
+    *
+    * @see RETRO_ENVIRONMENT_SET_LOG_INTERFACE
+    */
    enum retro_log_level level;
-   /* Message destination: OSD, logging interface or both */
+
+   /**
+    * The intended destination of this message.
+    *
+    * @see retro_message_target
+    */
    enum retro_message_target target;
-   /* Message 'type' when targeting the OSD
-    * > RETRO_MESSAGE_TYPE_NOTIFICATION: Specifies that a
-    *   message should be handled in identical fashion to
-    *   a standard frontend-generated notification
-    * > RETRO_MESSAGE_TYPE_NOTIFICATION_ALT: Specifies that
-    *   message is a notification that requires user attention
-    *   or action, but that it should be displayed in a manner
-    *   that differs from standard frontend-generated notifications.
-    *   This would typically correspond to messages that should be
-    *   displayed immediately (independently from any internal
-    *   frontend message queue), and/or which should be visually
-    *   distinguishable from frontend-generated notifications.
-    *   For example, a core may wish to inform the user of
-    *   information related to a disk-change event. It is
-    *   expected that the frontend itself may provide a
-    *   notification in this case; if the core sends a
-    *   message of type RETRO_MESSAGE_TYPE_NOTIFICATION, an
-    *   uncomfortable 'double-notification' may occur. A message
-    *   of RETRO_MESSAGE_TYPE_NOTIFICATION_ALT should therefore
-    *   be presented such that visual conflict with regular
-    *   notifications does not occur
-    * > RETRO_MESSAGE_TYPE_STATUS: Indicates that message
-    *   is not a standard notification. This typically
-    *   corresponds to 'status' indicators, such as a core's
-    *   internal FPS, which are intended to be displayed
-    *   either permanently while a core is running, or in
-    *   a manner that does not suggest user attention or action
-    *   is required. 'Status' type messages should therefore be
-    *   displayed in a different on-screen location and in a manner
-    *   easily distinguishable from both standard frontend-generated
-    *   notifications and messages of type RETRO_MESSAGE_TYPE_NOTIFICATION_ALT
-    * > RETRO_MESSAGE_TYPE_PROGRESS: Indicates that message reports
-    *   the progress of an internal core task. For example, in cases
-    *   where a core itself handles the loading of content from a file,
-    *   this may correspond to the percentage of the file that has been
-    *   read. Alternatively, an audio/video playback core may use a
-    *   message of type RETRO_MESSAGE_TYPE_PROGRESS to display the current
-    *   playback position as a percentage of the runtime. 'Progress' type
-    *   messages should therefore be displayed as a literal progress bar,
-    *   where:
-    *   - 'retro_message_ext.msg' is the progress bar title/label
-    *   - 'retro_message_ext.progress' determines the length of
-    *     the progress bar
-    * NOTE: Message type is a *hint*, and may be ignored
-    * by the frontend. If a frontend lacks support for
-    * displaying messages via alternate means than standard
-    * frontend-generated notifications, it will treat *all*
-    * messages as having the type RETRO_MESSAGE_TYPE_NOTIFICATION */
+
+   /**
+    * The intended semantics of this message.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG.
+    *
+    * @see retro_message_type
+    */
    enum retro_message_type type;
-   /* Task progress when targeting the OSD and message is
-    * of type RETRO_MESSAGE_TYPE_PROGRESS
-    * > -1:    Unmetered/indeterminate
-    * > 0-100: Current progress percentage
-    * NOTE: Since message type is a hint, a frontend may ignore
-    * progress values. Where relevant, a core should therefore
-    * include progress percentage within the message string,
+
+   /**
+    * The progress of an asynchronous task.
+    *
+    * A value between 0 and 100 (inclusive) indicates the task's percentage,
+    * and a value of -1 indicates a task of unknown completion.
+    *
+    * @note Since message type is a hint, a frontend may ignore progress values.
+    * Where relevant, a core should include progress percentage within the message string,
     * such that the message intent remains clear when displayed
-    * as a standard frontend-generated notification */
+    * as a standard frontend-generated notification.
+    *
+    * Ignored for \c RETRO_MESSAGE_TARGET_LOG and for
+    * message types other than \c RETRO_MESSAGE_TYPE_PROGRESS.
+    */
    int8_t progress;
 };
+
+/** @} */
 
 /* Describes how the libretro implementation maps a libretro input bind
  * to its internal input system through a human readable string.
@@ -3360,21 +5956,32 @@ struct retro_input_descriptor
    const char *description;
 };
 
+/**
+ * Contains basic information about the core.
+ *
+ * @see retro_get_system_info
+ * @warning All pointers are owned by the core
+ * and must remain valid throughout its lifetime.
+ */
 struct retro_system_info
 {
-   /* All pointers are owned by libretro implementation, and pointers must
-    * remain valid until it is unloaded. */
+   /**
+    * Descriptive name of the library.
+    *
+    * @note Should not contain any version numbers, etc.
+    */
+   const char *library_name;
 
-   const char *library_name;      /* Descriptive name of library. Should not
-                                   * contain any version numbers, etc. */
-   const char *library_version;   /* Descriptive version of core. */
+   /**
+    * Descriptive version of the core.
+    */
+   const char *library_version;
 
-   const char *valid_extensions;  /* A string listing probably content
-                                   * extensions the core will be able to
-                                   * load, separated with pipe.
-                                   * I.e. "bin|rom|iso".
-                                   * Typically used for a GUI to filter
-                                   * out extensions. */
+   /**
+    * A pipe-delimited string list of file extensions that this core can load, e.g. "bin|rom|iso".
+    * Typically used by a frontend for filtering or core selection.
+    */
+   const char *valid_extensions;
 
    /* Libretro cores that need to have direct access to their content
     * files, including cores which use the path of the content files to
@@ -3612,101 +6219,273 @@ struct retro_game_info_ext
    bool persistent_data;
 };
 
+/**
+ * Parameters describing the size and shape of the video frame.
+ * @see retro_system_av_info
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ * @see RETRO_ENVIRONMENT_SET_GEOMETRY
+ * @see retro_get_system_av_info
+ */
 struct retro_game_geometry
 {
-   unsigned base_width;    /* Nominal video width of game. */
-   unsigned base_height;   /* Nominal video height of game. */
-   unsigned max_width;     /* Maximum possible width of game. */
+   /**
+    * Nominal video width of game, in pixels.
+    * This will typically be the emulated platform's native video width
+    * (or its smallest, if the original hardware supports multiple resolutions).
+    */
+   unsigned base_width;
+
+   /**
+    * Nominal video height of game, in pixels.
+    * This will typically be the emulated platform's native video height
+    * (or its smallest, if the original hardware supports multiple resolutions).
+    */
+   unsigned base_height;
+
+   /**
+    * Maximum possible width of the game screen, in pixels.
+    * This will typically be the emulated platform's maximum video width.
+    * For cores that emulate platforms with multiple screens (such as the Nintendo DS),
+    * this should assume the core's widest possible screen layout (e.g. side-by-side).
+    * For cores that support upscaling the resolution,
+    * this should assume the highest supported scale factor is active.
+    */
+   unsigned max_width;
+
+   /**
+    * Maximum possible height of the game screen, in pixels.
+    * This will typically be the emulated platform's maximum video height.
+    * For cores that emulate platforms with multiple screens (such as the Nintendo DS),
+    * this should assume the core's tallest possible screen layout (e.g. vertical).
+    * For cores that support upscaling the resolution,
+    * this should assume the highest supported scale factor is active.
+    */
    unsigned max_height;    /* Maximum possible height of game. */
 
-   float    aspect_ratio;  /* Nominal aspect ratio of game. If
-                            * aspect_ratio is <= 0.0, an aspect ratio
-                            * of base_width / base_height is assumed.
-                            * A frontend could override this setting,
-                            * if desired. */
+   /**
+    * Nominal aspect ratio of game.
+    * If zero or less,
+    * an aspect ratio of <tt>base_width / base_height</tt> is assumed.
+    *
+    * @note A frontend may ignore this setting.
+    */
+   float    aspect_ratio;
 };
 
+/**
+ * Parameters describing the timing of the video and audio.
+ * @see retro_system_av_info
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ * @see retro_get_system_av_info
+ */
 struct retro_system_timing
 {
-   double fps;             /* FPS of video content. */
-   double sample_rate;     /* Sampling rate of audio. */
+   /** Video output refresh rate, in frames per second. */
+   double fps;
+
+   /** The audio output sample rate, in Hz. */
+   double sample_rate;
 };
 
+/**
+ * Configures how the core's audio and video should be updated.
+ * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+ * @see retro_get_system_av_info
+ */
 struct retro_system_av_info
 {
+   /** Parameters describing the size and shape of the video frame. */
    struct retro_game_geometry geometry;
+
+   /** Parameters describing the timing of the video and audio. */
    struct retro_system_timing timing;
 };
 
+/** @defgroup SET_CORE_OPTIONS Core Options
+ *  @{
+ */
+
+/**
+ * Represents \ref RETRO_ENVIRONMENT_GET_VARIABLE "a core option query".
+ *
+ * @note In \ref RETRO_ENVIRONMENT_SET_VARIABLES
+ * (which is a deprecated API),
+ * this \c struct serves as an option definition.
+ *
+ * @see RETRO_ENVIRONMENT_GET_VARIABLE
+ */
 struct retro_variable
 {
-   /* Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE.
-    * If NULL, obtains the complete environment string if more
-    * complex parsing is necessary.
-    * The environment string is formatted as key-value pairs
-    * delimited by semicolons as so:
-    * "key1=value1;key2=value2;..."
+   /**
+    * A unique key identifying this option.
+    *
+    * Should be a key for an option that was previously defined
+    * with \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 or similar.
+    *
+    * Should be prefixed with the core's name
+    * to minimize the risk of collisions with another core's options,
+    * as frontends are not required to use a namespacing scheme for storing options.
+    * For example, a core named "foo" might define an option named "foo_option".
+    *
+    * @note In \ref RETRO_ENVIRONMENT_SET_VARIABLES
+    * (which is a deprecated API),
+    * this field is used to define an option
+    * named by this key.
     */
    const char *key;
 
-   /* Value to be obtained. If key does not exist, it is set to NULL. */
+   /**
+    * Value to be obtained.
+    *
+    * Set by the frontend to \c NULL if
+    * the option named by \ref key does not exist.
+    *
+    * @note In \ref RETRO_ENVIRONMENT_SET_VARIABLES
+    * (which is a deprecated API),
+    * this field is set by the core to define the possible values
+    * for an option named by \ref key.
+    * When used this way, it must be formatted as follows:
+    * @li The text before the first ';' is the option's human-readable title.
+    * @li A single space follows the ';'.
+    * @li The rest of the string is a '|'-delimited list of possible values,
+    * with the first one being the default.
+    */
    const char *value;
 };
 
+/**
+ * An argument that's used to show or hide a core option in the frontend.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY
+ */
 struct retro_core_option_display
 {
-   /* Variable to configure in RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY */
+   /**
+    * The key for a core option that was defined with \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,
+    * \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL,
+    * or their legacy equivalents.
+    */
    const char *key;
 
-   /* Specifies whether variable should be displayed
-    * when presenting core options to the user */
+   /**
+    * Whether the option named by \c key
+    * should be displayed to the player in the frontend's core options menu.
+    *
+    * @note This value is a hint, \em not a requirement;
+    * the frontend is free to ignore this field.
+    */
    bool visible;
 };
 
-/* Maximum number of values permitted for a core option
- * > Note: We have to set a maximum value due the limitations
- *   of the C language - i.e. it is not possible to create an
- *   array of structs each containing a variable sized array,
- *   so the retro_core_option_definition values array must
- *   have a fixed size. The size limit of 128 is a balancing
- *   act - it needs to be large enough to support all 'sane'
- *   core options, but setting it too large may impact low memory
- *   platforms. In practise, if a core option has more than
- *   128 values then the implementation is likely flawed.
- *   To quote the above API reference:
- *      "The number of possible options should be very limited
- *       i.e. it should be feasible to cycle through options
- *       without a keyboard."
+/**
+ * The maximum number of choices that can be defined for a given core option.
+ *
+ * This limit was chosen as a compromise between
+ * a core's flexibility and a streamlined user experience.
+ *
+ * @note A guiding principle of libretro's API design is that
+ * all common interactions (gameplay, menu navigation, etc.)
+ * should be possible without a keyboard.
+ *
+ * If you need more than 128 choices for a core option,
+ * consider simplifying your option structure.
+ * Here are some ideas:
+ *
+ * \li If a core option represents a numeric value,
+ *     consider reducing the option's granularity
+ *     (e.g. define time limits in increments of 5 seconds instead of 1 second).
+ *     Providing a fixed set of values based on experimentation
+ *     is also a good idea.
+ * \li If a core option represents a dynamically-built list of files,
+ *     consider leaving out files that won't be useful.
+ *     For example, if a core allows the player to choose a specific BIOS file,
+ *     it can omit files of the wrong length or without a valid header.
+ *
+ * @see retro_core_option_definition
+ * @see retro_core_option_v2_definition
  */
 #define RETRO_NUM_CORE_OPTION_VALUES_MAX 128
 
+/**
+ * A descriptor for a particular choice within a core option.
+ *
+ * @note All option values are represented as strings.
+ * If you need to represent any other type,
+ * parse the string in \ref value.
+ *
+ * @see retro_core_option_v2_category
+ */
 struct retro_core_option_value
 {
-   /* Expected option value */
+   /**
+    * The option value that the frontend will serialize.
+    *
+    * Must not be \c NULL or empty.
+    * No other hard limits are placed on this value's contents,
+    * but here are some suggestions:
+    *
+    * \li If the value represents a number,
+    *     don't include any non-digit characters (units, separators, etc.).
+    *     Instead, include that information in \c label.
+    *     This will simplify parsing.
+    * \li If the value represents a file path,
+    *     store it as a relative path with respect to one of the common libretro directories
+    *     (e.g. \ref RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY "the system directory"
+    *     or \ref RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY "the save directory"),
+    *     and use forward slashes (\c "/") as directory separators.
+    *     This will simplify cloud storage if supported by the frontend,
+    *     as the same file may be used on multiple devices.
+    */
    const char *value;
 
-   /* Human-readable value label. If NULL, value itself
-    * will be displayed by the frontend */
+   /**
+    * Human-readable name for \c value that the frontend should show to players.
+    *
+    * May be \c NULL, in which case the frontend
+    * should display \c value itself.
+    *
+    * Here are some guidelines for writing a good label:
+    *
+    * \li Make the option labels obvious
+    *     so that they don't need to be explained in the description.
+    * \li Keep labels short, and don't use unnecessary words.
+    *     For example, "OpenGL" is a better label than "OpenGL Mode".
+    * \li If the option represents a number,
+    *     consider adding units, separators, or other punctuation
+    *     into the label itself.
+    *     For example, "5 seconds" is a better label than "5".
+    * \li If the option represents a number, use intuitive units
+    *     that don't take a lot of digits to express.
+    *     For example, prefer "1 minute" over "60 seconds" or "60,000 milliseconds".
+    */
    const char *label;
 };
 
+/**
+ * @copybrief retro_core_option_v2_definition
+ *
+ * @deprecated Use \ref retro_core_option_v2_definition instead,
+ * as it supports categorizing options into groups.
+ * Only use this \c struct to support older frontends or cores.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
+ */
 struct retro_core_option_definition
 {
-   /* Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE. */
+   /** @copydoc retro_core_option_v2_definition::key */
    const char *key;
 
-   /* Human-readable core option description (used as menu label) */
+   /** @copydoc retro_core_option_v2_definition::desc */
    const char *desc;
 
-   /* Human-readable core option information (used as menu sublabel) */
+   /** @copydoc retro_core_option_v2_definition::info */
    const char *info;
 
-   /* Array of retro_core_option_value structs, terminated by NULL */
+   /** @copydoc retro_core_option_v2_definition::values */
    struct retro_core_option_value values[RETRO_NUM_CORE_OPTION_VALUES_MAX];
 
-   /* Default core option value. Must match one of the values
-    * in the retro_core_option_value array, otherwise will be
-    * ignored */
+   /** @copydoc retro_core_option_v2_definition::default_value */
    const char *default_value;
 };
 
@@ -3714,155 +6493,324 @@ struct retro_core_option_definition
 #undef local
 #endif
 
+/**
+ * A variant of \ref retro_core_options that supports internationalization.
+ *
+ * @deprecated Use \ref retro_core_options_v2_intl instead,
+ * as it supports categorizing options into groups.
+ * Only use this \c struct to support older frontends or cores.
+ *
+ * @see retro_core_options
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
+ * @see RETRO_ENVIRONMENT_GET_LANGUAGE
+ * @see retro_language
+ */
 struct retro_core_options_intl
 {
-   /* Pointer to an array of retro_core_option_definition structs
-    * - US English implementation
-    * - Must point to a valid array */
+   /** @copydoc retro_core_options_v2_intl::us */
    struct retro_core_option_definition *us;
 
-   /* Pointer to an array of retro_core_option_definition structs
-    * - Implementation for current frontend language
-    * - May be NULL */
+   /** @copydoc retro_core_options_v2_intl::local */
    struct retro_core_option_definition *local;
 };
 
+/**
+ * A descriptor for a group of related core options.
+ *
+ * Here's an example category:
+ *
+ * @code
+ * {
+ *     "cpu",
+ *     "CPU Emulation",
+ *     "Settings for CPU quirks."
+ * }
+ * @endcode
+ *
+ * @see retro_core_options_v2
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+ */
 struct retro_core_option_v2_category
 {
-   /* Variable uniquely identifying the
-    * option category. Valid key characters
-    * are [a-z, A-Z, 0-9, _, -] */
+   /**
+    * A string that uniquely identifies this category within the core's options.
+    * Any \c retro_core_option_v2_definition whose \c category_key matches this
+    * is considered to be within this category.
+    * Different cores may use the same category keys,
+    * so namespacing them is not necessary.
+    * Valid characters are <tt>[a-zA-Z0-9_-]</tt>.
+    *
+    * Frontends should use this category to organize core options,
+    * but may customize this category's presentation in other ways.
+    * For example, a frontend may use common keys like "audio" or "gfx"
+    * to select an appropriate icon in its UI.
+    *
+    * Required; must not be \c NULL.
+    */
    const char *key;
 
-   /* Human-readable category description
-    * > Used as category menu label when
-    *   frontend has core option category
-    *   support */
+   /**
+    * A brief human-readable name for this category,
+    * intended for the frontend to display to the player.
+    * This should be a name that's concise and descriptive, such as "Audio" or "Video".
+    *
+    * Required; must not be \c NULL.
+    */
    const char *desc;
 
-   /* Human-readable category information
-    * > Used as category menu sublabel when
-    *   frontend has core option category
-    *   support
-    * > Optional (may be NULL or an empty
-    *   string) */
+   /**
+    * A human-readable description for this category,
+    * intended for the frontend to display to the player
+    * as secondary help text (e.g. a sublabel or a tooltip).
+    * Optional; may be \c NULL or an empty string.
+    */
    const char *info;
 };
 
+/**
+ * A descriptor for a particular core option and the values it may take.
+ *
+ * Supports categorizing options into groups,
+ * so as not to overwhelm the player.
+ *
+ * @see retro_core_option_v2_category
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+ */
 struct retro_core_option_v2_definition
 {
-   /* Variable to query in RETRO_ENVIRONMENT_GET_VARIABLE.
-    * Valid key characters are [a-z, A-Z, 0-9, _, -] */
+   /**
+    * A unique identifier for this option that cores may use
+    * \ref RETRO_ENVIRONMENT_GET_VARIABLE "to query its value from the frontend".
+    * Must be unique within this core.
+    *
+    * Should be unique globally;
+    * the recommended method for doing so
+    * is to prefix each option with the core's name.
+    * For example, an option that controls the resolution for a core named "foo"
+    * should be named \c "foo_resolution".
+    *
+    * Valid key characters are in the set <tt>[a-zA-Z0-9_-]</tt>.
+    */
    const char *key;
 
-   /* Human-readable core option description
-    * > Used as menu label when frontend does
-    *   not have core option category support
-    *   e.g. "Video > Aspect Ratio" */
+   /**
+    * A human-readable name for this option,
+    * intended to be displayed by frontends that don't support
+    * categorizing core options.
+    *
+    * Required; must not be \c NULL or empty.
+    */
    const char *desc;
 
-   /* Human-readable core option description
-    * > Used as menu label when frontend has
-    *   core option category support
-    *   e.g. "Aspect Ratio", where associated
-    *   retro_core_option_v2_category::desc
-    *   is "Video"
-    * > If empty or NULL, the string specified by
-    *   desc will be used as the menu label
-    * > Will be ignored (and may be set to NULL)
-    *   if category_key is empty or NULL */
+   /**
+    * A human-readable name for this option,
+    * intended to be displayed by frontends that support
+    * categorizing core options.
+    *
+    * This version may be slightly more concise than \ref desc,
+    * as it can rely on the structure of the options menu.
+    * For example, "Interface" is a good \c desc_categorized,
+    * as it can be displayed as a sublabel for a "Network" category.
+    * For \c desc, "Network Interface" would be more suitable.
+    *
+    * Optional; if this field or \c category_key is empty or \c NULL,
+    * \c desc will be used instead.
+    */
    const char *desc_categorized;
 
-   /* Human-readable core option information
-    * > Used as menu sublabel */
+   /**
+    * A human-readable description of this option and its effects,
+    * intended to be displayed by frontends that don't support
+    * categorizing core options.
+    *
+    * @details Intended to be displayed as secondary help text,
+    * such as a tooltip or a sublabel.
+    *
+    * Here are some suggestions for writing a good description:
+    *
+    * \li Avoid technical jargon unless this option is meant for advanced users.
+    *     If unavoidable, suggest one of the default options for those unsure.
+    * \li Don't repeat the option name in the description;
+    *     instead, describe what the option name means.
+    * \li If an option requires a core restart or game reset to take effect,
+    *     be sure to say so.
+    * \li Try to make the option labels obvious
+    *     so that they don't need to be explained in the description.
+    *
+    * Optional; may be \c NULL.
+    */
    const char *info;
 
-   /* Human-readable core option information
-    * > Used as menu sublabel when frontend
-    *   has core option category support
-    *   (e.g. may be required when info text
-    *   references an option by name/desc,
-    *   and the desc/desc_categorized text
-    *   for that option differ)
-    * > If empty or NULL, the string specified by
-    *   info will be used as the menu sublabel
-    * > Will be ignored (and may be set to NULL)
-    *   if category_key is empty or NULL */
+   /**
+    * @brief A human-readable description of this option and its effects,
+    * intended to be displayed by frontends that support
+    * categorizing core options.
+    *
+    * This version is provided to accommodate descriptions
+    * that reference other options by name,
+    * as options may have different user-facing names
+    * depending on whether the frontend supports categorization.
+    *
+    * @copydetails info
+    *
+    * If empty or \c NULL, \c info will be used instead.
+    * Will be ignored if \c category_key is empty or \c NULL.
+    */
    const char *info_categorized;
 
-   /* Variable specifying category (e.g. "video",
-    * "audio") that will be assigned to the option
-    * if frontend has core option category support.
-    * > Categorized options will be displayed in a
-    *   subsection/submenu of the frontend core
-    *   option interface
-    * > Specified string must match one of the
-    *   retro_core_option_v2_category::key values
-    *   in the associated retro_core_option_v2_category
-    *   array; If no match is not found, specified
-    *   string will be considered as NULL
-    * > If specified string is empty or NULL, option will
-    *   have no category and will be shown at the top
-    *   level of the frontend core option interface */
+   /**
+    * The key of the category that this option belongs to.
+    *
+    * Optional; if equal to \ref retro_core_option_v2_category::key "a defined category",
+    * then this option shall be displayed by the frontend
+    * next to other options in this same category,
+    * assuming it supports doing so.
+    * Option categories are intended to be displayed in a submenu,
+    * but this isn't a hard requirement.
+    *
+    * If \c NULL, empty, or not equal to a defined category,
+    * then this option is considered uncategorized
+    * and the frontend shall display it outside of any category
+    * (most likely at a top-level menu).
+    *
+    * @see retro_core_option_v2_category
+    */
    const char *category_key;
 
-   /* Array of retro_core_option_value structs, terminated by NULL */
+   /**
+    * One or more possible values for this option,
+    * up to the limit of \ref RETRO_NUM_CORE_OPTION_VALUES_MAX.
+    *
+    * Terminated by a \c { NULL, NULL } element,
+    * although frontends should work even if all elements are used.
+    */
    struct retro_core_option_value values[RETRO_NUM_CORE_OPTION_VALUES_MAX];
 
-   /* Default core option value. Must match one of the values
-    * in the retro_core_option_value array, otherwise will be
-    * ignored */
+   /**
+    * The default value for this core option.
+    * Used if it hasn't been set, e.g. for new cores.
+    * Must equal one of the \ref value members in the \c values array,
+    * or else this option will be ignored.
+    */
    const char *default_value;
 };
 
+/**
+ * A set of core option descriptors and the categories that group them,
+ * suitable for enabling a core to be customized.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
+ */
 struct retro_core_options_v2
 {
-   /* Array of retro_core_option_v2_category structs,
-    * terminated by NULL
-    * > If NULL, all entries in definitions array
-    *   will have no category and will be shown at
-    *   the top level of the frontend core option
-    *   interface
-    * > Will be ignored if frontend does not have
-    *   core option category support */
+   /**
+    * An array of \ref retro_core_option_v2_category "option categories",
+    * terminated by a zeroed-out category \c struct.
+    *
+    * Will be ignored if the frontend doesn't support core option categories.
+    *
+    * If \c NULL or ignored, all options will be treated as uncategorized.
+    * This most likely means that a frontend will display them at a top-level menu
+    * without any kind of hierarchy or grouping.
+    */
    struct retro_core_option_v2_category *categories;
 
-   /* Array of retro_core_option_v2_definition structs,
-    * terminated by NULL */
+   /**
+    * An array of \ref retro_core_option_v2_definition "core option descriptors",
+    * terminated by a zeroed-out definition \c struct.
+    *
+    * Required; must not be \c NULL.
+    */
    struct retro_core_option_v2_definition *definitions;
 };
 
+/**
+ * A variant of \ref retro_core_options_v2 that supports internationalization.
+ *
+ * @see retro_core_options_v2
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
+ * @see RETRO_ENVIRONMENT_GET_LANGUAGE
+ * @see retro_language
+ */
 struct retro_core_options_v2_intl
 {
-   /* Pointer to a retro_core_options_v2 struct
-    * > US English implementation
-    * > Must point to a valid struct */
+   /**
+    * Pointer to a core options set
+    * whose text is written in American English.
+    *
+    * This may be passed to \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2 as-is
+    * if not using \c RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL.
+    *
+    * Required; must not be \c NULL.
+    */
    struct retro_core_options_v2 *us;
 
-   /* Pointer to a retro_core_options_v2 struct
-    * - Implementation for current frontend language
-    * - May be NULL */
+   /**
+    * Pointer to a core options set
+    * whose text is written in one of libretro's \ref retro_language "supported languages",
+    * most likely the one returned by \ref RETRO_ENVIRONMENT_GET_LANGUAGE.
+    *
+    * Structure is the same, but usage is slightly different:
+    *
+    * \li All text (except for keys and option values)
+    *     should be written in whichever language
+    *     is returned by \c RETRO_ENVIRONMENT_GET_LANGUAGE.
+    * \li All fields besides keys and option values may be \c NULL,
+    *     in which case the corresponding string in \c us
+    *     is used instead.
+    * \li All \ref retro_core_option_v2_definition::default_value "default option values"
+    *     are taken from \c us.
+    *     The defaults in this field are ignored.
+    *
+    * May be \c NULL, in which case \c us is used instead.
+    */
    struct retro_core_options_v2 *local;
 };
 
-/* Used by the frontend to monitor changes in core option
- * visibility. May be called each time any core option
- * value is set via the frontend.
- * - On each invocation, the core must update the visibility
- *   of any dynamically hidden options using the
- *   RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY environment
- *   callback.
- * - On the first invocation, returns 'true' if the visibility
- *   of any core option has changed since the last call of
- *   retro_load_game() or retro_load_game_special().
- * - On each subsequent invocation, returns 'true' if the
- *   visibility of any core option has changed since the last
- *   time the function was called. */
+/**
+ * Called by the frontend to determine if any core option's visibility has changed.
+ *
+ * Each time a frontend sets a core option,
+ * it should call this function to see if
+ * any core option should be made visible or invisible.
+ *
+ * May also be called after \ref retro_load_game "loading a game",
+ * to determine what the initial visibility of each option should be.
+ *
+ * Within this function, the core must update the visibility
+ * of any dynamically-hidden options
+ * using \ref RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY.
+ *
+ * @note All core options are visible by default,
+ * even during this function's first call.
+ *
+ * @return \c true if any core option's visibility was adjusted
+ * since the last call to this function.
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY
+ * @see retro_core_option_display
+ */
 typedef bool (RETRO_CALLCONV *retro_core_options_update_display_callback_t)(void);
+
+/**
+ * Callback registered by the core for the frontend to use
+ * when setting the visibility of each core option.
+ *
+ * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY
+ * @see retro_core_option_display
+ */
 struct retro_core_options_update_display_callback
 {
+   /**
+    * @copydoc retro_core_options_update_display_callback_t
+    *
+    * Set by the core.
+    */
    retro_core_options_update_display_callback_t callback;
 };
+
+/** @} */
 
 struct retro_game_info
 {
@@ -3880,113 +6828,263 @@ struct retro_game_info
    const char *meta;       /* String of implementation specific meta-data. */
 };
 
+/** @defgroup GET_CURRENT_SOFTWARE_FRAMEBUFFER Frontend-Owned Framebuffers
+ * @{
+ */
+
+/** @defgroup RETRO_MEMORY_ACCESS Framebuffer Memory Access Types
+ * @{
+ */
+
+/** Indicates that core will write to the framebuffer returned by the frontend. */
 #define RETRO_MEMORY_ACCESS_WRITE (1 << 0)
-   /* The core will write to the buffer provided by retro_framebuffer::data. */
+
+/** Indicates that the core will read from the framebuffer returned by the frontend. */
 #define RETRO_MEMORY_ACCESS_READ (1 << 1)
-   /* The core will read from retro_framebuffer::data. */
+
+/** @} */
+
+/** @defgroup RETRO_MEMORY_TYPE Framebuffer Memory Types
+ * @{
+ */
+
+/**
+ * Indicates that the returned framebuffer's memory is cached.
+ * If not set, random access to the buffer may be very slow.
+ */
 #define RETRO_MEMORY_TYPE_CACHED (1 << 0)
-   /* The memory in data is cached.
-    * If not cached, random writes and/or reading from the buffer is expected to be very slow. */
+
+/** @} */
+
+/**
+ * A frame buffer owned by the frontend that a core may use for rendering.
+ *
+ * @see GET_CURRENT_SOFTWARE_FRAMEBUFFER
+ * @see retro_video_refresh_t
+ */
 struct retro_framebuffer
 {
-   void *data;                      /* The framebuffer which the core can render into.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER.
-                                       The initial contents of data are unspecified. */
-   unsigned width;                  /* The framebuffer width used by the core. Set by core. */
-   unsigned height;                 /* The framebuffer height used by the core. Set by core. */
-   size_t pitch;                    /* The number of bytes between the beginning of a scanline,
-                                       and beginning of the next scanline.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
-   enum retro_pixel_format format;  /* The pixel format the core must use to render into data.
-                                       This format could differ from the format used in
-                                       SET_PIXEL_FORMAT.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
+   /**
+    * Pointer to the beginning of the framebuffer provided by the frontend.
+    * The initial contents of this buffer are unspecified,
+    * as is the means used to map the memory;
+    * this may be defined in software,
+    * or it may be GPU memory mapped to RAM.
+    *
+    * If the framebuffer is used,
+    * this pointer must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined behavior to pass an offset to this pointer.
+    *
+    * @warning This pointer is only guaranteed to be valid
+    * for the duration of the same \c retro_run iteration
+    * \ref GET_CURRENT_SOFTWARE_FRAMEBUFFER "that requested the framebuffer".
+    * Reuse of this pointer is undefined.
+    */
+   void *data;
 
-   unsigned access_flags;           /* How the core will access the memory in the framebuffer.
-                                       RETRO_MEMORY_ACCESS_* flags.
-                                       Set by core. */
-   unsigned memory_flags;           /* Flags telling core how the memory has been mapped.
-                                       RETRO_MEMORY_TYPE_* flags.
-                                       Set by frontend in GET_CURRENT_SOFTWARE_FRAMEBUFFER. */
+   /**
+    * The width of the framebuffer given in \c data, in pixels.
+    * Set by the core.
+    *
+    * @warning If the framebuffer is used,
+    * this value must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined behavior to try to render \c data with any other width.
+    */
+   unsigned width;
+
+   /**
+    * The height of the framebuffer given in \c data, in pixels.
+    * Set by the core.
+    *
+    * @warning If the framebuffer is used,
+    * this value must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined behavior to try to render \c data with any other height.
+    */
+   unsigned height;
+
+   /**
+    * The distance between the start of one scanline and the beginning of the next, in bytes.
+    * In practice this is usually equal to \c width times the pixel size,
+    * but that's not guaranteed.
+    * Sometimes called the "stride".
+    *
+    * @setby{frontend}
+    * @warning If the framebuffer is used,
+    * this value must be passed to \c retro_video_refresh_t as-is.
+    * It is undefined to try to render \c data with any other pitch.
+    */
+   size_t pitch;
+
+   /**
+    * The pixel format of the returned framebuffer.
+    * May be different than the format specified by the core in \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT,
+    * e.g. due to conversions.
+    * Set by the frontend.
+    *
+    * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+    */
+   enum retro_pixel_format format;
+
+   /**
+    * One or more \ref RETRO_MEMORY_ACCESS "memory access flags"
+    * that specify how the core will access the memory in \c data.
+    *
+    * @setby{core}
+    */
+   unsigned access_flags;
+
+   /**
+    * Zero or more \ref RETRO_MEMORY_TYPE "memory type flags"
+    * that describe how the framebuffer's memory has been mapped.
+    *
+    * @setby{frontend}
+    */
+   unsigned memory_flags;
 };
 
-/* Used by a libretro core to override the current
- * fastforwarding mode of the frontend */
+/** @} */
+
+/** @defgroup SET_FASTFORWARDING_OVERRIDE Fast-Forward Override
+ * @{
+ */
+
+/**
+ * Parameters that govern when and how the core takes control
+ * of fast-forwarding mode.
+ */
 struct retro_fastforwarding_override
 {
-   /* Specifies the runtime speed multiplier that
-    * will be applied when 'fastforward' is true.
-    * For example, a value of 5.0 when running 60 FPS
-    * content will cap the fast-forward rate at 300 FPS.
-    * Note that the target multiplier may not be achieved
-    * if the host hardware has insufficient processing
-    * power.
-    * Setting a value of 0.0 (or greater than 0.0 but
-    * less than 1.0) will result in an uncapped
-    * fast-forward rate (limited only by hardware
-    * capacity).
-    * If the value is negative, it will be ignored
-    * (i.e. the frontend will use a runtime speed
-    * multiplier of its own choosing) */
+   /**
+    * The factor by which the core will be sped up
+    * when \c fastforward is \c true.
+    * This value is used as follows:
+    *
+    * @li A value greater than 1.0 will run the core at
+    *     the specified multiple of normal speed.
+    *     For example, a value of 5.0
+    *     combined with a normal target rate of 60 FPS
+    *     will result in a target rate of 300 FPS.
+    *     The actual rate may be lower if the host's hardware can't keep up.
+    * @li A value of 1.0 will run the core at normal speed.
+    * @li A value between 0.0 (inclusive) and 1.0 (exclusive)
+    *     will run the core as fast as the host system can manage.
+    * @li A negative value will let the frontend choose a factor.
+    * @li An infinite value or \c NaN results in undefined behavior.
+    *
+    * @attention Setting this value to less than 1.0 will \em not
+    * slow down the core.
+    */
    float ratio;
 
-   /* If true, fastforwarding mode will be enabled.
-    * If false, fastforwarding mode will be disabled. */
+   /**
+    * If \c true, the frontend should activate fast-forwarding
+    * until this field is set to \c false or the core is unloaded.
+    */
    bool fastforward;
 
-   /* If true, and if supported by the frontend, an
-    * on-screen notification will be displayed while
-    * 'fastforward' is true.
-    * If false, and if supported by the frontend, any
-    * on-screen fast-forward notifications will be
-    * suppressed */
+   /**
+    * If \c true, the frontend should display an on-screen notification or icon
+    * while \c fastforward is \c true (where supported).
+    * Otherwise, the frontend should not display any such notification.
+    */
    bool notification;
 
-   /* If true, the core will have sole control over
-    * when fastforwarding mode is enabled/disabled;
-    * the frontend will not be able to change the
-    * state set by 'fastforward' until either
-    * 'inhibit_toggle' is set to false, or the core
-    * is unloaded */
+   /**
+    * If \c true, the core has exclusive control
+    * over enabling and disabling fast-forwarding
+    * via the \c fastforward field.
+    * The frontend will not be able to start or stop fast-forwarding
+    * until this field is set to \c false or the core is unloaded.
+    */
    bool inhibit_toggle;
 };
 
-/* During normal operation. Rate will be equal to the core's internal FPS. */
+/** @} */
+
+/**
+ * During normal operation.
+ *
+ * @note Rate will be equal to the core's internal FPS.
+ */
 #define RETRO_THROTTLE_NONE              0
 
-/* While paused or stepping single frames. Rate will be 0. */
+/**
+ * While paused or stepping single frames.
+ *
+ * @note Rate will be 0.
+ */
 #define RETRO_THROTTLE_FRAME_STEPPING    1
 
-/* During fast forwarding.
- * Rate will be 0 if not specifically limited to a maximum speed. */
+/**
+ * During fast forwarding.
+ *
+ * @note Rate will be 0 if not specifically limited to a maximum speed.
+ */
 #define RETRO_THROTTLE_FAST_FORWARD      2
 
-/* During slow motion. Rate will be less than the core's internal FPS. */
+/**
+ * During slow motion.
+ *
+ * @note Rate will be less than the core's internal FPS.
+ */
 #define RETRO_THROTTLE_SLOW_MOTION       3
 
-/* While rewinding recorded save states. Rate can vary depending on the rewind
- * speed or be 0 if the frontend is not aiming for a specific rate. */
+/**
+ * While rewinding recorded save states.
+ *
+ * @note Rate can vary depending on the rewind speed or be 0 if the frontend
+ * is not aiming for a specific rate.
+ */
 #define RETRO_THROTTLE_REWINDING         4
 
-/* While vsync is active in the video driver and the target refresh rate is
- * lower than the core's internal FPS. Rate is the target refresh rate. */
+/**
+ * While vsync is active in the video driver, and the target refresh rate is lower than the core's internal FPS.
+ *
+ * @note Rate is the target refresh rate.
+ */
 #define RETRO_THROTTLE_VSYNC             5
 
-/* When the frontend does not throttle in any way. Rate will be 0.
- * An example could be if no vsync or audio output is active. */
+/**
+ * When the frontend does not throttle in any way.
+ *
+ * @note Rate will be 0. An example could be if no vsync or audio output is active.
+ */
 #define RETRO_THROTTLE_UNBLOCKED         6
 
+/**
+ * Details about the actual rate an implementation is calling \c retro_run() at.
+ *
+ * @see RETRO_ENVIRONMENT_GET_THROTTLE_STATE
+ */
 struct retro_throttle_state
 {
-   /* The current throttling mode. Should be one of the values above. */
+   /**
+    * The current throttling mode.
+    *
+    * @note Should be one of the \c RETRO_THROTTLE_* values.
+    * @see RETRO_THROTTLE_NONE
+    * @see RETRO_THROTTLE_FRAME_STEPPING
+    * @see RETRO_THROTTLE_FAST_FORWARD
+    * @see RETRO_THROTTLE_SLOW_MOTION
+    * @see RETRO_THROTTLE_REWINDING
+    * @see RETRO_THROTTLE_VSYNC
+    * @see RETRO_THROTTLE_UNBLOCKED
+    */
    unsigned mode;
 
-   /* How many times per second the frontend aims to call retro_run.
-    * Depending on the mode, it can be 0 if there is no known fixed rate.
+   /**
+    * How many times per second the frontend aims to call retro_run.
+    *
+    * @note Depending on the mode, it can be 0 if there is no known fixed rate.
     * This won't be accurate if the total processing time of the core and
-    * the frontend is longer than what is available for one frame. */
+    * the frontend is longer than what is available for one frame.
+    */
    float rate;
 };
+
+/** @defgroup GET_MICROPHONE_INTERFACE Microphone Interface
+ * @{
+ */
 
 /**
  * Opaque handle to a microphone that's been opened for use.
@@ -4081,7 +7179,7 @@ struct retro_microphone_interface
     *
     * This function is not guaranteed to be thread-safe.
     *
-    * @param args[in] Parameters used to create the microphone.
+    * @param[in] args Parameters used to create the microphone.
     * May be \c NULL, in which case the default value of each parameter will be used.
     *
     * @returns Pointer to the newly-opened microphone,
@@ -4121,9 +7219,9 @@ struct retro_microphone_interface
     *
     * Will not change after the mic was opened.
     *
-    * @param microphone[in] Opaque handle to the microphone
+    * @param[in] microphone Opaque handle to the microphone
     * whose parameters will be retrieved.
-    * @param params[out] The parameters object that the
+    * @param[out] params The parameters object that the
     * microphone's parameters will be copied to.
     *
     * @return \c true if the parameters were retrieved,
@@ -4190,6 +7288,12 @@ struct retro_microphone_interface
     */
    retro_read_mic_t read_mic;
 };
+
+/** @} */
+
+/** @defgroup GET_DEVICE_POWER Device Power
+ * @{
+ */
 
 /**
  * Describes how a device is being powered.
@@ -4271,152 +7375,450 @@ struct retro_device_power
    int8_t percent;
 };
 
-/* Callbacks */
+/** @} */
 
-/* Environment callback. Gives implementations a way of performing
- * uncommon tasks. Extensible. */
+/**
+ * @defgroup Callbacks
+ * @{
+ */
+
+/**
+ * Environment callback to give implementations a way of performing uncommon tasks.
+ *
+ * @note Extensible.
+ *
+ * @param cmd The command to run.
+ * @param data A pointer to the data associated with the command.
+ *
+ * @return Varies by callback,
+ * but will always return \c false if the command is not recognized.
+ *
+ * @see RETRO_ENVIRONMENT_SET_ROTATION
+ * @see retro_set_environment()
+ */
 typedef bool (RETRO_CALLCONV *retro_environment_t)(unsigned cmd, void *data);
 
-/* Render a frame. Pixel format is 15-bit 0RGB1555 native endian
- * unless changed (see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT).
+/**
+ * Render a frame.
  *
- * Width and height specify dimensions of buffer.
- * Pitch specifices length in bytes between two lines in buffer.
- *
- * For performance reasons, it is highly recommended to have a frame
+ * @note For performance reasons, it is highly recommended to have a frame
  * that is packed in memory, i.e. pitch == width * byte_per_pixel.
  * Certain graphic APIs, such as OpenGL ES, do not like textures
  * that are not packed in memory.
+ *
+ * @param data A pointer to the frame buffer data with a pixel format of 15-bit \c 0RGB1555 native endian, unless changed with \c RETRO_ENVIRONMENT_SET_PIXEL_FORMAT.
+ * @param width The width of the frame buffer, in pixels.
+ * @param height The height frame buffer, in pixels.
+ * @param pitch The width of the frame buffer, in bytes.
+ *
+ * @see retro_set_video_refresh()
+ * @see RETRO_ENVIRONMENT_SET_PIXEL_FORMAT
+ * @see retro_pixel_format
  */
 typedef void (RETRO_CALLCONV *retro_video_refresh_t)(const void *data, unsigned width,
       unsigned height, size_t pitch);
 
-/* Renders a single audio frame. Should only be used if implementation
- * generates a single sample at a time.
- * Format is signed 16-bit native endian.
+/**
+ * Renders a single audio frame. Should only be used if implementation generates a single sample at a time.
+ *
+ * @param left The left audio sample represented as a signed 16-bit native endian.
+ * @param right The right audio sample represented as a signed 16-bit native endian.
+ *
+ * @see retro_set_audio_sample()
+ * @see retro_set_audio_sample_batch()
  */
 typedef void (RETRO_CALLCONV *retro_audio_sample_t)(int16_t left, int16_t right);
 
-/* Renders multiple audio frames in one go.
+/**
+ * Renders multiple audio frames in one go.
  *
- * One frame is defined as a sample of left and right channels, interleaved.
- * I.e. int16_t buf[4] = { l, r, l, r }; would be 2 frames.
- * Only one of the audio callbacks must ever be used.
+ * @note Only one of the audio callbacks must ever be used.
+ *
+ * @param data A pointer to the audio sample data pairs to render.
+ * @param frames The number of frames that are represented in the data. One frame
+ *     is defined as a sample of left and right channels, interleaved.
+ *     For example: <tt>int16_t buf[4] = { l, r, l, r };</tt> would be 2 frames.
+ *
+ * @return The number of frames that were processed.
+ *
+ * @see retro_set_audio_sample_batch()
+ * @see retro_set_audio_sample()
  */
 typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_t)(const int16_t *data,
       size_t frames);
 
-/* Polls input. */
+/**
+ * Polls input.
+ *
+ * @see retro_set_input_poll()
+ */
 typedef void (RETRO_CALLCONV *retro_input_poll_t)(void);
 
-/* Queries for input for player 'port'. device will be masked with
- * RETRO_DEVICE_MASK.
+/**
+ * Queries for input for player 'port'.
  *
- * Specialization of devices such as RETRO_DEVICE_JOYPAD_MULTITAP that
- * have been set with retro_set_controller_port_device()
- * will still use the higher level RETRO_DEVICE_JOYPAD to request input.
+ * @param port Which player 'port' to query.
+ * @param device Which device to query for. Will be masked with \c RETRO_DEVICE_MASK.
+ * @param index The input index to retrieve.
+ * The exact semantics depend on the device type given in \c device.
+ * @param id The ID of which value to query, like \c RETRO_DEVICE_ID_JOYPAD_B.
+ * @returns Depends on the provided arguments,
+ * but will return 0 if their values are unsupported
+ * by the frontend or the backing physical device.
+ * @note Specialization of devices such as \c RETRO_DEVICE_JOYPAD_MULTITAP that
+ * have been set with \c retro_set_controller_port_device() will still use the
+ * higher level \c RETRO_DEVICE_JOYPAD to request input.
+ *
+ * @see retro_set_input_state()
+ * @see RETRO_DEVICE_NONE
+ * @see RETRO_DEVICE_JOYPAD
+ * @see RETRO_DEVICE_MOUSE
+ * @see RETRO_DEVICE_KEYBOARD
+ * @see RETRO_DEVICE_LIGHTGUN
+ * @see RETRO_DEVICE_ANALOG
+ * @see RETRO_DEVICE_POINTER
  */
 typedef int16_t (RETRO_CALLCONV *retro_input_state_t)(unsigned port, unsigned device,
       unsigned index, unsigned id);
 
-/* Sets callbacks. retro_set_environment() is guaranteed to be called
- * before retro_init().
+/**
+ * Sets the environment callback.
  *
- * The rest of the set_* functions are guaranteed to have been called
- * before the first call to retro_run() is made. */
-RETRO_API void retro_set_environment(retro_environment_t);
-RETRO_API void retro_set_video_refresh(retro_video_refresh_t);
-RETRO_API void retro_set_audio_sample(retro_audio_sample_t);
-RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t);
-RETRO_API void retro_set_input_poll(retro_input_poll_t);
-RETRO_API void retro_set_input_state(retro_input_state_t);
+ * @param cb The function which is used when making environment calls.
+ *
+ * @note Guaranteed to be called before \c retro_init().
+ *
+ * @see RETRO_ENVIRONMENT
+ */
+RETRO_API void retro_set_environment(retro_environment_t cb);
 
-/* Library global initialization/deinitialization. */
+/**
+ * Sets the video refresh callback.
+ *
+ * @param cb The function which is used when rendering a frame.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb);
+
+/**
+ * Sets the audio sample callback.
+ *
+ * @param cb The function which is used when rendering a single audio frame.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_audio_sample(retro_audio_sample_t cb);
+
+/**
+ * Sets the audio sample batch callback.
+ *
+ * @param cb The function which is used when rendering multiple audio frames in one go.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb);
+
+/**
+ * Sets the input poll callback.
+ *
+ * @param cb The function which is used to poll the active input.
+ *
+ * @note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_input_poll(retro_input_poll_t cb);
+
+/**
+ * Sets the input state callback.
+ *
+ * @param cb The function which is used to query the input state.
+ *
+ *@note Guaranteed to have been called before the first call to \c retro_run() is made.
+ */
+RETRO_API void retro_set_input_state(retro_input_state_t cb);
+
+/**
+ * @}
+ */
+
+/**
+ * Called by the frontend when initializing a libretro core.
+ *
+ * @warning There are many possible "gotchas" with global state in dynamic libraries.
+ * Here are some to keep in mind:
+ * <ul>
+ * <li>Do not assume that the core was loaded by the operating system
+ * for the first time within this call.
+ * It may have been statically linked or retained from a previous session.
+ * Consequently, cores must not rely on global variables being initialized
+ * to their default values before this function is called;
+ * this also goes for object constructors in C++.
+ * <li>Although C++ requires that constructors be called for global variables,
+ * it does not require that their destructors be called
+ * if stored within a dynamic library's global scope.
+ * <li>If the core is statically linked to the frontend,
+ * global variables may be initialized when the frontend itself is initially executed.
+ * </ul>
+ * @see retro_deinit
+ */
 RETRO_API void retro_init(void);
+
+/**
+ * Called by the frontend when deinitializing a libretro core.
+ * The core must release all of its allocated resources before this function returns.
+ *
+ * @warning There are many possible "gotchas" with global state in dynamic libraries.
+ * Here are some to keep in mind:
+ * <ul>
+ * <li>Do not assume that the operating system will unload the core after this function returns,
+ * as the core may be linked statically or retained in memory.
+ * Cores should use this function to clean up all allocated resources
+ * and reset all global variables to their default states.
+ * <li>Do not assume that this core won't be loaded again after this function returns.
+ * It may be kept in memory by the frontend for later use,
+ * or it may be statically linked.
+ * Therefore, all global variables should be reset to their default states within this function.
+ * <li>C++ does not require that destructors be called
+ * for variables within a dynamic library's global scope.
+ * Therefore, global objects that own dynamically-managed resources
+ * (such as \c std::string or <tt>std::vector</tt>)
+ * should be kept behind pointers that are explicitly deallocated within this function.
+ * </ul>
+ * @see retro_init
+ */
 RETRO_API void retro_deinit(void);
 
-/* Must return RETRO_API_VERSION. Used to validate ABI compatibility
- * when the API is revised. */
+/**
+ * Retrieves which version of the libretro API is being used.
+ *
+ * @note This is used to validate ABI compatibility when the API is revised.
+ *
+ * @return Must return \c RETRO_API_VERSION.
+ *
+ * @see RETRO_API_VERSION
+ */
 RETRO_API unsigned retro_api_version(void);
 
-/* Gets statically known system info. Pointers provided in *info
- * must be statically allocated.
- * Can be called at any time, even before retro_init(). */
+/**
+ * Gets statically known system info.
+ *
+ * @note Can be called at any time, even before retro_init().
+ *
+ * @param info A pointer to a \c retro_system_info where the info is to be loaded into. This must be statically allocated.
+ */
 RETRO_API void retro_get_system_info(struct retro_system_info *info);
 
-/* Gets information about system audio/video timings and geometry.
- * Can be called only after retro_load_game() has successfully completed.
- * NOTE: The implementation of this function might not initialize every
- * variable if needed.
- * E.g. geom.aspect_ratio might not be initialized if core doesn't
- * desire a particular aspect ratio. */
+/**
+ * Gets information about system audio/video timings and geometry.
+ *
+ * @note Can be called only after \c retro_load_game() has successfully completed.
+ *
+ * @note The implementation of this function might not initialize every variable
+ * if needed. For example, \c geom.aspect_ratio might not be initialized if
+ * the core doesn't desire a particular aspect ratio.
+ *
+ * @param info A pointer to a \c retro_system_av_info where the audio/video information should be loaded into.
+ *
+ * @see retro_system_av_info
+ */
 RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info);
 
-/* Sets device to be used for player 'port'.
- * By default, RETRO_DEVICE_JOYPAD is assumed to be plugged into all
+/**
+ * Sets device to be used for player 'port'.
+ *
+ * By default, \c RETRO_DEVICE_JOYPAD is assumed to be plugged into all
  * available ports.
- * Setting a particular device type is not a guarantee that libretro cores
+ *
+ * @note Setting a particular device type is not a guarantee that libretro cores
  * will only poll input based on that particular device type. It is only a
  * hint to the libretro core when a core cannot automatically detect the
  * appropriate input device type on its own. It is also relevant when a
  * core can change its behavior depending on device type.
  *
- * As part of the core's implementation of retro_set_controller_port_device,
- * the core should call RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS to notify the
+ * @note As part of the core's implementation of retro_set_controller_port_device,
+ * the core should call \c RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS to notify the
  * frontend if the descriptions for any controls have changed as a
  * result of changing the device type.
+ *
+ * @param port Which port to set the device for, usually indicates the player number.
+ * @param device Which device the given port is using. By default, \c RETRO_DEVICE_JOYPAD is assumed for all ports.
+ *
+ * @see RETRO_DEVICE_NONE
+ * @see RETRO_DEVICE_JOYPAD
+ * @see RETRO_DEVICE_MOUSE
+ * @see RETRO_DEVICE_KEYBOARD
+ * @see RETRO_DEVICE_LIGHTGUN
+ * @see RETRO_DEVICE_ANALOG
+ * @see RETRO_DEVICE_POINTER
+ * @see RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
  */
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device);
 
-/* Resets the current game. */
+/**
+ * Resets the currently-loaded game.
+ * Cores should treat this as a soft reset (i.e. an emulated reset button) if possible,
+ * but hard resets are acceptable.
+ */
 RETRO_API void retro_reset(void);
 
-/* Runs the game for one video frame.
- * During retro_run(), input_poll callback must be called at least once.
+/**
+ * Runs the game for one video frame.
  *
- * If a frame is not rendered for reasons where a game "dropped" a frame,
- * this still counts as a frame, and retro_run() should explicitly dupe
- * a frame if GET_CAN_DUPE returns true.
- * In this case, the video callback can take a NULL argument for data.
+ * During \c retro_run(), the \c retro_input_poll_t callback must be called at least once.
+ *
+ * @note If a frame is not rendered for reasons where a game "dropped" a frame,
+ * this still counts as a frame, and \c retro_run() should explicitly dupe
+ * a frame if \c RETRO_ENVIRONMENT_GET_CAN_DUPE returns true. In this case,
+ * the video callback can take a NULL argument for data.
+ *
+ * @see retro_input_poll_t
  */
 RETRO_API void retro_run(void);
 
-/* Returns the amount of data the implementation requires to serialize
- * internal state (save states).
- * Between calls to retro_load_game() and retro_unload_game(), the
+/**
+ * Returns the amount of data the implementation requires to serialize internal state (save states).
+ *
+ * @note Between calls to \c retro_load_game() and \c retro_unload_game(), the
  * returned size is never allowed to be larger than a previous returned
  * value, to ensure that the frontend can allocate a save state buffer once.
+ *
+ * @return The amount of data the implementation requires to serialize the internal state.
+ *
+ * @see retro_serialize()
  */
 RETRO_API size_t retro_serialize_size(void);
 
-/* Serializes internal state. If failed, or size is lower than
- * retro_serialize_size(), it should return false, true otherwise. */
+/**
+ * Serializes the internal state.
+ *
+ * @param data A pointer to where the serialized data should be saved to.
+ * @param size The size of the memory.
+ *
+ * @return If failed, or size is lower than \c retro_serialize_size(), it
+ * should return false. On success, it will return true.
+ *
+ * @see retro_serialize_size()
+ * @see retro_unserialize()
+ */
 RETRO_API bool retro_serialize(void *data, size_t size);
+
+/**
+ * Unserialize the given state data, and load it into the internal state.
+ *
+ * @return Returns true if loading the state was successful, false otherwise.
+ *
+ * @see retro_serialize()
+ */
 RETRO_API bool retro_unserialize(const void *data, size_t size);
 
+/**
+ * Reset all the active cheats to their default disabled state.
+ *
+ * @see retro_cheat_set()
+ */
 RETRO_API void retro_cheat_reset(void);
+
+/**
+ * Enable or disable a cheat.
+ *
+ * @param index The index of the cheat to act upon.
+ * @param enabled Whether to enable or disable the cheat.
+ * @param code A string of the code used for the cheat.
+ *
+ * @see retro_cheat_reset()
+ */
 RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code);
 
-/* Loads a game.
- * Return true to indicate successful loading and false to indicate load failure.
+/**
+ * Loads a game.
+ *
+ * @param game A pointer to a \c retro_game_info detailing information about the game to load.
+ * May be \c NULL if the core is loaded without content.
+ *
+ * @return Will return true when the game was loaded successfully, or false otherwise.
+ *
+ * @see retro_game_info
+ * @see RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME
  */
 RETRO_API bool retro_load_game(const struct retro_game_info *game);
 
-/* Loads a "special" kind of game. Should not be used,
- * except in extreme cases. */
+/**
+ * Called when the frontend has loaded one or more "special" content files,
+ * typically through subsystems.
+ *
+ * @note Only necessary for cores that support subsystems.
+ * Others may return \c false or delegate to <tt>retro_load_game</tt>.
+ *
+ * @param game_type The type of game to load,
+ * as determined by \c retro_subsystem_info.
+ * @param info A pointer to an array of \c retro_game_info objects
+ * providing information about the loaded content.
+ * @param num_info The number of \c retro_game_info objects passed into the info parameter.
+ * @return \c true if loading is successful, false otherwise.
+ * If the core returns \c false,
+ * the frontend should abort the core
+ * and return to its main menu (if applicable).
+ *
+ * @see RETRO_ENVIRONMENT_GET_GAME_INFO_EXT
+ * @see RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
+ * @see retro_load_game()
+ * @see retro_subsystem_info
+ */
 RETRO_API bool retro_load_game_special(
   unsigned game_type,
   const struct retro_game_info *info, size_t num_info
 );
 
-/* Unloads the currently loaded game. Called before retro_deinit(void). */
+/**
+ * Unloads the currently loaded game.
+ *
+ * @note This is called before \c retro_deinit(void).
+ *
+ * @see retro_load_game()
+ * @see retro_deinit()
+ */
 RETRO_API void retro_unload_game(void);
 
-/* Gets region of game. */
+/**
+ * Gets the region of the actively loaded content as either \c RETRO_REGION_NTSC or \c RETRO_REGION_PAL.
+ * @note This refers to the region of the content's intended television standard,
+ * not necessarily the region of the content's origin.
+ * For emulated consoles that don't use either standard
+ * (e.g. handhelds or post-HD platforms),
+ * the core should return \c RETRO_REGION_NTSC.
+ * @return The region of the actively loaded content.
+ *
+ * @see RETRO_REGION_NTSC
+ * @see RETRO_REGION_PAL
+ */
 RETRO_API unsigned retro_get_region(void);
 
-/* Gets region of memory. */
+/**
+ * Get a region of memory.
+ *
+ * @param id The ID for the memory block that's desired to retrieve. Can be \c RETRO_MEMORY_SAVE_RAM, \c RETRO_MEMORY_RTC, \c RETRO_MEMORY_SYSTEM_RAM, or \c RETRO_MEMORY_VIDEO_RAM.
+ *
+ * @return A pointer to the desired region of memory, or NULL when not available.
+ *
+ * @see RETRO_MEMORY_SAVE_RAM
+ * @see RETRO_MEMORY_RTC
+ * @see RETRO_MEMORY_SYSTEM_RAM
+ * @see RETRO_MEMORY_VIDEO_RAM
+ */
 RETRO_API void *retro_get_memory_data(unsigned id);
+
+/**
+ * Gets the size of the given region of memory.
+ *
+ * @param id The ID for the memory block to check the size of. Can be RETRO_MEMORY_SAVE_RAM, RETRO_MEMORY_RTC, RETRO_MEMORY_SYSTEM_RAM, or RETRO_MEMORY_VIDEO_RAM.
+ *
+ * @return The size of the region in memory, or 0 when not available.
+ *
+ * @see RETRO_MEMORY_SAVE_RAM
+ * @see RETRO_MEMORY_RTC
+ * @see RETRO_MEMORY_SYSTEM_RAM
+ * @see RETRO_MEMORY_VIDEO_RAM
+ */
 RETRO_API size_t retro_get_memory_size(unsigned id);
 
 #ifdef __cplusplus

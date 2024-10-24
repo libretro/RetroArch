@@ -6,9 +6,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RC_BEGIN_C_DECLS
 
 /* --- Fetch Achievement Info --- */
 
@@ -63,10 +61,11 @@ typedef struct rc_api_fetch_achievement_info_response_t {
 }
 rc_api_fetch_achievement_info_response_t;
 
-int rc_api_init_fetch_achievement_info_request(rc_api_request_t* request, const rc_api_fetch_achievement_info_request_t* api_params);
-int rc_api_process_fetch_achievement_info_response(rc_api_fetch_achievement_info_response_t* response, const char* server_response);
-int rc_api_process_fetch_achievement_info_server_response(rc_api_fetch_achievement_info_response_t* response, const rc_api_server_response_t* server_response);
-void rc_api_destroy_fetch_achievement_info_response(rc_api_fetch_achievement_info_response_t* response);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_achievement_info_request(rc_api_request_t* request, const rc_api_fetch_achievement_info_request_t* api_params);
+/* [deprecated] use rc_api_process_fetch_achievement_info_server_response instead */
+RC_EXPORT int RC_CCONV rc_api_process_fetch_achievement_info_response(rc_api_fetch_achievement_info_response_t* response, const char* server_response);
+RC_EXPORT int RC_CCONV rc_api_process_fetch_achievement_info_server_response(rc_api_fetch_achievement_info_response_t* response, const rc_api_server_response_t* server_response);
+RC_EXPORT void RC_CCONV rc_api_destroy_fetch_achievement_info_response(rc_api_fetch_achievement_info_response_t* response);
 
 /* --- Fetch Leaderboard Info --- */
 
@@ -130,15 +129,19 @@ typedef struct rc_api_fetch_leaderboard_info_response_t {
   /* The number of items in the entries array */
   uint32_t num_entries;
 
+  /* The total number of entries on the server */
+  uint32_t total_entries;
+
   /* Common server-provided response information */
   rc_api_response_t response;
 }
 rc_api_fetch_leaderboard_info_response_t;
 
-int rc_api_init_fetch_leaderboard_info_request(rc_api_request_t* request, const rc_api_fetch_leaderboard_info_request_t* api_params);
-int rc_api_process_fetch_leaderboard_info_response(rc_api_fetch_leaderboard_info_response_t* response, const char* server_response);
-int rc_api_process_fetch_leaderboard_info_server_response(rc_api_fetch_leaderboard_info_response_t* response, const rc_api_server_response_t* server_response);
-void rc_api_destroy_fetch_leaderboard_info_response(rc_api_fetch_leaderboard_info_response_t* response);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_leaderboard_info_request(rc_api_request_t* request, const rc_api_fetch_leaderboard_info_request_t* api_params);
+/* [deprecated] use rc_api_process_fetch_leaderboard_info_server_response instead */
+RC_EXPORT int RC_CCONV rc_api_process_fetch_leaderboard_info_response(rc_api_fetch_leaderboard_info_response_t* response, const char* server_response);
+RC_EXPORT int RC_CCONV rc_api_process_fetch_leaderboard_info_server_response(rc_api_fetch_leaderboard_info_response_t* response, const rc_api_server_response_t* server_response);
+RC_EXPORT void RC_CCONV rc_api_destroy_fetch_leaderboard_info_response(rc_api_fetch_leaderboard_info_response_t* response);
 
 /* --- Fetch Games List --- */
 
@@ -174,13 +177,54 @@ typedef struct rc_api_fetch_games_list_response_t {
 }
 rc_api_fetch_games_list_response_t;
 
-int rc_api_init_fetch_games_list_request(rc_api_request_t* request, const rc_api_fetch_games_list_request_t* api_params);
-int rc_api_process_fetch_games_list_response(rc_api_fetch_games_list_response_t* response, const char* server_response);
-int rc_api_process_fetch_games_list_server_response(rc_api_fetch_games_list_response_t* response, const rc_api_server_response_t* server_response);
-void rc_api_destroy_fetch_games_list_response(rc_api_fetch_games_list_response_t* response);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_games_list_request(rc_api_request_t* request, const rc_api_fetch_games_list_request_t* api_params);
+/* [deprecated] use rc_api_process_fetch_games_list_server_response instead */
+RC_EXPORT int RC_CCONV rc_api_process_fetch_games_list_response(rc_api_fetch_games_list_response_t* response, const char* server_response);
+RC_EXPORT int RC_CCONV rc_api_process_fetch_games_list_server_response(rc_api_fetch_games_list_response_t* response, const rc_api_server_response_t* server_response);
+RC_EXPORT void RC_CCONV rc_api_destroy_fetch_games_list_response(rc_api_fetch_games_list_response_t* response);
 
-#ifdef __cplusplus
+/* --- Fetch Game Titles --- */
+
+/**
+ * API parameters for a fetch games list request.
+ */
+typedef struct rc_api_fetch_game_titles_request_t {
+  /* An array of game ids to fetch titles for */
+  const uint32_t* game_ids;
+  /* The number of items in the game_ids array */
+  uint32_t num_game_ids;
 }
-#endif
+rc_api_fetch_game_titles_request_t;
+
+/* A game title entry */
+typedef struct rc_api_game_title_entry_t {
+  /* The unique identifier of the game */
+  uint32_t id;
+  /* The title of the game */
+  const char* title;
+  /* The image name for the game badge */
+  const char* image_name;
+}
+rc_api_game_title_entry_t;
+
+/**
+ * Response data for a fetch games title request.
+ */
+typedef struct rc_api_fetch_game_titles_response_t {
+  /* An array of requested entries */
+  rc_api_game_title_entry_t* entries;
+  /* The number of items in the entries array */
+  uint32_t num_entries;
+
+  /* Common server-provided response information */
+  rc_api_response_t response;
+}
+rc_api_fetch_game_titles_response_t;
+
+RC_EXPORT int RC_CCONV rc_api_init_fetch_game_titles_request(rc_api_request_t* request, const rc_api_fetch_game_titles_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_process_fetch_game_titles_server_response(rc_api_fetch_game_titles_response_t* response, const rc_api_server_response_t* server_response);
+RC_EXPORT void RC_CCONV rc_api_destroy_fetch_game_titles_response(rc_api_fetch_game_titles_response_t* response);
+
+RC_END_C_DECLS
 
 #endif /* RC_API_INFO_H */

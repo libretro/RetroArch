@@ -4,6 +4,7 @@ MSG_HASH(
    "switch_cpu_profile"
    )
 #endif
+
 MSG_HASH(
    MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME,
    "accounts_cheevos_username"
@@ -402,6 +403,10 @@ MSG_HASH(
    "auto_remaps_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "initial_disk_change_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,
    "global_core_options"
    )
@@ -499,6 +504,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_MENU_WALLPAPER,
    "cb_menu_wallpaper"
    )
+#if 0
+/* Thumbnailpack removal */
 MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_DOWNLOAD,
    "cb_thumbnails_updater_download"
@@ -507,6 +514,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_CB_THUMBNAILS_UPDATER_LIST,
    "cb_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_CB_UPDATE_ASSETS,
    "cb_update_assets"
@@ -898,10 +906,6 @@ MSG_HASH(
    "system_information_cpu_cores"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CURSOR_DIRECTORY,
-   "cursor_directory"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CURSOR_MANAGER,
    "cursor_manager"
    )
@@ -1004,6 +1008,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE,
    "deferred_dropdown_box_list_input_device_type"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE,
+   "deferred_dropdown_box_list_input_select_reserved_device"
    )
 #ifdef ANDROID
 MSG_HASH(
@@ -1344,6 +1352,14 @@ MSG_HASH(
    "deferred_osk_overlay_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_OVERLAY_LIGHTGUN_SETTINGS_LIST,
+   "deferred_overlay_lightgun_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_OVERLAY_MOUSE_SETTINGS_LIST,
+   "deferred_overlay_mouse_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_ONSCREEN_VIDEO_LAYOUT_SETTINGS_LIST,
    "deferred_onscreen_video_layout_settings_list"
    )
@@ -1415,10 +1431,13 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST,
    "deferred_cloud_sync_settings_list"
    )
+#if 0
+/* Thumbnailpack removal */
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST,
    "deferred_thumbnails_updater_list"
    )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_PL_THUMBNAILS_UPDATER_LIST,
    "deferred_pl_thumbnails_updater_list"
@@ -1938,6 +1957,10 @@ MSG_HASH(
    "input_hotkey_block_delay"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   "input_hotkey_device_merge"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_ICADE_ENABLE,
    "input_icade_enable"
    )
@@ -1958,8 +1981,32 @@ MSG_HASH(
    "input_device_p%u"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   "input_device_reserved_device_p%u"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   "input_device_reservation_type_p%u"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_MOUSE_INDEX,
    "input_player%u_mouse_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
+   "input_player%u_joypad_index"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX,
+   "input_player%u_bind_all"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX,
+   "input_player%u_bind_all_save_autoconfig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_BIND_DEFAULTS_INDEX,
+   "input_player%u_bind_all_bind_defaults"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_PORT,
@@ -2026,6 +2073,62 @@ MSG_HASH(
    "input_osk_overlay_auto_scale"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   "input_overlay_pointer_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "input_overlay_lightgun_port"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   "input_overlay_lightgun_trigger_on_touch"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   "input_overlay_lightgun_trigger_delay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   "input_overlay_lightgun_allow_offscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "input_overlay_lightgun_two_touch_input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "input_overlay_lightgun_three_touch_input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   "input_overlay_lightgun_four_touch_input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   "input_overlay_mouse_speed"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   "input_overlay_mouse_hold_to_drag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   "input_overlay_mouse_hold_msec"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   "input_overlay_mouse_dtap_to_drag"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   "input_overlay_mouse_dtap_msec"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_MOUSE_SWIPE_THRESHOLD,
+   "input_overlay_mouse_swipe_threshold"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
    "input_overlay_dpad_diagonal_sensitivity"
    )
@@ -2049,6 +2152,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,
    "input_remap_binds_enable"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "input_remap_sort_by_controller_enable"
+   )   
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_SETTINGS,
    "input_settings"
@@ -2201,7 +2308,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_LOAD_STATE,
-   "loadstate"
+   "load_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_LOCATION_ALLOW,
@@ -2628,6 +2735,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,
    "onscreen_overlay_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   "overlay_lightgun_settings"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,
+   "overlay_mouse_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,
@@ -3364,6 +3479,22 @@ MSG_HASH(
    "favorites_add_playlist"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+   "playlist_add"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST,
+   "deferred_add_to_playlist_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
+   "add_entry_to_playlist"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
+   "playlist_create"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,
    "set_core_association"
    )
@@ -3422,6 +3553,10 @@ MSG_HASH(
    "savestate_max_keep"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_REPLAY_AUTO_INDEX,
+   "replay_auto_index"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_REPLAY_MAX_KEEP,
    "replay_max_keep"
    )
@@ -3475,7 +3610,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SAVE_STATE,
-   "savestate"
+   "save_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RECORD_REPLAY,
@@ -3508,6 +3643,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE,
    "cloud_sync_destructive"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SAVES,
+   "cloud_sync_sync_saves"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "cloud_sync_sync_configs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "cloud_sync_sync_thumbs"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "cloud_sync_sync_system"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER,
@@ -3618,12 +3769,8 @@ MSG_HASH(
    "run_ahead_unsupported"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RUN_AHEAD_ENABLED,
-   "run_ahead_enabled"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "run_ahead_secondary_instance"
+   MENU_ENUM_LABEL_RUNAHEAD_MODE,
+   "run_ahead_mode"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,
@@ -3632,18 +3779,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,
    "run_ahead_frames"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_PREEMPT_ENABLE,
-   "preemptive_frames_enable"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_PREEMPT_UNSUPPORTED,
-   "preemptive_frames_unsupported"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_PREEMPT_HIDE_WARNINGS,
-   "preemptive_frames_hide_warnings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_PREEMPT_FRAMES,
@@ -3759,6 +3894,10 @@ MSG_HASH(
    "system_info_entry"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ICON_THUMBNAILS,
+   "icon_thumbnails"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_TAKE_SCREENSHOT,
    "take_screenshot"
    )
@@ -3822,6 +3961,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,
    "thumbnails_directory"
    )
+/* Thumbnailpack removal - next entry is deprecated */
 MSG_HASH(
    MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
    "thumbnails_updater_list"
@@ -3884,11 +4024,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UNDO_LOAD_STATE,
-   "undoloadstate"
+   "undo_load_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UNDO_SAVE_STATE,
-   "undosavestate"
+   "undo_save_state"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_UPDATER_SETTINGS,
@@ -3998,6 +4138,24 @@ MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX,
    "aspect_ratio_index"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   "video_viewport_bias_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   "video_viewport_bias_y"
+   )
+#if defined(RARCH_MOBILE)
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   "video_viewport_bias_portrait_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+   "video_viewport_bias_portrait_y"
+   )
+#endif
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
@@ -4023,6 +4181,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_BLACK_FRAME_INSERTION,
    "video_black_frame_insertion"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_BFI_DARK_FRAMES,
+   "video_bfi_dark_frames"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_SUBFRAMES,
+   "video_shader_subframes"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES,
+   "video_scan_subframes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_CROP_OVERSCAN,
@@ -4229,10 +4399,6 @@ MSG_HASH(
    "video_frame_delay_auto"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_FRAME_REST,
-   "video_frame_rest"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHADER_DELAY,
    "video_shader_delay"
    )
@@ -4319,6 +4485,10 @@ MSG_HASH(
    "video_autoswitch_refresh_rate"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   "video_autoswitch_pal_threshold"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_ROTATION,
    "video_rotation"
    )
@@ -4335,8 +4505,12 @@ MSG_HASH(
    "video_scale_integer"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "video_scale_integer_overscale"
+   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "video_scale_integer_axis"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "video_scale_integer_scaling"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SETTINGS,
@@ -4845,6 +5019,14 @@ MSG_HASH(
    "disable_search_button"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "disable_left_analog_in_menu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "disable_right_analog_in_menu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_QUIT_PRESS_TWICE,
    "quit_press_twice"
    )
@@ -5097,6 +5279,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    "quick_menu_show_add_to_favorites"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   "quick_menu_show_add_to_playlist"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING,
@@ -5979,6 +6165,14 @@ MSG_HASH(
    "playlist_portable_paths"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,
+   "playlist_use_filename"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,
+   "playlist_allow_non_png"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_SEND_DEBUG_INFO,
    "help_send_debug_info"
    )
@@ -6025,6 +6219,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
    "notification_show_set_initial_disk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   "notification_show_disk_control"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_SAVE_STATE,
@@ -6149,18 +6347,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_AI_SERVICE_SOURCE_LANG,
    "ai_service_source_lang"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_AI_SERVICE_POLL_DELAY,
-   "ai_service_poll_delay"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_AI_SERVICE_TEXT_POSITION,
-   "ai_service_text_position"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_AI_SERVICE_TEXT_PADDING,
-   "ai_service_text_padding"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SETTINGS_SHOW_DRIVERS,

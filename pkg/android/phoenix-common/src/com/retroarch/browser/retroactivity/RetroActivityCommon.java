@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.system.Os;
+import android.view.accessibility.AccessibilityManager;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.Surface;
@@ -607,5 +608,16 @@ public class RetroActivityCommon extends NativeActivity
         traverseFilesystem(child);
       }
     }
+  }
+
+  public boolean isScreenReaderEnabled() {
+    AccessibilityManager accessibilityManager = (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+    boolean isAccessibilityEnabled = accessibilityManager.isEnabled();
+    boolean isExploreByTouchEnabled = accessibilityManager.isTouchExplorationEnabled();
+    return isAccessibilityEnabled && isExploreByTouchEnabled;
+  }
+
+  public void accessibilitySpeak(String message) {
+    getWindow().getDecorView().announceForAccessibility(message);
   }
 }

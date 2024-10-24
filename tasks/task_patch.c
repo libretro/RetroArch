@@ -128,12 +128,6 @@ static uint64_t bps_decode(struct bps_data *bps)
    return data;
 }
 
-static void bps_write(struct bps_data *bps, uint8_t data)
-{
-   bps->target_data[bps->output_offset++] = data;
-   bps->target_checksum = ~(encoding_crc32(~bps->target_checksum, &data, 1));
-}
-
 static enum patch_error bps_apply_patch(
       const uint8_t *modify_data, uint64_t modify_length,
       const uint8_t *source_data, uint64_t source_length,
@@ -208,12 +202,20 @@ static enum patch_error bps_apply_patch(
       {
          case SOURCE_READ:
             while (length--)
-               bps_write(&bps, bps.source_data[bps.output_offset]);
+            {
+               uint8_t data = bps.source_data[bps.output_offset];
+               bps.target_data[bps.output_offset++] = data;
+               bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
+            }
             break;
 
          case TARGET_READ:
             while (length--)
-               bps_write(&bps, bps_read(&bps));
+            {
+               uint8_t data = bps_read(&bps);
+               bps.target_data[bps.output_offset++] = data;
+               bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
+            }
             break;
 
          case SOURCE_COPY:
@@ -231,13 +233,21 @@ static enum patch_error bps_apply_patch(
             {
                bps.source_offset += offset;
                while (length--)
-                  bps_write(&bps, bps.source_data[bps.source_offset++]);
+               {
+                  uint8_t data = bps.source_data[bps.source_offset++];
+                  bps.target_data[bps.output_offset++] = data;
+                  bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
+               }
             }
             else
             {
                bps.target_offset += offset;
                while (length--)
-                  bps_write(&bps, bps.target_data[bps.target_offset++]);
+               {
+                  uint8_t data = bps.target_data[bps.target_offset++];
+                  bps.target_data[bps.output_offset++] = data;
+                  bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
+               }
                break;
             }
             break;
@@ -616,12 +626,12 @@ static enum patch_error ips_apply_patch(
    return PATCH_PATCH_INVALID;
 }
 
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
 static enum patch_error xdelta_apply_patch(
         const uint8_t *patchdata, uint64_t patchlen,
         const uint8_t *sourcedata, uint64_t sourcelength,
         uint8_t **targetdata, uint64_t *targetlength)
 {
-#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
    int ret;
    enum patch_error error_patch = PATCH_SUCCESS;
    xd3_stream stream;
@@ -688,7 +698,7 @@ static enum patch_error xdelta_apply_patch(
       }
    } while (stream.avail_in);
 
-   *targetdata = malloc(*targetlength);
+   *targetdata = (uint8_t*)malloc(*targetlength);
    switch (ret = xd3_decode_memory(
            patchdata, patchlen,
            sourcedata, sourcelength,
@@ -710,10 +720,8 @@ cleanup_stream:
    xd3_close_stream(&stream);
    xd3_free_stream(&stream);
    return error_patch;
-#else /* HAVE_PATCH is defined and HAVE_XDELTA is defined */
-   return PATCH_PATCH_UNSUPPORTED;
-#endif
 }
+#endif
 
 static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
@@ -741,11 +749,8 @@ static bool apply_patch_content(uint8_t **buf,
       /* Show an OSD message */
       if (show_notification)
       {
+         char msg[128];
          const char *patch_filename = path_basename_nocompression(patch_path);
-         char msg[256];
-
-         msg[0] = '\0';
-
          snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
                patch_filename ? patch_filename :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN));

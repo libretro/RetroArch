@@ -1,185 +1,111 @@
-# 1.16.0
-- 3DS: Update __system_initArgv
-- 3DS: Update SquirrelJME 3DS Core information along with icons.
-- ANDROID: Rewrite input handling to better support AINPUT_SOURCE_STYLUS
-- ANDROID: Prevent the android quick tap mouse click emulation while pressing a button on the on-screen overlay
-- AUDIO: Fast-Forward Audio Resampling
-- AUDIO: Reinit audio on audio sync toggle
-- AUDIO: Count audio samples in stats when rate control is disabled
-- AUDIO/PULSEAUDIO: Support device list for PulseAudio
-- AUDIO/WASAPI: WASAPI Frame Delay fix + cleanups
-- AUDIO/WASAPI/MIDI: Frame Delay correction
-- ARCHIVE/ZIP: Improve ZIP decompression This reduces the amount of memory Retroarch needs to extract a ROM file. It will only need the size of the ROM plus 128KiB to extract the file from the ZIP. Previously it needed as much as twice that amount if the compression ratio was not great. This is useful on memory constrained platforms and has no impact on platforms with plenty of memory. Handles all cases correctly (with and without MMAP, for cores that require fullpath or not, small and big ZIP files).
-- APPLE: Add default keyboard overlay directory to platform_darwin
-- APPLE: Update to MoltenVK 1.2.4
-- APPLE: Don't include MoltenVK library in Load Core menu list
-- APPLE: Enable AltServer JIT for builds installed by Xcode
-- APPLE: The default pthread stack size on Apple is too small for detect_ps2_game, so increase it
-- CHEEVOS: Upgrade to rcheevos 10.7
-- CHEEVOS: Don't initialize rcheevos memory unless used
-- CHEEVOS: Add progress tracker widget
-- CHEEVOS: Eliminate leaderboard tracker stutter
-- CHEEVOS: Expand leaderboard visibility settings
-- CHEEVOS: Collapse trackers with same value definition
-- CHEEVOS: prevent frame step when hitting rewind button while paused in hardcore
-- CHEEVOS: disallow video_swap_interval and black_frame_insertion in hardcore
-- CRT/SWITCHRES: Don't always force core aspect ratio
-- CRT/SWITCHRES: Fix aspect ratio for tate games on a horizontal screen
-- CRT/SWITCHRES: Add PAL threshold option for automatic refresh rate switch
-- CRT/SWITCHRES/KMS: Add KMS modeswitch
-- COMMAND: Make cmd interface more useful for replay information
-- CONFIG: Allow all systems to check for backslashes (Windows) as last slash in path. Improves portable core logic
-- D3D11: Fix memory corruption in d3d11_gfx_init
-- D3D12: Enable blending when drawing the menu
-- D3D12: Move fence signaling out of d3d12_gfx_sync
-- D3D12/LIBRETRO: Add D3D12 HW_render support
-- DOWNLOADS/THUMBNAILS: Prevent directory creation on bogus thumbnail downloads
-- EMSCRIPTEN: Fix Emscripten sleep function/macro
-- EMSCRIPTEN/RWEBAUDIO: Fix RWebAudioInit race condition
-- EMSCRIPTEN/OPENAL: Make openal default audio driver
-- FFMPEG: Fix RetroArch fails to restart streaming when video re-inits and instead starts recording
-- FRAMESKIP: Use refresh rate instead of core fps for frameskip timing
-- INPUT: Combo hold + 'enable_hotkey' correction. Fixed issue with having menu toggle hold combo in different button than 'enable_hotkey', which caused 'enable_hotkey' to also act as menu toggle if held long enough, and simplified and unified duplicate code in start+select holds to a single function.
-- INPUT: input_keyboard_event: Don't check hotkey binds when device is RETRO_DEVICE_POINTER
-- INPUT: Add input_keymaps_translate_rk_to_ascii() for correct character input to input_keyboard_event
-- INPUT: input_overlay_poll: Delay clearing INPUT_OVERLAY_BLOCKED flag until there is no overlay input (Avoids stray input after osk_toggle)
-- INPUT: Send keyboard events for modifiers before other keys (for correct modifier+key input if hitboxes overlap)
-- INPUT: Remember currently set keyboard mapping bits during same config read, because otherwise customized keybinds can get cleared out of the bits on the next iteration, causing keyboard events to get passed to the core when they should get blocked.
-- INPUT/AUTOCONFIG: Reinit after updating autoconf profiles
-- INPUT/LINUX/UDEV: Log mouse devices in info level
-- INPUT/LINUX/UDEV: First working version of udev driver with touchscreen support and gestures.
-- INPUT/WAYLAND: Add wayland to input driver list
-- INPUT/MENU: move port X binds into retropad binds submenu and add appropriate help text and sublabels to discourage people from messing around in there unnecessarily
-- INPUT/MENU: Add menu icons to 'RetroPad Binds'
-- INPUT/MENU/OSK: Allow more keyboard actions with menu osk
-- INPUT/REMAP: Remap label fix when no autoconf profile active
-- INPUT/REMAP: Add 'Save As' option for remaps and overrides
-- INPUT/OVERLAY: Add overlay parameter to control x/y separation in auto-scale mode
-- INPUT/OVERLAY: Revive/rewrite Keyboard Overlay and OSK Toggle. Add keyboard overlay preset, keyboard submenu, and osk_toggle hotkey. Use overlay caching for osk_toggle.
-- INPUT/OVERLAY: Overlay Caching. Adds overlay_cache_ptr to keep a disabled overlay in memory when it's expected to be shown again. Most input_overlay_deinit calls are replaced with input_overlay_unload, which caches the overlay unless initing/deiniting core or disabling overlays. Loading a cached overlay is done as a swap, intended for osk_toggle.
-- INPUT/OVERLAY: Add input_overlay_check_mouse_cursor() to preserve show/hide mouse behavior
-- INPUT/OVERLAY: Don't apply input_overlay_show_mouse_cursor in windowed mode (controlled by mouse grab only)
-- INPUT/REMAPPING: Stop always reseting to defaults on remap delete
-- INPUT/SDL: Fix rumble on PS4/PS5 controllers connected via bluetooth
-- IOS: JIT support in iOS
-- IOS: Use AltKit to try to enable JIT on iOS
-- IOS: Fix thumbnails in history on iOS
-- IOS: Enable option to rumble iOS device instead of controller
-- IOS: Fix including audio/video filters on iOS
-- IOS: Haptic feedback for overlay on iOS
-- IOS: On iOS, stop/start audio on interruptions
-- IOS: Add accelerometer and gyroscope sensors to iOS
-- IOS: iOS needs to targets 13 due to some keyboard emulation, but tvOS does not
-- IOS/TVOS: Rework JIT availability checks
-- IOS/TVOS: When updating playlist with detected core path, used resolved core path
-- IOS/TVOS: Implement memory queries on iOS/tvOS
-- IOS/TVOS: Netplay discovery through bonjour/mdns
-- IOS/TVOS: Improve some log formatting on iOS/tvOS
-- IOS/TVOS: Preliminary MetricKit support on iOS/tvOS
-- TVOS: Fix analog stick handling after adding Siri remote tap support
-- TVOS: Also handle tap events on tvOS
-- TVOS: Back up retroarch.cfg to NSUserDefaults on tvOS.
-- TVOS: tvOS has its own beautiful screensavers and I would like them
-- TVOS: tvOS Siri remote handling
-- TVOS: Fix accidental left/right keypresses on tvOS
-- TVOS/CONFIG: Avoid a crash if there is no backed up config file on tvOS It's not really usable as a game controller, but it is good for going through the menu as a simple LRUD. This also adds better support for names of mFI controllers, as well as being able to do the expected tvOS behavior of "backing out" of the app.
-- TVOS: AltKit support for tvOS
-- INTL: Fix language detection in Canada to English
-- LANGEXTRA: Enable language autodetect for all builds with LANGEXTRA
-- LIBRETRO: Add new context hardware render enums - enables autodetection of DX12 for PS2 core
-- LIBRETRO: Add API to check JIT availability on iOS
-- LIBRETRO: Allow RETRO_ENVIRONMENT_SET_MEMORY_MAPS also after core startup. Change the comment in libretro.h about the removed limit and handle the environment call during core runtime in RetroArch.
-- LIBRETRO/MICROPHONE: Add new API for microphone support.
-- LIBRETRO: Add new API for querying the device's power state.
-- LIBRETRO/VFS: Rewrite retro_vfs_file_remove_impl
-- LINUX: Input driver fix 8+ joypads. It was reported that controllers beyond 8 worked only partially (analogs yes, but not buttons), and the found fix was also confirmed.
-- MIDI: Show MIDI output first
-- MENU: Reorganize 'Saving' menu
-- MENU: Start directory browsing from current value
-- MENU: Fix menu toggle combo hold with same 'enable_hotkey'
-- MENU: Add menu scroll home+end actions
-- MENU: Move 'systemfiles_in_content_dir' from Saving to Core
-- MENU: Menu navigation acceleration adjustments
-- MENU: Audio synchronization menu cleanup
-- MENU: Menu value label cleanup
-- MENU: Show playlist history/favorites icons by default
-- MENU: Remove advanced option flag from video rotation + orientation
-- MENU: Combine audio resampler menu with audio output menu
-- MENU: Microphone menu cleanup
-- MENU: Add missing menu visibility option for content dir override
-- MENU: Fix menu refresh in action_ok_network
-- MENU: Video settings menu cleanup
-- MENU: Try to declutter Quick Menu
-- MENU: Change network port menu options to 'allow_input' mode
-- MENU: Preselect current core in "Set Core Assocation" menu for more carefree usage
-- MENU: Focus back to "Set Core Association" item after returning from the menu instead of first item
-- MENU: Replaced hack fix for focusing the first item after returning from core suggestion "Run" menu after association reset
-- MENU: Fixed setting core association in history/favorites after resetting it and running without setting
-- MENU: Relocate playlist manager core association options to prevent accidental resets with Start
-- MENU: Fraction setting wraparound rounding correction
-- MENU: Add more missing sublabels
-- MENU: 'Updater Settings' relocation
-- MENU: Search box usability improvements
-- MENU/RGUI: Implement 'Remember Selection' option
-- MENU/RGUI: Fix savestate thumbnail fullscreen cancel action
-- MENU/RGUI: Fix and add toggle for playlist thumbnails
-- MENU/OZONE: Update Dracula theme
-- MENU/OZONE: Return to sidebar from playlist manage quick access
-- MENU/OZONE: Sidebar multiline scrolling
-- MENU/OZONE: Avoid crash if ozone sidebar_index_size is 0
-- MENU/OZONE: Prevent metadata and footer overlap
-- MENU/OZONE: Sublabel width tweak
-- MENU/OZONE: Mouse hover selection fix
-- MENU/XMB: Message/help box adjustments
-- MENU/XMB: XMB menu playlist index bugfix
-- MENU/XMB: Playlist label limit fixes
-- MENU/XMB: Prevent playlist label truncating long items even when right thumbnail is not enabled/visible
-- MENU/XMB: Prevent playlist label length resetting to full width on every item change while thumbnail is pending
-- MENU/XMB: Stop showing playlist entry index outside of playlists
-- MENU/XMB: Fix menu focus issue when returning from "Set Core Association" if playlist index is greater than the previous menu
-- MENU/EXPLORE: Prevent flashing when browsing fullscreen thumbnails
-- MENU/EXPLORE: Match label ticker length behavior with playlists
-- MENU/SOUNDS: Fix certain audio drivers from hanging when menu pause is enabled with menu sounds
-- MENU/SOUNDS: Fix menu sounds stopping after fullscreen toggle / video reinit
-- MENU/QT/WIMP: Cleanup Desktop Menu welcome text
-- MENU/OVERLAYS: Reorder overlay menu
-- MICROPHONE: Add support for microphones.
-- MICROPHONE/ALSA: Add alsa and alsathread microphone drivers.
-- MICROPHONE/SDL: Add sdl2 microphone driver.
-- MICROPHONE/WASAPI: Add wasapi microphone driver.
-- MOBILE: On mobile in portrait mode, don't override custom viewport
-- NETWORKING: Enhance netpacket interface
-- NETWORKING/NETPLAY: Enable core host to refuse connecting new players to limit the number of connected players
-- NETWORKING/NETPLAY: Enable a core to flush outgoing packets and read incoming packets without waiting for the next frame (can be used for lower latency or blocking reads)
-- OPENDINGUX/RG350: Enable networking for RG350
-- OPENGL/WAYLAND: Add frame callback after egl_swap_buffers to improve latency when max_swapchain <= 2
-- OSD/STATISTICS: Show current video + audio drivers in statistics
-- OSD/STATISTICS: Ensure statistics text is aligned left
-- OSX/MACOS: Fix steam OSX core path
-- OSX/MACOS: Add HAVE_STDIN_CMD support
-- OSX/MACOS: fix mouse grab in windowed mode
-- OSX/MACOS/IOS/TVOS: Enable SSL in macos/ios/tvos builds
-- PLAYLIST: Change default playlist last played time format
-- PS3/PSL1GHT: Add overlay support
-- RUNLOOP: Don't count frames while paused
-- SERENITYOS: Add SerenityOS to the list of supported operating systems
-- SCANNER: Improve scanner console output
-- SCANNER: More scanner console output coloring
-- SCANNER: Improve CLI scan console output
-- SCANNER: Add content import/scan via CLI
-- SCANNER/PS1: Serial extraction is now considered a failure if PSX.EXE is found, allowing CRC fallback and actually fixing the game scanning
-- VIDEO: Correct rotated core provided aspect ratio
-- VIDEO: Minor adjustments to refresh rate switch behavior
-- VIDEO: Fix windowed viewport with libretro rotation
-- VIDEO/SDL2: Use "nearest" scaling in menus
-- TASKS: Fix corrupt task progress percentage
-- XVIDEO/MENU: Add menu support to xvideo gfx driver, making it usable
-- UWP: Fix modifier keys ( shift, ctrl, alt ) as well as F10 not being detected on the UWP platform
-- VULKAN: Ignore Fast-Forward Frameskip option
-- VULKAN/KHR_DISPLAY: Support screen refresh rate with Vulkan KHR_Display context
-- WIN32: Increase maximum window limit
-- WIN32/WINDOWSXP/MSVC2010: Fix invisible menu display
-- WAYLAND: Remove splash screen
-- WAYLAND: Check for pointer before locking it
-- WAYLAND: Add mouse grab/lock functionality
-- WAYLAND: Get system wayland-protocols path via pkg-config
+# 1.19.1
+- Savestates: Revert savestate changes, was causing corruption and other issues
+
+# 1.19.0
+- AI: Revert AI translation to previous version (fix for translation not working with HW rendered cores)
+- APPLE: Try to use system preferred language
+- APPLE: Correctly register for filetypes uniquely
+- APPLE/MFI: improved Switch Online controller support through MFi
+- AUDIO: Bring back audio toggling on menu toggle
+- CHEEVOS: Build a default RetroAchievements memory map when no RetroAchievements game is loaded
+- CHEEVOS: Update to rcheevos 11.3
+- CHEEVOS: fix hardcore acting as if it's enabled when it isn't
+- CLANG: Fix clang error incompatible-pointer-types-discards-qualifiers
+- CLOUDSYNC/LINUX: Enable Cloud Sync by default on Linux builds with network (#16456)
+- CLOUDSYNC/WEBOS: Enable Cloud Sync by default on Linux builds with network (#16456)
+- CORE: Set compute fps stats logging to debug level
+- EMSCRIPTEN: Added M2000 to core selection dropdown
+- FFMPEG: Add compatibility with FFMPEG 7.0
+- GLSLANG: Remove unneeded ENABLE_HLSL code from glslang
+- GENERAL: Memory leak: Dynamic allocation from msg_hash_get_help_us_enum was not freed.
+- INPUT/KEYBOARD: Add support for multimedia keys - Extended RETROK_ values with 18 new items, commonly found on
+"multimedia" keyboards. Mapping added for SDL, X11, Wayland, dinput, winraw keymaps.
+- INPUT/MFI: Pressure sensitive left/right triggers
+- INPUT/MFI: Fix Start + L1/L2/R2 combinations
+- INPUT/MFI: Support strong and weak rumble
+- INTL: Fetch translations from Crowdin
+- INTL: Add Galician and Norwegian to list of languages
+- LAKKA: Display reboot/shutdown message also when not saving config on exit
+- LAKKA: Provide update URL and target name at buildtime
+- LIBRETRO: Add a debug message for the SET_ROTATION callback
+- macOS: Default Accessibility on if VoiceOver is on
+- iOS: default audio sync on again, also more mfi logging
+- iOS: Fix Import Content
+- iOS: Fix ios-arm64 nightly build crash
+- iOS: Import content from iCloud
+- iOS: Fix #16485 crash on startup
+- iOS: Display app icon in app icon picker in materialui
+- iOS/tvOS: Various QoL improvements
+- iOS/tvOS: Fix a couple more path name mangling bugs
+- iOS/tvOS: Better way of packaging Frameworks
+- iOS/tvOS: define PACKAGE_VERSION to be App Store MARKETING_VERSION
+- iOS/tvOS: Fix keyboard handling for app store builds
+- iOS/tvOS: Fix escaping the sandbox for jailbroken devices
+- iOS/tvOS: default accessibility on if voice over is enabled
+- iOS/tvOS: better way of reporting available memory
+- macOS/iOS/tvOS: enable text-to-speech using AVSpeechSynthesizer.
+- tvOS: Fix scaling for 720p
+- MENU: New function in Quick Menu: Add to Playlist
+- MENU/XMB: New theme: FlatUX, designed to merge FlatUI and Retroactive themes into a single, unified design
+- NETWORKING/RETROPAD CORE:  Fix socket close method
+- PIXMAN: Update pixman-private.h - patch to fix build issue with musl
+- PLAYLIST: Cleanup 'Add to Playlist' (#16495)
+- SCANNING: Fix for scanning PSP ISOs (and probably few others)
+- SAVES: Fix core config saving
+- SAVES: Fix save new config name when core loaded
+- SAVESTATES: Increase save state chunk size for all platforms - Even a class 6 or class 10 SD card can handle reads and writes on the order of MB/s, which means a 4KB chunk size is just wasting time in syscalls.  This could maybe be fixed with a buffering reader but I don't feel comfortable tweaking libretro-common's VFS to handle that.  Instead, I thought it would be good to both remove an ifdef and increase the chunk size to 128KB.  For cores with small states this will should make state saving virtually instantaneous, and for cores with large states it should be a 32x speedup.
+- VIDEO: Fix crash when using threaded video - for Mesa 23.2 and later
+- VIDEO/GL: Fix reinitialization of the threaded gl drivers
+- VIDEO/VULKAN: Add support for A2R10G10B10 HDR format
+- VIDEO/VULKAN: Implement HDR readback - screenshot support
+- WAYLAND: Ignore configure events during splash (fix not remembering window size)
+- WAYLAND: Use frontend signal handler to quit (fix quit by window close)
+- WAYLAND: Commit viewport resizes (window resize is more responsive)
+- UWP: Align MESA to alpha-2-resfix - Remove wrong resolution special handling for OPENGL
+- UWP: 4K fix: align MESA reading of ClientRect to retroarch procedure, this fixes max resolution being set to 1080p. As reading must be done inside an UI thread and is in fact an async operation which might delay frame generation, the reading itself is doen once and cached, give that changing resolution while the app is running is an unlikely corner-case use
+- WINDOWS: Windows mouse ungrab must release the mouse instead of confine it to the current desktop (#16488)
+- WINDOWS: Fix numlock/pause key release events
+
+# 1.18.0
+- AI: Fix narrator language when AI translation and menu languages are different
+- DISK CONTROL: Add option to disable initial disk change
+- DISK CONTROL: Visibility option for disk control notifications
+- DRM: Fix mode vrefresh calculation. When using an interlaced/doublescan mode, the vertical refresh rate is mis-calculated.
+- EMSCRIPTEN: Fix mouse Y parameter translation in rwebinput
+- INPUT: Fix input state combos including R3 and false triggers of RETROK_UNKNOWN
+- INPUT: Add a new turbo mode, "Classic (Toggle)"
+- INPUT: Fix bind hold when axis does not rest at 0
+- INPUT: Limit axis threshold setting to sensible values
+- INPUT: Add Overlay Mouse, Lightgun, and Pointer
+- INPUT/ANDROID: Fix mouse grab behavior on Android
+- INPUT/LINUXRAW: Fix device name and hotplug reconnect
+- IOS: Minor iOS JIT availability information
+- IOS/TVOS: Pause application on applicationWillResignActive
+- LIBRETRO: Add Doxygen-styled comments to parts of the libretro API
+- LUA: Update Lua to version 5.3.6
+- MENU: Add sublabels for input bind common entries
+- MENU: Don't load history and favorites if size is 0
+- MENU: Don't disable fast forward when entering menu
+- MENU: Widget position, size, color, icon adjustments
+- MENU: Fix savestate slots in Qt UI
+- MENU: Reorder and reduce depth of User Interface menu
+- MENU/OZONE: Fix sidebar wraparound, visibility after config load, crash after playlist delete
+- MENU/OZONE: Fix sidebar and sublabel animations
+- OSX/MACOS: Fix crash on non-Metal build
+- OSX/MACOS: Add portable.txt as flag for portable install
+- REMOTE RETROPAD: add display for analog axes, indication of inputs already pressed
+- SAVES: Allow combining saves in content dir with save sorting
+- SHADER: Added rolling scan line simulation based on the shader subframe feature. This is implemented with a scrolling scissor rect rather than in the shader itself as this is more efficient although may not work for every shader pass - we may need an option to exclude certain passes. The implementation simply divides the screen up by the number of sub frames and then moves the scissor rect down over the screen over the number of sub frames
+- TVOS: Force asset re-extraction when cache is deleted
+- TVOS: Add history and favorites to Top Shelf
+- TVOS: Fix crash when history item does not have a label
+- UWP: Enable HAVE_ACCESSIBILITY for UWP builds
+- UWP: Allow UWP build to work with a modified version of Mesa Gallium D3D12
+- VIDEO: Add subframe shader support for Vulkan/GLcore/DX10-11-12, enabling shaders to run at higher framerate than the content
+- VIDEO: Fix restoring fullscreen/windowed setting when unloading override
+- VIDEO/VULKAN: Fix HDR with Vulkan after reinit
+- VIDEO/VULKAN: Remove the use of oldSwapchain
+- VIDEO/GL2: Fix OpenGL ES version detection
+- WEBDAV: Fixed SEGFAULT in WebDav task sync + type changes
+- WEBOS: Fix build, add core location on webosbrew.org
+- WIN32: Fix Alt+Enter not working when menubar is disabled

@@ -22,9 +22,9 @@
 #ifndef _XDELTA3_H_
 #define _XDELTA3_H_
 
+#ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE 200112L
-#define _ISOC99_SOURCE
-#define _C99_SOURCE
+#endif
 /* To include RetroArch's INLINE macro */
 #include "retro_inline.h"
 
@@ -105,33 +105,12 @@
  */
 #ifndef _WIN32
 #include <inttypes.h>
-#include <stdint.h>
 #else /* WIN32 case */
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-
-#include <windows.h>
-
-/* _MSV_VER is defined by Microsoft tools, not by Mingw32 */
-#ifdef _MSC_VER
-typedef int pid_t;
-#if _MSC_VER < 1600
-typedef unsigned char  uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned long  uint32_t;
-typedef ULONGLONG      uint64_t;
-#else /* _MSC_VER >= 1600 */
-/* For MSVC10 and above */
-#include <stdint.h>
-#define inline __inline
-#endif /* _MSC_VER < 1600 */
-#else /* _MSC_VER not defined  */
-/* Mingw32 */
-#include <stdint.h>
-#endif /* _MSC_VER defined */
-
 #endif /* _WIN32 defined */
+#include <stdint.h>
 
 #ifndef XD3_USE_LARGEFILE64
 #if SIZE_MAX == UINT64_MAX
@@ -182,12 +161,6 @@ typedef ULONGLONG      uint64_t;
 
 #ifndef _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
-#endif
-
-_Static_assert(SIZEOF_SIZE_T == sizeof(size_t), "SIZEOF_SIZE_T not correctly set");
-
-#ifdef SIZEOF_UNSIGNED_LONG_LONG
-_Static_assert(SIZEOF_UNSIGNED_LONG_LONG == sizeof(unsigned long long), "SIZEOF_UNSIGNED_LONG_LONG not correctly set");
 #endif
 
 /* Set a xoff_t typedef and the "Q" printf insert. */

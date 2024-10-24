@@ -15,16 +15,17 @@
  */
 
 #include "wasapi.h"
-#include <stdio.h>
 #ifdef HAVE_MICROPHONE
-#include "audio/microphone_driver.h"
+#include "../microphone_driver.h"
 #endif
-#include "queues/fifo_queue.h"
-#include "lists/string_list.h"
-#include "configuration.h"
-#include "verbosity.h"
-#include "string/stdstring.h"
+#include <string/stdstring.h>
+#include <queues/fifo_queue.h>
+#include <lists/string_list.h>
+
 #include "mmdevice_common.h"
+
+#include "../../configuration.h"
+#include "../../verbosity.h"
 
 const char *hresult_name(HRESULT hr)
 {
@@ -93,15 +94,14 @@ const char *hresult_name(HRESULT hr)
    return "<unknown>";
 }
 
-const char *wave_subtype_name(const GUID *guid)
+static const char *wave_subtype_name(const GUID *guid)
 {
-   if (IsEqualGUID(guid, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT))
+   if (!memcmp(guid, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID)))
       return "KSDATAFORMAT_SUBTYPE_IEEE_FLOAT";
-
    return "<unknown sub-format>";
 }
 
-const char *wave_format_name(const WAVEFORMATEXTENSIBLE *format)
+static const char *wave_format_name(const WAVEFORMATEXTENSIBLE *format)
 {
    switch (format->Format.wFormatTag)
    {
@@ -199,7 +199,7 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
             return false;
          break;
       case WAVE_FORMAT_EXTENSIBLE:
-         if (!IsEqualGUID(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT))
+         if (!(!memcmp(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID))))
             /* RetroArch doesn't support any other subformat */
             return false;
 
@@ -228,8 +228,6 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
  */
 static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels)
 {
-   static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
-   const bool preferred_formats[]          = {format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE, format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE};
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
    bool result                             = false;
@@ -248,15 +246,17 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
       case S_FALSE:
          /* The requested format is unsupported, but Windows has suggested a similar one. */
          RARCH_DBG("[WASAPI]: Windows suggests a format of (%s, %u-channel, %uHz).\n",
-               wave_format_name(suggested_format), suggested_format->Format.nChannels, suggested_format->Format.nSamplesPerSec);
+               wave_format_name(suggested_format),
+               suggested_format->Format.nChannels,
+               suggested_format->Format.nSamplesPerSec);
+
          if (wasapi_is_format_suitable(suggested_format))
          {
             *format = *suggested_format;
-            result = true;
+            result  = true;
          }
          else
          {
-            result = false;
             RARCH_ERR("[WASAPI]: Windows suggested a format, but RetroArch can't use it.\n");
          }
          break;
@@ -267,33 +267,37 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
           * Usually happens with exclusive mode.
           * RetroArch will try selecting a format. */
          size_t i, j;
-         WAVEFORMATEXTENSIBLE possible_format;
-         HRESULT format_check_hr;
+         bool preferred_formats[2];
+         preferred_formats[0] = (format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE);
+         preferred_formats[1] = (format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE);
          RARCH_WARN("[WASAPI]: Requested format not supported, and Windows could not suggest one. RetroArch will do so.\n");
          for (i = 0; i < ARRAY_SIZE(preferred_formats); ++i)
          {
+            static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
             for (j = 0; j < ARRAY_SIZE(preferred_rates); ++j)
             {
+               HRESULT format_check_hr;
+               WAVEFORMATEXTENSIBLE possible_format;
                wasapi_set_format(&possible_format, preferred_formats[i], preferred_rates[j], channels);
                format_check_hr = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *) &possible_format, NULL);
                if (SUCCEEDED(format_check_hr))
                {
                   *format = possible_format;
-                  result = true;
+                  result  = true;
                   RARCH_DBG("[WASAPI]: RetroArch suggests a format of (%s, %u-channel, %uHz).\n",
-                        wave_format_name(format), format->Format.nChannels, format->Format.nSamplesPerSec);
+                        wave_format_name(format),
+                        format->Format.nChannels,
+                        format->Format.nSamplesPerSec);
                   goto done;
                }
             }
          }
          RARCH_ERR("[WASAPI]: Failed to select client format: No suitable format available.\n");
-         result = false;
          break;
       }
       default:
          /* Something else went wrong. */
          RARCH_ERR("[WASAPI]: Failed to select client format: %s.\n", hresult_name(hr));
-         result = false;
          break;
    }
 done:
@@ -336,7 +340,10 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    wasapi_set_format(&wf, *float_fmt, *rate, channels);
    RARCH_DBG("[WASAPI]: Requesting exclusive %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.Format.wBitsPerSample,
-         wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec, latency);
+         wf.Format.nChannels,
+         wave_format_name(&wf),
+         wf.Format.nSamplesPerSec,
+         latency);
 
    if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels))
    {
@@ -441,8 +448,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    }
 
    /* Use audio latency setting for buffer size if allowed */
-   if (     sh_buffer_length < WASAPI_SH_BUFFER_DEVICE_PERIOD
-         || sh_buffer_length > WASAPI_SH_BUFFER_CLIENT_BUFFER)
+   if (     (sh_buffer_length < WASAPI_SH_BUFFER_DEVICE_PERIOD)
+         || (sh_buffer_length > WASAPI_SH_BUFFER_CLIENT_BUFFER))
    {
       /* Buffer_duration is in 100ns units. */
       buffer_duration = latency * 10000.0;
@@ -453,7 +460,10 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    wasapi_set_format(&wf, *float_fmt, *rate, channels);
    RARCH_DBG("[WASAPI]: Requesting shared %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.Format.wBitsPerSample,
-         wf.Format.nChannels, wave_format_name(&wf), wf.Format.nSamplesPerSec, latency);
+         wf.Format.nChannels,
+         wave_format_name(&wf),
+         wf.Format.nSamplesPerSec,
+         latency);
 
    if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels))
    {

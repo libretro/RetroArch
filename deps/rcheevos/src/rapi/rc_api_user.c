@@ -94,7 +94,14 @@ int rc_api_init_start_session_request(rc_api_request_t* request, const rc_api_st
   rc_url_builder_init(&builder, &request->buffer, 48);
   if (rc_api_url_build_dorequest(&builder, "startsession", api_params->username, api_params->api_token)) {
     rc_url_builder_append_unum_param(&builder, "g", api_params->game_id);
+
+    if (api_params->game_hash && *api_params->game_hash) {
+      rc_url_builder_append_unum_param(&builder, "h", api_params->hardcore);
+      rc_url_builder_append_str_param(&builder, "m", api_params->game_hash);
+    }
+
     rc_url_builder_append_str_param(&builder, "l", RCHEEVOS_VERSION_STRING);
+
     request->post_data = rc_url_builder_finalize(&builder);
     request->content_type = RC_CONTENT_TYPE_URLENCODED;
   }
@@ -139,7 +146,7 @@ int rc_api_process_start_session_server_response(rc_api_start_session_response_t
   if (result != RC_OK || !response->response.succeeded)
     return result;
 
-  if (rc_json_get_optional_array(&response->num_unlocks, &array_field, &response->response, &fields[2], "Unlocks") && response->num_unlocks) {
+  if (rc_json_get_optional_array(&response->num_unlocks, &array_field, &fields[2], "Unlocks") && response->num_unlocks) {
     response->unlocks = (rc_api_unlock_entry_t*)rc_buffer_alloc(&response->response.buffer, response->num_unlocks * sizeof(rc_api_unlock_entry_t));
     if (!response->unlocks)
       return RC_OUT_OF_MEMORY;
@@ -160,7 +167,7 @@ int rc_api_process_start_session_server_response(rc_api_start_session_response_t
     }
   }
 
-  if (rc_json_get_optional_array(&response->num_hardcore_unlocks, &array_field, &response->response, &fields[3], "HardcoreUnlocks") && response->num_hardcore_unlocks) {
+  if (rc_json_get_optional_array(&response->num_hardcore_unlocks, &array_field, &fields[3], "HardcoreUnlocks") && response->num_hardcore_unlocks) {
     response->hardcore_unlocks = (rc_api_unlock_entry_t*)rc_buffer_alloc(&response->response.buffer, response->num_hardcore_unlocks * sizeof(rc_api_unlock_entry_t));
     if (!response->hardcore_unlocks)
       return RC_OUT_OF_MEMORY;

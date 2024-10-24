@@ -232,6 +232,19 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 }
 #endif
 
+static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
+{
+#ifdef OSX
+    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
+    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
+    float currentRate = CGDisplayModeGetRefreshRate(currentMode);
+    CFRelease(currentMode);
+    return currentRate;
+#else
+    return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
+}
+
 static gfx_ctx_proc_t cocoa_gl_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(
@@ -366,20 +379,14 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       {
          case 3:
 #if MAC_OS_X_VERSION_10_7
-            if (g_gl_minor >= 1 && g_gl_minor <= 3) /* OpenGL 3.2 Core */
-            {
-               attributes[6] = NSOpenGLPFAOpenGLProfile;
-               attributes[7] = NSOpenGLProfileVersion3_2Core;
-            }
+            attributes[6] = NSOpenGLPFAOpenGLProfile;
+            attributes[7] = NSOpenGLProfileVersion3_2Core;
 #endif
             break;
          case 4:
 #if MAC_OS_X_VERSION_10_10
-            if (g_gl_minor == 1) /* OpenGL 4.1 Core */
-            {
-               attributes[6] = NSOpenGLPFAOpenGLProfile;
-               attributes[7] = NSOpenGLProfileVersion4_1Core;
-            }
+            attributes[6] = NSOpenGLPFAOpenGLProfile;
+            attributes[7] = NSOpenGLProfileVersion4_1Core;
 #endif
             break;
       }
@@ -538,7 +545,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
 #else
    cocoa_gl_gfx_ctx_get_video_size,
 #endif
-   NULL, /* get_refresh_rate */
+   cocoa_gl_gfx_ctx_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

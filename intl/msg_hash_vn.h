@@ -45,6 +45,10 @@ MSG_HASH(
    "Mở rộng"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   "Lõi không nội dung"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ADD_TAB,
    "Tạo nội dung"
    )
@@ -66,6 +70,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
    "Chọn nhân nào sẽ dùng."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CORE_LIST,
+   "Duyệt qua các lõi libretro. Khi trình quản lý tập tin bắt đầu dựa vào đường dẫn thư mục lõi. Nếu nó trống, nó sẽ được bắt đầu ở thư mục gốc.\nNếu thư mục lõi của bạn là một thư mục, menu sẽ sử dụng thư mục đó là thư mục trên cùng. Nếu thư mục lõi của bạn là đường dẫn đầy đủ, nó sẽ bắt đầu ở thư mục nơi tệp nằm ở đó."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -126,10 +134,6 @@ MSG_HASH(
    "Mở Desktop Menu cổ điển."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Vô hiệu hóa chế độ Kiosk (Yêu cầu khởi động lại)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Hiện tất cả cấu hình cài đặt liên quan."
    )
@@ -183,19 +187,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Khởi động lại RetroArch"
+   "Khởi động lại"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Khởi động lại chương trình."
+   "Khởi động lại RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Thoát RetroArch"
+   "Thoát"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Thoát khỏi ứng dụng."
+   "Thoát RetroArch. Lưu thiết lập khi thoát được bật."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Thoát RetroArch. Lưu thiết lập khi thoát bị tắt."
    )
 
 /* Main Menu > Load Core */
@@ -285,6 +293,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
    "Duyệt tất cả nội dung khớp với kho dữ liệu thông qua giao diện tìm kiếm theo thể loại."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   "Lõi không nội dung"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
@@ -571,6 +583,10 @@ MSG_HASH(
    "Ngày tạo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   "Phiên bản RetroArch"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    "Phiên bản Git"
    )
@@ -589,6 +605,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    "Kiến trúc CPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   "Số lõi CPU"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -897,6 +917,18 @@ MSG_HASH(
    "Lối Chơi"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   "Cài đặt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   "Nhà phát hành"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   "Nhà phát triển"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
    "Phần cứng nâng cao"
    )
@@ -1033,6 +1065,10 @@ MSG_HASH(
    "Thay đổi cài đặt lưu trữ."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Bật đồng bộ hóa đám mây"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Tên truy nhập"
    )
@@ -1051,10 +1087,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Quản lý tập tin"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Thay đổi cài đặt quản lý tệp tin."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
@@ -1134,6 +1166,10 @@ MSG_HASH(
    )
 
 /* Core option category placeholders for icons */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   "Hiệu năng"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    "Hệ thống"
@@ -1282,6 +1318,8 @@ MSG_HASH(
    "Tùy chỉnh"
    )
 #if defined(DINGUX)
+#endif
+#if defined(RARCH_MOBILE)
 #endif
 
 /* Settings > Video > HDR */
@@ -1436,6 +1474,14 @@ MSG_HASH(
 /* Settings > Input */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Sort Remaps By Gamepad"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps will only apply to the active gamepad in which they were saved."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Kích hoạt Autoconfig"
    )
@@ -1520,6 +1566,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
@@ -1644,6 +1692,12 @@ MSG_HASH(
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
+
+
+/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
 
 /* Settings > On-Screen Display > Video Layout */
@@ -1785,7 +1839,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Core Danh mục:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

@@ -493,7 +493,7 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** convert raw gamecube serial to redump serial.
    not enough is known about the disc data to properly
    convert every raw serial to redump serial.  it will
-   only fail with the following excpetions: the
+   only fail with the following exceptions: the
    subregions of europe P-UKV, P-AUS, X-UKV, X-EUU
    will not match redump.**/
 
@@ -638,7 +638,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each prefix **/
-   if (     pre_game_id[0] == 'T' 
+   if (     pre_game_id[0] == 'T'
          && pre_game_id[1] == '-')
    {
       if (region_id == 'U' || region_id == 'J')
@@ -662,7 +662,7 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       cue_append_multi_disc_suffix(s, filename);
       return true;
    }
-   else if (pre_game_id[0] == 'G' 
+   else if (pre_game_id[0] == 'G'
          && pre_game_id[1] == '-')
    {
       if ((index = string_index_last_occurance(pre_game_id, '-')) == -1)
@@ -823,7 +823,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    raw_game_id[10] = '\0';
 
    /** Scrub files with bad data and log **/
-   if (     raw_game_id[0] == '\0' 
+   if (     raw_game_id[0] == '\0'
          || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
@@ -1016,7 +1016,7 @@ int detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    raw_game_id[6] = '\0';
 
    /** Scrub files with bad data and log **/
-   if (     raw_game_id[0] == '\0' 
+   if (     raw_game_id[0] == '\0'
          || raw_game_id[0] == ' ')
    {
 #ifdef DEBUG
@@ -1132,7 +1132,7 @@ static int64_t intfstream_get_file_size(const char *path)
 
 static bool update_cand(int64_t *cand_index, int64_t *last_index,
       uint64_t *largest, char *last_file, uint64_t *offset,
-      uint64_t *size, char *track_path, uint64_t max_len)
+      size_t *size, char *track_path, uint64_t max_len)
 {
    if (*cand_index != -1)
    {
@@ -1141,7 +1141,7 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
          *largest    = *last_index - *cand_index;
          strlcpy(track_path, last_file, (size_t)max_len);
          *offset     = *cand_index;
-         *size       = *largest;
+         *size       = (size_t)*largest;
          *cand_index = -1;
          return true;
       }
@@ -1151,13 +1151,13 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
 }
 
 int cue_find_track(const char *cue_path, bool first,
-      uint64_t *offset, uint64_t *size, char *track_path, uint64_t max_len)
+      uint64_t *offset, size_t *size, char *track_path, uint64_t max_len)
 {
    int rv;
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
    char last_file[PATH_MAX_LENGTH];
-   char cue_dir[PATH_MAX_LENGTH];
+   char cue_dir[DIR_MAX_LENGTH];
    intfstream_t *fd           = NULL;
    int64_t last_index         = -1;
    int64_t cand_index         = -1;
@@ -1291,7 +1291,7 @@ bool cue_next_file(intfstream_t *fd,
       const char *cue_path, char *s, uint64_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
-   char cue_dir[PATH_MAX_LENGTH];
+   char cue_dir[DIR_MAX_LENGTH];
    cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
@@ -1373,7 +1373,7 @@ int gdi_find_track(const char *gdi_path, bool first,
       if (!(mode == 0 && size == 2352))
       {
          char last_file[PATH_MAX_LENGTH];
-         char gdi_dir[PATH_MAX_LENGTH];
+         char gdi_dir[DIR_MAX_LENGTH];
 
          fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
          fill_pathname_join_special(last_file,
@@ -1432,7 +1432,7 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
    /* File name */
    if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
-      char gdi_dir[PATH_MAX_LENGTH];
+      char gdi_dir[DIR_MAX_LENGTH];
 
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
       fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);

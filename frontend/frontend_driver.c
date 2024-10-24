@@ -175,7 +175,7 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void)
    return frontend_ctx_drivers[0];
 }
 
-bool frontend_driver_get_core_extension(char *s, size_t len)
+size_t frontend_driver_get_core_extension(char *s, size_t len)
 {
 #ifdef HAVE_DYNAMIC
 
@@ -184,7 +184,19 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    s[1] = 'l';
    s[2] = 'l';
    s[3] = '\0';
-   return true;
+   return 3;
+#elif defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
+   s[0] = 'f';
+   s[1] = 'r';
+   s[2] = 'a';
+   s[3] = 'm';
+   s[4] = 'e';
+   s[5] = 'w';
+   s[6] = 'o';
+   s[7] = 'r';
+   s[8] = 'k';
+   s[9] = '\0';
+   return 9;
 #elif defined(__APPLE__) || defined(__MACH__)
    s[0] = 'd';
    s[1] = 'y';
@@ -192,12 +204,12 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    s[3] = 'i';
    s[4] = 'b';
    s[5] = '\0';
-   return true;
+   return 5;
 #else
    s[0] = 's';
    s[1] = 'o';
    s[2] = '\0';
-   return true;
+   return 2;
 #endif
 
 #else
@@ -207,76 +219,60 @@ bool frontend_driver_get_core_extension(char *s, size_t len)
    s[1] = 'b';
    s[2] = 'p';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(ORBIS) || defined(VITA) || defined(__PS3__)
-   strlcpy(s, "self|bin", len);
-   return true;
+   return strlcpy(s, "self|bin", len);
 #elif defined(PS2)
    s[0] = 'e';
    s[1] = 'l';
    s[2] = 'f';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(_XBOX1)
    s[0] = 'x';
    s[1] = 'b';
    s[2] = 'e';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(_XBOX360)
    s[0] = 'x';
    s[1] = 'e';
    s[2] = 'x';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(GEKKO)
    s[0] = 'd';
    s[1] = 'o';
    s[2] = 'l';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(HW_WUP)
-   strlcpy(s, "rpx|elf", len);
-   return true;
+   return strlcpy(s, "rpx|elf", len);
 #elif defined(__linux__)
    s[0] = 'e';
    s[1] = 'l';
    s[2] = 'f';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(HAVE_LIBNX)
    s[0] = 'n';
    s[1] = 'r';
    s[2] = 'o';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(DJGPP)
    s[0] = 'e';
    s[1] = 'x';
    s[2] = 'e';
    s[3] = '\0';
-   return true;
+   return 3;
 #elif defined(_3DS)
    if (envIsHomebrew())
-   {
-      s[0] = '3';
-      s[1] = 'd';
-      s[2] = 's';
-      s[3] = 'x';
-      s[4] = '\0';
-   }
-   else
-   {
-      s[0] = 'c';
-      s[1] = 'i';
-      s[2] = 'a';
-      s[3] = '\0';
-   }
-   return true;
+      return strlcpy(s, "3dsx", len);
+   return strlcpy(s, "cia", len);
 #else
-   return false;
+   return 0;
 #endif
-
 #endif
 }
 
@@ -389,7 +385,7 @@ void frontend_driver_init_first(void *args)
    frontend_st->current_frontend_ctx = (frontend_ctx_driver_t*)
       frontend_ctx_init_first();
 
-   if (     frontend_st->current_frontend_ctx 
+   if (     frontend_st->current_frontend_ctx
          && frontend_st->current_frontend_ctx->init)
       frontend_st->current_frontend_ctx->init(args);
 }
@@ -574,15 +570,15 @@ void frontend_driver_attach_console(void)
 {
    /* TODO/FIXME - the frontend driver code is garbage and needs to be
       redesigned. Apparently frontend_driver_attach_console can be called
-      BEFORE frontend_driver_init_first is called, hence why we need 
-      to resort to the check for non-NULL below. This is just awful, 
-      BEFORE we make any frontend function call, we should be 100% 
+      BEFORE frontend_driver_init_first is called, hence why we need
+      to resort to the check for non-NULL below. This is just awful,
+      BEFORE we make any frontend function call, we should be 100%
       sure frontend_driver_init_first has already been called first.
 
       For now, we do this hack, but this absolutely should be redesigned
       as soon as possible.
     */
-   if (     frontend_driver_st.current_frontend_ctx 
+   if (     frontend_driver_st.current_frontend_ctx
          && frontend_driver_st.current_frontend_ctx->attach_console)
       frontend_driver_st.current_frontend_ctx->attach_console();
 }

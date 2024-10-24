@@ -50,9 +50,6 @@
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
 #endif
 
-// Disable pthread functionality
-PS2_DISABLE_AUTOSTART_PTHREAD();
-
 static enum frontend_fork ps2_fork_mode      = FRONTEND_FORK_NONE;
 static char cwd[FILENAME_MAX]                = {0};
 static char mountString[10]                  = {0};
@@ -64,7 +61,7 @@ static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
    size_t _len = strlcpy(user_path, cwd, sizeof(user_path));
-   strlcpy(user_path + _len, "retroarch", sizeof(user_path) - _len);
+   strlcpy(user_path + _len, "/retroarch", sizeof(user_path) - _len);
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */
@@ -204,7 +201,7 @@ static void mount_partition(void)
 
    if (getMountInfo(mount_path, mountString, mountPoint, new_cwd) != 1)
    {
-      RARCH_WARN("Partition info not readed\n");
+      RARCH_WARN("Partition info not read\n");
       return;
    }
 
@@ -215,7 +212,7 @@ static void mount_partition(void)
       return;
    }
 
-   /* If we're booting from HDD, we must update the cwd variable 
+   /* If we're booting from HDD, we must update the cwd variable
     * and add : to the mount point */
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
    {
@@ -224,7 +221,7 @@ static void mount_partition(void)
    }
    else
    {
-      /* We MUST put mountPoint as empty to avoid wrong results 
+      /* We MUST put mountPoint as empty to avoid wrong results
          with LoadELFFromFileWithPartition */
       strlcpy(mountPoint, "", sizeof(mountPoint));
    }
@@ -298,7 +295,7 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 #endif
 }
 
-static void common_init_drivers(bool extra_drivers) 
+static void common_init_drivers(bool extra_drivers)
 {
    init_drivers(extra_drivers);
 
@@ -306,11 +303,11 @@ static void common_init_drivers(bool extra_drivers)
 
    getcwd(cwd, sizeof(cwd));
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
-   /* If it is not Salamander, we need to go one level 
+   /* If it is not Salamander, we need to go one level
     * up for setting the CWD. */
    path_parent_dir(cwd, strlen(cwd));
 #endif
-   
+
    mount_partition();
 
    waitUntilDeviceIsReady(cwd);
@@ -343,6 +340,7 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
    RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, mountPoint);
 
    /* Reload IOP drivers for saving IOP ram */
+   deinit_drivers(true, true);
    reset_IOP();
    common_init_drivers(false);
    waitUntilDeviceIsReady(path);

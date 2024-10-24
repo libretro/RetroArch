@@ -366,13 +366,22 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
          strtoul(existing_version + 8, (char**)&program, 10);
 
 #ifdef HAVE_OPENGLES
-      if (version_no < 130)
-         version_no    = 100;
-      else
+      if (version_no >= 130 && version_no < 330)
       {
          version_extra = " es";
          version_no    = 300;
       }
+      else if (version_no == 330)
+      {
+         version_extra = " es";
+         version_no    = 310;
+      }
+      else if (version_no > 330)
+      {
+         version_extra = " es";
+         version_no    = 320;
+      }
+      else version_no  = 100;
 #endif
       snprintf(version,
             sizeof(version), "#version %u%s\n", version_no, version_extra);

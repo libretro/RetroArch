@@ -2,10 +2,9 @@
 #define RC_INTERNAL_H
 
 #include "rc_runtime_types.h"
+#include "rc_util.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RC_BEGIN_C_DECLS
 
 typedef struct rc_scratch_string {
   char* value;
@@ -39,15 +38,8 @@ RC_ALLOW_ALIGN(char)
 /* force alignment to 4 bytes on 32-bit systems, or 8 bytes on 64-bit systems */
 #define RC_ALIGN(n) (((n) + (sizeof(void*)-1)) & ~(sizeof(void*)-1))
 
-typedef struct rc_scratch_buffer {
-  struct rc_scratch_buffer* next;
-  int32_t offset;
-  uint8_t buffer[512 - 16];
-}
-rc_scratch_buffer_t;
-
 typedef struct {
-  rc_scratch_buffer_t buffer;
+  rc_buffer_t buffer;
   rc_scratch_string_t* strings;
 
   struct objs {
@@ -97,12 +89,13 @@ typedef struct {
   void* peek_userdata;
   lua_State* L;
 
-  rc_typed_value_t measured_value;  /* Measured */
-  uint8_t was_reset;                /* ResetIf triggered */
-  uint8_t has_hits;                 /* one of more hit counts is non-zero */
-  uint8_t primed;                   /* true if all non-Trigger conditions are true */
-  uint8_t measured_from_hits;       /* true if the measured_value came from a condition's hit count */
-  uint8_t was_cond_reset;           /* ResetNextIf triggered */
+  rc_typed_value_t measured_value;     /* Measured */
+  rc_typed_value_t recall_value;       /* Set by RC_CONDITION_REMEMBER */
+  uint8_t was_reset;                   /* ResetIf triggered */
+  uint8_t has_hits;                    /* one of more hit counts is non-zero */
+  uint8_t primed;                      /* true if all non-Trigger conditions are true */
+  uint8_t measured_from_hits;          /* true if the measured_value came from a condition's hit count */
+  uint8_t was_cond_reset;              /* ResetNextIf triggered */
 }
 rc_eval_state_t;
 
@@ -177,7 +170,9 @@ int rc_parse_operand(rc_operand_t* self, const char** memaddr, uint8_t is_indire
 void rc_evaluate_operand(rc_typed_value_t* value, rc_operand_t* self, rc_eval_state_t* eval_state);
 int rc_operand_is_float_memref(const rc_operand_t* self);
 int rc_operand_is_float(const rc_operand_t* self);
+int rc_operand_is_recall(const rc_operand_t* self);
 
+int rc_is_valid_variable_character(char ch, int is_first);
 void rc_parse_value_internal(rc_value_t* self, const char** memaddr, rc_parse_state_t* parse);
 int rc_evaluate_value_typed(rc_value_t* self, rc_typed_value_t* value, rc_peek_t peek, void* ud, lua_State* L);
 void rc_reset_value(rc_value_t* self);
@@ -189,6 +184,7 @@ void rc_typed_value_convert(rc_typed_value_t* value, char new_type);
 void rc_typed_value_add(rc_typed_value_t* value, const rc_typed_value_t* amount);
 void rc_typed_value_multiply(rc_typed_value_t* value, const rc_typed_value_t* amount);
 void rc_typed_value_divide(rc_typed_value_t* value, const rc_typed_value_t* amount);
+void rc_typed_value_modulus(rc_typed_value_t* value, const rc_typed_value_t* amount);
 void rc_typed_value_negate(rc_typed_value_t* value);
 int rc_typed_value_compare(const rc_typed_value_t* value1, const rc_typed_value_t* value2, char oper);
 void rc_typed_value_from_memref_value(rc_typed_value_t* value, const rc_memref_value_t* memref);
@@ -200,8 +196,6 @@ int rc_lboard_state_active(int state);
 
 void rc_parse_richpresence_internal(rc_richpresence_t* self, const char* script, rc_parse_state_t* parse);
 
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_INTERNAL_H */

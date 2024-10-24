@@ -269,7 +269,9 @@ enum event_command
    CMD_EVENT_MICROPHONE_REINIT,
 #endif
    /* Deprecated */
-   CMD_EVENT_SEND_DEBUG_INFO
+   CMD_EVENT_SEND_DEBUG_INFO,
+   /* Add a playlist entry to another playlist. */
+   CMD_EVENT_ADD_TO_PLAYLIST
 };
 
 enum cmd_source_t
@@ -379,10 +381,8 @@ void command_event_load_auto_state(void);
 void command_event_set_savestate_auto_index(
       settings_t *settings);
 
-void command_event_set_savestate_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      );
+int command_event_get_next_savestate_auto_index(
+      settings_t *settings);
 
 void command_event_set_replay_auto_index(
       settings_t *settings);
