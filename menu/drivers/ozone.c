@@ -3708,10 +3708,10 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (   string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
-             || string_is_equal(entry.label, "state_slot")
-             || string_is_equal(entry.label, "loadstate")
-             || string_is_equal(entry.label, "savestate"))
+         if (     string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
             size_t _len;
             char path[PATH_MAX_LENGTH * 2];
