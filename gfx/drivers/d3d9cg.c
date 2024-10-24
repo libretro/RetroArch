@@ -1755,7 +1755,21 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
    d3d_matrix_identity(&d3d->mvp_transposed);
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
-   d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
+   d3d->mvp = d3d->mvp_transposed;
+
+   if (d3d->translate_x)
+   {
+      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
+      float vp_x = -(d3d->translate_x/(float)d3d->final_viewport.Width);
+      pout->m[3][0] = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
+   }
+
+   if (d3d->translate_y)
+   {
+      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
+      float vp_y = -(d3d->translate_y/(float)d3d->final_viewport.Height);
+      pout->m[3][1] = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
+   }
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
@@ -2103,7 +2117,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    if (d3d->overlays_enabled && overlay_behind_menu)
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp, 4);
+         0, (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -2121,7 +2135,6 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
             (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
             0, sizeof(Vertex));
-
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       menu_driver_frame(menu_is_alive, video_info);
    }
@@ -2142,7 +2155,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    if (d3d->overlays_enabled && !overlay_behind_menu)
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp, 4);
+         0, (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }

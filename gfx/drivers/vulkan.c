@@ -3798,6 +3798,9 @@ static void vulkan_set_projection(vk_t *vk,
       matrix_4x4_multiply(tmp, rot, vk->mvp_no_rot);
    }
    matrix_4x4_multiply(vk->mvp, trn, tmp);
+
+   /* Required for translate_x+y / negative offsets to also work in RGUI */
+   matrix_4x4_multiply(vk->mvp_no_rot, trn, tmp);
 }
 
 static void vulkan_set_rotation(void *data, unsigned rotation)
@@ -3863,14 +3866,15 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    if (vk->vp.x < 0)
    {
       vk->translate_x = (float)vk->vp.x * 2;
-      vk->vp.x = 0.0;
+      vk->vp.x        = 0.0;
    }
    else
       vk->translate_x = 0.0;
+
    if (vk->vp.y < 0)
    {
       vk->translate_y = (float)vk->vp.y * 2;
-      vk->vp.y = 0.0;
+      vk->vp.y        = 0.0;
    }
    else
       vk->translate_y = 0.0;
@@ -3920,8 +3924,8 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    region.imageOffset.x                   = vp.x;
    region.imageOffset.y                   = vp.y;
    region.imageOffset.z                   = 0;
-   region.imageExtent.width               = vp.width;
-   region.imageExtent.height              = vp.height;
+   region.imageExtent.width               = vp.width + vk->translate_x;
+   region.imageExtent.height              = vp.height + vk->translate_y;
    region.imageExtent.depth               = 1;
 
    staging  = &vk->readback.staging[vk->context->current_frame_index];
@@ -5633,17 +5637,20 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       {
          int y;
+         unsigned vp_width  = (vk->vp.width  > vk->video_width)  ? vk->video_width  : vk->vp.width;
+         unsigned vp_height = (vk->vp.height > vk->video_height) ? vk->video_height : vk->vp.height;
          const uint8_t *src = (const uint8_t*)staging->mapped;
-         buffer            += 3 * (vk->vp.height - 1) * vk->vp.width;
+
+         buffer            += 3 * (vp_height - 1) * vp_width;
 
          switch (format)
          {
             case VK_FORMAT_B8G8R8A8_UNORM:
-               for (y = 0; y < (int) vk->vp.height; y++,
-                     src += staging->stride, buffer -= 3 * vk->vp.width)
+               for (y = 0; y < (int) vp_height; y++,
+                     src += staging->stride, buffer -= 3 * vp_width)
                {
                   int x;
-                  for (x = 0; x < (int) vk->vp.width; x++)
+                  for (x = 0; x < (int) vp_width; x++)
                   {
                      buffer[3 * x + 0] = src[4 * x + 0];
                      buffer[3 * x + 1] = src[4 * x + 1];
@@ -5654,11 +5661,11 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
             case VK_FORMAT_R8G8B8A8_UNORM:
             case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-               for (y = 0; y < (int) vk->vp.height; y++,
-                     src += staging->stride, buffer -= 3 * vk->vp.width)
+               for (y = 0; y < (int) vp_height; y++,
+                     src += staging->stride, buffer -= 3 * vp_width)
                {
                   int x;
-                  for (x = 0; x < (int) vk->vp.width; x++)
+                  for (x = 0; x < (int) vp_width; x++)
                   {
                      buffer[3 * x + 2] = src[4 * x + 0];
                      buffer[3 * x + 1] = src[4 * x + 1];

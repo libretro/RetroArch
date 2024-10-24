@@ -476,6 +476,12 @@ static bool take_screenshot_viewport(
             video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
       goto error;
 
+   /* Limit image to screen size */
+   if (vp.width > video_st->width)
+      vp.width = video_st->width;
+   if (vp.height > video_st->height)
+      vp.height = video_st->height;
+
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
    if (!screenshot_dump(screenshot_dir,
             name_base,
@@ -611,7 +617,7 @@ bool take_screenshot(
       return false;
 
    ret       = take_screenshot_choice(
-		   video_st,
+         video_st,
          screenshot_dir,
          name_base,
          savestate,

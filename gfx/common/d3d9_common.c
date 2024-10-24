@@ -191,10 +191,10 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
       return false;
 #endif
 #if defined(DEBUG) || defined(_DEBUG)
-   if (!(g_d3d9_dll     = dylib_load("d3d9d.dll")))
+   if (!(g_d3d9_dll  = dylib_load("d3d9d.dll")))
 #endif
-      if (!(g_d3d9_dll  = dylib_load("d3d9.dll")))
-	      return false;
+   if (!(g_d3d9_dll  = dylib_load("d3d9.dll")))
+      return false;
    D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
 #ifdef HAVE_D3DX
    D3D9CompileShaderFromFile  = (D3D9CompileShaderFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShaderFromFile");
@@ -872,18 +872,39 @@ void d3d9_set_viewport(void *data,
       bool force_full,
       bool allow_rotate)
 {
+   d3d9_video_t *d3d   = (d3d9_video_t*)data;
+   float translate_x   = d3d->translate_x;
+   float translate_y   = d3d->translate_y;
    int x               = 0;
    int y               = 0;
-   d3d9_video_t *d3d   = (d3d9_video_t*)data;
 
    d3d9_calculate_rect(d3d, &width, &height, &x, &y,
          force_full, allow_rotate);
 
    /* D3D doesn't support negative X/Y viewports ... */
    if (x < 0)
+   {
+      if (!force_full)
+         d3d->translate_x = x * 2;
       x = 0;
+   }
+   else if (!force_full)
+      d3d->translate_x = 0;
+
    if (y < 0)
+   {
+      if (!force_full)
+         d3d->translate_y = y * 2;
       y = 0;
+   }
+   else if (!force_full)
+      d3d->translate_y = 0;
+
+   if (!force_full)
+   {
+      if (translate_x != d3d->translate_x || translate_y != d3d->translate_y)
+         d3d->needs_restore = true;
+   }
 
    d3d->final_viewport.X      = x;
    d3d->final_viewport.Y      = y;
@@ -1073,7 +1094,8 @@ void d3d9_set_menu_texture_frame(void *data,
             || (d3d->menu->tex_w != width)
             || (d3d->menu->tex_h != height))
    {
-      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      if (d3d->menu->tex)
+         IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev,
             width, height, 1,
@@ -1096,6 +1118,7 @@ void d3d9_set_menu_texture_frame(void *data,
          0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    {
       unsigned h, w;
+
       if (rgb32)
       {
          uint8_t        *dst = (uint8_t*)d3dlr.pBits;
@@ -1281,16 +1304,18 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    {
       unsigned x, y;
+      unsigned vp_width       = (d3d->final_viewport.Width  > width)  ? width  : d3d->final_viewport.Width;
+      unsigned vp_height      = (d3d->final_viewport.Height > height) ? height : d3d->final_viewport.Height;
       unsigned pitchpix       = rect.Pitch / 4;
       const uint32_t *pixels  = (const uint32_t*)rect.pBits;
 
       pixels                 += d3d->final_viewport.X;
-      pixels                 += (d3d->final_viewport.Height - 1) * pitchpix;
+      pixels                 += (vp_height - 1) * pitchpix;
       pixels                 -= d3d->final_viewport.Y * pitchpix;
 
-      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
+      for (y = 0; y < vp_height; y++, pixels -= pitchpix)
       {
-         for (x = 0; x < d3d->final_viewport.Width; x++)
+         for (x = 0; x < vp_width; x++)
          {
             *buffer++ = (pixels[x] >>  0) & 0xff;
             *buffer++ = (pixels[x] >>  8) & 0xff;
