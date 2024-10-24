@@ -1,0 +1,4 @@
+shaders = 1
+
+shader0 = showvalue.glsl
+filter_linear0 = true
