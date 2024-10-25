@@ -5400,27 +5400,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
-   "啟用覆疊介面的光線槍、滑鼠以及指向裝置"
+   "觸控模擬光線槍和滑鼠"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
-   "於核心中使用非按下覆疊介面的任何觸控以建立指向裝置的輸入。"
+   "執行時在螢幕無作用區使用觸控方式模擬光線槍和滑鼠。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
-   "覆疊介面的光線槍"
+   "模擬光線槍"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
-   "設定在覆疊介面的光線槍輸入傳送。"
+   "設定觸控模擬光線槍的輸入方式。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
-   "覆疊介面的滑鼠"
+   "模擬滑鼠"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
-   "設定在覆疊介面的滑鼠輸入傳送。備註: 單指、雙指、三指的輕碰各自傳送滑鼠左鍵、右鍵、以及中鍵的點按操作。"
+   "設定觸控模擬滑鼠的輸入方式。 注意: 一指(滑鼠左鍵)、二指(滑鼠右鍵)、三指(滑鼠中鍵)。"
    )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
@@ -7721,7 +7721,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   "ISO映像檔有時會使用重複產品序號, 尤其是PSP和PSN的作品。僅依靠產品序號掃描檔案, 可能會導致將項目加入到錯誤的系統中。\n開啟時增加了循環冗餘校驗(CRC), 會嚴重降低掃描速度, 但可能會更準確。"
+   "ISO映像檔有時會使用重複產品序號, 尤其是PSP和PSN的作品, 僅依靠產品序號掃描檔案, 可能會導致將項目加入到錯誤的系統中。\n開啟時增加了循環冗餘校驗(CRC), 會嚴重降低掃描速度, 但可能會更準確。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
@@ -10857,6 +10857,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
    "自訂預設主題"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   "從檔案瀏覽器中載入選單主題配置。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
