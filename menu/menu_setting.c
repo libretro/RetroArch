@@ -11817,9 +11817,8 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info-index -1].action_ok       = &setting_action_ok_int;
             (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_int_savestate_direct_max_slot);
+               &setting_get_string_representation_int_savestate_direct_max_slot;
             menu_settings_list_current_add_range(list, list_info, -1, 9, 1, true, true);
 
 #ifdef HAVE_BSV_MOVIE

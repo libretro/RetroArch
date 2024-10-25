@@ -3040,6 +3040,42 @@ bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enab
 #endif
 
 /**
+ * Handles a load state command event.
+ *
+ * Returns: true (1) on success, otherwise false (0).
+ **/
+bool handle_load_state_command_event()
+{
+   runloop_state_t *runloop_st     = runloop_state_get_ptr();
+
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+   {
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return false;
+   }
+#endif
+#ifdef HAVE_NETWORKING
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
+      return false;
+#endif
+   if (!command_event_main_state(CMD_EVENT_LOAD_STATE))
+      return false;
+
+   /* Run next frame to see the core output while paused */
+   else if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+   {
+      runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
+      runloop_st->run_frames_and_pause = 1;
+   }
+
+#if HAVE_RUNAHEAD
+   command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
+#endif
+   return true;
+}
+
+/**
  * command_event:
  * @cmd                  : Event command index.
  *
@@ -3389,41 +3425,70 @@ bool command_event(enum event_command cmd, void *data)
          break;
 #endif
       case CMD_EVENT_LOAD_STATE:
-      case CMD_EVENT_LOAD_STATE_SLOT0:
-      case CMD_EVENT_LOAD_STATE_SLOT1:
-      case CMD_EVENT_LOAD_STATE_SLOT2:
-      case CMD_EVENT_LOAD_STATE_SLOT3:
-      case CMD_EVENT_LOAD_STATE_SLOT4:
-      case CMD_EVENT_LOAD_STATE_SLOT5:
-      case CMD_EVENT_LOAD_STATE_SLOT6:
-      case CMD_EVENT_LOAD_STATE_SLOT7:
-      case CMD_EVENT_LOAD_STATE_SLOT8:
-      case CMD_EVENT_LOAD_STATE_SLOT9:
          {
-#ifdef HAVE_CHEEVOS
-            if (rcheevos_hardcore_active())
-            {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            if (!handle_load_state_command_event())
                return false;
-            }
-#endif
-#ifdef HAVE_NETWORKING
-            if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
-               return false;
-#endif
-            if (!command_event_main_state(cmd))
-               return false;
-            /* Run next frame to see the core output while paused */
-            else if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-            {
-               runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
-               runloop_st->run_frames_and_pause = 1;
-            }
-
-#if HAVE_RUNAHEAD
-            command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
-#endif
          }
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT0:
+         configuration_set_int(settings, settings->ints.state_slot, 0);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT1:
+         configuration_set_int(settings, settings->ints.state_slot, 1);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT2:
+         configuration_set_int(settings, settings->ints.state_slot, 2);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT3:
+         configuration_set_int(settings, settings->ints.state_slot, 3);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT4:
+         configuration_set_int(settings, settings->ints.state_slot, 4);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT5:
+         configuration_set_int(settings, settings->ints.state_slot, 5);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT6:
+         configuration_set_int(settings, settings->ints.state_slot, 6);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT7:
+         configuration_set_int(settings, settings->ints.state_slot, 7);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT8:
+         configuration_set_int(settings, settings->ints.state_slot, 8);
+
+         if (!handle_load_state_command_event())
+            return false;
+         break;
+      case CMD_EVENT_LOAD_STATE_SLOT9:
+         configuration_set_int(settings, settings->ints.state_slot, 9);
+
+         if (!handle_load_state_command_event())
+            return false;
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
       case CMD_EVENT_UNDO_SAVE_STATE:
@@ -3549,16 +3614,6 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_SAVE_STATE:
-      case CMD_EVENT_SAVE_STATE_SLOT0:
-      case CMD_EVENT_SAVE_STATE_SLOT1:
-      case CMD_EVENT_SAVE_STATE_SLOT2:
-      case CMD_EVENT_SAVE_STATE_SLOT3:
-      case CMD_EVENT_SAVE_STATE_SLOT4:
-      case CMD_EVENT_SAVE_STATE_SLOT5:
-      case CMD_EVENT_SAVE_STATE_SLOT6:
-      case CMD_EVENT_SAVE_STATE_SLOT7:
-      case CMD_EVENT_SAVE_STATE_SLOT8:
-      case CMD_EVENT_SAVE_STATE_SLOT9:
       case CMD_EVENT_SAVE_STATE_TO_RAM:
          {
             if (settings->bools.savestate_auto_index)
@@ -3568,6 +3623,66 @@ bool command_event(enum event_command cmd, void *data)
             }
          }
          if (!command_event_main_state(cmd))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT0:
+         configuration_set_int(settings, settings->ints.state_slot, 0);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT1:
+         configuration_set_int(settings, settings->ints.state_slot, 1);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT2:
+         configuration_set_int(settings, settings->ints.state_slot, 2);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT3:
+         configuration_set_int(settings, settings->ints.state_slot, 3);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT4:
+         configuration_set_int(settings, settings->ints.state_slot, 4);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT5:
+         configuration_set_int(settings, settings->ints.state_slot, 5);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT6:
+         configuration_set_int(settings, settings->ints.state_slot, 6);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT7:
+         configuration_set_int(settings, settings->ints.state_slot, 7);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT8:
+         configuration_set_int(settings, settings->ints.state_slot, 8);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
+            return false;
+         break;
+      case CMD_EVENT_SAVE_STATE_SLOT9:
+         configuration_set_int(settings, settings->ints.state_slot, 9);
+
+         if (!command_event_main_state(CMD_EVENT_SAVE_STATE))
             return false;
          break;
       case CMD_EVENT_SAVE_STATE_DECREMENT:

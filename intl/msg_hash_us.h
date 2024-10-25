@@ -3901,6 +3901,10 @@ MSG_HASH(
    )
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   "Load State"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
    "Loads saved state from the currently selected slot."
    )
@@ -4932,12 +4936,12 @@ MSG_HASH(
    "Block SaveRAM from being overwritten when loading save states. Might potentially lead to buggy games."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_DIRECT_SLOT,
-   "Sets the highest save state slot that can be directly saved or loaded."
+    MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_DIRECT_SLOT,
+    "Maximum Direct Save State Slot Available"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_MAX_DIRECT_SLOT,
-   "The maximum save state slot that can be directly saved into and loaded from. A value of '-1' means no direct save state slots will be available."
+   "The maximum save state slot that can be directly saved into and loaded from. 'OFF' means no direct save state slots will be available."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -16744,5 +16748,6 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "stopped."
    )
+
 
 

@@ -2109,8 +2109,6 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_SAVE_STATE:
          case CMD_EVENT_SAVE_STATE_TO_RAM:
             {
-               SAVESTATE_EVT: ;
-
                /* TODO: Saving state during recording should associate the state with the replay. */
                video_driver_state_t *video_st                 =
                   video_state_get_ptr();
@@ -2137,91 +2135,9 @@ bool command_event_main_state(unsigned cmd)
                push_msg = false;
             }
             break;
-            case CMD_EVENT_SAVE_STATE_SLOT0:
-            {
-               int new_state_slot = 0;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT1:
-            {
-               int new_state_slot = 1;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT2:
-            {
-               int new_state_slot = 2;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT3:
-            {
-               int new_state_slot = 3;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT4:
-            {
-               int new_state_slot = 4;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT5:
-            {
-               int new_state_slot = 5;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT6:
-            {
-               int new_state_slot = 6;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT7:
-            {
-               int new_state_slot = 7;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT8:
-            {
-               int new_state_slot = 8;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_SAVE_STATE_SLOT9:
-            {
-               int new_state_slot = 9;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto SAVESTATE_EVT;
-            }
-            break;
          case CMD_EVENT_LOAD_STATE:
          case CMD_EVENT_LOAD_STATE_FROM_RAM:
             {
-               LOADSTATE_EVT: ;
-
                bool res = false;
                if (cmd == CMD_EVENT_LOAD_STATE)
                   res = content_load_state(state_path, false, false);
@@ -2235,86 +2151,6 @@ bool command_event_main_state(unsigned cmd)
                }
             }
             push_msg = false;
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT0:
-            {
-               int new_state_slot = 0;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT1:
-            {
-               int new_state_slot = 1;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT2:
-            {
-               int new_state_slot = 2;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT3:
-            {
-               int new_state_slot = 3;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT4:
-            {
-               int new_state_slot = 4;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT5:
-            {
-               int new_state_slot = 5;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT6:
-            {
-               int new_state_slot = 6;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT7:
-            {
-               int new_state_slot = 7;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT8:
-            {
-               int new_state_slot = 8;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
-            break;
-         case CMD_EVENT_LOAD_STATE_SLOT9:
-            {
-               int new_state_slot = 9;
-               configuration_set_int(settings, settings->ints.state_slot, new_state_slot);
-
-               goto LOADSTATE_EVT;
-            }
             break;
         case CMD_EVENT_UNDO_LOAD_STATE:
            {
