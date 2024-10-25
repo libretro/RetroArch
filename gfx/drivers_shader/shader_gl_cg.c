@@ -314,7 +314,9 @@ static void gl_cg_set_texture_info(
 
 static void gl_cg_set_params(void *dat, void *shader_data)
 {
-   unsigned i;
+   unsigned int i;
+   int rot;
+   float originalaspectrot;
    video_shader_ctx_params_t          *params =
       (video_shader_ctx_params_t*)dat;
    unsigned width                             = params->width;
@@ -369,8 +371,8 @@ static void gl_cg_set_params(void *dat, void *shader_data)
    cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspect_v, (float)video_driver_get_core_aspect());
 
    /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
-   int rot = retroarch_get_rotation();
-   float originalaspectrot = video_driver_get_core_aspect();
+   rot = retroarch_get_rotation();
+   originalaspectrot = video_driver_get_core_aspect();
    if (rot == 1 || rot == 3)
       originalaspectrot = 1/originalaspectrot;
    cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspectrot_f, (float)originalaspectrot);
