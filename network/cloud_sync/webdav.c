@@ -450,7 +450,7 @@ static char *webdav_get_auth_header(const char *method, const char *url)
 static void webdav_log_http_failure(const char *path, http_transfer_data_t *data)
 {
     size_t i;
-    RARCH_WARN("webdav failed: %s: HTTP %d\n", path, data->status);
+    RARCH_WARN("[webdav] failed: %s: HTTP %d\n", path, data->status);
     for (i = 0; data->headers && i < data->headers->size; i++)
         RARCH_WARN("%s\n", data->headers->elems[i].data);
     if (data->data)
@@ -467,6 +467,9 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
    if (!webdav_cb_st)
       return;
 
+   if (!data)
+      RARCH_WARN("[webdav] did not get data for stat, is the server down?\n");
+
    if (data && data->status == 401 && data->headers && webdav_st->basic == true)
    {
       size_t i;
@@ -476,6 +479,7 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
          if (!string_starts_with(data->headers->elems[i].data, "WWW-Authenticate: Digest "))
             continue;
 
+         RARCH_DBG("[webdav] found WWW-Authenticate: Digest header\n");
          if (webdav_create_digest_auth(data->headers->elems[i].data))
          {
             task_push_webdav_stat(webdav_st->url, true,
@@ -484,7 +488,7 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
             return;
          }
          else
-            RARCH_WARN("failure creating WWW-Authenticate: Digest header\n");
+            RARCH_WARN("[webdav] failure creating WWW-Authenticate: Digest header\n");
       }
    }
 
@@ -529,7 +533,10 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       task_push_webdav_stat(webdav_st->url, true, auth_header, webdav_stat_cb, webdav_cb_st);
    }
    else
+   {
+      RARCH_WARN("[webdav] no basic auth header, assuming no user, check username/password?\n");
       cb(user_data, NULL, true, NULL);
+   }
    return true;
 }
 
@@ -618,6 +625,8 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data
    {
       if (data)
          webdav_log_http_failure(webdav_mkdir_st->url, data);
+      else
+         RARCH_WARN("[webdav] could not mkdir %s\n", webdav_mkdir_st ? webdav_mkdir_st->url : "<unknown>");
       webdav_mkdir_st->cb(false, webdav_mkdir_st->cb_st);
       free(webdav_mkdir_st);
       return;
@@ -628,12 +637,14 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data
    if (webdav_mkdir_st->last_slash)
    {
       *webdav_mkdir_st->last_slash = '\0';
+      RARCH_DBG("[webdav] MKCOL %s\n", webdav_mkdir_st->url);
       task_push_webdav_mkdir(webdav_mkdir_st->url, true,
                              webdav_get_auth_header("MKCOL", webdav_mkdir_st->url),
                              webdav_mkdir_cb, webdav_mkdir_st);
    }
    else
    {
+      RARCH_DBG("[webdav] MKCOL %s success\n", webdav_mkdir_st->url);
       webdav_mkdir_st->cb(true, webdav_mkdir_st->cb_st);
       free(webdav_mkdir_st);
    }
@@ -665,6 +676,8 @@ static void webdav_update_cb(retro_task_t *task, void *task_data, void *user_dat
 
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data);
+   else if (!data)
+      RARCH_WARN("[webdav] could not upload %s\n", webdav_cb_st ? webdav_cb_st->path : "<unknown>");
 
    /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    if (webdav_cb_st)
@@ -672,6 +685,8 @@ static void webdav_update_cb(retro_task_t *task, void *task_data, void *user_dat
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, success, webdav_cb_st->rfile);
       free(webdav_cb_st);
    }
+   else
+      RARCH_WARN("[webdav] missing cb data in update?\n");
 }
 
 static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
@@ -687,6 +702,7 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
 
    if (!success)
    {
+      RARCH_DBG("[webdav] cannot upload %s\n", webdav_cb_st->path);
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, webdav_cb_st->rfile);
       free(webdav_cb_st);
       return;
@@ -700,6 +716,7 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
    fill_pathname_join_special(url, webdav_st->url, webdav_cb_st->path, sizeof(url));
    net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
 
+   RARCH_DBG("[webdav] PUT %s\n", url_encoded);
    task_push_webdav_put(url_encoded, buf, len, true,
                         webdav_get_auth_header("PUT", url_encoded),
                         webdav_update_cb, webdav_cb_st);
@@ -737,7 +754,9 @@ static void webdav_delete_cb(retro_task_t *task, void *task_data, void *user_dat
    bool                  success      = (data != NULL && data->status >= 200 && data->status < 300);
 
    if (!success && data)
-       webdav_log_http_failure(webdav_cb_st->path, data);
+      webdav_log_http_failure(webdav_cb_st->path, data);
+   else if (!data)
+      RARCH_WARN("[webdav] could not delete %s\n", webdav_cb_st ? webdav_cb_st->path : "<unknown>");
 
    /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    if (webdav_cb_st)
@@ -745,6 +764,8 @@ static void webdav_delete_cb(retro_task_t *task, void *task_data, void *user_dat
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, success, NULL);
       free(webdav_cb_st);
    }
+   else
+      RARCH_WARN("[webdav] missing cb data in delete?\n");
 }
 
 static void webdav_backup_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
@@ -755,6 +776,8 @@ static void webdav_backup_cb(retro_task_t *task, void *task_data, void *user_dat
 
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data);
+   else if (!data)
+      RARCH_WARN("[webdav] could not backup %s\n", webdav_cb_st ? webdav_cb_st->path : "<unknown>");
 
    /* TODO: it's possible we get a 401 here and need to redo the auth check with this request */
    if (webdav_cb_st)
@@ -762,6 +785,8 @@ static void webdav_backup_cb(retro_task_t *task, void *task_data, void *user_dat
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, success, NULL);
       free(webdav_cb_st);
    }
+   else
+      RARCH_WARN("[webdav] missing cb data in backup?\n");
 }
 
 static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
@@ -780,6 +805,7 @@ static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
 
    if (!success)
    {
+      RARCH_DBG("[webdav] cannot backup/delete %s\n", webdav_cb_st->path);
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, NULL);
       free(webdav_cb_st);
       return;
@@ -794,6 +820,7 @@ static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
    strftime(dest + len, sizeof(dest) - len, "-%y%m%d-%H%M%S", &tm_);
    net_http_urlencode_full(dest_encoded, dest, sizeof(dest_encoded));
 
+   RARCH_DBG("[webdav] MOVE %s -> %s\n", url_encoded, dest_encoded);
    task_push_webdav_move(url_encoded, dest_encoded, true,
                          webdav_get_auth_header("MOVE", url_encoded),
                          webdav_backup_cb, webdav_cb_st);
@@ -822,6 +849,7 @@ static bool webdav_delete(const char *path, cloud_sync_complete_handler_t cb, vo
       fill_pathname_join_special(url, webdav_st->url, path, sizeof(url));
       net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
 
+      RARCH_DBG("[webdav] DELETE %s\n", url_encoded);
       task_push_webdav_delete(url_encoded, true,
                               webdav_get_auth_header("DELETE", url_encoded),
                               webdav_delete_cb, webdav_cb_st);
