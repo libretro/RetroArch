@@ -2490,6 +2490,34 @@ MSG_HASH(
    "Egész-szorzós felbontás skálázás"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "A kép méretezése csak egész lépésekben. Az alapméret a mag által közölt méretektől és képaránytól függ."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Egész-szorzós méretezés tengelye"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Méretezés csak a magasság, vagy a magasság és szélesség szerint. A fél lépések a nagyfelbontású forrásokra vonatkoznak."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Egész-szorzós méretezés"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Kerekítés felfele vagy lefele a következő egész számra. A \"Smart\" beállítás átvált lefelé méretezésre, ha a kép széléből túl sok lenne levágva."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Alulméretezés"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Túlméretezés"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "Intelligens"
    )
@@ -4382,8 +4410,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Az előre generált képkockák száma. Ha nagyobb, mint a játék belső késleltetése, gondot okozhat a játékmenetben, például rángatást."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Kiegészítő mag logika futtatása a késleltetés csökkentése érdekében. Az egypéldányos mód továbbfut, majd újratölti a jelenlegi állapotot. A másodpéldányos mód egy csak képkimenetet generáló második példányt kreál, a hangproblémák elkerülésére. Az előregenerált képkocka mód újrafuttatja a múltbeli képkockákat új bemenettel, a hatékonyság érdekében."
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Kiegészítő mag logika futtatása a késleltetés csökkentése érdekében. Az egypéldányos mód továbbfut, majd újratölti a jelenlegi állapotot. Az előregenerált képkocka mód újrafuttatja a múltbeli képkockákat új bemenettel, a hatékonyság érdekében."
+   )
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "Egypéldányos mód"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "Kétpéldányos mód"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "Előregenerált képkocka mód"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Run-ahead figyelmeztetések elrejtése"
