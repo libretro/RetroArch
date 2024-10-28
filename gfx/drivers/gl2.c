@@ -906,7 +906,7 @@ static void gl2_raster_font_render_line(gl2_t *gl,
 
       if (font->block)
          video_coord_array_append(&font->block->carr,
-			 &coords, coords.vertices);
+               &coords, coords.vertices);
       else
          gl2_raster_font_draw_vertices(gl, font, &coords);
    }
@@ -1580,7 +1580,7 @@ static unsigned gl2_wrap_type_to_enum(enum gfx_wrap_type type)
       case RARCH_WRAP_MIRRORED_REPEAT:
          return GL_MIRRORED_REPEAT;
       default:
-	 break;
+         break;
    }
 
    return 0;
@@ -2391,8 +2391,11 @@ static void gl2_renderchain_readback(
    glReadBuffer(GL_BACK);
 #endif
 
-   glReadPixels(gl->vp.x, gl->vp.y,
-         gl->vp.width, gl->vp.height,
+   glReadPixels(
+         (gl->vp.x > 0) ? gl->vp.x : 0,
+         (gl->vp.y > 0) ? gl->vp.y : 0,
+         (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width,
+         (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 

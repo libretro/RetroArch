@@ -154,8 +154,6 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    uint32_t runloop_flags;
    int          ret   = runloop_iterate();
 
-   task_queue_check();
-
    if (ret == -1)
    {
       ui_companion_cocoatouch_event_command(

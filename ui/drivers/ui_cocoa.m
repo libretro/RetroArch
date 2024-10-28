@@ -428,6 +428,9 @@ static ui_application_t ui_application_cocoa = {
 
             apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   keycode, character, mod, RETRO_DEVICE_KEYBOARD);
+            if ((mod & RETROKMOD_META) && (event_type == NSEventTypeKeyDown))
+               apple_input_keyboard_event(false,
+                     keycode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
 #if defined(HAVE_COCOA_METAL)

@@ -3291,11 +3291,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sort Remaps By Gamepad"
+   "依裝置建立預設控制器"
    )   
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Remaps will only apply to the active gamepad in which they were saved."
+   "開啟時在「控制器 (核心預設)」選項中, 儲存為預設控制器時依裝置名稱建立和載入。"
    )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -10624,6 +10624,10 @@ MSG_HASH(
    "右類比搖桿 (強制)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+   "%s鍵"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    "滑鼠 1"
    )
@@ -11286,7 +11290,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "主題配色亮度"
+   "色彩主題亮度"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_FONT,

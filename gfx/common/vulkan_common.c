@@ -1264,7 +1264,7 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
 
       if (vk->context.swapchain_wait_semaphores[i])
       {
-	      struct vulkan_context *ctx = &vk->context;
+         struct vulkan_context *ctx = &vk->context;
          VkSemaphore sem            = vk->context.swapchain_wait_semaphores[i];
          assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
          ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
