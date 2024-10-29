@@ -279,7 +279,7 @@ static void *task_push_http_transfer_generic(
       return NULL;
 
    method = net_http_connection_method(conn);
-   if (method && (method[0] == 'P' || method[0] == 'p'))
+   if (!string_is_equal(method, "GET"))
    {
       /* POST requests usually mutate the server, so assume multiple calls are
        * intended, even if they're duplicated. Additionally, they may differ
