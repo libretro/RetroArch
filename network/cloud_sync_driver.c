@@ -70,7 +70,7 @@ void cloud_sync_find_driver(
          cloud_sync_drivers[i];
    else
    {
-      if (verbosity_enabled)
+      if (verbosity_enabled && settings->arrays.cloud_sync_driver[0])
       {
          unsigned d;
          RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
@@ -80,10 +80,11 @@ void cloud_sync_find_driver(
          for (d = 0; cloud_sync_drivers[d]; d++)
             RARCH_LOG_OUTPUT("\t%s\n", cloud_sync_drivers[d]->ident);
 
-         RARCH_WARN("Going to default to first %s...\n", prefix);
+         RARCH_WARN("Going to default to null...\n");
       }
 
-      cloud_sync_st->driver = (const cloud_sync_driver_t*)cloud_sync_drivers[0];
+      i = (int)driver_find_index("cloud_sync_driver", "null");
+      cloud_sync_st->driver = (const cloud_sync_driver_t*)cloud_sync_drivers[i];
    }
 }
 
