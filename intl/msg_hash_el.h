@@ -138,6 +138,10 @@ MSG_HASH(
    "Άνοιγμα του παραδοσιακού μενού επιφάνειας εργασίας."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Απενεργοποίηση λειτουργίας Kiosk (απαιτείται επανεκκίνηση)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    "Εμφάνιση όλων των σχετικών ρυθμίσεων ρυθμίσεων."
    )
@@ -194,8 +198,24 @@ MSG_HASH(
    "Επανεκκίνηση"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Επανεκκινήστε την εφαρμογή RetroArch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Έξοδος"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Τερματισμός της εφαρμογής RetroArch. Η αποθήκευση ρυθμίσεων κατά την έξοδο είναι ενεργοποιημένη."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Τερματισμός της εφαρμογής RetroArch. Η αποθήκευση ρυθμίσεων κατά την έξοδο είναι απενεργοποιημένη."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Τερματισμός του RetroArch. Τερματίζοντας το πρόγραμμα απρόοπτα (SIGKILL κτλ) θα τερματίσει το RetroArch χωρίς αποθήκευση των ρυθμίσεων. Στα συστήματα βασισμένα στο Unix, το SIGINT/SIGTERM επιτρέπει την ομαλή απαρχικοποίηση που περιλαμβάνει την αποθήκευση ρυθμίσεων."
    )
 
 /* Main Menu > Load Core */
@@ -484,6 +504,10 @@ MSG_HASH(
    "Απαιτούμενο API γραφικών"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Πλήρης διαδρομή του πυρήνα"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Υποστήριξη αποθήκευσης κατάστασης"
    )
@@ -506,6 +530,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "Λογισμικό"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Σημείωση: Το 'Αρχεία συστήματος βρίσκονται στον Κατάλογο Περιεχομένου' είναι ενεργοποιημένο."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Κοιτάζοντας στο: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -609,6 +641,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "Πυρήνες Επεξεργαστή"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT διαθέσιμο"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -941,6 +977,10 @@ MSG_HASH(
    "Εμφάνιση"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   "Όχημα"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    "Εκδότης"
    )
@@ -975,6 +1015,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
    "Έκδοση του Περιοδικού Edge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   "Μήνας κυκλοφορίας"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   "Έτος κυκλοφορίας"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
@@ -1032,16 +1080,32 @@ MSG_HASH(
    "Φόρτωση Διαμορφώσεων"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   "Φόρτωση υφιστάμενων ρυθμίσεων και αντικατάσταση τρεχουσών τιμών."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    "Αποθήκευση Τρέχουσας Διαμόρφωσης"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   "Αντικατάσταση τρέχοντος αρχείου ρυθμίσεων."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    "Αποθήκευση Νέας Διαμόρφωσης"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   "Αποθήκευση των τρεχουσών ρυθμίσεων για διαχωρισμό αρχείου."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
    "Επαναφορά Προεπιλογών"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   "Επαναφορά τρεχουσών ρυθμίσεων στις προκαθορισμένες τιμές."
    )
 
 /* Main Menu > Help */
@@ -1109,6 +1173,10 @@ MSG_HASH(
    "Ήχος"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   "Αλλαγή ρυθμίσεων εισόδου/εξόδου ήχου."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    "Εισαγωγή"
    )
@@ -1149,12 +1217,92 @@ MSG_HASH(
    "Αλλαγή ρυθμίσεων αποθήκευσης."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   "Συγχρονισμός cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   "Αλλαγή ρυθμίσεων συγχρονισμού cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   "Ενεργοποίηση συγχρονισμού cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   "Προσπάθεια συγχρονισμού ρυθμίσεων, sram και καταστάσεων σε πάροχο cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "Καταστροφικός συγχρονισμός cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Συγχρονισμός: Αποθηκεύσεων/καταστάσεων"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Συγχρονισμός: Αρχεία ρυθμίσεων"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Συγχρονισμός: Εικόνες προεπισκόπησης"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Συγχρονισμός: Αρχεία συστήματος"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Όταν ενεργοποιηθεί, οι αποθηκεύσεις/καταστάσεις θα συγχρονιστούν στο cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Όταν ενεργοποιηθεί, τα αρχεία ρυθμίσεων θα συγχρονιστούν στο cloud."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Όταν ενεργοποιηθεί, οι μικρογραφίες θα συγχρονιστούν στο cloud. Δεν συνιστάται γενικά παρά μόνο για μεγάλες συλλογές προσαρμοσμένων μικρογραφιών εικόνων. Διαφορετικά, ο λήπτης μικρογραφιών είναι μια καλύτερη επιλογή."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Όταν ενεργοποιηθεί, τα αρχεία συστήματος θα συγχρονιστούν στο cloud. Αυτό μπορεί να αυξήσει σημαντικά τον χρόνο που χρειάζεται για συγχρονισμό: να χρησιμοποιηθεί με προσοχή."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   "Όταν απενεργοποιηθεί, τα αρχεία μετακινούνται σε ένα φάκελο αντιγράφων ασφαλείας πριν αντικατασταθούν ή διαγραφούν."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   "Σύστημα υποστήριξης συγχρονισμού cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   "Ποιο πρωτόκολλο δικτύου cloud να χρησιμοποιηθεί."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   "Διεύθυνση cloud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   "Η διεύθυνση για το σημείου εισόδου API στην υπηρεσία cloud."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
    "Όνομα Χρήστη"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   "Το όνομα χρήστη για τον λογαριασμό cloud."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    "Κωδικός"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   "Ο κωδικός για τον λογαριασμό cloud."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -1167,6 +1315,90 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Περιηγητής Αρχείων"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Αλλαγή ρυθμίσεων Περιήγηση Αρχείων."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   "Αρχείο ρυθμίσεων."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   "Συμπιεσμένο αρχείο αρχείου."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   "Εγγραφή αρχείου ρυθμίσεων."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   "Αρχείο δρομέα βάσης δεδομένων."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   "Αρχείο ρυθμίσεων."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   "Προκαθορισμένο αρχείο shader."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   "Αρχείο shader."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   "Αρχείο διαμόρφωσης συντομεύσεων ελέγχου."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   "Αρχείο cheat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   "Αρχείο επικαλύμματος."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   "Αρχείο βάσης δεδομένων."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   "Αρχείο γραμματοσειράς TrueType."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   "Απλό αρχείο."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   "Βίντεο. Επιλέξτε το για να ανοίξετε αυτό το αρχείο με το πρόγραμμα αναπαραγωγής βίντεο."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   "Μουσική. Επιλέξτε το για να ανοίξετε αυτό το αρχείο με το πρόγραμμα αναπαραγωγής μουσικής."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   "Αρχείο εικόνας."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   "Εικόνα. Επιλέξτε το για άνοιγμα αυτού του αρχείου με τον πρόγραμμα προβολής εικόνας."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   "Ο πυρήνας Libretro. Επιλέγοντας αυτό θα συσχετίσει αυτόν τον πυρήνα με το παιχνίδι."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   "Πυρήνας Libretro. Επιλέξτε αυτό το αρχείο για να φορτώσετε αυτόν τον πυρήνα στο RetroArch."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   "Κατάλογος. Επιλέξτε το για να ανοίξετε αυτόν τον κατάλογο."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
@@ -1237,6 +1469,10 @@ MSG_HASH(
    "Δίκτυο"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   "Αλλαγή ρυθμίσεων server και δικτύου."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
    "Λίστες Αναπαραγωγής"
    )
@@ -1263,6 +1499,10 @@ MSG_HASH(
 
 /* Core option category placeholders for icons */
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   "Χάρτης συντομεύσεων"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    "Μέσα"
    )
@@ -1271,11 +1511,31 @@ MSG_HASH(
    "Επίδοση"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   "Ήχος"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   "Προδιαγραφές"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   "Αποθηκευτικός χώρος"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    "Σύστημα"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   "Χρονισμός"
+   )
 
 #ifdef HAVE_MIST
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+   "Αλλαγή ρυθμίσεων που σχετίζονται με το Steam."
+   )
 #endif
 
 /* Settings > Drivers */
@@ -1283,6 +1543,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
    "Οδηγός Εισαγωγής"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   "Οδηγός εισόδου προς χρήση. Κάποιοι οδηγοί βίντεο εξαναγκάζουν έναν διαφορετικό οδηγό εισόδου."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
