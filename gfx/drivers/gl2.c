@@ -3559,19 +3559,19 @@ static bool gl2_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   params.data          = gl;
-   params.width         = frame_width;
-   params.height        = frame_height;
-   params.tex_width     = gl->tex_w;
-   params.tex_height    = gl->tex_h;
-   params.out_width     = gl->vp.width;
-   params.out_height    = gl->vp.height;
-   params.frame_counter = (unsigned int)frame_count;
-   params.info          = &gl->tex_info;
-   params.prev_info     = gl->prev_info;
-   params.feedback_info = &feedback_info;
-   params.fbo_info      = NULL;
-   params.fbo_info_cnt  = 0;
+   params.data             = gl;
+   params.width            = frame_width;
+   params.height           = frame_height;
+   params.tex_width        = gl->tex_w;
+   params.tex_height       = gl->tex_h;
+   params.out_width        = gl->vp.width;
+   params.out_height       = gl->vp.height;
+   params.frame_counter    = (unsigned int)frame_count;
+   params.info             = &gl->tex_info;
+   params.prev_info        = gl->prev_info;
+   params.feedback_info    = &feedback_info;
+   params.fbo_info         = NULL;
+   params.fbo_info_cnt     = 0;
 
    gl->shader->set_params(&params, gl->shader_data);
 

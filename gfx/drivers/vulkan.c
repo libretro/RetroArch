@@ -3800,7 +3800,7 @@ static void vulkan_set_projection(vk_t *vk,
    matrix_4x4_multiply(vk->mvp, trn, tmp);
 
    /* Required for translate_x+y / negative offsets to also work in RGUI */
-   matrix_4x4_multiply(vk->mvp_menu, trn, vk->mvp_no_rot);
+   matrix_4x4_multiply(vk->mvp_no_rot, trn, tmp);
 }
 
 static void vulkan_set_rotation(void *data, unsigned rotation)
@@ -4571,6 +4571,12 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain,
          1);
 #endif
+   vulkan_filter_chain_set_frame_time_delta(
+         (vulkan_filter_chain_t*)vk->filter_chain, video_driver_get_frame_time_delta_usec());
+
+   vulkan_filter_chain_set_core_fps(
+         (vulkan_filter_chain_t*)vk->filter_chain, video_driver_get_core_fps());
+
    vulkan_filter_chain_set_rotation(
          (vulkan_filter_chain_t*)vk->filter_chain, retroarch_get_rotation());
 
@@ -4748,7 +4754,7 @@ static bool vulkan_frame(void *data, const void *frame,
                quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
                   ? vk->samplers.mipmap_nearest : vk->samplers.nearest;
 
-            quad.mvp        = &vk->mvp_menu;
+            quad.mvp        = &vk->mvp_no_rot;
             quad.color.r    = 1.0f;
             quad.color.g    = 1.0f;
             quad.color.b    = 1.0f;

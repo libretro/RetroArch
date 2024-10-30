@@ -752,6 +752,16 @@ public:
       frame_direction = direction;
    }
 
+   void set_frame_time_delta(uint32_t time_delta)
+   {
+      frame_time_delta = time_delta;
+   }
+
+   void set_core_fps(float fps)
+   {
+      core_fps = fps;
+   }
+
    void set_rotation(uint32_t rot)
    {
       rotation = rot;
@@ -883,6 +893,8 @@ private:
    uint64_t frame_count = 0;
    unsigned frame_count_period = 0;
    int32_t frame_direction = 1;
+   uint32_t frame_time_delta = 0;
+   float core_fps = 0;
    uint32_t rotation = 0;
    float core_aspect = 0;
    float core_aspect_rot = 0;
@@ -1093,6 +1105,8 @@ bool Pass::init_pipeline()
    reflect_parameter("FinalViewportSize", reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
+   reflect_parameter("FrameTimeDelta", reflection.semantics[SLANG_SEMANTIC_FRAME_TIME_DELTA]);
+   reflect_parameter("CoreFPS", reflection.semantics[SLANG_SEMANTIC_CORE_FPS]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
    reflect_parameter("OriginalAspect", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
    reflect_parameter("OriginalAspectRotated", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
@@ -1560,6 +1574,12 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
+                      frame_time_delta);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_FPS,
+                      core_fps);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
 
@@ -1817,6 +1837,8 @@ public:
    void set_frame_count(uint64_t count);
    void set_frame_count_period(unsigned pass, unsigned period);
    void set_frame_direction(int32_t direction);
+   void set_frame_time_delta(uint32_t rot);
+   void set_core_fps(float fps);
    void set_rotation(uint32_t rot);
    void set_core_aspect(float coreaspect);
    void set_core_aspect_rot(float coreaspectrot);
@@ -2308,6 +2330,20 @@ void gl3_filter_chain::set_frame_direction(int32_t direction)
       passes[i]->set_frame_direction(direction);
 }
 
+void gl3_filter_chain::set_frame_time_delta(uint32_t time_delta)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_time_delta(time_delta);
+}
+
+void gl3_filter_chain::set_core_fps(float fps)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_fps(fps);
+}
+
 void gl3_filter_chain::set_rotation(uint32_t rot)
 {
    unsigned i;
@@ -2764,6 +2800,20 @@ void gl3_filter_chain_set_frame_direction(
       int32_t direction)
 {
    chain->set_frame_direction(direction);
+}
+
+void gl3_filter_chain_set_frame_time_delta(
+      gl3_filter_chain_t *chain,
+      uint32_t time_delta)
+{
+   chain->set_frame_time_delta(time_delta);
+}
+
+void gl3_filter_chain_set_core_fps(
+      gl3_filter_chain_t *chain,
+      float fps)
+{
+   chain->set_core_fps(fps);
 }
 
 void gl3_filter_chain_set_rotation(

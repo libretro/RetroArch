@@ -915,6 +915,10 @@ void video_driver_unset_stub_frame(void);
 
 float video_driver_get_core_aspect(void);
 
+uint32_t video_driver_get_frame_time_delta_usec(void);
+
+float video_driver_get_core_fps(void);
+
 void video_driver_set_viewport_core(void);
 
 void video_driver_set_rgba(void);

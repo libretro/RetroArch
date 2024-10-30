@@ -1335,6 +1335,8 @@ static bool d3d10_gfx_set_shader(void* data,
             &d3d10->frame.output_size,       /* FinalViewportSize */
             &d3d10->pass[i].frame_count,     /* FrameCount */
             &d3d10->pass[i].frame_direction, /* FrameDirection */
+            &d3d10->pass[i].frame_time_delta,/* FrameTimeDelta */
+            &d3d10->pass[i].core_fps,        /* CoreFPS */
             &d3d10->pass[i].rotation,        /* Rotation */
             &d3d10->pass[i].core_aspect,     /* OriginalAspect */
             &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRotated */
@@ -2330,6 +2332,10 @@ static bool d3d10_gfx_frame(
 #else
          d3d10->pass[i].frame_direction = 1;
 #endif
+
+         d3d10->pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+         d3d10->pass[i].core_fps = video_driver_get_core_fps();
 
          d3d10->pass[i].rotation = retroarch_get_rotation();
 
