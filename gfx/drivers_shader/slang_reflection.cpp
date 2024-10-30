@@ -52,7 +52,7 @@ static const char *semantic_uniform_names[] = {
    "FrameDirection",
    "Rotation",
    "OriginalAspect",
-   "OriginalAspectRot",
+   "OriginalAspectRotated",
    "TotalSubFrames",
    "CurrentSubFrame",
 };

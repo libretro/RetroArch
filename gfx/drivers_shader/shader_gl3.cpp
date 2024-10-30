@@ -1095,7 +1095,7 @@ bool Pass::init_pipeline()
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
    reflect_parameter("OriginalAspect", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
-   reflect_parameter("OriginalAspectRot", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
+   reflect_parameter("OriginalAspectRotated", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
    reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
    reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
 

@@ -1337,7 +1337,7 @@ static bool d3d10_gfx_set_shader(void* data,
             &d3d10->pass[i].frame_direction, /* FrameDirection */
             &d3d10->pass[i].rotation,        /* Rotation */
             &d3d10->pass[i].core_aspect,     /* OriginalAspect */
-            &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRot */
+            &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d10->pass[i].total_subframes, /* TotalSubFrames */
             &d3d10->pass[i].current_subframe,/* CurrentSubFrame */
          }
@@ -2335,7 +2335,7 @@ static bool d3d10_gfx_frame(
 
          d3d10->pass[i].core_aspect = video_driver_get_core_aspect();
 
-         /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
+         /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
          d3d10->pass[i].core_aspect_rot = video_driver_get_core_aspect();
          uint32_t rot = retroarch_get_rotation();
          if (rot == 1 || rot == 3)

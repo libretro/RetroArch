@@ -755,7 +755,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
    uni->rotation        = gl_glsl_get_uniform(glsl, prog, "Rotation");
    uni->core_aspect     = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
-   uni->core_aspect_rot = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRot");
+   uni->core_aspect_rot = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotated");
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -1368,7 +1368,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
 
   if (uni->core_aspect_rot >= 0) {
-      /* OriginalAspectRot: return 1/aspect for 90 and 270 rotated content */
+      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
       float core_aspect_rot = video_driver_get_core_aspect();
       uint32_t rot = retroarch_get_rotation();
       if (rot == 1 || rot == 3)

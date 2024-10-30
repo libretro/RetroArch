@@ -51,7 +51,7 @@ def replace_global_in(source):
         ('IN.frame_direction', 'FrameDirection'),
         ('IN.rotation', 'Rotation'),
         ('IN.core_aspect', 'OriginalAspect'),
-        ('IN.core_aspect_rot', 'OriginalAspectRot'),
+        ('IN.core_aspect_rot', 'OriginalAspectRotated'),
     ]
 
     for line in source.splitlines():
