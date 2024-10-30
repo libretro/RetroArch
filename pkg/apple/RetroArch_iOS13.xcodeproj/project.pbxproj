@@ -31,6 +31,7 @@
 		076CA50D2B695C2C00840EA5 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 076CA50C2B695C2C00840EA5 /* libz.tbd */; };
 		077D61D42C8CCF7400E492B4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9292D6E428F549D000E47A75 /* SwiftUI.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		07B7872D29E8FE8F0088B74F /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07B7872C29E8FE8F0088B74F /* filters */; };
+		07C5C6402CD167470030FBEC /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */; };
 		07F7FB022A2DA8B800037C04 /* filters in Resources */ = {isa = PBXBuildFile; fileRef = 07F7FB012A2DA8B800037C04 /* filters */; };
 		9204BE0D1D319EF300BD49DB /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		9204BE101D319EF300BD49DB /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; settings = {COMPILER_FLAGS = "-include $(DERIVED_FILE_DIR)/git_version.h"; }; };
@@ -182,6 +183,8 @@
 		076CA50C2B695C2C00840EA5 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS17.2.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		077AB2C82BFB0E28002BBE2F /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = AppStore.xcconfig; path = iOS/AppStore.xcconfig; sourceTree = "<group>"; };
 		07B7872C29E8FE8F0088B74F /* filters */ = {isa = PBXFileReference; lastKnownFileType = folder; path = filters; sourceTree = "<group>"; };
+		07C5C63D2CD167470030FBEC /* GCDWebDAVServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GCDWebDAVServer.h; sourceTree = "<group>"; };
+		07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GCDWebDAVServer.m; sourceTree = "<group>"; };
 		07F7FB012A2DA8B800037C04 /* filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = filters; path = iOS/filters; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -533,6 +536,15 @@
 				0712A7772B807AE400C9765F /* Info.plist */,
 			);
 			path = RetroArchTopShelfExtension;
+			sourceTree = "<group>";
+		};
+		07C5C63F2CD167470030FBEC /* GCDWebDAVServer */ = {
+			isa = PBXGroup;
+			children = (
+				07C5C63D2CD167470030FBEC /* GCDWebDAVServer.h */,
+				07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */,
+			);
+			path = GCDWebDAVServer;
 			sourceTree = "<group>";
 		};
 		83D632D719ECFCC4009E3161 /* iOS */ = {
@@ -1166,6 +1178,7 @@
 			children = (
 				92CC05C021FE3C6D00FF79F0 /* WebServer.h */,
 				92CC05C121FE3C6D00FF79F0 /* WebServer.m */,
+				07C5C63F2CD167470030FBEC /* GCDWebDAVServer */,
 				92CC057E21FE3C1700FF79F0 /* GCDWebServer */,
 				92CC059E21FE3C1700FF79F0 /* GCDWebUploader */,
 			);
@@ -1611,6 +1624,7 @@
 				92CC05A921FE3C1700FF79F0 /* GCDWebServer.m in Sources */,
 				926C77EA21FD20C100103EDE /* griffin_objc.m in Sources */,
 				926C77EB21FD20C400103EDE /* griffin.c in Sources */,
+				07C5C6402CD167470030FBEC /* GCDWebDAVServer.m in Sources */,
 				92CC05B521FE3C1700FF79F0 /* GCDWebServerURLEncodedFormRequest.m in Sources */,
 				92CC05B121FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C321FE3C6D00FF79F0 /* WebServer.m in Sources */,
