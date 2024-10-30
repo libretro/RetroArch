@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		07019B932CD24FF200D6C3FD /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */; };
 		070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A88422A4E7AA9003161C0 /* OpenAL.framework */; };
 		0712A7722B807AE400C9765F /* TVServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0712A7712B807AE400C9765F /* TVServices.framework */; };
 		0712A7762B807AE400C9765F /* ContentProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = 0712A7752B807AE400C9765F /* ContentProvider.m */; };
@@ -1606,6 +1607,7 @@
 				9289D20A25E40D7B004B5D52 /* EmulatorKeyboardView.swift in Sources */,
 				92CC05B221FE3C1700FF79F0 /* GCDWebServerStreamedResponse.m in Sources */,
 				92CC05A221FE3C1700FF79F0 /* GCDWebServerResponse.m in Sources */,
+				07019B932CD24FF200D6C3FD /* GCDWebDAVServer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
