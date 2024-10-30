@@ -310,6 +310,14 @@ static int filebrowser_parse(
                FILE_TYPE_USE_DIRECTORY, 0 ,0);
          break;
       default:
+         /* if a core has / in its list of supported extensions, the core
+            supports loading of directories on the host file system */
+         if (exts && strchr(exts, '/'))
+            menu_entries_prepend(info_list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
+                  MSG_UNKNOWN,
+                  FILE_TYPE_PLAIN, 0, FILE_TYPE_USE_DIRECTORY);
          break;
    }
 
