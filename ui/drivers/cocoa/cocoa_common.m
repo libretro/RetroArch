@@ -713,7 +713,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
 {
     [super viewWillAppear:animated];
 #if TARGET_OS_TV
-    [[WebServer sharedInstance] startUploader];
+    [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
 #endif
 }
@@ -783,7 +783,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
 #elif TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
-            [[WebServer sharedInstance] stopUploader];
+            [[WebServer sharedInstance] stopServers];
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{

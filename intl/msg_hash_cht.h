@@ -1221,6 +1221,10 @@ MSG_HASH(
    "嘗試將設定檔、記憶存檔和即時存檔, 同步到雲端儲存供應商。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   "破壞雲端同步"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
    "同步: 記憶存檔/即時存檔"
    )
@@ -1238,7 +1242,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
-   "若未啟用，覆蓋或刪除前檔案將會移動到備份資料夾。"
+   "關閉時檔案將會在覆寫或刪除前移動到備份資料夾。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
@@ -1258,11 +1262,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
-   "使用者名稱"
+   "帳號"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
-   "你的雲端儲存帳號名稱。"
+   "請輸入雲端儲存服務的帳號。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
@@ -1270,7 +1274,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
-   "你的雲端儲存帳號密碼。"
+   "請輸入雲端儲存服務的密碼。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -3295,7 +3299,7 @@ MSG_HASH(
    )   
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "開啟時在「控制器 (核心預設)」選項中, 儲存為預設控制器時依裝置名稱建立和載入。"
+   "開啟時在快捷選單「控制器 (核心預設)」選項中, 儲存為預設控制器時, 依裝置名稱建立資料夾儲存和載入。"
    )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -4593,7 +4597,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-   "使用核心的名稱, 建立資料夾儲存記憶存檔。"
+   "記憶存檔依核心名稱建立資料夾儲存和載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
@@ -4601,7 +4605,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "使用核心的名稱, 建立資料夾儲存即時存檔。"
+   "即時存檔依核心名稱建立資料夾儲存和載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -4609,7 +4613,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "使用遊戲載入位置的資料夾名稱, 建立資料夾儲存記憶存檔。"
+   "記憶存檔依載入位置資料夾名稱建立資料夾儲存和載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -4617,7 +4621,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "使用遊戲載入位置的資料夾名稱, 建立資料夾儲存即時存檔。"
+   "即時存檔依載入位置資料夾名稱建立資料夾儲存和載入。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
@@ -4729,7 +4733,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "使用遊戲載入位置的資料夾名稱, 建立資料夾儲存螢幕截圖。"
+   "使用載入位置資料夾名稱建立資料夾儲存螢幕截圖。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
@@ -4737,7 +4741,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "使用載入位置資料夾儲存記憶存檔。"
+   "使用載入位置資料夾儲存和載入記憶存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -4745,7 +4749,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "使用載入位置資料夾儲存即時存檔。"
+   "使用載入位置資料夾儲存和載入即時存檔。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
@@ -4844,7 +4848,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
-   "效能計數器 (僅限Switch主機)"
+   "效能計數器"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
@@ -15316,7 +15320,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "Switch主機中央處理器超頻設定。"
+   "中央處理器超頻設定。"
    )
 #endif
 #ifdef HAVE_LAKKA
