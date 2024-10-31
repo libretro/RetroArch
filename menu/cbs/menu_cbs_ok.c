@@ -2014,6 +2014,17 @@ static int file_load_with_detect_core_wrapper(
 
       core_info_get_list(&list);
 
+      /* If loading a directory, use only path */
+      if (path == NULL && !string_is_empty(menu_path_new))
+      {
+         strlcpy(menu->deferred_path, menu_path_new,
+                 sizeof(menu->deferred_path));
+         strlcpy(menu->detect_content_path, menu_path_new,
+                 sizeof(menu->detect_content_path));
+         path = menu->detect_content_path;
+         menu_path_new[0] = '\0';
+      }
+
       def_info.data       = list;
       def_info.dir        = menu_path_new;
       def_info.path       = path;
@@ -2101,6 +2112,10 @@ static int action_ok_file_load_with_detect_core_carchive(
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
+         && string_is_equal(label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+   if (is_dir) path = NULL;
 
    type  = 0;
    label = NULL;
@@ -7985,7 +8000,17 @@ static int action_ok_disk_image_append(const char *path,
 
    if (!string_is_empty(menu_path))
    {
-      if (!string_is_empty(path))
+      bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
+            && string_is_equal(label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+      if (is_dir)
+      {
+         size_t past_slash;
+         strlcpy(image_path, menu_path, sizeof(image_path));
+         past_slash = fill_pathname_slash(image_path, sizeof(image_path));
+         if (past_slash > 1) image_path[past_slash - 1] = '\0';
+      }
+      else if (!string_is_empty(path))
          fill_pathname_join_special(image_path,
                menu_path, path, sizeof(image_path));
       else
