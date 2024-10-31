@@ -5,10 +5,10 @@ ifneq ($(CROSS_COMPILE),arm-webos-linux-gnueabi-)
 endif
 
 ifdef SDKTARGETSYSROOT
-    $(warning OE-based toolchain isn't supported anymore. Please use https://github.com/webosbrew/native-toolchain)
+    $(warning "OE-based toolchain isn't supported anymore. Please use https://github.com/webosbrew/native-toolchain")
     STAGING_DIR = $(SDKTARGETSYSROOT)
 else ifndef STAGING_DIR
-    $(error Can't find buildroot based toolchain. Please use https://github.com/webosbrew/native-toolchain)
+    $(error "Can't find buildroot based toolchain. Please use https://github.com/webosbrew/native-toolchain")
 endif
 
 WEBOS_FREETYPE_CONFIG ?= $(STAGING_DIR)/usr/bin/freetype-config
@@ -17,7 +17,7 @@ WEBOS_INC_DIR         ?= $(STAGING_DIR)/usr/include
 WEBOS_LIB_DIR         ?= $(STAGING_DIR)/usr/lib
 
 ADD_SDL2_LIB          ?= 0
-SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.0-webos.2/SDL2-2.30.0-webos.tar.gz
+SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.8-webos.3/SDL2-2.30.8-webos-abi.tar.gz
 
 #########################
 #########################
@@ -151,6 +151,7 @@ DEFINES += -DHAVE_FILTERS_BUILTIN
 DEFINES += -DHAVE_SDL2
 DEFINES += -DHAVE_PULSE
 DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES
+DEFINES += -DHAVE_NETWORKGAMEPAD
 DEFINES += -DHAVE_UPDATE_CORE_INFO
 
 PKG_CONFIG=pkg-config
@@ -159,6 +160,8 @@ SDL2_CFLAGS := $(shell $(PKG_CONFIG) --cflags sdl2)
 SDL2_LIBS := $(shell $(PKG_CONFIG) --libs sdl2)
 OPENGLES_LIBS = -lGLESv2
 PULSE_LIBS = $(shell $(PKG_CONFIG) --libs libpulse)
+FREETYPE_CFLAGS := $(shell $(WEBOS_FREETYPE_CONFIG) --cflags)
+FREETYPE_LIBS := $(shell $(WEBOS_FREETYPE_CONFIG) --libs)
 MMAP_LIBS = -lc
 NEON_CFLAGS = -mfpu=neon
 NEON_ASFLAGS = -mfpu=neon
