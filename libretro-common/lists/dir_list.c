@@ -164,7 +164,7 @@ static int dir_list_read(const char *dir,
       char file_path[PATH_MAX_LENGTH];
       const char *name                = retro_dirent_get_name(entry);
 
-      if (name[0] == '.')
+      if (name[0] == '.' || name[0] == '$')
       {
          /* Do not include hidden files and directories */
          if (!include_hidden)
@@ -185,10 +185,9 @@ static int dir_list_read(const char *dir,
       if (retro_dirent_is_dir(entry, NULL))
       {
          /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
-#ifndef _WIN32
          if (!include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
-#endif
+
 #if defined(IOS) || defined(OSX)
          if (string_ends_with(name, ".framework"))
          {
