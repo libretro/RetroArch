@@ -22,7 +22,7 @@ SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/downloa
 #########################
 #########################
 
-PACKAGE_NAME = com.retroarch
+PACKAGE_NAME ?= com.retroarch.webos
 PACKAGE_VERSION := $(patsubst "%",%,$(RARCH_VERSION))
 
 DEBUG ?= 0
@@ -294,7 +294,7 @@ install: ipk
 	ares-install webos/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(ARCH).ipk
 
 launch: install
-	ares-launch com.retroarch
+	ares-launch $(PACKAGE_NAME)
 
 .PHONY: all clean ipk
 
