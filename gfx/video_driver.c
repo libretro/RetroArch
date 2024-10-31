@@ -2453,7 +2453,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                max_scale_h = overscale_h;
             /* Overscale will be too much even if it is closer */
             else if ((scale_h_diff < -155 && scale_h_diff > (int)-content_height / 2)
-                  || (scale_h_diff < -20 && scale_h_diff > -50)
+                  || (scale_h_diff < -30 && scale_h_diff > -50)
                   || (scale_h_diff > 20))
                max_scale_h = underscale_h;
 
