@@ -4088,10 +4088,6 @@ MSG_HASH(
    "現在のネットプレイセッションにチャットメッセージを送信します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "ネットプレイチャットフェード切り替え"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "ネットプレイチャットメッセージのフェードと固定を切り替えます。"
    )

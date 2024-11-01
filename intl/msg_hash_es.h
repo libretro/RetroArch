@@ -4140,10 +4140,6 @@ MSG_HASH(
    "Envía un mensaje a la sesión actual de juego en red."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Desvanecer chat del juego en red"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Oculta los mensajes de chat del juego en red con o sin una animación de fundido."
    )

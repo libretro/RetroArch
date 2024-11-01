@@ -3616,10 +3616,6 @@ MSG_HASH(
    "Envia uma mensagem de bate-papo para a sessão atual da Netplay."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "(Des)ativar desvanecimento do bate-papo da Netplay"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Ativa ou desativa o desvanecimento das mensagens do bate-papo da Netplay."
    )
