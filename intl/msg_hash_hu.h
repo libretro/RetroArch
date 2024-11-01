@@ -4132,10 +4132,6 @@ MSG_HASH(
    "Csevegőüzenet küldése a jelenlegi netplay menetbe."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "A Netplay csevegés elhalványul"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Váltás az elhalványuló és a statikus Netplay csevegő üzenetek közt."
    )

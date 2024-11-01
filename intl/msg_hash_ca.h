@@ -3036,10 +3036,6 @@ MSG_HASH(
    "Envia un missatge de xat a la sessió actual de netplay."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Commuta Esvaïment de Xat de Netplay"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Canvia entre els missatges de xat estàtics o esvaïts."
    )

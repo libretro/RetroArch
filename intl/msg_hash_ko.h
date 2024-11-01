@@ -4172,10 +4172,6 @@ MSG_HASH(
    "현재 넷플레이 세션에 대화 메시지를 보냅니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "넷플레이 채팅 페이드 켜기/끄기"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "채팅 메시지를 서서히 사라지게 할 것인지 정적으로 표시할 것인지 선택합니다."
    )

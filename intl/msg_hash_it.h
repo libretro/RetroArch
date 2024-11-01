@@ -4072,10 +4072,6 @@ MSG_HASH(
    "Invia un messaggio di chat alla sessione di rete corrente."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Dissolvenza Netplay Chat Attiva/Disattiva"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Commuta tra dissolvenza e messaggi statici di chat di netplay."
    )

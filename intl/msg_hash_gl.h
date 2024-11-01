@@ -4100,10 +4100,6 @@ MSG_HASH(
    "Envía unha mensaxe de chat na sesión actual de Xogo en Rede."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Activar/desactivar atenuado do chat no Xogo en rede"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Alterna entre mensaxes de chat de netplay esvaecidas e estáticas."
    )
