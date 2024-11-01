@@ -4013,19 +4013,13 @@ static bool config_load_file(global_t *global,
    }
 
 #if defined(__APPLE__) && defined(OSX)
-#if defined(__aarch64__)
-   /* Wrong architecture, set it back to arm64 */
-   if (string_is_equal(settings->paths.network_buildbot_url,
-            "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"))
-       configuration_set_string(settings,
-             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-#elif defined(__x86_64__)
-   /* Wrong architecture, set it back to x86_64 */
-   if (string_is_equal(settings->paths.network_buildbot_url,
-            "http://buildbot.libretro.com/nightly/apple/osx/arm64/latest/"))
-       configuration_set_string(settings,
-             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-#endif
+   if (     ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_X86_64) &&
+             string_ends_with(settings->paths.network_buildbot_url, "/arm64/latest/"))
+         || ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_ARMV8) &&
+             string_ends_with(settings->paths.network_buildbot_url, "/x86_64/latest/")))
+      /* Wrong architecture, set it back */
+      configuration_set_string(settings,
+            settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
 #endif
 
    if (string_is_equal(settings->paths.path_menu_wallpaper, "default"))
