@@ -230,12 +230,12 @@ static int filebrowser_parse(
          if (subsystem && runloop_st->subsystem_current_count > 0)
             ret = file_archive_get_file_list_noalloc(&str_list,
                   path,
-                  subsystem->roms[
-                  content_get_subsystem_rom_id()].valid_extensions);
+                  filter_ext ? subsystem->roms[
+                  content_get_subsystem_rom_id()].valid_extensions : NULL);
       }
       else
          ret = file_archive_get_file_list_noalloc(&str_list,
-               path, exts);
+               path, filter_ext ? exts : NULL);
    }
    else if (!string_is_empty(path))
    {
