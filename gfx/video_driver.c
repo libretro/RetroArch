@@ -2392,6 +2392,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    if (content_width < 2 || content_height < 2)
       return;
 
+   /* Use regular scaling if there is no room for 1x */
+   if (content_width > width || content_height > height)
+   {
+      video_viewport_get_scaled_aspect(vp, width, height, ydown);
+      return;
+   }
+
    content_width  = (content_width  > width)  ? width  : content_width;
    content_height = (content_height > height) ? height : content_height;
 
@@ -2496,6 +2503,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             {
                content_height = (unsigned)roundf(content_width / aspect_ratio);
                overscale_h    = (height / content_height) + !!(height % content_height);
+
+               /* Use regular scaling if there is no room for 1x */
+               if (content_width > width || content_height > height)
+               {
+                  video_viewport_get_scaled_aspect(vp, width, height, ydown);
+                  return;
+               }
 
                if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
                   max_scale_h = ((int)(height - content_height * overscale_h) < -(int)(height * 0.20f)) ? overscale_h - 1 : overscale_h;
