@@ -51,7 +51,7 @@ struct vulkan_filter_chain_pass_info
    float scale_x;
    float scale_y;
 
-   /* Ignored for the last pass, swapchain info 
+   /* Ignored for the last pass, swapchain info
     * will be used instead. */
    VkFormat rt_format;
    /* For the last pass, make sure VIEWPORT scale
@@ -102,7 +102,7 @@ void vulkan_filter_chain_set_shader(vulkan_filter_chain_t *chain,
 
 VkFormat vulkan_filter_chain_get_pass_rt_format(
       vulkan_filter_chain_t *chain,
-      unsigned pass);      
+      unsigned pass);
 
 bool vulkan_filter_chain_update_swapchain_info(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_swapchain_info *info);
@@ -138,6 +138,12 @@ void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
 
 void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *chain,
       uint32_t rot);
+
+void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *chain,
+      float coreaspect);
+
+void vulkan_filter_chain_set_core_aspect_rot(vulkan_filter_chain_t *chain,
+      float coreaspectrot);
 
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);

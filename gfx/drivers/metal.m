@@ -1206,6 +1206,8 @@ typedef struct MTLALIGN(16)
       uint32_t frame_count;
       int32_t frame_direction;
       uint32_t rotation;
+      float_t core_aspect;
+      float_t core_aspect_rot;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -1579,6 +1581,15 @@ typedef struct MTLALIGN(16)
 
       _engine.pass[i].rotation = retroarch_get_rotation();
 
+      _engine.pass[i].core_aspect = video_driver_get_core_aspect();
+
+      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+      int rot = retroarch_get_rotation();
+      float core_aspect_rot = video_driver_get_core_aspect();
+      if (rot == 1 || rot == 3)
+         core_aspect_rot = 1/core_aspect_rot;
+      _engine.pass[i].core_aspect_rot  = core_aspect_rot;
+
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
          id<MTLBuffer> buffer      = _engine.pass[i].buffers[j];
@@ -1836,6 +1847,8 @@ typedef struct MTLALIGN(16)
                &_engine.pass[i].frame_count,     /* FrameCount */
                &_engine.pass[i].frame_direction, /* FrameDirection */
                &_engine.pass[i].rotation,        /* Rotation */
+               &_engine.pass[i].core_aspect,     /* OriginalAspect */
+               &_engine.pass[i].core_aspect_rot, /* OriginalAspectRotated */
             }
          };
          /* clang-format on */

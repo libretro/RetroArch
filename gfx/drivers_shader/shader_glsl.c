@@ -101,6 +101,9 @@ struct shader_uniforms
    /* Use int for maximal compatibility despite other drivers using uint. */
    int rotation;
 
+   float core_aspect;
+   float core_aspect_rot;
+
    int lut_texture[GFX_MAX_TEXTURES];
    unsigned frame_count_mod;
 
@@ -287,7 +290,7 @@ static const XXH64_hash_t gl_glsl_hash_shader(
    {
       XXH64_update(state, source[n], strlen(source[n]));
    }
-   
+
    XXH64_hash_t const hash = XXH64_digest(state);
 
    XXH64_freeState(state);
@@ -417,10 +420,10 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    source[2] = glsl->alias_define;
    source[3] = program;
 
-#if defined(ORBIS) 
+#if defined(ORBIS)
    {
       char save_path[250];
-      XXH64_hash_t const hash = 
+      XXH64_hash_t const hash =
          gl_glsl_hash_shader(source, ARRAY_SIZE(source));
       snprintf(save_path, sizeof(save_path),
             "/data/retroarch/temp/%lx.sb", hash);
@@ -468,7 +471,7 @@ static bool gl_glsl_compile_program(
       struct shader_program_info *program_info)
 {
    glsl_shader_data_t                 *glsl = (glsl_shader_data_t*)data;
-   struct shader_program_glsl_data *program = 
+   struct shader_program_glsl_data *program =
       (struct shader_program_glsl_data*)program_data;
    GLuint prog                              = glCreateProgram();
 
@@ -486,7 +489,8 @@ static bool gl_glsl_compile_program(
       if (!gl_glsl_compile_shader(
                glsl,
                program->vprg,
-               "#define VERTEX\n#define PARAMETER_UNIFORM\n", program_info->vertex))
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n",
+               program_info->vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
          goto error;
@@ -500,7 +504,7 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL]: Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n",
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n",
                program_info->fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", idx);
@@ -750,6 +754,8 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->frame_count     = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
    uni->rotation        = gl_glsl_get_uniform(glsl, prog, "Rotation");
+   uni->core_aspect     = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
+   uni->core_aspect_rot = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotated");
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -1112,7 +1118,7 @@ static void *gl_glsl_init(void *data, const char *path)
       goto error;
    }
 #else
-   if (      glsl_core 
+   if (      glsl_core
          && (!(glsl->shader->flags & SHDR_FLAG_MODERN)))
    {
       RARCH_ERR("[GL]: GL core context is used, but shader is not core compatible. Cannot use it.\n");
@@ -1358,6 +1364,18 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
   if (uni->rotation >= 0)
       glUniform1i(uni->rotation, retroarch_get_rotation());
 
+  if (uni->core_aspect >= 0)
+      glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
+
+  if (uni->core_aspect_rot >= 0) {
+      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+      float core_aspect_rot = video_driver_get_core_aspect();
+      uint32_t rot = retroarch_get_rotation();
+      if (rot == 1 || rot == 3)
+         core_aspect_rot = 1/core_aspect_rot;
+      glUniform1f(uni->core_aspect_rot, core_aspect_rot);
+  }
+
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
    {
@@ -1545,7 +1563,7 @@ static bool gl_glsl_set_mvp(void *shader_data, const void *mat_data)
    int loc;
    glsl_shader_data_t *glsl   = (glsl_shader_data_t*)shader_data;
 
-   if (      !glsl 
+   if (      !glsl
          || (!(glsl->shader->flags & SHDR_FLAG_MODERN)))
       return false;
 
@@ -1589,7 +1607,7 @@ static bool gl_glsl_set_coords(void *shader_data,
    const struct shader_uniforms *uni = glsl
       ? &glsl->uniforms[glsl->active_idx] : NULL;
 
-   if (     !glsl 
+   if (     !glsl
          || (!(glsl->shader->flags & SHDR_FLAG_MODERN))
          || !coords)
    {

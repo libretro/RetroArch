@@ -72,14 +72,18 @@ enum slang_semantic
    SLANG_SEMANTIC_FRAME_DIRECTION  = 4,
    /* uint, rotation */
    SLANG_SEMANTIC_ROTATION         = 5,
+   /* float, rotation */
+   SLANG_SEMANTIC_CORE_ASPECT      = 6,
+   SLANG_SEMANTIC_CORE_ASPECT_ROT  = 7,
+
    /* uint, sub frames per content frame */
-   SLANG_SEMANTIC_TOTAL_SUBFRAMES  = 6,
+   SLANG_SEMANTIC_TOTAL_SUBFRAMES  = 8,
    /* uint, current sub frame */
-   SLANG_SEMANTIC_CURRENT_SUBFRAME = 7,
+   SLANG_SEMANTIC_CURRENT_SUBFRAME = 9,
    SLANG_NUM_BASE_SEMANTICS,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 8,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 10,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

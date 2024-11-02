@@ -4574,6 +4574,17 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_filter_chain_set_rotation(
          (vulkan_filter_chain_t*)vk->filter_chain, retroarch_get_rotation());
 
+   vulkan_filter_chain_set_core_aspect(
+         (vulkan_filter_chain_t*)vk->filter_chain, video_driver_get_core_aspect());
+
+   /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+   uint32_t rot = retroarch_get_rotation();
+   float core_aspect_rot = video_driver_get_core_aspect();
+   if (rot == 1 || rot == 3)
+      core_aspect_rot = 1/core_aspect_rot;
+   vulkan_filter_chain_set_core_aspect_rot(
+         (vulkan_filter_chain_t*)vk->filter_chain, core_aspect_rot);
+
    /* Render offscreen filter chain passes. */
    {
       /* Set the source texture in the filter chain */
