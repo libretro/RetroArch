@@ -436,7 +436,27 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_volume_up,             ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_volume_down,           MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN)
 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_key,        MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot0_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT0_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot1_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT1_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot2_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT2_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot3_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT3_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot4_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT4_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot5_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT5_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot6_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT6_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot7_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT7_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot8_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT8_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_load_state_slot9_key,  MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_SLOT9_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_key,        MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot0_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT0_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot1_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT1_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot2_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT2_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot3_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT3_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot4_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT4_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot5_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT5_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot6_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT6_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot7_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT7_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot8_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT8_KEY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_save_state_slot9_key,  MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_SLOT9_KEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_plus,       MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_state_slot_minus,      MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS)
 
@@ -731,6 +751,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_windowed_fullscreen,     MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_autoswitch_refresh_rate, MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_autoswitch_pal_threshold,MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_record,              MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_max_direct_slot,     MENU_ENUM_SUBLABEL_SAVESTATE_MAX_DIRECT_SLOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_savestate_auto_index,          MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_replay_auto_index,             MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_block_sram_overwrite,          MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE)
@@ -2329,8 +2350,68 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             case RARCH_LOAD_STATE_KEY:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_key);
                return 0;
+            case RARCH_LOAD_STATE_SLOT0_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot0_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT1_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot1_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT2_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot2_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT3_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot3_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT4_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot4_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT5_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot5_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT6_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot6_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT7_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot7_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT8_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot8_key);
+               return 0;
+            case RARCH_LOAD_STATE_SLOT9_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_load_state_slot9_key);
+               return 0;
             case RARCH_SAVE_STATE_KEY:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT0_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot0_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT1_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot1_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT2_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot2_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT3_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot3_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT4_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot4_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT5_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot5_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT6_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot6_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT7_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot7_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT8_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot8_key);
+               return 0;
+            case RARCH_SAVE_STATE_SLOT9_KEY:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_save_state_slot9_key);
                return 0;
             case RARCH_STATE_SLOT_PLUS:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_state_slot_plus);
@@ -4208,6 +4289,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_block_sram_overwrite);
             break;
+         case MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_max_direct_slot);
+            break;
          case MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_savestate_auto_index);
             break;
@@ -5757,3 +5841,4 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 
    return 0;
 }
+

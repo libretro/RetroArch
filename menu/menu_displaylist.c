@@ -7188,6 +7188,57 @@ unsigned menu_displaylist_build_list(
                            PARSE_ONLY_UINT, false) == 0)
                      count++;
                }
+               /* Find a better way to do this! */
+               else if ((i == RARCH_LOAD_STATE_SLOT0_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT0_KEY) && settings->ints.savestate_max_direct_slot < 0)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT1_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT1_KEY) && settings->ints.savestate_max_direct_slot < 1)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT2_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT2_KEY) && settings->ints.savestate_max_direct_slot < 2)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT3_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT3_KEY) && settings->ints.savestate_max_direct_slot < 3)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT4_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT4_KEY) && settings->ints.savestate_max_direct_slot < 4)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT5_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT5_KEY) && settings->ints.savestate_max_direct_slot < 5)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT6_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT6_KEY) && settings->ints.savestate_max_direct_slot < 6)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT7_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT7_KEY) && settings->ints.savestate_max_direct_slot < 7)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT8_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT8_KEY) && settings->ints.savestate_max_direct_slot < 8)
+               {
+                   continue;
+               }
+               else if ((i == RARCH_LOAD_STATE_SLOT9_KEY ||
+                  i == RARCH_SAVE_STATE_SLOT9_KEY) && settings->ints.savestate_max_direct_slot < 9)
+               {
+                   continue;
+               }
 
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         (enum msg_hash_enums)(
@@ -10664,6 +10715,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,    PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,  PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SAVESTATE_MAX_DIRECT_SLOT,          PARSE_ONLY_INT,  true},
                {MENU_ENUM_LABEL_AUTOSAVE_INTERVAL,                  PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},

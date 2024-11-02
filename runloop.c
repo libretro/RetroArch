@@ -6708,6 +6708,67 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_SAVE_STATE_KEY, CMD_EVENT_SAVE_STATE, true, NULL);
    HOTKEY_CHECK(RARCH_LOAD_STATE_KEY, CMD_EVENT_LOAD_STATE, true, NULL);
 
+   /* There should be a better way to do this - fix it up if so */
+   if (settings->ints.savestate_max_direct_slot >= 0)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT0_KEY, CMD_EVENT_SAVE_STATE_SLOT0, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT0_KEY, CMD_EVENT_LOAD_STATE_SLOT0, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 1)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT1_KEY, CMD_EVENT_SAVE_STATE_SLOT1, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT1_KEY, CMD_EVENT_LOAD_STATE_SLOT1, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 2)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT2_KEY, CMD_EVENT_SAVE_STATE_SLOT2, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT2_KEY, CMD_EVENT_LOAD_STATE_SLOT2, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 3)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT3_KEY, CMD_EVENT_SAVE_STATE_SLOT3, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT3_KEY, CMD_EVENT_LOAD_STATE_SLOT3, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 4)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT4_KEY, CMD_EVENT_SAVE_STATE_SLOT4, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT4_KEY, CMD_EVENT_LOAD_STATE_SLOT4, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 5)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT5_KEY, CMD_EVENT_SAVE_STATE_SLOT5, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT5_KEY, CMD_EVENT_LOAD_STATE_SLOT5, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 6)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT6_KEY, CMD_EVENT_SAVE_STATE_SLOT6, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT6_KEY, CMD_EVENT_LOAD_STATE_SLOT6, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 7)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT7_KEY, CMD_EVENT_SAVE_STATE_SLOT7, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT7_KEY, CMD_EVENT_LOAD_STATE_SLOT7, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 8)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT8_KEY, CMD_EVENT_SAVE_STATE_SLOT8, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT8_KEY, CMD_EVENT_LOAD_STATE_SLOT8, true, NULL);
+   }
+
+   if (settings->ints.savestate_max_direct_slot >= 9)
+   {
+      HOTKEY_CHECK(RARCH_SAVE_STATE_SLOT9_KEY, CMD_EVENT_SAVE_STATE_SLOT9, true, NULL);
+      HOTKEY_CHECK(RARCH_LOAD_STATE_SLOT9_KEY, CMD_EVENT_LOAD_STATE_SLOT9, true, NULL);
+   }
+
    /* Check reset hotkey */
    HOTKEY_CHECK(RARCH_RESET, CMD_EVENT_RESET, true, NULL);
 
