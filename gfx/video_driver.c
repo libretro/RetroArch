@@ -2392,6 +2392,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    if (content_width < 2 || content_height < 2)
       return;
 
+   /* Use regular scaling if there is no room for 1x */
+   if (content_width > width || content_height > height)
+   {
+      video_viewport_get_scaled_aspect(vp, width, height, ydown);
+      return;
+   }
+
    content_width  = (content_width  > width)  ? width  : content_width;
    content_height = (content_height > height) ? height : content_height;
 
@@ -2481,6 +2488,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             float overscale_ratio     = 0;
             uint16_t content_width_ar = content_width;
             uint8_t overscale_w       = 0;
+            uint8_t overscale_h       = 0;
             uint8_t i                 = 0;
 
             /* Reset width to exact width */
@@ -2489,6 +2497,27 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                   : ((video_st->frame_cache_width  == 4) ? video_st->av_info.geometry.base_width  : video_st->frame_cache_width);
 
             overscale_w   = (width / content_width) + !!(width % content_width);
+
+            /* Maintain aspect ratio when only touching X */
+            if (axis >= VIDEO_SCALE_INTEGER_AXIS_X)
+            {
+               content_height = (unsigned)roundf(content_width / aspect_ratio);
+               overscale_h    = (height / content_height) + !!(height % content_height);
+
+               /* Use regular scaling if there is no room for 1x */
+               if (content_width > width || content_height > height)
+               {
+                  video_viewport_get_scaled_aspect(vp, width, height, ydown);
+                  return;
+               }
+
+               if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
+                  max_scale_h = ((int)(height - content_height * overscale_h) < -(int)(height * 0.20f)) ? overscale_h - 1 : overscale_h;
+               else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
+                  max_scale_h = overscale_h;
+               else
+                  max_scale_h = overscale_h - 1;
+            }
 
             /* Populate the ratios */
             for (i = 1; i < overscale_w + 1; i++)
@@ -2504,7 +2533,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             }
 
             /* Pick the nearest ratio */
-            if (overscale_ratio - target_ratio <= target_ratio - underscale_ratio)
+            if (overscale_ratio > 0 && overscale_ratio - target_ratio <= target_ratio - underscale_ratio)
                max_scale_w = i;
             else if (i > 1)
                max_scale_w = i - 1;
@@ -2520,13 +2549,17 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
                if (     content_width_ar - content_width_diff == (int)content_width / 2
                      && content_width_diff < 20
-                     && scale_w_ratio - target_ratio > 0.25f
-                  )
+                     && scale_w_ratio - target_ratio > 0.25f)
                   half_w = -1;
+               else if (axis == VIDEO_SCALE_INTEGER_AXIS_XHALF
+                     && content_width_diff > (int)content_width / 2
+                     && content_width * max_scale_w < width)
+                  half_w = 1;
             }
 
             /* Special half height scale for hi-res */
-            if (axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF)
+            if (     axis == VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF
+                  || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
             {
                if (     max_scale_h == (height / content_height)
                      && content_height / 300
@@ -2546,10 +2579,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
          padding_x = width  - content_width  * (max_scale_w + (half_w * 0.5f));
          padding_y = height - content_height * (max_scale_h + (half_h * 0.5f));
-
-         /* No Y padding when only touching X */
-         if (axis >= VIDEO_SCALE_INTEGER_AXIS_X)
-            padding_y = 0;
       }
       else
       {
