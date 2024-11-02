@@ -157,6 +157,8 @@ static bool slang_process_reflection(
             "FrameCount",
             "FrameDirection",
             "Rotation",
+            "OriginalAspect",
+            "OriginalAspectRotated",
             "TotalSubFrames",
             "CurrentSubFrame",
          };

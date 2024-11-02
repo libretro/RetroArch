@@ -177,17 +177,21 @@ bool glslang_read_shader_file(const char *path,
          goto error;
    }
 
+   /* Add defines about supported retroarch features */
+   if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr))
+      goto error;
+
    /* At least VIM treats the first line as line #1,
     * so offset everything by one. */
    snprintf(tmp, sizeof(tmp), "#line %u \"%s\"", root_file ? 2 : 1, basename);
    if (!string_list_append(output, tmp, attr))
       goto error;
-   
+
    /* Loop through lines of file */
    for (i = root_file ? 1 : 0; i < lines.size; i++)
    {
       const char *line   = lines.elems[i].data;
-   
+
       /* Check for 'include' statements */
       bool include_optional = !strncmp("#pragma include_optional ", line, STRLEN_CONST("#pragma include_optional "));
       if ( !strncmp("#include ", line, STRLEN_CONST("#include ")) || include_optional )
