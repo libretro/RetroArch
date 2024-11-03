@@ -1727,7 +1727,6 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
       if (string_is_equal(id, "CoreFPS"))
       {
          *dst        = core_fps;
-         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
          continue;
       }
 
