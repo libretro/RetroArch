@@ -75,12 +75,11 @@ enum slang_semantic
    /* uint, CoreFPS */
    SLANG_SEMANTIC_CORE_FPS         = 6,
    /* uint, rotation */
-
    SLANG_SEMANTIC_ROTATION         = 7,
-   /* float, rotation */
+   /* float, OriginalAspect */
    SLANG_SEMANTIC_CORE_ASPECT      = 8,
+   /* float, OriginalAspectRotated */
    SLANG_SEMANTIC_CORE_ASPECT_ROT  = 9,
-
    /* uint, sub frames per content frame */
    SLANG_SEMANTIC_TOTAL_SUBFRAMES  = 10,
    /* uint, current sub frame */
