@@ -4754,7 +4754,7 @@ static bool vulkan_frame(void *data, const void *frame,
                quad.sampler = (optimal->flags & VK_TEX_FLAG_MIPMAP)
                   ? vk->samplers.mipmap_nearest : vk->samplers.nearest;
 
-            quad.mvp        = &vk->mvp_no_rot;
+            quad.mvp        = &vk->mvp_menu;
             quad.color.r    = 1.0f;
             quad.color.g    = 1.0f;
             quad.color.b    = 1.0f;

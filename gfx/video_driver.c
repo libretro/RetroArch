@@ -1900,13 +1900,13 @@ void video_driver_unset_stub_frame(void)
 /* Get time diff between frames in msec*/
 uint32_t video_driver_get_frame_time_delta_usec(void)
 {
-	static retro_time_t last_time;
-	retro_time_t now_time;
+   static retro_time_t last_time;
+   retro_time_t now_time;
    retro_time_t delta_time;
-	now_time = cpu_features_get_time_usec();
-	delta_time = now_time - last_time;
-	last_time = now_time;
-	return delta_time;
+   now_time = cpu_features_get_time_usec();
+   delta_time = now_time - last_time;
+   last_time = now_time;
+   return delta_time;
 }
 
 /* Get core FPS */
