@@ -492,10 +492,7 @@ static bool gl_glsl_compile_program(
                glsl,
                program->vprg,
                "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n",
-               program_info->vertex)) gfx/drivers/gx2_gfx.c
-gfx/drivers_shader/glslang_util.c
-gfx/drivers_shader/shader_glsl.c
-gfx/drivers_shader/slang_reflection.h 
+               program_info->vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
          goto error;
