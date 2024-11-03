@@ -4064,10 +4064,6 @@ MSG_HASH(
    "发送一条聊天消息到当前的联机会话。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "联机淡出聊天开关"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "在淡出和静态网络播放聊天消息之间切换。"
    )

@@ -672,6 +672,38 @@ enum
    int argc           = 1;
    apple_platform     = self;
 
+   if ([NSUserDefaults.standardUserDefaults boolForKey:@"restore_default_config"])
+   {
+      [NSUserDefaults.standardUserDefaults setBool:NO forKey:@"restore_default_config"];
+      [NSUserDefaults.standardUserDefaults setObject:@"" forKey:@FILE_PATH_MAIN_CONFIG];
+
+      // Get the Caches directory path
+      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+      NSString *cachesDirectory = [paths firstObject];
+
+      // Define the original and new file paths
+      NSString *originalPath = [cachesDirectory stringByAppendingPathComponent:@"RetroArch/config/retroarch.cfg"];
+      NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+      [dateFormatter setDateFormat:@"HHmm-yyMMdd"];
+      NSString *timestamp = [dateFormatter stringFromDate:[NSDate date]];
+      NSString *newPath = [cachesDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"RetroArch/config/RetroArch-%@.cfg", timestamp]];
+
+      // File manager instance
+      NSFileManager *fileManager = [NSFileManager defaultManager];
+
+      // Check if the file exists and rename it
+      if ([fileManager fileExistsAtPath:originalPath]) {
+          NSError *error = nil;
+          if ([fileManager moveItemAtPath:originalPath toPath:newPath error:&error]) {
+              NSLog(@"File renamed to %@", newPath);
+          } else {
+              NSLog(@"Error renaming file: %@", error.localizedDescription);
+          }
+      } else {
+          NSLog(@"File does not exist at path %@", originalPath);
+      }
+   }
+
    [self setDelegate:self];
 
    /* Setup window */

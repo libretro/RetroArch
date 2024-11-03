@@ -3857,10 +3857,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #ifdef HAVE_NETWORKING
             menu_pause_libretro      = settings->bools.menu_pause_libretro
-                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
-				   return true;
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
+                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL);
 #else
             menu_pause_libretro      = settings->bools.menu_pause_libretro;
 #endif
@@ -3883,10 +3881,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #ifdef HAVE_NETWORKING
             menu_pause_libretro      = settings->bools.menu_pause_libretro
-                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
-				   return true;
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
+                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL);
 #else
             menu_pause_libretro      = settings->bools.menu_pause_libretro;
 #endif

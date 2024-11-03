@@ -4112,10 +4112,6 @@ MSG_HASH(
    "連線遊戲時開啟輸入視窗傳送訊息的按鍵。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "淡化對話訊息 (開關)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "連線遊戲時淡化對話訊息的開關。"
    )

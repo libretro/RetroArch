@@ -492,7 +492,10 @@ static bool gl_glsl_compile_program(
                glsl,
                program->vprg,
                "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n",
-               program_info->vertex))
+               program_info->vertex)) gfx/drivers/gx2_gfx.c
+gfx/drivers_shader/glslang_util.c
+gfx/drivers_shader/shader_glsl.c
+gfx/drivers_shader/slang_reflection.h 
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
          goto error;
@@ -742,6 +745,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
 #if defined(VITA)
    uni->time             = gl_glsl_get_uniform(glsl, prog, "Time");
 #endif
+
    uni->mvp              = gl_glsl_get_uniform(glsl, prog, "MVPMatrix");
    uni->tex_coord        = gl_glsl_get_attrib(glsl, prog, "TexCoord");
    uni->vertex_coord     = gl_glsl_get_attrib(glsl, prog, "VertexCoord");
@@ -760,6 +764,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->rotation         = gl_glsl_get_uniform(glsl, prog, "Rotation");
    uni->core_aspect      = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
    uni->core_aspect_rot  = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotAted");
+
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);

@@ -71,10 +71,7 @@ const char* config_get_record_driver_options(void)
    return char_list_new_special(STRING_LIST_RECORD_DRIVERS, NULL);
 }
 
-#if 0
-/* TODO/FIXME - not used apparently */
-static void find_record_driver(const char *prefix,
-      bool verbosity_enabled)
+static void find_record_driver(void)
 {
    settings_t *settings = config_get_ptr();
    int i                = (int)driver_find_index(
@@ -85,16 +82,16 @@ static void find_record_driver(const char *prefix,
       recording_state.driver = (const record_driver_t*)record_drivers[i];
    else
    {
-      if (verbosity_enabled)
+      if (verbosity_is_enabled())
       {
          unsigned d;
 
-         RARCH_ERR("[Recording]: Couldn't find any %s named \"%s\".\n", prefix,
+         RARCH_ERR("[Recording]: Couldn't find any record driver named \"%s\".\n",
                settings->arrays.record_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+         RARCH_LOG_OUTPUT("Available record drivers are:\n");
          for (d = 0; record_drivers[d]; d++)
-            RARCH_LOG_OUTPUT("\t%s\n", record_drivers[d].ident);
-         RARCH_WARN("[Recording]: Going to default to first %s...\n", prefix);
+            RARCH_LOG_OUTPUT("\t%s\n", record_drivers[d]->ident);
+         RARCH_WARN("[Recording]: Going to default to first record driver...\n");
       }
 
       recording_state.driver = (const record_driver_t*)record_drivers[0];
@@ -104,6 +101,8 @@ static void find_record_driver(const char *prefix,
    }
 }
 
+#if 0
+/* TODO/FIXME - not used apparently */
 /**
  * ffemu_find_backend:
  * @ident                   : Identifier of driver to find.
@@ -149,26 +148,15 @@ static void recording_driver_free_state(void)
  *
  * @return true if successful, otherwise false.
  **/
-static bool record_driver_init_first(
-      const record_driver_t **backend, void **data,
+static bool record_driver_init(
       const struct record_params *params)
 {
-   unsigned i;
+   find_record_driver();
+   if (!recording_state.driver)
+      return false;
 
-   for (i = 0; record_drivers[i]; i++)
-   {
-      void *handle = NULL;
-      if (!record_drivers[i]->init)
-         continue;
-      if (!(handle = record_drivers[i]->init(params)))
-         continue;
-
-      *backend = record_drivers[i];
-      *data    = handle;
-      return true;
-   }
-
-   return false;
+   recording_state.data = recording_state.driver->init(params);
+   return recording_state.data != NULL;
 }
 
 bool recording_deinit(void)
@@ -286,6 +274,8 @@ bool recording_init(void)
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+         if (!path_is_directory(recording_st->output_dir))
+            path_mkdir(recording_st->output_dir);
          /* Fallback to core name if started without content */
          if (string_is_empty(game_name))
             game_name          = runloop_st->system.info.library_name;
@@ -448,9 +438,7 @@ bool recording_init(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!record_driver_init_first(
-            &recording_state.driver,
-            &recording_state.data, &params))
+   if (!record_driver_init(&params))
    {
       RARCH_ERR("[Recording]: %s\n",
             msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));

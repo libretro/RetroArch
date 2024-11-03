@@ -75,6 +75,7 @@ enum slang_semantic
    /* uint, CoreFPS */
    SLANG_SEMANTIC_CORE_FPS         = 6,
    /* uint, rotation */
+
    SLANG_SEMANTIC_ROTATION         = 7,
    /* float, rotation */
    SLANG_SEMANTIC_CORE_ASPECT      = 8,

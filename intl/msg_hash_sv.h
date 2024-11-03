@@ -3492,10 +3492,6 @@ MSG_HASH(
    "Skickar ett chattmeddelande till den aktuella Netplay sessionen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Netplay Tona chatt (På/Av)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Växlar mellan tonande eller statiska Netplay chattmeddelanden."
    )

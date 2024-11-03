@@ -1990,6 +1990,7 @@ static bool gx2_frame(void *data, const void *frame,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
                   frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, core_fps);
+
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }

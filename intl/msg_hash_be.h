@@ -2522,8 +2522,16 @@ MSG_HASH(
    "Цэлалікавы маштаб"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Змяняць маштаб выявы толькі з цэлымі крокамі. Базавыя памеры залежаць ад геаметрыі і суадносін бакоў, перададзеныя ядром."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
    "Вось цэлалікавага маштабу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Змяняць маштаб толькі па вышыні або як па вышыні, так і па шырыні. Паўкрокі прымяняюцца да крыніц з высокай раздзяляльнасцю."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -2532,6 +2540,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    "Акругліць у меншы або большы бок да наступнага цэлага ліку. 'Разумна' заніжае маштаб пры празмернай абрэзцы выявы."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Заніжэнне маштабу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Завышэнне маштабу"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
@@ -4426,15 +4442,23 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Колькасць кадраў забягання. Выклікае нестабільнасць геймплэя пры завышэнні колькасці кадраў унутрагульнявой затрымкі."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Запускае дадатковую логіку ядра, каб скараціць затрымку. Адзіны асобнік сутыкае будучы кадр, затым перазагружае бягучы стан. Другі трымае толькі пад відэа асобнік ядра на будучым кадры, каб пазбегнуць праблем са станам гуку. Папераджальныя кадры могуць запускаць мінулыя [...]"
+   )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Запускае дадатковую логіку ядра, каб скараціць затрымку. Адзіны асобнік сутыкае будучы кадр, затым перазагружае бягучы стан. Папераджальныя кадры могуць дзеля эфектыўнасці запускаць мінулыя кадры з новым уводам."
+   )
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
-   "Рэжым адзінага экзэмпляра"
+   "Рэжым адзінага асобніка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
-   "Рэжым другога экзэмпляра"
+   "Рэжым другога асобніка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
@@ -11458,7 +11482,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
-   "Згасанне па вертыкалі"
+   "Велічыня вертыкальнага згасання"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -11906,7 +11930,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
-   "Затуханне"
+   "Згасанне"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
@@ -14637,7 +14661,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "Уключана забяганне з другім экзэмплярам. Выдалена кадраў затрымкі: %u."
+   "Уключана забяганне з другім асобнікам. Выдалена кадраў затрымкі: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
@@ -14661,7 +14685,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Не ўдалося стварыць другі экзэмпляр. Забяганне будзе выкарыстоўваць толькі адзін экзэмпляр."
+   "Не ўдалося стварыць другі асобнік. Забяганне будзе выкарыстоўваць толькі адзін экзэмпляр."
    )
 MSG_HASH(
    MSG_PREEMPT_ENABLED,
