@@ -3800,7 +3800,7 @@ static void vulkan_set_projection(vk_t *vk,
    matrix_4x4_multiply(vk->mvp, trn, tmp);
 
    /* Required for translate_x+y / negative offsets to also work in RGUI */
-   matrix_4x4_multiply(vk->mvp_no_rot, trn, tmp);
+   matrix_4x4_multiply(vk->mvp_menu, trn, vk->mvp_no_rot);
 }
 
 static void vulkan_set_rotation(void *data, unsigned rotation)
