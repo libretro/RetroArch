@@ -10527,6 +10527,18 @@ static void materialui_list_insert(
             }
             /* for other types we don't have an icon */
             break;
+         case MENU_SETTINGS_CORE_INFO_NONE:
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            if (strstr(path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED)))
+               node->icon_texture_index = MUI_TEXTURE_CLOSE;
+            else if (strstr(path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL)))
+               node->icon_texture_index = MUI_TEXTURE_INFO;
+            else if (strstr(path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED))
+                  || strstr(path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL)))
+               node->icon_texture_index = MUI_TEXTURE_CHECKMARK;
+            else
+               node->icon_type          = MUI_ICON_TYPE_NONE;
+            break;
          case FILE_TYPE_RPL_ENTRY:
          case MENU_SETTING_DROPDOWN_ITEM:
          case MENU_SETTING_DROPDOWN_ITEM_RESOLUTION:
@@ -10552,7 +10564,6 @@ static void materialui_list_insert(
          case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
-         case MENU_SETTINGS_CORE_INFO_NONE:
          case MENU_SETTING_ITEM_CORE_RESTORE_BACKUP:
          case MENU_SETTING_ITEM_CORE_DELETE_BACKUP:
             /* None of these entries have icons - catch them
