@@ -2551,10 +2551,6 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                      && content_width_diff < 20
                      && scale_w_ratio - target_ratio > 0.25f)
                   half_w = -1;
-               else if (axis == VIDEO_SCALE_INTEGER_AXIS_XHALF
-                     && content_width_diff > (int)content_width / 2
-                     && content_width * max_scale_w < width)
-                  half_w = 1;
             }
 
             /* Special half height scale for hi-res */
@@ -2563,16 +2559,19 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             {
                if (     max_scale_h == (height / content_height)
                      && content_height / 300
-                     && content_height * max_scale_h < height
+                     && content_height * max_scale_h < height * 0.90f
                   )
                {
                   float halfstep_prev_ratio = (float)(content_width * max_scale_w) / (float)(content_height * max_scale_h);
                   float halfstep_next_ratio = (float)(content_width * max_scale_w) / (float)(content_height * (max_scale_h + 0.5f));
 
-                  half_h = 1;
+                  if (content_height * (max_scale_h + 0.5f) < height * 1.12f)
+                  {
+                     half_h = 1;
 
-                  if (halfstep_next_ratio - target_ratio <= target_ratio - halfstep_prev_ratio)
-                     half_w = 1;
+                     if (halfstep_next_ratio - target_ratio <= target_ratio - halfstep_prev_ratio)
+                        half_w = 1;
+                  }
                }
             }
          }
