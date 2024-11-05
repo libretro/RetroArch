@@ -72,8 +72,8 @@ enum slang_semantic
    SLANG_SEMANTIC_FRAME_DIRECTION  = 4,
    /* uint, FrameTimeDelta */
    SLANG_SEMANTIC_FRAME_TIME_DELTA = 5,
-   /* uint, CoreFPS */
-   SLANG_SEMANTIC_CORE_FPS         = 6,
+   /* uint, OriginalFPS */
+   SLANG_SEMANTIC_ORIGINAL_FPS         = 6,
    /* uint, rotation */
    SLANG_SEMANTIC_ROTATION         = 7,
    /* float, OriginalAspect */

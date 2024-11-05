@@ -757,7 +757,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->frame_count      = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction  = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
    uni->frame_time_delta = gl_glsl_get_uniform(glsl, prog, "FrameTimeDelta");
-   uni->core_fps         = gl_glsl_get_uniform(glsl, prog, "CoreFPS");
+   uni->core_fps         = gl_glsl_get_uniform(glsl, prog, "OriginalFPS");
    uni->rotation         = gl_glsl_get_uniform(glsl, prog, "Rotation");
    uni->core_aspect      = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
    uni->core_aspect_rot  = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotAted");

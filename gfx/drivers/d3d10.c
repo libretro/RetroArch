@@ -1336,7 +1336,7 @@ static bool d3d10_gfx_set_shader(void* data,
             &d3d10->pass[i].frame_count,     /* FrameCount */
             &d3d10->pass[i].frame_direction, /* FrameDirection */
             &d3d10->pass[i].frame_time_delta,/* FrameTimeDelta */
-            &d3d10->pass[i].core_fps,        /* CoreFPS */
+            &d3d10->pass[i].core_fps,        /* OriginalFPS */
             &d3d10->pass[i].rotation,        /* Rotation */
             &d3d10->pass[i].core_aspect,     /* OriginalAspect */
             &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRotated */

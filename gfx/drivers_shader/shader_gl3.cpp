@@ -1106,7 +1106,7 @@ bool Pass::init_pipeline()
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
    reflect_parameter("FrameTimeDelta", reflection.semantics[SLANG_SEMANTIC_FRAME_TIME_DELTA]);
-   reflect_parameter("CoreFPS", reflection.semantics[SLANG_SEMANTIC_CORE_FPS]);
+   reflect_parameter("OriginalFPS", reflection.semantics[SLANG_SEMANTIC_ORIGINAL_FPS]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
    reflect_parameter("OriginalAspect", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
    reflect_parameter("OriginalAspectRotated", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
@@ -1577,7 +1577,7 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
                       frame_time_delta);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_FPS,
+   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
                       core_fps);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,

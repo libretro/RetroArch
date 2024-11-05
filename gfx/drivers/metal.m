@@ -1853,7 +1853,7 @@ typedef struct MTLALIGN(16)
                &_engine.pass[i].frame_count,     /* FrameCount */
                &_engine.pass[i].frame_direction, /* FrameDirection */
                &_engine.pass[i].frame_time_delta,/* FrameTimeDelta */
-               &_engine.pass[i].core_fps,        /* CoreFPS */
+               &_engine.pass[i].core_fps,        /* OriginalFPS */
                &_engine.pass[i].rotation,        /* Rotation */
                &_engine.pass[i].core_aspect,     /* OriginalAspect */
                &_engine.pass[i].core_aspect_rot, /* OriginalAspectRotated */

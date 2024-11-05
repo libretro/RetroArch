@@ -2399,7 +2399,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
                       frame_time_delta);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_FPS,
+   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
                       core_fps);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
