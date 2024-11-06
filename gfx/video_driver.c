@@ -2496,8 +2496,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
             /* Reset width to exact width */
             content_width = (rotation % 2)
-                  ? ((video_st->frame_cache_height == 4) ? video_st->av_info.geometry.base_height : video_st->frame_cache_height)
-                  : ((video_st->frame_cache_width  == 4) ? video_st->av_info.geometry.base_width  : video_st->frame_cache_width);
+                  ? ((video_st->frame_cache_height <= 4) ? video_st->av_info.geometry.base_height : video_st->frame_cache_height)
+                  : ((video_st->frame_cache_width  <= 4) ? video_st->av_info.geometry.base_width  : video_st->frame_cache_width);
 
             overscale_w   = (width / content_width) + !!(width % content_width);
 
