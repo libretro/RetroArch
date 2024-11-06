@@ -4958,8 +4958,10 @@ static void setting_get_string_representation_uint_custom_viewport_width(rarch_s
       return;
 
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   _len    = snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
+   _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+
+   if (!geom->base_width || !geom->base_height)
+      return;
 
    if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
       snprintf(s + _len, len - _len, " (%ux)",
@@ -4981,8 +4983,10 @@ static void setting_get_string_representation_uint_custom_viewport_height(rarch_
       return;
 
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   _len    = snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
+   _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+
+   if (!geom->base_width || !geom->base_height)
+      return;
 
    if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
       snprintf(s + _len, len - _len, " (%ux)",
@@ -5836,11 +5840,17 @@ static int setting_uint_action_left_custom_viewport_width(
       {
          if (custom->width > geom->base_height)
             custom->width -= geom->base_height;
+
+         if (custom->width < geom->base_height)
+            custom->width  = geom->base_height;
       }
       else
       {
          if (custom->width > geom->base_width)
             custom->width -= geom->base_width;
+
+         if (custom->width < geom->base_width)
+            custom->width  = geom->base_width;
       }
    }
    else
@@ -5877,11 +5887,17 @@ static int setting_uint_action_left_custom_viewport_height(
       {
          if (custom->height > geom->base_width)
             custom->height -= geom->base_width;
+
+         if (custom->height < geom->base_width)
+            custom->height  = geom->base_width;
       }
       else
       {
          if (custom->height > geom->base_height)
             custom->height -= geom->base_height;
+
+         if (custom->height < geom->base_height)
+            custom->height  = geom->base_height;
       }
    }
    else
@@ -8517,25 +8533,35 @@ static void general_write_handler(rarch_setting_t *setting)
 
             if (*setting->value.target.boolean)
             {
-               unsigned int rotation = retroarch_get_rotation();
-               struct retro_game_geometry *geom = (struct retro_game_geometry*)
-                  &av_info->geometry;
+               unsigned rotation                = retroarch_get_rotation();
+               unsigned base_width              = 0;
+               unsigned base_height             = 0;
+               struct retro_game_geometry *geom = (struct retro_game_geometry*)&av_info->geometry;
 
-               custom_vp->x          = 0;
-               custom_vp->y          = 0;
+               custom_vp->x         = 0;
+               custom_vp->y         = 0;
+
+               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
+               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+
+               if (base_width <= 4 || base_height <= 4)
+               {
+                  base_width        = (rotation % 2) ? 240 : 320;
+                  base_height       = (rotation % 2) ? 320 : 240;
+               }
 
                if (rotation % 2)
                {
-                  custom_vp->width   = ((custom_vp->width  + geom->base_height - 1) / geom->base_height)  * geom->base_height;
-                  custom_vp->height  = ((custom_vp->height + geom->base_width - 1)  / geom->base_width)   * geom->base_width;
+                  custom_vp->width  = ((custom_vp->width  + base_height - 1) / base_height)  * base_height;
+                  custom_vp->height = ((custom_vp->height + base_width - 1)  / base_width)   * base_width;
                }
                else
                {
-                  custom_vp->width   = ((custom_vp->width  + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
-                  custom_vp->height  = ((custom_vp->height + geom->base_height - 1)  / geom->base_height) * geom->base_height;
+                  custom_vp->width  = ((custom_vp->width  + base_width - 1)  / base_width)  * base_width;
+                  custom_vp->height = ((custom_vp->height + base_height - 1) / base_height) * base_height;
                }
-               aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-                  (float)custom_vp->width / custom_vp->height;
+
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom_vp->width / custom_vp->height;
             }
          }
          break;
@@ -8845,9 +8871,10 @@ static void general_write_handler(rarch_setting_t *setting)
 
             if (sys_info)
             {
-               unsigned int rotation             = retroarch_get_rotation();
-               struct retro_game_geometry  *geom = (struct retro_game_geometry*)
-                  &av_info->geometry;
+               unsigned rotation                = retroarch_get_rotation();
+               unsigned base_width              = 0;
+               unsigned base_height             = 0;
+               struct retro_game_geometry *geom = (struct retro_game_geometry*)&av_info->geometry;
 
                video_driver_set_rotation(
                      (*setting->value.target.unsigned_integer +
@@ -8858,18 +8885,28 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->x         = 0;
                custom_vp->y         = 0;
 
+               base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
+               base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+
+               if (base_width <= 4 || base_height <= 4)
+               {
+                  base_width        = (rotation % 2) ? 240 : 320;
+                  base_height       = (rotation % 2) ? 320 : 240;
+               }
+
                /* Round down when rotation is "horizontal", round up when rotation is "vertical"
                   to avoid expanding viewport each time user rotates */
                if (rotation % 2)
                {
-                  custom_vp->width  = MAX(1, (custom_vp->width  / geom->base_height))  * geom->base_height;
-                  custom_vp->height = MAX(1, (custom_vp->height / geom->base_width ))  * geom->base_width;
+                  custom_vp->width  = MAX(1, (custom_vp->width  / base_height)) * base_height;
+                  custom_vp->height = MAX(1, (custom_vp->height / base_width )) * base_width;
                }
                else
                {
-                  custom_vp->width  = ((custom_vp->width  + geom->base_width   - 1) / geom->base_width)  * geom->base_width;
-                  custom_vp->height = ((custom_vp->height + geom->base_height - 1)  / geom->base_height) * geom->base_height;
+                  custom_vp->width  = ((custom_vp->width  + base_width  - 1) / base_width)  * base_width;
+                  custom_vp->height = ((custom_vp->height + base_height - 1) / base_height) * base_height;
                }
+
                aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom_vp->width / custom_vp->height;
 
                /* Update Aspect Ratio (only useful for 1:1 PAR) */
