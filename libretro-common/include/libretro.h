@@ -432,6 +432,9 @@ extern "C" {
 #define RETRO_DEVICE_ID_POINTER_PRESSED   2
 #define RETRO_DEVICE_ID_POINTER_COUNT     3
 
+/* Values for pointer confinement */
+#define RETRO_POINTER_CONFINEMENT_LEGACY 0
+#define RETRO_POINTER_CONFINEMENT_EDGE   1
 /** @} */
 
 /* Returned from retro_get_region(). */
@@ -2568,6 +2571,31 @@ enum retro_mod
  * @return \c true if the environment call is available.
  */
 #define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
+
+/**
+ * Controls how the frontend should handle screen edges and off-screen for
+ * inputs returning screen coordinates (pointer and lightgun).
+ *
+ * Default behavior is that (0,0) coordinates are returned if cursor leaves
+ * the actual viewport, and resides on either the black padding area or
+ * outside the window (if there is one), but it is somewhat input driver
+ * dependent.
+ *
+ * Modified behavior is that coordinates will always be in the range of
+ * [-0x7fff,0x7fff], with the edge values meaning that cursor has left the
+ * viewport in that direction.
+ *
+ * @param[in] data <tt>const unsigned *</tt>.
+ * Pointer to a single \c unsigned that indicates the confinement method.
+ * Can point to a value of \c RETRO_POINTER_CONFINEMENT_LEGACY but this
+ * isn't necessary, pointer confinement support is opt-in.
+ * The behavior is not changed compared to the previous state if \c data
+ * is <tt>NULL</tt>.
+ * @returns \c true if the environment call is available.
+ * @see RETRO_DEVICE_POINTER
+ * @see RETRO_DEVICE_LIGHTGUN
+ */
+#define RETRO_ENVIRONMENT_SET_POINTER_CONFINEMENT 81
 
 /**@}*/
 

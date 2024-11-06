@@ -3586,6 +3586,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+
+      case RETRO_ENVIRONMENT_SET_POINTER_CONFINEMENT:
+         if (data)
+            runloop_st->pointer_confinement = *(unsigned*)data;
+         RARCH_LOG("[Environ]: RETRO_ENVIRONMENT_SET_POINTER_CONFINEMENT: %d\n", runloop_st->pointer_confinement);
+         break;
+
       default:
          RARCH_LOG("[Environ]: UNSUPPORTED (#%u).\n", cmd);
          return false;
