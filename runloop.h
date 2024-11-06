@@ -254,6 +254,7 @@ struct runloop
    unsigned subsystem_current_count;
    unsigned entry_state_slot;
    unsigned video_swap_interval_auto;
+   unsigned pointer_confinement;
 
    fastmotion_overrides_t fastmotion_override; /* float alignment */
 

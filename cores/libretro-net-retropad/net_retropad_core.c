@@ -785,6 +785,7 @@ void NETRETROPAD_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       { "net_retropad_screen", "Start screen; Retropad|Keyboard tester|Sensor tester" },
       { "net_retropad_hide_analog_mismatch", "Hide mismatching analog button inputs; True|False" },
       { "net_retropad_pointer_test", "Pointer test; Off|Mouse|Pointer|Lightgun|Old lightgun" },
+      { "net_retropad_pointer_confine", "Pointer confinement; Off|Edge" },
       { NULL, NULL },
    };
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
@@ -806,15 +807,17 @@ void NETRETROPAD_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 
 static void netretropad_check_variables(void)
 {
-   struct retro_variable var, var2, var3, var4, port_var, screen_var, hide_a_var, mouse_var;
-   var.key        = "net_retropad_ip_octet1";
-   var2.key       = "net_retropad_ip_octet2";
-   var3.key       = "net_retropad_ip_octet3";
-   var4.key       = "net_retropad_ip_octet4";
-   port_var.key   = "net_retropad_port";
-   screen_var.key = "net_retropad_screen";
-   hide_a_var.key = "net_retropad_hide_analog_mismatch";
-   mouse_var.key  = "net_retropad_pointer_test";
+   unsigned pointer_confinement = RETRO_POINTER_CONFINEMENT_LEGACY;
+   struct retro_variable var, var2, var3, var4, port_var, screen_var, hide_a_var, mouse_var, confine_var;
+   var.key         = "net_retropad_ip_octet1";
+   var2.key        = "net_retropad_ip_octet2";
+   var3.key        = "net_retropad_ip_octet3";
+   var4.key        = "net_retropad_ip_octet4";
+   port_var.key    = "net_retropad_port";
+   screen_var.key  = "net_retropad_screen";
+   hide_a_var.key  = "net_retropad_hide_analog_mismatch";
+   mouse_var.key   = "net_retropad_pointer_test";
+   confine_var.key = "net_retropad_pointer_confine";
 
    NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
    NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var2);
@@ -824,6 +827,7 @@ static void netretropad_check_variables(void)
    NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &screen_var);
    NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &hide_a_var);
    NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &mouse_var);
+   NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &confine_var);
 
    snprintf(server, sizeof(server), "%s.%s.%s.%s", var.value, var2.value, var3.value, var4.value);
    port = atoi(port_var.value);
@@ -849,6 +853,9 @@ static void netretropad_check_variables(void)
    else
       mouse_type = 0;
 
+   if (confine_var.value && strstr(confine_var.value,"Edge"))
+      pointer_confinement = RETRO_POINTER_CONFINEMENT_EDGE;
+   NETRETROPAD_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_POINTER_CONFINEMENT, &pointer_confinement);
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_set_audio_sample)(retro_audio_sample_t cb)
