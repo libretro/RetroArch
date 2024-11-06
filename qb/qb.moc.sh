@@ -30,7 +30,9 @@ if [ "$HAVE_QT" = "yes" ]; then
 		moc_works=1
 	else
 		for moc in "moc-$QT_VERSION" moc; do
-			MOC="$(exists "$moc")" || MOC=""
+			QMAKE="$(exists qmake6)" || QMAKE="qmake"
+			QT_HOST_LIBEXECS="$($QMAKE -query QT_HOST_LIBEXECS)"
+			MOC="$(exists "$QT_HOST_LIBEXECS/$moc")" || MOC=""
 			if [ "$MOC" ]; then
 				QT_SELECT="$QT_VERSION" \
 				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||

@@ -549,8 +549,7 @@ QGroupBox *NetplayPage::createMitmServerGroup()
 
    groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
 
-   connect(buttonGroup, SIGNAL(buttonClicked(int)), this,
-      SLOT(onRadioButtonClicked(int)));
+   connect(buttonGroup, &QButtonGroup::idClicked, this, &NetplayPage::onRadioButtonClicked);
 
    return groupBox;
 }
@@ -1439,7 +1438,7 @@ QWidget *VideoPage::widget()
 
    layout->addStretch();
 
-   connect(m_resolutionCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(onResolutionComboIndexChanged(const QString&)));
+   connect(m_resolutionCombo, &QComboBox::currentIndexChanged, this, &VideoPage::onResolutionComboIndexChanged);
 
    widget->setLayout(layout);
 
@@ -1567,8 +1566,9 @@ QWidget *CrtSwitchresPage::widget()
    return widget;
 }
 
-void VideoPage::onResolutionComboIndexChanged(const QString &text)
+void VideoPage::onResolutionComboIndexChanged(int index)
 {
+   const QString& text  = m_resolutionCombo->itemText(index);
    const char *path     = text.toUtf8().constData();
    action_cb_push_dropdown_item_resolution(path,
          NULL, 0, 0, 0);

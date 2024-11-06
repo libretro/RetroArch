@@ -96,7 +96,7 @@ public:
 };
 
 /***********************************************************
-   AI Service 
+   AI Service
 ************************************************************/
 class AIServiceCategory : public OptionsCategory
 {
@@ -154,7 +154,7 @@ public:
    VideoPage(QObject *parent = nullptr);
    QWidget *widget();
 private slots:
-   void onResolutionComboIndexChanged(const QString& value);
+   void onResolutionComboIndexChanged(int index);
 private:
    QComboBox *m_resolutionCombo;
 };
