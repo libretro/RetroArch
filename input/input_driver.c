@@ -5642,6 +5642,10 @@ static void input_keys_pressed(
             }
 
             BIT256_SET_PTR(p_new_state, i);
+
+            /* Ignore all other hotkeys if menu toggle is pressed */
+            if (i == RARCH_MENU_TOGGLE)
+               break;
          }
       }
    }
