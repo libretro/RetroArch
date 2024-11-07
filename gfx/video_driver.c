@@ -694,15 +694,14 @@ bool video_driver_translate_coord_viewport(
       int16_t *res_x,        int16_t *res_y,
       int16_t *res_screen_x, int16_t *res_screen_y)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   int norm_vp_width           = (int)vp->width;
-   int norm_vp_height          = (int)vp->height;
-   int norm_full_vp_width      = (int)vp->full_width;
-   int norm_full_vp_height     = (int)vp->full_height;
-   int scaled_screen_x         = -0x8000; /* Legacy OOB */
-   int scaled_screen_y         = -0x8000; /* Legacy OOB */
-   int scaled_x                = -0x8000; /* Legacy OOB */
-   int scaled_y                = -0x8000; /* Legacy OOB */
+   int norm_vp_width         = (int)vp->width;
+   int norm_vp_height        = (int)vp->height;
+   int norm_full_vp_width    = (int)vp->full_width;
+   int norm_full_vp_height   = (int)vp->full_height;
+   int scaled_screen_x       = -0x8000; /* OOB */
+   int scaled_screen_y       = -0x8000; /* OOB */
+   int scaled_x              = -0x8000; /* OOB */
+   int scaled_y              = -0x8000; /* OOB */
    if (   (norm_vp_width       <= 0)
        || (norm_vp_height      <= 0)
        || (norm_full_vp_width  <= 0)
@@ -723,24 +722,12 @@ bool video_driver_translate_coord_viewport(
    if (mouse_x >= 0 && mouse_x <= norm_vp_width)
       scaled_x        = ((2 * mouse_x * 0x7fff)
             / norm_vp_width) - 0x7fff;
-   else if (runloop_st->pointer_confinement == RETRO_POINTER_CONFINEMENT_EDGE)
-   {
-      if (mouse_x < 0)
-         scaled_x = -0x7fff;
-      else
-         scaled_x =  0x7fff;
-   }
+   else
+      scaled_x        = -0x8000; /* OOB */
 
    if (mouse_y >= 0 && mouse_y <= norm_vp_height)
       scaled_y        = ((2 * mouse_y * 0x7fff)
             / norm_vp_height) - 0x7fff;
-   else if (runloop_st->pointer_confinement == RETRO_POINTER_CONFINEMENT_EDGE)
-   {
-      if (mouse_y < 0)
-         scaled_y = -0x7fff;
-      else
-         scaled_y =  0x7fff;
-   }
 
    *res_x             = scaled_x;
    *res_y             = scaled_y;
