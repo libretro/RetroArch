@@ -1006,13 +1006,16 @@ FILTERS
 #endif
 
 #ifdef HAVE_DSP_FILTER
+#include "../libretro-common/audio/dsp_filters/chorus.c"
+#include "../libretro-common/audio/dsp_filters/crystalizer.c"
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
-#include "../libretro-common/audio/dsp_filters/chorus.c"
 #include "../libretro-common/audio/dsp_filters/iir.c"
 #include "../libretro-common/audio/dsp_filters/panning.c"
 #include "../libretro-common/audio/dsp_filters/phaser.c"
 #include "../libretro-common/audio/dsp_filters/reverb.c"
+#include "../libretro-common/audio/dsp_filters/tremolo.c"
+#include "../libretro-common/audio/dsp_filters/vibrato.c"
 #include "../libretro-common/audio/dsp_filters/wahwah.c"
 #endif
 #endif
