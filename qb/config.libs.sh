@@ -304,13 +304,35 @@ if [ "$HAVE_QT" != 'no' ]; then
 
       if [ "$HAVE_QT" != yes ]; then
          die : 'Notice: Qt support disabled, required libraries were not found.'
+      else
+         HAVE_QT6='yes'
+         add_define MAKEFILE HAVE_QT6 1
       fi
-
-      check_pkgconf OPENSSL openssl 1.0.0
-   else
-      HAVE_QT='no'
-      die : 'Notice: Qt support disabled, required compiler was not found.'
    fi
+   if [ "$HAVE_QT6" != 'yes' ]; then
+      HAVE_QT='auto'
+      check_pkgconf QT5CORE Qt5Core 5.2
+      check_pkgconf QT5GUI Qt5Gui 5.2
+      check_pkgconf QT5WIDGETS Qt5Widgets 5.2
+      check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
+      check_pkgconf QT5NETWORK Qt5Network 5.2
+      #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
+
+      # pkg-config is needed to reliably find Qt5 libraries.
+
+      check_enabled QT5CORE QT Qt 'Qt5Core is' true
+      check_enabled QT5GUI QT Qt 'Qt5GUI is' true
+      check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
+      check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
+      check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
+      #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
+
+      if [ "$HAVE_QT" != yes ]; then
+         die : 'Notice: Qt support disabled, required libraries were not found.'
+      fi
+   fi
+
+   check_pkgconf OPENSSL openssl 1.0.0
 fi
 
 check_enabled FLAC BUILTINFLAC 'builtin flac' 'flac is' true

@@ -154,6 +154,7 @@ public:
    VideoPage(QObject *parent = nullptr);
    QWidget *widget();
 private slots:
+   Q_DECL_DEPRECATED void onResolutionComboIndexChanged(const QString& value);
    void onResolutionComboIndexChanged(int index);
 private:
    QComboBox *m_resolutionCombo;

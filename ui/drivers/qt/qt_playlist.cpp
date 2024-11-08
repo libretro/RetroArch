@@ -246,7 +246,11 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
    if (!m_pendingImages.contains(path) && !m_cache.contains(path))
    {
       m_pendingImages.insert(path);
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
       QtConcurrent::run(&PlaylistModel::loadImage, this, index, path);
+#else
+      QtConcurrent::run(this, &PlaylistModel::loadImage, index, path);
+#endif
    }
 }
 
@@ -874,7 +878,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    for (j = 0; j < m_listWidget->count(); j++)
    {
       QListWidgetItem *item = m_listWidget->item(j);
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
       bool           hidden = item->isHidden();
+#else
+      bool           hidden = m_listWidget->isItemHidden(item);
+#endif
 
       if (hidden)
       {

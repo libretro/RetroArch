@@ -543,7 +543,11 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QHBoxLayout *headerHLayout = new QHBoxLayout;
    const int       leftMargin = QApplication::style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
 
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
    m_optionsStack->setContentsMargins(0, 0, 0, 0);
+#else
+   m_optionsStack->setMargin(0);
+#endif
 
    headerLabelFont.setBold(true);
 
@@ -1193,7 +1197,11 @@ void CoreOptionsDialog::buildLayout()
             }
 
             for (k = 0; k < option->vals->size; k++)
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
                combo_box->addItem(option->vals->elems[k].data, QVariant::fromValue(option->key));
+#else
+               combo_box->addItem(option->vals->elems[k].data, option->key);
+#endif
 
 
             combo_box->setCurrentText(val);

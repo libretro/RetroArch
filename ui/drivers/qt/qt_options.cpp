@@ -549,7 +549,12 @@ QGroupBox *NetplayPage::createMitmServerGroup()
 
    groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    connect(buttonGroup, &QButtonGroup::idClicked, this, &NetplayPage::onRadioButtonClicked);
+#else
+   connect(buttonGroup, SIGNAL(buttonClicked(int)), this,
+      SLOT(onRadioButtonClicked(int)));
+#endif
 
    return groupBox;
 }
@@ -1438,7 +1443,13 @@ QWidget *VideoPage::widget()
 
    layout->addStretch();
 
-   connect(m_resolutionCombo, &QComboBox::currentIndexChanged, this, &VideoPage::onResolutionComboIndexChanged);
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+   void (VideoPage::*cb)(int) = &VideoPage::onResolutionComboIndexChanged;
+   connect(m_resolutionCombo, &QComboBox::currentIndexChanged, this, cb);
+#else
+   connect(m_resolutionCombo, SIGNAL(currentIndexChanged(const QString&)), this,
+         SLOT(onResolutionComboIndexChanged(const QString&)));
+#endif
 
    widget->setLayout(layout);
 
@@ -1564,6 +1575,13 @@ QWidget *CrtSwitchresPage::widget()
    widget->setLayout(layout);
 
    return widget;
+}
+
+void VideoPage::onResolutionComboIndexChanged(const QString &text)
+{
+   const char *path     = text.toUtf8().constData();
+   action_cb_push_dropdown_item_resolution(path,
+         NULL, 0, 0, 0);
 }
 
 void VideoPage::onResolutionComboIndexChanged(int index)

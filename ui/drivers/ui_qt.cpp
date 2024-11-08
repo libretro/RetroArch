@@ -1904,7 +1904,11 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    if (currentDirString.isEmpty())
       return;
 
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
    dir.setPath(currentDirString);
+#else
+   dir                           = currentDirString;
+#endif
 
    if (!dir.exists())
       return;
@@ -3107,8 +3111,13 @@ void MainWindow::setCoreActions()
                   if (!found_existing)
                   {
                      QVariantMap comboBoxMap;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
                      comboBoxMap["core_name"] = QVariant::fromValue(coreInfo->core_name);
                      comboBoxMap["core_path"] = QVariant::fromValue(coreInfo->path);
+#else
+                     comboBoxMap["core_name"] = coreInfo->core_name;
+                     comboBoxMap["core_path"] = coreInfo->path;
+#endif
                      comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
                      m_launchWithComboBox->addItem(coreInfo->core_name, QVariant::fromValue(comboBoxMap));
                   }
@@ -4216,6 +4225,11 @@ static void* ui_application_qt_initialize(void)
 
    app_handler             = new AppHandler();
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+   /* HiDpi supported since Qt 5.6 */
+   QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
+
    /* Create QApplication() before calling QApplication::setStyle()
     * to ensure that plugin path is determined correctly */
    ui_application.app = new QApplication(app_argc, app_argv);
@@ -4255,6 +4269,10 @@ static void* ui_application_qt_initialize(void)
 
 static void ui_application_qt_process_events(void)
 {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+   QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
+   if (dispatcher && dispatcher->hasPendingEvents())
+#endif
    QApplication::processEvents();
 }
 
@@ -5147,7 +5165,11 @@ void LoadCoreWindow::onCoreEnterPressed()
          Qt::UserRole).toHash();
    QString                       path = hash["path"].toString();
 
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
    pathArray.append(path.toStdString());
+#else
+   pathArray.append(path);
+#endif
    pathData                           = pathArray.constData();
 
    loadCore(pathData);
