@@ -2104,10 +2104,12 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewp
       video_viewport_t *custom_vp = &settings->video_viewport_custom;
       int padding_x               = 0;
       int padding_y               = 0;
+
       x                           = custom_vp->x;
       y                           = custom_vp->y;
+
       if (!ydown)
-         y                        = vp->full_height - (y + custom_vp->height);
+         y       = vp->full_height - (y + custom_vp->height);
       padding_x += (viewport_width - custom_vp->width);
       if (padding_x < 0)
          padding_x *= 2;
@@ -2395,8 +2397,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    }
 #endif
 
-   content_width  = (content_width  == 4) ? video_st->av_info.geometry.base_width  : content_width;
-   content_height = (content_height == 4) ? video_st->av_info.geometry.base_height : content_height;
+   content_width  = (content_width  <= 4) ? video_st->av_info.geometry.base_width  : content_width;
+   content_height = (content_height <= 4) ? video_st->av_info.geometry.base_height : content_height;
 
    if (!ydown)
       viewport_bias_y = 1.0 - viewport_bias_y;
@@ -2432,6 +2434,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       {
          x         = custom_vp->x;
          y         = custom_vp->y;
+
          if (!ydown)
             y      = vp->height - (y + custom_vp->height);
          padding_x = width - custom_vp->width;
@@ -2516,8 +2519,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
             /* Reset width to exact width */
             content_width = (rotation % 2)
-                  ? ((video_st->frame_cache_height == 4) ? video_st->av_info.geometry.base_height : video_st->frame_cache_height)
-                  : ((video_st->frame_cache_width  == 4) ? video_st->av_info.geometry.base_width  : video_st->frame_cache_width);
+                  ? ((video_st->frame_cache_height <= 4) ? video_st->av_info.geometry.base_height : video_st->frame_cache_height)
+                  : ((video_st->frame_cache_width  <= 4) ? video_st->av_info.geometry.base_width  : video_st->frame_cache_width);
 
             overscale_w   = (width / content_width) + !!(width % content_width);
 

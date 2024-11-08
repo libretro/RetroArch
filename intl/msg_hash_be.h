@@ -504,6 +504,10 @@ MSG_HASH(
    "Патрэбныя графічныя API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Поўны шлях"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Падтрымка захавання стану"
    )
@@ -532,8 +536,12 @@ MSG_HASH(
    "- Заўвага: уключана опцыя «Сістэмныя файлы ў каталогу змесціва»."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Прагляд у: %s"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "Адсутнічае, патрабуецца:"
+   "Адсутнічае, неабходнае:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
@@ -541,7 +549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "Маецца, патрабуецца:"
+   "Маецца, неабходнае:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,

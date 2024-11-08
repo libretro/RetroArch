@@ -5571,6 +5571,7 @@ unsigned menu_event(
    else
    {
       static uint8_t switch_old = 0;
+      static bool down[MENU_ACTION_TOGGLE] = {false};
       uint8_t switch_current    = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
                                 | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
       uint8_t switch_trigger    = switch_current & ~switch_old;
@@ -5646,11 +5647,24 @@ unsigned menu_event(
          menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
          ret = MENU_ACTION_SCROLL_DOWN;
       }
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L3))
+
+      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
+         down[MENU_ACTION_SCROLL_HOME] = true;
+      else if (down[MENU_ACTION_SCROLL_HOME])
+      {
+         down[MENU_ACTION_SCROLL_HOME] = false;
          ret = MENU_ACTION_SCROLL_HOME;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R3))
+      }
+
+      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
+         down[MENU_ACTION_SCROLL_END] = true;
+      else if (down[MENU_ACTION_SCROLL_END])
+      {
+         down[MENU_ACTION_SCROLL_END] = false;
          ret = MENU_ACTION_SCROLL_END;
-      else if (ok_trigger)
+      }
+
+      if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
