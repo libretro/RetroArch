@@ -1666,7 +1666,7 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
       int pass, float *ubo, int id,
       int size, int uniformVarCount, GX2UniformVar *uniformVars,
       uint64_t frame_count, int32_t frame_direction, uint32_t rotation, float core_aspect,
-      float core_aspect_rot, uint32_t frame_time_delta, uint32_t core_fps)
+      float core_aspect_rot, uint32_t frame_time_delta, uint32_t original_fps)
 {
    unsigned i;
    for (i = 0; i < uniformVarCount; i++)
@@ -1726,7 +1726,7 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
 
       if (string_is_equal(id, "OriginalFPS"))
       {
-         *dst        = core_fps;
+         *dst        = original_fps;
          continue;
       }
 
@@ -1967,7 +1967,7 @@ static bool gx2_frame(void *data, const void *frame,
 
       uint32_t frame_time_delta = video_driver_get_frame_time_delta_usec();
 
-      float core_fps = video_driver_get_core_fps();
+      float original_fps = video_driver_get_original_fps();
 
       uint32_t rotation       = retroarch_get_rotation();
 
@@ -1988,7 +1988,7 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
-                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, core_fps);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, original_fps);
 
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
@@ -2001,7 +2001,7 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
-                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, core_fps);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, original_fps);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }

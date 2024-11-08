@@ -99,7 +99,7 @@ struct shader_uniforms
    int frame_count;
    int frame_direction;
    int frame_time_delta;
-   float core_fps;
+   float original_fps;
    /* Use int for maximal compatibility despite other drivers using uint. */
    int rotation;
 
@@ -757,7 +757,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->frame_count      = gl_glsl_get_uniform(glsl, prog, "FrameCount");
    uni->frame_direction  = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
    uni->frame_time_delta = gl_glsl_get_uniform(glsl, prog, "FrameTimeDelta");
-   uni->core_fps         = gl_glsl_get_uniform(glsl, prog, "OriginalFPS");
+   uni->original_fps         = gl_glsl_get_uniform(glsl, prog, "OriginalFPS");
    uni->rotation         = gl_glsl_get_uniform(glsl, prog, "Rotation");
    uni->core_aspect      = gl_glsl_get_uniform(glsl, prog, "OriginalAspect");
    uni->core_aspect_rot  = gl_glsl_get_uniform(glsl, prog, "OriginalAspectRotAted");
@@ -1370,8 +1370,8 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
   if (uni->frame_time_delta >= 0)
       glUniform1i(uni->frame_time_delta, video_driver_get_frame_time_delta_usec());
 
-  if (uni->core_fps >= 0)
-      glUniform1f(uni->core_fps, video_driver_get_core_fps());
+  if (uni->original_fps >= 0)
+      glUniform1f(uni->original_fps, video_driver_get_original_fps());
 
   if (uni->rotation >= 0)
       glUniform1i(uni->rotation, retroarch_get_rotation());

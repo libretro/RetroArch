@@ -2744,7 +2744,7 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
    gl3_filter_chain_set_frame_time_delta(gl->filter_chain, video_driver_get_frame_time_delta_usec());
 
-   gl3_filter_chain_set_core_fps(gl->filter_chain, video_driver_get_core_fps());
+   gl3_filter_chain_set_original_fps(gl->filter_chain, video_driver_get_original_fps());
 
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
 

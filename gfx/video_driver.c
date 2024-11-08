@@ -1897,7 +1897,7 @@ void video_driver_unset_stub_frame(void)
 
 
 
-/* Get time diff between frames in msec*/
+/* Get time diff between frames in usec*/
 uint32_t video_driver_get_frame_time_delta_usec(void)
 {
    static retro_time_t last_time;
@@ -1909,13 +1909,13 @@ uint32_t video_driver_get_frame_time_delta_usec(void)
    return delta_time;
 }
 
-/* Get core FPS */
-float video_driver_get_core_fps(void)
+/* Get Original fps (core fps) */
+float video_driver_get_original_fps(void)
 {
    video_driver_state_t *video_st   = &video_driver_st;
    struct retro_system_av_info *av_info   = &video_st->av_info;
-   float core_fps = (float)video_st->av_info.timing.fps;
-   return core_fps;
+   float original_fps = (float)video_st->av_info.timing.fps;
+   return original_fps;
 }
 
 /* Get aspect ratio (DAR) requested by the core */

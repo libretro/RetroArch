@@ -119,7 +119,7 @@ void gl3_filter_chain_set_frame_time_delta(
       gl3_filter_chain_t *chain,
       uint32_t time_delta);
 
-void gl3_filter_chain_set_core_fps(
+void gl3_filter_chain_set_original_fps(
       gl3_filter_chain_t *chain,
       float fps);
 

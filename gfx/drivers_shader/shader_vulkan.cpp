@@ -254,7 +254,7 @@ class Pass
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
       void set_frame_time_delta(uint32_t time_delta) { frame_time_delta = time_delta; }
-      void set_core_fps(float fps) { core_fps = fps; }
+      void set_original_fps(float fps) { original_fps = fps; }
       void set_rotation(uint32_t rot) { rotation = rot; }
       void set_core_aspect(float coreaspect) { core_aspect = coreaspect; }
       void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
@@ -348,7 +348,7 @@ class Pass
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
       uint32_t frame_time_delta   = 0;
-      float core_fps              = 0;
+      float original_fps          = 0;
       uint32_t rotation           = 0;
       float core_aspect           = 0;
       float core_aspect_rot       = 0;
@@ -420,7 +420,7 @@ struct vulkan_filter_chain
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t direction);
       void set_frame_time_delta(uint32_t time_delta);
-      void set_core_fps(float fps);
+      void set_original_fps(float fps);
       void set_rotation(uint32_t rot);
       void set_core_aspect(float coreaspect);
       void set_core_aspect_rot(float coreaspect);
@@ -1454,11 +1454,11 @@ void vulkan_filter_chain::set_frame_time_delta(uint32_t time_delta)
       passes[i]->set_frame_time_delta(time_delta);
 }
 
-void vulkan_filter_chain::set_core_fps(float fps)
+void vulkan_filter_chain::set_original_fps(float fps)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
-      passes[i]->set_core_fps(fps);
+      passes[i]->set_original_fps(fps);
 }
 
 void vulkan_filter_chain::set_rotation(uint32_t rot)
@@ -2400,7 +2400,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                       frame_time_delta);
 
    build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
-                      core_fps);
+                      original_fps);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
@@ -3255,11 +3255,11 @@ void vulkan_filter_chain_set_frame_time_delta(
    chain->set_frame_time_delta(time_delta);
 }
 
-void vulkan_filter_chain_set_core_fps(
+void vulkan_filter_chain_set_original_fps(
       vulkan_filter_chain_t *chain,
       float fps)
 {
-   chain->set_core_fps(fps);
+   chain->set_original_fps(fps);
 }
 
 void vulkan_filter_chain_set_rotation(
