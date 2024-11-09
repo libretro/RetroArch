@@ -13325,7 +13325,6 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_INT(
                   list, list_info,
@@ -13343,7 +13342,6 @@ static bool setting_append_list(
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if defined(GEKKO) || defined(PS2) || defined(__PS3__)
             if (true)
@@ -13408,7 +13406,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_right = &setting_uint_action_right_custom_viewport_width;
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
             CONFIG_UINT(
                   list, list_info,
@@ -13430,7 +13427,6 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].action_right = &setting_uint_action_right_custom_viewport_height;
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info,
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_LAKKA_ADVANCED);
 
 #if defined(DINGUX)
             if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
