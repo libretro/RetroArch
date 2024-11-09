@@ -2494,13 +2494,16 @@ ifeq ($(WANT_LIBFAT), 1)
 endif
 
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
-   OBJ += libretro-common/audio/dsp_filters/echo.o \
+   OBJ += libretro-common/audio/dsp_filters/chorus.o \
+          libretro-common/audio/dsp_filters/crystalizer.o \
+          libretro-common/audio/dsp_filters/echo.o \
           libretro-common/audio/dsp_filters/eq.o \
-          libretro-common/audio/dsp_filters/chorus.o \
           libretro-common/audio/dsp_filters/iir.o \
           libretro-common/audio/dsp_filters/panning.o \
           libretro-common/audio/dsp_filters/phaser.o \
           libretro-common/audio/dsp_filters/reverb.o \
+          libretro-common/audio/dsp_filters/tremolo.o \
+          libretro-common/audio/dsp_filters/vibrato.o \
           libretro-common/audio/dsp_filters/wahwah.o
 endif
 
