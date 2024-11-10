@@ -2740,6 +2740,10 @@ MSG_HASH(
    "自動有效的動態調整「幀數延遲」選項設定。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   "嘗試維持幀數延遲所需值並最大限度的減少影格丟失, 當「幀數延遲」設定<自動>時起點時間為四分之三幀。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    "自動"
    )
@@ -3538,6 +3542,10 @@ MSG_HASH(
    "連接埠 %u 控制器"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   "變更此虛擬控制器連接埠映射實體控制器的按鍵配置。"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    "變更核心特定的按鍵配置。"
    )
@@ -4102,6 +4110,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
    "連線遊戲時開啟輸入視窗傳送訊息的按鍵。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   "連線遊戲淡化訊息 (開關)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -6396,11 +6408,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "顯示「還原載入之前」「還原儲存之前」"
+   "顯示「還原成載入前」「還原成儲存前」"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "顯示「還原載入之前」 「還原儲存之前」選項。"
+   "顯示「還原成載入前」 「還原成儲存前」選項。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,

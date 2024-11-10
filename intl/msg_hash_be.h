@@ -13645,7 +13645,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_COMPILED_AGAINST_API,
-   "Скампіляваны супраць API"
+   "Скампіляваны паводле API"
    )
 MSG_HASH(
    MSG_CONFIG_DIRECTORY_NOT_SET,
