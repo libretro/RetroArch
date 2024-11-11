@@ -504,6 +504,10 @@ MSG_HASH(
    "Необхідний графічний API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Повний шлях"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Підтримка збереження стану"
    )
@@ -530,6 +534,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    "- Примітка: \"Системні файли знаходяться у каталозі вмісту\" наразі увімкнено."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Перегляд: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1229,12 +1237,28 @@ MSG_HASH(
    "Синхронізація: Файли конфігурації"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Синхронізація: ескізи зображень"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Синхронізація: система летить"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Коли увімкнено, збереження чи стани будуть синхронізуватись до хмари."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
    "Коли цей параметр увімкнено, файли конфігурації будуть синхронізовані до хмари."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Якщо ввімкнено, мініатюри зображень синхронізуватимуться з хмарою. Зазвичай не рекомендується, за винятком великих колекцій власних мініатюр; в іншому випадку кращим вибором буде завантажувач мініатюр."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Якщо ввімкнено, системні файли синхронізуватимуться з хмарою. Це може значно збільшити час, необхідний для синхронізації; використовувати з обережністю."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -2059,8 +2083,20 @@ MSG_HASH(
    "15 - Для частоти оновлення дисплея 900 Гц"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - Для частоти оновлення дисплея 960 Гц"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    "Зняток екрану силами GPU"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Моделювання рухомої розгортки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Імітує базову рухливу розгортку на кількох підкадрах, розділяючи екран вертикально та відтворюючи кожну частину екрана відповідно до кількості підкадрів."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
