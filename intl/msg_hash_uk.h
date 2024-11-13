@@ -2642,15 +2642,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Viewport Anchor Bias X (книжкова орієнтація)"
+   "Перегляд упередженої прив’язки X (портретна орієнтація)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Видове вікно Anchor Bias Y (книжкова орієнтація)"
+   "Перегляд упередженості якоря Y (портретна орієнтація)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Видове вікно Anchor Bias Y (книжкова орієнтація)"
+   "Перегляд упередженості якоря Y (портретна орієнтація)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
@@ -5319,6 +5319,10 @@ MSG_HASH(
    "Автоматично повертати макет, щоб відповідати орієнтації/співвідношенню екрана, якщо підтримується поточною накладкою."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   "Накладання з автоматичним масштабуванням"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
    "Автоматичне настроювання шкали накладання та інтервалу елементу інтерфейсу для співпаду зі співвідношенням сторін екрану. Таким чином відповідає результатам керувальника."
    )
@@ -5451,6 +5455,10 @@ MSG_HASH(
    "Використовуйте сенсорні вхідні дані не натискаючи кнопку \"Накладання\", щоб створити введення точного пристрою для ядра."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "Накладка Lightgun"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
    "Налаштувати введення блискавки, яке надсилається з оверлею."
    )
@@ -5513,8 +5521,16 @@ MSG_HASH(
    "Затримка перемикання запису і тригера. Ця затримка використовується для очікування правильної мультисенсорної лічильника."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   "2-сенсорне введення"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
    "Виберіть запис, якщо на екрані знаходяться два вказівки. Затримка заставки при виклику має бути не нульовим, щоб відрізняти його від іншого значення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   "3-сенсорне введення"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
@@ -6277,11 +6293,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
-   "Показати 'Help'"
+   "Показати 'Допомога'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    "Показувати опцію \"Допомога\" у головному меню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+   "Показати 'Вихід RetroArch'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
@@ -6607,6 +6627,10 @@ MSG_HASH(
    "Показувати варіант \"Латиниця\"."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   "Показати 'Перемотати назад'"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
    "Показувати опцію \"Повтор назад\"."
    )
@@ -6724,6 +6748,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
    "Показувати настройки."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+   "Показати \"Введення\""
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
@@ -7424,6 +7452,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
    "Розкрити спливаючі повідомлення з плином часу."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   "Колір чату (псевдонім)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
@@ -14808,6 +14840,82 @@ MSG_HASH(
    "Стан збереження був завантажений. Досягнення Хардкорного режиму вимкнуто для поточної сесії."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   "Читання було активовано. Досягнення Хардкорного режиму вимкнено для поточного сеансу."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "Опанував %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "Завершено %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Підвищення гарного режиму досягнень, збереження стану та перемог вимкнено."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "У цій грі немає досягнень."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Усі досягнення %d активовано для цієї сесії"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Активовано %d неофіційних досягнень"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Ви відкрили %d з %d досягнень"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d не підтримується"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Перегляд %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Хардкорно призупинено. Ручне затримка відеокадрів не допускається."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
+   "Хардкорний призупинений. Підсистеми Шейдера заборонені."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Хардкорн призупинено. Інтервал зміни vsync вище 1 не допускається."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Хардкорний призупинений. Чорні кадри не дозволені."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Хардкорн призупинено. Налаштування не дозволено: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Хардкорн призупинено. Ви не можете заробляти невеликі досягнення для %s використовуючи %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "РетроДосягнення: гра не може бути ідентифікована."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "Помилка завантаження ретроДосягнень: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "Не вдалося змінити ретроДосягнення: %s"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Найнижча"
    )
@@ -14828,6 +14936,18 @@ MSG_HASH(
    "Найвищий"
    )
 MSG_HASH(
+   MSG_MISSING_ASSETS,
+   "Попередження: Відсутні активи, використовуйте Online Updater, якщо вони доступні."
+   )
+MSG_HASH(
+   MSG_RGUI_MISSING_FONTS,
+   "Попередження: Відсутні шрифти для обраної мови, використовувати Online Updater, якщо вони доступні."
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Попередження: мова не підтримується - використання англійської мови."
+   )
+MSG_HASH(
    MSG_DUMPING_DISC,
    "Збереження диску..."
    )
@@ -14836,12 +14956,64 @@ MSG_HASH(
    "Диск %d"
    )
 MSG_HASH(
+   MSG_LOAD_CORE_FIRST,
+   "Будь ласка, спершу завантажте ядро."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+   "Не вдалося прочитати з диска. Дамп перервано."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   "Не вдалося записати диск. Обнулення перервано."
+   )
+MSG_HASH(
+   MSG_NO_DISC_INSERTED,
+   "Ніякий диск не вставляється на диску."
+   )
+MSG_HASH(
+   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   "Пресет шейдерів успішно видалено."
+   )
+MSG_HASH(
+   MSG_ERROR_REMOVING_SHADER_PRESET,
+   "Помилка видалення пресета шейдера."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   "Обрано некоректний файл DAT."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   "Вибраний файл DAT занадто великий (недостатньо вільної пам'яті)."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+   "Не вдалося завантажити файл arcade DAT (неприпустимий формат?)"
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   "Неправильна конфігурація ручного сканування."
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   "Контент не виявлено."
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
    "Сканування вмісту: "
    )
 MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   "Перевірка поточних записів: "
+   )
+MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
    "Сканування: "
+   )
+MSG_HASH(
+   MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+   "Очищення M3U елементів: "
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_END,
@@ -14852,16 +15024,76 @@ MSG_HASH(
    "Сканування ядер: "
    )
 MSG_HASH(
+   MSG_CORE_BACKUP_ALREADY_EXISTS,
+   "Резервна копія встановлених ядра вже існує: "
+   )
+MSG_HASH(
    MSG_BACKING_UP_CORE,
    "Резервне копіювання ядра: "
+   )
+MSG_HASH(
+   MSG_PRUNING_CORE_BACKUP_HISTORY,
+   "Видалення застарілих резервних копій: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_COMPLETE,
+   "Резервну копію Ядро завершено: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_ALREADY_INSTALLED,
+   "Обрана резервна копія вже встановлена: "
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Відновлення ядра: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_COMPLETE,
+   "Відновлення ядра завершено: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   "Вибраний базовий файл вже встановлено: "
    )
 MSG_HASH(
    MSG_INSTALLING_CORE,
    "Встановлені ядра: "
    )
 MSG_HASH(
+   MSG_CORE_INSTALLATION_COMPLETE,
+   "Встановлення ядра завершено: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_INVALID_CONTENT,
+   "Обрано невірний файл: "
+   )
+MSG_HASH(
+   MSG_CORE_BACKUP_FAILED,
+   "Помилка резервного копіювання ядра: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_FAILED,
+   "Помилка відновлення ядра: "
+   )
+MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
    "Невдала спроба встановлення: "
+   )
+MSG_HASH(
+   MSG_CORE_RESTORATION_DISABLED,
+   "Відновлення ядра вимкнено - ядро заблоковано: "
+   )
+MSG_HASH(
+   MSG_CORE_INSTALLATION_DISABLED,
+   "Встановлення ядра вимкнено - ядро заблоковано: "
+   )
+MSG_HASH(
+   MSG_CORE_LOCK_FAILED,
+   "Не вдалося заблокувати ядро: "
+   )
+MSG_HASH(
+   MSG_CORE_UNLOCK_FAILED,
+   "Не вдалося розблокувати core: "
    )
 MSG_HASH(
    MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
@@ -15198,35 +15430,119 @@ MSG_HASH(
    "Пріоритет при доторканні інтерфейсу"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+   "Використовувати спереду замість дотику."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    "Дотик"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   "Запис контролера клавіатури"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   "Тип відображення клавіатури"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    "Мала клавіатура"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+   "Таймаут блоку вводу"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+   "Кількість мілісекунд для отримання повного виведення зразка. Використовуйте, якщо у вас є проблеми з одночасними натисненням кнопки (лише для Android)."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   "Показувати опцію \"Перезавантаження\"."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+   "Показати 'Shutdown'"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+   "Показувати опцію \"Завершення\"."
+   )
+MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Пароль"
+   )
+MSG_HASH(
    MSG_INTERNET,
    "Інтернет"
    )
 MSG_HASH(
+   MSG_INTERNET_RELAY,
+   "Інтернет (станція)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Інтернет (немає з'єднання)"
+   )
+MSG_HASH(
    MSG_LOCAL,
    "Місцеві"
+   )
+MSG_HASH(
+   MSG_READ_WRITE,
+   "Стан внутрішнього сховища: Читання/запис"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "Стан внутрішнього сховища: лише для читання"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   "Яскравість екрану"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Збільшити або зменшити яскравість екрану."
    )
 #ifdef HAVE_LIBNX
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
    "Розгін CPU"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+   "Перемкнути ЦП."
+   )
 #endif
 #ifdef HAVE_LAKKA
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+   "Визначити стан Bluetooth."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
    "Послуги"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+   "Керувати службами операційної системи."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+   "Обмінюйтеся мережевими папками за допомогою протоколу SMB."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SSH_ENABLE,
+   "Використовуйте SSH для доступу до командного рядка дистанційно."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
    "Точка доступу Wi-Fi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+   "Увімкнути або вимкнути точку доступу Wi-Fi."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEZONE,
@@ -15236,12 +15552,60 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_TIMEZONE,
    "Виберіть свій часовий пояс, щоб налаштувати дату та час відповідно до вашого місцезнаходження."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TIMEZONE,
+   "Відображає список доступних часових поясів. Вибравши часовий пояс, час та дату, налаштовано на обрану часову пояс. Системні/апаратний годинник встановлено на UTC."
+   )
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Параметри перемикача Nintendo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Налаштування параметрів параметрів Nintendo."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
    "Розгін CPU"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+   "Увімкнути частоти Перевизначення частоти ЦП"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+   "CEC підтримка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+   "Включати рукостискання CEC з телевізором при док-станції"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+   "Вимкнути Bluetooth ERTM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+   "Вимкніть Bluetooth ERTM для виправлення пари деяких пристроїв"
+   )
 #endif
+MSG_HASH(
+   MSG_LOCALAP_SWITCHING_OFF,
+   "Вимкнення точки доступу Wi-Fi."
+   )
+MSG_HASH(
+   MSG_WIFI_DISCONNECT_FROM,
+   "Відключення від Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Підключення до Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_EMPTY_SSID,
+   "[Без SSD]"
+   )
 MSG_HASH(
    MSG_LOCALAP_ALREADY_RUNNING,
    "Точка доступу Wi-Fi вже запущена"
@@ -15250,6 +15614,18 @@ MSG_HASH(
    MSG_LOCALAP_NOT_RUNNING,
    "Точка доступу Wi-Fi не запущена"
    )
+MSG_HASH(
+   MSG_LOCALAP_STARTING,
+   "Запуск точки доступу Wi-Fi з SSID=%s і Passkey=%s"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   "Не вдалося створити файл конфігурації точки доступу Wi-Fi."
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   "Неправильний файл конфігурації - не вдалося знайти APNAME або PASSWORD в %s"
+   )
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
@@ -15257,6 +15633,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
    "Масштабування Мишею"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+   "Налаштуйте масштаб x/y для швидкості підсвітки гармат."
    )
 #endif
 MSG_HASH(
@@ -15268,11 +15648,55 @@ MSG_HASH(
    "Налаштування x/y масштабу координат сенсорного екрана для масштабування дисплея на рівні ОС."
    )
 #ifdef UDEV_TOUCH_SUPPORT
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   "Торкніться вказівника VMouse як Pointer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   "Увімкнути для того, щоб пройти сенсорні події з екрану введення."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Цільова миша"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   "Увімкнути віртуальну емуляцію миші, використовуючи сенсорні події."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Сенсорний режим VMouse Touchpad"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   "Увімкніть, аби використовувати сенсорний екран як сенсорний контакт."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Торкніться режиму VMouse Trackball"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+   "Увімкнути разом з мишею для використання сенсорного екрану в якості трекболу, додавання інерції в вказівник."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Торкніться жестів мишею"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   "Увімкнути жести сенсорного екрану, включаючи натискання, перетягування."
+   )
 #endif
 #ifdef HAVE_ODROIDGO2
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
    "Масштабування RGA"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
+   "Масштабування RGA і бітубна фільтрація. Може зламати віджети."
    )
 #else
 MSG_HASH(
@@ -15285,6 +15709,10 @@ MSG_HASH(
    )
 #endif
 #ifdef _3DS
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+   "Увімкнути годинник New3DS / L2 кеш"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
    "Увімкніть частоту New3DS (804MHz) та кеш L2."
