@@ -1205,6 +1205,8 @@ typedef struct MTLALIGN(16)
       texture_t feedback;
       uint32_t frame_count;
       int32_t frame_direction;
+      int32_t frame_time_delta;
+      float original_fps;
       uint32_t rotation;
       float_t core_aspect;
       float_t core_aspect_rot;
@@ -1576,8 +1578,12 @@ typedef struct MTLALIGN(16)
          _engine.pass[i].frame_direction = -1;
       else
 #else
-         _engine.pass[i].frame_direction = 1;
+      _engine.pass[i].frame_direction = 1;
 #endif
+
+      _engine.pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+      _engine.pass[i].original_fps = video_driver_get_original_fps();
 
       _engine.pass[i].rotation = retroarch_get_rotation();
 
@@ -1846,6 +1852,8 @@ typedef struct MTLALIGN(16)
                &_engine.frame.output_size,       /* FinalViewportSize */
                &_engine.pass[i].frame_count,     /* FrameCount */
                &_engine.pass[i].frame_direction, /* FrameDirection */
+               &_engine.pass[i].frame_time_delta,/* FrameTimeDelta */
+               &_engine.pass[i].original_fps,        /* OriginalFPS */
                &_engine.pass[i].rotation,        /* Rotation */
                &_engine.pass[i].core_aspect,     /* OriginalAspect */
                &_engine.pass[i].core_aspect_rot, /* OriginalAspectRotated */

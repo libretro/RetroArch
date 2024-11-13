@@ -1724,6 +1724,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->frame.output_size,       /* FinalViewportSize */
             &d3d12->pass[i].frame_count,     /* FrameCount */
             &d3d12->pass[i].frame_direction, /* FrameDirection */
+            &d3d12->pass[i].frame_time_delta,/* FrameTimeDelta */
+            &d3d12->pass[i].original_fps,        /* OriginalFPS */
             &d3d12->pass[i].rotation,        /* Rotation */
             &d3d12->pass[i].core_aspect,     /* OriginalAspect */
             &d3d12->pass[i].core_aspect_rot, /* OriginalAspectRotated */
@@ -3593,7 +3595,11 @@ static bool d3d12_gfx_frame(
             d3d12->pass[i].frame_direction = -1;
          else
 #endif
-            d3d12->pass[i].frame_direction = 1;
+         d3d12->pass[i].frame_direction = 1;
+
+         d3d12->pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+         d3d12->pass[i].original_fps = video_driver_get_original_fps();
 
          d3d12->pass[i].rotation = retroarch_get_rotation();
 

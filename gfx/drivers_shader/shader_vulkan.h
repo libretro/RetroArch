@@ -136,6 +136,12 @@ void vulkan_filter_chain_set_simulate_scanline(vulkan_filter_chain_t *chain,
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);
 
+void vulkan_filter_chain_set_frame_time_delta(vulkan_filter_chain_t *chain,
+      uint32_t time_delta);
+
+void vulkan_filter_chain_set_original_fps(vulkan_filter_chain_t *chain,
+      float fps);
+
 void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *chain,
       uint32_t rot);
 

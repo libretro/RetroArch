@@ -291,6 +291,8 @@ typedef struct
       pass_semantics_t           semantics;
       uint32_t                   frame_count;
       int32_t                    frame_direction;
+      uint32_t                   frame_time_delta;
+      float                      original_fps;
       uint32_t                   rotation;
       uint32_t                   total_subframes;
       uint32_t                   current_subframe;

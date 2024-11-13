@@ -4571,6 +4571,12 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)vk->filter_chain,
          1);
 #endif
+   vulkan_filter_chain_set_frame_time_delta(
+         (vulkan_filter_chain_t*)vk->filter_chain, video_driver_get_frame_time_delta_usec());
+
+   vulkan_filter_chain_set_original_fps(
+         (vulkan_filter_chain_t*)vk->filter_chain, video_driver_get_original_fps());
+
    vulkan_filter_chain_set_rotation(
          (vulkan_filter_chain_t*)vk->filter_chain, retroarch_get_rotation());
 
