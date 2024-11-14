@@ -93,7 +93,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Carga un medio físico. Primero tendrás que cargar el núcleo que pretendes utilizar."
+   "Carga un medio físico. Primero tendrás que seleccionar el núcleo que pretendes utilizar (desde Cargar núcleo)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DUMP_DISC,
