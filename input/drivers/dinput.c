@@ -71,16 +71,17 @@ enum dinput_input_flags
    DINP_FLAG_SHIFT_L           = (1 << 0),
    DINP_FLAG_SHIFT_R           = (1 << 1),
    DINP_FLAG_ALT_L             = (1 << 2),
-   DINP_FLAG_DBCLK_ON_TITLEBAR = (1 << 3),
-   DINP_FLAG_MOUSE_L_BTN       = (1 << 4),
-   DINP_FLAG_MOUSE_R_BTN       = (1 << 5),
-   DINP_FLAG_MOUSE_M_BTN       = (1 << 6),
-   DINP_FLAG_MOUSE_B4_BTN      = (1 << 7),
-   DINP_FLAG_MOUSE_B5_BTN      = (1 << 8),
-   DINP_FLAG_MOUSE_WU_BTN      = (1 << 9),
-   DINP_FLAG_MOUSE_WD_BTN      = (1 << 10),
-   DINP_FLAG_MOUSE_HWU_BTN     = (1 << 11),
-   DINP_FLAG_MOUSE_HWD_BTN     = (1 << 12)
+   DINP_FLAG_ALT_R             = (1 << 3),
+   DINP_FLAG_DBCLK_ON_TITLEBAR = (1 << 4),
+   DINP_FLAG_MOUSE_L_BTN       = (1 << 5),
+   DINP_FLAG_MOUSE_R_BTN       = (1 << 6),
+   DINP_FLAG_MOUSE_M_BTN       = (1 << 7),
+   DINP_FLAG_MOUSE_B4_BTN      = (1 << 8),
+   DINP_FLAG_MOUSE_B5_BTN      = (1 << 9),
+   DINP_FLAG_MOUSE_WU_BTN      = (1 << 10),
+   DINP_FLAG_MOUSE_WD_BTN      = (1 << 11),
+   DINP_FLAG_MOUSE_HWU_BTN     = (1 << 12),
+   DINP_FLAG_MOUSE_HWD_BTN     = (1 << 13)
 };
 
 struct dinput_input
@@ -219,67 +220,6 @@ static uint16_t dinput_get_active_keyboard_mods()
    return mod;
 }
 
-static void dinput_keyboard_mods(struct dinput_input *di, int mod)
-{
-   switch (mod)
-   {
-      case RETROKMOD_SHIFT:
-         {
-            unsigned vk_shift_l = GetAsyncKeyState(VK_LSHIFT) >> 1;
-            unsigned vk_shift_r = GetAsyncKeyState(VK_RSHIFT) >> 1;
-
-            if (   ( vk_shift_l && (!(di->flags & DINP_FLAG_SHIFT_L)))
-                || (!vk_shift_l &&   (di->flags & DINP_FLAG_SHIFT_L)))
-            {
-               input_keyboard_event(vk_shift_l, RETROK_LSHIFT,
-                     0, dinput_get_active_keyboard_mods() | RETROKMOD_SHIFT,
-                     RETRO_DEVICE_KEYBOARD);
-               if (di->flags & DINP_FLAG_SHIFT_L)
-                  di->flags &= ~DINP_FLAG_SHIFT_L;
-               else
-                  di->flags |=  DINP_FLAG_SHIFT_L;
-            }
-
-            if (   ( vk_shift_r && (!(di->flags & DINP_FLAG_SHIFT_R)))
-                || (!vk_shift_r &&   (di->flags & DINP_FLAG_SHIFT_R)))
-            {
-               input_keyboard_event(vk_shift_r, RETROK_RSHIFT,
-                     0, dinput_get_active_keyboard_mods() | RETROKMOD_SHIFT,
-                     RETRO_DEVICE_KEYBOARD);
-               if (di->flags & DINP_FLAG_SHIFT_R)
-                  di->flags &= ~DINP_FLAG_SHIFT_R;
-               else
-                  di->flags |=  DINP_FLAG_SHIFT_R;
-            }
-         }
-         break;
-
-      case RETROKMOD_ALT:
-         {
-            unsigned vk_alt_l = GetAsyncKeyState(VK_LMENU) >> 1;
-
-            if (vk_alt_l && (!(di->flags & DINP_FLAG_ALT_L)))
-            {
-               if (di->flags & DINP_FLAG_ALT_L)
-                  di->flags &= ~DINP_FLAG_ALT_L;
-               else
-                  di->flags |=  DINP_FLAG_ALT_L;
-            }
-            else if (!vk_alt_l && (di->flags & DINP_FLAG_ALT_L))
-            {
-               input_keyboard_event(vk_alt_l, RETROK_LALT,
-                     0, dinput_get_active_keyboard_mods() | RETROKMOD_ALT,
-                     RETRO_DEVICE_KEYBOARD);
-               if (di->flags & DINP_FLAG_ALT_L)
-                  di->flags &= ~DINP_FLAG_ALT_L;
-               else
-                  di->flags |=  DINP_FLAG_ALT_L;
-            }
-         }
-         break;
-   }
-}
-
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
@@ -312,15 +252,39 @@ static void dinput_poll(void *data)
       }
       else
       {
-         /* Shifts only when window focused */
-         dinput_keyboard_mods(di, RETROKMOD_SHIFT);
-
          /* Ignore 'unknown/undefined' key */
          di->state[RETROK_UNKNOWN] = 0;
       }
 
-      /* Left alt keyup when unfocused, to prevent alt-tab sticky */
-      dinput_keyboard_mods(di, RETROKMOD_ALT);
+      /* If both shift keys are pressed simultaneously, the OS will not issue
+       * a WM_KEYUP for the first one. That up event will be issued here. */
+      if ((di->flags & DINP_FLAG_SHIFT_L) && !(GetAsyncKeyState(VK_LSHIFT) >> 1))
+      {
+         input_keyboard_event(false, RETROK_LSHIFT, 0,
+               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+         di->flags &= ~DINP_FLAG_SHIFT_L;
+      }
+      if ((di->flags & DINP_FLAG_SHIFT_R) && !(GetAsyncKeyState(VK_RSHIFT) >> 1))
+      {
+         input_keyboard_event(false, RETROK_RSHIFT, 0,
+               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+         di->flags &= ~DINP_FLAG_SHIFT_R;
+      }
+
+      /* When using alt-tab, the alt key won't get a WM_KEYUP message from the
+       * OS. Instead we issue it here when ALT isn't pressed down anymore. */
+      if ((di->flags & DINP_FLAG_ALT_L) && !(GetAsyncKeyState(VK_LMENU) >> 1))
+      {
+         input_keyboard_event(false, RETROK_LALT, 0,
+               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+         di->flags &= ~DINP_FLAG_ALT_L;
+      }
+      if ((di->flags & DINP_FLAG_ALT_R) && !(GetAsyncKeyState(VK_RMENU) >> 1))
+      {
+         input_keyboard_event(false, RETROK_RALT, 0,
+               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+         di->flags &= ~DINP_FLAG_ALT_R;
+      }
    }
 
    if (di->mouse)
@@ -1048,6 +1012,35 @@ bool dinput_handle_message(void *data,
             di->flags |= DINP_FLAG_MOUSE_HWU_BTN;
          if (((short) HIWORD(wParam))/120 < 0)
             di->flags |= DINP_FLAG_MOUSE_HWD_BTN;
+         break;
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         {
+            unsigned keysym       = (lParam >> 16) & 0xff;
+            bool extended         = (lParam >> 24) & 0x1;
+            uint16_t flag         = 0;
+
+            /* extended keys will map to dinput if the high bit is set */
+            if (extended)
+               keysym |= 0x80;
+
+            switch (keysym)
+            {
+               case DIK_LSHIFT: flag = DINP_FLAG_SHIFT_L; break;
+               case DIK_RSHIFT: flag = DINP_FLAG_SHIFT_R; break;
+               case DIK_LMENU:  flag = DINP_FLAG_ALT_L;   break;
+               case DIK_RMENU:  flag = DINP_FLAG_ALT_R;   break;
+            }
+
+            if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
+               di->flags |= flag;
+            else if (di->flags & flag)
+               di->flags &= ~flag;
+            else if (flag) /* key up already issued or down never happened */
+               return true;
+         }
          break;
    }
 
