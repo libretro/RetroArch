@@ -2173,7 +2173,11 @@ static bool d3d10_gfx_frame(
       *osd_params             = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text      = video_info->stat_text;
+#ifdef HAVE_MENU
    bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#else
+   bool menu_is_alive         = false;
+#endif
    bool overlay_behind_menu   = video_info->overlay_behind_menu;
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
