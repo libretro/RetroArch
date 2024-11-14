@@ -2530,6 +2530,10 @@ MSG_HASH(
    "整数缩放轴"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "仅缩放高度，或同时缩放高度和宽度。半步适用于高分辨率信号源。"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "智能"
    )
