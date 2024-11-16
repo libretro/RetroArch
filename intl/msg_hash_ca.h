@@ -1586,8 +1586,96 @@ MSG_HASH(
    "Controlador de vídeo que es farà servir."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   "Controlador OpenGL 1.x. Versió mínima requerida: OpenGL 1.1. No és compatible amb els shaders. Millor fes servir els últims controladors OpenGL si és possible."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   "Controlador OpenGL 2.x. Aquest controlador permet que s'utilitzin els nuclis libretro GL a més dels nuclis de renderitzat per programari. Versió mínima requerida: OpenGL 2.0 o OpenGLES 2.0. És compatible amb el format de shaders GLSL. Millor fes servir el controlador glcore si és possible."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   "Controlador OpenGL 3.x. Aquest controlador permet que s'utilitzin els nuclis libretro GL a més dels nuclis de renderitzat per programari. Versió mínima requerida: OpenGL 3.2 o OpenGLES 3.0+. És compatible amb el format de shaders Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   "Controlador Vulkan. Aquest controlador permet que s'utilitzin els nuclis libretro Vulkan a més dels nuclis de renderitzat per maquinari. Versió mínima requerida: Vulkan 1.0. És compatible amb els shaders HDR i Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   "Controlador de renderitzat per programari SDL 1.2. Es considera que el seu rendiment no és l'òptim. Considera fer-lo servir només com a últim recurs."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   "Controlador de renderitzat per programari SDL 2. El rendiment de les implementacions del nucli de renderitzat per programari libretro depèn de la teva implementació de la plataforma SDL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   "Controlador Metal per a plataformes Apple. És compatible amb el format de shaders Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   "Controlador Direct3D 8 sense compatibilitat amb els shaders."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   "Controlador Direct3D 9 amb compatibilitat amb l'antic format de shaders Cg."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   "Controlador Direct3D 9 amb compatibilitat amb el format de shaders HLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   "Controlador Direct3D 10 amb compatibilitat amb el format de shaders Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   "Controlador Direct3D 11 amb compatibilitat amb HDR i amb el format de shaders Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   "Controlador Direct3D 12 amb compatibilitat amb HDR i amb el format de shaders Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   "Controlador DispmanX. Utilitza l'API DispmanX per al Videocore IV GPU a les Raspberry Pi 0..3. Sense compatibilitat amb superposicions ni shaders."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   "Controlador LibCACA. Produeix una eixida amb caràcters en compte d'amb gràfics. No es recomana per a l'ús pràctic."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   "Un controlador de vídeo Exynos de baix nivell que utilitza el bloc G2D del SoC de Samsung Exynos per a les operacions blit. El rendiment dels nuclis renderitzats per programari hauria de ser òptim."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   "Controlador de vídeo DRM simple. És un controlador de vídeo de baix nivell que utilitza libdrm per a fer l'escalat per maquinari, fent servir superposicions de la GPU."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   "Un controlador de vídeo Sunxi de baix nivell que utilitza el bloc G2D dels SoC Allwinner."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   "Controlador de la Wii U. És compatible amb els shaders Slang."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   "Controlador de la Switch. És compatible amb el format de shaders GLSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   "Controlador OpenVG. Utilitza l'API de gràfics vectorials 2D accelerats per maquinari OpenVG."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   "Controlador GDI. Utilitza una interfície de Windows antiga. No es recomana."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
-   "Controlador actual de vídeo."
+   "Controlador de vídeo actual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -1597,10 +1685,70 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    "Controlador d'àudio que es farà servir."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   "Controlador RSound per a sistemes d'àudio en xarxa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   "Controlador antic Open Sound System."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Controlador predefinit ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   "Controlador ALSA amb compatibilitat amb multifil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   "Controlador ALSA implementat sense dependències."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   "Controlador del sistema de so RoarAudio."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   "Controlador OpenAL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   "Controlador OpenSL."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   "Controlador DirectSound. El DirectSound s'utilitza principalment per a Windows 95 i Windows XP."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   "Controlador de l'API del Windwos Audio Session (WASAPI). El WASAPI s'utilitza principalment per a Windows 7 i superiors."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   "Controlador PulseAudio. Si el sistema utilitza PulseAudio, assegura't de fer servir aquest controlador en compte de, p. ex., l'ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   "Controlador del Jack Audio Connection Kit (JACK)."
+   )
 #ifdef HAVE_MICROPHONE
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
    "Micròfon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   "Controlador de micròfon que es farà servir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   "Remostreig del micròfon"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   "Controlador del remostreig del micròfon que es farà servir."
    )
 #endif
 MSG_HASH(
@@ -1609,7 +1757,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Controlador de remostreig d'àudio a usar."
+   "Controlador de remostreig d'àudio que es farà servir."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   "Implementació de sinus cardinal (Windowed-Sinc)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   "Implementació de cosinus de convolució (Convoluted Cosine)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   "Implementació de remostreig més propera. Aquest remostreig ignora l'opció de qualitat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
@@ -1617,19 +1777,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Tria el controlador de càmera que es farà servir."
+   "Controlador de càmera que es farà servir."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
    "Controlador Bluetooth que es farà servir."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-   "Connexió sense fils Wi-Fi"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Tria el controlador Wi-Fi que es farà servir."
+   "Controlador Wi-Fi que es farà servir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1637,7 +1793,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Tria el controlador de localització que es farà servir."
+   "Controlador d'ubicació que es farà servir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -9244,10 +9400,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    "Filtre suau"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   "Connexió sense fils Wi-Fi"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
