@@ -4844,6 +4844,10 @@ static int xmb_draw_item(
          node->zoom  = xmb->items_active_zoom;
       }
 
+      /* Differentiate the basic setting icon from the rest */
+      if (texture == xmb->textures.list[XMB_TEXTURE_SUBSETTING])
+         gfx_display_set_alpha(color, MIN(node->alpha / 3, xmb->alpha));
+
       /* Explore list correction hack for not showing wrong icons as "previous" icon */
       if (xmb->is_explore_list && !xmb->is_quick_menu && texture)
       {
