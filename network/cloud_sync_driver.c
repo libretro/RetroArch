@@ -35,7 +35,7 @@ const cloud_sync_driver_t *cloud_sync_drivers[] = {
    NULL
 };
 
-static cloud_sync_driver_state_t cloud_sync_driver_st = {0};
+static cloud_sync_driver_state_t cloud_sync_driver_st;
 
 cloud_sync_driver_state_t *cloud_sync_state_get_ptr(void)
 {

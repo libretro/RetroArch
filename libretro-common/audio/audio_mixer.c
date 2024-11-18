@@ -198,7 +198,7 @@ struct audio_mixer_voice
 };
 
 /* TODO/FIXME - static globals */
-static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {0};
+static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES];
 static unsigned s_rate = 0;
 
 static void audio_mixer_release(audio_mixer_voice_t* voice);

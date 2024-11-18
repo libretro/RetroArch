@@ -58,7 +58,7 @@ const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
-static camera_driver_state_t camera_driver_st     = {0};
+static camera_driver_state_t camera_driver_st;
 
 camera_driver_state_t *camera_state_get_ptr(void)
 {
@@ -112,7 +112,7 @@ bool camera_driver_find_driver(const char *prefix,
       bool verbosity_enabled)
 {
    settings_t *settings         = config_get_ptr();
-   camera_driver_state_t 
+   camera_driver_state_t
       *camera_st                = &camera_driver_st;
    int i                        = (int)driver_find_index(
          "camera_driver",

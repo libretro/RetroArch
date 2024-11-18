@@ -51,7 +51,7 @@ const bluetooth_driver_t *bluetooth_drivers[] = {
    NULL,
 };
 
-static bluetooth_driver_state_t bluetooth_driver_st = {0};
+static bluetooth_driver_state_t bluetooth_driver_st;
 
 bluetooth_driver_state_t *bluetooth_state_get_ptr(void)
 {
