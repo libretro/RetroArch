@@ -172,7 +172,7 @@ audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
-static audio_driver_state_t audio_driver_st = {0}; /* double alignment */
+static audio_driver_state_t audio_driver_st; /* double alignment */
 
 /**************************************/
 
@@ -1872,7 +1872,7 @@ bool audio_compute_buffer_statistics(audio_statistics_t *stats)
 #ifdef HAVE_MENU
 void audio_driver_menu_sample(void)
 {
-   static int16_t samples_buf[1024]       = {0};
+   static int16_t samples_buf[1024];
    settings_t *settings                   = config_get_ptr();
    video_driver_state_t *video_st         = video_state_get_ptr();
    uint32_t runloop_flags                 = runloop_get_flags();

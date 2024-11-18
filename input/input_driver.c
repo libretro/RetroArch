@@ -396,7 +396,7 @@ hid_driver_t *hid_drivers[] = {
 };
 #endif
 
-static input_driver_state_t input_driver_st = {0}; /* double alignment */
+static input_driver_state_t input_driver_st; /* double alignment */
 
 /**************************************/
 

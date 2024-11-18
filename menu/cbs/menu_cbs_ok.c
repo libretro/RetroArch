@@ -5212,7 +5212,7 @@ void cb_generic_download(retro_task_t *task,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            static char shaderdir[DIR_MAX_LENGTH] = {0};
+            static char shaderdir[DIR_MAX_LENGTH];
             const char *dirname                    = NULL;
             const char *dir_video_shader           = settings->paths.directory_video_shader;
 

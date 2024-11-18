@@ -46,7 +46,7 @@ typedef struct
    gfx_thumbnail_t *thumbnail;
 } gfx_thumbnail_tag_t;
 
-static gfx_thumbnail_state_t gfx_thumb_st = {0}; /* uint64_t alignment */
+static gfx_thumbnail_state_t gfx_thumb_st; /* uint64_t alignment */
 
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void)
 {
@@ -289,10 +289,10 @@ void gfx_thumbnail_request(
             /* Handle on demand thumbnail downloads */
             else if (network_on_demand_thumbnails)
             {
+               static char last_img_name[NAME_MAX_LENGTH];
                enum playlist_thumbnail_name_flags curr_flag;
                const char *system                         = NULL;
                const char *img_name                       = NULL;
-               static char last_img_name[NAME_MAX_LENGTH] = {0};
                settings_t *settings                       = config_get_ptr();
                if (!playlist)
                   goto end;

@@ -55,7 +55,7 @@ const wifi_driver_t *wifi_drivers[] = {
    NULL,
 };
 
-static wifi_driver_state_t wifi_driver_st = {0}; /* double alignment */
+static wifi_driver_state_t wifi_driver_st; /* double alignment */
 
 wifi_driver_state_t *wifi_state_get_ptr(void)
 {

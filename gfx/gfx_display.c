@@ -35,7 +35,7 @@
 static uintptr_t gfx_white_texture;
 
 /* ptr alignment */
-static gfx_display_t dispgfx_st = {0};
+static gfx_display_t dispgfx_st;
 
 gfx_display_t *disp_get_ptr(void)
 {

@@ -85,7 +85,7 @@ typedef struct omapfb_data
 
 static const char *omapfb_get_fb_device(void)
 {
-   static char fbname[12] = {0};
+   static char fbname[12];
    settings_t   *settings = config_get_ptr();
    const int        fbidx = settings->uints.video_monitor_index;
 
