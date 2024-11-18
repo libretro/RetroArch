@@ -124,7 +124,7 @@ static uint8_t g_platform_android_flags  = 0;
 #define PROC_ACPI_SYSFS_AC_ADAPTER_PATH  "/sys/class/power_supply/ACAD"
 #define PROC_ACPI_SYSFS_BATTERY_PATH     "/sys/class/power_supply"
 #define PROC_ACPI_AC_ADAPTER_PATH        "/proc/acpi/ac_adapter"
-static char unix_cpu_model_name[64]      = {0};
+static char unix_cpu_model_name[64];
 #endif
 
 /* /proc/meminfo parameters */
@@ -1366,7 +1366,7 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char config_path[PATH_MAX_LENGTH] = {0};
+      static char config_path[PATH_MAX_LENGTH];
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)

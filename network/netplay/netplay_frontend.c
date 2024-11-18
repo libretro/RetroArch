@@ -209,7 +209,7 @@ const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
    { "custom",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM }
 };
 
-static net_driver_state_t networking_driver_st = {0};
+static net_driver_state_t networking_driver_st;
 
 net_driver_state_t *networking_state_get_ptr(void)
 {

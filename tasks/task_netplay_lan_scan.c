@@ -87,7 +87,7 @@ static void task_netplay_lan_scan_callback(retro_task_t *task,
 
 bool task_push_netplay_lan_scan(void (*cb)(const void*), unsigned timeout)
 {
-   static struct netplay_lan_scan_data data = {0};
+   static struct netplay_lan_scan_data data;
    retro_task_t *task;
 
    /* Do not run more than one LAN scan task at a time. */

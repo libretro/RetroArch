@@ -91,7 +91,7 @@ struct netplay_crc_scan_data
    char hostname[512];
 };
 
-static struct netplay_crc_scan_state scan_state = {0};
+static struct netplay_crc_scan_state scan_state;
 
 static bool find_content_by_crc(playlist_config_t *playlist_config,
       const struct string_list *playlists, uint32_t crc,
