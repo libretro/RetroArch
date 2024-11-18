@@ -330,14 +330,14 @@ struct rarch_state
 void libnx_apply_overclock(void);
 #endif
 
-static struct rarch_state rarch_st        = {0};
+static struct rarch_state rarch_st;
 
 #ifdef HAVE_THREAD_STORAGE
 static const void *MAGIC_POINTER          = (void*)(uintptr_t)0x0DEFACED;
 #endif
 
-static access_state_t access_state_st     = {0};
-static struct global global_driver_st     = {0}; /* retro_time_t alignment */
+static access_state_t access_state_st;
+static struct global global_driver_st; /* retro_time_t alignment */
 
 static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch) { }
@@ -361,7 +361,7 @@ static const location_driver_t *location_drivers[] = {
    NULL,
 };
 
-static location_driver_state_t location_driver_st     = {0};
+static location_driver_state_t location_driver_st;
 
 location_driver_state_t *location_state_get_ptr(void)
 {

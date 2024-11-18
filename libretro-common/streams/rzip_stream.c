@@ -97,7 +97,7 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
    /* Check 'magic numbers' - first 8 bytes
     * of header */
    if (
-       (length       < RZIP_HEADER_SIZE) || 
+       (length       < RZIP_HEADER_SIZE) ||
        (header_bytes[0] !=           35) || /* # */
        (header_bytes[1] !=           82) || /* R */
        (header_bytes[2] !=           90) || /* Z */
@@ -270,7 +270,7 @@ static bool rzipstream_init_stream(
       stream->in_buf_size  = stream->chunk_size;
       stream->out_buf_size = stream->chunk_size * 2;
       /* > Account for minimum zlib overhead
-       *   of 11 bytes... */ 
+       *   of 11 bytes... */
       stream->out_buf_size =
             (stream->out_buf_size < (stream->in_buf_size + 11)) ?
                   stream->out_buf_size + 11 :
@@ -846,7 +846,7 @@ int rzipstream_putc(rzipstream_t *stream, int c)
  * in the event of an error */
 int rzipstream_vprintf(rzipstream_t *stream, const char* format, va_list args)
 {
-   static char buffer[8 * 1024] = {0};
+   static char buffer[8 * 1024];
    int64_t num_chars            = vsnprintf(buffer,
          sizeof(buffer), format, args);
 

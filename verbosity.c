@@ -457,7 +457,7 @@ void rarch_log_file_init(
    char log_file_path[PATH_MAX_LENGTH];
    verbosity_state_t *g_verbosity            = &main_verbosity_st;
    static bool log_file_created              = false;
-   static char timestamped_log_file_name[64] = {0};
+   static char timestamped_log_file_name[64];
    bool logging_to_file                      = g_verbosity->initialized;
 
 

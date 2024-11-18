@@ -990,7 +990,7 @@ static unsigned char invader_png[] = {
 };
 static unsigned int invader_png_len = 4008;
 
-static ui_window_qt_t ui_window = {0};
+static ui_window_qt_t ui_window;
 
 static const QPixmap getInvader(void)
 {
