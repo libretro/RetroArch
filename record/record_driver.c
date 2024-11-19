@@ -34,7 +34,7 @@
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
 
-static recording_state_t recording_state;
+static recording_state_t recording_state = {0};
 
 static const record_driver_t record_null = {
    NULL, /* new */

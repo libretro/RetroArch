@@ -515,12 +515,12 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
 {
    int w;
    char buffer[1024];
-   static char output1[250];
-   static char output2[250];
-   static char set_hdmi[250];
-   static char set_hdmi_timing[250];
    VCHI_INSTANCE_T vchi_instance;
    VCHI_CONNECTION_T *vchi_connection  = NULL;
+   static char output1[250]            = {0};
+   static char output2[250]            = {0};
+   static char set_hdmi[250]           = {0};
+   static char set_hdmi_timing[250]    = {0};
    int i                               = 0;
    int hfp                             = 0;
    int hsp                             = 0;

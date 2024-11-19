@@ -63,7 +63,7 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 };
 
 
-static uico_driver_state_t uico_driver_st; /* double alignment */
+static uico_driver_state_t uico_driver_st = {0}; /* double alignment */
 
 uico_driver_state_t *uico_state_get_ptr(void)
 {

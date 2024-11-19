@@ -85,7 +85,7 @@ static uint8_t g_plat_win32_flags = PLAT_WIN32_FLAG_USE_POWERSHELL;
 VOID (WINAPI *DragAcceptFiles_func)(HWND, BOOL);
 
 /* TODO/FIXME - static global variables */
-static char win32_cpu_model_name[64];
+static char win32_cpu_model_name[64] = {0};
 #ifdef HAVE_DYLIB
 /* We only load this library once, so we let it be
  * unloaded at application shutdown, since unloading

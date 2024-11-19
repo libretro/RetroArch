@@ -322,7 +322,7 @@
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
 #endif
 
-static runloop_state_t runloop_state;
+static runloop_state_t runloop_state      = {0};
 
 /* GLOBAL POINTER GETTERS */
 runloop_state_t *runloop_state_get_ptr(void)
@@ -6740,7 +6740,7 @@ static enum runloop_state_enum runloop_check_state(
 
    if (settings->bools.video_shader_watch_files)
    {
-      static rarch_timer_t timer;
+      static rarch_timer_t timer = {0};
       static bool need_to_apply  = false;
 
       if (video_shader_check_for_changes())
