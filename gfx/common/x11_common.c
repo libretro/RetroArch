@@ -73,19 +73,18 @@ Colormap g_x11_cmap;
 #ifdef HAVE_XF86VM
 static XF86VidModeModeInfo desktop_mode;
 #endif
-static XConfigureEvent g_x11_xce;
+static bool xdg_screensaver_available       = true;
+static bool g_x11_has_focus                 = false;
+static bool g_x11_true_full                 = false;
+static XConfigureEvent g_x11_xce            = {0};
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
 static XIM g_x11_xim;
 static XIC g_x11_xic;
+
 static enum retro_key x11_keysym_lut[RETROK_LAST];
-
-static bool xdg_screensaver_available       = true;
-static bool g_x11_has_focus                 = false;
-static bool g_x11_true_full                 = false;
-
 static unsigned *x11_keysym_rlut            = NULL;
 static unsigned x11_keysym_rlut_size        = 0;
 

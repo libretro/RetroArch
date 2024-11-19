@@ -39,7 +39,7 @@
 /* TODO/FIXME - static globals */
 static int psp2_model;
 static SceCtrlPortInfo old_ctrl_info, curr_ctrl_info;
-static SceCtrlActuator actuators[DEFAULT_MAX_PADS];
+static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 
 #define LERP(p, f, t) ((((p * 10) * (t * 10)) / (f * 10)) / 10)
 #define AREA(lx, ly, rx, ry, x, y) (lx <= x && x < rx && ly <= y && y < ry)
@@ -202,12 +202,12 @@ static int16_t psp_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN
+               (uint16_t)joykey != NO_BTN 
             && (pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey))
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(psp_joypad_axis_state(port_idx, joyaxis))
+            ((float)abs(psp_joypad_axis_state(port_idx, joyaxis)) 
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -272,7 +272,7 @@ static void psp_joypad_poll(void)
       SceCtrlData state_tmp;
       unsigned i  = player;
 #if defined(VITA)
-      unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV)
+      unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV) 
          ? player + 1 : player;
       if (curr_ctrl_info.port[p] == SCE_CTRL_TYPE_UNPAIRED)
          continue;
@@ -303,7 +303,7 @@ static void psp_joypad_poll(void)
          unsigned i;
          SceTouchData touch_surface = {0};
          sceTouchPeek(input_backtouch_toggle
-               ? SCE_TOUCH_PORT_FRONT
+               ? SCE_TOUCH_PORT_FRONT 
                : SCE_TOUCH_PORT_BACK,
                &touch_surface, 1);
 

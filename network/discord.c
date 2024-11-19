@@ -53,7 +53,7 @@ extern "C"
 }
 #endif
 
-static discord_state_t discord_state_st; /* int64_t alignment */
+static discord_state_t discord_state_st = {0}; /* int64_t alignment */
 
 discord_state_t *discord_state_get_ptr(void)
 {
