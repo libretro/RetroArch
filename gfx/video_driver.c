@@ -3229,10 +3229,10 @@ const char* video_driver_get_gpu_api_version_string(void)
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 {
    video_info_t video;
-   static uint16_t dummy_pixels[32];
    unsigned max_dim, scale, width, height;
    video_viewport_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
+   static uint16_t dummy_pixels[32]       = {0};
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
    settings_t       *settings             = config_get_ptr();
    input_driver_state_t *input_st         = input_state_get_ptr();

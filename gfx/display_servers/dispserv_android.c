@@ -43,10 +43,10 @@ static void android_display_server_set_screen_orientation(void *data,
 
 static void android_display_dpi_get_density(char *s, size_t len)
 {
-   static char string[PROP_VALUE_MAX];
-   static char string2[PROP_VALUE_MAX];
    static bool inited_once             = false;
    static bool inited2_once            = false;
+   static char string[PROP_VALUE_MAX]  = {0};
+   static char string2[PROP_VALUE_MAX] = {0};
    if (!inited_once)
    {
       system_property_get("getprop", "ro.sf.lcd_density", string);

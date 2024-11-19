@@ -65,7 +65,7 @@ static const char
    "menu_achievements.png"
 };
 
-static dispgfx_widget_t dispwidget_st; /* uint64_t alignment */
+static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
 
 static void INLINE gfx_widgets_font_free(gfx_widget_font_data_t *font_data)
 {
