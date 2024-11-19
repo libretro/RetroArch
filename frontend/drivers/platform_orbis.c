@@ -81,7 +81,7 @@
 #define MODULE_PATH "/data/self/system/common/lib/"
 #define MODULE_PATH_EXT "/app0/sce_module/"
 
-static char eboot_path[512];
+static char eboot_path[512]     = {0};
 SceKernelModule s_piglet_module;
 SceKernelModule s_shacc_module;
 
@@ -160,7 +160,7 @@ static void frontend_orbis_get_env(int *argc, char *argv[],
 
    if (!string_is_empty(argv[CONTENT_PATH_ARG_INDEX]))
    {
-      static char path[PATH_MAX_LENGTH];
+      static char path[PATH_MAX_LENGTH] = {0};
       struct rarch_main_wrap      *args =
          (struct rarch_main_wrap*)params_data;
 

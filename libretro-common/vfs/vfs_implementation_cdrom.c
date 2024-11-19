@@ -31,7 +31,7 @@
 #endif
 
 /* TODO/FIXME - static global variable */
-static cdrom_toc_t vfs_cdrom_toc;
+static cdrom_toc_t vfs_cdrom_toc = {0};
 
 const cdrom_toc_t* retro_vfs_file_get_cdrom_toc(void)
 {
@@ -93,8 +93,8 @@ int64_t retro_vfs_file_seek_cdrom(
             break;
          case SEEK_END:
             {
-               ssize_t pregap_lba_len = (vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].audio
-                     ? 0
+               ssize_t pregap_lba_len = (vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].audio 
+                     ? 0 
                      : (vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba - vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba_start));
                ssize_t lba_len        = vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_size - pregap_lba_len;
 #ifdef CDROM_DEBUG
@@ -153,7 +153,7 @@ void retro_vfs_file_open_cdrom(
 
    stream->cdrom.cur_track = 1;
 
-   if (     !string_is_equal_noncase(ext, "cue")
+   if (     !string_is_equal_noncase(ext, "cue") 
          && !string_is_equal_noncase(ext, "bin"))
       return;
 
@@ -231,7 +231,7 @@ void retro_vfs_file_open_cdrom(
    size_t path_len   = strlen(path);
    const char *ext   = path_get_extension(path);
 
-   if (     !string_is_equal_noncase(ext, "cue")
+   if (     !string_is_equal_noncase(ext, "cue") 
          && !string_is_equal_noncase(ext, "bin"))
       return;
 
@@ -378,7 +378,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
 
    if (string_is_equal_noncase(ext, "cue"))
    {
-      if ((int64_t)len >= (int64_t)stream->cdrom.cue_len
+      if ((int64_t)len >= (int64_t)stream->cdrom.cue_len 
             - stream->cdrom.byte_pos)
          len = stream->cdrom.cue_len - stream->cdrom.byte_pos - 1;
 #ifdef CDROM_DEBUG
@@ -403,17 +403,17 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       unsigned char rframe = 0;
       size_t skip          = stream->cdrom.byte_pos % 2352;
 
-      if (stream->cdrom.byte_pos >=
+      if (stream->cdrom.byte_pos >= 
             vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes)
          return 0;
 
-      if (stream->cdrom.byte_pos + len >
+      if (stream->cdrom.byte_pos + len > 
             vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes)
-         len -= (stream->cdrom.byte_pos + len)
+         len -= (stream->cdrom.byte_pos + len) 
             - vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].track_bytes;
 
       cdrom_lba_to_msf(stream->cdrom.cur_lba, &min, &sec, &frame);
-      cdrom_lba_to_msf(stream->cdrom.cur_lba
+      cdrom_lba_to_msf(stream->cdrom.cur_lba 
             - vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba,
             &rmin, &rsec, &rframe);
 
@@ -452,8 +452,8 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       }
 
       stream->cdrom.byte_pos += len;
-      stream->cdrom.cur_lba   =
-         vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba
+      stream->cdrom.cur_lba   = 
+         vfs_cdrom_toc.track[stream->cdrom.cur_track - 1].lba 
          + (stream->cdrom.byte_pos / 2352);
 
       cdrom_lba_to_msf(stream->cdrom.cur_lba,

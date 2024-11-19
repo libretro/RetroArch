@@ -115,8 +115,8 @@ int inet_pton(int af, const char *src, void *dst)
 #elif defined(_XBOX)
 struct hostent *gethostbyname(const char *name)
 {
-   static struct in_addr addr;
-   static struct hostent he;
+   static struct in_addr addr = {0};
+   static struct hostent he   = {0};
    WSAEVENT event;
    XNDNS          *dns = NULL;
    struct hostent *ret = NULL;
@@ -180,8 +180,8 @@ uint32_t inet_addr(const char *cp)
 
 struct hostent *gethostbyname(const char *name)
 {
-   static struct SceNetInAddr addr;
-   static struct hostent      he;
+   static struct SceNetInAddr addr = {0};
+   static struct hostent      he   = {0};
    int rid;
    struct hostent *ret = NULL;
 

@@ -50,10 +50,10 @@
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
 #endif
 
-static char mountPoint[50];
-static char mountString[10];
-static char cwd[FILENAME_MAX];
 static enum frontend_fork ps2_fork_mode      = FRONTEND_FORK_NONE;
+static char cwd[FILENAME_MAX]                = {0};
+static char mountString[10]                  = {0};
+static char mountPoint[50]                   = {0};
 static enum HDD_MOUNT_STATUS hddMountStatus  = HDD_MOUNT_INIT_STATUS_NOT_READY;
 static enum HDD_INIT_STATUS hddStatus        = HDD_INIT_STATUS_UNKNOWN;
 
@@ -265,7 +265,7 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 #ifndef IS_SALAMANDER
    if (!string_is_empty(argv[1]))
    {
-      static char path[FILENAME_MAX];
+      static char path[FILENAME_MAX] = {0};
       struct rarch_main_wrap      *args =
          (struct rarch_main_wrap*)params_data;
 

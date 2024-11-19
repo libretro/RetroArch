@@ -61,7 +61,7 @@ typedef struct
    unsigned nc;
 } webdav_state_t;
 
-static webdav_state_t webdav_driver_st;
+static webdav_state_t webdav_driver_st = {0};
 
 webdav_state_t *webdav_state_get_ptr(void)
 {

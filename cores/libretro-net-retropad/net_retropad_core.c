@@ -87,13 +87,13 @@ struct remote_joypad_message
    uint16_t state;
 };
 
-static float tilt_sensor_values[3];
-static float gyro_sensor_values[3];
 static bool keyboard_state[RETROK_LAST];
 static bool keyboard_state_validated[RETROK_LAST];
 static bool tilt_sensor_enabled    = false;
 static bool gyro_sensor_enabled    = false;
 static bool lux_sensor_enabled     = false;
+static float tilt_sensor_values[3] = {0};
+static float gyro_sensor_values[3] = {0};
 static float lux_sensor_value      = 0.0f;
 static unsigned mouse_type = 0;
 static int pointer_x = 0;
@@ -727,7 +727,7 @@ static void retropad_update_input(void)
                         pointer_y = (int16_t)state;
                   }
                }
-
+               
                /* Do not send extra descriptor state - RA side is not prepared to receive it */
                if (i>1)
                   continue;
@@ -1034,7 +1034,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             sensor_item_colors[median_index]   = (uint16_t)(fabsf(32*4*value)) << 11;
       }
    }
-
+   
    /* Button values for sensor test screen, since they do not follow any pattern, it is *
     * provided as a direct list. */
    if (mouse_type == NETRETROPAD_MOUSE)
@@ -1061,7 +1061,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
       offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
       sensor_item_colors[86] = mouse.value[offset] ? 0xA000 : 0x0000;
-
+      
       offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_BUTTON_4);
       sensor_item_colors[88] = mouse.value[offset] ? 0xA000 : 0x0000;
 
@@ -1093,7 +1093,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
       offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_SELECT);
       sensor_item_colors[76] = lightgun.value[offset] ? 0xA000 : 0x0000;
-
+      
       offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN);
       sensor_item_colors[77] = lightgun.value[offset] ? 0xA000 : 0x0000;
 
@@ -1386,7 +1386,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          pointer_prev_y = pointer_y_coord;
       }
    }
-
+   
    NETRETROPAD_CORE_PREFIX(video_cb)(frame_buf, 320, 240, 640);
    retro_sleep(4);
 }

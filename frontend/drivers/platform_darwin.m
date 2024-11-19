@@ -112,10 +112,10 @@ typedef enum
 } CFDomainMask;
 
 #if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-static int speak_pid    = 0;
+static int speak_pid                            = 0;
 #endif
 
-static char darwin_cpu_model_name[64];
+static char darwin_cpu_model_name[64] = {0};
 
 static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)

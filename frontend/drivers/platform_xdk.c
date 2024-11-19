@@ -59,7 +59,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    DWORD volume_device_type;
 #endif
 #ifndef IS_SALAMANDER
-   static char path[PATH_MAX_LENGTH];
+   static char path[PATH_MAX_LENGTH] = {0};
 #if defined(_XBOX1)
    LAUNCH_DATA ptr;
    DWORD launch_type;
