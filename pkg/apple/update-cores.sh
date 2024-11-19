@@ -176,6 +176,7 @@ else
                 gpsp
                 gw
                 handy
+                holani
                 kronos
                 mednafen_ngp
                 mednafen_pce
