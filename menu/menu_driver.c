@@ -7714,6 +7714,9 @@ int generic_menu_entry_action(
             ret = cbs->action_scan(entry->path,
                   entry->label, entry->type, i);
          break;
+      case MENU_ACTION_RESUME:
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         break;
       default:
          break;
    }
