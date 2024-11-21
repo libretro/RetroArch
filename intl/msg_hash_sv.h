@@ -8752,6 +8752,14 @@ MSG_HASH(
    "Välj mapp"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+   "Fyll i alla nödvändiga fält."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+   "Uppdatera RetroArch (nightly)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    "Uppdateringen misslyckades."
    )
@@ -8786,6 +8794,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
    "Återställ parameter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+   "Hämta miniatyrbild"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+   "En hämtning pågår redan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
@@ -8925,6 +8941,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
    "Ingen kärna hittades"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "Inga spellistor hittades"
    )
 
 /* Unused (Only Exist in Translation Files) */
@@ -9576,8 +9596,20 @@ MSG_HASH(
    "i gigabyte"
    )
 MSG_HASH(
+   MSG_LIBRETRO_ABI_BREAK,
+   "är kompilerad mot en annan version av libretro än denna libretro-implementation."
+   )
+MSG_HASH(
+   MSG_LIBRETRO_FRONTEND,
+   "Frontend för libretro"
+   )
+MSG_HASH(
    MSG_LOADING,
    "Laddar"
+   )
+MSG_HASH(
+   MSG_FIRMWARE,
+   "En eller flera firmwarefiler saknas"
    )
 MSG_HASH(
    MSG_LOADING_CONTENT_FILE,
@@ -9600,12 +9632,36 @@ MSG_HASH(
    "Minne"
    )
 MSG_HASH(
+   MSG_MOVIE_RECORD_STOPPED,
+   "Stoppar filminspelning."
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED,
+   "Misslyckades med att initiera netplay."
+   )
+MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Kärnan har inte stöd för netplay."
+   )
+MSG_HASH(
+   MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+   "Inget innehåll, startar dummykärna."
+   )
+MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
    "Ingen sparad status har ännu blivit överskriven."
    )
 MSG_HASH(
+   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   "Inget tillstånd har lästs in än."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "Pausad."
+   )
+MSG_HASH(
+   MSG_READING_FIRST_DATA_TRACK,
+   "Läser första dataspåret..."
    )
 MSG_HASH(
    MSG_RECORDING_TO,
@@ -9630,6 +9686,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
    "Återställer katalogen för sparad status-filer till"
+   )
+MSG_HASH(
+   MSG_REWINDING,
+   "Spolar tillbaka."
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
@@ -9688,12 +9748,20 @@ MSG_HASH(
    "Bästa: %s" /* Best: [value] */
    )
 MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Ändra miniatyrbildstyp"
+   )
+MSG_HASH(
    MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
    "Helskärmsminiatyrer"
    )
 MSG_HASH(
    MSG_TOGGLE_CONTENT_METADATA,
    "Växla metadata"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Ingen miniatyrbild tillgänglig"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -9828,6 +9896,10 @@ MSG_HASH(
    "Run-Ahead har inaktiverats för att denna Kärna saknar stöd för Spara Statusar."
    )
 MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "Lade till %u matchningar."
+   )
+MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Alla fusk borttagna."
    )
@@ -9836,13 +9908,53 @@ MSG_HASH(
    "Fusk raderat."
    )
 MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Misslyckades med att ansluta till värd."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Netplay-värden är full."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Du är bannlyst från denna värd."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Inloggad som \"%s\"."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "Bemästrat: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "Klarade av %s"
+   )
+MSG_HASH(
    MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
    "Detta spel har inga prestationer."
    )
 MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Alla %d prestationer har aktiverats för denna session"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Aktiverade %d inofficiella prestationer"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Du har låst upp %d av %d prestationer"
+)
+MSG_HASH(
    MSG_CHEEVOS_UNSUPPORTED_COUNT,
    "%d stöds inte"
 )
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Åskådarläge för %s"
+   )
 MSG_HASH(
    MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
    "RetroAchievements: Spelet kunde inte identifieras."
@@ -9878,6 +9990,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOAD_CORE_FIRST,
    "Läs in en kärna först."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+   "Misslyckades med att läsa från enhet. Dumpning avbröts."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   "Misslyckades med att skriva till disk. Dumpning avbröts."
    )
 MSG_HASH(
    MSG_NO_DISC_INSERTED,
@@ -9958,6 +10078,18 @@ MSG_HASH(
    "Skärmupplösning: %dx%d - %s"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Verkställer: Standard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Verkställer: %dx%d\nSTART för att starta om"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Verkställer: %dx%d - %s\nSTART för att starta om"
+   )
+MSG_HASH(
    MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
    "Återställer till: Standard"
    )
@@ -9980,6 +10112,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
    "Aktivera extern filåtkomst"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Öppna Windows-inställningar för filåtkomstbehörighet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
@@ -10024,6 +10160,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
    "Balanserad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "Minimal frekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "Maximal frekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "Minimum kärnfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "Maximal kärnfrekvens"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
@@ -10105,6 +10257,10 @@ MSG_HASH(
    "Tjänster"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SSH_ENABLE,
+   "Använd SSH för att komma åt kommandoraden utifrån."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
    "Wi-Fi accesspunkt"
    )
@@ -10125,6 +10281,14 @@ MSG_HASH(
    "Visar en lista över tillgängliga tidszoner. Efter att du valt en tidszon justeras tid och datum till den valda tidszonen. Det antar, att system/hårdvaruklockan är inställd på UTC."
    )
 #ifdef HAVE_LAKKA_SWITCH
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Alternativ för Nintendo Switch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Hantera specifika alternativ för Nintendo Switch."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
    "Överklocka CPU"
