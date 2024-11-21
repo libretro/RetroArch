@@ -1197,12 +1197,7 @@ void CoreOptionsDialog::buildLayout()
             }
 
             for (k = 0; k < option->vals->size; k++)
-#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
-               combo_box->addItem(option->vals->elems[k].data, QVariant::fromValue(option->key));
-#else
-               combo_box->addItem(option->vals->elems[k].data, option->key);
-#endif
-
+               combo_box->addItem(option->vals->elems[k].data, QVariant::fromValue(QString(option->key)));
 
             combo_box->setCurrentText(val);
             combo_box->setProperty("default_index",
