@@ -1800,27 +1800,47 @@ MSG_HASH(
    "Menú"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Controlador de menú que es farà servir (cal reiniciar)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   "L'XMB és una interfície gràfica per al RetroArch que s'assembla al menú d'una consola de 7a generació. És compatible amb les mateixes funcions que l'Ozone."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   "L'Ozone és la interfície gràfica predefinida del RetroArch a la majoria dels dispositius. És optimitzada per a navegar-hi amb un comandament."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   "L'RGUI és una interfície gràfica simple integrada al RetroArch. És el controlador de menú que menys requisits de rendiment demana, i es pot utilitzar en pantalles de resolució baixa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   "En dispositius mòbils, el RetroArch utilitza de manera predefinida la interfície mòbil, MaterialUI. Aquesta s'ha dissenyat per a les pantalles tàctils i els dispositius senyaladors, com ara ratolins o trackballs."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Enregistrament"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Tria el controlador d'enregistrament que es farà servir."
+   "Controlador d'enregistrament que es farà servir."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Tria el tipus de controlador MIDI que es farà servir."
+   "Controlador MIDI que es farà servir."
    )
 
 /* Settings > Video */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   "SwitchRes per a CRT's"
+   "SwitchRes per a monitors CRT"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Crea senyals de vídeo de baixa resolució per a pantalles de tub de raigs catòdics (CRT)."
+   "Emet senyals de vídeo natius de baixa resolució per a pantalles de tub de raigs catòdics (CRT)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -1832,7 +1852,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Mode Pantalla Sencera"
+   "Mode de pantalla completa"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -1852,7 +1872,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "Canvia les opcions de mida de l'escalat d'imatge."
+   "Canvia les opcions de l'escalat del vídeo."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
@@ -1868,23 +1888,163 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   "Suspendre el salvapantalles"
+   "Suspensió de l'estalvi de pantalla"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   "Evita que el salvapantalles del vostre sistema s'activi."
+   "Evita que s'activi l'estalvi de pantalla del sistema."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   "Suspèn l'estalvi de pantalla. És una petició que el controlador de vídeo no té per què respectar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Vídeo amb fils"
+   "Vídeo multifil"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Millora el rendiment a costa de la latència i de l'entretallament del vídeo. Useu només si no es pot assolir la velocitat màxima de cap altra manera."
+   "Millora el rendiment a costa de la latència i de més entretallament del vídeo. Useu només si no es pot assolir la velocitat màxima de cap altra manera."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   "Utilitza un controlador de vídeo multifil. En usar-lo, podria millorar el rendiment a costa de la latència i més entretallament del vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   "Insereix fotogrames negres"
+   "Inserció de fotogrames en negre"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "Insereix fotogrames en negre entre fotogrames. Pot reduir considerablement el difuminat per moviment emulant l'escaneig de sortida que fan les pantalles CRT, però a costa de la brillantor. No ho combineu amb intervals d'intercanvi > 1, subfotogrames, retard dels fotogrames ni amb la sincronització a la velocitat de fotogrames del contingut exacta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   "Insereix fotogrames en negre entre fotogrames per a millorar la claredat del moviment. Useu només l'opció designada per a la freqüència d'actualització actual de la pantalla. No ho feu servir per a freqüències d'actualització que no siguin múltiples de 60 Hz, com ara 144 Hz, 165 Hz, etc. No ho combineu amb intervals d'intercanvi > 1, subfotogrames, retard dels fotogrames ni amb la sincronització a la velocitat de fotogrames del contingut exacta. Es pot deixar activada l'opció de VRR ([...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
+   "1 - Per a una freqüència d'actualització de 120 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_180,
+   "2 - Per a una freqüència d'actualització de 180 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_240,
+   "3 - Per a una freqüència d'actualització de 240 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_300,
+   "4 - Per a una freqüència d'actualització de 300 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_360,
+   "5 - Per a una freqüència d'actualització de 360 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_420,
+   "6 - Per a una freqüència d'actualització de 420 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_480,
+   "7 - Per a una freqüència d'actualització de 480 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_540,
+   "8 - Per a una freqüència d'actualització de 540 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_600,
+   "9 - Per a una freqüència d'actualització de 600 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_660,
+   "10 - Per a una freqüència d'actualització de 660 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_720,
+   "11 - Per a una freqüència d'actualització de 720 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_780,
+   "12 - Per a una freqüència d'actualització de 780 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_840,
+   "13 - Per a una freqüència d'actualització de 840 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_900,
+   "14 - Per a una freqüència d'actualització de 900 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_960,
+   "15 - Per a una freqüència d'actualització de 960 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   "Inserció de fotogrames en negre (BFI) - Fotogrames foscos"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
+   "2 - Per a una freqüència d'actualització de 120 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_180,
+   "3 - Per a una freqüència d'actualització de 180 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_240,
+   "4 - Per a una freqüència d'actualització de 240 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_300,
+   "5 - Per a una freqüència d'actualització de 300 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_360,
+   "6 - Per a una freqüència d'actualització de 360 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_420,
+   "7 - Per a una freqüència d'actualització de 420 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_480,
+   "8 - Per a una freqüència d'actualització de 480 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_540,
+   "9 - Per a una freqüència d'actualització de 540 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_600,
+   "10 - Per a una freqüència d'actualització de 600 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_660,
+   "11 - Per a una freqüència d'actualització de 660 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_720,
+   "12 - Per a una freqüència d'actualització de 720 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_780,
+   "13 - Per a una freqüència d'actualització de 780 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_840,
+   "14 - Per a una freqüència d'actualització de 840 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_900,
+   "15 - Per a una freqüència d'actualització de 900 Hz"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_960,
+   "16 - Per a una freqüència d'actualització de 960 Hz"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -1967,11 +2127,11 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   "SwitchRes per a CRT's"
+   "SwitchRes per a monitors CRT"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   "Només per a pantalles CRT. Intenta usar la resolució i freqüència de refresc exacta al nucli/joc."
+   "Només per a pantalles CRT. Intenta usar la resolució i freqüència d'actualització exacta del nucli/joc."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
@@ -2003,7 +2163,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Freqüència de refresc personalitzada"
+   "Freqüència d'actualització personalitzada"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -2068,27 +2228,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   "Freqüència de refresc vertical"
+   "Freqüència d'actualització vertical"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
-   "La freqüència de refresc vertical de la vostra pantalla. S'usa per calcular una freqüència d'àudio adient.\nS'ignorarà si s'activa 'Vídeo amb fils'."
+   "Freqüència d'actualització vertical de la pantalla. S'usa per a calcular una freqüència d'àudio adient.\nS'ignorarà si s'activa «Vídeo multifil»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "Freqüència de refresc estimat de la pantalla"
+   "Freqüència d'actualització estimada"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "La freqüència de refresc precisa estimada de la pantalla en hz."
+   "La freqüència d'actualització precisa estimada de la pantalla en Hz."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Estableix la freqüència de refresc notificada per la pantalla"
+   "Estableix la freqüència d'actualització notificada per la pantalla"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   "La freqüència de refresc tal com l'anuncia el controlador de la pantalla."
+   "La freqüència d'actualització que notifica el controlador de la pantalla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
@@ -2105,11 +2265,11 @@ MSG_HASH(
 #if defined(DINGUX) && defined(DINGUX_BETA)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   "Freqüència de refresc vertical"
+   "Freqüència d'actualització vertical"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "Estableix la freqüència de refresc vertical de la pantalla. '50 Hz' habilitarà un vídeo fluid quan s'executi contingut PAL."
+   "Estableix la freqüència d'actualització vertical de la pantalla. «50 Hz» permetrà un vídeo fluid quan s'executi contingut PAL."
    )
 #endif
 MSG_HASH(
@@ -2385,7 +2545,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   "Sincronitza la sortida de vídeo de la tarja gràfica a la freqüència de refresc de la pantalla. Recomanat."
+   "Sincronitza la sortida de vídeo de la targeta gràfica a la freqüència d'actualització de la pantalla. Recomanat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
@@ -2405,7 +2565,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "El VSync roman actiu fins que el rendiment cau per davall de la freqüència de refresc establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient."
+   "La sincronització vertical roman activa fins que el rendiment cau per davall de la freqüència d'actualització establerta. Pot minimitzar l'entretallament quan el rendiment cau per davall del temps real, i pot ser més energèticament eficient."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
@@ -2441,11 +2601,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Sincronitza a fotogrames per segon exactes de contingut (S-Sync, FreeSync)"
+   "Sincronització a la velocitat de fotogrames del contingut exacta (S-Sync, FreeSync)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   "Sense desviació de la cadència demanada pel nucli. Useu-ho per a pantalles amb freqüència de refresc variable (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   "Sense desviació de la cadència demanada pel nucli. Useu-ho per a pantalles amb freqüències d'actualització variable (G-Sync, FreeSync, HDMI 2.1 VRR)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   "Sincronització a la velocitat de fotogrames del contingut exacta. Aquesta opció és l'equivalent a forçar una velocitat de x1 permetent alhora l'avançament ràpid. No produeix alteracions en la velocitat d'actualització sol·licitada pel nucli, ni en el Control de velocitat dinàmic."
    )
 
 /* Settings > Audio */
@@ -3363,7 +3527,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Sincronitza amb velocitat de fotograma del contingut exacte (commuta)"
+   "Sincronització a la velocitat de fotogrames del contingut exacta (commuta)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -9362,6 +9526,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
    "No s'ha pogut afegir el nucli a la llista «Nuclis sense continguts»: "
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_ENABLED,
+   "S'ha activat la sincronització a la velocitat de fotogrames del contingut exacta."
+   )
+MSG_HASH(
+   MSG_VRR_RUNLOOP_DISABLED,
+   "S'ha desactivat la sincronització a la velocitat de fotogrames del contingut exacta."
+   )
+MSG_HASH(
+   MSG_VIDEO_REFRESH_RATE_CHANGED,
+   "S'ha canviat la freqüència d'actualització a %s Hz."
    )
 
 /* Lakka */
