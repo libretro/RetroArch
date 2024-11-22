@@ -681,9 +681,12 @@ struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api)
  * @res_y                          : Scaled  Y coordinate.
  * @res_screen_x                   : Scaled screen X coordinate.
  * @res_screen_y                   : Scaled screen Y coordinate.
+ * @report_oob                     : Out-of-bounds report mode
  *
  * Translates pointer [X,Y] coordinates into scaled screen
- * coordinates based on viewport info.
+ * coordinates based on viewport info. If report_oob is true,
+ * -0x8000 will be returned for the coordinate which is offscreen,
+ * otherwise offscreen coordinate is clamped to 0x7fff / -0x7fff.
  *
  * Returns: true (1) if successful, false if video driver doesn't support
  * viewport info.
@@ -692,7 +695,8 @@ bool video_driver_translate_coord_viewport(
       struct video_viewport *vp,
       int mouse_x,           int mouse_y,
       int16_t *res_x,        int16_t *res_y,
-      int16_t *res_screen_x, int16_t *res_screen_y)
+      int16_t *res_screen_x, int16_t *res_screen_y,
+      bool report_oob)
 {
    int norm_vp_width         = (int)vp->width;
    int norm_vp_height        = (int)vp->height;
@@ -722,12 +726,24 @@ bool video_driver_translate_coord_viewport(
    if (mouse_x >= 0 && mouse_x <= norm_vp_width)
       scaled_x        = ((2 * mouse_x * 0x7fff)
             / norm_vp_width) - 0x7fff;
-   else
-      scaled_x        = -0x8000; /* OOB */
+   else if (!report_oob)
+   {
+      if (mouse_x < 0)
+         scaled_x = -0x7fff;
+      else
+         scaled_x =  0x7fff;
+   }
 
    if (mouse_y >= 0 && mouse_y <= norm_vp_height)
       scaled_y        = ((2 * mouse_y * 0x7fff)
             / norm_vp_height) - 0x7fff;
+   else if (!report_oob)
+   {
+      if (mouse_y < 0)
+         scaled_y = -0x7fff;
+      else
+         scaled_y =  0x7fff;
+   }
 
    *res_x             = scaled_x;
    *res_y             = scaled_y;

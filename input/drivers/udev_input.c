@@ -1898,7 +1898,7 @@ static bool udev_translate_touch_pos(
    *pointer_ma_pos_y  = ma_pos_y;
 
    /* Main panel -> Screen and Viewport */
-   return video_driver_translate_coord_viewport(
+   return video_driver_translate_coord_viewport_wrap(
       target_vp,
       *pointer_ma_pos_x,
       *pointer_ma_pos_y,
@@ -2569,7 +2569,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->mouse_pos_y = (int32_t) touch->touchpad_pos_y;
 
                   /* Translate the panel coordinates into normalized coordinates. */
-                  video_driver_translate_coord_viewport(
+                  video_driver_translate_coord_viewport_wrap(
                      &vp, touch->mouse_pos_x, touch->mouse_pos_y,
                      &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
                      &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
@@ -2873,7 +2873,7 @@ static void udev_input_touch_state_trackball(
          /* Get current viewport information */
          video_driver_get_viewport_info(&vp);
          /* Translate the raw coordinates into normalized coordinates. */
-         video_driver_translate_coord_viewport(
+         video_driver_translate_coord_viewport_wrap(
             &vp, touch->mouse_pos_x, touch->mouse_pos_y,
             &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
             &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
