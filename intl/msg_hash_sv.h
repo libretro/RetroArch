@@ -512,6 +512,10 @@ MSG_HASH(
    "Deterministisk (Spara/Ladda, Spola tillbaka, Run-Ahead, Netplay)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Observera: 'Systemfiler är i Innehållskatalog' är för närvarande aktiverat."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
    "- Letar i: %s"
    )
@@ -3286,7 +3290,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Ladda status"
+   "Läs in tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
