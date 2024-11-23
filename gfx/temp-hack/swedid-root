@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# This script requires running as root. "sudo" is called from "gfx/video_crt_switch.c", thus requiring a sudoers rule to non-interactively grant root permissions when running "/usr/local/bin/swedid-root" (this script)
+# switchres binary must be in root's PATH
+
+# Hardcoding Display for now as DP-1
+if [ -z "$3" ]; then
+	echo "Usage: $0 [HRes] [VRes] [VFreq] [Display]"
+	exit 1
+fi
+
+# Hardcoding Display
+if [ -n "$4" ]; then
+	echo "Too many arguments"
+	echo "Usage: $0 [HRes] [VRes] [VFreq] [Display]"
+	exit 1
+fi
+
+# Generate temperary working directory to generate EDID binary, then delete after applying
+_tmpdir=$(mktemp -d)
+if [ -z "$_tmpdir" ]; then
+        echo "_tmpdir doesn't exist"
+        exit 1
+fi
+cd "$_tmpdir"
+
+switchres --ini /home/syboxez/.config/retroarch/config/switchres.ini --edid $1 $2 $3
+
+#Replace "1" with GPU number, replace "DP-1" with display
+cat "$_tmpdir"/custom.bin > /sys/kernel/debug/dri/1/DP-1/edid_override
+echo 1 > /sys/kernel/debug/dri/1/DP-1/trigger_hotplug
+
+cd /tmp
+rm -rf "$_tmpdir"

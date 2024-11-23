@@ -300,6 +300,7 @@ static void switch_res_crt(
 {
    int w                   = native_width;
    int h                   = height;
+   char commandbuffer[256];
 
    /* Check if SR2 is loaded, if not, load it */
    if (crt_sr2_init(p_switch, monitor_index, crt_mode, super_width))
@@ -382,16 +383,11 @@ static void switch_res_crt(
       RARCH_DBG("[CRT] %dx%d rotation: %d rotated: %d core rotation:%d\n", w, h, p_switch->rotated, flags & SR_MODE_ROTATED, retroarch_get_rotation());
       ret = sr_add_mode(w, h, rr, flags, &srm);
       if (!ret)
-         RARCH_ERR("[CRT] SR failed to add mode.\n");
-      if (p_switch->kms_ctx)
-      {
-         get_modeline_for_kms(p_switch, &srm);
-         video_driver_set_video_mode(srm.width, srm.height, true);
-      }
-      else if (p_switch->khr_ctx)
-         RARCH_WARN("[CRT] Vulkan -> Can't modeswitch for now.\n");
-      else
-         ret = sr_set_mode(srm.id);
+         RARCH_ERR("[CRT]: SR failed to add mode\n");
+
+      snprintf(commandbuffer, sizeof(commandbuffer), "/usr/bin/sudo /usr/local/bin/swedid-root %d %d %d", srm.width, srm.height, srm.vfreq);
+      ret = system(commandbuffer);
+
       if (!p_switch->kms_ctx && !ret)
          RARCH_ERR("[CRT] SR failed to switch mode.\n");
       p_switch->sr_core_hz = (float)srm.vfreq;
