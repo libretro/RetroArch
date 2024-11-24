@@ -3390,13 +3390,6 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_LOAD_STATE:
          {
-#ifdef HAVE_CHEEVOS
-            if (rcheevos_hardcore_active())
-            {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-               return false;
-            }
-#endif
 #ifdef HAVE_NETWORKING
             if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
                return false;

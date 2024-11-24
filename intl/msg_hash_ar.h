@@ -9020,10 +9020,6 @@ MSG_HASH(
    "تم حذف الغش."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "يجب عليك إيقاف أو تعطيل الوضع الصعب للإنجازات لتحميل الحالات."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "تم تحميل حالة الحفظ. تم تعطيل وضع الهرنج للإنجازات للدورة الحالية."
    )

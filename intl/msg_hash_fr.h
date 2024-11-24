@@ -14696,10 +14696,6 @@ MSG_HASH(
    "RetroSuccès (RetroAchievements) : Connecté en tant que \"%s\"."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Vous devez mettre en pause ou désactiver les succès en mode Hardcore pour charger des sauvegardes instantanées."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Une sauvegarde instantanée a été chargée. Succès en mode Hardcore désactivés pour la session en cours."
    )

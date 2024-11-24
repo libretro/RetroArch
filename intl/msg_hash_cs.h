@@ -14140,10 +14140,6 @@ MSG_HASH(
    "Nepodařilo se přijmout hlavičku od hostitele."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Pro nahrání stavů je nutné pozastavit nebo vypnout Úspěchy hardcore režimu."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Byl nahrán stav uložení. Pro aktuální relaci jsou vypnuty Úspěchy hardcore režimu."
    )

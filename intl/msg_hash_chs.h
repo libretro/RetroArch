@@ -14680,10 +14680,6 @@ MSG_HASH(
    "RetroAchievements: 以 \"%s \" 登录."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "您必须暂停或禁用硬核心模式才能加载状态。"
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "已加载状态存储。成就硬核模式在当前游戏中已经禁用。"
    )

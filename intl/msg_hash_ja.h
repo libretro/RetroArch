@@ -14616,10 +14616,6 @@ MSG_HASH(
    "RetroAchievements: 「%s」としてログイン済み。"
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "ステートロードするには実績ハードコアモードを無効にするか一時停止する必要があります。"
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "ステートセーブがロードされました。実績ハードコアモードが現在のセッションで無効になりました。"
    )

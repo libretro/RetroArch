@@ -14492,10 +14492,6 @@ MSG_HASH(
    "RetroAchivements: Bejelentkezve \"%s\" néven."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "A Hardcore trófea módot fel kell függeszteni vagy ki kell kapcsolni az állás betöltéséhez."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Állás betöltve. A Hardcore trófea mód letiltva a mostani játékmenet idejére."
    )

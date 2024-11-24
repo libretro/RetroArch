@@ -12824,10 +12824,6 @@ MSG_HASH(
    "Trapaça excluída."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Você deve pausar ou desativar as conquistas no modo hardcore para carregar jogos salvos."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Um jogo salvo foi carregado. Conquistas no Modo Hardcore foram desativadas para a sessão atual."
    )

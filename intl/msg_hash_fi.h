@@ -13436,10 +13436,6 @@ MSG_HASH(
    "RetroAchievements: Kirjautuneena tilillä \"%s\"."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Tilatallennusten lataamiseksi, sinun on keskeytettävä tai poistettava Hardcore Mode:n saavutukset käytöstä."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Tilatalennus ladattu. Saavutusten hardcore tila pois käytöstä nykyisessä istunnossa."
    )

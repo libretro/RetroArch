@@ -14720,10 +14720,6 @@ MSG_HASH(
    "已刪除金手指。"
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "必須暫停或關閉硬核模式, 才能載入即時存檔。"
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "已載入即時存檔, 硬核模式已關閉。"
    )

@@ -14824,10 +14824,6 @@ MSG_HASH(
    "RetroAchievements: уваход як \"%s\"."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Для загрузкі захаванняў патрабуецца адключыць ці прыпыніць Рэжым хардкора для дасягненняў."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Загружана захаванне стану. Для бягучага сеанса дасягненняў рэжым хардкору адключаны."
    )

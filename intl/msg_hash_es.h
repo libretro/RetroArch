@@ -14732,10 +14732,6 @@ MSG_HASH(
    "RetroAchievements: Sesión iniciada como «%s»."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Debes pausar o desactivar el modo de logros Hardcore para poder cargar un guardado rápido."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Se ha cargado un guardado rápido. Los logros Hardcore han sido desactivados para esta sesión."
    )

@@ -14832,10 +14832,6 @@ MSG_HASH(
    "RetroAchievements: Ви ввійшли як \"%s\"."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Ви повинні призупинити або вимкнути передобуті досягнень для завантаження станів."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Стан збереження був завантажений. Досягнення Хардкорного режиму вимкнуто для поточної сесії."
    )

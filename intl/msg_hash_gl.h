@@ -14588,10 +14588,6 @@ MSG_HASH(
    "RetroLogros: Conectado como \"%s\"."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Debes pausar ou desactivar o modo Hardcore de logros para cargar estados."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "Cargouse un estado de gardado. Logros Modo Hardcore desactivado para a sesión actual."
    )

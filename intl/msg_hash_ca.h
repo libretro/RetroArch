@@ -9472,10 +9472,6 @@ MSG_HASH(
    "S’ha suprimit el truc."
    )
 MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Heu de posar en pausa o desactivar el mode expert d’assoliments per carregar desats ràpids."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    "S’ha carregat un desat ràpid. S’ha desactivat el mode expert d’assoliments per la sessió actual."
    )
