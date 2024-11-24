@@ -197,6 +197,7 @@ else
                 mupen64plus_next
                 neocd
                 nestopia
+                noods
                 np2kai
                 numero
                 nxengine
