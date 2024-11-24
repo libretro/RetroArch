@@ -1216,7 +1216,11 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailTimer(new QTimer(this))
    ,m_gridItem(this)
    ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    ,m_searchRegularExpression()
+#else
+   ,m_searchRegExp()
+#endif
    ,m_zoomWidget(new QWidget(this))
    ,m_itemsCountLiteral(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT))
    ,m_itemsCountLabel(new QLabel(this))
@@ -2622,9 +2626,17 @@ void MainWindow::selectBrowserDir(QString path)
          /* the directory is filtered out. Remove the filter for a moment.
           * FIXME: Find a way to not have to do this
           * (not filtering dirs is one). */
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
          m_proxyFileModel->setFilterRegularExpression(QRegularExpression());
+#else
+	 m_proxyFileModel->setFilterRegExp(QRegExp());
+#endif
          m_fileTableView->setRootIndex(m_proxyFileModel->mapFromSource(sourceIndex));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
          m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
+#else
+	 m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
       }
    }
    setCoreActions();
@@ -3209,6 +3221,7 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
       }
    }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    if (!found_hiragana && !found_katakana)
       m_searchRegularExpression = QRegularExpression(text, QRegularExpression::CaseInsensitiveOption);
    else if (found_hiragana && !found_katakana)
@@ -3225,6 +3238,24 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
                textHiraToKata.size()) + "|" +
             QString::fromUcs4(textKataToHira.constData(),
                textKataToHira.size()), QRegularExpression::CaseInsensitiveOption);
+#else
+   if (!found_hiragana && !found_katakana)
+      m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
+   else if (found_hiragana && !found_katakana)
+      m_searchRegExp = QRegExp(text + "|"
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size()), Qt::CaseInsensitive);
+   else if (!found_hiragana && found_katakana)
+      m_searchRegExp = QRegExp(text + "|"
+            + QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()), Qt::CaseInsensitive);
+   else
+      m_searchRegExp = QRegExp(text + "|"
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size()) + "|" +
+            QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()), Qt::CaseInsensitive);
+#endif
 
    applySearch();
 }
@@ -3234,15 +3265,28 @@ void MainWindow::applySearch()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
          if (m_proxyModel->filterRegularExpression() != m_searchRegularExpression)
          {
             m_proxyModel->setFilterRegularExpression(m_searchRegularExpression);
             updateItemsCount();
          }
+#else
+	 if (m_proxyModel->filterRegExp() != m_searchRegExp)
+         {
+            m_proxyModel->setFilterRegExp(m_searchRegExp);
+            updateItemsCount();
+         }
+#endif
          break;
       case BROWSER_TYPE_FILES:
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
          if (m_proxyFileModel->filterRegularExpression() != m_searchRegularExpression)
             m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
+#else
+	 if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
+            m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
          break;
    }
 }
