@@ -3111,13 +3111,8 @@ void MainWindow::setCoreActions()
                   if (!found_existing)
                   {
                      QVariantMap comboBoxMap;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                     comboBoxMap["core_name"] = QVariant::fromValue(coreInfo->core_name);
-                     comboBoxMap["core_path"] = QVariant::fromValue(coreInfo->path);
-#else
-                     comboBoxMap["core_name"] = coreInfo->core_name;
-                     comboBoxMap["core_path"] = coreInfo->path;
-#endif
+                     comboBoxMap["core_name"] = QVariant::fromValue(QString(coreInfo->core_name));
+                     comboBoxMap["core_path"] = QVariant::fromValue(QString(coreInfo->path));
                      comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
                      m_launchWithComboBox->addItem(coreInfo->core_name, QVariant::fromValue(comboBoxMap));
                   }
