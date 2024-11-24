@@ -543,7 +543,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    QHBoxLayout *headerHLayout = new QHBoxLayout;
    const int       leftMargin = QApplication::style()->pixelMetric(QStyle::PM_LayoutLeftMargin);
 
-#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    m_optionsStack->setContentsMargins(0, 0, 0, 0);
 #else
    m_optionsStack->setMargin(0);
