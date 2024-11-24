@@ -249,3 +249,6 @@ param.sfo
 
 # Visual Studio Code
 .vscode/
+
+# Clazy
+*.clazy.yaml

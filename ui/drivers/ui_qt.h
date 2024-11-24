@@ -634,7 +634,7 @@ private:
    QTimer *m_thumbnailTimer;
    GridItem m_gridItem;
    BrowserType m_currentBrowser;
-   QRegExp m_searchRegExp;
+   QRegularExpression m_searchRegularExpression;
    QByteArray m_fileTableHeaderState;
    QWidget *m_zoomWidget;
    QString m_itemsCountLiteral;

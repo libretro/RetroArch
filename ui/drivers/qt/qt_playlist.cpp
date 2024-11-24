@@ -246,7 +246,11 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
    if (!m_pendingImages.contains(path) && !m_cache.contains(path))
    {
       m_pendingImages.insert(path);
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+      QtConcurrent::run(&PlaylistModel::loadImage, this, index, path);
+#else
       QtConcurrent::run(this, &PlaylistModel::loadImage, index, path);
+#endif
    }
 }
 
@@ -566,7 +570,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
        * automatically in setValue() */
       dialog->setValue(i + 1);
 
-      fileInfo = fileName;
+      fileInfo = QFileInfo(fileName);
 
       /* Make sure we're looking at a user-specified field
        * and not just "<multiple>"
@@ -874,7 +878,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    for (j = 0; j < m_listWidget->count(); j++)
    {
       QListWidgetItem *item = m_listWidget->item(j);
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+      bool           hidden = item->isHidden();
+#else
       bool           hidden = m_listWidget->isItemHidden(item);
+#endif
 
       if (hidden)
       {
@@ -1168,19 +1176,19 @@ void MainWindow::reloadPlaylists()
    allPlaylistsItem->setData(Qt::UserRole, ALL_PLAYLISTS_TOKEN);
 
    favoritesPlaylistsItem = new QListWidgetItem(m_folderIcon, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB));
-   favoritesPlaylistsItem->setData(Qt::UserRole, settings->paths.path_content_favorites);
+   favoritesPlaylistsItem->setData(Qt::UserRole, QString(settings->paths.path_content_favorites));
 
    m_historyPlaylistsItem = new QListWidgetItem(m_folderIcon, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB));
-   m_historyPlaylistsItem->setData(Qt::UserRole, settings->paths.path_content_history);
+   m_historyPlaylistsItem->setData(Qt::UserRole, QString(settings->paths.path_content_history));
 
    imagePlaylistsItem = new QListWidgetItem(m_folderIcon, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB));
-   imagePlaylistsItem->setData(Qt::UserRole, settings->paths.path_content_image_history);
+   imagePlaylistsItem->setData(Qt::UserRole, QString(settings->paths.path_content_image_history));
 
    musicPlaylistsItem = new QListWidgetItem(m_folderIcon, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB));
-   musicPlaylistsItem->setData(Qt::UserRole, settings->paths.path_content_music_history);
+   musicPlaylistsItem->setData(Qt::UserRole, QString(settings->paths.path_content_music_history));
 
    videoPlaylistsItem = new QListWidgetItem(m_folderIcon, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB));
-   videoPlaylistsItem->setData(Qt::UserRole, settings->paths.path_content_video_history);
+   videoPlaylistsItem->setData(Qt::UserRole, QString(settings->paths.path_content_video_history));
 
    m_listWidget->addItem(allPlaylistsItem);
    m_listWidget->addItem(favoritesPlaylistsItem);
@@ -1491,7 +1499,7 @@ void PlaylistModel::getPlaylistItems(QString path)
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
-   pathArray.append(path);
+   pathArray.append(path.toUtf8());
    pathData              = pathArray.constData();
    if (!string_is_empty(pathData))
       playlistName       = path_basename(pathData);
