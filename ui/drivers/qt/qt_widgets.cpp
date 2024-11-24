@@ -724,7 +724,11 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
       *setting->value.target.unsigned_integer = orig_value;
    }
    add_sublabel_and_whats_this(this, m_setting);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   connect(m_buttonGroup, &QButtonGroup::idClicked, this, &UIntRadioButtons::onButtonClicked);
+#else
    connect(m_buttonGroup, SIGNAL(buttonClicked(int)), this, SLOT(onButtonClicked(int)));
+#endif
 }
 
 UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
