@@ -1987,6 +1987,26 @@ MSG_HASH(
    "Inserció de fotogrames en negre (BFI) - Fotogrames foscos"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   "Ajusta el nombre de fotogrames en negre a la seqüència total d'escaneig de sortida. Més significa una claredat de moviment més alta; menys significa una brillantor més alta. No aplicable a 120 Hz atès que només s'introduirà 1 fotograma en negre. Els paràmetres més alts del que és possible us limitarà al màxim possible de la freqüència d'actualització que trieu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   "Ajusta el nombre de fotogrames mostrats en la seqüència d'inserció de fotogrames en negre. Més fotogrames en negre augmenta la claredat, però redueix la brillantor. No es pot aplicar a 120 Hz atès que només hi ha un fotograma extra als 60 Hz, i per això cal que sigui en negre, ja que altrament la inserció de fotogrames en negre no seria activa."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
+   "Subfotogrames d'ombreig"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "Insereix fotogrames d'ombreig extra entre fotogrames. Permet a l'ombreig fer efectes que s'executen a fotogrames per segon més alts que la freqüència actual del contingut. S'haura d'establir a la freqüència de la pantalla. No ho combineu amb interval d'intercanvi > 1, BFI, retard dels fotogrames ni amb la sincronització a la velocitat de fotogrames del contingut exacta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   "Insereix fotogrames d'ombreig extra entre fotogrames per a qualsevol efecte d'ombreig que estigui designat per a executar-se més ràpid que la freqüència del contingut. Useu només l'opció designada per a la freqüència d'actualització actual de la pantalla. No ho feu servir per a freqüències d'actualització que no siguin múltiples de 60 Hz, com ara 144 Hz, 165 Hz, etc. No ho combineu amb intervals d'intercanvi > 1, BFI, retard dels fotogrames ni amb la sincronització a la velocitat d[...]"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
    "2 - Per a una freqüència d'actualització de 120 Hz"
    )
@@ -2052,16 +2072,20 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Les captures de pantalla es faran sobre la imatge de la GPU amb els shaders aplicats, si és possible."
+   "Les captures de pantalla prendran la GPU amb el material d'ombreig si es troba disponible."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    "Filtre bilineal"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   "Afegeix un difuminat lleuger a la imatge per a suavitzar les vores dels píxels. Aquesta opció té molt poc impacte en el rendiment. S'hauria de desactivar si useu ombreig."
+   )
 #if defined(DINGUX)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Interpolació d'imatges"
+   "Interpolació de la imatge"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
@@ -2082,7 +2106,7 @@ MSG_HASH(
 #if defined(RS90) || defined(MIYOO)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Interpolació d'imatges"
+   "Interpolació de la imatge"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
@@ -2100,11 +2124,11 @@ MSG_HASH(
 #endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "Retard de l'Auto-Shader"
+   "Retard de l'ombreig automàtic"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Retard en la càrrega automàtica dels shaders (en ms). Pot solventar algunes errades gràfiques quan s'utilitza programari per capturar la pantalla."
+   "Retarda la càrrega automàtica de l'ombreig (en ms). Pot resoldre algunes errades gràfiques quan s'utilitza programari per capturar la pantalla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
@@ -2112,7 +2136,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Aplica un filtre de vídeo per CPU. Pot tenir un gran impacte sobre el rendiment. Alguns filtres de vídeo poden funcionar només amb nuclis que usen color en 32 o 16 bits."
+   "Aplica un filtre de vídeo per CPU. Pot tenir un gran impacte sobre el rendiment. Alguns filtres de vídeo podrien només funcionar amb nuclis que usen color en 32 o 16 bits."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   "Aplica un filtre de vídeo per CPU. Pot tenir un gran impacte sobre el rendiment. Alguns filtres de vídeo podrien només funcionar amb nuclis que usen color en 32 o 16 bits. Es poden seleccionar biblioteques de filtres de vídeo enllaçades de manera dinàmica."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   "Aplica un filtre de vídeo per CPU. Pot tenir un gran impacte sobre el rendiment. Alguns filtres de vídeo podrien només funcionar amb nuclis que usen color en 32 o 16 bits. Es poden seleccionar biblioteques de filtres de vídeo integrades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -2122,6 +2154,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    "Elimina qualsevol filtre de vídeo per CPU actiu."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   "Activa la pantalla completa sobre l'osca als dispositius Android i iOS"
+)
 
 /* Settings > Video > CRT SwitchRes */
 
@@ -2147,11 +2183,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   "Rota entre aquestes opcions si la imatge no es centra correctament a la pantalla."
+   "Rota entre aquestes opcions si la imatge no se centra correctament a la pantalla."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Adjustament de pòrtic"
+   "Ajustament de pòrtic"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
