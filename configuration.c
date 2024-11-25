@@ -5671,6 +5671,10 @@ int8_t config_save_overrides(enum override_type type,
       {
          if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
          {
+#if IOS
+            if (string_is_equal(path_settings[i].ident, "libretro_directory"))
+               continue;
+#endif
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
             RARCH_DBG("[Overrides]: %s = \"%s\"\n",
