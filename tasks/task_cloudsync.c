@@ -898,7 +898,17 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
       {
          /* the file has been deleted locally */
          if (!CS_FILE_DELETED(server_file))
-            task_cloud_sync_delete_server_file(sync_state);
+         {
+            if (CS_FILE_DELETED(current_file))
+               /* previously saw the delete, now it's resurrected */
+               task_cloud_sync_fetch_server_file(sync_state);
+            else if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(current_file)))
+               /* server didn't change, delete from the server */
+               task_cloud_sync_delete_server_file(sync_state);
+            else
+               /* the server changed and local deleted, that's a conflict */
+               task_cloud_sync_resolve_conflict(sync_state);
+         }
          else
          {
             /* already deleted, oh well */
