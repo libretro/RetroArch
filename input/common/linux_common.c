@@ -261,8 +261,11 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
       return;
 
    if (sensor->thread)
+   {
+      sensor->done = true;
       sthread_join(sensor->thread);
-   /* sthread_join will free the thread */
+      /* sthread_join will free the thread */
+   }
 
    free(sensor);
 }
