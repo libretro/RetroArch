@@ -288,6 +288,9 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsig
    if (!sensor)
       return;
 
+   /* Set a default rate of 5 Hz if none is provided */
+   rate = rate ? rate : DEFAULT_POLL_RATE;
+
    sensor->poll_rate = rate;
 }
 
