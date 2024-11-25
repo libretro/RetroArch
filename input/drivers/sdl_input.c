@@ -374,9 +374,11 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
 
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
 #ifdef __linux__
-         if (!sdl->illuminance_sensor)
-            /* If the light sensor isn't already open... */
-            sdl->illuminance_sensor = linux_open_illuminance_sensor();
+         if (sdl->illuminance_sensor)
+            /* If we already have a sensor, just set the rate */
+            linux_set_illuminance_sensor_rate(sdl->illuminance_sensor, rate);
+         else
+            sdl->illuminance_sensor = linux_open_illuminance_sensor(rate);
 
          return sdl->illuminance_sensor != NULL;
 #endif
@@ -398,7 +400,7 @@ static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
       case RETRO_SENSOR_ILLUMINANCE:
 #ifdef __linux__
          if (sdl->illuminance_sensor)
-            return linux_read_illuminance_sensor(sdl->illuminance_sensor);
+            return linux_get_illuminance_reading(sdl->illuminance_sensor);
 #endif
       /* Unsupported on non-Linux platforms */
       default:

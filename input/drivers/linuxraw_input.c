@@ -189,9 +189,11 @@ static bool linuxraw_input_set_sensor_state(void *data, unsigned port, enum retr
          return true;
 
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
-         if (!linuxraw->illuminance_sensor)
-            /* If the light sensor isn't already open... */
-            linuxraw->illuminance_sensor = linux_open_illuminance_sensor();
+         if (linuxraw->illuminance_sensor)
+            /* If the light sensor is already open, just set the rate */
+            linux_set_illuminance_sensor_rate(linuxraw->illuminance_sensor, rate);
+         else
+            linuxraw->illuminance_sensor = linux_open_illuminance_sensor(rate);
 
          return linuxraw->illuminance_sensor != NULL;
       default:
@@ -210,7 +212,7 @@ static float linuxraw_input_get_sensor_input(void *data, unsigned port, unsigned
    {
       case RETRO_SENSOR_ILLUMINANCE:
          if (linuxraw->illuminance_sensor)
-            return linux_read_illuminance_sensor(linuxraw->illuminance_sensor);
+            return linux_get_illuminance_reading(linuxraw->illuminance_sensor);
       default:
          return 0.0f;
    }

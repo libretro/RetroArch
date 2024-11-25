@@ -36,12 +36,16 @@ typedef struct linux_illuminance_sensor linux_illuminance_sensor_t;
 /**
  * Iterates through /sys/bus/iio/devices and returns the first illuminance sensor found,
  * or NULL if none was found.
+ *
+ * @param rate The rate at which to poll the sensor, in Hz.
  */
-linux_illuminance_sensor_t *linux_open_illuminance_sensor();
+linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate);
 
 void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor);
 
-/** Returns the light sensor's reading in lux, or a negative number on error. */
-float linux_read_illuminance_sensor(linux_illuminance_sensor_t *sensor);
+/** Returns the light sensor's most recent reading in lux, or a negative number on error. */
+float linux_get_illuminance_reading(const linux_illuminance_sensor_t *sensor);
+
+void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsigned rate);
 
 #endif

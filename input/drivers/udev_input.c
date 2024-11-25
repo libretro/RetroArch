@@ -4039,9 +4039,11 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
          return true;
 
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
-         if (!udev->illuminance_sensor)
-            /* If the light sensor isn't already open... */
-            udev->illuminance_sensor = linux_open_illuminance_sensor();
+         if (udev->illuminance_sensor)
+            /* If we already have a sensor, just set the rate */
+            linux_set_illuminance_sensor_rate(udev->illuminance_sensor, rate);
+         else
+            udev->illuminance_sensor = linux_open_illuminance_sensor(rate);
 
          return udev->illuminance_sensor != NULL;
       default:
@@ -4060,7 +4062,7 @@ static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
    {
       case RETRO_SENSOR_ILLUMINANCE:
          if (udev->illuminance_sensor)
-            return linux_read_illuminance_sensor(udev->illuminance_sensor);
+            return linux_get_illuminance_reading(udev->illuminance_sensor);
       default:
          return 0.0f;
    }

@@ -46,7 +46,10 @@ typedef struct x11_input
    bool mouse_l;
    bool mouse_r;
    bool mouse_m;
+#ifdef __linux__
+   /* X11 is mostly used on Linux, but not exclusively. */
    linux_illuminance_sensor_t *illuminance_sensor;
+#endif
 } x11_input_t;
 
 /* Public global variable */
@@ -434,7 +437,9 @@ static void x_input_free(void *data)
 
    if (x11)
    {
+#ifdef __linux__
       linux_close_illuminance_sensor(x11->illuminance_sensor);
+#endif
       free(x11);
    }
 }
@@ -450,19 +455,25 @@ static bool x_set_sensor_state(void *data, unsigned port, enum retro_sensor_acti
    {
       case RETRO_SENSOR_ILLUMINANCE_DISABLE:
          /* If already disabled, then do nothing */
+#ifdef __linux__
          linux_close_illuminance_sensor(x11->illuminance_sensor); /* noop if NULL */
          x11->illuminance_sensor = NULL;
+#endif
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          /** Unimplemented sensor actions that probably shouldn't fail */
          return true;
 
+#ifdef __linux__
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
-         if (!x11->illuminance_sensor)
-            /* If the light sensor isn't already open... */
-            x11->illuminance_sensor = linux_open_illuminance_sensor();
+         if (x11->illuminance_sensor)
+           /* If we already have a sensor, just set the rate */
+           linux_set_illuminance_sensor_rate(x11->illuminance_sensor, rate);
+         else
+           x11->illuminance_sensor = linux_open_illuminance_sensor(rate);
 
          return x11->illuminance_sensor != NULL;
+#endif
       default:
          return false;
    }
@@ -477,9 +488,11 @@ static float x_get_sensor_input(void *data, unsigned port, unsigned id)
 
    switch (id)
    {
+#ifdef __linux__
       case RETRO_SENSOR_ILLUMINANCE:
          if (x11->illuminance_sensor)
-            return linux_read_illuminance_sensor(x11->illuminance_sensor);
+            return linux_get_illuminance_reading(x11->illuminance_sensor);
+#endif
       default:
          return 0.0f;
    }
@@ -655,8 +668,14 @@ input_driver_t input_x = {
    x_input_poll,
    x_input_state,
    x_input_free,
+#ifdef __linux__
+   /* Right now this driver only supports the illuminance sensor on Linux. */
    x_set_sensor_state,
    x_get_sensor_input,
+#else
+   NULL,
+   NULL,
+#endif
    x_input_get_capabilities,
    "x",
    x_grab_mouse,

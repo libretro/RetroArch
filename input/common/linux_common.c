@@ -28,11 +28,15 @@
 
 #include "linux_common.h"
 #include "verbosity.h"
+#include <retro_assert.h>
+#include <retro_timers.h>
+#include <rthreads/rthreads.h>
 
 #include <string.h>
 
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
 #define IIO_ILLUMINANCE_SENSOR "in_illuminance_input"
+#define DEFAULT_POLL_RATE 5
 
 /* TODO/FIXME - static globals */
 static struct termios old_term, new_term;
@@ -41,10 +45,23 @@ static bool linux_stdin_claimed    = false;
 
 struct linux_illuminance_sensor
 {
-   /* This is a Linux-specific struct, so we can rely on FILE* here.
-      I don't want to introduce abstraction where it isn't needed. */
-   FILE* file;
+   sthread_t *thread;
+
+   /* Poll rate in Hz (i.e. in queries per second) */
+   volatile unsigned poll_rate;
+
+   /* We store the lux reading in millilux (as an int)
+    * so that we can make the access atomic and avoid locks.
+    * A little bit of precision is lost, but not enough to matter.
+    */
+   volatile int millilux;
+
+   /* If true, the associated thread must finish its work and exit. */
+   volatile bool done;
+
+   char path[PATH_MAX];
 };
+static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *sensor);
 
 void linux_terminal_restore_input(void)
 {
@@ -138,7 +155,27 @@ bool linux_terminal_disable_input(void)
    return true;
 }
 
-linux_illuminance_sensor_t *linux_open_illuminance_sensor()
+static void linux_poll_illuminance_sensor(void *data)
+{
+   linux_illuminance_sensor_t *sensor = data;
+
+   if (!data)
+      return;
+
+   while (!sensor->done)
+   { /* Aligned int reads are atomic on most CPUs */
+        double lux = linux_read_illuminance_sensor(sensor);
+        int millilux = (int)(lux * 1000.0);
+        unsigned poll_rate = sensor->poll_rate;
+        retro_assert(poll_rate != 0);
+
+        sensor->millilux = millilux;
+
+        retro_sleep(1000 / poll_rate);
+   }
+}
+
+linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
    DIR *devices = opendir(IIO_DEVICES_DIR);
    struct dirent *d = NULL;
@@ -146,6 +183,11 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor()
 
    if (!sensor)
       goto error;
+
+   sensor->millilux  = 0;
+   sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
+   sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
+   sensor->done      = false;
 
    if (!devices)
    { /* If we couldn't find the IIO device directory... */
@@ -155,13 +197,19 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor()
       goto error;
    }
 
+   /*
+    * Must clear errno at the start of each iteration,
+    * as an error code that came from one run of the loop
+    * can leak into the next iteration and hide serious errors.
+    * (Ex: trying to open a file that doesn't exist,
+    * which we handle here.)
+    */
    errno = 0;
-   for (d = readdir(devices); d != NULL; d = readdir(devices))
+   for (d = readdir(devices); d != NULL; errno = 0, d = readdir(devices))
    { /* For each IIO device... */
       /* First ensure that the readdir call succeeded... */
       int err = errno;
-      char pathbuf[PATH_MAX];
-      FILE *sensorfile = NULL;
+      double lux;
 
       if (err != 0)
       {
@@ -172,13 +220,22 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor()
       }
 
       /* If that worked out, look to see if this device represents an illuminance sensor */
-      snprintf(pathbuf, sizeof(pathbuf), IIO_DEVICES_DIR "/%s/" IIO_ILLUMINANCE_SENSOR, d->d_name);
+      snprintf(sensor->path, sizeof(sensor->path), IIO_DEVICES_DIR "/%s/" IIO_ILLUMINANCE_SENSOR, d->d_name);
 
-      sensorfile = fopen(pathbuf, "r");
-      if (sensorfile != NULL)
-      { /* If we found an illuminance sensor... */
-         sensor->file = sensorfile;
-         RARCH_LOG("Opened illuminance sensor at %s\n", pathbuf);
+      lux = linux_read_illuminance_sensor(sensor);
+      if (lux > 0)
+      { /* If we found an illuminance sensor that works... */
+         sensor->millilux = (int)(lux * 1000.0); /* Set the first reading */
+         sensor->thread = sthread_create(linux_poll_illuminance_sensor, sensor);
+
+         if (!sensor->thread)
+         {
+            RARCH_ERR("Failed to spawn thread for illuminance sensor\n");
+            goto error;
+         }
+
+         RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz\n", sensor->path, sensor->poll_rate);
+
          goto done;
       }
    }
@@ -203,42 +260,79 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
    if (!sensor)
       return;
 
-   if (sensor->file)
-      fclose(sensor->file);
+   if (sensor->thread)
+      sthread_join(sensor->thread);
+   /* sthread_join will free the thread */
 
    free(sensor);
 }
 
-float linux_read_illuminance_sensor(linux_illuminance_sensor_t *sensor)
+float linux_get_illuminance_reading(const linux_illuminance_sensor_t *sensor)
 {
-   char buffer[256];
-   float illuminance = 0.0f;
-   char errmesg[PATH_MAX];
-   int err;
-   if (!sensor || !sensor->file)
+   int millilux;
+   if (!sensor)
       return -1.0f;
 
-   /* The illuminance will always be updated even if the file handle remains open,
-    * but the seek position won't be reset.
-    * So we have to do that before each read. */
-   rewind(sensor->file);
-   if (!fgets(buffer, sizeof(buffer), sensor->file))
+   /* Reading an int is atomic on most CPUs */
+   millilux = sensor->millilux;
+
+   return (float)millilux / 1000.0f;
+}
+
+
+void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsigned rate)
+{
+   if (!sensor)
+      return;
+
+   sensor->poll_rate = rate;
+}
+
+static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *sensor)
+{
+   char buffer[256];
+   double illuminance = 0.0;
+   int err;
+   FILE* in_illuminance_input = NULL;
+
+   if (!sensor || sensor->path[0] == '\0')
+      return -1.0;
+
+   in_illuminance_input = fopen(sensor->path, "r");
+   if (!in_illuminance_input)
+   {
+      char errmesg[PATH_MAX];
+      strerror_r(errno, errmesg, sizeof(errmesg));
+      RARCH_ERR("Failed to open %s: %s\n", sensor->path, errmesg);
+      illuminance = -1.0;
+      goto done;
+   }
+
+   if (!fgets(buffer, sizeof(buffer), in_illuminance_input))
    { /* Read the illuminance value from the file. If that fails... */
+      char errmesg[PATH_MAX];
       strerror_r(errno, errmesg, sizeof(errmesg));
       RARCH_ERR("Illuminance sensor read failed: %s\n", errmesg);
-      return -1.0f;
+      illuminance = -1.0;
+      goto done;
    }
 
    /* TODO: This may be locale-sensitive */
    errno = 0;
-   illuminance = strtof(buffer, NULL);
+   illuminance = strtod(buffer, NULL);
    err = errno;
    if (err != 0)
    {
+      char errmesg[PATH_MAX];
       strerror_r(err, errmesg, sizeof(errmesg));
       RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s", buffer, errmesg);
-      return -1.0f;
+      illuminance = -1.0;
+      goto done;
    }
+
+done:
+   if (in_illuminance_input)
+      fclose(in_illuminance_input);
 
    return illuminance;
 }
