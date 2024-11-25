@@ -176,6 +176,7 @@ else
                 gpsp
                 gw
                 handy
+                holani
                 kronos
                 mednafen_ngp
                 mednafen_pce
@@ -192,10 +193,12 @@ else
                 mesen-s
                 mgba
                 mojozork
+                mrboom
                 mu
                 mupen64plus_next
                 neocd
                 nestopia
+                noods
                 np2kai
                 numero
                 nxengine

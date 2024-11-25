@@ -365,29 +365,75 @@ static int16_t input_wl_state(
       case RETRO_DEVICE_LIGHTGUN:
          if (port == 0) /* TODO/FIXME: support lightguns on additional ports */
          {
-            switch (id)
+            const int edge_detect       = 32700;
+            struct video_viewport vp;
+            bool screen                 =
+               (device == RARCH_DEVICE_POINTER_SCREEN);
+            bool inside                 = false;
+            int16_t res_x               = 0;
+            int16_t res_y               = 0;
+            int16_t res_screen_x        = 0;
+            int16_t res_screen_y        = 0;
+
+            vp.x                        = 0;
+            vp.y                        = 0;
+            vp.width                    = 0;
+            vp.height                   = 0;
+            vp.full_width               = 0;
+            vp.full_height              = 0;
+
+            if (video_driver_translate_coord_viewport_wrap(&vp,
+                        wl->mouse.x, wl->mouse.y,
+                        &res_x, &res_y, &res_screen_x, &res_screen_y))
             {
-               case RETRO_DEVICE_ID_LIGHTGUN_X:            /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X */
-                  return wl->mouse.delta_x;                /* deprecated relative coordinates */
-               case RETRO_DEVICE_ID_LIGHTGUN_Y:            /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y */
-                  return wl->mouse.delta_y;                /* deprecated relative coordinates */
-               case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-                  return wl->mouse.left;
-               case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:       /* forced/faked off-screen shot */
-                  return wl->mouse.middle;
-               case RETRO_DEVICE_ID_LIGHTGUN_START:
-                  return wl->mouse.right;
-               case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-                  return wl->mouse.left && wl->mouse.right;
-               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN: /* TODO: implement this status check*/
-               case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:        /* TODO */
-               case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:        /* TODO */
-               case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:        /* TODO */
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:      /* TODO */
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:    /* TODO */
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:    /* TODO */
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:   /* TODO */
-                  break;
+               if (screen)
+               {
+                  res_x = res_screen_x;
+                  res_y = res_screen_y;
+               }
+
+               inside = (res_x >= -0x7fff) && (res_y >= -0x7fff);
+               if (!inside)
+                  return 0;
+
+               switch (id)
+               {
+                  case RETRO_DEVICE_ID_LIGHTGUN_X:            /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X */
+                     return wl->mouse.delta_x;                /* deprecated relative coordinates */
+                  case RETRO_DEVICE_ID_LIGHTGUN_Y:            /* TODO: migrate to RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y */
+                     return wl->mouse.delta_y;                /* deprecated relative coordinates */
+                  case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+                     return res_x;
+                  case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+                     return res_y;
+                  case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+                     return wl->mouse.left;
+                  case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:       /* forced/faked off-screen shot */
+                     return wl->mouse.middle;
+                  case RETRO_DEVICE_ID_LIGHTGUN_START:
+                     return wl->mouse.right;
+                  case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+                     return wl->mouse.left && wl->mouse.right;
+                  case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                     if (screen)
+                     {
+                        res_x = res_screen_x;
+                        res_y = res_screen_y;
+                     }
+                     inside = (res_x >= -edge_detect)
+                           && (res_y >= -edge_detect)
+                           && (res_x <=  edge_detect)
+                           && (res_y <=  edge_detect);
+                     return (!inside);
+                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:        /* TODO */
+                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:        /* TODO */
+                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:        /* TODO */
+                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:      /* TODO */
+                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:    /* TODO */
+                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:    /* TODO */
+                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:   /* TODO */
+                     break;
+               }
             }
          }
          break;

@@ -2183,7 +2183,7 @@ static void video_texture_load_gl3(
          break;
 
       case TEXTURE_FILTER_MIPMAP_LINEAR:
-	  default:
+      default:
          mag_filter = GL_LINEAR;
          min_filter = GL_LINEAR_MIPMAP_LINEAR;
          break;
@@ -2465,10 +2465,9 @@ static void gl3_set_rotation(void *data, unsigned rotation)
 static void gl3_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
-   gl3_t *gl   = (gl3_t*)data;
+   gl3_t *gl       = (gl3_t*)data;
    unsigned width  = gl->video_width;
    unsigned height = gl->video_height;
-
 
    *vp             = gl->vp;
    vp->full_width  = width;
@@ -2490,6 +2489,7 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+
    num_pixels = gl->vp.width * gl->vp.height;
 
    if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
@@ -2724,10 +2724,10 @@ static bool gl3_frame(void *data, const void *frame,
       texture.padded_width  = gl->hw_render_max_width;
       texture.padded_height = gl->hw_render_max_height;
 
-	  if (texture.width == 0)
-		  texture.width       = 1;
-	  if (texture.height == 0)
-		  texture.height      = 1;
+      if (texture.width == 0)
+         texture.width      = 1;
+      if (texture.height == 0)
+         texture.height     = 1;
    }
    else
    {
@@ -2742,7 +2742,20 @@ static bool gl3_frame(void *data, const void *frame,
 #else
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
+   gl3_filter_chain_set_frame_time_delta(gl->filter_chain, video_driver_get_frame_time_delta_usec());
+
+   gl3_filter_chain_set_original_fps(gl->filter_chain, video_driver_get_original_fps());
+
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
+
+   gl3_filter_chain_set_core_aspect(gl->filter_chain, video_driver_get_core_aspect());
+
+   /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+   uint32_t rot = retroarch_get_rotation();
+   float core_aspect_rot = video_driver_get_core_aspect();
+   if (rot == 1 || rot == 3)
+      core_aspect_rot = 1/core_aspect_rot;
+   gl3_filter_chain_set_core_aspect_rot(gl->filter_chain, core_aspect_rot);
 
    /* Sub-frame info for multiframe shaders (per real content frame).
       Should always be 1 for non-use of subframes*/
@@ -2843,8 +2856,11 @@ static bool gl3_frame(void *data, const void *frame,
 #ifndef HAVE_OPENGLES
       glReadBuffer(GL_BACK);
 #endif
-      glReadPixels(gl->vp.x, gl->vp.y,
-            gl->vp.width, gl->vp.height,
+      glReadPixels(
+            (gl->vp.x > 0) ? gl->vp.x : 0,
+            (gl->vp.y > 0) ? gl->vp.y : 0,
+            (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width,
+            (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
    }
@@ -2856,7 +2872,6 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
          gl3_pbo_async_readback(gl);
    }
-
 
    if (gl->ctx_driver->swap_buffers)
       gl->ctx_driver->swap_buffers(gl->ctx_data);

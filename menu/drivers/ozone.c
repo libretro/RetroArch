@@ -490,6 +490,7 @@ struct ozone_handle
       ozone_footer_label_t help;
       ozone_footer_label_t clear;
       ozone_footer_label_t scan;
+      ozone_footer_label_t resume;
    } footer_labels;
 
    struct
@@ -1946,6 +1947,15 @@ static uintptr_t ozone_entries_icon_get_texture(
             if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION)))
                return 0;
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
+      case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
+            if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED)))
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CLOSE];
+            else if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL)))
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INFO];
+            else if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED))
+                  || strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL)))
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK];
+            return 0;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
       case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_FILE:
@@ -3708,10 +3718,10 @@ static void ozone_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (   string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
-             || string_is_equal(entry.label, "state_slot")
-             || string_is_equal(entry.label, "loadstate")
-             || string_is_equal(entry.label, "savestate"))
+         if (     string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
             size_t _len;
             char path[PATH_MAX_LENGTH * 2];
@@ -9108,6 +9118,12 @@ static void ozone_cache_footer_label(
  * menu language) and calculates pixel widths */
 static void ozone_cache_footer_labels(ozone_handle_t *ozone)
 {
+   /* Just the resume icon or text too?
+    * The former seems better to me. */
+   /* ozone_cache_footer_label(ozone,
+         &ozone->footer_labels.resume,
+         MENU_ENUM_SUBLABEL_RESUME_CONTENT);*/
+
    ozone_cache_footer_label(ozone,
          &ozone->footer_labels.ok,
          MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
@@ -10713,9 +10729,13 @@ static void ozone_draw_footer(
    bool manage_available                  =
          ozone_manage_available(ozone, selection);
 
+   bool resume_enabled                    =
+         !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
+
    /* Determine x origin positions of each
     * button
     * > From right to left, these are ordered:
+    *   - resume
     *   - ok
     *   - back
     *   - (X) search
@@ -10726,9 +10746,14 @@ static void ozone_draw_footer(
     *   - (Start) reset to default (settings only)
     *   - (Start) manage playlist (sidebar only)
     *   - (Select) toggle metadata (playlists only)
-    *   - (Select) help (non-playlist only) */
-   float ok_x                             = (float)video_width
-         - footer_margin - ozone->footer_labels.ok.width - icon_size - icon_padding;
+    *   - (Select) help (non-playlist only)*/
+
+   float resume_x                    = (resume_enabled)
+         ? (float)video_width - footer_margin - ozone->footer_labels.resume.width - icon_size - icon_padding
+         : (float)video_width - footer_margin;
+
+   float ok_x                             = resume_x
+         - ozone->footer_labels.ok.width - icon_size - (2.0f * icon_padding);
    float back_x                           = ok_x
          - ozone->footer_labels.back.width - icon_size - (2.0f * icon_padding);
    float search_x                         = (search_enabled)
@@ -10786,6 +10811,25 @@ static void ozone_draw_footer(
 
       if (dispctx->draw)
       {
+         /* > Resume */
+         if (resume_enabled)
+            ozone_draw_icon(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               icon_size,
+               icon_size,
+               ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RESUME],
+               resume_x,
+               icon_y,
+               video_width,
+               video_height,
+               0.0f,
+               1.0f,
+               col,
+               mymat);
+
          /* > Ok */
          ozone_draw_icon(
                p_disp,
@@ -11091,6 +11135,21 @@ static void ozone_draw_footer(
             ozone->fonts.footer.font,
             ozone->footer_labels.metadata_toggle.str,
             metadata_toggle_x + icon_size + icon_padding_small,
+            footer_text_y,
+            video_width,
+            video_height,
+            ozone->theme->text_rgba,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+
+   /* > Resume */
+      gfx_display_draw_text(
+            ozone->fonts.footer.font,
+            ozone->footer_labels.resume.str,
+            resume_x + icon_size + icon_padding_small,
             footer_text_y,
             video_width,
             video_height,
@@ -12480,9 +12539,14 @@ static int ozone_tap_footer(
          && ozone_help_available(ozone, selection, settings->bools.menu_show_sublabels);
    bool manage_available                  =
          ozone_manage_available(ozone, selection);
+   bool resume_enabled                    =
+         !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL);
 
-   float ok_x                             = (float)video_width
-         - footer_margin - ozone->footer_labels.ok.width - icon_size - icon_padding;
+   float resume_x                    = (resume_enabled)
+         ? (float)video_width - footer_margin - ozone->footer_labels.resume.width - icon_size - icon_padding
+         : (float)video_width - footer_margin;
+   float ok_x                             = resume_x
+         - ozone->footer_labels.ok.width - icon_size - (2.0f * icon_padding);
    float back_x                           = ok_x
          - ozone->footer_labels.back.width - icon_size - (2.0f * icon_padding);
    float search_x                         = (search_enabled)
@@ -12514,6 +12578,8 @@ static int ozone_tap_footer(
 
    if (x > (float)video_width - footer_margin)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_CANCEL);
+   else if (resume_enabled && x > resume_x)
+      return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_RESUME);
    else if (x > ok_x)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_OK);
    else if (x > back_x)

@@ -492,10 +492,6 @@ MSG_HASH(
    "API gráficas necessárias"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Caminho completo do núcleo"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Suporte ao jogo salvo"
    )
@@ -518,10 +514,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    "- Nota: Os arquivos do sistema estão no Diretório de Conteúdo' está ativado no momento."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Pesquisando em: \"%s\""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -3614,10 +3606,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
    "Envia uma mensagem de bate-papo para a sessão atual da Netplay."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "(Des)ativar desvanecimento do bate-papo da Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,

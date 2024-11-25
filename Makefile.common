@@ -15,7 +15,9 @@ ifeq ($(HAVE_NOUNUSED_VARIABLE), 1)
    DEF_FLAGS += $(NOUNUSED_VARIABLE_CFLAGS)
 endif
 
-ifeq ($(HAVE_CXX11), 1)
+ifeq ($(HAVE_QT6), 1)
+   CXXFLAGS += $(CXX17_CFLAGS)
+else ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif
 
@@ -336,12 +338,16 @@ OBJ += \
        gfx/video_driver.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
-       gfx/gfx_thumbnail_path.o \
-       gfx/gfx_thumbnail.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o
+
+ifeq ($(HAVE_MENU), 1)
+   OBJ += \
+       gfx/gfx_thumbnail_path.o \
+       gfx/gfx_thumbnail.o
+endif
 
 ifeq ($(HAVE_MICROPHONE), 1)
    DEFINES += -DHAVE_MICROPHONE
@@ -531,10 +537,18 @@ ifeq ($(HAVE_QT), 1)
    endif
 
    DEFINES += -DHAVE_MAIN
+ifeq ($(HAVE_QT6), 1)
+   CXXFLAGS += -DQT_DISABLE_DEPRECATED_BEFORE=0x060000 $(QT6CORE_CFLAGS) $(QT6GUI_CFLAGS) $(QT6WIDGETS_CFLAGS) $(QT6CONCURRENT_CFLAGS) $(QT6NETWORK_CFLAGS)
+   #DEF_FLAGS += $(QT6WEBENGINE_CFLAGS)
+   LIBS += $(QT6CORE_LIBS) $(QT6GUI_LIBS) $(QT6WIDGETS_LIBS) $(QT6CONCURRENT_LIBS) $(QT6NETWORK_LIBS)
+   #LIBS += $(QT6WEBENGINE_LIBS)
+else
    DEF_FLAGS += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS)
    #DEF_FLAGS += $(QT5WEBENGINE_CFLAGS)
    LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS) $(QT5NETWORK_LIBS)
    #LIBS += $(QT5WEBENGINE_LIBS)
+endif
+
    NEED_CXX_LINKER = 1
 
    ifneq ($(findstring Linux,$(OS)),)
@@ -2166,14 +2180,21 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
-	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
+
+   ifeq ($(HAVE_MENU), 1)
+      OBJ += tasks/task_pl_thumbnail_download.o
+   endif
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += tasks/task_core_updater.o
    endif
 
    ifneq ($(findstring Linux,$(OS)),)
+      HAVE_CLOUDSYNC = 1
+   endif
+   
+   ifneq ($(findstring Win,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
 
@@ -2494,13 +2515,16 @@ ifeq ($(WANT_LIBFAT), 1)
 endif
 
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
-   OBJ += libretro-common/audio/dsp_filters/echo.o \
+   OBJ += libretro-common/audio/dsp_filters/chorus.o \
+          libretro-common/audio/dsp_filters/crystalizer.o \
+          libretro-common/audio/dsp_filters/echo.o \
           libretro-common/audio/dsp_filters/eq.o \
-          libretro-common/audio/dsp_filters/chorus.o \
           libretro-common/audio/dsp_filters/iir.o \
           libretro-common/audio/dsp_filters/panning.o \
           libretro-common/audio/dsp_filters/phaser.o \
           libretro-common/audio/dsp_filters/reverb.o \
+          libretro-common/audio/dsp_filters/tremolo.o \
+          libretro-common/audio/dsp_filters/vibrato.o \
           libretro-common/audio/dsp_filters/wahwah.o
 endif
 

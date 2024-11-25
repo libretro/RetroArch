@@ -501,7 +501,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Úplná cesta k jádru"
+   "Úplný popis umístění"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -529,7 +529,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Při pohledu dovnitř: '%s'"
+   "- Hledám v: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1199,6 +1199,38 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    "Destruktivní cloudová synchronizace"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Synchronizace: Uložené hry/Stavy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Synchronizace: Konfigurační soubory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Synchronizace: Obrázky miniatur"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Synchronizace: Systémové soubory"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "Pokud je povoleno, Uložené hry/Stavy budou synchronizovány do cloudu."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "Pokud je povoleno, Uložené hry/Stavy budou synchronizovány do cloudu."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Pokud je povoleno, obrázky náhledu budou synchronizovány do cloudu. Není obecně doporučeno kromě velkých kolekcí vlastních náhledových obrázků. V opačném případě je výběr miniatury lepší."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Pokud je povoleno, systémové soubory budou synchronizovány do cloudu. To může výrazně zvýšit dobu potřebnou k synchronizaci; použíjte s opatrností."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -2027,6 +2059,14 @@ MSG_HASH(
    "Simulace valivé skenovací linie"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Simuluje základní klouzavý skenovací řádek ve více dílčích snímcích vertikálním rozdělením obrazovky a vykreslením každé části obrazovky podle počtu dílčích snímků."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Simuluje základní klouzavý skenovací řádek ve více dílčích snímcích vertikálním rozdělením obrazovky a vykreslením každé části obrazovky podle toho, kolik dílčích snímků je od horního okraje obrazovky do dolního okraje."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "Snímky obrazovky zachycují stínovaný materiál GPU, pokud je k dispozici."
    )
@@ -2432,6 +2472,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    "Celočíselné škálování"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   "Měřítko videa pouze v celých krocích. Základní velikost závisí na základní geometrii nahlášené a poměru stran."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Celočíselné škálování"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Měřítko pouze výška, nebo jak výška, tak šířka. Poloviční kroky platí pro zdroje vysokého rozlišení."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
@@ -3926,10 +3978,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
    "Odešle zprávu chatu do aktuální relace síťové hry."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Mizení přepínače chatu Netplay"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,

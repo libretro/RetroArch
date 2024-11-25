@@ -583,17 +583,68 @@ static void action_ok_get_file_browser_start_path(
       menu_driver_set_pending_selection(pending_selection);
 }
 
+static void menu_driver_set_last_start_content(struct menu_state *menu_st, const char *start_content_path)
+{
+   char archive_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu         = menu_st->driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+   const char *archive_delim   = NULL;
+   const char *file_name       = NULL;
+
+   if (!menu)
+      return;
+
+   /* Reset existing cache */
+   menu->last_start_content.directory[0] = '\0';
+   menu->last_start_content.file_name[0] = '\0';
+
+   /* If 'use_last_start_directory' is disabled or
+    * path is empty, do nothing */
+   if (!use_last ||
+       string_is_empty(start_content_path))
+      return;
+
+   /* Cache directory */
+   fill_pathname_parent_dir(menu->last_start_content.directory,
+         start_content_path, sizeof(menu->last_start_content.directory));
+
+   /* Cache file name */
+   if ((archive_delim = path_get_archive_delim(start_content_path)))
+   {
+      /* If path references a file inside an
+       * archive, must extract the string segment
+       * before the archive delimiter (i.e. path of
+       * 'parent' archive file) */
+      size_t len      = (size_t)(1 + archive_delim - start_content_path);
+      if (len >= PATH_MAX_LENGTH)
+         len          = PATH_MAX_LENGTH;
+
+      strlcpy(archive_path, start_content_path, len * sizeof(char));
+
+      file_name       = path_basename(archive_path);
+   }
+   else
+      file_name       = path_basename_nocompression(start_content_path);
+
+   if (!string_is_empty(file_name))
+      strlcpy(menu->last_start_content.file_name, file_name,
+            sizeof(menu->last_start_content.file_name));
+}
+
 static const char *menu_driver_get_last_start_file_name(void)
 {
    struct menu_state *menu_st  = menu_state_get_ptr();
    menu_handle_t *menu         = menu_st->driver_data;
    settings_t *settings        = config_get_ptr();
    bool use_last               = settings->bools.use_last_start_directory;
+
    /* Return NULL if there is no last 'file name' */
    if (   !menu
        || !use_last
        || string_is_empty(menu->last_start_content.file_name))
       return NULL;
+
    return menu->last_start_content.file_name;
 }
 
@@ -605,6 +656,13 @@ static const char *menu_driver_get_last_start_directory(void)
    bool use_last                 = settings->bools.use_last_start_directory;
    const char *default_directory = settings->paths.directory_menu_content;
 
+   /* Also treat content launched from CLI as last start content */
+   if (     menu
+         && use_last
+         && string_is_empty(menu->last_start_content.file_name)
+         && !string_is_empty(path_get(RARCH_PATH_CONTENT)))
+      menu_driver_set_last_start_content(menu_st, path_get(RARCH_PATH_CONTENT));
+
    /* Return default directory if there is no
     * last directory or it's invalid */
    if (   !menu
@@ -615,7 +673,6 @@ static const char *menu_driver_get_last_start_directory(void)
 
    return menu->last_start_content.directory;
 }
-
 
 int generic_action_ok_displaylist_push(
       const char *path, const char *new_path,
@@ -1905,54 +1962,6 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
-static void menu_driver_set_last_start_content(struct menu_state *menu_st, const char *start_content_path)
-{
-   char archive_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu         = menu_st->driver_data;
-   settings_t *settings        = config_get_ptr();
-   bool use_last               = settings->bools.use_last_start_directory;
-   const char *archive_delim   = NULL;
-   const char *file_name       = NULL;
-
-   if (!menu)
-      return;
-
-   /* Reset existing cache */
-   menu->last_start_content.directory[0] = '\0';
-   menu->last_start_content.file_name[0] = '\0';
-
-   /* If 'use_last_start_directory' is disabled or
-    * path is empty, do nothing */
-   if (!use_last ||
-       string_is_empty(start_content_path))
-      return;
-
-   /* Cache directory */
-   fill_pathname_parent_dir(menu->last_start_content.directory,
-         start_content_path, sizeof(menu->last_start_content.directory));
-
-   /* Cache file name */
-   if ((archive_delim = path_get_archive_delim(start_content_path)))
-   {
-      /* If path references a file inside an
-       * archive, must extract the string segment
-       * before the archive delimiter (i.e. path of
-       * 'parent' archive file) */
-      size_t len      = (size_t)(1 + archive_delim - start_content_path);
-      if (len >= PATH_MAX_LENGTH)
-         len          = PATH_MAX_LENGTH;
-
-      strlcpy(archive_path, start_content_path, len * sizeof(char));
-
-      file_name       = path_basename(archive_path);
-   }
-   else
-      file_name       = path_basename_nocompression(start_content_path);
-
-   if (!string_is_empty(file_name))
-      strlcpy(menu->last_start_content.file_name, file_name,
-            sizeof(menu->last_start_content.file_name));
-}
 
 
 static int file_load_with_detect_core_wrapper(
@@ -2013,6 +2022,17 @@ static int file_load_with_detect_core_wrapper(
       }
 
       core_info_get_list(&list);
+
+      /* If loading a directory, use only path */
+      if (path == NULL && !string_is_empty(menu_path_new))
+      {
+         strlcpy(menu->deferred_path, menu_path_new,
+                 sizeof(menu->deferred_path));
+         strlcpy(menu->detect_content_path, menu_path_new,
+                 sizeof(menu->detect_content_path));
+         path = menu->detect_content_path;
+         menu_path_new[0] = '\0';
+      }
 
       def_info.data       = list;
       def_info.dir        = menu_path_new;
@@ -2101,6 +2121,10 @@ static int action_ok_file_load_with_detect_core_carchive(
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
+         && string_is_equal(label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+   if (is_dir) path = NULL;
 
    type  = 0;
    label = NULL;
@@ -7985,7 +8009,17 @@ static int action_ok_disk_image_append(const char *path,
 
    if (!string_is_empty(menu_path))
    {
-      if (!string_is_empty(path))
+      bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
+            && string_is_equal(label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+      if (is_dir)
+      {
+         size_t past_slash;
+         strlcpy(image_path, menu_path, sizeof(image_path));
+         past_slash = fill_pathname_slash(image_path, sizeof(image_path));
+         if (past_slash > 1) image_path[past_slash - 1] = '\0';
+      }
+      else if (!string_is_empty(path))
          fill_pathname_join_special(image_path,
                menu_path, path, sizeof(image_path));
       else

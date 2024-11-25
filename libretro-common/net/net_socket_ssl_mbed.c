@@ -51,7 +51,7 @@
 #endif
 
 /* Not part of the mbedtls upstream source */
-#include "../../deps/mbedtls/cacert.h"
+#include "cacert.h"
 
 #define DEBUG_LEVEL 0
 

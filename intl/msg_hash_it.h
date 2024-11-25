@@ -496,10 +496,6 @@ MSG_HASH(
    "Grafica API richiesta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Percorso completo del nucleo"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Supporto Salvataggio di Stato"
    )
@@ -522,10 +518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    "- Nota: 'File di sistema sono nella cartella contenuti' è attualmente abilitato."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Guardando: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -4073,7 +4065,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Dissolvenza Netplay Chat Attiva/Disattiva"
+   "Dissolvenza Chat Netplay (Abilità)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,

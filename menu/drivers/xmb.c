@@ -1256,10 +1256,10 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
 
       if (!string_is_empty(entry.label))
       {
-         if (  (string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
-             || string_is_equal(entry.label, "state_slot")
-             || string_is_equal(entry.label, "loadstate")
-             || string_is_equal(entry.label, "savestate"))
+         if (     string_to_unsigned(entry.label) == MENU_ENUM_LABEL_STATE_SLOT
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE)))
          {
             size_t _len;
             char path[PATH_MAX_LENGTH * 2];
@@ -3214,6 +3214,15 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION:
       case MENU_ENUM_LABEL_CORE_INFORMATION:
          return xmb->textures.list[XMB_TEXTURE_CORE];
+      case MENU_ENUM_LABEL_CORE_INFO_ENTRY:
+            if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED)))
+               return xmb->textures.list[XMB_TEXTURE_CLOSE];
+            else if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL)))
+               return xmb->textures.list[XMB_TEXTURE_INFO];
+            else if (strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED))
+                  || strstr(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL)))
+               return xmb->textures.list[XMB_TEXTURE_CHECKMARK];
+         break;
       case MENU_ENUM_LABEL_LOAD_CONTENT_LIST:
       case MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS:
       case MENU_ENUM_LABEL_SCAN_FILE:
@@ -4834,6 +4843,10 @@ static int xmb_draw_item(
          node->alpha = xmb->items_active_alpha;
          node->zoom  = xmb->items_active_zoom;
       }
+
+      /* Differentiate the basic setting icon from the rest */
+      if (texture == xmb->textures.list[XMB_TEXTURE_SUBSETTING])
+         gfx_display_set_alpha(color, MIN(node->alpha / 3, xmb->alpha));
 
       /* Explore list correction hack for not showing wrong icons as "previous" icon */
       if (xmb->is_explore_list && !xmb->is_quick_menu && texture)

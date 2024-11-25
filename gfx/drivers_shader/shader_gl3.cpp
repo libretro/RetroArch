@@ -752,9 +752,29 @@ public:
       frame_direction = direction;
    }
 
+   void set_frame_time_delta(uint32_t time_delta)
+   {
+      frame_time_delta = time_delta;
+   }
+
+   void set_original_fps(float fps)
+   {
+      original_fps = fps;
+   }
+
    void set_rotation(uint32_t rot)
    {
       rotation = rot;
+   }
+
+   void set_core_aspect(float coreaspect)
+   {
+      core_aspect = coreaspect;
+   }
+
+   void set_core_aspect_rot(float coreaspectrot)
+   {
+      core_aspect_rot = coreaspectrot;
    }
 
    void set_shader_subframes(uint32_t tot_subframes)
@@ -855,6 +875,8 @@ private:
          slang_semantic semantic, uint32_t value);
    void build_semantic_int(uint8_t *data,
          slang_semantic semantic, int32_t value);
+   void build_semantic_float(uint8_t *data,
+         slang_semantic semantic, float value);
    void build_semantic_parameter(uint8_t *data, unsigned index, float value);
    void build_semantic_texture_vec4(uint8_t *data,
          slang_texture_semantic semantic,
@@ -871,7 +893,11 @@ private:
    uint64_t frame_count = 0;
    unsigned frame_count_period = 0;
    int32_t frame_direction = 1;
+   uint32_t frame_time_delta = 0;
+   float original_fps = 0;
    uint32_t rotation = 0;
+   float core_aspect = 0;
+   float core_aspect_rot = 0;
    unsigned pass_number = 0;
    uint32_t total_subframes = 1;
    uint32_t current_subframe = 1;
@@ -1079,7 +1105,11 @@ bool Pass::init_pipeline()
    reflect_parameter("FinalViewportSize", reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
+   reflect_parameter("FrameTimeDelta", reflection.semantics[SLANG_SEMANTIC_FRAME_TIME_DELTA]);
+   reflect_parameter("OriginalFPS", reflection.semantics[SLANG_SEMANTIC_ORIGINAL_FPS]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
+   reflect_parameter("OriginalAspect", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
+   reflect_parameter("OriginalAspectRotated", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
    reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
    reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
 
@@ -1319,6 +1349,38 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
    }
 }
 
+void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
+                              float value)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+   {
+      if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
+      {
+         if (refl.location.ubo_vertex >= 0)
+            glUniform1f(refl.location.ubo_vertex, value);
+         if (refl.location.ubo_fragment >= 0)
+            glUniform1f(refl.location.ubo_fragment, value);
+      }
+      else
+         *reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset) = value;
+   }
+
+   if (refl.push_constant)
+   {
+      if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
+      {
+         if (refl.location.push_vertex >= 0)
+            glUniform1f(refl.location.push_vertex, value);
+         if (refl.location.push_fragment >= 0)
+            glUniform1f(refl.location.push_fragment, value);
+      }
+      else
+         *reinterpret_cast<float *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+   }
+}
+
 void Pass::build_semantic_texture(uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -1512,8 +1574,20 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
+                      frame_time_delta);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
+                      original_fps);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
+                      core_aspect);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      core_aspect_rot);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
                       total_subframes);
@@ -1763,7 +1837,11 @@ public:
    void set_frame_count(uint64_t count);
    void set_frame_count_period(unsigned pass, unsigned period);
    void set_frame_direction(int32_t direction);
+   void set_frame_time_delta(uint32_t rot);
+   void set_original_fps(float fps);
    void set_rotation(uint32_t rot);
+   void set_core_aspect(float coreaspect);
+   void set_core_aspect_rot(float coreaspectrot);
    void set_shader_subframes(uint32_t tot_subframes);
    void set_current_shader_subframe(uint32_t cur_subframe);
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
@@ -2252,12 +2330,41 @@ void gl3_filter_chain::set_frame_direction(int32_t direction)
       passes[i]->set_frame_direction(direction);
 }
 
+void gl3_filter_chain::set_frame_time_delta(uint32_t time_delta)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_time_delta(time_delta);
+}
+
+void gl3_filter_chain::set_original_fps(float fps)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_original_fps(fps);
+}
+
 void gl3_filter_chain::set_rotation(uint32_t rot)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_rotation(rot);
 }
+
+void gl3_filter_chain::set_core_aspect(float coreaspect)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect(coreaspect);
+}
+
+void gl3_filter_chain::set_core_aspect_rot(float coreaspectrot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect_rot(coreaspectrot);
+}
+
 
 void gl3_filter_chain::set_shader_subframes(uint32_t tot_subframes)
 {
@@ -2695,11 +2802,39 @@ void gl3_filter_chain_set_frame_direction(
    chain->set_frame_direction(direction);
 }
 
+void gl3_filter_chain_set_frame_time_delta(
+      gl3_filter_chain_t *chain,
+      uint32_t time_delta)
+{
+   chain->set_frame_time_delta(time_delta);
+}
+
+void gl3_filter_chain_set_original_fps(
+      gl3_filter_chain_t *chain,
+      float fps)
+{
+   chain->set_original_fps(fps);
+}
+
 void gl3_filter_chain_set_rotation(
       gl3_filter_chain_t *chain,
       uint32_t rot)
 {
    chain->set_rotation(rot);
+}
+
+void gl3_filter_chain_set_core_aspect(
+      gl3_filter_chain_t *chain,
+      float coreaspect)
+{
+   chain->set_core_aspect(coreaspect);
+}
+
+void gl3_filter_chain_set_core_aspect_rot(
+      gl3_filter_chain_t *chain,
+      float coreaspectrot)
+{
+   chain->set_core_aspect_rot(coreaspectrot);
 }
 
 void gl3_filter_chain_set_shader_subframes(

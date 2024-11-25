@@ -504,10 +504,6 @@ MSG_HASH(
    "مطلوب الرسومات API"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "المسار الكامل للأساس"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "دعم حفظ الحالة"
    )
@@ -530,10 +526,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    "- ملاحظة: تم تمكين 'ملفات النظام في دليل المحتوى' حاليا."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- جاري البحث في: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,

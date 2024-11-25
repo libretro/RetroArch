@@ -505,7 +505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "コアのフルパス"
+   "フルパス"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -537,7 +537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- 検索中: '%s'"
+   "- 検索中: '%s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -2724,6 +2724,10 @@ MSG_HASH(
    "実行速度がターゲットフレームレートを下回るまで垂直同期が有効になります。実行速度がリアルタイムを下回ったときのカクつきを最小限に抑え、電力効率を向上させます。"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   "フレーム遅延"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    "自動フレーム遅延"
    )
@@ -4088,10 +4092,6 @@ MSG_HASH(
    "現在のネットプレイセッションにチャットメッセージを送信します。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "ネットプレイチャットフェード切り替え"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "ネットプレイチャットメッセージのフェードと固定を切り替えます。"
    )
@@ -4368,6 +4368,14 @@ MSG_HASH(
    )
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
 #endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "シングルインスタンスモード"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "セカンドインスタンスモード"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "先行実行の警告を隠す"
@@ -7326,6 +7334,10 @@ MSG_HASH(
    "東南アジア"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "東アジア（韓国・春川市）"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "カスタム"
    )
@@ -10033,6 +10045,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    "RetroAchievements サーバーにアクセスできません。成功するかアプリが閉じられるまで再試行します。"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "全ての保留中のリクエストがRetroAchievementサーバーに正常に同期されました。"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
@@ -14596,6 +14612,10 @@ MSG_HASH(
    "ホストからヘッダーを受信できませんでした。"
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: 「%s」としてログイン済み。"
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "ステートロードするには実績ハードコアモードを無効にするか一時停止する必要があります。"
    )
@@ -14622,6 +14642,38 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
    "このゲームには実績がありません。"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "このセッションでの全ての %d アチーブメントが有効になりました"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "%d 非公式のアチーブメントを有効にしました"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "%d / %d のアチーブメントが解除されています"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d サポートされていない"
+)
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "ハードコアは一時停止しています。手動のビデオフレーム遅延設定は許可されていません。"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroAchievements: ゲームを特定できませんでした。"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "%sがRetroAchievementsのゲーム読み込みに失敗しました。"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "RetroAchievementsのメディア変更に失敗しました：%s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15551,6 +15603,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "タッチマウスが無効になりました"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "sdl2 マイクには sdl2 オーディオドライバーが必要です。"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

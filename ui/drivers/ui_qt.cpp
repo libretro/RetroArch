@@ -20,7 +20,11 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QString>
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QDesktopWidget>
+#endif
+
 #include <QtGlobal>
 #include <QCloseEvent>
 #include <QResizeEvent>
@@ -1217,7 +1221,11 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailTimer(new QTimer(this))
    ,m_gridItem(this)
    ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   ,m_searchRegularExpression()
+#else
    ,m_searchRegExp()
+#endif
    ,m_zoomWidget(new QWidget(this))
    ,m_itemsCountLiteral(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT))
    ,m_itemsCountLabel(new QLabel(this))
@@ -1905,7 +1913,11 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    if (currentDirString.isEmpty())
       return;
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   dir.setPath(currentDirString);
+#else
    dir                           = currentDirString;
+#endif
 
    if (!dir.exists())
       return;
@@ -2619,9 +2631,17 @@ void MainWindow::selectBrowserDir(QString path)
          /* the directory is filtered out. Remove the filter for a moment.
           * FIXME: Find a way to not have to do this
           * (not filtering dirs is one). */
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         m_proxyFileModel->setFilterRegularExpression(QRegularExpression());
+#else
          m_proxyFileModel->setFilterRegExp(QRegExp());
+#endif
          m_fileTableView->setRootIndex(m_proxyFileModel->mapFromSource(sourceIndex));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
+#else
          m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
       }
    }
    setCoreActions();
@@ -3108,8 +3128,8 @@ void MainWindow::setCoreActions()
                   if (!found_existing)
                   {
                      QVariantMap comboBoxMap;
-                     comboBoxMap["core_name"] = coreInfo->core_name;
-                     comboBoxMap["core_path"] = coreInfo->path;
+                     comboBoxMap["core_name"] = QVariant::fromValue(QString(coreInfo->core_name));
+                     comboBoxMap["core_path"] = QVariant::fromValue(QString(coreInfo->path));
                      comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
                      m_launchWithComboBox->addItem(coreInfo->core_name, QVariant::fromValue(comboBoxMap));
                   }
@@ -3179,8 +3199,13 @@ QComboBox* MainWindow::launchWithComboBox()
 void MainWindow::onSearchLineEditEdited(const QString &text)
 {
    int i;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   QVector<char32_t> textHiraToKata;
+   QVector<char32_t> textKataToHira;
+#else
    QVector<unsigned> textHiraToKata;
    QVector<unsigned> textKataToHira;
+#endif
    QVector<unsigned> textUnicode = text.toUcs4();
    bool found_hiragana = false;
    bool found_katakana = false;
@@ -3206,6 +3231,24 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
       }
    }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   if (!found_hiragana && !found_katakana)
+      m_searchRegularExpression = QRegularExpression(text, QRegularExpression::CaseInsensitiveOption);
+   else if (found_hiragana && !found_katakana)
+      m_searchRegularExpression = QRegularExpression(text + "|"
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size()), QRegularExpression::CaseInsensitiveOption);
+   else if (!found_hiragana && found_katakana)
+      m_searchRegularExpression = QRegularExpression(text + "|"
+            + QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()), QRegularExpression::CaseInsensitiveOption);
+   else
+      m_searchRegularExpression = QRegularExpression(text + "|"
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size()) + "|" +
+            QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()), QRegularExpression::CaseInsensitiveOption);
+#else
    if (!found_hiragana && !found_katakana)
       m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
    else if (found_hiragana && !found_katakana)
@@ -3222,6 +3265,7 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
                textHiraToKata.size()) + "|" +
             QString::fromUcs4(textKataToHira.constData(),
                textKataToHira.size()), Qt::CaseInsensitive);
+#endif
 
    applySearch();
 }
@@ -3231,15 +3275,28 @@ void MainWindow::applySearch()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
-         if (m_proxyModel->filterRegExp() != m_searchRegExp)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         if (m_proxyModel->filterRegularExpression() != m_searchRegularExpression)
+         {
+            m_proxyModel->setFilterRegularExpression(m_searchRegularExpression);
+            updateItemsCount();
+         }
+#else
+	 if (m_proxyModel->filterRegExp() != m_searchRegExp)
          {
             m_proxyModel->setFilterRegExp(m_searchRegExp);
             updateItemsCount();
          }
+#endif
          break;
       case BROWSER_TYPE_FILES:
-         if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         if (m_proxyFileModel->filterRegularExpression() != m_searchRegularExpression)
+            m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
+#else
+	 if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
             m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
          break;
    }
 }
@@ -3357,7 +3414,7 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
       return;
 
    playlistPath                  = item->data(Qt::UserRole).toString();
-   playlistInfo                  = playlistPath;
+   playlistInfo                  = QFileInfo(playlistPath);
    oldName                       = playlistInfo.completeBaseName();
 
    /* Don't just compare strings in case there are
@@ -3379,7 +3436,7 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    oldPath   = item->data(Qt::UserRole).toString();
 
    file.setFileName(oldPath);
-   info      = file;
+   info      = QFileInfo(file);
 
    extension = info.suffix();
 
@@ -4217,7 +4274,7 @@ static void* ui_application_qt_initialize(void)
 
    app_handler             = new AppHandler();
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
    /* HiDpi supported since Qt 5.6 */
    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
@@ -4261,8 +4318,10 @@ static void* ui_application_qt_initialize(void)
 
 static void ui_application_qt_process_events(void)
 {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
    QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
    if (dispatcher && dispatcher->hasPendingEvents())
+#endif
       QApplication::processEvents();
 }
 
@@ -4315,6 +4374,8 @@ typedef struct ui_companion_qt
    ui_application_qt_t *app;
    ui_window_qt_t *window;
 } ui_companion_qt_t;
+
+ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }
 
 ThumbnailWidget::ThumbnailWidget(ThumbnailType type, QWidget *parent) :
    QStackedWidget(parent)
@@ -4499,7 +4560,11 @@ static void* ui_companion_qt_init(void)
    QVBoxLayout     *launchWithWidgetLayout = NULL;
    QHBoxLayout         *coreComboBoxLayout = NULL;
    QMenuBar                          *menu = NULL;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   QScreen                         *screen = NULL;
+#else
    QDesktopWidget                 *desktop = NULL;
+#endif
    QMenu                         *fileMenu = NULL;
    QMenu                         *editMenu = NULL;
    QMenu                         *viewMenu = NULL;
@@ -4542,8 +4607,13 @@ static void* ui_companion_qt_init(void)
       (ui_application_qt.initialize());
    handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   screen          = qApp->primaryScreen();
+   desktopRect     = screen->availableGeometry();
+#else
    desktop         = qApp->desktop();
    desktopRect     = desktop->availableGeometry();
+#endif
 
    mainwindow      = handle->window->qtWindow;
 
@@ -5153,7 +5223,11 @@ void LoadCoreWindow::onCoreEnterPressed()
          Qt::UserRole).toHash();
    QString                       path = hash["path"].toString();
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   pathArray.append(path.toStdString());
+#else
    pathArray.append(path);
+#endif
    pathData                           = pathArray.constData();
 
    loadCore(pathData);
@@ -5183,7 +5257,11 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    if (path.isEmpty())
       return;
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   pathArray.append(path.toUtf8());
+#else
    pathArray.append(path);
+#endif
    pathData                      = pathArray.constData();
 
    loadCore(pathData);
@@ -5195,7 +5273,11 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
    unsigned i;
    QStringList horizontal_header_labels;
    core_info_list_t *cores = NULL;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   QScreen *desktop        = qApp->primaryScreen();
+#else
    QDesktopWidget *desktop = qApp->desktop();
+#endif
    QRect desktopRect       = desktop->availableGeometry();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
@@ -5229,7 +5311,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
 
          name_item                      = new QTableWidgetItem(name);
 
-         hash["path"]                   = core->path;
+         hash["path"]                   = QByteArray(core->path);
          hash["extensions"]             = string_split_to_qt(QString(core->supported_extensions), '|');
 
          name_item->setData(Qt::UserRole, hash);

@@ -3304,10 +3304,6 @@ MSG_HASH(
    "Stuurt een chatbericht naar de huidige net-play-sessie."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Schakel Netplay Chat-vervaag in/uit"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Schakelen tussen vervagende en statische net-play-chatberichten."
    )

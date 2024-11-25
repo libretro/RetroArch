@@ -814,6 +814,8 @@ void audio_driver_sample(int16_t left, int16_t right)
    uint32_t runloop_flags;
    audio_driver_state_t *audio_st  = &audio_driver_st;
    recording_state_t *recording_st = NULL;
+   if (!audio_st || !audio_st->output_samples_conv_buf)
+      return;
    if (audio_st->flags & AUDIO_FLAG_SUSPENDED)
       return;
    audio_st->output_samples_conv_buf[audio_st->data_ptr++] = left;

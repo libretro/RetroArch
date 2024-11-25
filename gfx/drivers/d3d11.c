@@ -855,7 +855,7 @@ static void d3d11_font_render_message(
          d3d11_font_render_line(d3d11,
                font, glyph_q, msg, msg_len, scale, color, pos_x,
                pos_y - (float)lines * line_height,
-	       x,
+               x,
                width, height, text_align);
 
       if (!delim)
@@ -1537,7 +1537,11 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d11->frame.output_size,       /* FinalViewportSize */
             &d3d11->pass[i].frame_count,     /* FrameCount */
             &d3d11->pass[i].frame_direction, /* FrameDirection */
+            &d3d11->pass[i].frame_time_delta,/* FrameTimeDelta */
+            &d3d11->pass[i].original_fps,        /* OriginalFPS */
             &d3d11->pass[i].rotation,        /* Rotation */
+            &d3d11->pass[i].core_aspect,     /* OriginalAspect */
+            &d3d11->pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d11->pass[i].total_subframes, /* TotalSubFrames */
             &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
          }
@@ -3091,8 +3095,19 @@ static bool d3d11_gfx_frame(
 #else
          d3d11->pass[i].frame_direction = 1;
 #endif
+         d3d11->pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+         d3d11->pass[i].original_fps = video_driver_get_original_fps();
 
          d3d11->pass[i].rotation = retroarch_get_rotation();
+
+         d3d11->pass[i].core_aspect = video_driver_get_core_aspect();
+
+         /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+         d3d11->pass[i].core_aspect_rot = video_driver_get_core_aspect();
+         uint32_t rot = retroarch_get_rotation();
+         if (rot == 1 || rot == 3)
+            d3d11->pass[i].core_aspect_rot = 1/d3d11->pass[i].core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */
@@ -3694,12 +3709,17 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    /* Assuming format is DXGI_FORMAT_R8G8B8A8_UNORM */
    if (StagingDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
    {
-      BackBufferData += Map.RowPitch * d3d11->vp.y;
-      for (y = 0; y < d3d11->vp.height; y++, BackBufferData += Map.RowPitch)
-      {
-         bufferRow = buffer + 3 * (d3d11->vp.height - y - 1) * d3d11->vp.width;
+      unsigned vp_y      = (d3d11->vp.y > 0) ? d3d11->vp.y : 0;
+      unsigned vp_width  = (d3d11->vp.width  > d3d11->vp.full_width)  ? d3d11->vp.full_width  : d3d11->vp.width;
+      unsigned vp_height = (d3d11->vp.height > d3d11->vp.full_height) ? d3d11->vp.full_height : d3d11->vp.height;
 
-         for (x = 0; x < d3d11->vp.width; x++)
+      BackBufferData += Map.RowPitch * vp_y;
+
+      for (y = 0; y < vp_height; y++, BackBufferData += Map.RowPitch)
+      {
+         bufferRow = buffer + 3 * (vp_height - y - 1) * vp_width;
+
+         for (x = 0; x < vp_width; x++)
          {
             bufferRow[3 * x + 2] = BackBufferData[4 * (x + d3d11->vp.x) + 0];
             bufferRow[3 * x + 1] = BackBufferData[4 * (x + d3d11->vp.x) + 1];

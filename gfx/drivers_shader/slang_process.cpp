@@ -156,7 +156,11 @@ static bool slang_process_reflection(
             "FinalViewportSize",
             "FrameCount",
             "FrameDirection",
+            "FrameTimeDelta",
+            "OriginalFPS",
             "Rotation",
+            "OriginalAspect",
+            "OriginalAspectRotated",
             "TotalSubFrames",
             "CurrentSubFrame",
          };

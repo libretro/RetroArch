@@ -505,7 +505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Camiño completo do núcleo"
+   "Ruta completa"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -537,7 +537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Buscando en: '%s'"
+   "- Buscando en: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -4101,7 +4101,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Activar/desactivar atenuado do chat no Xogo en rede"
+   "Esvaecer o chat do xogo en rede (activar/desactivar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -7375,7 +7375,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
-   "Desvanece Chat"
+   "Esvaece Chat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
@@ -11238,7 +11238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
-   "Factor de desvanecemento vertical"
+   "Factor de esvaecemento vertical"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,

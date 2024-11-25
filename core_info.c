@@ -2207,13 +2207,23 @@ static bool core_info_does_support_any_file(const core_info_t *core,
 static bool core_info_does_support_file(
       const core_info_t *core, const char *path)
 {
+   const char *basename, *ext;
+
    if (!core || !core->supported_extensions_list)
       return false;
    if (string_is_empty(path))
       return false;
 
+   basename = path_basename(path);
+
+   /* if a core has / in its list of supported extensions, the core
+      supports loading of directories on the host file system */
+   if (string_is_empty(basename))
+      return string_list_find_elem(core->supported_extensions_list, "/");
+
+   ext = strrchr(basename, '.');
    return string_list_find_elem_prefix(
-         core->supported_extensions_list, ".", path_get_extension(path));
+         core->supported_extensions_list, ".", (ext ? ext + 1 : ""));
 }
 
 /* qsort_r() is not in standard C, sadly. */
@@ -2452,9 +2462,18 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    struct string_list *list      = NULL;
 #endif
    core_info_state_t *p_coreinfo = &core_info_st;
+   char dir_path[PATH_MAX_LENGTH];
 
    if (!core_info_list)
       return;
+
+   if (path_is_directory(path))
+   {
+      /* Add a slash so core_info_does_support_file can know it is
+         a directory without having to check the file system again. */
+      fill_pathname_join_special(dir_path, path, "", sizeof(dir_path));
+      path = dir_path;
+   }
 
    p_coreinfo->tmp_path          = path;
 

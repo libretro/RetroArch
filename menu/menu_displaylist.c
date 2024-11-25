@@ -230,12 +230,12 @@ static int filebrowser_parse(
          if (subsystem && runloop_st->subsystem_current_count > 0)
             ret = file_archive_get_file_list_noalloc(&str_list,
                   path,
-                  subsystem->roms[
-                  content_get_subsystem_rom_id()].valid_extensions);
+                  filter_ext ? subsystem->roms[
+                  content_get_subsystem_rom_id()].valid_extensions : NULL);
       }
       else
          ret = file_archive_get_file_list_noalloc(&str_list,
-               path, exts);
+               path, filter_ext ? exts : NULL);
    }
    else if (!string_is_empty(path))
    {
@@ -310,6 +310,14 @@ static int filebrowser_parse(
                FILE_TYPE_USE_DIRECTORY, 0 ,0);
          break;
       default:
+         /* if a core has / in its list of supported extensions, the core
+            supports loading of directories on the host file system */
+         if (exts && strchr(exts, '/'))
+            menu_entries_prepend(info_list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
+                  msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
+                  MSG_UNKNOWN,
+                  FILE_TYPE_PLAIN, 0, FILE_TYPE_USE_DIRECTORY);
          break;
    }
 
@@ -536,6 +544,7 @@ static int menu_displaylist_parse_core_info(
    const char *savestate_support = NULL;
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    bool kiosk_mode_enable        = settings->bools.kiosk_mode_enable;
+   bool core_info_list_hide[64]  = {false};
 #if defined(HAVE_DYNAMIC)
    enum menu_contentless_cores_display_type
          contentless_display_type = (enum menu_contentless_cores_display_type)
@@ -837,36 +846,53 @@ static int menu_displaylist_parse_core_info(
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
             count++;
 
-         len        = strlcpy(tmp, "(!) ", sizeof(tmp));
-
-         /* FIXME: This looks hacky and probably
-          * needs to be improved for good translation support. */
-
          for (i = 0; i < core_info->firmware_count; i++)
          {
             if (!core_info->firmware[i].desc)
                continue;
 
-            snprintf(tmp + len, sizeof(tmp) - len, "%s %s",
-                  core_info->firmware[i].missing   ?
-                  (
-                    core_info->firmware[i].optional
-                  ? missing_optional
-                  : missing_required)
-                  :
-                  (
-                    core_info->firmware[i].optional
-                  ? present_optional
-                  : present_required),
-                  core_info->firmware[i].desc ?
-                  core_info->firmware[i].desc :
-                  rdb_entry_name
-                  );
+            snprintf(tmp, sizeof(tmp), "%s %s",
+                  core_info->firmware[i].missing
+                        ? (core_info->firmware[i].optional ? missing_optional : missing_required)
+                        : (core_info->firmware[i].optional ? present_optional : present_required),
+                  core_info->firmware[i].desc ? core_info->firmware[i].desc : rdb_entry_name
+            );
 
             if (menu_entries_append(list, tmp, "",
                   MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                count++;
+
+            /* Show relevant note row and skip showing it later */
+            if (core_info->notes)
+            {
+               unsigned pos;
+               unsigned j;
+               char firmware_basename[64];
+
+               strlcpy(firmware_basename, core_info->firmware[i].desc, sizeof(firmware_basename));
+               path_basename(firmware_basename);
+               firmware_basename[string_find_index_substring_string(firmware_basename, " ")] = '\0';
+
+               for (j = 0; j < core_info->note_list->size; j++)
+               {
+                  if (     !strstr(core_info->note_list->elems[j].data, firmware_basename)
+                        || !strstr(core_info->note_list->elems[j].data, "(md5)"))
+                     continue;
+
+                  pos = string_find_index_substring_string(core_info->note_list->elems[j].data, "(md5)");
+
+                  core_info_list_hide[j] = true;
+                  len = strlcpy(tmp, "- ", sizeof(tmp));
+                  strlcat(tmp, core_info->note_list->elems[j].data + pos, sizeof(tmp));
+
+                  if (menu_entries_append(list, tmp, "",
+                        MENU_ENUM_LABEL_CORE_INFO_ENTRY,
+                        MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+                     count++;
+                  break;
+               }
+            }
          }
       }
    }
@@ -875,6 +901,9 @@ static int menu_displaylist_parse_core_info(
    {
       for (i = 0; i < core_info->note_list->size; i++)
       {
+         if (core_info_list_hide[i])
+            continue;
+
          strlcpy(tmp,
                core_info->note_list->elems[i].data, sizeof(tmp));
          if (menu_entries_append(list, tmp, "",

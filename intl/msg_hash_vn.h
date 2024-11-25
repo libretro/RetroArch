@@ -84,6 +84,10 @@ MSG_HASH(
    "Chọn nội dung nào sẽ bắt đầu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   "Để duyệt nội dung, bạn cần một 'Core' để sử dụng và một tệp.\nĐể kiểm soát vị trí mà menu bắt đầu duyệt tìm tệp, hãy đặt 'Thư mục Duyệt Tệp'. Nếu không đặt, nó sẽ bắt đầu từ thư mục gốc.\nTrình duyệt sẽ lọc các tệp dựa trên phần mở rộng của core cuối cùng đã chọn trong 'Tải Core', và sẽ sử dụng core đó khi nội dung được tải."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    "Mở đĩa"
    )
@@ -132,6 +136,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHOW_WIMP,
    "Mở Desktop Menu cổ điển."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   "Vô hiệu hóa chế độ Kiosk (Yêu cầu khởi động lại)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,

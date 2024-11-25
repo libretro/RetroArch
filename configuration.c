@@ -689,12 +689,12 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_UDEV;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_LINUXRAW;
 #elif defined(ANDROID)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
+#elif defined(HAVE_MFI)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #elif defined(HAVE_SDL) || defined(HAVE_SDL2)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(DJGPP)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
-#elif defined(HAVE_MFI)
-static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
 #elif defined(HAVE_HID)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
 #elif defined(__QNX__)
@@ -4013,19 +4013,13 @@ static bool config_load_file(global_t *global,
    }
 
 #if defined(__APPLE__) && defined(OSX)
-#if defined(__aarch64__)
-   /* Wrong architecture, set it back to arm64 */
-   if (string_is_equal(settings->paths.network_buildbot_url,
-            "http://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"))
-       configuration_set_string(settings,
-             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-#elif defined(__x86_64__)
-   /* Wrong architecture, set it back to x86_64 */
-   if (string_is_equal(settings->paths.network_buildbot_url,
-            "http://buildbot.libretro.com/nightly/apple/osx/arm64/latest/"))
-       configuration_set_string(settings,
-             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
-#endif
+   if (     ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_X86_64) &&
+             string_ends_with(settings->paths.network_buildbot_url, "/arm64/latest/"))
+         || ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_ARMV8) &&
+             string_ends_with(settings->paths.network_buildbot_url, "/x86_64/latest/")))
+      /* Wrong architecture, set it back */
+      configuration_set_string(settings,
+            settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
 #endif
 
    if (string_is_equal(settings->paths.path_menu_wallpaper, "default"))
@@ -5196,10 +5190,10 @@ bool config_save_autoconf_profile(const
    config_set_string(conf, "input_driver",
          joypad_driver);
    config_set_string(conf, "input_device",
-         input_config_get_device_name(user));
+         input_config_get_device_name(settings->uints.input_joypad_index[user]));
 
-   pid_user = input_config_get_device_pid(user);
-   vid_user = input_config_get_device_vid(user);
+   pid_user = input_config_get_device_pid(settings->uints.input_joypad_index[user]);
+   vid_user = input_config_get_device_vid(settings->uints.input_joypad_index[user]);
 
    if (pid_user && vid_user)
    {
@@ -5677,6 +5671,10 @@ int8_t config_save_overrides(enum override_type type,
       {
          if (!string_is_equal(path_settings[i].ptr, path_overrides[i].ptr))
          {
+#if IOS
+            if (string_is_equal(path_settings[i].ident, "libretro_directory"))
+               continue;
+#endif
             config_set_path(conf, path_overrides[i].ident,
                   path_overrides[i].ptr);
             RARCH_DBG("[Overrides]: %s = \"%s\"\n",

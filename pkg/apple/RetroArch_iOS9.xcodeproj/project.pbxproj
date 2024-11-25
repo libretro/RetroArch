@@ -26,6 +26,7 @@
 		04306A8724A2C600002CAEFE /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 04306A8624A2C600002CAEFE /* libz.tbd */; };
 		072DA117299B2F7800619B75 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072DA116299B2F7800619B75 /* CoreHaptics.framework */; };
 		075CBF3E2A548F0700F1864D /* MetricKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075CBF3D2A548F0700F1864D /* MetricKit.framework */; };
+		07D690DD2CD25029003803FF /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07D690DB2CD25029003803FF /* GCDWebDAVServer.m */; };
 		0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		0FDA2A791BE1AFA800F2B5DA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
@@ -49,6 +50,7 @@
 		928F7B1627CB086B00377C40 /* JITSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 928F7B1527CB086B00377C40 /* JITSupport.m */; };
 		92CC05C521FEDC9F00FF79F0 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C421FEDC9F00FF79F0 /* CFNetwork.framework */; };
 		92CC05C721FEDD0B00FF79F0 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */; };
+		CC1563D72CD256A600ECD25D /* libxml2.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 0705A1DB2CD2522F0035A469 /* libxml2.tbd */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -86,8 +88,11 @@
 		040A5A4722953F3300BD075F /* GCDWebUploader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDWebUploader.h; sourceTree = "<group>"; };
 		040A5A4822953F3300BD075F /* GCDWebUploader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDWebUploader.m; sourceTree = "<group>"; };
 		04306A8624A2C600002CAEFE /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		0705A1DB2CD2522F0035A469 /* libxml2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libxml2.tbd; path = usr/lib/libxml2.tbd; sourceTree = SDKROOT; };
 		072DA116299B2F7800619B75 /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
 		075CBF3D2A548F0700F1864D /* MetricKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetricKit.framework; path = System/Library/Frameworks/MetricKit.framework; sourceTree = SDKROOT; };
+		07D690DA2CD25029003803FF /* GCDWebDAVServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GCDWebDAVServer.h; sourceTree = "<group>"; };
+		07D690DB2CD25029003803FF /* GCDWebDAVServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GCDWebDAVServer.m; sourceTree = "<group>"; };
 		0FDA2A911BE1AFA800F2B5DA /* RetroArchiOS9.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArchiOS9.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "RetroArch_iOS9-Info.plist"; sourceTree = SOURCE_ROOT; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
@@ -130,6 +135,7 @@
 				04306A8724A2C600002CAEFE /* libz.tbd in Frameworks */,
 				0FDA2A791BE1AFA800F2B5DA /* QuartzCore.framework in Frameworks */,
 				0FDA2A7A1BE1AFA800F2B5DA /* GameController.framework in Frameworks */,
+				CC1563D72CD256A600ECD25D /* libxml2.tbd in Frameworks */,
 				0FDA2A7B1BE1AFA800F2B5DA /* CoreText.framework in Frameworks */,
 				0FDA2A7C1BE1AFA800F2B5DA /* CoreLocation.framework in Frameworks */,
 				0FDA2A7D1BE1AFA800F2B5DA /* CoreMedia.framework in Frameworks */,
@@ -153,6 +159,7 @@
 		040A5A2222953F3300BD075F /* WebServer */ = {
 			isa = PBXGroup;
 			children = (
+				07D690DC2CD25029003803FF /* GCDWebDAVServer */,
 				040A5A2322953F3300BD075F /* GCDWebServer */,
 				040A5A4322953F3300BD075F /* WebServer.h */,
 				040A5A4422953F3300BD075F /* WebServer.m */,
@@ -230,6 +237,15 @@
 			path = GCDWebUploader;
 			sourceTree = "<group>";
 		};
+		07D690DC2CD25029003803FF /* GCDWebDAVServer */ = {
+			isa = PBXGroup;
+			children = (
+				07D690DA2CD25029003803FF /* GCDWebDAVServer.h */,
+				07D690DB2CD25029003803FF /* GCDWebDAVServer.m */,
+			);
+			path = GCDWebDAVServer;
+			sourceTree = "<group>";
+		};
 		83D632D719ECFCC4009E3161 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -270,6 +286,7 @@
 		96AFAE2816C1D4EA009DE44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0705A1DB2CD2522F0035A469 /* libxml2.tbd */,
 				075CBF3D2A548F0700F1864D /* MetricKit.framework */,
 				072DA116299B2F7800619B75 /* CoreHaptics.framework */,
 				92CC05C621FEDD0B00FF79F0 /* MobileCoreServices.framework */,
@@ -434,6 +451,7 @@
 				0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */,
 				040A5A4B22953F3300BD075F /* GCDWebServerFunctions.m in Sources */,
 				040A5A5122953F3300BD075F /* GCDWebServerStreamedResponse.m in Sources */,
+				07D690DD2CD25029003803FF /* GCDWebDAVServer.m in Sources */,
 				0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */,
 				040A5A4922953F3300BD075F /* GCDWebServerResponse.m in Sources */,
 				040A5A5322953F3300BD075F /* GCDWebServerMultiPartFormRequest.m in Sources */,
