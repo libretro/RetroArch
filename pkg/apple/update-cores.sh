@@ -193,6 +193,7 @@ else
                 mesen-s
                 mgba
                 mojozork
+                mrboom
                 mu
                 mupen64plus_next
                 neocd
