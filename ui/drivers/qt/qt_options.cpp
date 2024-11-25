@@ -254,9 +254,6 @@ QWidget *InputPage::widget()
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
          file_list_get_actiondata_at_offset(list, i);
 
-      if (cbs->enum_idx == MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)
-         break;
-
       layout->add(menu_setting_find_enum(cbs->enum_idx));
    }
 
