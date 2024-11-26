@@ -246,7 +246,7 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
    if (!m_pendingImages.contains(path) && !m_cache.contains(path))
    {
       m_pendingImages.insert(path);
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
       QtConcurrent::run(&PlaylistModel::loadImage, this, index, path);
 #else
       QtConcurrent::run(this, &PlaylistModel::loadImage, index, path);
@@ -878,7 +878,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    for (j = 0; j < m_listWidget->count(); j++)
    {
       QListWidgetItem *item = m_listWidget->item(j);
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
       bool           hidden = item->isHidden();
 #else
       bool           hidden = m_listWidget->isItemHidden(item);
@@ -1499,11 +1499,7 @@ void PlaylistModel::getPlaylistItems(QString path)
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
    playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    pathArray.append(path.toUtf8());
-#else
-   pathArray.append(path);
-#endif
    pathData              = pathArray.constData();
    if (!string_is_empty(pathData))
       playlistName       = path_basename(pathData);

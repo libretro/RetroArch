@@ -1440,7 +1440,7 @@ QWidget *VideoPage::widget()
 
    layout->addStretch();
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
    void (VideoPage::*cb)(int) = &VideoPage::onResolutionComboIndexChanged;
    connect(m_resolutionCombo, &QComboBox::currentIndexChanged, this, cb);
 #else
