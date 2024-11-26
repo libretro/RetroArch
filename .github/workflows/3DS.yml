@@ -20,6 +20,16 @@ jobs:
       options: --user root
 
     steps:
+    - name: Run on old node
+      run: |
+        apt update && apt -y install wget
+        touch "$HOME/.bashrc"
+        wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        nvm install 16
+        # node 16 is now available.
+        
     - uses: actions/checkout@v4
     
     - name: Compile Salamander
