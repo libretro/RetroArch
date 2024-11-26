@@ -20,11 +20,6 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QString>
-
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#include <QDesktopWidget>
-#endif
-
 #include <QtGlobal>
 #include <QCloseEvent>
 #include <QResizeEvent>
@@ -1913,7 +1908,7 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    if (currentDirString.isEmpty())
       return;
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
    dir.setPath(currentDirString);
 #else
    dir                           = currentDirString;
@@ -2634,13 +2629,13 @@ void MainWindow::selectBrowserDir(QString path)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
          m_proxyFileModel->setFilterRegularExpression(QRegularExpression());
 #else
-         m_proxyFileModel->setFilterRegExp(QRegExp());
+	 m_proxyFileModel->setFilterRegExp(QRegExp());
 #endif
          m_fileTableView->setRootIndex(m_proxyFileModel->mapFromSource(sourceIndex));
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
          m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
 #else
-         m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+	 m_proxyFileModel->setFilterRegExp(m_searchRegExp);
 #endif
       }
    }
@@ -3199,13 +3194,8 @@ QComboBox* MainWindow::launchWithComboBox()
 void MainWindow::onSearchLineEditEdited(const QString &text)
 {
    int i;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    QVector<char32_t> textHiraToKata;
    QVector<char32_t> textKataToHira;
-#else
-   QVector<unsigned> textHiraToKata;
-   QVector<unsigned> textKataToHira;
-#endif
    QVector<unsigned> textUnicode = text.toUcs4();
    bool found_hiragana = false;
    bool found_katakana = false;
@@ -4322,7 +4312,7 @@ static void ui_application_qt_process_events(void)
    QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
    if (dispatcher && dispatcher->hasPendingEvents())
 #endif
-      QApplication::processEvents();
+   QApplication::processEvents();
 }
 
 static void ui_application_qt_quit(void)
@@ -4560,11 +4550,7 @@ static void* ui_companion_qt_init(void)
    QVBoxLayout     *launchWithWidgetLayout = NULL;
    QHBoxLayout         *coreComboBoxLayout = NULL;
    QMenuBar                          *menu = NULL;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    QScreen                         *screen = NULL;
-#else
-   QDesktopWidget                 *desktop = NULL;
-#endif
    QMenu                         *fileMenu = NULL;
    QMenu                         *editMenu = NULL;
    QMenu                         *viewMenu = NULL;
@@ -4607,13 +4593,8 @@ static void* ui_companion_qt_init(void)
       (ui_application_qt.initialize());
    handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    screen          = qApp->primaryScreen();
    desktopRect     = screen->availableGeometry();
-#else
-   desktop         = qApp->desktop();
-   desktopRect     = desktop->availableGeometry();
-#endif
 
    mainwindow      = handle->window->qtWindow;
 
@@ -5223,7 +5204,7 @@ void LoadCoreWindow::onCoreEnterPressed()
          Qt::UserRole).toHash();
    QString                       path = hash["path"].toString();
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
    pathArray.append(path.toStdString());
 #else
    pathArray.append(path);
@@ -5257,11 +5238,7 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    if (path.isEmpty())
       return;
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    pathArray.append(path.toUtf8());
-#else
-   pathArray.append(path);
-#endif
    pathData                      = pathArray.constData();
 
    loadCore(pathData);
@@ -5273,11 +5250,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
    unsigned i;
    QStringList horizontal_header_labels;
    core_info_list_t *cores = NULL;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-   QScreen *desktop        = qApp->primaryScreen();
-#else
-   QDesktopWidget *desktop = qApp->desktop();
-#endif
+   QScreen *desktop = qApp->primaryScreen();
    QRect desktopRect       = desktop->availableGeometry();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
