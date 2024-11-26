@@ -6,6 +6,9 @@ stages:
   - prepare-for-static-cores
   - trigger-static-cores
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 build-retroarch-windows-x64:
   image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win64-cross:gcc10
   stage: build
@@ -880,6 +883,8 @@ build-static-retroarch-ctr:
   stage: prepare-for-static-cores
   before_script:
     - export NUMPROC=$(($(nproc)/3))
+    - export ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION=node16
+    - export ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION=node16
   artifacts:
     paths:
     -  retroarch-precompiled/
@@ -900,6 +905,7 @@ build-static-retroarch-ctr-legacy:
   stage: prepare-for-static-cores
   before_script:
     - export NUMPROC=$(($(nproc)/3))
+    - export ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true
   artifacts:
     paths:
     -  retroarch-precompiled/
@@ -920,6 +926,7 @@ build-static-retroarch-dummy-ctr:
     MEDIA_PATH: .media
   before_script:
     - export NUMPROC=$(($(nproc)/3))
+    - export ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true
   artifacts:
     paths:
     - retroarch_3ds.cia
