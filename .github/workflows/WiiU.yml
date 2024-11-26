@@ -14,7 +14,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: git.libretro.com:5050/libretro-infrastructure/libretro-build-wiiu:latest
       options: --user root
