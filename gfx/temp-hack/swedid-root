@@ -3,18 +3,38 @@
 # This script requires running as root. "sudo" is called from "gfx/video_crt_switch.c", thus requiring a sudoers rule to non-interactively grant root permissions when running "/usr/local/bin/swedid-root" (this script)
 # switchres binary must be in root's PATH
 
-# Hardcoding Display for now as DP-1
+# TODO: Get below values from RetroArch's video output settings instead of hardcoding.
+
+# Hardcode GPU number and Display name. Change these before running.
+_display="DP-1"
+_gpu="1"
+
+# Hardcode ini path or switchres monitor preset. Change this before running
+_sw_args="--ini /home/syboxez/.config/retroarch/config/switchres.ini"
+
+# Change $3 to $5 when no longer hardcoding Display or GPU
 if [ -z "$3" ]; then
-	echo "Usage: $0 [HRes] [VRes] [VFreq] [Display]"
+	echo "Usage: $0 [HRes] [VRes] [VFreq] [GPU Num] [Display]"
 	exit 1
 fi
 
-# Hardcoding Display
+# Change $4 to $6 when no longer hardcoding
 if [ -n "$4" ]; then
 	echo "Too many arguments"
-	echo "Usage: $0 [HRes] [VRes] [VFreq] [Display]"
+	echo "Usage: $0 [HRes] [VRes] [VFreq] [GPU Num] [Display]"
 	exit 1
 fi
+
+# Backup EDID if backup doesn't exist
+# Currently hardcoding GPU number and display name. Change this before running!
+if [ ! -f /tmp/edid.bak ]; then
+	echo "Backing up EDID to /tmp/edid.bak"
+	dd if=/sys/class/drm/card"$_gpu"-"$_display"/edid of=/tmp/edid.bak bs=256
+else
+	echo "EDID already backed up to /tmp/edid.bak. Skipping backup."
+fi
+
+# TODO: Restore EDID after RA closes instead of attempting to use xrandr, which is what happens now.
 
 # Generate temperary working directory to generate EDID binary, then delete after applying
 _tmpdir=$(mktemp -d)
@@ -24,11 +44,10 @@ if [ -z "$_tmpdir" ]; then
 fi
 cd "$_tmpdir"
 
-switchres --ini /home/syboxez/.config/retroarch/config/switchres.ini --edid $1 $2 $3
+switchres $_sw_args --edid $1 $2 $3
 
-#Replace "1" with GPU number, replace "DP-1" with display
-cat "$_tmpdir"/custom.bin > /sys/kernel/debug/dri/1/DP-1/edid_override
-echo 1 > /sys/kernel/debug/dri/1/DP-1/trigger_hotplug
+cat "$_tmpdir"/custom.bin > /sys/kernel/debug/dri/"$_gpu"/"$_display"/edid_override
+echo 1 > /sys/kernel/debug/dri/"$_gpu"/"$_display"/trigger_hotplug
 
 cd /tmp
 rm -rf "$_tmpdir"
