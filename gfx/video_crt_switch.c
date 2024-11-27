@@ -335,7 +335,8 @@ static void switch_res_crt(
       if (!ret)
          RARCH_ERR("[CRT]: SR failed to add mode\n");
 
-      snprintf(commandbuffer, sizeof(commandbuffer), "/usr/bin/sudo /usr/local/bin/swedid-root %d %d %d", srm.width, srm.height, srm.vfreq);
+      snprintf(commandbuffer, sizeof(commandbuffer), "/usr/bin/sudo /usr/local/bin/swedid-root %d %d %f", srm.width, srm.height, srm.vfreq);
+      printf("%s\n", commandbuffer);
       ret = system(commandbuffer);
 
       if (!p_switch->kms_ctx && !ret)
