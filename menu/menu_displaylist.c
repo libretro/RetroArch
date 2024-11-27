@@ -6343,6 +6343,9 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
             case PLAYLIST_THUMBNAIL_MODE_BOXARTS:
                label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS;
                break;
+            case PLAYLIST_THUMBNAIL_MODE_LOGOS:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS;
+               break;
             default:
                /* PLAYLIST_THUMBNAIL_MODE_DEFAULT */
                label_value = MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT;

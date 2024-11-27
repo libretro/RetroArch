@@ -92,7 +92,7 @@ typedef struct pl_entry_id
 /*********************/
 
 /* Fetches the thumbnail subdirectory (Named_Snaps,
- * Named_Titles, Named_Boxarts) corresponding to the
+ * Named_Titles, Named_Boxarts, Named_Logos) corresponding to the
  * specified 'type index' (1, 2, 3).
  * Returns true if 'type index' is valid */
 static bool gfx_thumbnail_get_sub_directory(
@@ -111,6 +111,9 @@ static bool gfx_thumbnail_get_sub_directory(
          return true;
       case 3:
          *sub_directory = "Named_Boxarts";
+         return true;
+      case 4:
+         *sub_directory = "Named_Logos";
          return true;
       case 0:
       default:

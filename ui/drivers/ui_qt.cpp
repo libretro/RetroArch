@@ -1159,6 +1159,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailPixmap(NULL)
    ,m_thumbnailPixmap2(NULL)
    ,m_thumbnailPixmap3(NULL)
+   ,m_thumbnailPixmap4(NULL)
    ,m_settings(NULL)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
@@ -1239,6 +1240,7 @@ MainWindow::MainWindow(QWidget *parent) :
    QAction     *thumbnailTypeBoxartAction = NULL;
    QAction *thumbnailTypeScreenshotAction = NULL;
    QAction *thumbnailTypeTitleAction      = NULL;
+   QAction *thumbnailTypeLogoAction       = NULL;
    QPushButton *viewTypePushButton        = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), m_zoomWidget);
    QMenu                    *viewTypeMenu = new QMenu(viewTypePushButton);
    QAction           *viewTypeIconsAction = NULL;
@@ -1271,6 +1273,8 @@ MainWindow::MainWindow(QWidget *parent) :
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
    thumbnailTypeTitleAction               = thumbnailTypeMenu->addAction(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
+   thumbnailTypeLogoAction               = thumbnailTypeMenu->addAction(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO));
 
    thumbnailTypePushButton->setMenu(thumbnailTypeMenu);
 
@@ -1509,6 +1513,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(thumbnailTypeBoxartAction, SIGNAL(triggered()), this, SLOT(onBoxartThumbnailClicked()));
    connect(thumbnailTypeScreenshotAction, SIGNAL(triggered()), this, SLOT(onScreenshotThumbnailClicked()));
    connect(thumbnailTypeTitleAction, SIGNAL(triggered()), this, SLOT(onTitleThumbnailClicked()));
+   connect(thumbnailTypeLogoAction, SIGNAL(triggered()), this, SLOT(onLogoThumbnailClicked()));
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
@@ -1595,6 +1600,8 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+   if (m_thumbnailPixmap4)
+      delete m_thumbnailPixmap4;
    if (m_proxyFileModel)
       delete m_proxyFileModel;
 }
@@ -1716,6 +1723,11 @@ void MainWindow::onScreenshotThumbnailClicked()
 void MainWindow::onTitleThumbnailClicked()
 {
    setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
+}
+
+void MainWindow::onLogoThumbnailClicked()
+{
+   setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
 }
 
 void MainWindow::setIconViewZoom(int zoom_val)
@@ -2249,6 +2261,22 @@ void MainWindow::onThumbnailDropped(const QImage &image,
          m_thumbnailPixmap3 = new QPixmap(path);
 
          onResizeThumbnailThree(*m_thumbnailPixmap3, true);
+         break;
+      }
+
+      case THUMBNAIL_TYPE_LOGO:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_LOGO);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap4)
+            delete m_thumbnailPixmap4;
+
+         m_thumbnailPixmap4 = new QPixmap(path);
+
+         onResizeThumbnailFour(*m_thumbnailPixmap4, true);
          break;
       }
    }
@@ -3471,6 +3499,8 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+   if (m_thumbnailPixmap4)
+      delete m_thumbnailPixmap4;
 
    if (m_playlistModel->isSupportedImage(path))
    {
@@ -3478,6 +3508,7 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       m_thumbnailPixmap = new QPixmap(path);
       m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
+      m_thumbnailPixmap4 = new QPixmap(*m_thumbnailPixmap);
    }
    else
    {
@@ -3487,6 +3518,7 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       m_thumbnailPixmap     = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_BOXART + "/" + thumbnailName);
       m_thumbnailPixmap2    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_TITLE + "/" + thumbnailName);
       m_thumbnailPixmap3    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_SCREENSHOT + "/" + thumbnailName);
+      m_thumbnailPixmap4    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_LOGO + "/" + thumbnailName);
 
       if (      m_currentBrowser == BROWSER_TYPE_PLAYLISTS
             && !currentPlaylistIsSpecial())
@@ -3496,6 +3528,7 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
    onResizeThumbnailOne(*m_thumbnailPixmap, acceptDrop);
    onResizeThumbnailTwo(*m_thumbnailPixmap2, acceptDrop);
    onResizeThumbnailThree(*m_thumbnailPixmap3, acceptDrop);
+   onResizeThumbnailFour(*m_thumbnailPixmap4, acceptDrop);
 
    setCoreActions();
 }
@@ -3522,6 +3555,11 @@ void MainWindow::onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop)
 void MainWindow::onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop)
 {
    setThumbnail("thumbnail3", pixmap, acceptDrop);
+}
+
+void MainWindow::onResizeThumbnailFour(QPixmap &pixmap, bool acceptDrop)
+{
+   setThumbnail("thumbnail4", pixmap, acceptDrop);
 }
 
 void MainWindow::setCurrentViewType(ViewType viewType)
@@ -3897,6 +3935,8 @@ QString MainWindow::getCurrentThumbnailTypeString()
          return QStringLiteral("screenshot");
       case THUMBNAIL_TYPE_TITLE_SCREEN:
          return QStringLiteral("title");
+      case THUMBNAIL_TYPE_LOGO:
+         return QStringLiteral("logo");
       case THUMBNAIL_TYPE_BOXART:
       default:
          return QStringLiteral("boxart");
@@ -3913,6 +3953,8 @@ ThumbnailType MainWindow::getThumbnailTypeFromString(QString thumbnailType)
       return THUMBNAIL_TYPE_SCREENSHOT;
    else if (thumbnailType == "title")
       return THUMBNAIL_TYPE_TITLE_SCREEN;
+   else if (thumbnailType == "logo")
+      return THUMBNAIL_TYPE_LOGO;
 
    return THUMBNAIL_TYPE_BOXART;
 }
@@ -4559,6 +4601,7 @@ static void* ui_companion_qt_init(void)
    QDockWidget              *thumbnailDock = NULL;
    QDockWidget             *thumbnail2Dock = NULL;
    QDockWidget             *thumbnail3Dock = NULL;
+   QDockWidget             *thumbnail4Dock = NULL;
    QDockWidget  *browserAndPlaylistTabDock = NULL;
    QDockWidget          *coreSelectionDock = NULL;
    QTabWidget *browserAndPlaylistTabWidget = NULL;
@@ -4571,12 +4614,14 @@ static void* ui_companion_qt_init(void)
    ThumbnailWidget        *thumbnailWidget = NULL;
    ThumbnailWidget       *thumbnail2Widget = NULL;
    ThumbnailWidget       *thumbnail3Widget = NULL;
+   ThumbnailWidget       *thumbnail4Widget = NULL;
    QPushButton     *browserDownloadsButton = NULL;
    QPushButton            *browserUpButton = NULL;
    QPushButton         *browserStartButton = NULL;
    ThumbnailLabel               *thumbnail = NULL;
    ThumbnailLabel              *thumbnail2 = NULL;
    ThumbnailLabel              *thumbnail3 = NULL;
+   ThumbnailLabel              *thumbnail4 = NULL;
    QAction               *editSearchAction = NULL;
    QAction                 *loadCoreAction = NULL;
    QAction               *unloadCoreAction = NULL;
@@ -4726,9 +4771,13 @@ static void* ui_companion_qt_init(void)
    thumbnail3Widget = new ThumbnailWidget(THUMBNAIL_TYPE_SCREENSHOT);
    thumbnail3Widget->setObjectName("thumbnail3");
 
+   thumbnail4Widget = new ThumbnailWidget(THUMBNAIL_TYPE_LOGO);
+   thumbnail4Widget->setObjectName("thumbnail4");
+
    QObject::connect(thumbnailWidget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
    QObject::connect(thumbnail2Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
    QObject::connect(thumbnail3Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
+   QObject::connect(thumbnail4Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
 
    thumbnailDock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART), mainwindow);
    thumbnailDock->setObjectName("thumbnailDock");
@@ -4754,8 +4803,17 @@ static void* ui_companion_qt_init(void)
 
    mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(thumbnail3Dock->property("default_area").toInt()), thumbnail3Dock);
 
+   thumbnail4Dock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO), mainwindow);
+   thumbnail4Dock->setObjectName("thumbnail4Dock");
+   thumbnail4Dock->setProperty("default_area", Qt::RightDockWidgetArea);
+   thumbnail4Dock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO));
+   thumbnail4Dock->setWidget(thumbnail4Widget);
+
+   mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(thumbnail4Dock->property("default_area").toInt()), thumbnail4Dock);
+
    mainwindow->tabifyDockWidget(thumbnailDock, thumbnail2Dock);
    mainwindow->tabifyDockWidget(thumbnailDock, thumbnail3Dock);
+   mainwindow->tabifyDockWidget(thumbnailDock, thumbnail4Dock);
 
    /* when tabifying the dock widgets, the last tab added is selected by default, so we need to re-select the first tab */
    thumbnailDock->raise();
@@ -4878,6 +4936,8 @@ static void* ui_companion_qt_init(void)
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);
       else if (thumbnailType == "title")
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
+      else if (thumbnailType == "logo")
+         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
       else
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
    }

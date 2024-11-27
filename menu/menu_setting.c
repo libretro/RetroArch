@@ -3336,6 +3336,11 @@ static void setting_get_string_representation_uint_menu_thumbnails(
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
          break;
+      case 4:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
+         break;
    }
 }
 
@@ -3366,6 +3371,11 @@ static void setting_get_string_representation_uint_menu_left_thumbnails(
          strlcpy(s,
                msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
+         break;
+      case 4:
+         strlcpy(s,
+               msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
          break;
    }
 }
