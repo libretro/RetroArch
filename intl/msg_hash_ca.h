@@ -2071,6 +2071,18 @@ MSG_HASH(
    "Captura de pantalla de la GPU"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   "Simulació de la línia d'escaneig en moviment"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "Simula una línia d'escaneig en moviment bàsica sobre múltiples subfotogrames dividint la pantalla en vertical i renderitzant cada part d'acord amb quants subfotogrames hi ha."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   "Simula una línia d'escaneig en moviment bàsica sobre múltiples subfotogrames dividint la pantalla en vertical i renderitzant cada part d'acord amb quants subfotogrames hi ha des del capdamunt cap avall."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
    "Les captures de pantalla prendran la GPU amb el material d'ombreig si es troba disponible."
    )
@@ -2194,8 +2206,12 @@ MSG_HASH(
    "Roteu entre aquestes opcions per ajustar la configuració de pòrtic per canviar la mida de la imatge."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   "Utilitza el menú d'alta resolució"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   "Canvia al mode de lína d'alta resolució amb menús d'alta resolució quan no hi ha contingut carregat."
+   "Canvia al mode de línia d'alta resolució amb menús d'alta resolució quan no hi ha contingut carregat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
@@ -2203,7 +2219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "En cas necessari, utilitzeu una freqüència de refresc personalitzada especificada al fitxer de configuració."
+   "Utilitza, si cal, una freqüència d'actualització personalitzada especificada en el fitxer de configuració."
    )
 
 /* Settings > Video > Output */
@@ -2216,10 +2232,18 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
    "Seleccioneu quina pantalla utilitzar."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   "Monitor preferit. 0 (predefinit) significa que no es prefereix cap monitor en particular, 1 i següents (sent 1 el primer monitor) suggereix al RetroArch utilitzar eixe monitor en particular."
+   )
 #if defined (WIIU)
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimitza per al comandament de la Wii U (cal reiniciar)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
-   "Utilitzeu un escalat exacte de 2x del controlador a la subàrea de visualització. Deshabiliteu per mostrar a la resolució nativa de la TV."
+   "Utilitza un escalat exacte de 2x del controlador a la subàrea de visualització. Deshabiliteu per mostrar a la resolució nativa de la TV."
    )
 #endif
 MSG_HASH(
@@ -2228,7 +2252,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "Forceu una certa rotació del vídeo. La rotació s'afegeix a les que permet el nucli."
+   "Força una certa rotació del vídeo. Aquesta rotació s'afegeix a les que permet el nucli."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
@@ -2236,31 +2260,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   "Forceu una certa orientació de la pantalla des del sistema operatiu."
+   "Força una certa orientació de la pantalla des del sistema operatiu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-   "Indel de GPU"
+   "Índex de la GPU"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   "Selecciona quina tarja gràfica usar."
+   "Selecciona quina targeta gràfica utilitzar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   "Òfset horitzontal de la pantalla"
+   "Desplaçament horitzontal de la pantalla"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   "Força un cert òfset horitzontal al vídeo. L'òfset s'aplica globalment."
+   "Força un cert desplaçament horitzontal al vídeo. S'aplica globalment."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   "Òfset vertical de la pantalla"
+   "Desplaçament vertical de la pantalla"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   "Força un cert òfset vertical al vídeo. L'òfset s'aplica globalment."
+   "Força un cert desplaçament vertical al vídeo. S'aplica globalment."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
