@@ -219,10 +219,6 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
          goto error;
       }
 
-      if (d->d_name[0] == '.')
-         /* Skip hidden files, ".", and ".." */
-         continue;
-
       /* If that worked out, look to see if this device represents an illuminance sensor */
       snprintf(sensor->path, sizeof(sensor->path), IIO_DEVICES_DIR "/%s/" IIO_ILLUMINANCE_SENSOR, d->d_name);
 
