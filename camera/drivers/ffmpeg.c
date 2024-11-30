@@ -17,25 +17,52 @@
 #include <libretro.h>
 
 #include "../camera_driver.h"
-#include "../../retroarch.h"
+#include "verbosity.h"
+
+typedef struct ffmpeg_camera
+{
+} ffmpeg_camera_t;
 
 void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
-   return NULL;
+   ffmpeg_camera_t *ffmpeg = NULL;
+
+   if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
+   { /* If the core didn't ask for raw framebuffers... */
+      RARCH_ERR("[FFMPEG]: Camera driver only supports raw framebuffer output.\n");
+      return NULL;
+   }
+
+   ffmpeg = (ffmpeg_camera_t*)calloc(1, sizeof(*ffmpeg));
+   if (!ffmpeg)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to allocate memory for camera driver.\n");
+      return NULL;
+   }
+
+   return ffmpeg;
 }
 
 void ffmpeg_camera_free(void *data)
 {
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
+   if (!ffmpeg)
+      return;
+
+   free(ffmpeg);
 }
 
 bool ffmpeg_camera_start(void *data)
 {
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
+
    return false;
 }
 
 void ffmpeg_camera_stop(void *data)
 {
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
 }
 
@@ -44,7 +71,9 @@ bool ffmpeg_camera_poll(
    retro_camera_frame_raw_framebuffer_t frame_raw_cb,
    retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
+   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
+   return false;
 }
 
 camera_driver_t camera_ffmpeg = {
