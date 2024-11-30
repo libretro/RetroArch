@@ -54,6 +54,7 @@ else
 	HAVE_MENU = 1
 	HAVE_CONFIGFILE = 1
 	HAVE_PATCH = 1
+	HAVE_PATCH = 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 	HAVE_CHEATS = 1
 	HAVE_RGUI = 1
 	HAVE_MATERIALUI = 0
@@ -116,7 +117,11 @@ run:
 	ps2client -h $(PS2_IP) execee host:$(EE_BIN)
 
 sim:
-	PCSX2 --elf=$(PWD)/$(EE_BIN) --nogui
+ifeq ($(shell uname), Darwin)
+	/Applications/PCSX2.app/Contents/MacOS/PCSX2 -elf $(PWD)/$(EE_BIN)
+else
+	PCSX2 -elf $(PWD)/$(EE_BIN) -nogui
+endif
 
 debug: clean all run
 

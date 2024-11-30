@@ -654,7 +654,7 @@ static INLINE unsigned font_get_arabic_replacement(
       next_connected = !!arabic_shape_map[next_id][1];
    }
 
-   if ((result = 
+   if ((result =
             arabic_shape_map[id][prev_connected | (next_connected <<
                1)]))
       return result;
@@ -669,7 +669,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
    size_t              msg_size    = (strlen(msg) * 2) + 1;
    /* Fallback to heap allocated buffer if the buffer is too small */
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
-   unsigned char*       dst_buffer = (buffer_size < msg_size) 
+   unsigned char*       dst_buffer = (buffer_size < msg_size)
                                    ? (unsigned char*)malloc(msg_size)
                                    : buffer;
    unsigned char *dst              = (unsigned char*)dst_buffer;
@@ -733,9 +733,9 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
          {
             reverse = false;
             src++;
-            while (  IS_MBCONT(src) 
-                  || IS_RTL(src) 
-                  || IS_DIR_NEUTRAL(src) 
+            while (  IS_MBCONT(src)
+                  || IS_RTL(src)
+                  || IS_DIR_NEUTRAL(src)
                   || is_misc_ws(src))
                src++;
          }
@@ -745,7 +745,7 @@ static char* font_driver_reshape_msg(const char* msg, unsigned char *buffer, siz
          if (IS_RTL(src))
          {
             reverse = true;
-            while (  IS_MBCONT(src) 
+            while (  IS_MBCONT(src)
                   || IS_RTL(src)
                   || IS_DIR_NEUTRAL(src)
                   || is_misc_ws(src))
@@ -943,7 +943,7 @@ void font_driver_init_osd(
 void font_driver_free_osd(void)
 {
    if (video_font_driver)
-      font_driver_free(video_font_driver);
+      font_driver_free((font_data_t*)video_font_driver);
 
    video_font_driver = NULL;
 }

@@ -63,6 +63,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_UPS_EXTENSION ".ups"
 #define FILE_PATH_IPS_EXTENSION ".ips"
 #define FILE_PATH_BPS_EXTENSION ".bps"
+#define FILE_PATH_XDELTA_EXTENSION ".xdelta"
 #define FILE_PATH_RDB_EXTENSION ".rdb"
 #define FILE_PATH_RDB_EXTENSION_NO_DOT "rdb"
 #define FILE_PATH_ZIP_EXTENSION ".zip"
@@ -75,11 +76,6 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_LOBBY_LIBRETRO_URL "http://lobby.libretro.com/"
 #define FILE_PATH_CORE_THUMBNAILS_URL "http://thumbnails.libretro.com"
 #define FILE_PATH_CORE_THUMBNAILPACKS_URL "http://thumbnailpacks.libretro.com"
-#ifdef HAVE_LAKKA_NIGHTLY
-#define FILE_PATH_LAKKA_URL "http://nightly.builds.lakka.tv/.updater"
-#else
-#define FILE_PATH_LAKKA_URL "http://le.builds.lakka.tv"
-#endif
 #define FILE_PATH_SHADERS_GLSL_ZIP "shaders_glsl.zip"
 #define FILE_PATH_SHADERS_SLANG_ZIP "shaders_slang.zip"
 #define FILE_PATH_SHADERS_CG_ZIP "shaders_cg.zip"
@@ -115,6 +111,19 @@ RETRO_BEGIN_DECLS
 #endif
 #define FILE_PATH_CORE_INFO_CACHE "core_info.cache"
 #define FILE_PATH_CORE_INFO_CACHE_REFRESH "core_info.refresh"
+
+#ifdef HAVE_LAKKA
+ #ifdef HAVE_LAKKA_SERVER
+  #define FILE_PATH_LAKKA_URL HAVE_LAKKA_SERVER
+ #else
+  #error "Building for Lakka, but no update server was defined! Add -DHAVE_LAKKA_SERVER=\\\"http://...\\\""
+ #endif
+ #ifdef HAVE_LAKKA_PROJECT
+  #define LAKKA_PROJECT HAVE_LAKKA_PROJECT
+ #else
+  #error "Building for Lakka, but no target device name was defined! Add -DHAVE_LAKKA_PROJECT=\\\"DeviceName.arch\\\""
+ #endif
+#endif
 
 enum application_special_type
 {

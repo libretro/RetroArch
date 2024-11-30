@@ -25,7 +25,7 @@
 #define COBJMACROS
 #define COBJMACROS_DEFINED
 #endif
-/* We really just want shobjidl.h, but there's no way to detect its existance at compile time (especially with mingw). however shlobj happens to include it for us when it's supported, which is easier. */
+/* We really just want shobjidl.h, but there's no way to detect its existence at compile time (especially with mingw). however shlobj happens to include it for us when it's supported, which is easier. */
 #include <shlobj.h>
 #ifdef COBJMACROS_DEFINED
 #undef COBJMACROS
@@ -41,9 +41,9 @@
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
 
-/* MSVC really doesn't want CINTERFACE to be used 
+/* MSVC really doesn't want CINTERFACE to be used
  * with shobjidl for some reason, but since we use C++ mode,
- * we need a workaround... so use the names of the 
+ * we need a workaround... so use the names of the
  * COBJMACROS functions instead. */
 #if defined(__cplusplus) && !defined(CINTERFACE)
 #define ITaskbarList3_HrInit(x) (x)->HrInit()
@@ -53,14 +53,14 @@
 #endif
 
 /*
-   NOTE: When an application displays a window, 
+   NOTE: When an application displays a window,
    its taskbar button is created by the system.
    When the button is in place, the taskbar sends a
-   TaskbarButtonCreated message to the window. 
+   TaskbarButtonCreated message to the window.
 
    Its value is computed by calling RegisterWindowMessage(
    L("TaskbarButtonCreated")).
-   That message must be received by your application before 
+   That message must be received by your application before
    it calls any ITaskbarList3 method.
  */
 #endif
@@ -92,13 +92,13 @@ static void *win32_display_server_init(void)
 
 #ifdef HAS_TASKBAR_EXT
 #ifdef __cplusplus
-   /* When compiling in C++ mode, GUIDs 
+   /* When compiling in C++ mode, GUIDs
       are references instead of pointers */
    if (FAILED(CoCreateInstance(CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
          (void**)&dispserv->taskbar_list)))
 #else
-   /* Mingw GUIDs are pointers 
+   /* Mingw GUIDs are pointers
       instead of references since we're in C mode */
    if (FAILED(CoCreateInstance(&CLSID_TaskbarList, NULL,
          CLSCTX_INPROC_SERVER, &IID_ITaskbarList3,
@@ -124,7 +124,9 @@ static void win32_display_server_destroy(void *data)
    if (!dispserv)
       return;
 
-   if (dispserv->orig_width > 0 && dispserv->orig_height > 0)
+   if (     dispserv->orig_width > 0
+         && dispserv->orig_height > 0
+         && dispserv->orig_refresh > 0)
       video_display_server_set_resolution(
             dispserv->orig_width,
             dispserv->orig_height,
@@ -228,6 +230,9 @@ static bool win32_display_server_set_window_decorations(void *data, bool on)
 static bool win32_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id           = 0;
    DEVMODE dm                = {0};
    LONG res                  = 0;
    unsigned i                = 0;
@@ -282,18 +287,19 @@ static bool win32_display_server_set_resolution(void *data,
          continue;
 #endif
 
-      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT 
+      dm.dmFields |= DM_PELSWIDTH | DM_PELSHEIGHT
                   | DM_BITSPERPEL | DM_DISPLAYFREQUENCY;
 #if _WIN32_WINNT >= 0x0500
       dm.dmFields |= DM_DISPLAYORIENTATION;
 #endif
 
-      res = win32_change_display_settings(NULL, &dm, CDS_TEST);
+      win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+      res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, CDS_TEST);
 
       switch (res)
       {
          case DISP_CHANGE_SUCCESSFUL:
-            res = win32_change_display_settings(NULL, &dm, 0);
+            res = win32_change_display_settings((const char*)&current_mon.szDevice, &dm, 0);
             switch (res)
             {
                case DISP_CHANGE_SUCCESSFUL:
@@ -352,6 +358,7 @@ static void *win32_display_server_get_resolution_list(
 #if _WIN32_WINNT >= 0x0500
    unsigned curr_orientation         = 0;
 #endif
+   bool curr_interlaced              = false;
    struct video_display_config *conf = NULL;
 
    if (win32_get_video_output(&dm, -1, sizeof(dm)))
@@ -362,6 +369,7 @@ static void *win32_display_server_get_resolution_list(
       curr_refreshrate               = dm.dmDisplayFrequency;
 #if _WIN32_WINNT >= 0x0500
       curr_orientation               = dm.dmDisplayOrientation;
+      curr_interlaced                = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
 #endif
    }
 
@@ -399,13 +407,22 @@ static void *win32_display_server_get_resolution_list(
       conf[j].height      = dm.dmPelsHeight;
       conf[j].bpp         = dm.dmBitsPerPel;
       conf[j].refreshrate = dm.dmDisplayFrequency;
+      /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
+      conf[j].refreshrate_float = 0.0f;
       conf[j].idx         = j;
       conf[j].current     = false;
+#if _WIN32_WINNT >= 0x0500
+      conf[j].interlaced  = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+#else
+      conf[j].interlaced  = false;
+#endif
+      conf[j].dblscan     = false; /* no flag for doublescan on this platform */
 
       if (     (conf[j].width       == curr_width)
             && (conf[j].height      == curr_height)
             && (conf[j].bpp         == curr_bpp)
             && (conf[j].refreshrate == curr_refreshrate)
+            && (conf[j].interlaced  == curr_interlaced)
          )
          conf[j].current  = true;
 
@@ -457,7 +474,7 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_90 
+            if ((       dm.dmDisplayOrientation == DMDO_90
                      || dm.dmDisplayOrientation == DMDO_270)
                      && (width != (int)dm.dmPelsHeight))
             {
@@ -473,8 +490,8 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
-                     || dm.dmDisplayOrientation == DMDO_180) 
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
+                     || dm.dmDisplayOrientation == DMDO_180)
                      && (width != (int)dm.dmPelsHeight))
             {
                /* Device is changing orientations, swap the aspect */
@@ -489,7 +506,7 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_90 
+            if ((       dm.dmDisplayOrientation == DMDO_90
                      || dm.dmDisplayOrientation == DMDO_270)
                      && (width != (int)dm.dmPelsHeight))
             {
@@ -505,7 +522,7 @@ void win32_display_server_set_screen_orientation(void *data,
          {
             int width = dm.dmPelsWidth;
 
-            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT 
+            if ((       dm.dmDisplayOrientation == DMDO_DEFAULT
                      || dm.dmDisplayOrientation == DMDO_180)
                      && (width != (int)dm.dmPelsHeight))
             {

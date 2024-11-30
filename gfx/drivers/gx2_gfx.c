@@ -375,7 +375,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 
       v                  = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
       v->pos.x           = draw->x;
-      v->pos.y           = wiiu->color_buffer.surface.height - 
+      v->pos.y           = wiiu->color_buffer.surface.height -
                            draw->y - draw->height;
       v->pos.width       = draw->width;
       v->pos.height      = draw->height;
@@ -410,7 +410,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
    GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
          sprite_shader.vs.uniformBlocks[1].size,
          wiiu->ubo_tex);
-   GX2SetAttribBuffer(0, wiiu->vertex_cache.size 
+   GX2SetAttribBuffer(0, wiiu->vertex_cache.size
          * sizeof(*wiiu->vertex_cache.v),
          sizeof(*wiiu->vertex_cache.v),
          wiiu->vertex_cache.v);
@@ -555,7 +555,7 @@ static void* gx2_font_init(void* data, const char* font_path,
          font->texture.surface.alignment);
 
    for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-      memcpy((uint8_t*)font->texture.surface.image 
+      memcpy((uint8_t*)font->texture.surface.image
             + (i * font->texture.surface.pitch),
             font->atlas->buffer + (i * font->atlas->width),
             font->atlas->width);
@@ -702,7 +702,7 @@ static void gx2_font_render_line(
    if (font->atlas->dirty)
    {
       for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-         memcpy(font->texture.surface.image 
+         memcpy(font->texture.surface.image
                + (i * font->texture.surface.pitch),
                 font->atlas->buffer + (i * font->atlas->width),
                 font->atlas->width);
@@ -748,7 +748,7 @@ static void gx2_font_render_message(
       size_t msg_len    = delim ? (delim - msg) : strlen(msg);
 
       /* Draw the line */
-      if ((wiiu->vertex_cache.current + (msg_len * 4) 
+      if ((wiiu->vertex_cache.current + (msg_len * 4)
 		      <= wiiu->vertex_cache.size))
          gx2_font_render_line(wiiu,
                font,
@@ -923,69 +923,22 @@ static void gx2_set_projection(wiiu_video_t *wiiu)
 
 static void gx2_update_viewport(wiiu_video_t *wiiu)
 {
-   int x                           = 0;
-   int y                           = 0;
    unsigned viewport_width         = wiiu->color_buffer.surface.width;
    unsigned viewport_height        = wiiu->color_buffer.surface.height;
-   float device_aspect             = (float)viewport_width / viewport_height;
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&wiiu->vp,
             viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), wiiu->keep_aspect);
+            video_driver_get_aspect_ratio(), wiiu->keep_aspect, true);
       viewport_width  = wiiu->vp.width;
       viewport_height = wiiu->vp.height;
    }
    else if (wiiu->keep_aspect)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* GX2 has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta          = (desired_aspect / device_aspect - 1.0f)
-                             / 2.0f + 0.5f;
-            x              = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta           = (device_aspect / desired_aspect - 1.0f)
-                              / 2.0f + 0.5f;
-            y               = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      wiiu->vp.x      = x;
-      wiiu->vp.y      = y;
-      wiiu->vp.width  = viewport_width;
-      wiiu->vp.height = viewport_height;
+      video_viewport_get_scaled_aspect(&wiiu->vp, viewport_width, viewport_height, true);
    }
    else
    {
@@ -1310,7 +1263,7 @@ static void *gx2_init(const video_info_t *video,
 
       gx2_fake_context.get_flags = gx2_get_flags;
 
-      video_context_driver_set(&gx2_fake_context); 
+      video_context_driver_set(&gx2_fake_context);
 
       shader_preset               = video_shader_get_current_shader_preset();
       type                        = video_shader_parse_type(shader_preset);
@@ -1655,7 +1608,7 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 #if 0
          wiiu->pass[i].texture.surface.mipLevels   = 1;
 #endif
-         wiiu->pass[i].texture.surface.format      = 
+         wiiu->pass[i].texture.surface.format      =
               (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             ? GX2_SURFACE_FORMAT_FLOAT_R32_G32_B32_A32
             : (pass->fbo.flags & FBO_SCALE_FLAG_SRGB_FBO)
@@ -1712,7 +1665,8 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 static void gx2_update_uniform_block(wiiu_video_t *wiiu,
       int pass, float *ubo, int id,
       int size, int uniformVarCount, GX2UniformVar *uniformVars,
-      uint64_t frame_count, int32_t frame_direction, uint32_t rotation)
+      uint64_t frame_count, int32_t frame_direction, uint32_t rotation, float core_aspect,
+      float core_aspect_rot, uint32_t frame_time_delta, uint32_t original_fps)
 {
    unsigned i;
    for (i = 0; i < uniformVarCount; i++)
@@ -1763,10 +1717,35 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
          continue;
       }
 
+      if (string_is_equal(id, "FrameTimeDelta"))
+      {
+         *dst        = frame_time_delta;
+         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
+      if (string_is_equal(id, "OriginalFPS"))
+      {
+         *dst        = original_fps;
+         continue;
+      }
+
       if (string_is_equal(id, "Rotation"))
       {
          *dst        = rotation;
          *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
+      if (string_is_equal(id, "OriginalAspect"))
+      {
+         *dst        = core_aspect;
+         continue;
+      }
+
+      if (string_is_equal(id, "OriginalAspectRotated"))
+      {
+         *dst        = core_aspect_rot;
          continue;
       }
 
@@ -1880,7 +1859,7 @@ static bool gx2_frame(void *data, const void *frame,
    uint32_t i;
    wiiu_video_t *wiiu             = (wiiu_video_t *) data;
 #ifdef HAVE_MENU
-   bool menu_is_alive             = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
@@ -1985,7 +1964,19 @@ static bool gx2_frame(void *data, const void *frame,
 #else
       int32_t frame_direction = 1;
 #endif
+
+      uint32_t frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+      float original_fps = video_driver_get_original_fps();
+
       uint32_t rotation       = retroarch_get_rotation();
+
+      float core_aspect = video_driver_get_core_aspect();
+
+      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+      float core_aspect_rot = core_aspect;
+      if (rotation == 1 || rotation == 3)
+         core_aspect_rot = 1/core_aspect;
 
       for (i = 0; i < wiiu->shader_preset->passes; i++)
       {
@@ -1997,7 +1988,8 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
-                  frame_count, frame_direction, rotation);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, original_fps);
+
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }
@@ -2009,7 +2001,7 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
-                  frame_count, frame_direction, rotation);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, original_fps);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }
@@ -2204,11 +2196,11 @@ static bool gx2_frame(void *data, const void *frame,
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
                  wiiu->vertex_cache.v,
-                 wiiu->vertex_cache.current 
+                 wiiu->vertex_cache.current
                  * sizeof(*wiiu->vertex_cache.v));
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
                  wiiu->vertex_cache_tex.v,
-                 wiiu->vertex_cache_tex.current 
+                 wiiu->vertex_cache_tex.current
                  * sizeof(*wiiu->vertex_cache_tex.v));
 
    if (wiiu->menu.enable)
@@ -2300,7 +2292,7 @@ static uintptr_t gx2_load_texture(void *video_data, void *data,
          texture->surface.imageSize, texture->surface.alignment);
 
    for (i = 0; (i < image->height) && (i < texture->surface.height); i++)
-      memcpy((uint32_t *)texture->surface.image 
+      memcpy((uint32_t *)texture->surface.image
             + (i * texture->surface.pitch),
             image->pixels + (i * image->width),
             image->width * sizeof(image->pixels));
@@ -2312,7 +2304,7 @@ static uintptr_t gx2_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
-static void gx2_unload_texture(void *data, 
+static void gx2_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
    GX2Texture *texture = (GX2Texture *)handle;

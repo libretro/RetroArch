@@ -2,6 +2,7 @@ HAVE_STATIC_DUMMY ?= 0
 ifeq ($(TARGET),)
 ifeq ($(LIBRETRO),)
 TARGET := retroarch.js
+LIBRETRO = dummy
 else
 TARGET := $(LIBRETRO)_libretro.js
 endif
@@ -48,7 +49,6 @@ HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
 HAVE_AL = 1
 
-
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
 #  minor crackling, or the entire page freezing/crashing.
@@ -78,8 +78,11 @@ OBJDIR := obj-emscripten
 #if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:
 
 LIBS    := -s USE_ZLIB=1
-LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 -s "EXTRA_EXPORTED_RUNTIME_METHODS=['callMain']" \
-           -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
+LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 \
+           -s "EXPORTED_RUNTIME_METHODS=['callMain', 'FS', 'PATH', 'ERRNO_CODES']" \
+           -s ALLOW_MEMORY_GROWTH=1 -s "EXPORTED_FUNCTIONS=['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
+           -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
+           -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 \
            --js-library emscripten/library_errno_codes.js \
            --js-library emscripten/library_rwebcam.js
 
@@ -90,6 +93,7 @@ endif
 ifeq ($(HAVE_AL), 1)
    LDFLAGS += -lopenal
    DEFINES += -DHAVE_AL
+   ASYNC = 1
 endif
 
 ifneq ($(PTHREAD), 0)
@@ -101,7 +105,10 @@ else
 endif
 
 ifeq ($(ASYNC), 1)
-   LDFLAGS += -s ASYNCIFY=$(ASYNC)
+   LDFLAGS += -s ASYNCIFY=$(ASYNC) -s ASYNCIFY_STACK_SIZE=8192 
+   ifeq ($(DEBUG), 1)
+     LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
+   endif
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -126,8 +133,8 @@ ifneq ($(V), 1)
 endif
 
 ifeq ($(DEBUG), 1)
-   LDFLAGS += -O0 -g
-   CFLAGS += -O0 -g
+   LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
+   CFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s SAFE_HEAP_LOG=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
 else
    LDFLAGS += -O3 -s WASM=1
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
@@ -138,7 +145,12 @@ else
    CFLAGS += -O3
 endif
 
-CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 $(LIBS) #\
+# 128 * 1024, double the usual emscripten stack size
+LDFLAGS += -s STACK_SIZE=131072
+
+LDFLAGS += --extern-pre-js emscripten/pre.js
+
+CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 #\
 #          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))

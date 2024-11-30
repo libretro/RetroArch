@@ -200,15 +200,13 @@ static bool xenon360_frame(void *data,
    unsigned stride_in, stride_out, copy_size;
    xenos_t *xenos           = (xenos_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive       = video_info->menu_is_alive;
+   bool menu_is_alive       = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
-   DrawVerticeFormats *Rect = NULL;
-
-   ScreenUv[UV_TOP]	    = ((float) (width) / (float) XE_W)*2;
-   ScreenUv[UV_LEFT]	    = ((float) (height) / (float) XE_H)*2;
-
-   Rect                     = Xe_VB_Lock(xenos->device, xenos->vb,
+   DrawVerticeFormats *Rect = Xe_VB_Lock(xenos->device, xenos->vb,
 		   0, 3 * sizeof(DrawVerticeFormats), XE_LOCK_WRITE);
+
+   ScreenUv[UV_TOP]	       = ((float)(width)  / (float)XE_W) * 2;
+   ScreenUv[UV_LEFT]	       = ((float)(height) / (float)XE_H) * 2;
 
    /* Bottom left */
    Rect[1].v                = ScreenUv[UV_LEFT];

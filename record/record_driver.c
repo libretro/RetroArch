@@ -31,6 +31,8 @@
 #include "../defaults.h"
 
 #include "record_driver.h"
+#include "drivers/record_ffmpeg.h"
+#include "drivers/record_wav.h"
 
 static recording_state_t recording_state = {0};
 
@@ -47,6 +49,7 @@ const record_driver_t *record_drivers[] = {
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
+   &record_wav,
    &record_null,
    NULL,
 };
@@ -68,10 +71,7 @@ const char* config_get_record_driver_options(void)
    return char_list_new_special(STRING_LIST_RECORD_DRIVERS, NULL);
 }
 
-#if 0
-/* TODO/FIXME - not used apparently */
-static void find_record_driver(const char *prefix,
-      bool verbosity_enabled)
+static void find_record_driver(void)
 {
    settings_t *settings = config_get_ptr();
    int i                = (int)driver_find_index(
@@ -82,16 +82,16 @@ static void find_record_driver(const char *prefix,
       recording_state.driver = (const record_driver_t*)record_drivers[i];
    else
    {
-      if (verbosity_enabled)
+      if (verbosity_is_enabled())
       {
          unsigned d;
 
-         RARCH_ERR("[Recording]: Couldn't find any %s named \"%s\".\n", prefix,
+         RARCH_ERR("[Recording]: Couldn't find any record driver named \"%s\".\n",
                settings->arrays.record_driver);
-         RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
+         RARCH_LOG_OUTPUT("Available record drivers are:\n");
          for (d = 0; record_drivers[d]; d++)
-            RARCH_LOG_OUTPUT("\t%s\n", record_drivers[d].ident);
-         RARCH_WARN("[Recording]: Going to default to first %s...\n", prefix);
+            RARCH_LOG_OUTPUT("\t%s\n", record_drivers[d]->ident);
+         RARCH_WARN("[Recording]: Going to default to first record driver...\n");
       }
 
       recording_state.driver = (const record_driver_t*)record_drivers[0];
@@ -101,6 +101,8 @@ static void find_record_driver(const char *prefix,
    }
 }
 
+#if 0
+/* TODO/FIXME - not used apparently */
 /**
  * ffemu_find_backend:
  * @ident                   : Identifier of driver to find.
@@ -129,7 +131,7 @@ static void recording_driver_free_state(void)
    recording_state.gpu_width     = 0;
    recording_state.gpu_height    = 0;
    recording_state.width         = 0;
-   recording_stte.height         = 0;
+   recording_state.height        = 0;
 }
 #endif
 
@@ -146,26 +148,15 @@ static void recording_driver_free_state(void)
  *
  * @return true if successful, otherwise false.
  **/
-static bool record_driver_init_first(
-      const record_driver_t **backend, void **data,
+static bool record_driver_init(
       const struct record_params *params)
 {
-   unsigned i;
+   find_record_driver();
+   if (!recording_state.driver)
+      return false;
 
-   for (i = 0; record_drivers[i]; i++)
-   {
-      void *handle = NULL;
-      if (!record_drivers[i]->init)
-         continue;
-      if (!(handle = record_drivers[i]->init(params)))
-         continue;
-
-      *backend = record_drivers[i];
-      *data    = handle;
-      return true;
-   }
-
-   return false;
+   recording_state.data = recording_state.driver->init(params);
+   return recording_state.data != NULL;
 }
 
 bool recording_deinit(void)
@@ -176,7 +167,7 @@ bool recording_deinit(void)
    bool history_list_enable        = settings->bools.history_list_enable;
 #endif
 
-   if (     !recording_st->data 
+   if (     !recording_st->data
 		   || !recording_st->driver)
       return false;
 
@@ -269,15 +260,22 @@ bool recording_init(void)
       unsigned video_record_quality = settings->uints.video_record_quality;
       unsigned video_stream_port    = settings->uints.video_stream_port;
       if (recording_st->streaming_enable)
+      {
          if (!string_is_empty(stream_url))
             strlcpy(output, stream_url, sizeof(output));
          else
+         {
             /* Fallback, stream locally to 127.0.0.1 */
-            snprintf(output, sizeof(output), "udp://127.0.0.1:%u",
+            size_t _len = strlcpy(output, "udp://127.0.0.1:", sizeof(output));
+            snprintf(output + _len, sizeof(output) - _len, "%u",
                   video_stream_port);
+         }
+      }
       else
       {
          const char *game_name = path_basename(path_get(RARCH_PATH_BASENAME));
+         if (!path_is_directory(recording_st->output_dir))
+            path_mkdir(recording_st->output_dir);
          /* Fallback to core name if started without content */
          if (string_is_empty(game_name))
             game_name          = runloop_st->system.info.library_name;
@@ -440,9 +438,7 @@ bool recording_init(void)
          params.fb_width, params.fb_height,
          (unsigned)params.pix_fmt);
 
-   if (!record_driver_init_first(
-            &recording_state.driver,
-            &recording_state.data, &params))
+   if (!record_driver_init(&params))
    {
       RARCH_ERR("[Recording]: %s\n",
             msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
@@ -489,13 +485,14 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_LOCAL:
-         /* TODO: figure out default interface and bind to that instead */
-         snprintf(settings->paths.path_stream_url, sizeof(settings->paths.path_stream_url),
-            "udp://%s:%u", "127.0.0.1", settings->uints.video_stream_port);
-         break;
-      case STREAMING_MODE_CUSTOM:
-      default:
-         /* Do nothing, let the user input the URL */
+         {
+            /* TODO: figure out default interface and bind to that instead */
+            size_t _len = strlcpy(settings->paths.path_stream_url, "udp://127.0.0.1:",
+                  sizeof(settings->paths.path_stream_url));
+            snprintf(settings->paths.path_stream_url      + _len,
+                  sizeof(settings->paths.path_stream_url) - _len,
+                  "%u", settings->uints.video_stream_port);
+         }
          break;
       case STREAMING_MODE_FACEBOOK:
          if (!string_is_empty(settings->arrays.facebook_stream_key))
@@ -507,6 +504,10 @@ void recording_driver_update_streaming_url(void)
                   settings->arrays.facebook_stream_key,
                   sizeof(settings->paths.path_stream_url) - _len);
          }
+         break;
+      case STREAMING_MODE_CUSTOM:
+      default:
+         /* Do nothing, let the user input the URL */
          break;
    }
 }

@@ -229,7 +229,6 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    int win_w, win_h;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
@@ -243,39 +242,10 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    if (video_scale_integer)
       video_viewport_get_scaled_integer(&vid->vp,
             win_w, win_h, video_driver_get_aspect_ratio(),
-            vid->video.force_aspect);
-   else if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-   {
-      video_viewport_t *custom_vp = &settings->video_viewport_custom;
-      vid->vp.x                   = custom_vp->x;
-      vid->vp.y                   = custom_vp->y;
-      vid->vp.width               = custom_vp->width;
-      vid->vp.height              = custom_vp->height;
-   }
+            vid->video.force_aspect, true);
    else if (vid->video.force_aspect)
    {
-      float delta;
-      float device_aspect  = (float)win_w / win_h;
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-      if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-      {
-         /* If the aspect ratios of screen and desired aspect ratio are
-             * sufficiently equal (floating point stuff), assume they are
-             * actually equal. */
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-         vid->vp.x     = (int)roundf(win_w * (0.5f - delta));
-         vid->vp.width = (unsigned)roundf(2.0f * win_w * delta);
-      }
-      else
-      {
-         delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-         vid->vp.y      = (int)roundf(win_h * (0.5f - delta));
-         vid->vp.height = (unsigned)roundf(2.0f * win_h * delta);
-      }
+      video_viewport_get_scaled_aspect(&vid->vp, win_w, win_h, true);
    }
 
    vid->flags &= ~SDL2_FLAG_SHOULD_RESIZE;
@@ -476,9 +446,9 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    char title[128];
-   sdl2_video_t *vid     = (sdl2_video_t*)data;
+   sdl2_video_t *vid  = (sdl2_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive    = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)
@@ -539,7 +509,10 @@ static bool sdl2_gfx_focus(void *data)
    return (SDL_GetWindowFlags(vid->window) & flags) == flags;
 }
 
+#if !defined(HAVE_X11)
 static bool sdl2_gfx_suspend_screensaver(void *data, bool enable) { return false; }
+#endif
+
 /* TODO/FIXME - implement */
 static bool sdl2_gfx_has_windowed(void *data) { return true; }
 
@@ -634,7 +607,7 @@ static void sdl2_poke_set_texture_frame(void *data,
       sdl_refresh_input_size(vid, true, rgb32, width, height,
             width * (rgb32 ? 4 : 2));
 
-      SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
+      SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);
    }
 }
 

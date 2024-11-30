@@ -164,7 +164,7 @@ rc_lboard_t* rc_parse_lboard(void* buffer, const char* memaddr, lua_State* L, in
   return (parse.offset >= 0) ? self : 0;
 }
 
-int rc_evaluate_lboard(rc_lboard_t* self, int* value, rc_peek_t peek, void* peek_ud, lua_State* L) {
+int rc_evaluate_lboard(rc_lboard_t* self, int32_t* value, rc_peek_t peek, void* peek_ud, lua_State* L) {
   int start_ok, cancel_ok, submit_ok;
 
   rc_update_memref_values(self->memrefs, peek, peek_ud);
@@ -199,19 +199,19 @@ int rc_evaluate_lboard(rc_lboard_t* self, int* value, rc_peek_t peek, void* peek
           /* start and submit are both true in the same frame, just submit without announcing the leaderboard is available */
           self->state = RC_LBOARD_STATE_TRIGGERED;
         }
-        else if (self->start.requirement == 0 && self->start.alternative == 0) {
-          /* start condition is empty - this leaderboard is submit-only with no measured progress */
+        else if (!self->start.requirement && !self->start.alternative) {
+          /* start trigger is empty. assume the leaderboard is in development and ignore */
         }
         else {
           /* start the leaderboard attempt */
           self->state = RC_LBOARD_STATE_STARTED;
-
-          /* reset any hit counts in the value */
-          if (self->progress)
-            rc_reset_value(self->progress);
-
-          rc_reset_value(&self->value);
         }
+
+        /* reset any hit counts in the value */
+        if (self->progress)
+          rc_reset_value(self->progress);
+
+        rc_reset_value(&self->value);
       }
       break;
 
@@ -235,7 +235,7 @@ int rc_evaluate_lboard(rc_lboard_t* self, int* value, rc_peek_t peek, void* peek
         *value = rc_evaluate_value(self->progress, peek, peek_ud, L);
         break;
       }
-      /* fallthrough to RC_LBOARD_STATE_TRIGGERED */
+      /* fallthrough */ /* to RC_LBOARD_STATE_TRIGGERED */
 
     case RC_LBOARD_STATE_TRIGGERED:
       *value = rc_evaluate_value(&self->value, peek, peek_ud, L);
@@ -262,6 +262,9 @@ int rc_lboard_state_active(int state) {
 }
 
 void rc_reset_lboard(rc_lboard_t* self) {
+  if (!self)
+    return;
+
   self->state = RC_LBOARD_STATE_WAITING;
 
   rc_reset_trigger(&self->start);

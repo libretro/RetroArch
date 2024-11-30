@@ -87,48 +87,26 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
    if (minor)
       *minor = vi.dwMinorVersion;
 
-   if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
-      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
-   else
-      snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
+   snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
 
    switch (vi.dwMajorVersion)
    {
       case 10:
          if (server)
-            _len = strlcpy(s, "Windows Server 2016", len);
-         else
-            _len = strlcpy(s, "Windows 10", len);
-         break;
-      case 6:
-         switch (vi.dwMinorVersion)
          {
-            case 3:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 8.1", len);
-               break;
-            case 2:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012", len);
-               else
-                  _len = strlcpy(s, "Windows 8", len);
-               break;
-            case 1:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 7", len);
-               break;
-            case 0:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008", len);
-               else
-                  _len = strlcpy(s, "Windows Vista", len);
-               break;
-            default:
-               break;
+            if ((vi.dwBuildNumber >= 14393) && (vi.dwBuildNumber < 17763))
+               _len = strlcpy(s, "Windows Server 2016", len);
+            else if ((vi.dwBuildNumber >= 17763) && (vi.dwBuildNumber < 20348))
+               _len = strlcpy(s, "Windows Server 2019", len);
+            else if (vi.dwBuildNumber >= 20348)
+               _len = strlcpy(s, "Windows Server 2022", len);
+         }
+         else
+         {
+            if ((vi.dwBuildNumber >= 10240) && (vi.dwBuildNumber < 22000))
+               _len = strlcpy(s, "Windows 10", len);
+            else if (vi.dwBuildNumber >= 22000)
+               _len = strlcpy(s, "Windows 11", len);
          }
          break;
       default:
@@ -164,7 +142,7 @@ enum frontend_powerstate frontend_uwp_get_powerstate(
       int *seconds, int *percent)
 {
    SYSTEM_POWER_STATUS status;
-   enum frontend_powerstate 
+   enum frontend_powerstate
       ret         = FRONTEND_POWERSTATE_NONE;
 
    if (GetSystemPowerStatus(&status))
@@ -219,7 +197,7 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
    int i;
-   char home_dir[PATH_MAX_LENGTH];
+   char home_dir[DIR_MAX_LENGTH];
    file_list_t            *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :

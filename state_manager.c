@@ -597,7 +597,6 @@ void state_manager_event_init(
                                  | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
                                  | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
                                     );
-   rewind_st->flags             |= STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED;
 
    /* We cannot initialise the rewind buffer
     * unless the core info struct for the current
@@ -606,6 +605,8 @@ void state_manager_event_init(
     * core is unknown) */
    if (!core_info_get_current_core(&core_info) || !core_info)
       return;
+
+   rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED;
 
    if (!core_info_current_supports_rewind())
    {

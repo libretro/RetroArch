@@ -301,7 +301,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 {
    int                                flags = 0;
    const char                     *mode_str = NULL;
-   libretro_vfs_implementation_file *stream = 
+   libretro_vfs_implementation_file *stream =
       (libretro_vfs_implementation_file*)
       malloc(sizeof(*stream));
 
@@ -452,14 +452,14 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
        *
        * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
        *
-       * If the size argument is not zero but buf is NULL, 
+       * If the size argument is not zero but buf is NULL,
        * a buffer of the given size will be allocated immediately, and
        * released on close. This is an extension to ANSI C.
        *
-       * Since C89 does not support specifying a NULL buffer 
+       * Since C89 does not support specifying a NULL buffer
        * with a non-zero size, we create and track our own buffer for it.
        */
-      /* TODO: this is only useful for a few platforms, 
+      /* TODO: this is only useful for a few platforms,
        * find which and add ifdef */
 #if defined(_3DS)
       if (stream->scheme != VFS_SCHEME_CDROM)
@@ -648,7 +648,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function
     * is called in filestream_open() */
-   if (stream->mapped && stream->hints & 
+   if (stream->mapped && stream->hints &
          RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return stream->mappos;
 #endif
@@ -738,39 +738,40 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 
 int retro_vfs_file_remove_impl(const char *path)
 {
+   if (path && *path)
+   {
+      int ret          = -1;
 #if defined(_WIN32) && !defined(_XBOX)
-   /* Win32 (no Xbox) */
-
+      /* Win32 (no Xbox) */
 #if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-   char *path_local    = NULL;
+      char *path_local = NULL;
+      if ((path_local = utf8_to_local_string_alloc(path)))
+      {
+         /* We need to check if path is a directory */
+         if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+            ret = _rmdir(path_local);
+         else
+            ret = remove(path_local);
+         free(path_local);
+      }
 #else
-   wchar_t *path_wide  = NULL;
+      wchar_t *path_wide = NULL;
+      if ((path_wide = utf8_to_utf16_string_alloc(path)))
+      {
+         /* We need to check if path is a directory */
+         if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+            ret = _wrmdir(path_wide);
+         else
+            ret = _wremove(path_wide);
+         free(path_wide);
+      }
 #endif
-   if (!path || !*path)
-      return -1;
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-   if ((path_local = utf8_to_local_string_alloc(path)))
-   {
-      int ret = remove(path_local);
-      free(path_local);
-
+#else
+      ret = remove(path);
+#endif
       if (ret == 0)
          return 0;
    }
-#else
-   if ((path_wide = utf8_to_utf16_string_alloc(path)))
-   {
-      int ret = _wremove(path_wide);
-      free(path_wide);
-
-      if (ret == 0)
-         return 0;
-   }
-#endif
-#else
-   if (remove(path) == 0)
-      return 0;
-#endif
    return -1;
 }
 
@@ -842,132 +843,118 @@ const char *retro_vfs_file_get_path_impl(
 
 int retro_vfs_stat_impl(const char *path, int32_t *size)
 {
-   bool is_dir               = false;
-   bool is_character_special = false;
+   int ret                   = RETRO_VFS_STAT_IS_VALID;
+
+   if (!path || !*path)
+      return 0;
+   {
 #if defined(VITA)
-   /* Vita / PSP */
-   SceIoStat buf;
-   int dir_ret;
-   char *tmp                 = NULL;
-   size_t len                = 0;
+      /* Vita / PSP */
+      SceIoStat stat_buf;
+      int dir_ret;
+      char *tmp                 = strdup(path);
+      size_t len                = strlen(tmp);
+      if (tmp[len-1] == '/')
+         tmp[len-1]             = '\0';
 
-   if (!path || !*path)
-      return 0;
+      dir_ret                   = sceIoGetstat(tmp, &stat_buf);
+      free(tmp);
+      if (dir_ret < 0)
+         return 0;
 
-   tmp                       = strdup(path);
-   len                       = strlen(tmp);
-   if (tmp[len-1] == '/')
-      tmp[len-1]             = '\0';
+      if (size)
+         *size                  = (int32_t)stat_buf.st_size;
 
-   dir_ret                   = sceIoGetstat(tmp, &buf);
-   free(tmp);
-   if (dir_ret < 0)
-      return 0;
-
-   if (size)
-      *size                  = (int32_t)buf.st_size;
-
-   is_dir                    = FIO_S_ISDIR(buf.st_mode);
+      if (FIO_S_ISDIR(stat_buf.st_mode))
+         ret              |= RETRO_VFS_STAT_IS_DIRECTORY;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
-   /* Lowlevel Lv2 */
-   sysFSStat buf;
+      /* Lowlevel Lv2 */
+      sysFSStat stat_buf;
 
-   if (!path || !*path)
-      return 0;
-   if (sysFsStat(path, &buf) < 0)
-      return 0;
+      if (sysFsStat(path, &stat_buf) < 0)
+         return 0;
 
-   if (size)
-      *size                  = (int32_t)buf.st_size;
+      if (size)
+         *size = (int32_t)stat_buf.st_size;
 
-   is_dir                    = ((buf.st_mode & S_IFMT) == S_IFDIR);
+      if ((stat_buf.st_mode & S_IFMT) == S_IFDIR)
+         ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
 #elif defined(_WIN32)
-   /* Windows */
-   DWORD file_info;
-   struct _stat buf;
+      /* Windows */
+      struct _stat stat_buf;
 #if defined(LEGACY_WIN32)
-   char *path_local          = NULL;
+      char *path_local          = utf8_to_local_string_alloc(path);
+      DWORD file_info           = GetFileAttributes(path_local);
+
+      if (!string_is_empty(path_local))
+         _stat(path_local, &stat_buf);
+
+      if (path_local)
+         free(path_local);
 #else
-   wchar_t *path_wide        = NULL;
+      wchar_t *path_wide        = utf8_to_utf16_string_alloc(path);
+      DWORD file_info           = GetFileAttributesW(path_wide);
+
+      _wstat(path_wide, &stat_buf);
+
+      if (path_wide)
+         free(path_wide);
 #endif
+      if (file_info == INVALID_FILE_ATTRIBUTES)
+         return 0;
 
-   if (!path || !*path)
-      return 0;
+      if (size)
+         *size = (int32_t)stat_buf.st_size;
 
-#if defined(LEGACY_WIN32)
-   path_local                = utf8_to_local_string_alloc(path);
-   file_info                 = GetFileAttributes(path_local);
-
-   if (!string_is_empty(path_local))
-      _stat(path_local, &buf);
-
-   if (path_local)
-      free(path_local);
-#else
-   path_wide                 = utf8_to_utf16_string_alloc(path);
-   file_info                 = GetFileAttributesW(path_wide);
-
-   _wstat(path_wide, &buf);
-
-   if (path_wide)
-      free(path_wide);
-#endif
-
-   if (file_info == INVALID_FILE_ATTRIBUTES)
-      return 0;
-
-   if (size)
-      *size = (int32_t)buf.st_size;
-
-   is_dir = (file_info & FILE_ATTRIBUTE_DIRECTORY);
-
+      if (file_info & FILE_ATTRIBUTE_DIRECTORY)
+         ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
 #elif defined(GEKKO)
-   /* On GEKKO platforms, paths cannot have
-    * trailing slashes - we must therefore
-    * remove them */
-   char *path_buf = NULL;
-   int stat_ret   = -1;
-   struct stat stat_buf;
-   size_t len;
+      /* On GEKKO platforms, paths cannot have
+       * trailing slashes - we must therefore
+       * remove them */
+      size_t len;
+      char *path_buf = NULL;
+      struct stat stat_buf;
 
-   if (string_is_empty(path))
-      return 0;
+      if (!(path_buf = strdup(path)))
+         return 0;
 
-   if (!(path_buf = strdup(path)))
-      return 0;
+      if ((len = strlen(path_buf)) > 0)
+         if (path_buf[len - 1] == '/')
+            path_buf[len - 1] = '\0';
 
-   if ((len = strlen(path_buf)) > 0)
-      if (path_buf[len - 1] == '/')
-         path_buf[len - 1] = '\0';
+      if (stat(path_buf, &stat_buf) < 0)
+      {
+         free(path_buf);
+         return 0;
+      }
 
-   stat_ret = stat(path_buf, &stat_buf);
-   free(path_buf);
+      free(path_buf);
+      
+      if (size)
+         *size = (int32_t)stat_buf.st_size;
 
-   if (stat_ret < 0)
-      return 0;
-
-   if (size)
-      *size             = (int32_t)stat_buf.st_size;
-
-   is_dir               = S_ISDIR(stat_buf.st_mode);
-   is_character_special = S_ISCHR(stat_buf.st_mode);
-
+      if (S_ISDIR(stat_buf.st_mode))
+         ret |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (S_ISCHR(stat_buf.st_mode))
+         ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
 #else
-   /* Every other platform */
-   struct stat buf;
+      /* Every other platform */
+      struct stat stat_buf;
 
-   if (!path || !*path)
-      return 0;
-   if (stat(path, &buf) < 0)
-      return 0;
+      if (stat(path, &stat_buf) < 0)
+         return 0;
 
-   if (size)
-      *size             = (int32_t)buf.st_size;
+      if (size)
+         *size = (int32_t)stat_buf.st_size;
 
-   is_dir               = S_ISDIR(buf.st_mode);
-   is_character_special = S_ISCHR(buf.st_mode);
+      if (S_ISDIR(stat_buf.st_mode))
+         ret |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (S_ISCHR(stat_buf.st_mode))
+         ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
 #endif
-   return RETRO_VFS_STAT_IS_VALID | (is_dir ? RETRO_VFS_STAT_IS_DIRECTORY : 0) | (is_character_special ? RETRO_VFS_STAT_IS_CHARACTER_SPECIAL : 0);
+   }
+   return ret;
 }
 
 #if defined(VITA)
@@ -1138,6 +1125,8 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       rdir->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
    else
       rdir->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+#else
+   (void)include_hidden;
 #endif
 
    if (rdir->directory && !dirent_check_error(rdir))

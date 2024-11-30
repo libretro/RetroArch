@@ -40,54 +40,18 @@ static unsigned uint_user_language;
 
 int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
-   int ret = -1;
+   int ret = msg_hash_get_help_us_enum(msg, s, len);
+   /* Replace line-breaks with "empty line-breaks" for readability */
+   const char *temp = string_replace_substring(s,
+         "\n",    STRLEN_CONST("\n"),
+         "\n \n", STRLEN_CONST("\n \n"));
 
-#ifdef HAVE_LANGEXTRA
-   switch (uint_user_language)
+   if (temp)
    {
-      case RETRO_LANGUAGE_PORTUGUESE_BRAZIL:
-         ret = msg_hash_get_help_pt_br_enum(msg, s, len);
-         break;
-      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-         ret = msg_hash_get_help_chs_enum(msg, s, len);
-         break;
-      case RETRO_LANGUAGE_PORTUGUESE_PORTUGAL:
-      case RETRO_LANGUAGE_JAPANESE:
-      case RETRO_LANGUAGE_KOREAN:
-      case RETRO_LANGUAGE_VIETNAMESE:
-      case RETRO_LANGUAGE_GREEK:
-      case RETRO_LANGUAGE_TURKISH:
-      case RETRO_LANGUAGE_CATALAN_VALENCIA:
-      case RETRO_LANGUAGE_UKRAINIAN:
-      case RETRO_LANGUAGE_SLOVAK:
-      case RETRO_LANGUAGE_PERSIAN:
-      case RETRO_LANGUAGE_ESPERANTO:
-      case RETRO_LANGUAGE_BRITISH_ENGLISH:
-      case RETRO_LANGUAGE_CATALAN:
-      case RETRO_LANGUAGE_CZECH:
-      case RETRO_LANGUAGE_HEBREW:
-      case RETRO_LANGUAGE_HUNGARIAN:
-      case RETRO_LANGUAGE_ARABIC:
-      case RETRO_LANGUAGE_ASTURIAN:
-      case RETRO_LANGUAGE_FINNISH:
-      case RETRO_LANGUAGE_INDONESIAN:
-      case RETRO_LANGUAGE_SWEDISH:
-      case RETRO_LANGUAGE_FRENCH:
-      case RETRO_LANGUAGE_GERMAN:
-      case RETRO_LANGUAGE_SPANISH:
-      case RETRO_LANGUAGE_ITALIAN:
-      case RETRO_LANGUAGE_DUTCH:
-      case RETRO_LANGUAGE_POLISH:
-      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-      default:
-         break;
+      strlcpy(s, temp, len);
+      free((void*)temp);
    }
-#endif
-
-   if (ret == 0)
-      return ret;
-
-   return msg_hash_get_help_us_enum(msg, s, len);
+   return ret;
 }
 
 const char *get_user_language_iso639_1(bool limit)
@@ -168,6 +132,12 @@ const char *get_user_language_iso639_1(bool limit)
          return "en_gb";
       case RETRO_LANGUAGE_HUNGARIAN:
          return "hu";
+      case RETRO_LANGUAGE_BELARUSIAN:
+         return "be";
+      case RETRO_LANGUAGE_GALICIAN:
+          return "gl";
+      case RETRO_LANGUAGE_NORWEGIAN:
+          return "no";
    }
    return "en";
 }
@@ -250,6 +220,18 @@ static const char *msg_hash_to_str_hu(enum msg_hash_enums msg)
    switch (msg)
    {
 #include "intl/msg_hash_hu.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
+static const char *msg_hash_to_str_be(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_be.h"
       default:
          break;
    }
@@ -521,22 +503,54 @@ static const char *msg_hash_to_str_vn(enum msg_hash_enums msg)
    return "null";
 }
 
-
-
-static const char *msg_hash_get_wideglyph_str_cht(void)
+static const char *msg_hash_to_str_chs(enum msg_hash_enums msg)
 {
-   return "主";
+   switch (msg)
+   {
+#include "intl/msg_hash_chs.h"
+      default:
+         break;
+   }
+
+   return "null";
 }
 
-static const char *msg_hash_get_wideglyph_str_jp(void)
+static const char *msg_hash_to_str_pt_br(enum msg_hash_enums msg)
 {
-   return "漢";
+   switch (msg)
+   {
+#include "intl/msg_hash_pt_br.h"
+      default:
+         break;
+   }
+
+   return "null";
 }
 
-static const char *msg_hash_get_wideglyph_str_ko(void)
+static const char *msg_hash_to_str_gl(enum msg_hash_enums msg)
 {
-   return "메";
+   switch (msg)
+   {
+#include "intl/msg_hash_gl.h"
+      default:
+         break;
+   }
+
+   return "null";
 }
+
+static const char *msg_hash_to_str_no(enum msg_hash_enums msg)
+{
+   switch (msg)
+   {
+#include "intl/msg_hash_no.h"
+      default:
+         break;
+   }
+
+   return "null";
+}
+
 #endif
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
@@ -638,6 +652,15 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
          break;
       case RETRO_LANGUAGE_HUNGARIAN:
          ret = msg_hash_to_str_hu(msg);
+         break;
+      case RETRO_LANGUAGE_BELARUSIAN:
+         ret = msg_hash_to_str_be(msg);
+         break;
+      case RETRO_LANGUAGE_GALICIAN:
+         ret = msg_hash_to_str_gl(msg);
+         break;
+      case RETRO_LANGUAGE_NORWEGIAN:
+         ret = msg_hash_to_str_no(msg);
          break;
       default:
          break;
@@ -815,16 +838,8 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
          return FILE_TYPE_MOV;
       case MENU_VALUE_FILE_WMV:
          return FILE_TYPE_WMV;
-      case MENU_VALUE_FILE_MP3:
-         return FILE_TYPE_MP3;
       case MENU_VALUE_FILE_M4A:
          return FILE_TYPE_M4A;
-      case MENU_VALUE_FILE_OGG:
-         return FILE_TYPE_OGG;
-      case MENU_VALUE_FILE_FLAC:
-         return FILE_TYPE_FLAC;
-      case MENU_VALUE_FILE_WAV:
-         return FILE_TYPE_WAV;
       case MENU_VALUE_FILE_3G2:
          return FILE_TYPE_3G2;
       case MENU_VALUE_FILE_MPG:
@@ -850,13 +865,31 @@ enum msg_file_type msg_hash_to_file_type(uint32_t hash)
       case MENU_VALUE_FILE_WMA:
          return FILE_TYPE_WMA;
 #endif
-#ifdef HAVE_IBXM
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_MP3)
+      case MENU_VALUE_FILE_MP3:
+         return FILE_TYPE_MP3;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_STB_VORBIS)
+      case MENU_VALUE_FILE_OGG:
+         return FILE_TYPE_OGG;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_DR_FLAC)
+      case MENU_VALUE_FILE_FLAC:
+         return FILE_TYPE_FLAC;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_RWAV)
+      case MENU_VALUE_FILE_WAV:
+         return FILE_TYPE_WAV;
+#endif
+#if !defined(HAVE_AUDIOMIXER) || defined(HAVE_IBXM)
        case MENU_VALUE_FILE_MOD:
            return FILE_TYPE_MOD;
        case MENU_VALUE_FILE_S3M:
            return FILE_TYPE_S3M;
        case MENU_VALUE_FILE_XM:
            return FILE_TYPE_XM;
+#endif
 #endif
 #ifdef HAVE_IMAGEVIEWER
       case MENU_VALUE_FILE_JPG:
@@ -928,13 +961,13 @@ const char *msg_hash_get_wideglyph_str(void)
    switch (uint_user_language)
    {
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-         return msg_hash_get_wideglyph_str_chs();
+         return "菜";
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         return msg_hash_get_wideglyph_str_cht();
+         return "主";
       case RETRO_LANGUAGE_JAPANESE:
-         return msg_hash_get_wideglyph_str_jp();
+         return "漢";
       case RETRO_LANGUAGE_KOREAN:
-         return msg_hash_get_wideglyph_str_ko();
+         return "메";
       default:
          break;
    }

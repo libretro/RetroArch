@@ -40,27 +40,28 @@
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   int i;
    runloop_state_t      *runloop_st = runloop_state_get_ptr();
 
-   if (!runloop_st->input_state_list)
-      return 0;
-
-   /* find list item */
-   for (i = 0; i < runloop_st->input_state_list->size; i++)
+   if (runloop_st->input_state_list)
    {
-      input_list_element *element =
-         (input_list_element*)runloop_st->input_state_list->data[i];
-
-      if (  (element->port   == port)   &&
-            (element->device == device) &&
-            (element->index  == index))
+      int i;
+      /* find list item */
+      for (i = 0; i < runloop_st->input_state_list->size; i++)
       {
-         if (id < element->state_size)
-            return element->state[id];
-         return 0;
+         input_list_element *element =
+            (input_list_element*)runloop_st->input_state_list->data[i];
+
+         if (     (element->port   == port)
+               && (element->device == device)
+               && (element->index  == index))
+         {
+            if (id < element->state_size)
+               return element->state[id];
+            break;
+         }
       }
    }
+
    return 0;
 }
 
@@ -334,7 +335,7 @@ static char *copy_core_to_temp_file(
    int64_t  dll_file_size      = 0;
    const char  *core_base_name = path_basename_nocompression(core_path);
 
-   if (strlen(core_base_name) == 0)
+   if (string_is_empty(core_base_name))
       return NULL;
 
    if (!(tmpdir = get_tmpdir_alloc(dir_libretro)))
@@ -391,7 +392,7 @@ end:
 static bool runloop_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
-   runloop_state_t *runloop_st    = runloop_state_get_ptr(); 
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
    bool result                    = runloop_environment_cb(cmd, data);
 
    if (runloop_st->flags & RUNLOOP_FLAG_HAS_VARIABLE_UPDATE)
@@ -509,10 +510,10 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       ssize_t port;
       for (port = 0; port < MAX_USERS; port++)
       {
-         if (port < sys_info->ports.size)
+         if (port < (ssize_t)sys_info->ports.size)
          {
-            unsigned device = (port < num_active_users)
-                  ? runloop_st->port_map[port] 
+            unsigned device = (port < (ssize_t)num_active_users)
+                  ? runloop_st->port_map[port]
                   : RETRO_DEVICE_NONE;
             runloop_st->secondary_core.retro_set_controller_port_device(
                   (unsigned)port, device);
@@ -816,7 +817,7 @@ static int16_t runahead_input_state_with_logging(unsigned port,
 
    if (runloop_st->input_state_callback_original)
    {
-      int16_t result                = 
+      int16_t result                =
          runloop_st->input_state_callback_original(
             port, device, index, id);
       int16_t last_input            =
@@ -834,7 +835,7 @@ static int16_t runahead_input_state_with_logging(unsigned port,
 static void runahead_reset_hook(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;       
+   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
    if (runloop_st->retro_reset_callback_original)
       runloop_st->retro_reset_callback_original();
 }
@@ -842,7 +843,7 @@ static void runahead_reset_hook(void)
 static bool runahead_unserialize_hook(const void *buf, size_t size)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;       
+   runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
    if (runloop_st->retro_unserialize_callback_original)
       return runloop_st->retro_unserialize_callback_original(buf, size);
    return false;
@@ -861,7 +862,7 @@ static void runahead_add_input_state_hook(runloop_state_t *runloop_st)
 
    if (!runloop_st->retro_reset_callback_original)
    {
-      runloop_st->retro_reset_callback_original 
+      runloop_st->retro_reset_callback_original
          = runloop_st->current_core.retro_reset;
       runloop_st->current_core.retro_reset   = runahead_reset_hook;
    }
@@ -879,7 +880,7 @@ static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
 
    if (runloop_st->input_state_callback_original)
    {
-      cbs->state_cb                             = 
+      cbs->state_cb                             =
          runloop_st->input_state_callback_original;
       runloop_st->current_core.retro_set_input_state(cbs->state_cb);
       runloop_st->input_state_callback_original = NULL;
@@ -950,14 +951,14 @@ static void runahead_remove_hooks(runloop_state_t *runloop_st)
 {
    if (runloop_st->original_retro_deinit)
    {
-      runloop_st->current_core.retro_deinit = 
+      runloop_st->current_core.retro_deinit =
          runloop_st->original_retro_deinit;
       runloop_st->original_retro_deinit     = NULL;
    }
 
    if (runloop_st->original_retro_unload)
    {
-      runloop_st->current_core.retro_unload_game = 
+      runloop_st->current_core.retro_unload_game =
          runloop_st->original_retro_unload;
       runloop_st->original_retro_unload          = NULL;
    }
@@ -998,7 +999,7 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
 {
    if (!runloop_st->original_retro_deinit)
    {
-      runloop_st->original_retro_deinit     = 
+      runloop_st->original_retro_deinit     =
          runloop_st->current_core.retro_deinit;
       runloop_st->current_core.retro_deinit = runahead_deinit_hook;
    }
@@ -1067,10 +1068,10 @@ static bool runahead_save_state(runloop_state_t *runloop_st)
 
 static bool runahead_load_state(runloop_state_t *runloop_st)
 {
-   retro_ctx_serialize_info_t *serialize_info = 
+   retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)
       runloop_st->runahead_save_state_list->data[0];
-   bool last_dirty                            = runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   bool last_dirty                            = (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY) ? true : false;
    bool ret                                   = core_unserialize_special(serialize_info);
    if (last_dirty)
       runloop_st->flags                      |=  RUNLOOP_FLAG_INPUT_IS_DIRTY;
@@ -1139,13 +1140,13 @@ void runahead_run(void *data,
 #else
    const bool have_dynamic = false;
 #endif
-   video_driver_state_t 
+   video_driver_state_t
       *video_st            = video_state_get_ptr();
    uint64_t frame_count    = video_st->frame_count;
-   audio_driver_state_t 
+   audio_driver_state_t
       *audio_st            = audio_state_get_ptr();
 
-   if (      runahead_count <= 0 
+   if (      runahead_count <= 0
          || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
       goto force_input_dirty;
 
@@ -1331,26 +1332,29 @@ force_input_dirty:
 static int16_t preempt_input_state(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   settings_t *settings         = config_get_ptr();
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   preempt_t *preempt           = runloop_st->preempt_data;
-   unsigned device_class        = device & RETRO_DEVICE_MASK;
-   unsigned *port_map           = settings->uints.input_remap_port_map[port];
-   uint8_t p;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   preempt_t *preempt          = runloop_st->preempt_data;
+   unsigned device_class       = device & RETRO_DEVICE_MASK;
 
    switch (device_class)
    {
       case RETRO_DEVICE_ANALOG:
          /* Add requested inputs to mask */
-         while ((p = *(port_map++)) < MAX_USERS)
-            preempt->analog_mask[p] |= (1 << (id + index * 2));
+         preempt->analog_mask[port] |= (1 << (id + index * 2));
          break;
       case RETRO_DEVICE_LIGHTGUN:
-      case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_POINTER:
          /* Set pointing device for this port */
-         while ((p = *(port_map++)) < MAX_USERS)
-            preempt->ptr_dev[p] = device_class;
+         preempt->ptr_dev_needed[port] = device_class;
+         break;
+      case RETRO_DEVICE_MOUSE:
+         /* Set pointing device and return stored x,y */
+         if (id <= RETRO_DEVICE_ID_MOUSE_Y)
+         {
+            preempt->ptr_dev_needed[port] = device_class;
+            if (preempt->ptr_dev_polled[port] == device_class)
+               return preempt->ptrdev_state[port][id];
+         }
          break;
       default:
          break;
@@ -1469,7 +1473,7 @@ bool preempt_init(void *data)
 error:
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.preemptive_frames_hide_warnings)
+   if (!settings->bools.run_ahead_hide_warnings)
       runloop_msg_queue_push(
             failed_str, 0, 2 * 60, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -1479,7 +1483,7 @@ error:
 }
 
 static INLINE bool preempt_analog_input_dirty(preempt_t *preempt,
-      retro_input_state_t state_cb, unsigned port, unsigned mapped_port)
+      retro_input_state_t state_cb, unsigned port)
 {
    int16_t state[20] = {0};
    uint8_t base, i;
@@ -1489,17 +1493,20 @@ static INLINE bool preempt_analog_input_dirty(preempt_t *preempt,
    {
       base = i * 2;
       if (preempt->analog_mask[port] & (1 << (base    )))
-         state[base    ] = state_cb(mapped_port, RETRO_DEVICE_ANALOG, i, 0);
+         state[base    ] = state_cb(port, RETRO_DEVICE_ANALOG, i, 0);
       if (preempt->analog_mask[port] & (1 << (base + 1)))
-         state[base + 1] = state_cb(mapped_port, RETRO_DEVICE_ANALOG, i, 1);
+         state[base + 1] = state_cb(port, RETRO_DEVICE_ANALOG, i, 1);
    }
 
    /* buttons */
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (preempt->analog_mask[port] & 0xfff0)
    {
-      if (preempt->analog_mask[port] & (1 << (i + 4)))
-         state[i + 4] = state_cb(mapped_port, RETRO_DEVICE_ANALOG,
-               RETRO_DEVICE_INDEX_ANALOG_BUTTON, i);
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      {
+         if (preempt->analog_mask[port] & (1 << (i + 4)))
+            state[i + 4] = state_cb(port, RETRO_DEVICE_ANALOG,
+                  RETRO_DEVICE_INDEX_ANALOG_BUTTON, i);
+      }
    }
 
    if (memcmp(preempt->analog_state[port], state, sizeof(state)) == 0)
@@ -1510,8 +1517,7 @@ static INLINE bool preempt_analog_input_dirty(preempt_t *preempt,
 }
 
 static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
-      retro_input_state_t state_cb, unsigned device,
-      unsigned port, unsigned mapped_port)
+      retro_input_state_t state_cb, unsigned device, unsigned port)
 {
    int16_t state[4]  = {0};
    unsigned count_id = 0;
@@ -1536,16 +1542,16 @@ static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
    }
 
    /* x, y */
-   state[0] = state_cb(mapped_port, device, 0, x_id    );
-   state[1] = state_cb(mapped_port, device, 0, x_id + 1);
+   state[0] = state_cb(port, device, 0, x_id    );
+   state[1] = state_cb(port, device, 0, x_id + 1);
 
    /* buttons */
    for (id = 2; id <= max_id; id++)
-      state[2] |= state_cb(mapped_port, device, 0, id) ? 1 << id : 0;
+      state[2] |= state_cb(port, device, 0, id) ? 1 << id : 0;
 
    /* ptr count */
    if (count_id)
-      state[3] = state_cb(mapped_port, device, 0, count_id);
+      state[3] = state_cb(port, device, 0, count_id);
 
    if (memcmp(preempt->ptrdev_state[port], state, sizeof(state)) == 0)
       return false;
@@ -1559,52 +1565,42 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
 {
    size_t p;
    int16_t joypad_state;
-   retro_input_state_t state_cb   = input_driver_state_wrapper;
-   unsigned max_users             = settings->uints.input_max_users;
+   retro_input_state_t state_cb = input_driver_state_wrapper;
+   unsigned max_users           = settings->uints.input_max_users;
 
    input_driver_poll();
 
    /* Check for input state changes */
    for (p = 0; p < max_users; p++)
    {
-      unsigned mapped_port = settings->uints.input_remap_ports[p];
-      unsigned device      = settings->uints.input_libretro_device[mapped_port]
-                             & RETRO_DEVICE_MASK;
-
-      switch (device)
+      /* Check full digital joypad */
+      joypad_state = state_cb(p, RETRO_DEVICE_JOYPAD,
+            0, RETRO_DEVICE_ID_JOYPAD_MASK);
+      if (joypad_state != preempt->joypad_state[p])
       {
-         case RETRO_DEVICE_JOYPAD:
-         case RETRO_DEVICE_ANALOG:
-            /* Check full digital joypad */
-            joypad_state = state_cb(mapped_port, RETRO_DEVICE_JOYPAD,
-                  0, RETRO_DEVICE_ID_JOYPAD_MASK);
-            if (joypad_state != preempt->joypad_state[p])
-            {
-               preempt->joypad_state[p] = joypad_state;
-               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
-            }
+         preempt->joypad_state[p] = joypad_state;
+         runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      }
 
-            /* Check requested analogs */
-            if (     preempt->analog_mask[p]
-                  && preempt_analog_input_dirty(preempt, state_cb, (unsigned)p, mapped_port))
-               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
-            break;
-         case RETRO_DEVICE_MOUSE:
-         case RETRO_DEVICE_LIGHTGUN:
-         case RETRO_DEVICE_POINTER:
-            /* Check full device state */
-            if (preempt_ptr_input_dirty(
-                  preempt, state_cb, preempt->ptr_dev[p], (unsigned)p, mapped_port))
-               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
-            break;
-         default:
-            break;
+      /* Check requested analogs */
+      if (     preempt->analog_mask[p]
+            && preempt_analog_input_dirty(preempt, state_cb, (unsigned)p))
+      {
+         runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+         preempt->analog_mask[p] = 0;
+      }
+
+      /* Check requested pointing device */
+      if (preempt->ptr_dev_needed[p])
+      {
+         if (preempt_ptr_input_dirty(
+               preempt, state_cb, preempt->ptr_dev_needed[p], (unsigned)p))
+            runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+
+         preempt->ptr_dev_polled[p] = preempt->ptr_dev_needed[p];
+         preempt->ptr_dev_needed[p] = RETRO_DEVICE_NONE;
       }
    }
-
-   /* Clear requested inputs */
-   memset(preempt->analog_mask, 0, max_users * sizeof(uint32_t));
-   memset(preempt->ptr_dev, 0, max_users * sizeof(uint8_t));
 }
 
 /* macro for preempt_run */
@@ -1624,7 +1620,7 @@ void preempt_run(preempt_t *preempt, void *data)
    settings_t *settings              = config_get_ptr();
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
-   
+
    /* Poll and check for dirty input */
    preempt_input_poll(preempt, runloop_st, settings);
 
@@ -1687,7 +1683,7 @@ error:
    video_st->flags   |=  VIDEO_FLAG_ACTIVE;
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.preemptive_frames_hide_warnings)
+   if (!settings->bools.run_ahead_hide_warnings)
       runloop_msg_queue_push(
             failed_str, 0, 2 * 60, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

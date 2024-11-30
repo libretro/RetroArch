@@ -220,7 +220,7 @@ static bool vga_gfx_frame(void *data, const void *frame,
    bool draw                 = true;
    vga_t *vga                = (vga_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive        = video_info->menu_is_alive;
+   bool menu_is_alive        = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame || !frame_width || !frame_height)
@@ -230,9 +230,9 @@ static bool vga_gfx_frame(void *data, const void *frame,
    menu_driver_frame(menu_is_alive, video_info);
 #endif
 
-   if (  vga->vga_video_width  != frame_width   ||
-         vga->vga_video_height != frame_height  ||
-         vga->vga_video_pitch  != pitch)
+   if (     (vga->vga_video_width  != frame_width)
+         || (vga->vga_video_height != frame_height)
+         || (vga->vga_video_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {

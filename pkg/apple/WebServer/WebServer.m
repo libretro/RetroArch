@@ -30,20 +30,40 @@
 #elif TARGET_OS_TV
         NSString* docsPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
 #endif
+        docsPath = [docsPath stringByAppendingPathComponent:@"RetroArch"];
         _webUploader = [[GCDWebUploader alloc] initWithUploadDirectory:docsPath];
         _webUploader.allowHiddenItems = YES;
+        _webDAVServer = [[GCDWebDAVServer alloc] initWithUploadDirectory:docsPath];
+        _webDAVServer.allowHiddenItems = YES;
     }
     return self;
 }
 
--(void)startUploader {
+-(void)startServers {
+    if ( _webDAVServer.isRunning ) {
+        [_webDAVServer stop];
+    }
+    NSDictionary *webDAVSeverOptions = @{
+        GCDWebServerOption_ServerName : @"RetroArch",
+        GCDWebServerOption_BonjourName : @"RetroArch",
+        GCDWebServerOption_BonjourType : @"_webdav._tcp",
+        GCDWebServerOption_Port : @(8080)
+    };
+    [_webDAVServer startWithOptions:webDAVSeverOptions error:nil];
+
     if ( _webUploader.isRunning ) {
         [_webUploader stop];
     }
-    [_webUploader start];
+    NSDictionary *webSeverOptions = @{
+        GCDWebServerOption_ServerName : @"RetroArch",
+        GCDWebServerOption_BonjourName : @"RetroArch",
+        GCDWebServerOption_BonjourType : @"_http._tcp",
+        GCDWebServerOption_Port : @(80)
+    };
+    [_webUploader startWithOptions:webSeverOptions error:nil];
 }
 
--(void)stopUploader {
+-(void)stopServers {
     [_webUploader stop];
 }
 

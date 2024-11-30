@@ -1,0 +1,21 @@
+//
+//  AppStore.xcconfig
+//  RetroArch_iOS13
+//
+//
+
+APPSTORE_BUILD = 1
+
+OTHER_CFLAGS = $(inherited) -DHAVE_APPLE_STORE
+OTHER_CFLAGS = $(inherited) -DHAVE_ICLOUD
+OTHER_CFLAGS = $(inherited) -DkRetroArchAppGroup=@\"group.com.libretro.dist.RetroArchGroup\"
+
+IOS_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch
+TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.RetroArch
+
+IOS_CODE_SIGN_ENTITLEMENTS = iOS/RetroArchiOS.entitlements
+TVOS_CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTV.entitlements
+TVOS_TOPSHELF_CODE_SIGN_ENTITLEMENTS = tvOS/RetroArchTopShelf.entitlements
+
+RA_IPHONEOS_DEPLOYMENT_TARGET = 12.0
+TVOS_DEPLOYMENT_TARGET = 13.0

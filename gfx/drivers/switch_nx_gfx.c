@@ -55,7 +55,7 @@
 #include "../../tasks/tasks_internal.h"
 #endif
 
-/* 
+/*
  * DISPLAY DRIVER
  */
 
@@ -90,7 +90,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    NULL                                          /* scissor_end   */
 };
 
-/* 
+/*
  * FONT DRIVER
  */
 
@@ -363,7 +363,7 @@ font_renderer_t switch_font =
    switch_font_get_line_metrics
 };
 
-/* 
+/*
  * VIDEO DRIVER
  */
 
@@ -471,7 +471,7 @@ static void gfx_cpy_dsp_buf(uint32_t *buffer, uint32_t *image, int w, int h, uin
     }
 }
 
-/* needed to clear surface completely as hw scaling doesn't always scale to full resoution perflectly */
+/* needed to clear surface completely as hw scaling doesn't always scale to full resolution perflectly */
 static void clear_screen(switch_video_t *sw)
 {
     nwindowSetDimensions(sw->win, sw->vp.full_width, sw->vp.full_height);
@@ -549,20 +549,18 @@ static void switch_update_viewport(switch_video_t *sw,
             video_frame_info_t *video_info)
 {
     settings_t *settings = config_get_ptr();
-    int x                = 0;
-    int y                = 0;
     float desired_aspect = 0.0f;
     float width          = sw->vp.full_width;
     float height         = sw->vp.full_height;
 
     if (sw->o_size)
     {
-        width = sw->o_width;
-        height = sw->o_height;
-        sw->vp.x = (int)(((float)sw->vp.full_width - width)) / 2;
-        sw->vp.y = (int)(((float)sw->vp.full_height - height)) / 2;
+        width         = sw->o_width;
+        height        = sw->o_height;
+        sw->vp.x      = (int)(((float)sw->vp.full_width - width)) / 2;
+        sw->vp.y      = (int)(((float)sw->vp.full_height - height)) / 2;
 
-        sw->vp.width = width;
+        sw->vp.width  = width;
         sw->vp.height = height;
 
         return;
@@ -570,57 +568,16 @@ static void switch_update_viewport(switch_video_t *sw,
 
     desired_aspect = video_driver_get_aspect_ratio();
 
+    /* TODO/FIXME: Does nx use top-left or bottom-left origin?  I'm assuming top left. */
     if (settings->bools.video_scale_integer)
-    {
-        video_viewport_get_scaled_integer(&sw->vp, sw->vp.full_width, sw->vp.full_height, desired_aspect, sw->keep_aspect);
-    }
+       video_viewport_get_scaled_integer(&sw->vp, sw->vp.full_width, sw->vp.full_height,
+             desired_aspect, sw->keep_aspect, true);
     else if (sw->keep_aspect)
-    {
-#if defined(HAVE_MENU)
-        if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-        {
-            sw->vp.x = sw->vp.y = 0;
-            sw->vp.width = width;
-            sw->vp.height = height;
-        }
-        else
-#endif
-        {
-            float delta;
-            float device_aspect = ((float)sw->vp.full_width) / sw->vp.full_height;
-
-            if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-            {
-                /*
-                    * If the aspect ratios of screen and desired aspect
-                    * ratio are sufficiently equal (floating point stuff),
-                    * assume they are actually equal.
-                */
-            }
-            else if (device_aspect > desired_aspect)
-            {
-                delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-                x = (int)roundf(width * (0.5f - delta));
-                width = (unsigned)roundf(2.0f * width * delta);
-            }
-            else
-            {
-                delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-                y = (int)roundf(height * (0.5f - delta));
-                height = (unsigned)roundf(2.0f * height * delta);
-            }
-        }
-
-        sw->vp.x = x;
-        sw->vp.y = y;
-
-        sw->vp.width = width;
-        sw->vp.height = height;
-    }
+       video_viewport_get_scaled_aspect(&sw->vp, width, height, true);
     else
     {
-        sw->vp.x = sw->vp.y = 0;
-        sw->vp.width = width;
+        sw->vp.x      = sw->vp.y = 0;
+        sw->vp.width  = width;
         sw->vp.height = height;
     }
 }
@@ -670,9 +627,9 @@ static bool switch_frame(void *data, const void *frame,
    uint32_t *out_buffer = NULL;
    bool       ffwd_mode = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
-   bool menu_is_alive   = video_info->menu_is_alive;
+   bool menu_is_alive   = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
-   struct font_params 
+   struct font_params
       *osd_params       = (struct font_params *)&video_info->osd_stat_params;
    bool statistics_show = video_info->statistics_show;
 
@@ -686,9 +643,9 @@ static bool switch_frame(void *data, const void *frame,
          return true;
    }
 
-   if (  sw->should_resize || 
-         width  != sw->last_width || 
-         height != sw->last_height)
+   if (     sw->should_resize
+         || (width  != sw->last_width)
+         || (height != sw->last_height))
    {
       switch_update_viewport(sw, video_info);
 
@@ -701,27 +658,27 @@ static bool switch_frame(void *data, const void *frame,
       sw->scaler.in_width  = width;
       sw->scaler.in_height = height;
       sw->scaler.in_stride = pitch;
-      sw->scaler.in_fmt    = sw->rgb32 
-         ? SCALER_FMT_ARGB8888 
+      sw->scaler.in_fmt    = sw->rgb32
+         ? SCALER_FMT_ARGB8888
          : SCALER_FMT_RGB565;
 
       if (!sw->smooth)
       {
-         sw->scaler.out_width = sw->vp.width;
+         sw->scaler.out_width  = sw->vp.width;
          sw->scaler.out_height = sw->vp.height;
          sw->scaler.out_stride = sw->vp.full_width * sizeof(uint32_t);
       }
       else
       {
-         sw->scaler.out_width = width;
+         sw->scaler.out_width  = width;
          sw->scaler.out_height = height;
          sw->scaler.out_stride = width * sizeof(uint32_t);
 
-         float screen_ratio = (float)sw->vp.full_width / sw->vp.full_height;
-         float tgt_ratio = (float)sw->vp.width / sw->vp.height;
+         float screen_ratio    = (float)sw->vp.full_width / sw->vp.full_height;
+         float tgt_ratio       = (float)sw->vp.width / sw->vp.height;
 
-         sw->hw_scale.width = ceil(screen_ratio / tgt_ratio * sw->scaler.out_width);
-         sw->hw_scale.height = sw->scaler.out_height;
+         sw->hw_scale.width    = ceil(screen_ratio / tgt_ratio * sw->scaler.out_width);
+         sw->hw_scale.height   = sw->scaler.out_height;
          sw->hw_scale.x_offset = ceil((sw->hw_scale.width - sw->scaler.out_width) / 2.0);
 #ifdef HAVE_MENU
          if (!menu_is_alive)
@@ -731,20 +688,20 @@ static bool switch_frame(void *data, const void *frame,
             nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
          }
       }
-      sw->scaler.out_fmt = SCALER_FMT_ABGR8888;
 
+      sw->scaler.out_fmt     = SCALER_FMT_ABGR8888;
       sw->scaler.scaler_type = SCALER_TYPE_POINT;
 
       if (!scaler_ctx_gen_filter(&sw->scaler))
          return false;
 
-      sw->last_width = width;
-      sw->last_height = height;
+      sw->last_width         = width;
+      sw->last_height        = height;
 
-      sw->should_resize = false;
+      sw->should_resize      = false;
    }
 
-   out_buffer     = (uint32_t *)framebufferBegin(&sw->fb, &stride);
+   out_buffer     = (uint32_t*)framebufferBegin(&sw->fb, &stride);
    sw->out_buffer = out_buffer;
    sw->stride     = stride;
 
@@ -764,7 +721,10 @@ static bool switch_frame(void *data, const void *frame,
       if (sw->menu_texture.pixels)
       {
          memset(out_buffer, 0, stride * sw->vp.full_height);
-         scaler_ctx_scale(&sw->menu_texture.scaler, sw->tmp_image + ((sw->vp.full_height - sw->menu_texture.tgth) / 2) * sw->vp.full_width + ((sw->vp.full_width - sw->menu_texture.tgtw) / 2), sw->menu_texture.pixels);
+         scaler_ctx_scale(&sw->menu_texture.scaler,
+                 sw->tmp_image     + ((sw->vp.full_height - sw->menu_texture.tgth) / 2)
+               * sw->vp.full_width + ((sw->vp.full_width  - sw->menu_texture.tgtw) / 2),
+               sw->menu_texture.pixels);
          gfx_cpy_dsp_buf(out_buffer, sw->tmp_image, sw->vp.full_width, sw->vp.full_height, stride, true);
       }
    }
@@ -859,9 +819,9 @@ static void switch_set_texture_frame(
     switch_video_t *sw = data;
     size_t sz = width * height * (rgb32 ? 4 : 2);
 
-    if (!sw->menu_texture.pixels ||
-        sw->menu_texture.width != width ||
-        sw->menu_texture.height != height)
+    if (   !sw->menu_texture.pixels
+        || (sw->menu_texture.width  != width)
+        || (sw->menu_texture.height != height))
     {
         int xsf, ysf, sf;
         struct scaler_ctx *sctx = NULL;
@@ -907,10 +867,7 @@ static void switch_set_texture_frame(
     memcpy(sw->menu_texture.pixels, frame, sz);
 }
 
-static void switch_apply_state_changes(void *data)
-{
-    (void)data;
-}
+static void switch_apply_state_changes(void *data) { }
 
 static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 {

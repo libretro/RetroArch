@@ -54,6 +54,10 @@
 #endif
 #endif
 
+#ifdef __WINRT__
+#include "../common/uwpgdi.h"
+#endif
+
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
 #endif
@@ -144,31 +148,30 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 }
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
-static bool wgl_has_extension(const char *extension, const char *extensions)
+static bool wgl_has_extension(const char *ext, const char *exts)
 {
-   const char *start      = NULL;
-   const char *terminator = NULL;
-   const char      *where = strchr(extension, ' ');
+   const char *where = strchr(ext, ' ');
 
-   if (where || *extension == '\0')
+   if (where || *ext == '\0')
       return false;
 
-   if (!extensions)
-      return false;
-
-   start = extensions;
-
-   for (;;)
+   if (exts)
    {
-      if (!(where = strstr(start, extension)))
-         break;
+      const char *terminator = NULL;
+      const char *start      = exts;
 
-      terminator = where + strlen(extension);
-      if (where == start || *(where - 1) == ' ')
-         if (*terminator == ' ' || *terminator == '\0')
-            return true;
+      for (;;)
+      {
+         if (!(where = strstr(start, ext)))
+            break;
 
-      start = terminator;
+         terminator = where + strlen(ext);
+         if (where == start || *(where - 1) == ' ')
+            if (*terminator == ' ' || *terminator == '\0')
+               return true;
+
+         start = terminator;
+      }
    }
    return false;
 }
@@ -183,7 +186,11 @@ void create_gl_context(HWND hwnd, bool *quit)
    bool debug                           = hwr->debug_context;
 #endif
 
+#ifdef __WINRT__
+   win32_hdc                            = (HDC)(hwnd);
+#else
    win32_hdc                            = GetDC(hwnd);
+#endif
 
    win32_setup_pixel_format(win32_hdc, true);
 
@@ -267,11 +274,11 @@ void create_gl_context(HWND hwnd, bool *quit)
          pcreate_context = (wglCreateContextAttribsProc)
             gfx_ctx_wgl_get_proc_address("wglCreateContextAttribsARB");
 
-      /* In order to support the core info "required_hw_api" 
+      /* In order to support the core info "required_hw_api"
        * field correctly, we should try to init the highest available
-       * version GL context possible. This means trying successively 
+       * version GL context possible. This means trying successively
        * lower versions until it works, because GL has
-       * no facility for determining the highest possible 
+       * no facility for determining the highest possible
        * supported version.
        */
       if (pcreate_context)
@@ -329,8 +336,8 @@ void create_gl_context(HWND hwnd, bool *quit)
                      (versions[i][0] == (int)win32_major)
                   && (versions[i][1] == (int)win32_minor))
             {
-               /* The requested version was tried and 
-                * is not supported, go ahead and fail 
+               /* The requested version was tried and
+                * is not supported, go ahead and fail
                 * since everything else will be lower than that. */
                break;
             }
@@ -348,16 +355,16 @@ void create_gl_context(HWND hwnd, bool *quit)
 
    {
       const char *(WINAPI * wglGetExtensionsStringARB) (HDC) = 0;
-      const char *extensions                                 = NULL;
-      wglGetExtensionsStringARB                              = 
+      const char *exts                                       = NULL;
+      wglGetExtensionsStringARB                              =
 	      (const char *(WINAPI *) (HDC))
 	      gfx_ctx_wgl_get_proc_address("wglGetExtensionsStringARB");
 
       if (wglGetExtensionsStringARB)
       {
-         extensions = wglGetExtensionsStringARB(win32_hdc);
-         RARCH_LOG("[WGL]: Extensions: %s\n", extensions);
-         if (wgl_has_extension("WGL_EXT_swap_control_tear", extensions))
+         exts = wglGetExtensionsStringARB(win32_hdc);
+         RARCH_LOG("[WGL]: Extensions: %s\n", exts);
+         if (wgl_has_extension("WGL_EXT_swap_control_tear", exts))
          {
             RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
             wgl_flags |= WGL_FLAG_ADAPTIVE_VSYNC;
@@ -457,7 +464,11 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
+#ifdef __WINRT__
+         wglSwapBuffers(win32_hdc);
+#else
          SwapBuffers(win32_hdc);
+#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_EGL)
@@ -515,19 +526,25 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    if (window && win32_hdc)
    {
+#ifndef __WINRT__
       ReleaseDC(window, win32_hdc);
+#endif
       win32_hdc = NULL;
    }
 
+#ifndef __WINRT__
    if (window)
    {
       win32_monitor_from_window();
       win32_destroy_window();
    }
 
+#endif
    if (g_win32_flags & WIN32_CMN_FLAG_RESTORE_DESKTOP)
    {
+#ifndef __WINRT__
       win32_monitor_get_info();
+#endif
       g_win32_flags &= ~WIN32_CMN_FLAG_RESTORE_DESKTOP;
    }
 
@@ -550,7 +567,9 @@ static void gfx_ctx_wgl_destroy(void *data)
 
 static void *gfx_ctx_wgl_init(void *video_driver)
 {
+#ifndef __WINRT__
    WNDCLASSEX wndclass     = {0};
+#endif
    gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t*)calloc(1, sizeof(*wgl));
    uint8_t win32_flags     = win32_get_flags();
    settings_t *settings    = config_get_ptr();
@@ -569,8 +588,10 @@ static void *gfx_ctx_wgl_init(void *video_driver)
 #endif
 #endif
 
+#ifndef __WINRT__
    win32_window_reset();
    win32_monitor_init();
+
 
    wndclass.lpfnWndProc    = wnd_proc_wgl_common;
 #ifdef HAVE_DINPUT
@@ -587,7 +608,16 @@ static void *gfx_ctx_wgl_init(void *video_driver)
       free(wgl);
       return NULL;
    }
-
+#else
+   bool quit = false;
+   create_gl_context(uwp_get_corewindow(), &quit);
+   if (quit)
+   {
+      RARCH_ERR("[UWP WGL]: create_gl_context failed.\n");
+      free(wgl);
+      return NULL;
+   }
+#endif
    return wgl;
 }
 
@@ -601,6 +631,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       gfx_ctx_wgl_destroy(data);
       return false;
    }
+
 
    if (win32_api == GFX_CTX_OPENGL_API)
       p_swap_interval = (BOOL (APIENTRY *)(int))gfx_ctx_wgl_get_proc_address("wglSwapIntervalEXT");
@@ -637,6 +668,25 @@ static void gfx_ctx_wgl_input_driver(void *data,
    dinput_wgl  = input_driver_init_wrap(&input_dinput, joypad_name);
    *input      = dinput_wgl ? &input_dinput : NULL;
    *input_data = dinput_wgl;
+#elif defined(__WINRT__)
+   /* Plain xinput is supported on UWP, but it
+    * supports joypad only (uwp driver was added later) */
+   if (string_is_equal(settings->arrays.input_driver, "xinput"))
+   {
+      void* xinput = input_driver_init_wrap(&input_xinput, joypad_name);
+      *input = xinput ? (input_driver_t*)&input_xinput : NULL;
+      *input_data = xinput;
+   }
+   else
+   {
+      void* uwp = input_driver_init_wrap(&input_uwp, joypad_name);
+      *input = uwp ? (input_driver_t*)&input_uwp : NULL;
+      *input_data = uwp;
+   }
+#elif defined(_XBOX)
+   void* xinput = input_driver_init_wrap(&input_xinput, joypad_name);
+   *input = xinput ? (input_driver_t*)&input_xinput : NULL;
+   *input_data = xinput;
 #endif
 }
 
@@ -762,6 +812,49 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 
 static void gfx_ctx_wgl_get_video_output_prev(void *data) { }
 static void gfx_ctx_wgl_get_video_output_next(void *data) { }
+
+/* TODO: maybe create an uwp_mesa_common.c? */
+#ifdef __WINRT__
+
+static void win32_get_video_size(void* data,
+   unsigned* width, unsigned* height)
+{
+   bool quit = false;
+   bool resize = false;
+   win32_check_window(NULL, &quit, &resize, width, height);
+   width = uwp_get_width();
+   height = uwp_get_height();
+}
+
+void win32_get_video_output_size(void* data, unsigned* width, unsigned* height, char* desc, size_t desc_len)
+{
+   win32_get_video_size(data, width, height);
+}
+
+bool win32_suspend_screensaver(void* data, bool enable)
+{
+   return true;
+}
+
+float win32_get_refresh_rate(void* data)
+{
+   return 60.0;
+}
+
+#define win32_get_refresh_rate NULL
+
+HWND win32_get_window(void)
+{
+   return (HWND)uwp_get_corewindow();
+}
+
+/* TODO/FIXME - static globals */
+uint8_t g_win32_flags = 0;
+
+uint8_t win32_get_flags(void) { return g_win32_flags; }
+/* NTD, already done by mesa */
+void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
+#endif
 
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,

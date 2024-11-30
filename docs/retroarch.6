@@ -227,6 +227,12 @@ If this flag is not specified, RetroArch will look for a .ips file with same bas
 Note that RetroArch cannot perform any error checking if patching was successful due to how IPS works.
 
 .TP
+\fB--xdelta PATCH\fR
+Attempts to apply an Xdelta patch to the current content image. No files are altered.
+If this flag is not specified, RetroArch will look for a .xdelta file with same basename as content specified.
+Only available if RetroArch was built with Xdelta support.
+
+.TP
 \fB--no-patch\fR
 Disables all kinds of content patching.
 

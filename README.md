@@ -74,41 +74,43 @@ RetroArch has been ported to the following platforms:
    - FreeBSD
    - Haiku
    - Linux
+   - Original Microsoft Xbox
    - Microsoft Xbox 360 (Libxenon/XeXDK)
    - Microsoft Xbox One
    - Microsoft Xbox Series S/X
    - Miyoo
    - NetBSD
-   - Nintendo 3DS/2DS
-   - Nintendo GameCube
    - Nintendo NES/SNES Classic Edition
-   - Nintendo Switch
+   - Nintendo GameCube
    - Nintendo Wii
+   - Nintendo Switch
    - Nintendo Wii U
+   - Nintendo 3DS/2DS
    - OpenBSD
    - OpenDingux
-   - Original Microsoft Xbox
    - PlayStation2
    - PlayStation3
    - PlayStation4
    - PlayStation Portable
    - PlayStation Vita
    - Raspberry Pi
+   - ReactOS
+   - Redox OS
    - RetroFW
    - RS90
    - SerenityOS
    - Solaris
-   - Windows 10
-   - Windows 11
-   - Windows 2000
-   - Windows 7
-   - Windows 8
+   - Windows NT 3.5
    - Windows 95
    - Windows 98
-   - Windows Millennium
-   - Windows NT 3.5
-   - Windows Vista
+   - Windows 2000
    - Windows XP
+   - Windows Millennium
+   - Windows Vista
+   - Windows 7
+   - Windows 8
+   - Windows 10
+   - Windows 11
 
 ## Dependencies (PC)
 
@@ -122,7 +124,7 @@ following dependencies come as recommended:
    - GL headers / Vulkan headers
    - X11 headers and libs, or EGL/KMS/GBM
 
-OSX port of RetroArch requires latest versions of XCode to build.
+OSX port of RetroArch requires latest versions of Xcode to build.
 
 RetroArch can utilize these libraries if enabled:
 
@@ -335,7 +337,7 @@ The links below belong to our official channels. Links other than this may have 
 - [YouTube Topic](https://www.youtube.com/channel/UC5q007PYyQPgin0HHbzF0zQ)
 - [Patreon](https://www.patreon.com/libretro)
 - [BOUNTYSOURCE](https://www.bountysource.com/teams/libretro/issues)
-- [Discord](https://discord.gg/27Xxm2h)
+- [Discord](https://discord.com/invite/VZ2b7wghxR)
 - [Teespring](https://teespring.com/stores/retroarch)
 - [Documentation](https://docs.libretro.com/)
 - [Forum](https://forums.libretro.com/)

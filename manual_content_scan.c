@@ -42,11 +42,11 @@ typedef struct
    enum manual_content_scan_system_name_type system_name_type;
    enum manual_content_scan_core_type core_type;
 
-   char content_dir[PATH_MAX_LENGTH];
-   char system_name_content_dir[PATH_MAX_LENGTH];
-   char system_name_database[PATH_MAX_LENGTH];
-   char system_name_custom[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
+   char core_name[NAME_MAX_LENGTH];
+   char system_name_database[NAME_MAX_LENGTH];
+   char system_name_custom[NAME_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
+   char system_name_content_dir[DIR_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char file_exts_core[PATH_MAX_LENGTH];
    char file_exts_custom[PATH_MAX_LENGTH];
@@ -207,7 +207,7 @@ void manual_content_scan_scrub_system_name_custom(void)
     * and/or violate the No-Intro filename standard:
     * http://datomatic.no-intro.org/stuff/The%20Official%20No-Intro%20Convention%20(20071030).zip
     * Replace these characters with underscores */
-   while ((scrub_char_pointer = 
+   while ((scrub_char_pointer =
             strpbrk(scan_settings.system_name_custom, "&*/:`\"<>?\\|")))
       *scrub_char_pointer = '_';
 }
@@ -513,6 +513,7 @@ enum manual_content_scan_playlist_refresh_status
    bool search_recursively      = false;
    bool search_archives         = false;
    bool filter_dat_content      = false;
+   bool overwrite_playlist      = false;
 #ifdef HAVE_LIBRETRODB
    struct string_list *rdb_list = NULL;
 #endif
@@ -522,7 +523,7 @@ enum manual_content_scan_playlist_refresh_status
          core_type              = MANUAL_CONTENT_SCAN_CORE_DETECT;
    enum manual_content_scan_playlist_refresh_status
          playlist_status        = MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK;
-   char system_name[PATH_MAX_LENGTH];
+   char system_name[NAME_MAX_LENGTH];
 
    system_name[0] = '\0';
 
@@ -542,6 +543,7 @@ enum manual_content_scan_playlist_refresh_status
    search_recursively = playlist_get_scan_search_recursively(playlist);
    search_archives    = playlist_get_scan_search_archives(playlist);
    filter_dat_content = playlist_get_scan_filter_dat_content(playlist);
+   overwrite_playlist = playlist_get_scan_overwrite_playlist(playlist);
 
    /* Determine system name (playlist basename
     * without extension) */
@@ -591,9 +593,7 @@ enum manual_content_scan_playlist_refresh_status
       {
          const char *rdb_path = rdb_list->elems[i].data;
          const char *rdb_file = NULL;
-         char rdb_name[PATH_MAX_LENGTH];
-
-         rdb_name[0] = '\0';
+         char rdb_name[NAME_MAX_LENGTH];
 
          /* Sanity check */
          if (string_is_empty(rdb_path))
@@ -654,8 +654,8 @@ enum manual_content_scan_playlist_refresh_status
    }
 
    /* Set core path/name */
-   if (!string_is_empty(core_name) &&
-       !string_is_equal(core_name, FILE_PATH_DETECT))
+   if (   !string_is_empty(core_name)
+       && !string_is_equal(core_name, FILE_PATH_DETECT))
       core_type = MANUAL_CONTENT_SCAN_CORE_SET;
 
    if (!manual_content_scan_set_menu_core_name(
@@ -712,11 +712,10 @@ enum manual_content_scan_playlist_refresh_status
    scan_settings.search_recursively = search_recursively;
    scan_settings.search_archives    = search_archives;
    scan_settings.filter_dat_content = filter_dat_content;
+   scan_settings.overwrite_playlist = overwrite_playlist;
    /* When refreshing a playlist:
-    * > We never overwrite the existing file
     * > We always validate entries in the
     *   existing file */
-   scan_settings.overwrite_playlist = false;
    scan_settings.validate_entries   = true;
 
 end:
@@ -748,29 +747,28 @@ bool manual_content_scan_get_menu_content_dir(const char **content_dir)
  * actual system name used when generating the playlist */
 bool manual_content_scan_get_menu_system_name(const char **system_name)
 {
-   if (!system_name)
-      return false;
-
-   switch (scan_settings.system_name_type)
+   if (system_name)
    {
-      case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR:
-         *system_name = msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR);
-         return true;
-      case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
-         *system_name = msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM);
-         return true;
-      case MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE:
-         if (string_is_empty(scan_settings.system_name_database))
-            return false;
-         else
-         {
-            *system_name = scan_settings.system_name_database;
+      switch (scan_settings.system_name_type)
+      {
+         case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR:
+            *system_name = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CONTENT_DIR);
             return true;
-         }
-      default:
-         break;
+         case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
+            *system_name = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_CUSTOM);
+            return true;
+         case MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE:
+            if (!string_is_empty(scan_settings.system_name_database))
+            {
+               *system_name = scan_settings.system_name_database;
+               return true;
+            }
+            break;
+         default:
+            break;
+      }
    }
 
    return false;
@@ -780,25 +778,24 @@ bool manual_content_scan_get_menu_system_name(const char **system_name)
  * Returns true if core name is valid. */
 bool manual_content_scan_get_menu_core_name(const char **core_name)
 {
-   if (!core_name)
-      return false;
-
-   switch (scan_settings.core_type)
+   if (core_name)
    {
-      case MANUAL_CONTENT_SCAN_CORE_DETECT:
-         *core_name = msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT);
-         return true;
-      case MANUAL_CONTENT_SCAN_CORE_SET:
-         if (string_is_empty(scan_settings.core_name))
-            return false;
-         else
-         {
-            *core_name = scan_settings.core_name;
+      switch (scan_settings.core_type)
+      {
+         case MANUAL_CONTENT_SCAN_CORE_DETECT:
+            *core_name = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT);
             return true;
-         }
-      default:
-         break;
+         case MANUAL_CONTENT_SCAN_CORE_SET:
+            if (!string_is_empty(scan_settings.core_name))
+            {
+               *core_name = scan_settings.core_name;
+               return true;
+            }
+            break;
+         default:
+            break;
+      }
    }
 
    return false;
@@ -857,9 +854,7 @@ struct string_list *manual_content_scan_get_menu_system_name_list(
          {
             const char *rdb_path = rdb_list->elems[i].data;
             const char *rdb_file = NULL;
-            char rdb_name[PATH_MAX_LENGTH];
-
-            rdb_name[0] = '\0';
+            char rdb_name[NAME_MAX_LENGTH];
 
             /* Sanity check */
             if (string_is_empty(rdb_path))
@@ -924,8 +919,8 @@ struct string_list *manual_content_scan_get_menu_core_name_list(void)
 
    if (core_info_list)
    {
-      core_info_t *core_info = NULL;
       size_t i;
+      core_info_t *core_info = NULL;
 
       /* Sort cores alphabetically */
       core_info_qsort(core_info_list, CORE_INFO_LIST_SORT_DISPLAY_NAME);
@@ -933,10 +928,7 @@ struct string_list *manual_content_scan_get_menu_core_name_list(void)
       /* Loop through cores */
       for (i = 0; i < core_info_list->count; i++)
       {
-         core_info = NULL;
-         core_info = core_info_get(core_info_list, i);
-
-         if (core_info)
+         if ((core_info = core_info_get(core_info_list, i)))
          {
             if (string_is_empty(core_info->display_name))
                continue;
@@ -1002,32 +994,26 @@ bool manual_content_scan_get_task_config(
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR:
          if (string_is_empty(scan_settings.system_name_content_dir))
             return false;
-
          strlcpy(
                task_config->system_name,
                scan_settings.system_name_content_dir,
                sizeof(task_config->system_name));
-
          break;
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
          if (string_is_empty(scan_settings.system_name_custom))
             return false;
-
          strlcpy(
                task_config->system_name,
                scan_settings.system_name_custom,
                sizeof(task_config->system_name));
-
          break;
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE:
          if (string_is_empty(scan_settings.system_name_database))
             return false;
-
          strlcpy(
                task_config->system_name,
                scan_settings.system_name_database,
                sizeof(task_config->system_name));
-
          break;
       default:
          return false;
@@ -1142,9 +1128,9 @@ bool manual_content_scan_get_task_config(
 struct string_list *manual_content_scan_get_content_list(
       manual_content_scan_task_config_t *task_config)
 {
-   struct string_list *dir_list = NULL;
    bool filter_exts;
    bool include_compressed;
+   struct string_list *dir_list = NULL;
 
    /* Sanity check */
    if (!task_config)
@@ -1225,8 +1211,8 @@ static bool manual_content_scan_get_playlist_content_path(
 
    /* Check whether this is an archive file
     * requiring special attention... */
-   if ((content_type == RARCH_COMPRESSED_ARCHIVE) &&
-       task_config->search_archives)
+   if (  (content_type == RARCH_COMPRESSED_ARCHIVE)
+       && task_config->search_archives)
    {
       bool filter_exts         = !string_is_empty(task_config->file_exts);
       const char *archive_file = NULL;
@@ -1304,7 +1290,7 @@ static bool manual_content_scan_get_playlist_content_label(
 
    /* In most cases, content label is just the
     * filename without extension */
-   fill_pathname(content_label, path_basename(content_path), 
+   fill_pathname(content_label, path_basename(content_path),
          "", len);
 
    if (string_is_empty(content_label))
@@ -1370,7 +1356,7 @@ void manual_content_scan_add_content_to_playlist(
    if (!playlist_entry_exists(playlist, playlist_content_path))
    {
       struct playlist_entry entry = {0};
-      char label[PATH_MAX_LENGTH];
+      char label[NAME_MAX_LENGTH];
 
       label[0] = '\0';
 

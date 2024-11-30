@@ -1069,6 +1069,9 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    sdl_rs90_video_t* vid = (sdl_rs90_video_t*)data;
+#ifdef HAVE_MENU
+   bool menu_is_alive    = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#endif
 
    /* Return early if:
     * - Input sdl_rs90_video_t struct is NULL
@@ -1100,7 +1103,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
    }
 
 #ifdef HAVE_MENU
-   menu_driver_frame(video_info->menu_is_alive, video_info);
+   menu_driver_frame(menu_is_alive, video_info);
 #endif
 
    if (likely(!vid->menu_active))

@@ -10,16 +10,19 @@
 
 #import <Foundation/Foundation.h>
 
+#import "JITSupport.h"
+
 #include <dlfcn.h>
 #include <mach/mach.h>
+#include <mach-o/dyld.h>
 #include <mach-o/loader.h>
 #include <mach-o/getsect.h>
 #include <pthread.h>
+#include <dirent.h>
 
-#if defined(HAVE_ALTKIT)
-@import AltKit;
-#endif
-
+#include <string/stdstring.h>
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include "../../verbosity.h"
 
 extern int csops(pid_t pid, unsigned int ops, void * useraddr, size_t usersize);
@@ -32,15 +35,15 @@ extern int ptrace(int request, pid_t pid, caddr_t addr, int data);
 #define PT_TRACE_ME     0       /* child declares it's being traced */
 #define PT_SIGEXC       12      /* signals as exceptions for current_proc */
 
-static void *exception_handler(void *argument) {
 #if !TARGET_OS_TV
+static void *exception_handler(void *argument) {
     mach_port_t port = *(mach_port_t *)argument;
     mach_msg_server(exc_server, 2048, port, 0);
-#endif
     return NULL;
 }
+#endif
 
-bool jb_has_debugger_attached(void) {
+static bool jb_has_debugger_attached(void) {
     int flags;
     return !csops(getpid(), CS_OPS_STATUS, &flags, sizeof(flags)) && flags & CS_DEBUGGED;
 }
@@ -91,26 +94,41 @@ bool jb_enable_ptrace_hack(void) {
     return true;
 }
 
-void jb_start_altkit(void) {
-#if HAVE_ALTKIT
-   // asking AltKit/AltServer to debug us when we're already debugged is bad, very bad
-   if (jb_has_debugger_attached())
-      return;
+bool jit_available(void)
+{
+   static bool canOpenApps = false;
+   static dispatch_once_t appsOnce = 0;
+   dispatch_once(&appsOnce, ^{
+      DIR *apps = opendir("/Applications");
+      if (apps)
+      {
+         closedir(apps);
+         canOpenApps = true;
+      }
+   });
 
-   [[ALTServerManager sharedManager] autoconnectWithCompletionHandler:^(ALTServerConnection *connection, NSError *error) {
-      if (error)
-         return;
+   static bool dylded = false;
+   static dispatch_once_t dyldOnce = 0;
+   dispatch_once(&dyldOnce, ^{
+      int imageCount = _dyld_image_count();
+      for (int i = 0; i < imageCount; i++)
+      {
+         if (string_is_equal("/usr/lib/pspawn_payload-stg2.dylib", _dyld_get_image_name(i)))
+            dylded = true;
+      }
+   });
 
-      [connection enableUnsignedCodeExecutionWithCompletionHandler:^(BOOL success, NSError *error) {
-         if (success)
-            [[ALTServerManager sharedManager] stopDiscovering];
-         else
-            RARCH_WARN("AltServer failed: %s\n", [error.description UTF8String]);
+   static bool doped = false;
+   static dispatch_once_t dopeOnce = 0;
+   dispatch_once(&dopeOnce, ^{
+      int64_t (*jbdswDebugMe)(void) = dlsym(RTLD_DEFAULT, "jbdswDebugMe");
+      if (jbdswDebugMe)
+      {
+         int64_t ret = jbdswDebugMe();
+         doped = (ret == 0);
+      }
+   });
 
-         [connection disconnect];
-      }];
-   }];
-
-   [[ALTServerManager sharedManager] startDiscovering];
-#endif
+   /* the debugger could be attached at any time, its value can't be cached */
+   return canOpenApps || dylded || doped || jb_has_debugger_attached();
 }

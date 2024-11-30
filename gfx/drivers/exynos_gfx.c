@@ -905,7 +905,7 @@ static int exynos_blit_frame(
       const void *frame,
       unsigned src_pitch)
 {
-   const enum exynos_buffer_type 
+   const enum exynos_buffer_type
       buf_type           = defaults[EXYNOS_IMAGE_FRAME].buf_type;
    const unsigned size   = src_pitch * pdata->blit_params[5];
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_FRAME];
@@ -1282,8 +1282,7 @@ static bool exynos_frame(void *data, const void *frame, unsigned width,
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
 #ifdef HAVE_MENU
-   bool menu_is_alive       = video_info->menu_is_alive;
-
+   bool menu_is_alive       = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    /* Check if neither menu nor core framebuffer is to be displayed. */
    if (!vid->menu_active && !frame)
       return true;

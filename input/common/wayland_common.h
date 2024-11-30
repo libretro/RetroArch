@@ -34,6 +34,7 @@
 #endif
 
 /* Generated from wayland protocol files by generate_wayland_protos.sh */
+#include "../../gfx/common/wayland/fractional-scale-v1.h"
 #include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
 #include "../../gfx/common/wayland/xdg-shell.h"
@@ -41,7 +42,11 @@
 #include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
 #include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
 
-#define UDEV_KEY_MAX			     0x2ff
+#define FRACTIONAL_SCALE_V1_DEN 120
+#define FRACTIONAL_SCALE_MULT(v, scale_num) \
+   (((v) * (scale_num) + FRACTIONAL_SCALE_V1_DEN / 2) / FRACTIONAL_SCALE_V1_DEN)
+
+#define UDEV_KEY_MAX            0x2ff
 #define UDEV_MAX_KEYS           (UDEV_KEY_MAX + 7) / 8
 
 #define MAX_TOUCHES             16
@@ -118,7 +123,7 @@ typedef struct input_ctx_wayland_data
       int delta_x, delta_y;
       bool last_valid;
       bool focus;
-      bool left, right, middle;
+      bool left, right, middle, side, extra;
       bool wu, wd, wl, wr;
    } mouse;
 
@@ -144,9 +149,11 @@ typedef struct gfx_ctx_wayland_data
    struct wl_registry *registry;
    struct wl_compositor *compositor;
    struct wp_viewporter *viewporter;
+   struct wp_fractional_scale_manager_v1 *fractional_scale_manager;
    struct wl_surface *surface;
    struct xdg_surface *xdg_surface;
    struct wp_viewport *viewport;
+   struct wp_fractional_scale_v1 *fractional_scale;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
    struct wl_keyboard *wl_keyboard;
@@ -163,7 +170,7 @@ typedef struct gfx_ctx_wayland_data
    struct libdecor *libdecor_context;
    struct libdecor_frame *libdecor_frame;
 #ifdef HAVE_DYLIB
-   struct dylib_t *libdecor;
+   dylib_t libdecor;
 #define RA_WAYLAND_SYM(rc,fn,params) rc (*fn) params;
 #include "../../gfx/common/wayland/libdecor_sym.h"
 #endif
@@ -203,12 +210,16 @@ typedef struct gfx_ctx_wayland_data
    unsigned last_buffer_scale;
    unsigned pending_buffer_scale;
    unsigned buffer_scale;
+   unsigned last_fractional_scale_num;
+   unsigned pending_fractional_scale_num;
+   unsigned fractional_scale_num;
 
    bool core_hw_context_enable;
    bool fullscreen;
    bool maximized;
    bool resize;
    bool configured;
+   bool ignore_configuration;
    bool activated;
    bool reported_display_size;
    bool swap_complete;
@@ -238,6 +249,8 @@ extern const struct zwp_locked_pointer_v1_listener locked_pointer_listener;
 extern const struct wl_touch_listener touch_listener;
 
 extern const struct wl_seat_listener seat_listener;
+
+extern const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener;
 
 extern const struct wl_surface_listener wl_surface_listener;
 

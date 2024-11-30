@@ -35,6 +35,7 @@ bool rcheevos_set_serialized_data(void* buffer);
 bool rcheevos_unload(void);
 
 void rcheevos_test(void);
+void rcheevos_idle(void);
 
 void rcheevos_reset_game(bool widgets_ready);
 void rcheevos_refresh_memory(void);
@@ -43,6 +44,9 @@ void rcheevos_pause_hardcore(void);
 void rcheevos_hardcore_enabled_changed(void);
 void rcheevos_toggle_hardcore_paused(void);
 bool rcheevos_hardcore_active(void);
+
+bool rcheevos_is_pause_allowed(void);
+void rcheevos_spectating_changed(void);
 
 void rcheevos_validate_config_settings(void);
 
@@ -53,7 +57,8 @@ bool rcheevos_get_support_cheevos(void);
 
 const char* rcheevos_get_hash(void);
 int rcheevos_get_richpresence(char *s, size_t len);
-uintptr_t rcheevos_get_badge_texture(const char *badge, bool locked);
+int rcheevos_get_game_badge_url(char *s, size_t len);
+uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing);
 
 uint8_t* rcheevos_patch_address(unsigned address);
 

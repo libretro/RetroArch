@@ -122,8 +122,8 @@ static void *orbis_ctx_init(void *video_driver)
       goto error;
 
 #if defined(HAVE_OOSDK)
-   shdr_cache_dir                                = "/data/retroarch/temp/";
    memset(&ctx_orbis->shdr_cache_config, 0, sizeof(ctx_orbis->shdr_cache_config));
+   shdr_cache_dir                   = "/data/retroarch/temp/";
    ctx_orbis->shdr_cache_config.ver = 0x00010064;
    snprintf(ctx_orbis->shdr_cache_config.cache_dir,
          strlen(shdr_cache_dir) + 1, "%s",

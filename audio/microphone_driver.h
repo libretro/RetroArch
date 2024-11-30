@@ -20,8 +20,8 @@
 #include <lists/string_list.h>
 #include <retro_common_api.h>
 #include <libretro.h>
-#include "audio/audio_resampler.h"
-#include "queues/fifo_queue.h"
+#include <audio/audio_resampler.h>
+#include <queues/fifo_queue.h>
 
 /**
  * Flags that indicate the current state of the microphone driver.

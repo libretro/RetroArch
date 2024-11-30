@@ -15,7 +15,9 @@ ifeq ($(HAVE_NOUNUSED_VARIABLE), 1)
    DEF_FLAGS += $(NOUNUSED_VARIABLE_CFLAGS)
 endif
 
-ifeq ($(HAVE_CXX11), 1)
+ifeq ($(HAVE_QT6), 1)
+   CXXFLAGS += $(CXX17_CFLAGS)
+else ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif
 
@@ -240,20 +242,37 @@ OBJ += frontend/frontend_driver.o \
        ui/ui_companion_driver.o \
        camera/camera_driver.o \
        record/record_driver.o \
+       record/drivers/record_wav.o \
        command.o \
        msg_hash.o \
-       midi_driver.o \
-       location_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o
 
 ifeq ($(HAVE_PATCH), 1)
    DEFINES += -DHAVE_PATCH
-	OBJ += tasks/task_patch.o
+   OBJ     += tasks/task_patch.o
+   ifeq ($(HAVE_XDELTA), 1)
+      DEFINES      += -DHAVE_XDELTA -DSECONDARY_DJW -DSECONDARY_LZMA -DSECONDARY_FGK
+      INCLUDE_DIRS += -I$(DEPS_DIR)/xdelta3 -I$(LIBRETRO_COMM_DIR)
+      LIBS         += -llzma
+      OBJ          += $(DEPS_DIR)/xdelta3/xdelta3.o
+      HEADERS      += xdelta3.h \
+                      xdelta3-cfgs.h \
+                      xdelta3-fgk.h \
+                      xdelta3-hash.h \
+                      xdelta3-internal.h \
+                      xdelta3-list.h \
+                      xdelta3-lzma.h \
+                      xdelta3-second.h
+      # These headers are added to the makefile because xdelta3 does weird things
+      # with its #includes, which affects dependency tracking and project analysis
+      # (e.g. for IDEs).
+   endif
 endif
 
 OBJ += \
+       save.o \
        tasks/task_save.o \
        tasks/task_movie.o \
        tasks/task_file_transfer.o \
@@ -319,13 +338,16 @@ OBJ += \
        gfx/video_driver.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
-       gfx/gfx_thumbnail_path.o \
-       gfx/gfx_thumbnail.o \
-       gfx/video_coord_array.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
        $(LIBRETRO_COMM_DIR)/queues/message_queue.o
+
+ifeq ($(HAVE_MENU), 1)
+   OBJ += \
+       gfx/gfx_thumbnail_path.o \
+       gfx/gfx_thumbnail.o
+endif
 
 ifeq ($(HAVE_MICROPHONE), 1)
    DEFINES += -DHAVE_MICROPHONE
@@ -449,9 +471,6 @@ endif
 ifeq ($(HAVE_LANGEXTRA), 1)
    DEFINES += -DHAVE_LANGEXTRA
    DEF_FLAGS += -finput-charset=UTF-8
-
-   OBJ += intl/msg_hash_chs.o \
-          intl/msg_hash_pt_br.o
 endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -518,10 +537,18 @@ ifeq ($(HAVE_QT), 1)
    endif
 
    DEFINES += -DHAVE_MAIN
+ifeq ($(HAVE_QT6), 1)
+   CXXFLAGS += -DQT_DISABLE_DEPRECATED_BEFORE=0x060000 $(QT6CORE_CFLAGS) $(QT6GUI_CFLAGS) $(QT6WIDGETS_CFLAGS) $(QT6CONCURRENT_CFLAGS) $(QT6NETWORK_CFLAGS)
+   #DEF_FLAGS += $(QT6WEBENGINE_CFLAGS)
+   LIBS += $(QT6CORE_LIBS) $(QT6GUI_LIBS) $(QT6WIDGETS_LIBS) $(QT6CONCURRENT_LIBS) $(QT6NETWORK_LIBS)
+   #LIBS += $(QT6WEBENGINE_LIBS)
+else
    DEF_FLAGS += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS)
    #DEF_FLAGS += $(QT5WEBENGINE_CFLAGS)
    LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS) $(QT5NETWORK_LIBS)
    #LIBS += $(QT5WEBENGINE_LIBS)
+endif
+
    NEED_CXX_LINKER = 1
 
    ifneq ($(findstring Linux,$(OS)),)
@@ -741,7 +768,8 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
    OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
 else ifeq ($(HAVE_SSL), 1)
    DEFINES += -DHAVE_SSL
-   LIBS += $(SYSTEMMBEDTLS_LIBS)
+   LIBS += $(SYSTEMMBEDTLS_LIBS) $(SYSTEMMBEDX509_LIBS) $(SYSTEMMBEDCRYPTO_LIBS)
+   DEF_FLAGS += $(SYSTEMMBEDTLS_CFLAGS) $(SYSTEMMBEDX509_CFLAGS) $(SYSTEMMBEDCRYPTO_CFLAGS)
 endif
 
 # Miscellaneous
@@ -1044,14 +1072,20 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
+   ifneq ($(HAVE_LAKKA_PROJECT),)
+      DEFINES += -DHAVE_LAKKA_PROJECT=\"${HAVE_LAKKA_PROJECT}\"
+   else
+      $(error You asked for Lakka, but you did not specify a target device name in HAVE_LAKKA_PROJECT)
+   endif
+   ifneq ($(HAVE_LAKKA_SERVER),)
+      DEFINES += -DHAVE_LAKKA_SERVER=\"${HAVE_LAKKA_SERVER}\"
+   else
+      $(error You asked for Lakka, but you did not specify update server in HAVE_LAKKA_SERVER)
+   endif
 endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
-endif
-
-ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
-   DEFINES += -DHAVE_LAKKA_NIGHTLY
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
@@ -1223,6 +1257,7 @@ ifeq ($(HAVE_WAYLAND), 1)
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland_common.o \
+        gfx/common/wayland/fractional-scale-v1.o \
         gfx/common/wayland/viewporter.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
@@ -1285,6 +1320,9 @@ ifeq ($(HAVE_X11), 1)
    DEF_FLAGS += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
+   endif
+   ifeq ($(HAVE_XSCRNSAVER),1)
+      LIBS += -lXss
    endif
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
@@ -1822,10 +1860,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DENABLE_HLSL
-      GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
-   endif
 else ifeq ($(HAVE_GLSLANG),1)
    HAVE_GLSLANG_COMMON = 1
    GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
@@ -1836,7 +1870,6 @@ else ifeq ($(HAVE_GLSLANG),1)
            $(GLSLANG_GENERICCODEGEN_LIBS) \
            $(GLSLANG_OSDEPENDENT_LIBS) \
            $(GLSLANG_OGLCOMPILER_LIBS) \
-           $(GLSLANG_HLSL_LIBS) \
            $(GLSLANG_SPIRV_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_OPT_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_LIBS)
@@ -1967,6 +2000,90 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
    ifeq ($(HAVE_CHD), 1)
       INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
       DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+      ifeq ($(HAVE_STATIC_CORES), 1)
+         DEFINES += -Dbitstream_overflow=retroarch_internal_bitstream_overflow
+         DEFINES += -Dcreate_bitstream=retroarch_internal_create_bitstream
+         DEFINES += -Dbitstream_peek=retroarch_internal_bitstream_peek
+         DEFINES += -Dbitstream_remove=retroarch_internal_bitstream_remove
+         DEFINES += -Dbitstream_read=retroarch_internal_bitstream_read
+         DEFINES += -Dbitstream_read_offset=retroarch_internal_bitstream_read_offset
+         DEFINES += -Dbitstream_flush=retroarch_internal_bitstream_flush
+
+         DEFINES += -Decc_compute_bytes=retroarch_internal_ecc_compute_bytes
+         DEFINES += -Decc_verify=retroarch_internal_ecc_verify
+         DEFINES += -Decc_generate=retroarch_internal_ecc_generate
+         DEFINES += -Decc_clear=retroarch_internal_ecc_clear
+
+         DEFINES += -Ds_cd_sync_header=retroarch_internal_s_cd_sync_header
+         DEFINES += -Dchd_open_file=retroarch_internal_chd_open_file
+         DEFINES += -Dchd_precache=retroarch_internal_chd_precache
+         DEFINES += -Dchd_open=retroarch_internal_chd_open
+         DEFINES += -Dchd_close=retroarch_internal_chd_close
+         DEFINES += -Dchd_core_file=retroarch_internal_chd_core_file
+         DEFINES += -Dchd_error_string=retroarch_internal_chd_error_string
+         DEFINES += -Dchd_get_header=retroarch_internal_chd_get_header
+         DEFINES += -Dchd_read=retroarch_internal_chd_read
+         DEFINES += -Dchd_get_metadata=retroarch_internal_chd_get_metadata
+         DEFINES += -Dchd_codec_config=retroarch_internal_chd_codec_config
+         DEFINES += -Dchd_get_codec_name=retroarch_internal_chd_get_codec_name
+
+         DEFINES += -Dcreate_huffman_decoder=retroarch_internal_create_huffman_decoder
+         DEFINES += -Ddelete_huffman_decoder=retroarch_internal_delete_huffman_decoder
+         DEFINES += -Dhuffman_decode_one=retroarch_internal_huffman_decode_one
+         DEFINES += -Dhuffman_import_tree_rle=retroarch_internal_huffman_import_tree_rle
+         DEFINES += -Dhuffman_import_tree_huffman=retroarch_internal_huffman_import_tree_huffman
+         DEFINES += -Dhuffman_compute_tree_from_histo=retroarch_internal_huffman_compute_tree_from_histo
+         DEFINES += -Dhuffman_build_tree=retroarch_internal_huffman_build_tree
+         DEFINES += -Dhuffman_assign_canonical_codes=retroarch_internal_huffman_assign_canonical_codes
+         DEFINES += -Dhuffman_build_lookup_table=retroarch_internal_huffman_build_lookup_table
+
+         DEFINES += -Dcdzl_codec_init=retroarch_internal_cdzl_codec_init
+         DEFINES += -Dcdzl_codec_free=retroarch_internal_cdzl_codec_free
+         DEFINES += -Dcdzl_codec_decompress=retroarch_internal_cdzl_codec_decompress
+         DEFINES += -Dzlib_codec_init=retroarch_internal_zlib_codec_init
+         DEFINES += -Dzlib_codec_free=retroarch_internal_zlib_codec_free
+         DEFINES += -Dzlib_codec_decompress=retroarch_internal_zlib_codec_decompress
+         DEFINES += -Dzlib_fast_alloc=retroarch_internal_zlib_fast_alloc
+         DEFINES += -Dzlib_fast_free=retroarch_internal_zlib_fast_free
+
+         DEFINES += -Dchdstream_open=retroarch_internal_chdstream_open
+         DEFINES += -Dchdstream_close=retroarch_internal_chdstream_close
+         DEFINES += -Dchdstream_read=retroarch_internal_chdstream_read
+         DEFINES += -Dchdstream_getc=retroarch_internal_chdstream_getc
+         DEFINES += -Dchdstream_gets=retroarch_internal_chdstream_gets
+         DEFINES += -Dchdstream_tell=retroarch_internal_chdstream_tell
+         DEFINES += -Dchdstream_rewind=retroarch_internal_chdstream_rewind
+         DEFINES += -Dchdstream_seek=retroarch_internal_chdstream_seek
+         DEFINES += -Dchdstream_get_size=retroarch_internal_chdstream_get_size
+         DEFINES += -Dchdstream_get_track_start=retroarch_internal_chdstream_get_track_start
+         DEFINES += -Dchdstream_get_frame_size=retroarch_internal_chdstream_get_frame_size
+         DEFINES += -Dchdstream_get_first_track_sector=retroarch_internal_chdstream_get_first_track_sector
+
+         DEFINES += -Dflac_decoder_init=retroarch_internal_flac_decoder_init
+         DEFINES += -Dflac_decoder_free=retroarch_internal_flac_decoder_free
+         DEFINES += -Dflac_decoder_reset=retroarch_internal_flac_decoder_reset
+         DEFINES += -Dflac_decoder_decode_interleaved=retroarch_internal_flac_decoder_decode_interleaved
+         DEFINES += -Dflac_decoder_finish=retroarch_internal_flac_decoder_finish
+         DEFINES += -Dflac_decoder_read_callback_static=retroarch_internal_flac_decoder_read_callback_static
+         DEFINES += -Dflac_decoder_read_callback=retroarch_internal_flac_decoder_read_callback
+         DEFINES += -Dflac_decoder_metadata_callback_static=retroarch_internal_flac_decoder_metadata_callback_static
+         DEFINES += -Dflac_decoder_tell_callback_static=retroarch_internal_flac_decoder_tell_callback_static
+         DEFINES += -Dflac_decoder_write_callback_static=retroarch_internal_flac_decoder_write_callback_static
+         DEFINES += -Dflac_decoder_write_callback=retroarch_internal_flac_decoder_write_callback
+         DEFINES += -Dflac_decoder_error_callback_static=retroarch_internal_flac_decoder_error_callback_static
+         DEFINES += -Dcdfl_codec_init=retroarch_internal_cdfl_codec_init
+         DEFINES += -Dcdfl_codec_free=retroarch_internal_cdfl_codec_free
+         DEFINES += -Dcdfl_codec_decompress=retroarch_internal_cdfl_codec_decompress
+
+         DEFINES += -Dlzma_allocator_init=retroarch_internal_lzma_allocator_init
+         DEFINES += -Dlzma_allocator_free=retroarch_internal_lzma_allocator_free
+         DEFINES += -Dlzma_codec_init=retroarch_internal_lzma_codec_init
+         DEFINES += -Dlzma_codec_free=retroarch_internal_lzma_codec_free
+         DEFINES += -Dlzma_codec_decompress=retroarch_internal_lzma_codec_decompress
+         DEFINES += -Dcdlz_codec_init=retroarch_internal_cdlz_codec_init
+         DEFINES += -Dcdlz_codec_free=retroarch_internal_cdlz_codec_free
+         DEFINES += -Dcdlz_codec_decompress=retroarch_internal_cdlz_codec_decompress
+      endif
       OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
@@ -2063,11 +2180,29 @@ ifeq ($(HAVE_NETWORKING), 1)
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
-	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
+
+   ifeq ($(HAVE_MENU), 1)
+      OBJ += tasks/task_pl_thumbnail_download.o
+   endif
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += tasks/task_core_updater.o
+   endif
+
+   ifneq ($(findstring Linux,$(OS)),)
+      HAVE_CLOUDSYNC = 1
+   endif
+   
+   ifneq ($(findstring Win,$(OS)),)
+      HAVE_CLOUDSYNC = 1
+   endif
+
+   ifeq ($(HAVE_CLOUDSYNC), 1)
+      DEFINES += -DHAVE_CLOUDSYNC
+      OBJ += tasks/task_cloudsync.o \
+             network/cloud_sync/webdav.o \
+             network/cloud_sync_driver.o
    endif
 
    ifeq ($(HAVE_BUILTINBEARSSL), 1)
@@ -2098,15 +2233,27 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS
+      DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
+
+      ifneq ($(HAVE_THREADS), 1)
+         DEFINES += -DRC_NO_THREADS
+      else ifneq (,$(filter GEKKO,$(CFLAGS)))
+         # Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c)
+         DEFINES += -DRC_NO_THREADS
+      else ifneq (,$(filter _3DS,$(CFLAGS)))
+         DEFINES += -DRC_NO_THREADS
+      endif
 
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
+             deps/rcheevos/src/rc_client.o \
+             deps/rcheevos/src/rc_compat.o \
+             deps/rcheevos/src/rc_libretro.o \
+             deps/rcheevos/src/rc_util.o \
              deps/rcheevos/src/rcheevos/alloc.o \
-             deps/rcheevos/src/rcheevos/compat.o \
              deps/rcheevos/src/rcheevos/condition.o \
              deps/rcheevos/src/rcheevos/condset.o \
              deps/rcheevos/src/rcheevos/consoleinfo.o \
@@ -2114,15 +2261,16 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
              deps/rcheevos/src/rcheevos/operand.o \
-             deps/rcheevos/src/rcheevos/rc_libretro.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
              deps/rcheevos/src/rcheevos/runtime.o \
              deps/rcheevos/src/rcheevos/runtime_progress.o \
              deps/rcheevos/src/rcheevos/trigger.o \
              deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/aes.o \
              deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
              deps/rcheevos/src/rapi/rc_api_common.o \
+             deps/rcheevos/src/rapi/rc_api_info.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
 
@@ -2368,13 +2516,16 @@ ifeq ($(WANT_LIBFAT), 1)
 endif
 
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
-   OBJ += libretro-common/audio/dsp_filters/echo.o \
+   OBJ += libretro-common/audio/dsp_filters/chorus.o \
+          libretro-common/audio/dsp_filters/crystalizer.o \
+          libretro-common/audio/dsp_filters/echo.o \
           libretro-common/audio/dsp_filters/eq.o \
-          libretro-common/audio/dsp_filters/chorus.o \
           libretro-common/audio/dsp_filters/iir.o \
           libretro-common/audio/dsp_filters/panning.o \
           libretro-common/audio/dsp_filters/phaser.o \
           libretro-common/audio/dsp_filters/reverb.o \
+          libretro-common/audio/dsp_filters/tremolo.o \
+          libretro-common/audio/dsp_filters/vibrato.o \
           libretro-common/audio/dsp_filters/wahwah.o
 endif
 
@@ -2401,6 +2552,13 @@ endif
 ifeq ($(HAVE_WEBOS), 1)
   DEFINES += -DWEBOS
 endif
+
+ifeq ($(HAVE_TEST_DRIVERS), 1)
+  DEFINES += -DHAVE_TEST_DRIVERS
+  OBJ += input/drivers_joypad/test_joypad.o
+  OBJ += input/drivers/test_input.o
+endif
+
 
 #####################################
 ### Android Play Feature Delivery ###

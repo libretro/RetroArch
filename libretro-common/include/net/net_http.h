@@ -51,6 +51,9 @@ void net_http_connection_set_user_agent(struct http_connection_t *conn, const ch
 
 void net_http_connection_set_headers(struct http_connection_t *conn, const char *headers);
 
+void net_http_connection_set_content(struct http_connection_t *conn, const char *content_type,
+      size_t content_length, const void *content);
+
 const char *net_http_connection_url(struct http_connection_t *conn);
 
 const char* net_http_connection_method(struct http_connection_t* conn);
@@ -92,6 +95,17 @@ int net_http_status(struct http_t *state);
  * Leaf function
  **/
 bool net_http_error(struct http_t *state);
+
+/**
+ * net_http_headers:
+ *
+ * Leaf function.
+ *
+ * @return the response headers. The returned buffer is owned by the
+ * caller of net_http_new; it is not freed by net_http_delete.
+ * If the status is not 20x and accept_error is false, it returns NULL.
+ **/
+struct string_list *net_http_headers(struct http_t *state);
 
 /**
  * net_http_data:

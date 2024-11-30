@@ -33,7 +33,6 @@
 #include <formats/image.h>
 
 #include "../video_driver.h"
-#include "../video_coord_array.h"
 #include "../drivers_shader/shader_gl3.h"
 
 RETRO_BEGIN_DECLS
@@ -57,7 +56,8 @@ enum gl3_flags
    GL3_FLAG_FULLSCREEN             = (1 <<  9),
    GL3_FLAG_QUITTING               = (1 << 10),
    GL3_FLAG_SHOULD_RESIZE          = (1 << 11),
-   GL3_FLAG_KEEP_ASPECT            = (1 << 12)
+   GL3_FLAG_KEEP_ASPECT            = (1 << 12),
+   GL3_FLAG_FRAME_DUPE_LOCK        = (1 << 13)
 };
 
 struct gl3_streamed_texture

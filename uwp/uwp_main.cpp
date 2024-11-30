@@ -54,8 +54,8 @@ using namespace Windows::Graphics::Display;
 using namespace Windows::Devices::Enumeration;
 using namespace Windows::Storage;
 
-char uwp_dir_install[PATH_MAX_LENGTH] = { 0 };
-char uwp_dir_data[PATH_MAX_LENGTH]    = { 0 };
+char uwp_dir_install[DIR_MAX_LENGTH]  = { 0 };
+char uwp_dir_data[DIR_MAX_LENGTH]     = { 0 };
 char uwp_device_family[128]           = { 0 };
 char win32_cpu_model_name[128]        = { 0 };
 
@@ -159,7 +159,6 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
    { (unsigned int)VirtualKey::RightControl, RETROK_RCTRL },
    { (unsigned int)VirtualKey::LeftMenu, RETROK_LALT },
    { (unsigned int)VirtualKey::RightMenu, RETROK_RALT },
-   { VK_RETURN, RETROK_KP_ENTER },
    { (unsigned int)VirtualKey::CapitalLock, RETROK_CAPSLOCK },
    { VK_OEM_1, RETROK_SEMICOLON },
    { VK_OEM_PLUS, RETROK_EQUALS },
@@ -225,7 +224,7 @@ int main(Platform::Array<Platform::String^>^)
    Platform::String^ data_dir     = local_folder + L"\\";
 
    /* Delete VFS cache dir, we do this because this allows a far more
-    * concise implementation than manually implementing a function to do this 
+    * concise implementation than manually implementing a function to do this
     * This may be a little slower but shouldn't really matter as the cache dir
     * should never have more than a few items */
    Platform::String^ vfs_dir     = local_folder + L"\\VFSCACHE";
@@ -275,7 +274,7 @@ App::App() :
 /* The first method called when the IFrameworkView is being created. */
 void App::Initialize(CoreApplicationView^ applicationView)
 {
-   /* Register event handlers for app lifecycle. This example 
+   /* Register event handlers for app lifecycle. This example
     * includes Activated, so that we can make the CoreWindow active and start
     * rendering on the window. */
    applicationView->Activated         +=
@@ -306,12 +305,6 @@ void App::SetWindow(CoreWindow^ window)
    window->Closed              +=
       ref new TypedEventHandler<CoreWindow^, CoreWindowEventArgs^>(this, &App::OnWindowClosed);
 
-   window->KeyDown             +=
-      ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKey);
-
-   window->KeyUp               +=
-      ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &App::OnKey);
-
    window->PointerPressed      +=
       ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
 
@@ -323,6 +316,9 @@ void App::SetWindow(CoreWindow^ window)
 
    window->PointerWheelChanged +=
       ref new TypedEventHandler<CoreWindow^, PointerEventArgs^>(this, &App::OnPointer);
+
+   window->Dispatcher->AcceleratorKeyActivated +=
+      ref new TypedEventHandler<CoreDispatcher^, AcceleratorKeyEventArgs^>(this, &App::OnAcceleratorKey);
 
    DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
@@ -369,9 +365,9 @@ void App::Run()
 
       if (!x)
       {
-         /* HACK: I have no idea why is this necessary but 
+         /* HACK: I have no idea why is this necessary but
           * it is required to get proper scaling on Xbox *
-          * Perhaps PreferredLaunchViewSize is broken and 
+          * Perhaps PreferredLaunchViewSize is broken and
           * we need to wait until the app starts to call TryResizeView */
          m_windowResized = true;
          x               = true;
@@ -383,27 +379,27 @@ void App::Run()
 }
 
 /* Required for IFrameworkView.
- * Terminate events do not cause Uninitialize to be called. 
+ * Terminate events do not cause Uninitialize to be called.
  * It will be called if your IFrameworkView
  * class is torn down while the app is in the foreground. */
 void App::Uninitialize()
 {
    main_exit(NULL);
 
-   /* If this instance of RetroArch was started from another app/frontend 
+   /* If this instance of RetroArch was started from another app/frontend
     * and the frontend passed "launchOnExit" parameter:
-    * 1. launch the app specified in "launchOnExit", most likely the 
+    * 1. launch the app specified in "launchOnExit", most likely the
     *    same app that started RetroArch
-    * 2. RetroArch goes to background and RunAsyncAndCatchErrors doesn't 
+    * 2. RetroArch goes to background and RunAsyncAndCatchErrors doesn't
     *    return, because the target app is immediately started.
-    * 3. Explicitly exit in App::OnEnteredBackground if 
-    *    m_launchOnExitShutdown is set. Otherwise, RetroArch doesn't 
+    * 3. Explicitly exit in App::OnEnteredBackground if
+    *    m_launchOnExitShutdown is set. Otherwise, RetroArch doesn't
     *    properly shutdown.
     */
    if (m_launchOnExit != nullptr && !m_launchOnExit->IsEmpty())
-   {		
+   {
       try
-      {			
+      {
          /* Launch the target app */
          m_launchOnExitShutdown = true;
          auto ret               = RunAsyncAndCatchErrors<bool>([&]() {
@@ -423,12 +419,12 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
    int ret;
    int argc = NULL;
    std::vector<char*> argv;
-   /* using std::string as temp buf instead of char* array 
+   /* using std::string as temp buf instead of char* array
     * to avoid manual char allocations */
-   std::vector<std::string> argvTmp; 
+   std::vector<std::string> argvTmp;
    ParseProtocolArgs(args, &argc, &argv, &argvTmp);
 
-   /* Start only if not already initialized. 
+   /* Start only if not already initialized.
     * If there is a game in progress, just return */
    if (m_initialized)
       return;
@@ -446,16 +442,16 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
       bool reset                 = false;
       int width                  = uwp_get_width();
       int height                 = uwp_get_height();
-      /* Reset driver to D3D11 if set to OpenGL on boot as cores can 
-       * just set to 'gl' when needed and there is no good reason to 
+      /* Reset driver to D3D11 if set to OpenGL on boot as cores can
+       * just set to 'gl' when needed and there is no good reason to
        * use 'gl' for the menus
-       * Do not change the default driver if the content is already 
-       * initialized through arguments, as this would crash RA for 
+       * Do not change the default driver if the content is already
+       * initialized through arguments, as this would crash RA for
        * cores that use only ANGLE */
       settings_t *settings       = config_get_ptr();
       content_state_t *p_content = content_state_get_ptr();
       char *currentdriver        = settings->arrays.video_driver;
-      if (     strcmpi(currentdriver, "gl") == 0 
+      if (     strcmpi(currentdriver, "gl") == 0
             && !p_content->flags & CONTENT_ST_FLAG_IS_INITED)
       {
          /* Set driver to default */
@@ -464,7 +460,7 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
                config_get_default_video());
          reset = true; /* Reset needed */
       }
-      if (     (settings->uints.video_fullscreen_x != width) 
+      if (     (settings->uints.video_fullscreen_x != width)
             || (settings->uints.video_fullscreen_y != height))
       {
          /* Get width and height from display again */
@@ -486,15 +482,15 @@ void App::OnActivated(CoreApplicationView^ applicationView, IActivatedEventArgs^
 
 void App::OnSuspending(Platform::Object^ sender, SuspendingEventArgs^ args)
 {
-   /* This function will ensure that configs are saved in case the app 
+   /* This function will ensure that configs are saved in case the app
     * is sent to background or terminated for saving configs on quit
-    * for saving configs on quit now configs will be saved in 
+    * for saving configs on quit now configs will be saved in
     * `retroarch_main_quit` at `retroarch.c`
-    * If this function is called because of app closed by quit, 
+    * If this function is called because of app closed by quit,
     * the below code must be ignored
 
-   /* Save app state asynchronously after requesting a deferral. 
-    * Holding a deferral indicates that the application is busy 
+   /* Save app state asynchronously after requesting a deferral.
+    * Holding a deferral indicates that the application is busy
     * performing suspending operations. Be aware that a deferral may
     * not be held indefinitely. After about five seconds, the app will
     * be forced to exit. */
@@ -547,7 +543,7 @@ void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 
 void App::OnEnteredBackground(Platform::Object^ sender, EnteredBackgroundEventArgs^ args)
 {
-   /* RetroArch entered background because another app/frontend 
+   /* RetroArch entered background because another app/frontend
     * was launched on exit, so properly quit */
    if (m_launchOnExitShutdown)
       CoreApplication::Exit();
@@ -574,29 +570,79 @@ void App::OnVisibilityChanged(CoreWindow^ sender, VisibilityChangedEventArgs^ ar
 void App::OnWindowActivated(CoreWindow^ sender, WindowActivatedEventArgs^ args)
 {
    m_windowFocused = args->WindowActivationState != CoreWindowActivationState::Deactivated;
+   if (!m_windowFocused)
+   {
+      /* When deactivating the window, send key up events for anything still held down */
+      for (rarch_key_map it : rarch_key_map_uwp)
+      {
+         if ((sender->GetKeyState((VirtualKey)it.sym) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
+            input_keyboard_event(false, it.rk, 0, 0, RETRO_DEVICE_KEYBOARD);
+      }
+   }
 }
 
-void App::OnKey(CoreWindow^ sender, KeyEventArgs^ args)
+void App::OnAcceleratorKey(CoreDispatcher^ sender, AcceleratorKeyEventArgs^ args)
 {
-   unsigned keycode;
+   if (args->EventType != CoreAcceleratorKeyEventType::KeyDown && args->EventType != CoreAcceleratorKeyEventType::KeyUp &&
+       args->EventType != CoreAcceleratorKeyEventType::SystemKeyDown && args->EventType != CoreAcceleratorKeyEventType::SystemKeyUp)
+      return;
+
+   /* Unlike CoreWindow::KeyDown/KeyUp events, this callback gets called for all keys including
+    * F10, Alt and any keys pressed in addition to while Alt is being held down. */
+   bool down = !args->KeyStatus.IsKeyReleased;
+   bool extended = args->KeyStatus.IsExtendedKey;
+   VirtualKey vkey = args->VirtualKey;
+   CoreWindow^ window = CoreWindow::GetForCurrentThread();
+
+   /* Some keys we need to specify via the extended flag */
+   unsigned keycode = RETROK_UNKNOWN;
+   if (vkey == VirtualKey::Enter)
+      keycode = (extended ? RETROK_KP_ENTER : RETROK_RETURN);
+   else if (vkey == VirtualKey::Control)
+      keycode = (extended ? RETROK_RCTRL : RETROK_LCTRL);
+   else if (vkey == VirtualKey::Menu)
+      keycode = (extended ? RETROK_RALT : RETROK_LALT);
+   else if (vkey == VirtualKey::Shift)
+   {
+      /* Shift is just sent generic, we need to query for and remember left or right */
+      bool left_down = ((window->GetKeyState(VirtualKey::LeftShift) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down);
+      bool right_down = ((window->GetKeyState(VirtualKey::RightShift) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down);
+      static bool had_left_down, had_right_down;
+      if (down != had_left_down && down == left_down)
+      {
+         had_left_down = down;
+         keycode = RETROK_LSHIFT;
+      }
+      else if (down != had_right_down && down == right_down)
+      {
+         had_right_down = down;
+         keycode = RETROK_RSHIFT;
+      }
+   }
+   else
+      keycode = input_keymaps_translate_keysym_to_rk((unsigned)vkey);
+
+   if (keycode == RETROK_UNKNOWN)
+      return;
+
    uint16_t mod = 0;
-   if ((sender->GetKeyState(VirtualKey::Shift) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::Shift) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_SHIFT;
-   if ((sender->GetKeyState(VirtualKey::Control) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::Control) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_CTRL;
-   if ((sender->GetKeyState(VirtualKey::Menu) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::Menu) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_ALT;
-   if ((sender->GetKeyState(VirtualKey::CapitalLock) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::CapitalLock) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
       mod |= RETROKMOD_CAPSLOCK;
-   if ((sender->GetKeyState(VirtualKey::Scroll) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::Scroll) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
       mod |= RETROKMOD_SCROLLOCK;
-   if ((sender->GetKeyState(VirtualKey::LeftWindows) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked ||
-         (sender->GetKeyState(VirtualKey::RightWindows) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+   if ((window->GetKeyState(VirtualKey::NumberKeyLock) & CoreVirtualKeyStates::Locked) == CoreVirtualKeyStates::Locked)
+      mod |= RETROKMOD_NUMLOCK;
+   if ((window->GetKeyState(VirtualKey::LeftWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down ||
+         (window->GetKeyState(VirtualKey::RightWindows) & CoreVirtualKeyStates::Down) == CoreVirtualKeyStates::Down)
       mod |= RETROKMOD_META;
 
-   keycode = input_keymaps_translate_keysym_to_rk((unsigned)args->VirtualKey);
-
-   input_keyboard_event(!args->KeyStatus.IsKeyReleased, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
+   input_keyboard_event(down, keycode, 0, mod, RETRO_DEVICE_KEYBOARD);
 }
 
 void App::OnPointer(CoreWindow^ sender, PointerEventArgs^ args)
@@ -709,12 +755,12 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
    argvTmp->clear();
    argv->clear();
 
-   /* If the app is activated using protocol, 
+   /* If the app is activated using protocol,
     * it is expected to be in this format:
     * "retroarch:?cmd=<RetroArch CLI arguments>&launchOnExit=<app to launch on exit>"
     * For example:
     * retroarch:?cmd=retroarch -L cores\core_libretro.dll "c:\mypath\path with spaces\game.rom"&launchOnExit=LaunchApp:
-    * "cmd" and "launchOnExit" are optional. If none specified, 
+    * "cmd" and "launchOnExit" are optional. If none specified,
     * it will normally launch into menu
     */
    if (args->Kind == ActivationKind::Protocol)
@@ -736,7 +782,7 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
          {
             std::wstring wsValue(arg->Value->ToString()->Data());
             std::string strValue(wsValue.begin(), wsValue.end());
-            std::istringstream iss(strValue);				
+            std::istringstream iss(strValue);
             std::string s;
 
             /* Set escape character to NULL char to preserve backslashes in
@@ -744,8 +790,8 @@ void App::ParseProtocolArgs(Windows::ApplicationModel::Activation::IActivatedEve
             while (iss >> std::quoted(s, '"', (char)0))
                argvTmp->push_back(s);
          }
-         /* If RetroArch UWP app is started using protocol 
-          * with argument "launchOnExit", this gives an option 
+         /* If RetroArch UWP app is started using protocol
+          * with argument "launchOnExit", this gives an option
           * to launch another app on RA exit,
           * making it easy to integrate RA with other UWP frontends */
          else if (arg->Name == "launchOnExit")
@@ -782,7 +828,7 @@ extern "C" {
    {
       if (App::GetInstance()->IsInitialized())
       {
-         if (fullscreen != 
+         if (fullscreen !=
                ApplicationView::GetForCurrentView()->IsFullScreenMode)
          {
             if (fullscreen)
@@ -794,11 +840,11 @@ extern "C" {
       }
       else
       {
-         /* In case the window is not activated yet, 
-          * TryResizeView will fail and we have to set the 
+         /* In case the window is not activated yet,
+          * TryResizeView will fail and we have to set the
           * initial parameters instead
-          * Note that these are preserved after restarting the app 
-          * and used for the UWP splash screen size (!), so they 
+          * Note that these are preserved after restarting the app
+          * and used for the UWP splash screen size (!), so they
           * should be set only during init and not changed afterwards */
          ApplicationView::PreferredLaunchViewSize      = Size(width, height);
          ApplicationView::PreferredLaunchWindowingMode = fullscreen ? ApplicationViewWindowingMode::FullScreen : ApplicationViewWindowingMode::PreferredLaunchViewSize;
@@ -895,8 +941,13 @@ extern "C" {
       return (void*)CoreWindow::GetForCurrentThread();
    }
 
+   int current_height = -1;
+
    int uwp_get_height(void)
    {
+       if (current_height != -1)
+           return current_height;
+
       /* This function must be performed within UI thread,
        * otherwise it will cause a crash in specific cases
        * https://github.com/libretro/RetroArch/issues/13491 */
@@ -919,7 +970,7 @@ extern "C" {
                const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
                surface_scale                 = static_cast<float>(resolution_scale) / 100.0f;
                ret                           = static_cast<LONG32>(
-                     CoreWindow::GetForCurrentThread()->Bounds.Height 
+                     CoreWindow::GetForCurrentThread()->Bounds.Height
                      * surface_scale);
                }
                finished = true;
@@ -930,11 +981,17 @@ extern "C" {
          if (corewindow)
             corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
       }
+      current_height = ret;
       return ret;
    }
 
+   int current_width = -1;
+
    int uwp_get_width(void)
    {
+       if (current_width != -1)
+           return current_width;
+
       /* This function must be performed within UI thread,
        * otherwise it will cause a crash in specific cases
        * https://github.com/libretro/RetroArch/issues/13491 */
@@ -957,7 +1014,7 @@ extern "C" {
                const LONG32 resolution_scale = static_cast<LONG32>(Windows::Graphics::Display::DisplayInformation::GetForCurrentView()->ResolutionScale);
                surface_scale = static_cast<float>(resolution_scale) / 100.0f;
                returnValue   = static_cast<LONG32>(
-                     CoreWindow::GetForCurrentThread()->Bounds.Width 
+                     CoreWindow::GetForCurrentThread()->Bounds.Width
                      * surface_scale);
                }
                finished = true;
@@ -968,7 +1025,7 @@ extern "C" {
          if (corewindow)
             corewindow->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
       }
-
+      current_width = returnValue;
       return returnValue;
    }
 
@@ -1016,12 +1073,12 @@ extern "C" {
       switch (id)
       {
          case RETRO_DEVICE_ID_MOUSE_X:
-            return screen 
-               ? uwp_current_input.mouse_screen_x 
+            return screen
+               ? uwp_current_input.mouse_screen_x
                : uwp_current_input.mouse_rel_x;
          case RETRO_DEVICE_ID_MOUSE_Y:
-            return screen 
-               ? uwp_current_input.mouse_screen_y 
+            return screen
+               ? uwp_current_input.mouse_screen_y
                : uwp_current_input.mouse_rel_y;
          case RETRO_DEVICE_ID_MOUSE_LEFT:
             return uwp_current_input.mouse_left;
@@ -1051,12 +1108,12 @@ extern "C" {
       switch (id)
       {
          case RETRO_DEVICE_ID_POINTER_X:
-            return screen 
-               ? uwp_current_input.touch[idx].full_x 
+            return screen
+               ? uwp_current_input.touch[idx].full_x
                : uwp_current_input.touch[idx].x;
          case RETRO_DEVICE_ID_POINTER_Y:
-            return screen 
-               ? uwp_current_input.touch[idx].full_y 
+            return screen
+               ? uwp_current_input.touch[idx].full_y
                : uwp_current_input.touch[idx].y;
          case RETRO_DEVICE_ID_POINTER_PRESSED:
             return uwp_current_input.touch[idx].isInContact;
@@ -1103,8 +1160,10 @@ extern "C" {
 
    const char* uwp_get_cpu_model_name(void)
    {
-      /* TODO/FIXME - Xbox codepath should have a hardcoded CPU model name */
-      if (is_running_on_xbox()) { }
+      if (is_running_on_xbox())
+      {
+        return "Xbox One/Series CPU";
+      }
       else
       {
          Platform::String^ cpu_id    = nullptr;

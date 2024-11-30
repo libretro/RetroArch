@@ -87,7 +87,7 @@ static void* hidpad_wiiugca_init(void *data, uint32_t slot, hid_driver_t *driver
       device->pad_data[i].joypad      = NULL;
       device->pad_data[i].pad_index   = i;
    }
-   
+
    device->driver                     = driver;
 
    device->driver->send_control(device->handle, magic_data, sizeof(magic_data));
@@ -135,7 +135,7 @@ static int16_t hidpad_wiiugca_get_axis(void *pad_data, unsigned axis)
    if (!pad || axis_data.axis >= 4)
       return 0;
    if (pad->datatype == GCA_TYPE_PAD)
-      return gamepad_get_axis_value(pad->analog, &axis_data);
+      return gamepad_get_axis_value_raw(pad->analog, &axis_data, false);
    return gamepad_get_axis_value(device->pad_data[0].analog, &axis_data);
 }
 
@@ -175,7 +175,7 @@ static void update_analog_state(gca_pad_data_t *pad)
    int pad_axis;
 
    /* GameCube analog axis are 8-bit unsigned, where 128/128 is center.
-    * So, we subtract 128 to get a signed, 0-based value and then mulitply
+    * So, we subtract 128 to get a signed, 0-based value and then multiply
     * by 256 to get the 16-bit range RetroArch expects. */
    for (pad_axis = 0; pad_axis < 4; pad_axis++)
    {

@@ -15,13 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* OpenGL 1.x driver. 
+/* OpenGL 1.x driver.
  *
  * Minimum version : OpenGL 1.1 (1997)
  *
- * We are targeting a minimum of OpenGL 1.1 and the Microsoft 
+ * We are targeting a minimum of OpenGL 1.1 and the Microsoft
  * "GDI Generic" * software GL implementation.
- * Any additional features added for later 1.x versions should only be 
+ * Any additional features added for later 1.x versions should only be
  * enabled if they are detected at runtime. */
 
 #include <stddef.h>
@@ -260,7 +260,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
                sizeof(float) * 2);
          vertices3[i * 3 + 2]  = 0.0f;
       }
-      glVertexPointer(3, GL_FLOAT, 0, vertices3);   
+      glVertexPointer(3, GL_FLOAT, 0, vertices3);
    }
 #else
    glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
@@ -503,7 +503,7 @@ static void gl1_raster_font_draw_vertices(
          vertices3[i*3+2] = 0.0f;
       }
    }
-   glVertexPointer(3, GL_FLOAT, 0, vertices3);   
+   glVertexPointer(3, GL_FLOAT, 0, vertices3);
 #else
    glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
 #endif
@@ -1115,26 +1115,8 @@ static void *gl1_init(const video_info_t *video,
    RARCH_LOG("[GL1]: Version: %s.\n", version);
    RARCH_LOG("[GL1]: Extensions: %s\n", extensions);
 
-   {
-      char device_str[128];
-      size_t len    = 0;
-      device_str[0] = '\0';
-
-      if (!string_is_empty(vendor))
-      {
-         len               = strlcpy(device_str, vendor, sizeof(device_str));
-         device_str[  len] = ' ';
-         device_str[++len] = '\0';
-      }
-
-      if (!string_is_empty(renderer))
-         strlcpy(device_str + len, renderer, sizeof(device_str) - len);
-
-      video_driver_set_gpu_device_string(device_str);
-
-      if (!string_is_empty(version))
-         video_driver_set_gpu_api_version_string(version);
-   }
+   if (!string_is_empty(version))
+      video_driver_set_gpu_api_version_string(version);
 
    if (gl1->ctx_driver->input_driver)
    {
@@ -1171,7 +1153,7 @@ static void *gl1_init(const video_info_t *video,
 
    memcpy(gl1->tex_info.coord, gl1_tex_coords, sizeof(gl1->tex_info.coord));
    gl1->vertex_ptr            = hwr->bottom_left_origin
-                              ? gl1_vertexes 
+                              ? gl1_vertexes
                               : gl1_vertexes_flipped;
    gl1->textures              = 4;
    gl1->white_color_ptr       = gl1_white_color;
@@ -1245,54 +1227,16 @@ static void gl1_set_viewport(gl1_t *gl1,
       video_viewport_get_scaled_integer(&gl1->vp,
             viewport_width, viewport_height,
             video_driver_get_aspect_ratio(),
-            gl1->flags & GL1_FLAG_KEEP_ASPECT);
+            gl1->flags & GL1_FLAG_KEEP_ASPECT, false);
       viewport_width  = gl1->vp.width;
       viewport_height = gl1->vp.height;
    }
    else if ((gl1->flags & GL1_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* OpenGL has bottom-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = height - custom_vp->y - custom_vp->height;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl1->vp.x      = x;
-      gl1->vp.y      = y;
-      gl1->vp.width  = viewport_width;
-      gl1->vp.height = viewport_height;
+      gl1->vp.full_height = gl1->video_height;
+      video_viewport_get_scaled_aspect2(&gl1->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
+      viewport_width  = gl1->vp.width;
+      viewport_height = gl1->vp.height;
    }
    else
    {
@@ -1300,12 +1244,6 @@ static void gl1_set_viewport(gl1_t *gl1,
       gl1->vp.width  = viewport_width;
       gl1->vp.height = viewport_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl1->vp.y *= 2;
-#endif
 
    glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
@@ -1332,10 +1270,10 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
    GLenum type            = GL_UNSIGNED_BYTE;
 #endif
    float vertices[]       = {
-	   -1.0f, -1.0f, 0.0f,
-	   -1.0f,  1.0f, 0.0f,
-	    1.0f, -1.0f, 0.0f,
-	    1.0f,  1.0f, 0.0f,
+      -1.0f, -1.0f, 0.0f,
+      -1.0f,  1.0f, 0.0f,
+       1.0f, -1.0f, 0.0f,
+       1.0f,  1.0f, 0.0f,
    };
 
    float colors[]         = {
@@ -1347,14 +1285,14 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
    float norm_width       = (1.0f / (float)pot_width) * (float)width;
    float norm_height      = (1.0f / (float)pot_height) * (float)height;
-   
+
    float texcoords[]      = {
       0.0f, 0.0f,
       0.0f, 0.0f,
       0.0f, 0.0f,
       0.0f, 0.0f
    };
-   
+
    texcoords[1] = texcoords[5] = norm_height;
    texcoords[4] = texcoords[6] = norm_width;
 
@@ -1447,17 +1385,17 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
    if (gl1->rotation && tex == gl1->tex)
       glRotatef(gl1->rotation, 0.0f, 0.0f, 1.0f);
-   
+
    glEnableClientState(GL_COLOR_ARRAY);
    glEnableClientState(GL_VERTEX_ARRAY);
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-   
+
    glColorPointer(4, GL_FLOAT, 0, colors);
    glVertexPointer(3, GL_FLOAT, 0, vertices);
    glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   
+
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_VERTEX_ARRAY);
    glDisableClientState(GL_COLOR_ARRAY);
@@ -1470,6 +1408,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
 static void gl1_readback(gl1_t *gl1,
       unsigned alignment, unsigned fmt, unsigned type,
+      unsigned video_width, unsigned video_height,
       void *src)
 {
 #ifndef VITA
@@ -1477,8 +1416,12 @@ static void gl1_readback(gl1_t *gl1,
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
 #endif
-   glReadPixels(gl1->vp.x, gl1->vp.y,
-         gl1->vp.width, gl1->vp.height,
+
+   glReadPixels(
+         (gl1->vp.x > 0) ? gl1->vp.x : 0,
+         (gl1->vp.y > 0) ? gl1->vp.y : 0,
+         (gl1->vp.width  > video_width)  ? video_width  : gl1->vp.width,
+         (gl1->vp.height > video_height) ? video_height : gl1->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
@@ -1499,8 +1442,10 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned pot_height              = 0;
    unsigned video_width             = video_info->width;
    unsigned video_height            = video_info->height;
+   int bfi_light_frames;
+   unsigned n;
 #ifdef HAVE_MENU
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive               = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active              = video_info->widgets_active;
@@ -1539,7 +1484,7 @@ static bool gl1_frame(void *data, const void *frame,
          && (frame_width < width && frame_height < height))
       )
       draw = false;
-   
+
    do_swap = frame || draw;
 
    if (     (gl1->video_width  != frame_width)
@@ -1554,7 +1499,7 @@ static bool gl1_frame(void *data, const void *frame,
 
          pot_width         = GET_POT(frame_width);
          pot_height        = GET_POT(frame_height);
-         
+
          if (draw)
          {
             if (gl1->video_buf)
@@ -1606,7 +1551,7 @@ static bool gl1_frame(void *data, const void *frame,
    {
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-   
+
       if (frame_to_copy)
          gl1_draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy);
@@ -1716,6 +1661,7 @@ static bool gl1_frame(void *data, const void *frame,
 #else
             GL_UNSIGNED_BYTE,
 #endif
+            video_width, video_height,
             gl1->readback_buffer_screenshot);
 
 
@@ -1730,25 +1676,54 @@ static bool gl1_frame(void *data, const void *frame,
          video_info->black_frame_insertion
          && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
-         && !video_info->runloop_is_paused 
+         && !video_info->runloop_is_paused
          && !(gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE))
    {
-        int n;
-        for (n = 0; n < (int)video_info->black_frame_insertion; ++n)
-        {
-          glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-          glClear(GL_COLOR_BUFFER_BIT);			
 
-          if (gl1->ctx_driver->swap_buffers)
-            gl1->ctx_driver->swap_buffers(gl1->ctx_data);
-        }  
-   }   
-#endif 
+      if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
+      video_info->bfi_dark_frames = video_info->black_frame_insertion;
 
-   /* check if we are fast forwarding or in menu, 
+      /* BFI now handles variable strobe strength, like on-off-off, vs on-on-off for 180hz.
+         This needs to be done with duping frames instead of increased swap intervals for
+         a couple reasons. Swap interval caps out at 4 in most all apis as of coding,
+         and seems to be flat ignored >1 at least in modern Windows for some older APIs. */
+      bfi_light_frames = video_info->black_frame_insertion - video_info->bfi_dark_frames;
+      if (bfi_light_frames > 0 && !(gl1->flags & GL1_FLAG_FRAME_DUPE_LOCK))
+      {
+         gl1->flags |= GL1_FLAG_FRAME_DUPE_LOCK;
+
+         while (bfi_light_frames > 0)
+         {
+            if (!(gl1_frame(gl1, frame, 0, 0, frame_count, 0, msg, video_info)))
+            {
+               gl1->flags &= ~GL1_FLAG_FRAME_DUPE_LOCK;
+               return false;
+            }
+            --bfi_light_frames;
+         }
+         gl1->flags &= ~GL1_FLAG_FRAME_DUPE_LOCK;
+      }
+
+      for (n = 0; n < video_info->bfi_dark_frames; ++n)
+      {
+         if (!(gl1->flags & GL1_FLAG_FRAME_DUPE_LOCK))
+         {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            if (gl1->ctx_driver->swap_buffers)
+               gl1->ctx_driver->swap_buffers(gl1->ctx_data);
+         }
+      }
+   }
+#endif
+
+
+   /* check if we are fast forwarding or in menu,
       if we are ignore hard sync */
    if (      hard_sync
          && !video_info->input_driver_nonblock_state
+
       )
    {
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1760,7 +1735,6 @@ static bool gl1_frame(void *data, const void *frame,
       glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }
-
    return true;
 }
 
@@ -1962,9 +1936,9 @@ static void gl1_set_texture_frame(void *data,
          if (gl1->menu_frame)
             free(gl1->menu_frame);
 
-         /* FIXME? We have to assume the pitch has no 
-          * extra padding in it because that will 
-          * mess up the POT calculation when we don't 
+         /* FIXME? We have to assume the pitch has no
+          * extra padding in it because that will
+          * mess up the POT calculation when we don't
           * know how many bpp there are. */
          gl1->menu_frame = (unsigned char*)malloc(pitch * height);
       }
@@ -2062,20 +2036,20 @@ static void gl1_load_texture_data(
 
    glTexImage2D(GL_TEXTURE_2D,
          0,
-         (use_rgba || !rgb32) 
-         ? GL_RGBA 
+         (use_rgba || !rgb32)
+         ? GL_RGBA
          : RARCH_GL1_INTERNAL_FORMAT32,
          width,
          height,
          0,
-         (use_rgba || !rgb32) 
-         ? GL_RGBA 
+         (use_rgba || !rgb32)
+         ? GL_RGBA
          : RARCH_GL1_TEXTURE_TYPE32,
 #ifdef MSB_FIRST
          GL_UNSIGNED_INT_8_8_8_8_REV,
 #else
          rgb32
-         ? RARCH_GL1_FORMAT32 
+         ? RARCH_GL1_FORMAT32
          : GL_UNSIGNED_BYTE,
 #endif
          frame);
@@ -2118,11 +2092,29 @@ static void video_texture_load_gl1(
 static int video_texture_load_wrap_gl1(void *data)
 {
    uintptr_t id = 0;
-   if (!data)
-      return 0;
-   video_texture_load_gl1((struct texture_image*)data,
-         TEXTURE_FILTER_NEAREST, &id);
+   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+
+   if (gl1->ctx_driver->make_current)
+      gl1->ctx_driver->make_current(false);
+
+   if (data)
+      video_texture_load_gl1((struct texture_image*)data,
+            TEXTURE_FILTER_NEAREST, &id);
    return (int)id;
+}
+
+static int video_texture_unload_wrap_gl1(void *data)
+{
+   GLuint  glid;
+   uintptr_t id = (uintptr_t)data;
+   gl1_t   *gl1 = (gl1_t*)video_driver_get_ptr();
+
+   if (gl1 && gl1->ctx_driver->make_current)
+      gl1->ctx_driver->make_current(false);
+
+   glid = (GLuint)id;
+   glDeleteTextures(1, &glid);
+   return 0;
 }
 #endif
 
@@ -2137,10 +2129,7 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
       gl1_t                   *gl1 = (gl1_t*)video_data;
       custom_command_method_t func = video_texture_load_wrap_gl1;
 
-      if (gl1->ctx_driver->make_current)
-         gl1->ctx_driver->make_current(false);
-
-      return video_thread_texture_load(data, func);
+      return video_thread_texture_handle(data, func);
    }
 #endif
 
@@ -2155,19 +2144,19 @@ static void gl1_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       gl1->flags |= (GL1_FLAG_KEEP_ASPECT | GL1_FLAG_SHOULD_RESIZE);
 }
 
-static void gl1_unload_texture(void *data, 
+static void gl1_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    GLuint glid;
-   gl1_t *gl1 = (gl1_t*)data;
    if (!id)
       return;
 
 #ifdef HAVE_THREADS
    if (threaded)
    {
-      if (gl1->ctx_driver->make_current)
-         gl1->ctx_driver->make_current(false);
+      custom_command_method_t func = video_texture_unload_wrap_gl1;
+      video_thread_texture_handle((void *)id, func);
+      return;
    }
 #endif
 

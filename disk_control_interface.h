@@ -241,7 +241,8 @@ bool disk_control_set_initial_index(
  **/
 bool disk_control_verify_initial_index(
       disk_control_interface_t *disk_control,
-      bool verbosity);
+      bool verbosity,
+      bool enabled);
 
 /**
  * disk_control_save_image_index:

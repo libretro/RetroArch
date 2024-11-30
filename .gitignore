@@ -14,6 +14,7 @@
 *.swp
 *.cache
 *.gcda
+*.lcbk
 *.gcno
 .tmp
 .tmp.c
@@ -96,6 +97,10 @@ database
 overlays
 playlists
 states
+cheats
+thumbnails
+docs/html
+system
 shaders/shaders_cg
 shaders/shaders_glsl
 shaders/shaders_slang
@@ -134,6 +139,7 @@ wiiu/wut/elf2rpl/elf2rpl
 
 # CLion
 /cmake-build-debug/
+.run
 
 # Android
 /pkg/android/phoenix/obj/
@@ -154,6 +160,7 @@ wiiu/wut/elf2rpl/elf2rpl
 /media/shaders_cg/
 /media/libretrodb/
 
+compile_commands.json
 pkg/apple/iOS/build/
 pkg/apple/build/
 ui/drivers/qt/moc_*
@@ -206,6 +213,10 @@ retroarch_switch.nso
 *_irx.c
 
 # Wayland
+gfx/common/wayland/fractional-scale-v1.c
+gfx/common/wayland/fractional-scale-v1.h
+gfx/common/wayland/viewporter.c
+gfx/common/wayland/viewporter.h
 gfx/common/wayland/idle-inhibit-unstable-v1.c
 gfx/common/wayland/idle-inhibit-unstable-v1.h
 gfx/common/wayland/xdg-shell-unstable-v6.c
@@ -238,3 +249,6 @@ param.sfo
 
 # Visual Studio Code
 .vscode/
+
+# Clazy
+*.clazy.yaml

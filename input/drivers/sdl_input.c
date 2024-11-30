@@ -39,9 +39,6 @@
 #include <dlfcn.h>
 #endif
 
-/* TODO/FIXME -
- * fix game focus toggle */
-
 typedef struct sdl_input
 {
    int mouse_x;
@@ -91,6 +88,9 @@ static bool sdl_key_pressed(int key)
    unsigned sym          = rarch_keysym_lut[(enum retro_key)key];
 #endif
 
+   if (!key)
+      return false;
+
 #ifdef WEBOS
    if (   (key == RETROK_BACKSPACE )
        && sdl_webos_special_keymap[sdl_webos_spkey_back])
@@ -139,11 +139,17 @@ static int16_t sdl_input_state(
          {
             unsigned i;
 
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (!keyboard_mapping_blocked)
             {
-               if (binds[port][i].valid)
-                  if (sdl_key_pressed(binds[port][i].key))
-                     ret |= (1 << i);
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+               {
+                  if (binds[port][i].valid)
+                  {
+                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                           && sdl_key_pressed(binds[port][i].key))
+                        ret |= (1 << i);
+                  }
+               }
             }
 
             return ret;
@@ -152,8 +158,13 @@ static int16_t sdl_input_state(
          if (id < RARCH_BIND_LIST_END)
          {
             if (binds[port][id].valid)
-               if (sdl_key_pressed(binds[port][id].key))
+            {
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && sdl_key_pressed(binds[port][id].key)
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
                   return 1;
+            }
          }
          break;
       case RETRO_DEVICE_ANALOG:
@@ -172,18 +183,18 @@ static int16_t sdl_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                if (sdl_key_pressed(id_plus_key))
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                if (sdl_key_pressed(id_minus_key))
                   ret += -0x7fff;
             }
          }
-	 return ret;
+         return ret;
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
@@ -284,7 +295,7 @@ static int16_t sdl_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && sdl_key_pressed(id);
+         return (id && id < RETROK_LAST) && sdl_key_pressed(id);
       case RETRO_DEVICE_LIGHTGUN:
          switch (id)
          {
@@ -314,7 +325,6 @@ static void sdl_input_free(void *data)
 #ifndef HAVE_SDL2
    SDL_Event event;
 #endif
-   sdl_input_t *sdl = (sdl_input_t*)data;
 
    if (!data)
       return;
@@ -430,6 +440,11 @@ static void sdl_input_poll(void *data)
 
          if (event.key.keysym.mod & KMOD_CAPS)
             mod |= RETROKMOD_CAPSLOCK;
+
+         /* KMOD_SCROLL was added in SDL 2.0.18, use the raw number
+            to stay backwards compatible with older versions */
+         if (event.key.keysym.mod & 0x8000 /*KMOD_SCROLL*/)
+            mod |= RETROKMOD_SCROLLOCK;
 
          input_keyboard_event(event.type == SDL_KEYDOWN, code, code, mod,
                RETRO_DEVICE_KEYBOARD);

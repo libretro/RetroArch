@@ -58,8 +58,9 @@ static void task_auto_translate_handler(retro_task_t *task)
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
 #endif
+   uint8_t flg                 = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (*mode_ptr)
@@ -87,11 +88,11 @@ task_finished:
    if (access_st->ai_service_auto == 1)
       access_st->ai_service_auto = 2;
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
    {
-      bool was_paused = runloop_flags & RUNLOOP_FLAG_PAUSED;
+      bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
       command_event(CMD_EVENT_AI_SERVICE_CALL, &was_paused);
    }
    if (task->user_data)
@@ -121,11 +122,17 @@ static void call_auto_translate_task(
          return;
 
       mode                               = (int*)malloc(sizeof(int));
-      *mode                              = ai_service_mode;
 
+      t->user_data                       = NULL;
       t->handler                         = task_auto_translate_handler;
-      t->user_data                       = mode;
-      t->mute                            = true;
+      t->flags                          |= RETRO_TASK_FLG_MUTE;
+
+      if (mode)
+      {
+         *mode                           = ai_service_mode;
+         t->user_data                    = mode;
+      }
+
       task_queue_push(t);
    }
 }
@@ -135,7 +142,7 @@ static void handle_translation_cb(
       void *user_data, const char *error)
 {
    uint8_t* raw_output_data          = NULL;
-   char* raw_image_file_data         = NULL;
+   char *raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    int new_image_size                = 0;
@@ -147,23 +154,23 @@ static void handle_translation_cb(
    void* raw_sound_data              = NULL;
    rjson_t *json                     = NULL;
    int json_current_key              = 0;
-   char* err_str                     = NULL;
-   char* txt_str                     = NULL;
-   char* auto_str                    = NULL;
-   char* key_str                     = NULL;
+   char *err_str                     = NULL;
+   char *txt_str                     = NULL;
+   char *auto_str                    = NULL;
+   char *key_str                     = NULL;
    settings_t* settings              = config_get_ptr();
    uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
    input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
-   video_driver_state_t 
+   video_driver_state_t
       *video_st                      = video_state_get_ptr();
    const enum retro_pixel_format
       video_driver_pix_fmt           = video_st->pix_fmt;
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused           = video_st->flags &
-      VIDEO_FLAG_WIDGETS_PAUSED;
+   bool gfx_widgets_paused           = (video_st->flags &
+      VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
    dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
 #endif
 #ifdef HAVE_ACCESSIBILITY
@@ -192,8 +199,7 @@ static void handle_translation_cb(
    /* Parse JSON body for the image and sound data */
    for (;;)
    {
-      static const char* keys[] = { "image", "sound", "text", "error", "auto", "press" };
-
+      static const char *keys[] = { "image", "sound", "text", "error", "auto", "press" };
       const char *str           = NULL;
       size_t str_len            = 0;
       enum rjson_type json_type = rjson_next(json);
@@ -345,7 +351,7 @@ static void handle_translation_cb(
          /* Write to video buffer directly (software cores only) */
 
          /* This is a BMP file coming back. */
-         if (     raw_image_file_data[0] == 'B' 
+         if (     raw_image_file_data[0] == 'B'
                && raw_image_file_data[1] == 'M')
          {
             /* Get image data (24 bit), and convert to the emulated pixel format */
@@ -361,12 +367,13 @@ static void handle_translation_cb(
                ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
                ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
             raw_image_data = (void*)malloc(image_width * image_height * 3 * sizeof(uint8_t));
-            memcpy(raw_image_data,
-                   raw_image_file_data + 54       * sizeof(uint8_t),
-                   image_width * image_height * 3 * sizeof(uint8_t));
+            if (raw_image_data)
+               memcpy(raw_image_data,
+                     raw_image_file_data + 54       * sizeof(uint8_t),
+                     image_width * image_height * 3 * sizeof(uint8_t));
          }
          /* PNG coming back from the url */
-         else if (raw_image_file_data[1] == 'P' 
+         else if (raw_image_file_data[1] == 'P'
                && raw_image_file_data[2] == 'N'
                && raw_image_file_data[3] == 'G')
          {
@@ -617,7 +624,7 @@ finish:
    {
       if (string_is_equal(auto_str, "auto"))
       {
-         bool was_paused = runloop_flags & RUNLOOP_FLAG_PAUSED;
+         bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
          if (     (access_st->ai_service_auto != 0)
                && !settings->bools.ai_service_pause)
             call_auto_translate_task(settings, &was_paused);
@@ -662,6 +669,8 @@ static const char *ai_service_get_str(enum translation_lang id)
          return "zh-TW";
       case TRANSLATION_LANG_CA:
          return "ca";
+      case TRANSLATION_LANG_BE:
+         return "be";
       case TRANSLATION_LANG_BG:
          return "bg";
       case TRANSLATION_LANG_BN:
@@ -833,10 +842,14 @@ bool run_translation_service(settings_t *settings, bool paused)
          lbl       = path_basename(path_get(RARCH_PATH_BASENAME));
       lbl_len      = strlen(lbl);
       sys_lbl      = (char*)malloc(lbl_len + sys_id_len + 3);
-      memcpy(sys_lbl, sys_id, sys_id_len);
-      memcpy(sys_lbl + sys_id_len, "__", 2);
-      memcpy(sys_lbl + 2 + sys_id_len, lbl, lbl_len);
-      sys_lbl[sys_id_len + 2 + lbl_len] = '\0';
+
+      if (sys_lbl)
+      {
+         memcpy(sys_lbl, sys_id, sys_id_len);
+         memcpy(sys_lbl + sys_id_len, "__", 2);
+         memcpy(sys_lbl + 2 + sys_id_len, lbl, lbl_len);
+         sys_lbl[sys_id_len + 2 + lbl_len] = '\0';
+      }
    }
 
    if (!scaler)
@@ -1075,7 +1088,7 @@ bool run_translation_service(settings_t *settings, bool paused)
       /* mode */
       {
          unsigned ai_service_mode   = settings->uints.ai_service_mode;
-         /*"image" is included for backwards compatability with
+         /*"image" is included for backwards compatibility with
           * vgtranslate < 1.04 */
 
          new_ai_service_url[  _len] = separator;
@@ -1142,6 +1155,7 @@ finish:
       free(bmp64_buffer);
    if (sys_lbl)
       free(sys_lbl);
+   sys_lbl = NULL;
    if (jsonwriter)
       rjsonwriter_free(jsonwriter);
    return !error;
@@ -1155,7 +1169,7 @@ bool is_narrator_running(bool accessibility_enable)
             accessibility_enable,
             access_st->enabled))
    {
-      frontend_ctx_driver_t *frontend = 
+      frontend_ctx_driver_t *frontend =
          frontend_state_get_ptr()->current_frontend_ctx;
       if (frontend && frontend->is_narrator_running)
          return frontend->is_narrator_running();

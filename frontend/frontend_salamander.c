@@ -60,8 +60,8 @@ static void find_first_libretro_core(char *first_file,
 
    for (i = 0; i < list->size && !ret; i++)
    {
-      char fname[PATH_MAX_LENGTH]           = {0};
-      char salamander_name[PATH_MAX_LENGTH] = {0};
+      char salamander_name[NAME_MAX_LENGTH] = {0};
+      char fname[NAME_MAX_LENGTH]           = {0};
       const char *libretro_elem             = (const char*)list->elems[i].data;
 
       RARCH_LOG("Checking library: \"%s\".\n", libretro_elem);
@@ -123,7 +123,7 @@ static void salamander_init(char *s, size_t len)
    const char *rarch_config_path = g_defaults.path_config;
    bool config_valid             = false;
    char config_path[PATH_MAX_LENGTH];
-   char config_dir[PATH_MAX_LENGTH];
+   char config_dir[DIR_MAX_LENGTH];
 
    config_dir[0]  = '\0';
 
@@ -164,15 +164,12 @@ static void salamander_init(char *s, size_t len)
 
    if (!config_valid)
    {
-      char executable_name[PATH_MAX_LENGTH];
-
-      executable_name[0] = '\0';
-
+      char core_ext[16];
       /* No config file - search filesystem for
        * first available core */
       frontend_driver_get_core_extension(
-            executable_name, sizeof(executable_name));
-      find_and_set_first_file(s, len, executable_name);
+            core_ext, sizeof(core_ext));
+      find_and_set_first_file(s, len, core_ext);
 
       /* Save result to new config file */
       if (!string_is_empty(s))
@@ -183,6 +180,7 @@ static void salamander_init(char *s, size_t len)
          {
             config_set_path(config, "libretro_path", s);
             config_file_write(config, config_path, false);
+            RARCH_DBG("Salamander config file written to \"%s\".\n", config_path);
             config_file_free(config);
          }
       }

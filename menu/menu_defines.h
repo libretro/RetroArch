@@ -25,6 +25,54 @@ RETRO_BEGIN_DECLS
 
 #define MENU_SETTINGS_AUDIO_MIXER_MAX_STREAMS        (AUDIO_MIXER_MAX_SYSTEM_STREAMS-1)
 
+enum menu_state_flags
+{
+   MENU_ST_FLAG_ALIVE                       = (1 << 0),
+   MENU_ST_FLAG_IS_BINDING                  = (1 << 1),
+   MENU_ST_FLAG_INP_DLG_KB_DISPLAY          = (1 << 2),
+   /* When enabled, on next iteration the 'Quick Menu'
+    * list will be pushed onto the stack */
+   MENU_ST_FLAG_PENDING_QUICK_MENU          = (1 << 3),
+   MENU_ST_FLAG_PREVENT_POPULATE            = (1 << 4),
+   /* The menu driver owns the userdata */
+   MENU_ST_FLAG_DATA_OWN                    = (1 << 5),
+   /* Flagged when menu entries need to be refreshed */
+   MENU_ST_FLAG_ENTRIES_NEED_REFRESH        = (1 << 6),
+   MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH = (1 << 7),
+   /* 'Close Content'-hotkey menu resetting */
+   MENU_ST_FLAG_PENDING_CLOSE_CONTENT       = (1 << 8),
+   /* Flagged when a core calls RETRO_ENVIRONMENT_SHUTDOWN,
+    * requiring the menu to be flushed on the next iteration */
+   MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH  = (1 << 9),
+   /* Screensaver status
+    * - Does menu driver support screensaver functionality?
+    * - Is screensaver currently active? */
+   MENU_ST_FLAG_SCREENSAVER_SUPPORTED       = (1 << 10),
+   MENU_ST_FLAG_SCREENSAVER_ACTIVE          = (1 << 11)
+};
+
+enum menu_scroll_mode
+{
+   MENU_SCROLL_PAGE = 0,
+   MENU_SCROLL_START_LETTER
+};
+
+enum contentless_core_runtime_status
+{
+   CONTENTLESS_CORE_RUNTIME_UNKNOWN = 0,
+   CONTENTLESS_CORE_RUNTIME_MISSING,
+   CONTENTLESS_CORE_RUNTIME_VALID
+};
+
+enum action_iterate_type
+{
+   ITERATE_TYPE_DEFAULT = 0,
+   ITERATE_TYPE_HELP,
+   ITERATE_TYPE_INFO,
+   ITERATE_TYPE_BIND
+};
+
+
 enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
@@ -275,9 +323,8 @@ enum xmb_icon_theme
 {
    XMB_ICON_THEME_MONOCHROME = 0,
    XMB_ICON_THEME_FLATUI,
-   XMB_ICON_THEME_RETROACTIVE,
+   XMB_ICON_THEME_FLATUX,
    XMB_ICON_THEME_PIXEL,
-   XMB_ICON_THEME_NEOACTIVE,
    XMB_ICON_THEME_SYSTEMATIC,
    XMB_ICON_THEME_DOTART,
    XMB_ICON_THEME_CUSTOM,
@@ -309,7 +356,7 @@ enum xmb_shader_pipeline
    XMB_SHADER_PIPELINE_SNOW,
    XMB_SHADER_PIPELINE_BOKEH,
    XMB_SHADER_PIPELINE_SNOWFLAKE
-#endif   
+#endif
 };
 
 enum rgui_thumbnail_scaler
@@ -342,11 +389,13 @@ enum rgui_aspect_ratio
    RGUI_ASPECT_RATIO_16_9_CENTRE,
    RGUI_ASPECT_RATIO_16_10,
    RGUI_ASPECT_RATIO_16_10_CENTRE,
+   RGUI_ASPECT_RATIO_21_9,
+   RGUI_ASPECT_RATIO_21_9_CENTRE,
    RGUI_ASPECT_RATIO_3_2,
    RGUI_ASPECT_RATIO_3_2_CENTRE,
    RGUI_ASPECT_RATIO_5_3,
    RGUI_ASPECT_RATIO_5_3_CENTRE,
-
+   RGUI_ASPECT_RATIO_AUTO,
    RGUI_ASPECT_RATIO_LAST
 };
 
@@ -385,6 +434,7 @@ enum ozone_color_theme
    OZONE_COLOR_THEME_GRAY_DARK,
    OZONE_COLOR_THEME_GRAY_LIGHT,
    OZONE_COLOR_THEME_PURPLE_RAIN,
+   OZONE_COLOR_THEME_SELENIUM,
    OZONE_COLOR_THEME_LAST
 };
 
@@ -407,6 +457,7 @@ enum menu_action
    MENU_ACTION_SCROLL_HOME,
    MENU_ACTION_SCROLL_END,
    MENU_ACTION_TOGGLE,
+   MENU_ACTION_RESUME,
    MENU_ACTION_POINTER_MOVED,
    MENU_ACTION_POINTER_PRESSED,
    MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE,
@@ -500,6 +551,19 @@ struct menu_dialog
 };
 
 typedef struct menu_dialog menu_dialog_t;
+
+#ifdef HAVE_RUNAHEAD
+enum menu_runahead_mode
+{
+   MENU_RUNAHEAD_MODE_OFF = 0,
+   MENU_RUNAHEAD_MODE_SINGLE_INSTANCE,
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   MENU_RUNAHEAD_MODE_SECOND_INSTANCE,
+#endif
+   MENU_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   MENU_RUNAHEAD_MODE_LAST
+};
+#endif
 
 RETRO_END_DECLS
 

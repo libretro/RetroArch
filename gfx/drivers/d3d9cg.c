@@ -48,7 +48,7 @@
 #include "../common/d3d9_common.h"
 #include "../include/Cg/cg.h"
 #include "../include/Cg/cgD3D9.h"
-#include "../video_coord_array.h"
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
@@ -133,7 +133,7 @@ static void *gfx_display_d3d9_cg_get_default_mvp(void *data)
 {
    static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
-                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 1.0f, 0.0f,
                                  0.0f, 0.0f, 0.0f, 1.0f
                                };
    return &id;
@@ -263,7 +263,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
    d3d_matrix_transpose(&m1, &m2);
-  
+
    IDirect3DDevice9_SetVertexShaderConstantF(dev,
          0, (const float*)&m1, 4);
 
@@ -1657,8 +1657,8 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
          if (!d3d9_renderchain_add_lut(
                   d3d->renderchain_data,
                   d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
-                  ? video_smooth 
+                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC
+                  ? video_smooth
                   : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
          {
             RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
@@ -1755,7 +1755,21 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
 
    d3d_matrix_identity(&d3d->mvp_transposed);
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
-   d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
+   d3d->mvp = d3d->mvp_transposed;
+
+   if (d3d->translate_x)
+   {
+      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
+      float vp_x = -(d3d->translate_x/(float)d3d->final_viewport.Width);
+      pout->m[3][0] = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
+   }
+
+   if (d3d->translate_y)
+   {
+      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
+      float vp_y = -(d3d->translate_y/(float)d3d->final_viewport.Height);
+      pout->m[3][1] = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
+   }
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
@@ -1905,7 +1919,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
 
    d3d9_cg_fake_context.get_flags   = d3d9_cg_get_flags;
    d3d9_cg_fake_context.get_metrics = win32_get_metrics;
-   video_context_driver_set(&d3d9_cg_fake_context); 
+   video_context_driver_set(&d3d9_cg_fake_context);
    {
       const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
@@ -1929,11 +1943,8 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
             LOWORD(ident.DriverVersion.HighPart),
             HIWORD(ident.DriverVersion.LowPart),
             LOWORD(ident.DriverVersion.LowPart));
-
       RARCH_LOG("[D3D9]: Using GPU: \"%s\".\n", ident.Description);
       RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
-
-      video_driver_set_gpu_device_string(ident.Description);
       video_driver_set_gpu_api_version_string(version_str);
    }
 
@@ -2032,7 +2043,11 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
-   bool menu_is_alive                  = video_info->menu_is_alive;
+#ifdef HAVE_MENU
+   bool menu_is_alive                  = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#else
+   bool menu_is_alive                  = false;
+#endif
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;
@@ -2087,12 +2102,12 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    d3d9_cg_renderchain_render(
             d3d, frame, frame_width, frame_height,
             pitch, d3d->dev_rotation);
-   
+
    if (black_frame_insertion && !d3d->menu->enabled)
    {
       int n;
-      for (n = 0; n < video_info->black_frame_insertion; ++n) 
-      {   
+      for (n = 0; n < video_info->black_frame_insertion; ++n)
+      {
         bool ret = (IDirect3DDevice9_Present(d3d->dev,
                  NULL, NULL, NULL, NULL) != D3DERR_DEVICELOST);
         if (!ret || d3d->needs_restore)
@@ -2100,13 +2115,13 @@ static bool d3d9_cg_frame(void *data, const void *frame,
         IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
               0, 1, 0);
       }
-   }   
+   }
 
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp, 4);
+         0, (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }
@@ -2124,7 +2139,6 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       IDirect3DDevice9_SetStreamSource(d3d->dev, 0,
             (LPDIRECT3DVERTEXBUFFER9)d3d->menu_display.buffer,
             0, sizeof(Vertex));
-
       IDirect3DDevice9_SetViewport(d3d->dev, (D3DVIEWPORT9*)&screen_vp);
       menu_driver_frame(menu_is_alive, video_info);
    }
@@ -2145,7 +2159,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
    if (d3d->overlays_enabled && !overlay_behind_menu)
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev,
-         0, (const float*)&d3d->mvp, 4);
+         0, (const float*)&d3d->mvp_transposed, 4);
       for (i = 0; i < d3d->overlays_size; i++)
          d3d9_overlay_render(d3d, width, height, &d3d->overlays[i], true);
    }

@@ -201,9 +201,8 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
-      RARCH_LIGHTGUN_RELOAD,
       MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD, RETROK_UNKNOWN,
-      NO_BTN, NO_BTN, 0,
+      RARCH_LIGHTGUN_RELOAD, RETRO_DEVICE_ID_MOUSE_RIGHT, NO_BTN, 0,
       true
    },
    {
@@ -838,7 +837,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD, RETROK_UNKNOWN,
-      RARCH_LIGHTGUN_RELOAD, NO_BTN, NO_BTN, 0,
+      RARCH_LIGHTGUN_RELOAD, RETRO_DEVICE_ID_MOUSE_RIGHT, NO_BTN, 0,
       true
    },
    {
@@ -1473,7 +1472,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD, RETROK_UNKNOWN,
-      RARCH_LIGHTGUN_RELOAD, NO_BTN, NO_BTN, 0,
+      RARCH_LIGHTGUN_RELOAD, RETRO_DEVICE_ID_MOUSE_RIGHT, NO_BTN, 0,
       true
    },
    {
@@ -2122,7 +2121,7 @@ static const struct retro_keybind retro_keybinds_rest[] = {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD, RETROK_UNKNOWN,
-      RARCH_LIGHTGUN_RELOAD, NO_BTN, NO_BTN, 0,
+      RARCH_LIGHTGUN_RELOAD, RETRO_DEVICE_ID_MOUSE_RIGHT, NO_BTN, 0,
       true
    },
    {

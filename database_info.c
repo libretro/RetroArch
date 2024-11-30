@@ -515,8 +515,11 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       }
       else if (string_is_equal(str, "rom_name"))
       {
+/* rom_name is not used anywhere in codebase, but is frequently added to DB */
+#if 0
          if (!string_is_empty(val_string))
             db_info->rom_name = strdup(val_string);
+#endif
       }
       else if (string_is_equal(str, "name"))
       {
@@ -717,7 +720,7 @@ static int database_cursor_open(libretrodb_t *db,
    const char *error     = NULL;
    libretrodb_query_t *q = NULL;
 
-   if ((libretrodb_open(path, db)) != 0)
+   if ((libretrodb_open(path, db, false)) != 0)
       return -1;
 
    if (query)

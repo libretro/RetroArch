@@ -3,6 +3,21 @@
 #include <string.h> /* memset */
 #include <ctype.h> /* isdigit */
 #include <float.h> /* FLT_EPSILON */
+#include <math.h> /* fmod */
+
+
+
+int rc_is_valid_variable_character(char ch, int is_first) {
+  if (is_first) {
+    if (!isalpha((unsigned char)ch))
+      return 0;
+  }
+  else {
+    if (!isalnum((unsigned char)ch))
+      return 0;
+  }
+  return 1;
+}
 
 static void rc_parse_cond_value(rc_value_t* self, const char** memaddr, rc_parse_state_t* parse) {
   rc_condset_t** next_clause;
@@ -112,6 +127,9 @@ void rc_parse_legacy_value(rc_value_t* self, const char** memaddr, rc_parse_stat
       case RC_OPERATOR_DIV:
       case RC_OPERATOR_AND:
       case RC_OPERATOR_XOR:
+      case RC_OPERATOR_MOD:
+      case RC_OPERATOR_ADD:
+      case RC_OPERATOR_SUB:
       case RC_OPERATOR_NONE:
         break;
 
@@ -255,7 +273,7 @@ int rc_evaluate_value_typed(rc_value_t* self, rc_typed_value_t* value, rc_peek_t
   return valid;
 }
 
-int rc_evaluate_value(rc_value_t* self, rc_peek_t peek, void* ud, lua_State* L) {
+int32_t rc_evaluate_value(rc_value_t* self, rc_peek_t peek, void* ud, lua_State* L) {
   rc_typed_value_t result;
   int valid = rc_evaluate_value_typed(self, &result, peek, ud, L);
 
@@ -285,17 +303,31 @@ void rc_reset_value(rc_value_t* self) {
   self->value.changed = 0;
 }
 
+int rc_value_from_hits(rc_value_t* self)
+{
+  rc_condset_t* condset = self->conditions;
+  for (; condset != NULL; condset = condset->next) {
+    rc_condition_t* condition = condset->conditions;
+    for (; condition != NULL; condition = condition->next) {
+      if (condition->type == RC_CONDITION_MEASURED)
+        return (condition->required_hits != 0);
+    }
+  }
+
+  return 0;
+}
+
 void rc_init_parse_state_variables(rc_parse_state_t* parse, rc_value_t** variables) {
   parse->variables = variables;
   *variables = 0;
 }
 
-rc_value_t* rc_alloc_helper_variable(const char* memaddr, int memaddr_len, rc_parse_state_t* parse)
+rc_value_t* rc_alloc_helper_variable(const char* memaddr, size_t memaddr_len, rc_parse_state_t* parse)
 {
   rc_value_t** variables = parse->variables;
   rc_value_t* value;
   const char* name;
-  unsigned measured_target;
+  uint32_t measured_target;
 
   while ((value = *variables) != NULL) {
     if (strncmp(value->name, memaddr, memaddr_len) == 0 && value->name[memaddr_len] == 0)
@@ -433,7 +465,7 @@ void rc_typed_value_negate(rc_typed_value_t* value) {
   {
     case RC_VALUE_TYPE_UNSIGNED:
       rc_typed_value_convert(value, RC_VALUE_TYPE_SIGNED);
-      /* fallthrough to RC_VALUE_TYPE_SIGNED */
+      /* fallthrough */ /* to RC_VALUE_TYPE_SIGNED */
 
     case RC_VALUE_TYPE_SIGNED:
       value->value.i32 = -(value->value.i32);
@@ -614,6 +646,72 @@ void rc_typed_value_divide(rc_typed_value_t* value, const rc_typed_value_t* amou
   value->value.f32 /= amount->value.f32;
 }
 
+void rc_typed_value_modulus(rc_typed_value_t* value, const rc_typed_value_t* amount) {
+  rc_typed_value_t converted;
+
+  switch (amount->type)
+  {
+  case RC_VALUE_TYPE_UNSIGNED:
+    if (amount->value.u32 == 0) { /* divide by zero */
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+
+    switch (value->type) {
+    case RC_VALUE_TYPE_UNSIGNED: /* integer math */
+      value->value.u32 %= amount->value.u32;
+      return;
+    case RC_VALUE_TYPE_SIGNED: /* integer math */
+      value->value.i32 %= (int)amount->value.u32;
+      return;
+    case RC_VALUE_TYPE_FLOAT:
+      amount = rc_typed_value_convert_into(&converted, amount, RC_VALUE_TYPE_FLOAT);
+      break;
+    default:
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+    break;
+
+  case RC_VALUE_TYPE_SIGNED:
+    if (amount->value.i32 == 0) { /* divide by zero */
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+
+    switch (value->type) {
+    case RC_VALUE_TYPE_SIGNED: /* integer math */
+      value->value.i32 %= amount->value.i32;
+      return;
+    case RC_VALUE_TYPE_UNSIGNED: /* integer math */
+      value->value.u32 %= (unsigned)amount->value.i32;
+      return;
+    case RC_VALUE_TYPE_FLOAT:
+      amount = rc_typed_value_convert_into(&converted, amount, RC_VALUE_TYPE_FLOAT);
+      break;
+    default:
+      value->type = RC_VALUE_TYPE_NONE;
+      return;
+    }
+    break;
+
+  case RC_VALUE_TYPE_FLOAT:
+    break;
+
+  default:
+    value->type = RC_VALUE_TYPE_NONE;
+    return;
+  }
+
+  if (amount->value.f32 == 0.0) { /* divide by zero */
+    value->type = RC_VALUE_TYPE_NONE;
+    return;
+  }
+
+  rc_typed_value_convert(value, RC_VALUE_TYPE_FLOAT);
+  value->value.f32 = (float)fmod(value->value.f32, amount->value.f32);
+}
+
 static int rc_typed_value_compare_floats(float f1, float f2, char oper) {
   if (f1 == f2) {
     /* exactly equal */
@@ -669,9 +767,14 @@ static int rc_typed_value_compare_floats(float f1, float f2, char oper) {
 }
 
 int rc_typed_value_compare(const rc_typed_value_t* value1, const rc_typed_value_t* value2, char oper) {
-  rc_typed_value_t converted_value2;
-  if (value2->type != value1->type)
-    value2 = rc_typed_value_convert_into(&converted_value2, value2, value1->type);
+  rc_typed_value_t converted_value;
+  if (value2->type != value1->type) {
+    /* if either side is a float, convert both sides to float. otherwise, assume the signed-ness of the left side. */
+    if (value2->type == RC_VALUE_TYPE_FLOAT)
+      value1 = rc_typed_value_convert_into(&converted_value, value1, value2->type);
+    else
+      value2 = rc_typed_value_convert_into(&converted_value, value2, value1->type);
+  }
 
   switch (value1->type) {
     case RC_VALUE_TYPE_UNSIGNED:

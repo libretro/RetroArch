@@ -1,0 +1,37 @@
+name: CI Linux (i686)
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-i386-ubuntu:xenial-gcc9
+      options: --user root
+
+    steps:
+      - name: Check Out Repo
+        uses: taiki-e/checkout-action@v1
+
+      - name: Configure Build
+        run: |
+          ./configure --disable-qt --enable-xdelta
+
+      - name: Compile RA
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) clean
+          make -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Get short SHA
+        id: slug
+        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"

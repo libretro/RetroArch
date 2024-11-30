@@ -46,9 +46,7 @@ static bool fifo_initialize_internal(fifo_buffer_t *buf, size_t size)
 
 bool fifo_initialize(fifo_buffer_t *buf, size_t size)
 {
-   if (!buf)
-      return false;
-   return fifo_initialize_internal(buf, size);
+   return (buf && fifo_initialize_internal(buf, size));
 }
 
 void fifo_free(fifo_buffer_t *buffer)

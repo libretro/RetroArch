@@ -112,7 +112,7 @@ typedef struct verbosity_state
 
 /* TODO/FIXME - static public global variables */
 static verbosity_state_t main_verbosity_st;
-static unsigned verbosity_log_level           = 
+static unsigned verbosity_log_level           =
 DEFAULT_FRONTEND_LOG_LEVEL;
 
 #ifdef HAVE_LIBNX
@@ -218,7 +218,7 @@ void retro_main_log_file_deinit(void)
 #if !defined(HAVE_LOGGER)
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
-#if defined(_XBOX1)
+#if defined(_XBOX1) || defined (__WINRT__)
    /* FIXME: Using arbitrary string as fmt argument is unsafe. */
    char msg_new[256];
    char buffer[256];
@@ -227,7 +227,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    msg_new[0]        = buffer[0] = '\0';
    snprintf(msg_new, sizeof(msg_new), "%s: %s %s",
          FILE_PATH_PROGRAM_NAME, tag_v, fmt);
+#if defined(__WINRT__)
+   vsnprintf(buffer, sizeof(buffer), msg_new, ap);
+#else
    wvsprintf(buffer, msg_new, ap);
+#endif
    OutputDebugStringA(buffer);
 #elif defined(ANDROID)
    verbosity_state_t *g_verbosity = &main_verbosity_st;
@@ -252,10 +256,9 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    FILE                       *fp = (FILE*)g_verbosity->fp;
    const char              *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 #if defined(HAVE_QT) || defined(__WINRT__)
-   char buffer[2048];
+   char buffer[1024];
    buffer[0]         = '\0';
-
-   /* Ensure null termination and line break in error case */
+   /* Ensure NULL termination and line break in error case */
    if (vsnprintf(buffer, sizeof(buffer), fmt, ap) < 0)
    {
       size_t end;
@@ -289,7 +292,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    vprintf(fmt, ap);
 #elif __IPHONE_OS_VERSION_MIN_REQUIRED > __IPHONE_10_0 || __TV_OS_VERSION_MIN_REQUIRED > __TVOS_10_0
    int sz = vsnprintf(NULL, 0, fmt, ap) + 1;
-   char buffer[sz];
+   char buffer[sz]; /* TODO/FIXME - VLA - C89 backwards compatibility */
    vsnprintf(buffer, sz, fmt, ap);
    os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
 #else
@@ -314,14 +317,12 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #if defined(HAVE_LIBNX)
    mutexLock(&g_verbosity->mtx);
 #endif
-#if !TARGET_OS_TV
    if (fp)
    {
       fprintf(fp, "%s ", tag_v);
       vfprintf(fp, fmt, ap);
       fflush(fp);
    }
-#endif
 #if defined(HAVE_LIBNX)
    mutexUnlock(&g_verbosity->mtx);
 #endif
@@ -367,11 +368,12 @@ void RARCH_DBG(const char *fmt, ...)
 {
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
-
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 0)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_LOG_V(FILE_PATH_LOG_DBG, fmt, ap);
@@ -383,10 +385,12 @@ void RARCH_LOG(const char *fmt, ...)
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
 
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 1)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_LOG_V(FILE_PATH_LOG_INFO, fmt, ap);
@@ -406,10 +410,12 @@ void RARCH_WARN(const char *fmt, ...)
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
 
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
    if (verbosity_log_level > 2)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_WARN_V(FILE_PATH_LOG_WARN, fmt, ap);
@@ -421,8 +427,10 @@ void RARCH_ERR(const char *fmt, ...)
    va_list ap;
    verbosity_state_t *g_verbosity = &main_verbosity_st;
 
+#ifndef _DEBUG
    if (!g_verbosity->verbosity)
       return;
+#endif
 
    va_start(ap, fmt);
    RARCH_ERR_V(FILE_PATH_LOG_ERROR, fmt, ap);
@@ -445,7 +453,7 @@ void rarch_log_file_init(
       const char *log_dir
       )
 {
-   char log_directory[PATH_MAX_LENGTH];
+   char log_directory[DIR_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    verbosity_state_t *g_verbosity            = &main_verbosity_st;
    static bool log_file_created              = false;
@@ -493,7 +501,9 @@ void rarch_log_file_init(
    {
       /* Get log directory */
       const char *override_path        = g_verbosity->override_path;
-      const char *last_slash           = find_last_slash(override_path);
+      const char *slash                = strrchr(override_path, '/');
+      const char *backslash            = strrchr(override_path, '\\');
+      const char *last_slash           = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
 
       if (last_slash)
       {

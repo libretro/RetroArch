@@ -170,7 +170,7 @@ $(OBJDIR)/%.o: %.cpp | $(dir $@)
 $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
-	$(Q)$(WINDRES) -o $@ $<
+	$(Q)$(WINDRES) $(DEFINES) -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR)

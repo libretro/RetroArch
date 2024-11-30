@@ -37,15 +37,9 @@ static void frontend_dos_init(void *data)
 	printf("Loading RetroArch. Time is @%ld...\n", (long) time(NULL));
 }
 
-static void frontend_dos_shutdown(bool unused)
-{
-	(void)unused;
-}
-
-static int frontend_dos_get_rating(void)
-{
-	return -1;
-}
+/* TODO/FIXME - implement */
+static void frontend_dos_shutdown(bool unused) { }
+static int frontend_dos_get_rating(void) { return -1; }
 
 enum frontend_architecture frontend_dos_get_arch(void)
 {
@@ -128,16 +122,8 @@ static void frontend_dos_exitspawn(char *s, size_t len, char *args)
 
 	if (dos_fork_mode == FRONTEND_FORK_NONE)
 		return;
-	
-	switch (dos_fork_mode)
-	{
-	case FRONTEND_FORK_CORE_WITH_ARGS:
-		should_load_content = true;
-		break;
-	case FRONTEND_FORK_NONE:
-	default:
-		break;
-	}
+	if (dos_fork_mode == FRONTEND_FORK_CORE_WITH_ARGS)
+      should_load_content = true;
 
 	frontend_dos_exec(s, should_load_content);
 }

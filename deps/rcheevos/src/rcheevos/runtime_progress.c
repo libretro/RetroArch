@@ -1,8 +1,10 @@
 #include "rc_runtime.h"
 #include "rc_internal.h"
 
+#include "rc_util.h"
 #include "../rhash/md5.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,16 +18,21 @@
 
 #define RC_RUNTIME_CHUNK_DONE         0x454E4F44 /* DONE */
 
+#define RC_RUNTIME_MIN_BUFFER_SIZE    4 + 8 + 16 /* RUNTIME_MARKER, CHUNK_DONE, MD5 */
+
 typedef struct rc_runtime_progress_t {
-  rc_runtime_t* runtime;
+  const rc_runtime_t* runtime;
 
-  int offset;
-  unsigned char* buffer;
+  uint32_t offset;
+  uint8_t* buffer;
+  uint32_t buffer_size;
 
-  int chunk_size_offset;
+  uint32_t chunk_size_offset;
 
   lua_State* L;
 } rc_runtime_progress_t;
+
+#define assert_chunk_size(expected_size) assert((uint32_t)(progress->offset - progress->chunk_size_offset - 4) == (uint32_t)(expected_size))
 
 #define RC_TRIGGER_STATE_UNUPDATED 0x7F
 
@@ -39,7 +46,7 @@ typedef struct rc_runtime_progress_t {
 #define RC_COND_FLAG_OPERAND2_IS_INDIRECT_MEMREF        0x00100000
 #define RC_COND_FLAG_OPERAND2_MEMREF_CHANGED_THIS_FRAME 0x00200000
 
-static void rc_runtime_progress_write_uint(rc_runtime_progress_t* progress, unsigned value)
+static void rc_runtime_progress_write_uint(rc_runtime_progress_t* progress, uint32_t value)
 {
   if (progress->buffer) {
     progress->buffer[progress->offset + 0] = value & 0xFF; value >>= 8;
@@ -51,9 +58,9 @@ static void rc_runtime_progress_write_uint(rc_runtime_progress_t* progress, unsi
   progress->offset += 4;
 }
 
-static unsigned rc_runtime_progress_read_uint(rc_runtime_progress_t* progress)
+static uint32_t rc_runtime_progress_read_uint(rc_runtime_progress_t* progress)
 {
-  unsigned value = progress->buffer[progress->offset + 0] |
+  uint32_t value = progress->buffer[progress->offset + 0] |
       (progress->buffer[progress->offset + 1] << 8) |
       (progress->buffer[progress->offset + 2] << 16) |
       (progress->buffer[progress->offset + 3] << 24);
@@ -62,7 +69,7 @@ static unsigned rc_runtime_progress_read_uint(rc_runtime_progress_t* progress)
   return value;
 }
 
-static void rc_runtime_progress_write_md5(rc_runtime_progress_t* progress, unsigned char* md5)
+static void rc_runtime_progress_write_md5(rc_runtime_progress_t* progress, uint8_t* md5)
 {
   if (progress->buffer)
     memcpy(&progress->buffer[progress->offset], md5, 16);
@@ -70,7 +77,7 @@ static void rc_runtime_progress_write_md5(rc_runtime_progress_t* progress, unsig
   progress->offset += 16;
 }
 
-static int rc_runtime_progress_match_md5(rc_runtime_progress_t* progress, unsigned char* md5)
+static int rc_runtime_progress_match_md5(rc_runtime_progress_t* progress, uint8_t* md5)
 {
   int result = 0;
   if (progress->buffer)
@@ -81,18 +88,7 @@ static int rc_runtime_progress_match_md5(rc_runtime_progress_t* progress, unsign
   return result;
 }
 
-static unsigned rc_runtime_progress_djb2(const char* input)
-{
-  unsigned result = 5381;
-  char c;
-
-  while ((c = *input++) != '\0')
-    result = ((result << 5) + result) + c; /* result = result * 33 + c */
-
-  return result;
-}
-
-static void rc_runtime_progress_start_chunk(rc_runtime_progress_t* progress, unsigned chunk_id)
+static void rc_runtime_progress_start_chunk(rc_runtime_progress_t* progress, uint32_t chunk_id)
 {
   rc_runtime_progress_write_uint(progress, chunk_id);
 
@@ -103,14 +99,14 @@ static void rc_runtime_progress_start_chunk(rc_runtime_progress_t* progress, uns
 
 static void rc_runtime_progress_end_chunk(rc_runtime_progress_t* progress)
 {
-  unsigned length;
-  int offset;
+  uint32_t length;
+  uint32_t offset;
 
   progress->offset = (progress->offset + 3) & ~0x03; /* align to 4 byte boundary */
 
   if (progress->buffer) {
     /* ignore chunk size field when calculating chunk size */
-    length = (unsigned)(progress->offset - progress->chunk_size_offset - 4);
+    length = (uint32_t)(progress->offset - progress->chunk_size_offset - 4);
 
     /* temporarily update the write pointer to write the chunk size field */
     offset = progress->offset;
@@ -120,28 +116,36 @@ static void rc_runtime_progress_end_chunk(rc_runtime_progress_t* progress)
   }
 }
 
-static void rc_runtime_progress_init(rc_runtime_progress_t* progress, rc_runtime_t* runtime, lua_State* L)
+static void rc_runtime_progress_init(rc_runtime_progress_t* progress, const rc_runtime_t* runtime, lua_State* L)
 {
   memset(progress, 0, sizeof(rc_runtime_progress_t));
   progress->runtime = runtime;
   progress->L = L;
 }
 
+#define RC_RUNTIME_SERIALIZED_MEMREF_SIZE 16 /* 4x uint: address, flags, value, prior */
+
 static int rc_runtime_progress_write_memrefs(rc_runtime_progress_t* progress)
 {
-  rc_memref_t* memref = progress->runtime->memrefs;
-  unsigned int flags = 0;
+  rc_memref_t* memref;
+  uint32_t count = 0;
+
+  for (memref = progress->runtime->memrefs; memref; memref = memref->next)
+    ++count;
+  if (count == 0)
+    return RC_OK;
+
+  if (progress->offset + 8 + count * RC_RUNTIME_SERIALIZED_MEMREF_SIZE > progress->buffer_size)
+    return RC_INSUFFICIENT_BUFFER;
 
   rc_runtime_progress_start_chunk(progress, RC_RUNTIME_CHUNK_MEMREFS);
 
   if (!progress->buffer) {
-    while (memref) {
-      progress->offset += 16;
-      memref = memref->next;
-    }
+    progress->offset += count * RC_RUNTIME_SERIALIZED_MEMREF_SIZE;
   }
   else {
-    while (memref) {
+    uint32_t flags = 0;
+    for (memref = progress->runtime->memrefs; memref; memref = memref->next) {
       flags = memref->value.size;
       if (memref->value.changed)
         flags |= RC_MEMREF_FLAG_CHANGED_THIS_FRAME;
@@ -150,26 +154,25 @@ static int rc_runtime_progress_write_memrefs(rc_runtime_progress_t* progress)
       rc_runtime_progress_write_uint(progress, flags);
       rc_runtime_progress_write_uint(progress, memref->value.value);
       rc_runtime_progress_write_uint(progress, memref->value.prior);
-
-      memref = memref->next;
     }
   }
 
+  assert_chunk_size(count * RC_RUNTIME_SERIALIZED_MEMREF_SIZE);
   rc_runtime_progress_end_chunk(progress);
   return RC_OK;
 }
 
 static int rc_runtime_progress_read_memrefs(rc_runtime_progress_t* progress)
 {
-  unsigned entries;
-  unsigned address, flags, value, prior;
-  char size;
+  uint32_t entries;
+  uint32_t address, flags, value, prior;
+  uint8_t size;
   rc_memref_t* memref;
   rc_memref_t* first_unmatched_memref = progress->runtime->memrefs;
 
   /* re-read the chunk size to determine how many memrefs are present */
   progress->offset -= 4;
-  entries = rc_runtime_progress_read_uint(progress) / 16;
+  entries = rc_runtime_progress_read_uint(progress) / RC_RUNTIME_SERIALIZED_MEMREF_SIZE;
 
   while (entries != 0) {
     address = rc_runtime_progress_read_uint(progress);
@@ -207,6 +210,7 @@ static int rc_runtime_progress_is_indirect_memref(rc_operand_t* oper)
   {
     case RC_OPERAND_CONST:
     case RC_OPERAND_FP:
+    case RC_OPERAND_RECALL:
     case RC_OPERAND_LUA:
       return 0;
 
@@ -218,7 +222,10 @@ static int rc_runtime_progress_is_indirect_memref(rc_operand_t* oper)
 static int rc_runtime_progress_write_condset(rc_runtime_progress_t* progress, rc_condset_t* condset)
 {
   rc_condition_t* cond;
-  unsigned flags;
+  uint32_t flags;
+
+  if (progress->offset + 4 > progress->buffer_size)
+    return RC_INSUFFICIENT_BUFFER;
 
   rc_runtime_progress_write_uint(progress, condset->is_paused);
 
@@ -240,15 +247,24 @@ static int rc_runtime_progress_write_condset(rc_runtime_progress_t* progress, rc
         flags |= RC_COND_FLAG_OPERAND2_MEMREF_CHANGED_THIS_FRAME;
     }
 
+    if (progress->offset + 8 > progress->buffer_size)
+      return RC_INSUFFICIENT_BUFFER;
+
     rc_runtime_progress_write_uint(progress, cond->current_hits);
     rc_runtime_progress_write_uint(progress, flags);
 
     if (flags & RC_COND_FLAG_OPERAND1_IS_INDIRECT_MEMREF) {
+      if (progress->offset + 8 > progress->buffer_size)
+        return RC_INSUFFICIENT_BUFFER;
+
       rc_runtime_progress_write_uint(progress, cond->operand1.value.memref->value.value);
       rc_runtime_progress_write_uint(progress, cond->operand1.value.memref->value.prior);
     }
 
     if (flags & RC_COND_FLAG_OPERAND2_IS_INDIRECT_MEMREF) {
+      if (progress->offset + 8 > progress->buffer_size)
+        return RC_INSUFFICIENT_BUFFER;
+
       rc_runtime_progress_write_uint(progress, cond->operand2.value.memref->value.value);
       rc_runtime_progress_write_uint(progress, cond->operand2.value.memref->value.prior);
     }
@@ -262,7 +278,7 @@ static int rc_runtime_progress_write_condset(rc_runtime_progress_t* progress, rc
 static int rc_runtime_progress_read_condset(rc_runtime_progress_t* progress, rc_condset_t* condset)
 {
   rc_condition_t* cond;
-  unsigned flags;
+  uint32_t flags;
 
   condset->is_paused = (char)rc_runtime_progress_read_uint(progress);
 
@@ -297,7 +313,7 @@ static int rc_runtime_progress_read_condset(rc_runtime_progress_t* progress, rc_
   return RC_OK;
 }
 
-static unsigned rc_runtime_progress_should_serialize_variable_condset(const rc_condset_t* conditions)
+static uint32_t rc_runtime_progress_should_serialize_variable_condset(const rc_condset_t* conditions)
 {
   const rc_condition_t* condition;
 
@@ -318,7 +334,10 @@ static unsigned rc_runtime_progress_should_serialize_variable_condset(const rc_c
 
 static int rc_runtime_progress_write_variable(rc_runtime_progress_t* progress, const rc_value_t* variable)
 {
-  unsigned flags;
+  uint32_t flags;
+
+  if (progress->offset + 12 > progress->buffer_size)
+    return RC_INSUFFICIENT_BUFFER;
 
   flags = rc_runtime_progress_should_serialize_variable_condset(variable->conditions);
   if (variable->value.changed)
@@ -339,23 +358,32 @@ static int rc_runtime_progress_write_variable(rc_runtime_progress_t* progress, c
 
 static int rc_runtime_progress_write_variables(rc_runtime_progress_t* progress)
 {
-  unsigned count = 0;
+  uint32_t count = 0;
   const rc_value_t* variable;
+  int result;
 
   for (variable = progress->runtime->variables; variable; variable = variable->next)
     ++count;
   if (count == 0)
     return RC_OK;
 
+  /* header + count + count(djb2,flags,value,prior,?cond) */
+  if (progress->offset + 8 + 4 + count * 16 > progress->buffer_size)
+    return RC_INSUFFICIENT_BUFFER;
+
   rc_runtime_progress_start_chunk(progress, RC_RUNTIME_CHUNK_VARIABLES);
   rc_runtime_progress_write_uint(progress, count);
 
-  for (variable = progress->runtime->variables; variable; variable = variable->next)
-  {
-    unsigned djb2 = rc_runtime_progress_djb2(variable->name);
+  for (variable = progress->runtime->variables; variable; variable = variable->next) {
+    uint32_t djb2 = rc_djb2(variable->name);
+    if (progress->offset + 16 > progress->buffer_size)
+      return RC_INSUFFICIENT_BUFFER;
+
     rc_runtime_progress_write_uint(progress, djb2);
 
-    rc_runtime_progress_write_variable(progress, variable);
+    result = rc_runtime_progress_write_variable(progress, variable);
+    if (result != RC_OK)
+      return result;
   }
 
   rc_runtime_progress_end_chunk(progress);
@@ -364,7 +392,7 @@ static int rc_runtime_progress_write_variables(rc_runtime_progress_t* progress)
 
 static int rc_runtime_progress_read_variable(rc_runtime_progress_t* progress, rc_value_t* variable)
 {
-  unsigned flags = rc_runtime_progress_read_uint(progress);
+  uint32_t flags = rc_runtime_progress_read_uint(progress);
   variable->value.changed = (flags & RC_MEMREF_FLAG_CHANGED_THIS_FRAME) ? 1 : 0;
   variable->value.value = rc_runtime_progress_read_uint(progress);
   variable->value.prior = rc_runtime_progress_read_uint(progress);
@@ -386,14 +414,14 @@ static int rc_runtime_progress_read_variables(rc_runtime_progress_t* progress)
   struct rc_pending_value_t
   {
     rc_value_t* variable;
-    unsigned djb2;
+    uint32_t djb2;
   };
   struct rc_pending_value_t local_pending_variables[32];
   struct rc_pending_value_t* pending_variables;
   rc_value_t* variable;
-  unsigned count, serialized_count;
+  uint32_t count, serialized_count;
   int result;
-  unsigned i;
+  uint32_t i;
 
   serialized_count = rc_runtime_progress_read_uint(progress);
   if (serialized_count == 0)
@@ -418,13 +446,13 @@ static int rc_runtime_progress_read_variables(rc_runtime_progress_t* progress)
   count = 0;
   for (variable = progress->runtime->variables; variable; variable = variable->next) {
     pending_variables[count].variable = variable;
-    pending_variables[count].djb2 = rc_runtime_progress_djb2(variable->name);
+    pending_variables[count].djb2 = rc_djb2(variable->name);
     ++count;
   }
 
   result = RC_OK;
   for (; serialized_count > 0 && result == RC_OK; --serialized_count) {
-    unsigned djb2 = rc_runtime_progress_read_uint(progress);
+    uint32_t djb2 = rc_runtime_progress_read_uint(progress);
     for (i = 0; i < count; ++i) {
       if (pending_variables[i].djb2 == djb2) {
         variable = pending_variables[i].variable;
@@ -502,8 +530,8 @@ static int rc_runtime_progress_read_trigger(rc_runtime_progress_t* progress, rc_
 
 static int rc_runtime_progress_write_achievements(rc_runtime_progress_t* progress)
 {
-  unsigned i;
-  int offset = 0;
+  uint32_t i;
+  int initial_offset = 0;
   int result;
 
   for (i = 0; i < progress->runtime->trigger_count; ++i) {
@@ -521,7 +549,10 @@ static int rc_runtime_progress_write_achievements(rc_runtime_progress_t* progres
         continue;
       }
 
-      offset = progress->offset;
+      initial_offset = progress->offset;
+    } else {
+      if (progress->offset + runtime_trigger->serialized_size > progress->buffer_size)
+        return RC_INSUFFICIENT_BUFFER;
     }
 
     rc_runtime_progress_start_chunk(progress, RC_RUNTIME_CHUNK_ACHIEVEMENT);
@@ -532,10 +563,15 @@ static int rc_runtime_progress_write_achievements(rc_runtime_progress_t* progres
     if (result != RC_OK)
       return result;
 
+    if (runtime_trigger->serialized_size) {
+      /* runtime_trigger->serialized_size includes the header */
+      assert_chunk_size(runtime_trigger->serialized_size - 8);
+    }
+
     rc_runtime_progress_end_chunk(progress);
 
     if (!progress->buffer)
-      runtime_trigger->serialized_size = progress->offset - offset;
+      runtime_trigger->serialized_size = progress->offset - initial_offset;
   }
 
   return RC_OK;
@@ -543,8 +579,8 @@ static int rc_runtime_progress_write_achievements(rc_runtime_progress_t* progres
 
 static int rc_runtime_progress_read_achievement(rc_runtime_progress_t* progress)
 {
-  unsigned id = rc_runtime_progress_read_uint(progress);
-  unsigned i;
+  uint32_t id = rc_runtime_progress_read_uint(progress);
+  uint32_t i;
 
   for (i = 0; i < progress->runtime->trigger_count; ++i) {
     rc_runtime_trigger_t* runtime_trigger = &progress->runtime->triggers[i];
@@ -564,9 +600,9 @@ static int rc_runtime_progress_read_achievement(rc_runtime_progress_t* progress)
 
 static int rc_runtime_progress_write_leaderboards(rc_runtime_progress_t* progress)
 {
-  unsigned i;
-  unsigned flags;
-  int offset = 0;
+  uint32_t i;
+  uint32_t flags;
+  int initial_offset = 0;
   int result;
 
   for (i = 0; i < progress->runtime->lboard_count; ++i) {
@@ -584,7 +620,10 @@ static int rc_runtime_progress_write_leaderboards(rc_runtime_progress_t* progres
         continue;
       }
 
-      offset = progress->offset;
+      initial_offset = progress->offset;
+    } else {
+      if (progress->offset + runtime_lboard->serialized_size > progress->buffer_size)
+        return RC_INSUFFICIENT_BUFFER;
     }
 
     rc_runtime_progress_start_chunk(progress, RC_RUNTIME_CHUNK_LEADERBOARD);
@@ -610,10 +649,15 @@ static int rc_runtime_progress_write_leaderboards(rc_runtime_progress_t* progres
     if (result != RC_OK)
       return result;
 
+    if (runtime_lboard->serialized_size) {
+      /* runtime_lboard->serialized_size includes the header */
+      assert_chunk_size(runtime_lboard->serialized_size - 8);
+    }
+
     rc_runtime_progress_end_chunk(progress);
 
     if (!progress->buffer)
-      runtime_lboard->serialized_size = progress->offset - offset;
+      runtime_lboard->serialized_size = progress->offset - initial_offset;
   }
 
   return RC_OK;
@@ -621,8 +665,8 @@ static int rc_runtime_progress_write_leaderboards(rc_runtime_progress_t* progres
 
 static int rc_runtime_progress_read_leaderboard(rc_runtime_progress_t* progress)
 {
-  unsigned id = rc_runtime_progress_read_uint(progress);
-  unsigned i;
+  uint32_t id = rc_runtime_progress_read_uint(progress);
+  uint32_t i;
   int result;
 
   for (i = 0; i < progress->runtime->lboard_count; ++i) {
@@ -632,7 +676,7 @@ static int rc_runtime_progress_read_leaderboard(rc_runtime_progress_t* progress)
       if (runtime_lboard->lboard->state == RC_TRIGGER_STATE_UNUPDATED) {
         /* only update state if definition hasn't changed (md5 matches) */
         if (rc_runtime_progress_match_md5(progress, runtime_lboard->md5)) {
-          unsigned flags = rc_runtime_progress_read_uint(progress);
+          uint32_t flags = rc_runtime_progress_read_uint(progress);
 
           result = rc_runtime_progress_read_trigger(progress, &runtime_lboard->lboard->start);
           if (result != RC_OK)
@@ -673,6 +717,9 @@ static int rc_runtime_progress_write_rich_presence(rc_runtime_progress_t* progre
   if (!display->next)
     return RC_OK;
 
+  if (progress->offset + 8 + 16 > progress->buffer_size)
+    return RC_INSUFFICIENT_BUFFER;
+
   rc_runtime_progress_start_chunk(progress, RC_RUNTIME_CHUNK_RICHPRESENCE);
   rc_runtime_progress_write_md5(progress, progress->runtime->richpresence->md5);
 
@@ -712,8 +759,11 @@ static int rc_runtime_progress_read_rich_presence(rc_runtime_progress_t* progres
 static int rc_runtime_progress_serialize_internal(rc_runtime_progress_t* progress)
 {
   md5_state_t state;
-  unsigned char md5[16];
+  uint8_t md5[16];
   int result;
+
+  if (progress->buffer_size < RC_RUNTIME_MIN_BUFFER_SIZE)
+    return RC_INSUFFICIENT_BUFFER;
 
   rc_runtime_progress_write_uint(progress, RC_RUNTIME_MARKER);
 
@@ -732,6 +782,9 @@ static int rc_runtime_progress_serialize_internal(rc_runtime_progress_t* progres
   if ((result = rc_runtime_progress_write_rich_presence(progress)) != RC_OK)
     return result;
 
+  if (progress->offset + 8 + 16 > progress->buffer_size)
+    return RC_INSUFFICIENT_BUFFER;
+
   rc_runtime_progress_write_uint(progress, RC_RUNTIME_CHUNK_DONE);
   rc_runtime_progress_write_uint(progress, 16);
 
@@ -746,12 +799,13 @@ static int rc_runtime_progress_serialize_internal(rc_runtime_progress_t* progres
   return RC_OK;
 }
 
-int rc_runtime_progress_size(const rc_runtime_t* runtime, lua_State* L)
+uint32_t rc_runtime_progress_size(const rc_runtime_t* runtime, lua_State* L)
 {
   rc_runtime_progress_t progress;
   int result;
 
-  rc_runtime_progress_init(&progress, (rc_runtime_t*)runtime, L);
+  rc_runtime_progress_init(&progress, runtime, L);
+  progress.buffer_size = 0xFFFFFFFF;
 
   result = rc_runtime_progress_serialize_internal(&progress);
   if (result != RC_OK)
@@ -762,28 +816,47 @@ int rc_runtime_progress_size(const rc_runtime_t* runtime, lua_State* L)
 
 int rc_runtime_serialize_progress(void* buffer, const rc_runtime_t* runtime, lua_State* L)
 {
+  return rc_runtime_serialize_progress_sized(buffer, 0xFFFFFFFF, runtime, L);
+}
+
+int rc_runtime_serialize_progress_sized(uint8_t* buffer, uint32_t buffer_size, const rc_runtime_t* runtime, lua_State* L)
+{
   rc_runtime_progress_t progress;
 
-  rc_runtime_progress_init(&progress, (rc_runtime_t*)runtime, L);
-  progress.buffer = (unsigned char*)buffer;
+  if (!buffer)
+    return RC_INVALID_STATE;
+
+  rc_runtime_progress_init(&progress, runtime, L);
+  progress.buffer = (uint8_t*)buffer;
+  progress.buffer_size = buffer_size;
 
   return rc_runtime_progress_serialize_internal(&progress);
 }
 
-int rc_runtime_deserialize_progress(rc_runtime_t* runtime, const unsigned char* serialized, lua_State* L)
+int rc_runtime_deserialize_progress(rc_runtime_t* runtime, const uint8_t* serialized, lua_State* L)
+{
+  return rc_runtime_deserialize_progress_sized(runtime, serialized, 0xFFFFFFFF, L);
+}
+
+int rc_runtime_deserialize_progress_sized(rc_runtime_t* runtime, const uint8_t* serialized, uint32_t serialized_size, lua_State* L)
 {
   rc_runtime_progress_t progress;
   md5_state_t state;
-  unsigned char md5[16];
-  unsigned chunk_id;
-  unsigned chunk_size;
-  unsigned next_chunk_offset;
-  unsigned i;
+  uint8_t md5[16];
+  uint32_t chunk_id;
+  uint32_t chunk_size;
+  uint32_t next_chunk_offset;
+  uint32_t i;
   int seen_rich_presence = 0;
   int result = RC_OK;
 
+  if (!serialized || serialized_size < RC_RUNTIME_MIN_BUFFER_SIZE) {
+    rc_runtime_reset(runtime);
+    return RC_INSUFFICIENT_BUFFER;
+  }
+
   rc_runtime_progress_init(&progress, runtime, L);
-  progress.buffer = (unsigned char*)serialized;
+  progress.buffer = (uint8_t*)serialized;
 
   if (rc_runtime_progress_read_uint(&progress) != RC_RUNTIME_MARKER) {
     rc_runtime_reset(runtime);
@@ -815,12 +888,21 @@ int rc_runtime_deserialize_progress(rc_runtime_t* runtime, const unsigned char* 
   }
 
   do {
+    if (progress.offset + 8 >= serialized_size) {
+      result = RC_INSUFFICIENT_BUFFER;
+      break;
+    }
+
     chunk_id = rc_runtime_progress_read_uint(&progress);
     chunk_size = rc_runtime_progress_read_uint(&progress);
     next_chunk_offset = progress.offset + chunk_size;
 
-    switch (chunk_id)
-    {
+    if (next_chunk_offset > serialized_size) {
+      result = RC_INSUFFICIENT_BUFFER;
+      break;
+    }
+
+    switch (chunk_id) {
       case RC_RUNTIME_CHUNK_MEMREFS:
         result = rc_runtime_progress_read_memrefs(&progress);
         break;

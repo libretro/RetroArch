@@ -35,8 +35,13 @@
 #include "../../deps/mbedtls/mbedtls/ctr_drbg.h"
 #include "../../deps/mbedtls/mbedtls/entropy.h"
 #else
+#include <mbedtls/version.h>
+#if MBEDTLS_VERSION_MAJOR < 3
 #include <mbedtls/config.h>
 #include <mbedtls/certs.h>
+#else
+#include <mbedtls/build_info.h>
+#endif
 #include <mbedtls/debug.h>
 #include <mbedtls/platform.h>
 #include <mbedtls/net_sockets.h>
@@ -46,7 +51,7 @@
 #endif
 
 /* Not part of the mbedtls upstream source */
-#include "../../deps/mbedtls/cacert.h"
+#include "cacert.h"
 
 #define DEBUG_LEVEL 0
 
@@ -234,11 +239,24 @@ int ssl_socket_send_all_blocking(void *state_data,
 
    mbedtls_net_set_block(&state->net_ctx);
 
-   while ((ret = mbedtls_ssl_write(&state->ctx, data, size)) <= 0)
+   while (size)
    {
-      if (  ret != MBEDTLS_ERR_SSL_WANT_READ && 
-            ret != MBEDTLS_ERR_SSL_WANT_WRITE)
-         return false;
+      ret = mbedtls_ssl_write(&state->ctx, data, size);
+
+      if (!ret)
+         continue;
+
+      if (ret < 0)
+      {
+         if (  ret != MBEDTLS_ERR_SSL_WANT_READ &&
+              ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+            return false;
+      }
+      else
+      {
+          data += ret;
+          size -= ret;
+      }
    }
 
    return true;

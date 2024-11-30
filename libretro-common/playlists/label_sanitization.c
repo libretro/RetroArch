@@ -26,13 +26,15 @@
 #include <string/stdstring.h>
 #include <string.h>
 
-#define DISC_STRINGS_LENGTH   3
+#define DISC_STRINGS_LENGTH   5
 #define REGION_STRINGS_LENGTH 20
 
 const char *disc_strings[DISC_STRINGS_LENGTH] = {
    "(CD",
    "(Disc",
-   "(Disk"
+   "(Disk",
+   "(Side",
+   "(Tape"
 };
 
 /*

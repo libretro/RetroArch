@@ -388,7 +388,7 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
 static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
 {
-   win32_common_state_t 
+   win32_common_state_t
       *g_win32           = (win32_common_state_t*)&win32_st;
 
    win32_monitor_all[g_win32->monitor_count++] = hMonitor;
@@ -442,7 +442,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    MONITORINFOEX *mon    = (MONITORINFOEX*)data;
    HMONITOR *hm_to_use   = (HMONITOR*)hm_data;
    unsigned fs_monitor   = settings->uints.video_monitor_index;
-   win32_common_state_t 
+   win32_common_state_t
       *g_win32           = (win32_common_state_t*)&win32_st;
 
    if (!win32_monitor_last)
@@ -877,17 +877,27 @@ static void win32_save_position(void)
    placement.rcNormalPosition.right  = 0;
    placement.rcNormalPosition.bottom = 0;
 
-   if (GetWindowPlacement(main_window.hwnd, &placement))
+   /* If SETTINGS_FLG_SKIP_WINDOW_POSITIONS is set, it means we've
+    * just unloaded an override that had fullscreen mode
+    * enabled while we have windowed mode set globally,
+    * in this case we skip the following blocks to not
+    * end up with fullscreen size and position. */
+   if (!(settings->flags & SETTINGS_FLG_SKIP_WINDOW_POSITIONS))
    {
-      g_win32->pos_x      = placement.rcNormalPosition.left;
-      g_win32->pos_y      = placement.rcNormalPosition.top;
-   }
+      if (GetWindowPlacement(main_window.hwnd, &placement))
+      {
+         g_win32->pos_x      = placement.rcNormalPosition.left;
+         g_win32->pos_y      = placement.rcNormalPosition.top;
+      }
 
-   if (GetWindowRect(main_window.hwnd, &rect))
-   {
-      g_win32->pos_width  = rect.right  - rect.left;
-      g_win32->pos_height = rect.bottom - rect.top;
+      if (GetWindowRect(main_window.hwnd, &rect))
+      {
+         g_win32->pos_width  = rect.right  - rect.left;
+         g_win32->pos_height = rect.bottom - rect.top;
+      }
    }
+   else
+      settings->flags &= ~SETTINGS_FLG_SKIP_WINDOW_POSITIONS;
 
    if (window_save_positions)
    {
@@ -899,16 +909,16 @@ static void win32_save_position(void)
             && !(video_st_flags & VIDEO_FLAG_FORCE_FULLSCREEN)
             && !(video_st_flags & VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE))
       {
-         bool ui_menubar_enable = settings->bools.ui_menubar_enable;
-         bool window_show_decor = settings->bools.video_window_show_decorations;
-         settings->uints.window_position_x      = g_win32->pos_x;
-         settings->uints.window_position_y      = g_win32->pos_y;
-         settings->uints.window_position_width  = g_win32->pos_width;
-         settings->uints.window_position_height = g_win32->pos_height;
+         bool ui_menubar_enable                     = settings->bools.ui_menubar_enable;
+         bool window_show_decor                     = settings->bools.video_window_show_decorations;
+         settings->uints.window_position_x          = g_win32->pos_x;
+         settings->uints.window_position_y          = g_win32->pos_y;
+         settings->uints.window_position_width      = g_win32->pos_width;
+         settings->uints.window_position_height     = g_win32->pos_height;
          if (window_show_decor)
          {
-            int border_thickness  = GetSystemMetrics(SM_CXSIZEFRAME);
-            int title_bar_height  = GetSystemMetrics(SM_CYCAPTION);
+            int border_thickness                    = GetSystemMetrics(SM_CXSIZEFRAME);
+            int title_bar_height                    = GetSystemMetrics(SM_CYCAPTION);
             settings->uints.window_position_width  -= border_thickness * 2;
             settings->uints.window_position_height -= border_thickness * 2;
             settings->uints.window_position_height -= title_bar_height;
@@ -932,7 +942,7 @@ static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
    if (!video_st || runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
       return;
 
-   if (video_st->av_info.geometry.aspect_ratio)
+   if (video_st->av_info.geometry.aspect_ratio > 0)
       *width                      = roundf(
               video_st->av_info.geometry.base_height
             * video_st->av_info.geometry.aspect_ratio);
@@ -977,6 +987,8 @@ static LRESULT CALLBACK wnd_proc_common(
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1051,9 +1063,7 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_COMMAND:
          {
             settings_t *settings     = config_get_ptr();
-            bool ui_menubar_enable   = settings ? settings->bools.ui_menubar_enable : false;
-            if (ui_menubar_enable)
-               win32_menu_loop(main_window.hwnd, wparam);
+            win32_menu_loop(main_window.hwnd, wparam);
          }
          break;
    }
@@ -1081,9 +1091,14 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             uint16_t mod          = 0;
             unsigned keycode      = 0;
             unsigned keysym       = (lparam >> 16) & 0xff;
+            bool extended         = (lparam >> 24) & 0x1;
+
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
 
             /* extended keys will map to dinput if the high bit is set */
-            if ((lparam >> 24 & 0x1))
+            if (extended)
                keysym |= 0x80;
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
@@ -1098,6 +1113,8 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1313,7 +1330,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                }
             }
             ImmReleaseContext(hwnd, hIMC);
-            return 0;   
+            return 0;
          }
          break;
       case WM_KEYUP:                /* Key released */
@@ -1327,19 +1344,27 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             uint16_t mod          = 0;
             unsigned keycode      = 0;
             unsigned keysym       = (lparam >> 16) & 0xff;
+            bool extended         = (lparam >> 24) & 0x1;
+
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
 
             /* extended keys will map to dinput if the high bit is set */
-            if ((lparam >> 24 & 0x1))
+            if (extended)
                keysym |= 0x80;
 
-            keycode = input_keymaps_translate_keysym_to_rk(keysym);
-            switch (keycode)
+            /* tell the driver about shift and alt key events */
+            if (keysym == 0x2A/*DIK_LSHIFT*/ || keysym == 0x36/*DIK_RSHIFT*/
+                     || keysym == 0x38/*DIK_LMENU*/ || keysym == 0xB8/*DIK_RMENU*/)
             {
-               /* L+R Shift handling done in dinput_poll */
-               case RETROK_LSHIFT:
-               case RETROK_RSHIFT:
-                  return 0;
+               void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+               if (input_data && dinput_handle_message(input_data,
+                        message, wparam, lparam))
+                  return 0; /* key up already handled by the driver */
             }
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -1351,6 +1376,8 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                mod |= RETROKMOD_CAPSLOCK;
             if (GetKeyState(VK_SCROLL)  & 0x81)
                mod |= RETROKMOD_SCROLLOCK;
+            if (GetKeyState(VK_NUMLOCK) & 0x81)
+               mod |= RETROKMOD_NUMLOCK;
             if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
                mod |= RETROKMOD_META;
 
@@ -1361,7 +1388,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                return 0;
 
             if (
-                     wparam == VK_F10 
+                     wparam == VK_F10
                   || wparam == VK_MENU
                   || wparam == VK_RSHIFT
                )
@@ -1647,7 +1674,7 @@ LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       }
 
 #ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message 
+      if (     g_win32->taskbar_message
             && message == g_win32->taskbar_message)
          g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
@@ -1690,7 +1717,7 @@ LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
       }
 
 #ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message 
+      if (     g_win32->taskbar_message
             && message == g_win32->taskbar_message)
          g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
@@ -1732,7 +1759,7 @@ LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
       }
 
 #ifdef HAVE_TASKBAR
-      if (     g_win32->taskbar_message 
+      if (     g_win32->taskbar_message
             && message == g_win32->taskbar_message)
          g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
@@ -1789,7 +1816,7 @@ bool win32_window_create(void *data, unsigned style,
    window_accelerators = LoadAcceleratorsA(GetModuleHandleA(NULL), MAKEINTRESOURCE(IDR_ACCELERATOR1));
 
 #ifdef HAVE_TASKBAR
-   g_win32->taskbar_message            = 
+   g_win32->taskbar_message            =
       RegisterWindowMessage("TaskbarButtonCreated");
 
    memset(&notification_filter, 0, sizeof(notification_filter));
@@ -1879,7 +1906,7 @@ bool win32_get_metrics(void *data,
 void win32_monitor_init(void)
 {
 #if !defined(_XBOX)
-   win32_common_state_t 
+   win32_common_state_t
       *g_win32            = (win32_common_state_t*)&win32_st;
    g_win32->monitor_count = 0;
    EnumDisplayMonitors(NULL, NULL,
@@ -1904,7 +1931,7 @@ void win32_check_window(void *data,
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
       ui_companion_win32.application->process_events();
-   *quit                  = g_win32_flags & WIN32_CMN_FLAG_QUIT;
+   *quit                  = (g_win32_flags & WIN32_CMN_FLAG_QUIT) ? true : false;
 
    if (g_win32_flags & WIN32_CMN_FLAG_RESIZED)
    {
@@ -1936,11 +1963,11 @@ void win32_clip_window(bool state)
          free(info);
       }
       info = NULL;
+
+      ClipCursor(&clip_rect);
    }
    else
-      GetWindowRect(GetDesktopWindow(), &clip_rect);
-
-   ClipCursor(&clip_rect);
+      ClipCursor(NULL);
 }
 #endif
 
@@ -2026,7 +2053,7 @@ static unsigned int menu_id_to_meta_key(unsigned int menu_id)
 }
 
 /* Given a short key (meta key), get its name as a string */
-/* For single character results, may return same pointer 
+/* For single character results, may return same pointer
  * with different data inside (modifying the old result) */
 static const char *win32_meta_key_to_name(unsigned int meta_key)
 {
@@ -2053,7 +2080,7 @@ static const char *win32_meta_key_to_name(unsigned int meta_key)
    return NULL;
 }
 
-/* Replaces Menu Item text with localized menu text, 
+/* Replaces Menu Item text with localized menu text,
  * and displays the current shortcut key */
 static void win32_localize_menu(HMENU menu)
 {
@@ -2107,13 +2134,13 @@ static void win32_localize_menu(HMENU menu)
          /* specific replacements:
             Load Content = "Ctrl+O"
             Fullscreen = "Alt+Enter" */
-         if (label_enum == 
+         if (label_enum ==
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
          {
             meta_key_name = "Ctrl+O";
             len2          = STRLEN_CONST("Ctrl+O");
          }
-         else if (label_enum == 
+         else if (label_enum ==
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
          {
             meta_key_name = "Alt+Enter";
@@ -2304,7 +2331,7 @@ bool win32_suspend_screensaver(void *data, bool enable)
 
 static bool win32_monitor_set_fullscreen(
       unsigned width, unsigned height,
-      unsigned refresh, char *dev_name)
+      unsigned refresh, bool interlaced, char *dev_name)
 {
    DEVMODE devmode;
    memset(&devmode, 0, sizeof(devmode));
@@ -2313,8 +2340,13 @@ static bool win32_monitor_set_fullscreen(
    devmode.dmPelsHeight       = height;
    devmode.dmDisplayFrequency = refresh;
    devmode.dmFields           = DM_PELSWIDTH
-                              | DM_PELSHEIGHT 
+                              | DM_PELSHEIGHT
                               | DM_DISPLAYFREQUENCY;
+#if !(_MSC_VER && (_MSC_VER < 1600))
+   devmode.dmDisplayFlags     = interlaced ? DM_INTERLACED : 0;
+   if (interlaced)
+      devmode.dmFields       |= DM_DISPLAYFLAGS;
+#endif
    return win32_change_display_settings(dev_name, &devmode,
          CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 }
@@ -2331,10 +2363,21 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
        * an integer, so video_refresh_rate needs to be rounded. Also, account
        * for black frame insertion using video_refresh_rate set to a portion
        * of the display refresh rate, as well as higher vsync swap intervals. */
-      float video_refresh    = settings->floats.video_refresh_rate;
+      float refresh_rate     = settings->floats.video_refresh_rate;
       unsigned bfi           = settings->uints.video_black_frame_insertion;
-      float refresh_mod      = bfi + 1.0f;
-      float refresh_rate     = video_refresh * refresh_mod;
+      unsigned swap_interval = settings->uints.video_swap_interval;
+      unsigned
+         shader_subframes    = settings->uints.video_shader_subframes;
+
+      /* if refresh_rate is <=60hz, adjust for modifiers, if it is higher
+         assume modifiers already factored into setting. Multiplying by
+         modifiers will still leave result at original value when they
+         are not set. Swap interval 0 is automatic, but at automatic
+         we should default to checking for normal SI 1 for rate change*/
+      if (swap_interval == 0)
+        ++swap_interval;
+      if ((int)refresh_rate <= 60)
+         refresh_rate     = refresh_rate * (bfi + 1) * swap_interval * shader_subframes;
 
       if (windowed_full)
       {
@@ -2347,7 +2390,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          *style          = WS_POPUP | WS_VISIBLE;
 
          if (win32_monitor_set_fullscreen(*width, *height,
-               (int)refresh_rate, current_mon->szDevice))
+               (int)refresh_rate, false, current_mon->szDevice))
          {
             RARCH_LOG("[Video]: Fullscreen set to %ux%u @ %uHz on device %s.\n",
                   *width, *height, (int)refresh_rate, current_mon->szDevice);
@@ -2492,7 +2535,7 @@ bool win32_set_video_mode(void *data,
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
-   while (  !(g_win32_flags & WIN32_CMN_FLAG_INITED) 
+   while (  !(g_win32_flags & WIN32_CMN_FLAG_INITED)
          && !(g_win32_flags & WIN32_CMN_FLAG_QUIT)
          && (res = GetMessage(&msg, main_window.hwnd, 0, 0)) != 0)
    {
@@ -2526,7 +2569,7 @@ void win32_window_reset(void)
 void win32_destroy_window(void)
 {
 #ifndef _XBOX
-   UnregisterClass("RetroArch", 
+   UnregisterClass("RetroArch",
          GetModuleHandle(NULL));
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x500 /* 2K */
    UnregisterDeviceNotification(notification_handler);
@@ -2666,17 +2709,21 @@ void win32_get_video_output_next(
 }
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
-#define WIN32_GET_VIDEO_OUTPUT(iModeNum, dm) EnumDisplaySettingsEx(NULL, iModeNum, dm, EDS_ROTATEDMODE)
+#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettingsEx(devName, iModeNum, dm, EDS_ROTATEDMODE)
 #else
-#define WIN32_GET_VIDEO_OUTPUT(iModeNum, dm) EnumDisplaySettings(NULL, iModeNum, dm)
+#define WIN32_GET_VIDEO_OUTPUT(devName, iModeNum, dm) EnumDisplaySettings(devName, iModeNum, dm)
 #endif
 
 bool win32_get_video_output(DEVMODE *dm, int mode, size_t len)
 {
+   MONITORINFOEX current_mon;
+   HMONITOR hm_to_use        = NULL;
+   unsigned mon_id           = 0;
    memset(dm, 0, len);
    dm->dmSize  = len;
-   if (WIN32_GET_VIDEO_OUTPUT((mode == -1) 
-            ? ENUM_CURRENT_SETTINGS 
+   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+   if (WIN32_GET_VIDEO_OUTPUT((const char*)&current_mon.szDevice, (mode == -1)
+            ? ENUM_CURRENT_SETTINGS
             : (DWORD)mode,
             dm) == 0)
       return false;
@@ -2718,7 +2765,7 @@ bool win32_window_init(WNDCLASSEX *wndclass,
       bool fullscreen, const char *class_name)
 {
 #if _WIN32_WINNT >= 0x0501
-   /* Use the language set in the config for the menubar... 
+   /* Use the language set in the config for the menubar...
     * also changes the console language. */
    SetThreadUILanguage(win32_get_langid_from_retro_lang(
             (enum retro_language)

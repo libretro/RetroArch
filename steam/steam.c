@@ -6,6 +6,7 @@
 #include <retro_timers.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../input/input_driver.h"
 #include "../menu/menu_driver.h"
@@ -145,7 +146,7 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
 
    for (i = 0; core_info_list->count > i; i++)
    {
-      char core_info_name[256];
+      char core_info_name[NAME_MAX_LENGTH];
       core_info_t *core_info   = core_info_get(core_info_list, i);
       /* Find the opening parenthesis for the core name */
       char *start              = strchr(core_info->display_name, '(');
@@ -174,7 +175,7 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
 }
 
 /* Generate a list with core dlcs
- * Needs to be called after initializion because it uses core info */
+ * Needs to be called after initialization because it uses core info */
 MistResult steam_generate_core_dlcs_list(steam_core_dlc_list_t **list)
 {
    int count, i;
@@ -266,7 +267,7 @@ steam_core_dlc_t* steam_get_core_dlc_by_name(
 
 void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 {
-   char msg[PATH_MAX_LENGTH] = { 0 };
+   char msg[128] = { 0 };
    bool downloading          = false;
    bool installed            = false;
    uint64_t bytes_downloaded = 0;
@@ -308,7 +309,7 @@ error:
 
 void steam_uninstall_core_dlc(steam_core_dlc_t *core_dlc)
 {
-   char msg[PATH_MAX_LENGTH] = { 0 };
+   char msg[128] = { 0 };
 
    MistResult result = mist_steam_apps_uninstall_dlc(core_dlc->app_id);
 
@@ -447,8 +448,9 @@ void steam_update_presence(enum presence presence, bool force)
                   content[_len+2]    = '\0';
                   if (core_info)
                   {
-                     _len            = strlcat(content, core_info->systemname,
-                           sizeof(content));
+                     _len           += 2;
+                     _len           += strlcpy(content + _len, core_info->systemname,
+                           sizeof(content) - _len);
                      content[_len  ] = ')';
                      content[_len+1] = '\0';
                   }
@@ -468,8 +470,9 @@ void steam_update_presence(enum presence presence, bool force)
                   content[_len+2]    = '\0';
                   if (core_info)
                   {
-                     _len            = strlcat(content, core_info->core_name,
-                           sizeof(content));
+                     _len           += 2;
+                     _len           += strlcpy(content + _len, core_info->core_name,
+                           sizeof(content) - _len);
                      content[_len  ] = ')';
                      content[_len+1] = '\0';
                   }
@@ -489,13 +492,15 @@ void steam_update_presence(enum presence presence, bool force)
                   content[_len+2]    = '\0';
                   if (core_info)
                   {
-                     _len            = strlcat(content, core_info->systemname,
-                           sizeof(content));
+                     _len           += 2;
+                     _len           += strlcpy(content + _len, core_info->systemname,
+                           sizeof(content) - _len);
                      content[_len  ] = ' ';
                      content[_len+1] = '-';
                      content[_len+2] = ' ';
-                     _len            = strlcat(content, core_info->core_name,
-                           sizeof(content));
+                     _len           += 3;
+                     _len           += strlcpy(content + _len, core_info->core_name,
+                           sizeof(content) - _len);
                      content[_len  ] = ')';
                      content[_len+1] = '\0';
                   }

@@ -272,7 +272,7 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
 
 static void drm_page_flip(struct drm_surface *surface)
 {
-   /* We alredy have the id of the FB_ID property of
+   /* We already have the id of the FB_ID property of
     * the plane on which we are going to do a pageflip:
     * we got it back in drm_plane_setup()  */
    static drmModeAtomicReqPtr req = NULL;
@@ -517,7 +517,7 @@ static void drm_plane_setup(struct drm_surface *surface)
    uint32_t plane_w = drm.current_mode->vdisplay * surface->aspect;
    uint32_t plane_h = drm.current_mode->vdisplay;
    /* If we obtain a scaled image width that is bigger than the physical screen width,
-    * then we keep the physical screen width as our maximun width. */
+    * then we keep the physical screen width as our maximum width. */
    if (plane_w > drm.current_mode->hdisplay)
       plane_w = drm.current_mode->hdisplay;
 
@@ -746,11 +746,11 @@ static bool drm_frame(void *data, const void *frame, unsigned width,
 {
    struct drm_video *_drmvars = data;
 #ifdef HAVE_MENU
-   bool menu_is_alive         = video_info->menu_is_alive;
+   bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (  ( width != _drmvars->core_width) ||
-         (height != _drmvars->core_height))
+   if (   (width  != _drmvars->core_width)
+       || (height != _drmvars->core_height))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
@@ -770,7 +770,7 @@ static bool drm_frame(void *data, const void *frame, unsigned width,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
             _drmvars->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565,
-	    255,
+            255,
             _drmvars->current_aspect,
             3,
             0,
@@ -796,7 +796,7 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
    /* If menu was active but it's not anymore... */
    if (!state && _drmvars->menu_active)
    {
-      /* We tell ony the plane we have to read from the main surface again */
+      /* We tell only the plane we have to read from the main surface again */
       drm_plane_setup(_drmvars->main_surface);
       /* We free the menu surface buffers */
       drm_surface_free(_drmvars, &_drmvars->menu_surface);

@@ -40,31 +40,31 @@
 
 #define configuration_set_float(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_bool(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_uint(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_int(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_string(settings, var, newvar) \
 { \
-   settings->modified = true; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
    strlcpy(var, newvar, sizeof(var)); \
 }
 
@@ -82,9 +82,16 @@ enum crt_switch_type
 enum override_type
 {
    OVERRIDE_NONE = 0,
+   OVERRIDE_AS,
    OVERRIDE_CORE,
    OVERRIDE_CONTENT_DIR,
    OVERRIDE_GAME
+};
+
+enum settings_glob_flags
+{
+   SETTINGS_FLG_MODIFIED              = (1 << 0),
+   SETTINGS_FLG_SKIP_WINDOW_POSITIONS = (1 << 1)
 };
 
 typedef struct settings
@@ -105,7 +112,6 @@ typedef struct settings
       int location_update_interval_distance;
       int state_slot;
       int replay_slot;
-      int audio_wasapi_sh_buffer_length;
       int crt_switch_center_adjust;
       int crt_switch_porch_adjust;
 #ifdef HAVE_VULKAN
@@ -135,6 +141,9 @@ typedef struct settings
       int menu_xmb_title_margin;
       int menu_xmb_title_margin_horizontal_offset;
 #endif
+#ifdef HAVE_OVERLAY
+      int input_overlay_lightgun_port;
+#endif
    } ints;
 
    struct
@@ -148,6 +157,7 @@ typedef struct settings
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
+      unsigned input_device_reservation_type[MAX_USERS];
 
       unsigned input_remap_ports[MAX_USERS];
       unsigned input_remap_ids[MAX_USERS][RARCH_CUSTOM_BIND_LIST_END];
@@ -160,12 +170,18 @@ typedef struct settings
       unsigned audio_block_frames;
       unsigned audio_latency;
 
+#ifdef HAVE_WASAPI
+      unsigned audio_wasapi_sh_buffer_length;
+#endif
+
 #ifdef HAVE_MICROPHONE
       unsigned microphone_sample_rate;
       unsigned microphone_block_frames;
       unsigned microphone_latency;
-      unsigned microphone_wasapi_sh_buffer_length;
       unsigned microphone_resampler_quality;
+#ifdef HAVE_WASAPI
+      unsigned microphone_wasapi_sh_buffer_length;
+#endif
 #endif
 
       unsigned fps_update_interval;
@@ -226,6 +242,8 @@ typedef struct settings
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
       unsigned video_scale;
+      unsigned video_scale_integer_axis;
+      unsigned video_scale_integer_scaling;
       unsigned video_max_swapchain_images;
       unsigned video_max_frame_latency;
       unsigned video_swap_interval;
@@ -264,6 +282,7 @@ typedef struct settings
       unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_icon_thumbnails;
       unsigned gfx_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
@@ -313,6 +332,12 @@ typedef struct settings
       unsigned input_overlay_show_inputs_port;
       unsigned input_overlay_dpad_diagonal_sensitivity;
       unsigned input_overlay_abxy_diagonal_sensitivity;
+      unsigned input_overlay_lightgun_trigger_delay;
+      unsigned input_overlay_lightgun_two_touch_input;
+      unsigned input_overlay_lightgun_three_touch_input;
+      unsigned input_overlay_lightgun_four_touch_input;
+      unsigned input_overlay_mouse_hold_msec;
+      unsigned input_overlay_mouse_dtap_msec;
 #endif
 
       unsigned run_ahead_frames;
@@ -336,6 +361,8 @@ typedef struct settings
 
       unsigned core_updater_auto_backup_history_size;
       unsigned video_black_frame_insertion;
+      unsigned video_bfi_dark_frames;
+      unsigned video_shader_subframes;
       unsigned video_autoswitch_refresh_rate;
       unsigned quit_on_close_content;
 
@@ -357,7 +384,14 @@ typedef struct settings
    {
       float placeholder;
       float video_aspect_ratio;
+      float video_viewport_bias_x;
+      float video_viewport_bias_y;
+#if defined(RARCH_MOBILE)
+      float video_viewport_bias_portrait_x;
+      float video_viewport_bias_portrait_y;
+#endif
       float video_refresh_rate;
+      float video_autoswitch_pal_threshold;
       float crt_video_refresh_rate;
       float video_font_size;
       float video_msg_pos_x;
@@ -406,6 +440,9 @@ typedef struct settings
       float input_overlay_x_offset_portrait;
       float input_overlay_y_offset_portrait;
 
+      float input_overlay_mouse_speed;
+      float input_overlay_mouse_swipe_threshold;
+
       float slowmotion_ratio;
       float fastforward_ratio;
       float input_analog_deadzone;
@@ -427,12 +464,11 @@ typedef struct settings
       char wifi_driver[32];
       char led_driver[32];
       char location_driver[32];
+      char cloud_sync_driver[32];
       char menu_driver[32];
       char cheevos_username[32];
-      char cheevos_password[256];
       char cheevos_token[32];
       char cheevos_leaderboards_enable[32];
-      char cheevos_custom_host[64];
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];
@@ -441,24 +477,37 @@ typedef struct settings
       char midi_driver[32];
       char midi_input[32];
       char midi_output[32];
-
-      char input_keyboard_layout[64];
-
+#ifdef HAVE_LAKKA
+      char cpu_main_gov[32];
+      char cpu_menu_gov[32];
+#endif
 #ifdef HAVE_MICROPHONE
       char microphone_driver[32];
       char microphone_resampler[32];
-      char microphone_device[255];
+#endif
+      char input_keyboard_layout[64];
+      char cheevos_custom_host[64];
+
+#ifdef HAVE_LAKKA
+      char timezone[TIMEZONE_LENGTH];
 #endif
 
+      char cheevos_password[NAME_MAX_LENGTH];
+#ifdef HAVE_MICROPHONE
+      char microphone_device[NAME_MAX_LENGTH];
+#endif
 #ifdef ANDROID
-      char input_android_physical_keyboard[255];
+      char input_android_physical_keyboard[NAME_MAX_LENGTH];
 #endif
+      char audio_device[NAME_MAX_LENGTH];
+      char camera_device[NAME_MAX_LENGTH];
+      char netplay_mitm_server[NAME_MAX_LENGTH];
+      char webdav_url[NAME_MAX_LENGTH];
+      char webdav_username[NAME_MAX_LENGTH];
+      char webdav_password[NAME_MAX_LENGTH];
 
-      char audio_device[255];
-      char camera_device[255];
-      char netplay_mitm_server[255];
-
-      char translation_service_url[2048];
+      char crt_switch_timings[NAME_MAX_LENGTH];
+      char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
@@ -466,12 +515,7 @@ typedef struct settings
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
 
-      char crt_switch_timings[255];
-#ifdef HAVE_LAKKA
-      char timezone[TIMEZONE_LENGTH];
-      char cpu_main_gov[32];
-      char cpu_menu_gov[32];
-#endif
+      char translation_service_url[2048]; /* TODO/FIXME - check size */
    } arrays;
 
    struct
@@ -483,21 +527,52 @@ typedef struct settings
       char netplay_password[128];
       char netplay_spectate_password[128];
 
-      char netplay_server[255];
-      char netplay_custom_mitm_server[255];
-      char network_buildbot_url[255];
-      char network_buildbot_assets_url[255];
+      char streaming_title[512]; /* TODO/FIXME - check size */
 
-      char browse_url[4096];
+      char netplay_server[NAME_MAX_LENGTH];
+      char netplay_custom_mitm_server[NAME_MAX_LENGTH];
+      char network_buildbot_url[NAME_MAX_LENGTH];
+      char network_buildbot_assets_url[NAME_MAX_LENGTH];
+      char menu_content_show_settings_password[NAME_MAX_LENGTH];
+      char kiosk_mode_password[NAME_MAX_LENGTH];
 
-      char path_stream_url[8192];
+      char bundle_assets_dst_subdir[DIR_MAX_LENGTH];
+      char directory_audio_filter[DIR_MAX_LENGTH];
+      char directory_autoconfig[DIR_MAX_LENGTH];
+      char directory_video_filter[DIR_MAX_LENGTH];
+      char directory_video_shader[DIR_MAX_LENGTH];
+      char directory_libretro[DIR_MAX_LENGTH];
+      char directory_input_remapping[DIR_MAX_LENGTH];
+      char directory_overlay[DIR_MAX_LENGTH];
+      char directory_osk_overlay[DIR_MAX_LENGTH];
+      char directory_screenshot[DIR_MAX_LENGTH];
+      char directory_system[DIR_MAX_LENGTH];
+      char directory_cache[DIR_MAX_LENGTH];
+      char directory_playlist[DIR_MAX_LENGTH];
+      char directory_content_favorites[DIR_MAX_LENGTH];
+      char directory_content_history[DIR_MAX_LENGTH];
+      char directory_content_image_history[DIR_MAX_LENGTH];
+      char directory_content_music_history[DIR_MAX_LENGTH];
+      char directory_content_video_history[DIR_MAX_LENGTH];
+      char directory_runtime_log[DIR_MAX_LENGTH];
+      char directory_core_assets[DIR_MAX_LENGTH];
+      char directory_assets[DIR_MAX_LENGTH];
+      char directory_dynamic_wallpapers[DIR_MAX_LENGTH];
+      char directory_thumbnails[DIR_MAX_LENGTH];
+      char directory_menu_config[DIR_MAX_LENGTH];
+      char directory_menu_content[DIR_MAX_LENGTH];
+#ifdef _3DS
+      char directory_bottom_assets[DIR_MAX_LENGTH];
+#endif
+      char log_dir[DIR_MAX_LENGTH];
 
+#ifdef HAVE_TEST_DRIVERS
+      char test_input_file_joypad[PATH_MAX_LENGTH];
+      char test_input_file_general[PATH_MAX_LENGTH];
+#endif
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
-      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char path_menu_xmb_font[PATH_MAX_LENGTH];
-      char menu_content_show_settings_password[PATH_MAX_LENGTH];
-      char kiosk_mode_password[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
@@ -517,40 +592,12 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
       char path_rgui_theme_preset[PATH_MAX_LENGTH];
+      char app_icon[PATH_MAX_LENGTH];
 
-      char directory_audio_filter[PATH_MAX_LENGTH];
-      char directory_autoconfig[PATH_MAX_LENGTH];
-      char directory_video_filter[PATH_MAX_LENGTH];
-      char directory_video_shader[PATH_MAX_LENGTH];
-      char directory_libretro[PATH_MAX_LENGTH];
-      char directory_input_remapping[PATH_MAX_LENGTH];
-      char directory_overlay[PATH_MAX_LENGTH];
-      char directory_osk_overlay[PATH_MAX_LENGTH];
-      char directory_resampler[PATH_MAX_LENGTH];
-      char directory_screenshot[PATH_MAX_LENGTH];
-      char directory_system[PATH_MAX_LENGTH];
-      char directory_cache[PATH_MAX_LENGTH];
-      char directory_playlist[PATH_MAX_LENGTH];
-      char directory_content_favorites[PATH_MAX_LENGTH];
-      char directory_content_history[PATH_MAX_LENGTH];
-      char directory_content_image_history[PATH_MAX_LENGTH];
-      char directory_content_music_history[PATH_MAX_LENGTH];
-      char directory_content_video_history[PATH_MAX_LENGTH];
-      char directory_runtime_log[PATH_MAX_LENGTH];
-      char directory_core_assets[PATH_MAX_LENGTH];
-      char directory_assets[PATH_MAX_LENGTH];
-      char directory_dynamic_wallpapers[PATH_MAX_LENGTH];
-      char directory_thumbnails[PATH_MAX_LENGTH];
-      char directory_menu_config[PATH_MAX_LENGTH];
-      char directory_menu_content[PATH_MAX_LENGTH];
-      char streaming_title[PATH_MAX_LENGTH];
-#ifdef _3DS
-      char directory_bottom_assets[PATH_MAX_LENGTH];
-#endif
-      char log_dir[PATH_MAX_LENGTH];
+      char browse_url[4096];      /* TODO/FIXME - check size */
+      char path_stream_url[8192]; /* TODO/FIXME - check size */
    } paths;
 
-   bool modified;
 
    struct
    {
@@ -572,11 +619,11 @@ typedef struct settings
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
-      bool video_scale_integer_overscale;
       bool video_shader_enable;
       bool video_shader_watch_files;
       bool video_shader_remember_last_dir;
       bool video_shader_preset_save_reference_enable;
+      bool video_scan_subframes;
       bool video_threaded;
       bool video_font_enable;
       bool video_disable_composition;
@@ -612,10 +659,16 @@ typedef struct settings
       bool audio_enable_menu_scroll;
       bool audio_sync;
       bool audio_rate_control;
-      bool audio_wasapi_exclusive_mode;
-      bool audio_wasapi_float_format;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+#ifdef IOS
+      bool audio_respect_silent_mode;
+#endif
+
+#ifdef HAVE_WASAPI
+      bool audio_wasapi_exclusive_mode;
+      bool audio_wasapi_float_format;
+#endif
 
 #ifdef HAVE_MICROPHONE
       /* Microphone */
@@ -628,6 +681,7 @@ typedef struct settings
 
       /* Input */
       bool input_remap_binds_enable;
+      bool input_remap_sort_by_controller_enable;
       bool input_autodetect_enable;
       bool input_sensors_enable;
       bool input_overlay_enable;
@@ -639,6 +693,11 @@ typedef struct settings
       bool input_overlay_auto_rotate;
       bool input_overlay_auto_scale;
       bool input_osk_overlay_auto_scale;
+      bool input_overlay_pointer_enable;
+      bool input_overlay_lightgun_trigger_on_touch;
+      bool input_overlay_lightgun_allow_offscreen;
+      bool input_overlay_mouse_hold_to_drag;
+      bool input_overlay_mouse_dtap_to_drag;
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
       bool input_all_users_control_menu;
@@ -649,6 +708,8 @@ typedef struct settings
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
       bool input_auto_mouse_grab;
+      bool input_allow_turbo_dpad;
+      bool input_hotkey_device_merge;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
 #endif
@@ -675,6 +736,8 @@ typedef struct settings
       bool notification_show_remap_load;
       bool notification_show_config_override_load;
       bool notification_show_set_initial_disk;
+      bool notification_show_disk_control;
+      bool notification_show_save_state;
       bool notification_show_fast_forward;
 #ifdef HAVE_SCREENSHOTS
       bool notification_show_screenshot;
@@ -694,13 +757,11 @@ typedef struct settings
       bool menu_core_enable;
       bool menu_show_sublabels;
       bool menu_dynamic_wallpaper_enable;
-      bool menu_throttle;
       bool menu_mouse_enable;
       bool menu_pointer_enable;
       bool menu_navigation_wraparound_enable;
       bool menu_navigation_browser_filter_supported_extensions_enable;
       bool menu_show_advanced_settings;
-      bool menu_throttle_framerate;
       bool menu_linear_filter;
       bool menu_horizontal_animation;
       bool menu_scroll_fast;
@@ -726,7 +787,10 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
+#if 0
+/* Thumbnailpack removal */
       bool menu_show_legacy_thumbnail_updater;
+#endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
       bool menu_materialui_switch_icons;
@@ -764,6 +828,8 @@ typedef struct settings
       bool menu_unified_controls;
       bool menu_disable_info_button;
       bool menu_disable_search_button;
+      bool menu_disable_left_analog;
+      bool menu_disable_right_analog;
       bool menu_ticker_smooth;
       bool settings_show_drivers;
       bool settings_show_video;
@@ -799,6 +865,7 @@ typedef struct settings
       bool quick_menu_show_replay;
       bool quick_menu_show_undo_save_load_state;
       bool quick_menu_show_add_to_favorites;
+      bool quick_menu_show_add_to_playlist;
       bool quick_menu_show_start_recording;
       bool quick_menu_show_start_streaming;
       bool quick_menu_show_set_core_association;
@@ -899,6 +966,14 @@ typedef struct settings
       bool steam_rich_presence_enable;
 #endif
 
+      /* Cloud Sync */
+      bool cloud_sync_enable;
+      bool cloud_sync_destructive;
+      bool cloud_sync_sync_saves;
+      bool cloud_sync_sync_configs;
+      bool cloud_sync_sync_thumbs;
+      bool cloud_sync_sync_system;
+
       /* Misc. */
       bool discord_enable;
       bool threaded_data_runloop_enable;
@@ -909,13 +984,13 @@ typedef struct settings
       bool rewind_enable;
       bool fastforward_frameskip;
       bool vrr_runloop_enable;
+      bool menu_throttle_framerate;
       bool apply_cheats_after_toggle;
       bool apply_cheats_after_load;
       bool run_ahead_enabled;
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
       bool preemptive_frames_enable;
-      bool preemptive_frames_hide_warnings;
       bool pause_nonactive;
       bool pause_on_disconnect;
       bool block_sram_overwrite;
@@ -943,6 +1018,7 @@ typedef struct settings
       bool game_specific_options;
       bool auto_overrides_enable;
       bool auto_remaps_enable;
+      bool initial_disk_change_enable;
       bool global_core_options;
       bool auto_shaders_enable;
 
@@ -961,6 +1037,11 @@ typedef struct settings
       bool screenshots_in_content_dir;
       bool systemfiles_in_content_dir;
       bool ssh_enable;
+#ifdef HAVE_LAKKA_SWITCH
+      bool switch_oc;
+      bool switch_cec;
+      bool bluetooth_ertm_disable;
+#endif
       bool samba_enable;
       bool bluetooth_enable;
       bool localap_enable;
@@ -980,6 +1061,8 @@ typedef struct settings
       bool playlist_show_entry_idx;
       bool playlist_fuzzy_archive_match;
       bool playlist_portable_paths;
+      bool playlist_use_filename;
+      bool playlist_allow_non_png;
 
       bool quit_press_twice;
       bool vibrate_on_keypress;
@@ -993,6 +1076,7 @@ typedef struct settings
       bool log_to_file_timestamp;
 
       bool scan_without_core_match;
+      bool scan_serial_and_crc;
 
       bool ai_service_enable;
       bool ai_service_pause;
@@ -1007,10 +1091,12 @@ typedef struct settings
       bool android_input_disconnect_workaround;
 #endif
 
-#if defined(HAVE_COCOATOUCH) && defined(TARGET_OS_TV)
+#if defined(HAVE_COCOATOUCH)
       bool gcdwebserver_alert;
 #endif
    } bools;
+
+   uint8_t flags;
 
 } settings_t;
 
@@ -1167,6 +1253,16 @@ bool config_load_remap(const char *directory_input_remapping,
       void *data);
 
 /**
+ * config_get_autoconf_profile_filename:
+ * @device_name       : Input device name
+ * @user              : Controller number to save
+ * Fills buf with the autoconf profile file name (including driver dir if needed).
+ **/
+
+void config_get_autoconf_profile_filename(
+      const char *device_name, unsigned user,
+      char *buf, size_t len_buf);
+/**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
  * @user              : Controller number to save
@@ -1192,7 +1288,8 @@ bool config_save_file(const char *path);
  *
  * Returns: true (1) on success, (-1) if nothing to write, otherwise returns false (0).
  **/
-int8_t config_save_overrides(enum override_type type, void *data, bool remove);
+int8_t config_save_overrides(enum override_type type,
+      void *data, bool remove, const char *path);
 
 /* Replaces currently loaded configuration file with
  * another one. Will load a dummy core to flush state

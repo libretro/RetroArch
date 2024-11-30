@@ -54,7 +54,7 @@
 #include <defines/d3d_defines.h>
 #include "../common/d3d_common.h"
 #include "../common/d3d9_common.h"
-#include "../video_coord_array.h"
+#include "../video_driver.h"
 #include "../../configuration.h"
 #include "../../dynamic.h"
 #include "../../frontend/frontend_driver.h"
@@ -91,7 +91,7 @@ typedef struct hlsl_renderchain
    struct shader_pass stock_shader;
 } hlsl_renderchain_t;
 
-/* 
+/*
  * DISPLAY DRIVER
  */
 
@@ -123,7 +123,7 @@ static void *gfx_display_d3d9_hlsl_get_default_mvp(void *data)
 {
    static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
-                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 1.0f, 0.0f,
                                  0.0f, 0.0f, 0.0f, 1.0f
                                };
    return &id;
@@ -387,7 +387,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    gfx_display_d3d9_hlsl_scissor_end
 };
 
-/* 
+/*
  * VIDEO DRIVER
  */
 
@@ -469,11 +469,15 @@ static bool d3d9_hlsl_load_program_from_file(
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if (listing_f)
+   {
       RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
+      listing_f->lpVtbl->Release(listing_f);
+   }
    if (listing_v)
+   {
       RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
-   listing_f->lpVtbl->Release(listing_f);
-   listing_v->lpVtbl->Release(listing_v);
+      listing_v->lpVtbl->Release(listing_v);
+   }
 
    return false;
 }
@@ -483,19 +487,20 @@ static bool d3d9_hlsl_load_program(
       struct shader_pass *pass,
       const char *prog)
 {
-   ID3DXBuffer *listing_f                    = NULL;
-   ID3DXBuffer *listing_v                    = NULL;
-   ID3DXBuffer *code_f                       = NULL;
-   ID3DXBuffer *code_v                       = NULL;
+   ID3DXBuffer *listing_f = NULL;
+   ID3DXBuffer *listing_v = NULL;
+   ID3DXBuffer *code_f    = NULL;
+   ID3DXBuffer *code_v    = NULL;
+   size_t prog_len        = strlen(prog);
 
-   if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
+   if (!d3d9x_compile_shader(prog, prog_len, NULL, NULL,
             "main_fragment", "ps_3_0", 0, &code_f, &listing_f,
             &pass->ftable ))
    {
       RARCH_ERR("Could not compile stock fragment shader..\n");
       goto error;
    }
-   if (!d3d9x_compile_shader(prog, strlen(prog), NULL, NULL,
+   if (!d3d9x_compile_shader(prog, prog_len, NULL, NULL,
             "main_vertex", "vs_3_0", 0, &code_v, &listing_v,
             &pass->vtable ))
    {
@@ -517,12 +522,15 @@ static bool d3d9_hlsl_load_program(
 error:
    RARCH_ERR("Cg/HLSL error:\n");
    if (listing_f)
+   {
       RARCH_ERR("Fragment:\n%s\n", (char*)listing_f->lpVtbl->GetBufferPointer(listing_f));
+      listing_f->lpVtbl->Release(listing_f);
+   }
    if (listing_v)
+   {
       RARCH_ERR("Vertex:\n%s\n", (char*)listing_v->lpVtbl->GetBufferPointer(listing_v));
-   listing_f->lpVtbl->Release(listing_f);
-   listing_v->lpVtbl->Release(listing_v);
-
+      listing_v->lpVtbl->Release(listing_v);
+   }
    return false;
 }
 
@@ -596,7 +604,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
    int i;
    struct shader_pass pass       = { 0 };
    unsigned fmt                  =
-        (_fmt == RETRO_PIXEL_FORMAT_RGB565) 
+        (_fmt == RETRO_PIXEL_FORMAT_RGB565)
       ? D3D9_RGB565_FORMAT
       : D3D9_XRGB8888_FORMAT;
 
@@ -844,8 +852,8 @@ static void hlsl_d3d9_renderchain_render_pass(
       struct shader_pass *pass,
       unsigned pass_index)
 {
-   /* Currently we override the passes shader program 
-      with the stock shader as at least the last pass 
+   /* Currently we override the passes shader program
+      with the stock shader as at least the last pass
       is not setup correctly */
 #if 0
    d3d9_hlsl_bind_program(chain->chain.dev, pass);
@@ -856,8 +864,8 @@ static void hlsl_d3d9_renderchain_render_pass(
    IDirect3DDevice9_SetTexture(chain->chain.dev, 0,
          (IDirect3DBaseTexture9*)pass->tex);
 
-   /* D3D8 sets the sampler address modes - 
-      I've left them out for the time being 
+   /* D3D8 sets the sampler address modes -
+      I've left them out for the time being
       but maybe this is a bug in d3d9 */
 #if 0
    IDirect3DDevice9_SetSamplerState(chain->chain.dev,
@@ -1019,7 +1027,7 @@ static void hlsl_d3d9_renderchain_render(
             chain->chain.frame_count, 0);
 
       hlsl_d3d9_renderchain_render_pass(chain,
-            from_pass, 
+            from_pass,
             i + 1);
 
       current_width  = out_width;
@@ -1186,7 +1194,7 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
             d3d, (hlsl_renderchain_t*)d3d->renderchain_data,
             d3d->dev, &d3d->final_viewport, &link_info,
             rgb32
-            ? RETRO_PIXEL_FORMAT_XRGB8888 
+            ? RETRO_PIXEL_FORMAT_XRGB8888
             : RETRO_PIXEL_FORMAT_RGB565
             )
       )
@@ -1234,8 +1242,8 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
                   chain,
                   d3d->shader.lut[i].id,
                   d3d->shader.lut[i].path,
-                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC 
-                  ? video_smooth 
+                  d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC
+                  ? video_smooth
                   : (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR)))
          {
             RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
@@ -1335,7 +1343,21 @@ static bool d3d9_hlsl_initialize(
 
    d3d_matrix_identity(&d3d->mvp_transposed);
    d3d_matrix_ortho_off_center_lh(&d3d->mvp_transposed, 0, 1, 0, 1, 0, 1);
-   d3d_matrix_transpose(&d3d->mvp, &d3d->mvp_transposed);
+   d3d->mvp = d3d->mvp_transposed;
+
+   if (d3d->translate_x)
+   {
+      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
+      float vp_x = -(d3d->translate_x/(float)d3d->final_viewport.Width);
+      pout->m[3][0] = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
+   }
+
+   if (d3d->translate_y)
+   {
+      struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
+      float vp_y = -(d3d->translate_y/(float)d3d->final_viewport.Height);
+      pout->m[3][1] = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
+   }
 
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_CULLMODE, D3DCULL_NONE);
    IDirect3DDevice9_SetRenderState(d3d->dev, D3DRS_SCISSORTESTENABLE, TRUE);
@@ -1452,10 +1474,10 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    windowed_full         = settings->bools.video_windowed_fullscreen;
 
    full_x                = (windowed_full || info->width  == 0)
-      ? (unsigned)(mon_rect.right  - mon_rect.left) 
+      ? (unsigned)(mon_rect.right  - mon_rect.left)
       : info->width;
    full_y                = (windowed_full || info->height == 0)
-      ? (unsigned)(mon_rect.bottom - mon_rect.top)  
+      ? (unsigned)(mon_rect.bottom - mon_rect.top)
       : info->height;
 #else
    d3d9_get_video_size(d3d, &full_x, &full_y);
@@ -1488,7 +1510,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 #ifndef _XBOX_
    d3d9_hlsl_fake_context.get_metrics = win32_get_metrics;
 #endif
-   video_context_driver_set(&d3d9_hlsl_fake_context); 
+   video_context_driver_set(&d3d9_hlsl_fake_context);
    {
       const char *shader_preset   = video_shader_get_current_shader_preset();
       enum rarch_shader_type type = video_shader_parse_type(shader_preset);
@@ -1515,8 +1537,6 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 
       RARCH_LOG("[D3D9]: Using GPU: \"%s\".\n", ident.Description);
       RARCH_LOG("[D3D9]: GPU API Version: %s\n", version_str);
-
-      video_driver_set_gpu_device_string(ident.Description);
       video_driver_set_gpu_api_version_string(version_str);
    }
 
@@ -1616,7 +1636,11 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
-   bool menu_is_alive                  = video_info->menu_is_alive;
+#ifdef HAVE_MENU
+   bool menu_is_alive                  = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#else
+   bool menu_is_alive                  = false;
+#endif
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                 = video_info->widgets_active;
@@ -1669,16 +1693,16 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
          0, 1, 0);
 
    IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
-         (const float*)&d3d->mvp_transposed, 4);
+         (const float*)&d3d->mvp, 4);
    hlsl_d3d9_renderchain_render(
          d3d, frame, frame_width, frame_height,
          pitch, d3d->dev_rotation);
-   
+
    if (black_frame_insertion && !d3d->menu->enabled)
    {
       unsigned n;
-      for (n = 0; n < video_info->black_frame_insertion; ++n) 
-      {   
+      for (n = 0; n < video_info->black_frame_insertion; ++n)
+      {
 #ifdef _XBOX
         bool ret = true;
         IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
@@ -1691,7 +1715,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
         IDirect3DDevice9_Clear(d3d->dev, 0, 0, D3DCLEAR_TARGET,
               0, 1, 0);
       }
-   }   
+   }
 
 #ifdef HAVE_OVERLAY
    if (d3d->overlays_enabled && overlay_behind_menu)
@@ -1707,7 +1731,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
    if (d3d->menu && d3d->menu->enabled)
    {
       IDirect3DDevice9_SetVertexShaderConstantF(d3d->dev, 0,
-            (const float*)&d3d->mvp_transposed, 4);
+            (const float*)&d3d->mvp, 4);
       d3d9_overlay_render(d3d, width, height, d3d->menu, false);
 
       d3d->menu_display.offset = 0;

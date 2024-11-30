@@ -8,11 +8,13 @@
 
 import Combine
 
+@available(iOS 13, *)
 protocol HelperBarViewModelDelegate: AnyObject {
    func setNavigationBarHidden(_ isHidden: Bool)
    func updateNavigationBarItems()
 }
 
+@available(iOS 13, *)
 class HelperBarViewModel {
    @Published var didInteractWithBar = false
    private var cancellable: AnyCancellable?
@@ -23,7 +25,8 @@ class HelperBarViewModel {
    
    lazy var barItems: [HelperBarItem] = [
       KeyboardBarItem(actionDelegate: actionDelegate),
-      MouseBarItem(actionDelegate: actionDelegate)
+      MouseBarItem(actionDelegate: actionDelegate),
+      LockOrientationBarItem(actionDelegate: actionDelegate)
    ]
    
    var barItemMapping = [UIBarButtonItem: HelperBarItem]()

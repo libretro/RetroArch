@@ -716,8 +716,6 @@ DECL_BTN(l, 10) \
 DECL_BTN(r, 11) \
 DECL_BTN(start, 3) \
 DECL_BTN(select, 2) \
-DECL_BTN(l2, 12) \
-DECL_BTN(r2, 13) \
 DECL_BTN(l3, 14) \
 DECL_BTN(r3, 15) \
 DECL_AXIS(l_x_plus,  +0) \
@@ -727,7 +725,9 @@ DECL_AXIS(l_y_minus, +1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_minus, +3) \
+DECL_AXIS(l2, +4) \
+DECL_AXIS(r2, +5)
 
 const char* const input_builtin_autoconfs[] =
 {

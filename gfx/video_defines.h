@@ -66,6 +66,25 @@ enum aspect_ratio
    ASPECT_RATIO_END
 };
 
+enum video_scale_integer_axis
+{
+   VIDEO_SCALE_INTEGER_AXIS_Y = 0,
+   VIDEO_SCALE_INTEGER_AXIS_Y_X,
+   VIDEO_SCALE_INTEGER_AXIS_Y_XHALF,
+   VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF,
+   VIDEO_SCALE_INTEGER_AXIS_X,
+   VIDEO_SCALE_INTEGER_AXIS_XHALF,
+   VIDEO_SCALE_INTEGER_AXIS_LAST
+};
+
+enum video_scale_integer_scaling
+{
+   VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE = 0,
+   VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   VIDEO_SCALE_INTEGER_SCALING_SMART,
+   VIDEO_SCALE_INTEGER_SCALING_LAST
+};
+
 enum rotation
 {
    ORIENTATION_NORMAL = 0,
@@ -228,7 +247,8 @@ enum display_flags
    GFX_CTX_FLAGS_SHADERS_SLANG,
    GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED,
    GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED,
-   GFX_CTX_FLAGS_CRT_SWITCHRES
+   GFX_CTX_FLAGS_CRT_SWITCHRES,
+   GFX_CTX_FLAGS_SUBFRAME_SHADERS
 };
 
 enum shader_uniform_type
@@ -314,6 +334,69 @@ struct font_line_metrics
    float ascender;
    float descender;
 };
+
+struct video_fbo_rect
+{
+   unsigned img_width;
+   unsigned img_height;
+   unsigned max_img_width;
+   unsigned max_img_height;
+   unsigned width;
+   unsigned height;
+};
+
+struct video_ortho
+{
+   float left;
+   float right;
+   float bottom;
+   float top;
+   float znear;
+   float zfar;
+};
+
+struct video_tex_info
+{
+   unsigned int tex;
+   float input_size[2];
+   float tex_size[2];
+   float coord[8];
+};
+
+typedef struct video_coords
+{
+   const float *vertex;
+   const float *color;
+   const float *tex_coord;
+   const float *lut_tex_coord;
+   const unsigned *index;
+   unsigned vertices;
+   unsigned indexes;
+} video_coords_t;
+
+typedef struct video_mut_coords
+{
+   float *vertex;
+   float *color;
+   float *tex_coord;
+   float *lut_tex_coord;
+   unsigned *index;
+   unsigned vertices;
+   unsigned indexes;
+} video_mut_coords_t;
+
+typedef struct video_coord_array
+{
+   video_mut_coords_t coords; /* ptr alignment */
+   unsigned allocated;
+} video_coord_array_t;
+
+typedef struct video_font_raster_block
+{
+   video_coord_array_t carr; /* ptr alignment */
+   bool fullscreen;
+} video_font_raster_block_t;
+
 
 RETRO_END_DECLS
 

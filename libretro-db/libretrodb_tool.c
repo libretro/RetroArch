@@ -60,7 +60,7 @@ int main(int argc, char ** argv)
    if (!db || !cur)
       goto error;
 
-   if ((rv = libretrodb_open(path, db)) != 0)
+   if ((rv = libretrodb_open(path, db, true)) != 0)
    {
       printf("Could not open db file '%s'\n", path);
       goto error;

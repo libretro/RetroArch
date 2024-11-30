@@ -6,6 +6,7 @@
 //  Copyright © 2022 RetroArch. All rights reserved.
 //
 
+@available(iOS 13, *)
 class HelperBarViewController: UIViewController {
    var viewModel = HelperBarViewModel()
    
@@ -88,8 +89,14 @@ class HelperBarViewController: UIViewController {
          }
          if helperBarItem.isSelected {
             barButtonItem.image = helperBarItem.selectedImage
+            if let tintColor = helperBarItem.tintColorOnSelection {
+               barButtonItem.tintColor = tintColor
+            } else {
+               barButtonItem.tintColor = nil
+            }
          } else {
             barButtonItem.image = helperBarItem.image
+            barButtonItem.tintColor = nil
          }
       }
    }
@@ -131,12 +138,14 @@ class HelperBarViewController: UIViewController {
    }
 }
 
+@available(iOS 13, *)
 extension HelperBarViewController: UIGestureRecognizerDelegate {
    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
       true
    }
 }
 
+@available(iOS 13, *)
 extension HelperBarViewController: HelperBarViewModelDelegate {
    func setNavigationBarHidden(_ isHidden: Bool) {
       navigationBar.isHidden = isHidden
@@ -146,6 +155,7 @@ extension HelperBarViewController: HelperBarViewModelDelegate {
    }
 }
 
+@available(iOS 13, *)
 extension HelperBarViewController: UINavigationBarDelegate {
    func position(for bar: UIBarPositioning) -> UIBarPosition {
       return .topAttached

@@ -52,7 +52,7 @@
 #define IDENTIFIER_INDEX   4
 #define HEADER_LEN         6
 
-#define REPLAY_FORMAT_VERSION 0
+#define REPLAY_FORMAT_VERSION 1
 #define REPLAY_MAGIC       0x42535632
 
 /* Forward declaration */
@@ -66,6 +66,7 @@ static bool bsv_movie_init_playback(
    int64_t *identifier_loc;
    uint32_t state_size         = 0;
    uint32_t header[HEADER_LEN] = {0};
+   uint32_t vsn                = 0;
    intfstream_t *file          = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -85,13 +86,13 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-#if 0
-   if (swap_if_big32(header[VERSION_INDEX]) > REPLAY_FORMAT_VERSION)
+   vsn                = swap_if_big32(header[VERSION_INDEX]);
+   if (vsn > REPLAY_FORMAT_VERSION)
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-#endif
+   handle->version    = vsn;
 
    state_size         = swap_if_big32(header[STATE_SIZE_INDEX]);
    identifier_loc     = (int64_t *)(header+IDENTIFIER_INDEX);
@@ -137,6 +138,7 @@ static bool bsv_movie_init_playback(
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
+   bsv_movie_read_next_events(handle);
 
    return true;
 }
@@ -161,11 +163,12 @@ static bool bsv_movie_init_record(
    }
 
    handle->file             = file;
+   handle->version          = REPLAY_FORMAT_VERSION;
 
    content_crc              = content_get_crc();
 
    header[MAGIC_INDEX]      = swap_if_big32(REPLAY_MAGIC);
-   header[VERSION_INDEX]    = REPLAY_FORMAT_VERSION;
+   header[VERSION_INDEX]    = swap_if_big32(handle->version);
    header[CRC_INDEX]        = swap_if_big32(content_crc);
 
    info_size                = core_serialize_size();
@@ -249,7 +252,7 @@ error:
 static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 {
    size_t _len;
-   char msg[8192];
+   char msg[128];
    bsv_movie_t *state                       = NULL;
    const char *movie_rec_str                = NULL;
 
@@ -267,8 +270,7 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
       return false;
    }
 
-   input_st->bsv_movie_state_handle         = state;
-   input_st->bsv_movie_state.flags         |= BSV_FLAG_MOVIE_RECORDING;
+   bsv_movie_enqueue(input_st, state, BSV_FLAG_MOVIE_RECORDING);
    movie_rec_str                            = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    _len = strlcpy(msg, movie_rec_str, sizeof(msg));
    snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
@@ -293,8 +295,7 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
       return false;
    }
 
-   input_st->bsv_movie_state_handle         = state;
-   input_st->bsv_movie_state.flags         |= BSV_FLAG_MOVIE_PLAYBACK;
+   bsv_movie_enqueue(input_st, state, BSV_FLAG_MOVIE_PLAYBACK);
    starting_movie_str                       =
       msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK);
 
@@ -317,14 +318,16 @@ typedef struct bsv_state moviectl_task_state_t;
 
 static void task_moviectl_playback_handler(retro_task_t *task)
 {
-  /* trivial handler */
-  task_set_finished(task, true);
-  if (!task_get_error(task) && task_get_cancelled(task))
-    task_set_error(task, strdup("Task canceled"));
+   uint8_t flg;
+   /* trivial handler */
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   flg = task_get_flags(task);
+   if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
+      task_set_error(task, strdup("Task canceled"));
 
-  task_set_data(task, task->state);
-  task->state = NULL;
-  /* no need to free state here since I'm recycling it as data */
+   task_set_data(task, task->state);
+   task->state = NULL;
+   /* no need to free state here since I'm recycling it as data */
 }
 
 static void moviectl_start_playback_cb(retro_task_t *task,
@@ -340,13 +343,15 @@ static void moviectl_start_playback_cb(retro_task_t *task,
 
 static void task_moviectl_record_handler(retro_task_t *task)
 {
+   uint8_t flg;
    /* Hang on until the state is loaded */
    if (content_load_state_in_progress(NULL))
       return;
 
    /* trivial handler */
-   task_set_finished(task, true);
-   if (!task_get_error(task) && task_get_cancelled(task))
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   flg = task_get_flags(task);
+   if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
    task_set_data(task, task->state);
@@ -380,7 +385,7 @@ bool movie_stop_playback(input_driver_state_t *input_st)
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", movie_playback_end_str);
 
-   bsv_movie_deinit(input_st);
+   bsv_movie_deinit_full(input_st);
 
    input_st->bsv_movie_state.flags &= ~(
          BSV_FLAG_MOVIE_END
@@ -397,7 +402,7 @@ bool movie_stop_record(input_driver_state_t *input_st)
          2, 180, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", movie_rec_stopped_str);
-   bsv_movie_deinit(input_st);
+   bsv_movie_deinit_full(input_st);
    input_st->bsv_movie_state.flags &= ~(
          BSV_FLAG_MOVIE_END
          | BSV_FLAG_MOVIE_RECORDING);
@@ -448,7 +453,7 @@ error:
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
    size_t _len;
-   char msg[8192];
+   char msg[128];
    const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));

@@ -979,7 +979,7 @@ static bool omap_frame(void *data, const void *frame, unsigned width,
 {
    omap_video_t  *vid = (omap_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame)
@@ -1019,7 +1019,7 @@ static bool omap_frame(void *data, const void *frame, unsigned width,
    return true;
 }
 
-static void omap_set_nonblock_state(void *data, bool state, 
+static void omap_set_nonblock_state(void *data, bool state,
       bool adaptive_vsync_enabled, unsigned swap_interval)
 {
    omap_video_t *vid;

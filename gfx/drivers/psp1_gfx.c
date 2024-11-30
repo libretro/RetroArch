@@ -257,54 +257,15 @@ static void psp_update_viewport(psp1_video_t* psp,
    if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&psp->vp, SCEGU_SCR_WIDTH,
-            SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect);
+            SCEGU_SCR_HEIGHT, video_driver_get_aspect_ratio(), psp->keep_aspect, true);
       width  = psp->vp.width;
       height = psp->vp.height;
    }
    else if (psp->keep_aspect)
    {
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         x      = video_info->custom_vp_x;
-         y      = video_info->custom_vp_y;
-         width  = video_info->custom_vp_width;
-         height = video_info->custom_vp_height;
-      }
-      else
-#endif
-      {
-         float delta;
-         float desired_aspect = video_driver_get_aspect_ratio();
-
-         if (     (fabsf(device_aspect - desired_aspect) < 0.0001f)
-               || (fabsf((16.0/9.0)    - desired_aspect) < 0.02f))
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x     = (int)roundf(width * (0.5f - delta));
-            width = (unsigned)roundf(2.0f * width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y      = (int)roundf(height * (0.5f - delta));
-            height = (unsigned)roundf(2.0f * height * delta);
-         }
-      }
-
-      psp->vp.x      = x;
-      psp->vp.y      = y;
-      psp->vp.width  = width;
-      psp->vp.height = height;
+      video_viewport_get_scaled_aspect(&psp->vp, width, height, true);
+      width  = psp->vp.width;
+      height = psp->vp.height;
    }
    else
    {
@@ -429,7 +390,7 @@ static void *psp_init(const video_info_t *video,
    else
    {
       u16 i;
-      video_driver_state_t *video_st = video_state_get_ptr(); 
+      video_driver_state_t *video_st = video_state_get_ptr();
       uint16_t* LUT_r_local = (uint16_t*)(SCEGU_VRAM_BP_2);
       uint16_t* LUT_b_local = (uint16_t*)(SCEGU_VRAM_BP_2) + (1 << 5);
 
@@ -550,9 +511,9 @@ static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   psp1_video_t *psp              = (psp1_video_t*)data;
+   psp1_video_t *psp  = (psp1_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive             = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!width || !height)
@@ -566,7 +527,7 @@ static bool psp_frame(void *data, const void *frame,
    if (!psp->hw_render)
       sceGuSync(0, 0); /* let the core decide when to sync when HW_RENDER */
 
-   if (msg) 
+   if (msg)
    {
       pspDebugScreenSetBase(psp->draw_buffer);
       pspDebugScreenSetXY(0,0);

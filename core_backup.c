@@ -51,9 +51,9 @@ static bool core_backup_get_backup_dir(
       const char *core_filename,
       char *backup_dir, size_t len)
 {
-   char *last_underscore = NULL;
-   char core_file_id[PATH_MAX_LENGTH];
    char tmp[PATH_MAX_LENGTH];
+   char core_file_id[NAME_MAX_LENGTH];
+   char *last_underscore = NULL;
 
    /* Extract core file 'ID' (name without extension + suffix)
     * from core path */
@@ -86,7 +86,7 @@ static bool core_backup_get_backup_dir(
     *   core directory as a base */
    fill_pathname_join_special(tmp,
          string_is_empty(dir_core_assets)
-         ? dir_libretro 
+         ? dir_libretro
          : dir_core_assets,
                "core_backups", sizeof(tmp));
 
@@ -120,8 +120,8 @@ bool core_backup_get_backup_path(
    time_t current_time;
    struct tm time_info;
    const char *core_filename = NULL;
-   char core_dir[PATH_MAX_LENGTH];
-   char backup_dir[PATH_MAX_LENGTH];
+   char core_dir[DIR_MAX_LENGTH];
+   char backup_dir[DIR_MAX_LENGTH];
    char backup_filename[PATH_MAX_LENGTH];
 
    backup_dir[0]      = '\0';
@@ -174,11 +174,9 @@ bool core_backup_get_backup_path(
 /* Returns detected type of specified core backup file */
 enum core_backup_type core_backup_get_backup_type(const char *backup_path)
 {
+   char core_ext[16];
    const char *backup_ext            = NULL;
    struct string_list *metadata_list = NULL;
-   char core_ext[255];
-
-   core_ext[0] = '\0';
 
    if (string_is_empty(backup_path) || !path_is_valid(backup_path))
       goto error;
@@ -224,7 +222,7 @@ enum core_backup_type core_backup_get_backup_type(const char *backup_path)
 
       string_list_free(metadata_list);
       metadata_list = NULL;
-   
+
       return CORE_BACKUP_TYPE_ARCHIVE;
    }
 
@@ -246,11 +244,11 @@ error:
  * Returns true if successful */
 bool core_backup_get_backup_crc(char *backup_path, uint32_t *crc)
 {
-   struct string_list *metadata_list = NULL;
    enum core_backup_type backup_type;
+   struct string_list *metadata_list = NULL;
 
    if (string_is_empty(backup_path) || !crc)
-      goto error;
+      return false;
 
    /* Get backup type */
    backup_type = core_backup_get_backup_type(backup_path);
@@ -342,69 +340,64 @@ enum core_backup_type core_backup_get_core_path(
       char *core_path, size_t len)
 {
    const char *backup_filename       = NULL;
-   char *core_filename               = NULL;
-   enum core_backup_type backup_type = CORE_BACKUP_TYPE_INVALID;
 
    if (string_is_empty(backup_path) || string_is_empty(dir_libretro))
-      return backup_type;
+      return CORE_BACKUP_TYPE_INVALID;
 
    backup_filename = path_basename(backup_path);
 
-   if (string_is_empty(backup_filename))
-      return backup_type;
-
-   /* Check backup type */
-   switch (core_backup_get_backup_type(backup_path))
+   if (!string_is_empty(backup_filename))
    {
-      case CORE_BACKUP_TYPE_ARCHIVE:
-         {
-            char *period  = NULL;
+      /* Check backup type */
+      switch (core_backup_get_backup_type(backup_path))
+      {
+         case CORE_BACKUP_TYPE_ARCHIVE:
+            {
+               /* This is an archived backup with timestamp/crc
+                * metadata in the filename */
+               char *core_filename = strdup(backup_filename);
+               /* Find the location of the second period */
+               char *period        = strchr(core_filename, '.');
+               if (!period || (*(++period) == '\0'))
+               {
+                  free(core_filename);
+                  break;
+               }
 
-            /* This is an archived backup with timestamp/crc
-             * metadata in the filename */
-            core_filename = strdup(backup_filename);
+               if (!(period = strchr(period, '.')))
+               {
+                  free(core_filename);
+                  break;
+               }
 
-            /* Find the location of the second period */
-            period = strchr(core_filename, '.');
-            if (!period || (*(++period) == '\0'))
-               break;
+               /* Trim everything after (and including) the
+                * second period */
+               *period = '\0';
 
-            period = strchr(period, '.');
-            if (!period)
-               break;
+               if (string_is_empty(core_filename))
+               {
+                  free(core_filename);
+                  break;
+               }
 
-            /* Trim everything after (and including) the
-             * second period */
-            *period = '\0';
-
-            if (string_is_empty(core_filename))
-               break;
-
-            /* All good - build core path */
+               /* All good - build core path */
+               fill_pathname_join_special(core_path, dir_libretro,
+                     core_filename, len);
+               free(core_filename);
+            }
+            return CORE_BACKUP_TYPE_ARCHIVE;
+         case CORE_BACKUP_TYPE_LIB:
+            /* This is a plain dynamic library file */
             fill_pathname_join_special(core_path, dir_libretro,
-                  core_filename, len);
-
-            backup_type = CORE_BACKUP_TYPE_ARCHIVE;
-         }
-         break;
-      case CORE_BACKUP_TYPE_LIB:
-         /* This is a plain dynamic library file */
-         fill_pathname_join_special(core_path, dir_libretro,
-               backup_filename, len);
-         backup_type = CORE_BACKUP_TYPE_LIB;
-         break;
-      default:
-         /* Backup is invalid */
-         break;
+                  backup_filename, len);
+            return CORE_BACKUP_TYPE_LIB;
+         default:
+            /* Backup is invalid */
+            break;
+      }
    }
 
-   if (core_filename)
-   {
-      free(core_filename);
-      core_filename = NULL;
-   }
-
-   return backup_type;
+   return CORE_BACKUP_TYPE_INVALID;
 }
 
 /*************************/
@@ -428,7 +421,7 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
        || string_is_empty(core_filename)
        || string_is_empty(backup_path)
        || (backup_list->size >= backup_list->capacity))
-      goto error;
+      return false;
 
    backup_filename = strdup(path_basename(backup_path));
 
@@ -484,10 +477,10 @@ core_backup_list_t *core_backup_list_init(
    struct string_list *dir_list      = NULL;
    core_backup_list_t *backup_list   = NULL;
    core_backup_list_entry_t *entries = NULL;
-   char core_dir[PATH_MAX_LENGTH];
-   char backup_dir[PATH_MAX_LENGTH];
+   char core_dir[DIR_MAX_LENGTH];
+   char backup_dir[DIR_MAX_LENGTH];
 
-   core_dir[0]   = '\0'; 
+   core_dir[0]   = '\0';
    backup_dir[0] = '\0';
 
    /* Get core filename and parent directory */
@@ -531,9 +524,7 @@ core_backup_list_t *core_backup_list_init(
    dir_list_sort(dir_list, true);
 
    /* Create core backup list */
-   backup_list = (core_backup_list_t*)malloc(sizeof(*backup_list));
-
-   if (!backup_list)
+   if (!(backup_list = (core_backup_list_t*)malloc(sizeof(*backup_list))))
       goto error;
 
    backup_list->entries  = NULL;
@@ -544,10 +535,8 @@ core_backup_list_t *core_backup_list_init(
     * (Note: Set this to the full size of the directory
     * list - this may be larger than we need, but saves
     * many inefficiencies later)   */
-   entries               = (core_backup_list_entry_t*)
-      calloc(dir_list->size, sizeof(*entries));
-
-   if (!entries)
+   if (!(entries = (core_backup_list_entry_t*)
+      calloc(dir_list->size, sizeof(*entries))))
       goto error;
 
    backup_list->entries  = entries;
@@ -696,49 +685,4 @@ bool core_backup_list_get_crc(
    }
 
    return false;
-}
-
-/* Fetches a string representation of a backup
- * list entry timestamp.
- * Returns false in the event of an error */
-bool core_backup_list_get_entry_timestamp_str(
-      const core_backup_list_entry_t *entry,
-      enum core_backup_date_separator_type date_separator,
-      char *timestamp, size_t len)
-{
-   const char *format_str = "%04u-%02u-%02u %02u:%02u:%02u";
-
-   if (!entry || (len < 20))
-      return false;
-
-   /* Get time format string */
-   if      (date_separator == CORE_BACKUP_DATE_SEPARATOR_SLASH)
-      format_str = "%04u/%02u/%02u %02u:%02u:%02u";
-   else if (date_separator == CORE_BACKUP_DATE_SEPARATOR_PERIOD)
-      format_str = "%04u.%02u.%02u %02u:%02u:%02u";
-
-   snprintf(timestamp, len,
-         format_str,
-         entry->date.year,
-         entry->date.month,
-         entry->date.day,
-         entry->date.hour,
-         entry->date.minute,
-         entry->date.second);
-
-   return true;
-}
-
-/* Fetches a string representation of a backup
- * list entry crc value.
- * Returns false in the event of an error */
-bool core_backup_list_get_entry_crc_str(
-      const core_backup_list_entry_t *entry,
-      char *crc, size_t len)
-{
-   if (!entry || (len < 9))
-      return false;
-
-   snprintf(crc, len, "%08lx", (unsigned long)entry->crc);
-   return true;
 }

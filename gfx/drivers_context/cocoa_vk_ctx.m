@@ -138,6 +138,19 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
 }
 #endif
 
+static float cocoa_vk_gfx_ctx_get_refresh_rate(void *data)
+{
+#ifdef OSX
+    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
+    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
+    float currentRate = CGDisplayModeGetRefreshRate(currentMode);
+    CFRelease(currentMode);
+    return currentRate;
+#else
+    return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
+}
+
 static gfx_ctx_proc_t cocoa_vk_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return NULL;
@@ -150,11 +163,9 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
 {
    unsigned new_width, new_height;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-
-   *quit                       = false;
-
-   *resize                     = cocoa_ctx->vk.flags &
-      VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+   *quit                          = false;
+   *resize                        = (cocoa_ctx->vk.flags &
+         VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
 #if MAC_OS_X_VERSION_10_7 && defined(OSX)
    cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
@@ -226,7 +237,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    CocoaView *g_view              = (CocoaView*)nsview_get_ptr();
 #endif
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
-   static bool 
+   static bool
       has_went_fullscreen         = false;
    cocoa_ctx->width               = width;
    cocoa_ctx->height              = height;
@@ -238,7 +249,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
             &cocoa_ctx->vk,
             VULKAN_WSI_MVK_MACOS,
             NULL,
-            (BRIDGE void *)g_view,
+            (BRIDGE void *)g_view.layer,
             cocoa_ctx->width,
             cocoa_ctx->height,
             cocoa_ctx->swap_interval))
@@ -272,7 +283,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
       free(cocoa_ctx);
       return NULL;
    }
-    
+
    return cocoa_ctx;
 }
 #else
@@ -287,7 +298,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
    if (!vulkan_surface_create(&cocoa_ctx->vk,
                               VULKAN_WSI_MVK_IOS,
                               NULL,
-                              (BRIDGE void *)g_view,
+                              (BRIDGE void *)((MetalLayerView*)g_view).metalLayer,
                               cocoa_ctx->width,
                               cocoa_ctx->height,
                               cocoa_ctx->swap_interval))
@@ -296,7 +307,7 @@ static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       return false;
    }
 
-   /* TODO: Maybe iOS users should be able to 
+   /* TODO: Maybe iOS users should be able to
     * show/hide the status bar here? */
    return true;
 }
@@ -355,7 +366,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
 #else
    cocoa_vk_gfx_ctx_get_video_size,
 #endif
-   NULL, /* get_refresh_rate */
+   cocoa_vk_gfx_ctx_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

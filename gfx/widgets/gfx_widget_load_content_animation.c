@@ -98,7 +98,7 @@ struct gfx_widget_load_content_animation_state
 
    char content_name[512];
    char system_name[512];
-   char icon_directory[PATH_MAX_LENGTH];
+   char icon_directory[DIR_MAX_LENGTH];
    char icon_file[PATH_MAX_LENGTH];
 
    bool has_icon;
@@ -354,8 +354,8 @@ bool gfx_widget_start_load_content_animation(void)
                   entry->core_path);
 
             /* Check whether core matches... */
-            if (string_is_empty(entry_core_file) ||
-                !string_starts_with(entry_core_file,
+            if (    string_is_empty(entry_core_file)
+                || !string_starts_with(entry_core_file,
                      core_info->core_file_id.str))
                entry = NULL;
          }
@@ -390,7 +390,7 @@ bool gfx_widget_start_load_content_animation(void)
       /* If content was found in playlist but the entry
        * did not have a db_name, use playlist name itself
        * as the system name */
-      if (      playlist_entry_found 
+      if (      playlist_entry_found
             && !has_system)
       {
          const char *playlist_path = playlist_get_conf_path(playlist);
@@ -404,9 +404,9 @@ bool gfx_widget_start_load_content_animation(void)
                   state->system_name, new_system_name,
                   sizeof(state->system_name));
             /* Exclude history and favourites playlists */
-            if (string_ends_with_size(state->system_name, "_history",
-                     state->system_name_len, STRLEN_CONST("_history")) ||
-                string_ends_with_size(state->system_name, "_favorites",
+            if (   string_ends_with_size(state->system_name, "_history",
+                     state->system_name_len, STRLEN_CONST("_history"))
+                || string_ends_with_size(state->system_name, "_favorites",
                      state->system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
@@ -539,7 +539,7 @@ static void gfx_widget_load_content_animation_layout(
    /* > Note: cannot determine state->icon_x_end
     *   until text strings are set */
 
-   /* Background layout */ 
+   /* Background layout */
    state->bg_width  = last_video_width;
    state->bg_height = state->icon_size + (widget_padding * 2);
    state->bg_x      = 0.0f;
@@ -566,6 +566,42 @@ static void gfx_widget_load_content_animation_layout(
          (float)font_regular->line_centre_offset;
    /* > Note: cannot determine state->text_x_end
     *   until text strings are set */
+
+   /* Recalculate end positions if layout changes after start */
+   if (state->status > GFX_WIDGET_LOAD_CONTENT_BEGIN)
+   {
+      int content_name_width;
+      int system_name_width;
+      int text_width;
+
+      /* Get overall text width */
+      content_name_width = font_driver_get_message_width(
+            font_bold->font, state->content_name,
+            strlen(state->content_name), 1.0f);
+      system_name_width = font_driver_get_message_width(
+            font_regular->font, state->system_name,
+            state->system_name_len, 1.0f);
+
+      state->content_name_width = (content_name_width > 0) ?
+            (unsigned)content_name_width : 0;
+      state->system_name_width  = (system_name_width > 0) ?
+            (unsigned)system_name_width : 0;
+
+      text_width = (state->content_name_width > state->system_name_width) ?
+            (int)state->content_name_width : (int)state->system_name_width;
+
+      /* Now we have the text width, can determine
+       * final icon/text x draw positions */
+      state->icon_x_end = ((int)last_video_width - text_width -
+            (int)state->icon_size - (3 * (int)widget_padding)) >> 1;
+      if (state->icon_x_end < (int)widget_padding)
+         state->icon_x_end = widget_padding;
+
+      state->text_x_end = state->icon_x_end +
+            (float)(state->icon_size + widget_padding);
+
+   }
+
 }
 
 /* Widget iterate() */
@@ -985,7 +1021,7 @@ static bool gfx_widget_load_content_animation_init(
       gfx_animation_t *p_anim,
       bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_load_content_animation_state_t *state = 
+   gfx_widget_load_content_animation_state_t *state =
       &p_w_load_content_animation_st;
 
    state->p_disp = p_disp;

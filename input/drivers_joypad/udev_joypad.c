@@ -261,7 +261,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                by testing if the axis initial value is negative, allowing for
                for some slop (1300 =~ 4%) in an axis centred around 0.
                The actual work is done in udev_joypad_axis.
-               All bets are off if you're sitting on it. Reinitailise it by unpluging
+               All bets are off if you're sitting on it. Reinitialise it by unpluging
                and plugging back in. */
             if (udev_compute_axis(abs, abs->value) < -1300)
               pad->neg_trigger[i] = true;
@@ -506,6 +506,12 @@ static void udev_joypad_poll(void)
             /* Hotplug removal */
             else if (string_is_equal(action, "remove"))
                udev_joypad_remove_device(devnode);
+            /* Device change */
+            else if  (string_is_equal(action, "change"))
+            {
+               udev_joypad_remove_device(devnode);
+               udev_check_device(dev, devnode);
+            }
          }
 
          udev_device_unref(dev);
@@ -789,8 +795,10 @@ input_device_driver_t udev_joypad = {
 #ifndef HAVE_LAKKA_SWITCH
    udev_set_rumble_gain,
 #else
-   NULL,
+   NULL, /* set_rumble_gain */
 #endif
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    udev_joypad_name,
    "udev",
 };

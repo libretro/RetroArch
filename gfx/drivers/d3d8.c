@@ -41,7 +41,6 @@
 #include <defines/d3d_defines.h>
 #include "../common/d3d8_defines.h"
 #include "../common/d3d_common.h"
-#include "../video_coord_array.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../dynamic.h"
@@ -378,7 +377,7 @@ static void d3d8_blit_to_texture(
    D3DLOCKED_RECT d3dlr;
    D3DLOCKED_RECT *lr         = &d3dlr;
    LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)chain->dev;
-   LPDIRECT3DTEXTURE8 tex     = (LPDIRECT3DTEXTURE8)chain->tex;                
+   LPDIRECT3DTEXTURE8 tex     = (LPDIRECT3DTEXTURE8)chain->tex;
 #ifdef _XBOX
    global_t        *global    = global_get_ptr();
    D3DDevice_SetFlickerFilter(global->console.screen.flicker_filter_index);
@@ -483,8 +482,8 @@ static bool d3d8_setup_init(void *data,
    video_driver_get_size(&width, &height);
 
    chain->dev                             = dev_data;
-   chain->pixel_size                      = (fmt == RETRO_PIXEL_FORMAT_RGB565) 
-      ? 2 
+   chain->pixel_size                      = (fmt == RETRO_PIXEL_FORMAT_RGB565)
+      ? 2
       : 4;
    chain->tex_w                           = link_info->tex_w;
    chain->tex_h                           = link_info->tex_h;
@@ -553,7 +552,7 @@ static void *gfx_display_d3d8_get_default_mvp(void *data)
 {
    static float id[16] =       { 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
-                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 1.0f, 0.0f,
                                  0.0f, 0.0f, 0.0f, 1.0f
                                };
    return &id;
@@ -600,12 +599,12 @@ static void gfx_display_d3d8_blend_end(void *data)
 
 static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       void *data,
-      unsigned video_width, 
+      unsigned video_width,
       unsigned video_height)
 {
    static float default_mvp[] ={ 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
-                                 0.0f, 0.0f, 1.0f, 0.0f, 
+                                 0.0f, 0.0f, 1.0f, 0.0f,
                                  0.0f, 0.0f, 0.0f, 1.0f
                                };
    unsigned i;
@@ -1160,6 +1159,7 @@ static void d3d8_calculate_rect(void *data,
       bool force_full,
       bool allow_rotate)
 {
+   struct video_viewport vp;
    float device_aspect       = (float)*width / *height;
    d3d8_video_t *d3d         = (d3d8_video_t*)data;
    settings_t *settings      = config_get_ptr();
@@ -1168,71 +1168,26 @@ static void d3d8_calculate_rect(void *data,
 
    video_driver_get_size(width, height);
 
-   *x                        = 0;
-   *y                        = 0;
+   vp.x           = 0;
+   vp.y           = 0;
+   vp.width       = *width;
+   vp.height      = *height;
+   vp.full_width  = *width;
+   vp.full_height = *height;
 
    if (video_scale_integer && !force_full)
-   {
-      struct video_viewport vp;
-
-      vp.x                        = 0;
-      vp.y                        = 0;
-      vp.width                    = 0;
-      vp.height                   = 0;
-      vp.full_width               = 0;
-      vp.full_height              = 0;
-
       video_viewport_get_scaled_integer(&vp,
             *width,
             *height,
             video_driver_get_aspect_ratio(),
-            d3d->keep_aspect);
-
-      *x                          = vp.x;
-      *y                          = vp.y;
-      *width                      = vp.width;
-      *height                     = vp.height;
-   }
+            d3d->keep_aspect,
+            true);
    else if (d3d->keep_aspect && !force_full)
-   {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-
-         *x                          = custom_vp->x;
-         *y                          = custom_vp->y;
-         *width                      = custom_vp->width;
-         *height                     = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta        = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            *x           = (int)(roundf(*width * (0.5f - delta)));
-            *width       = (unsigned)(roundf(2.0f * (*width) * delta));
-         }
-         else
-         {
-            delta        = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            *y           = (int)(roundf(*height * (0.5f - delta)));
-            *height      = (unsigned)(roundf(2.0f * (*height) * delta));
-         }
-      }
-   }
+      video_viewport_get_scaled_aspect(&vp, *width, *height, true);
+   *x                          = vp.x;
+   *y                          = vp.y;
+   *width                      = vp.width;
+   *height                     = vp.height;
 }
 
 static void d3d8_set_viewport(void *data,
@@ -1303,8 +1258,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
          IDirect3D8_Release(g_pD3D8);
          g_pD3D8 = NULL;
 
-         ret = d3d8_init_base(d3d, info);
-         if (ret)
+         if ((ret = d3d8_init_base(d3d, info)))
             RARCH_LOG("[D3D8]: Recovered from dead state.\n");
       }
 
@@ -1866,7 +1820,7 @@ static bool d3d8_frame(void *data, const void *frame,
    bool statistics_show                = video_info->statistics_show;
    unsigned black_frame_insertion      = video_info->black_frame_insertion;
 #ifdef HAVE_MENU
-   bool menu_is_alive                  = video_info->menu_is_alive;
+   bool menu_is_alive                  = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!frame)
@@ -1912,7 +1866,7 @@ static bool d3d8_frame(void *data, const void *frame,
    if (black_frame_insertion && !d3d->menu->enabled)
    {
       unsigned n;
-      for (n = 0; n < video_info->black_frame_insertion; ++n) 
+      for (n = 0; n < video_info->black_frame_insertion; ++n)
       {
          if (IDirect3DDevice8_Present(d3d->dev, NULL, NULL, NULL, NULL)
                == D3DERR_DEVICELOST)
@@ -2122,7 +2076,7 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    info.type     = filter_type;
 
    if (threaded)
-      return video_thread_texture_load(&info,
+      return video_thread_texture_handle(&info,
             d3d8_video_texture_load_wrap_d3d);
 
    d3d8_video_texture_load_d3d(&info, &id);

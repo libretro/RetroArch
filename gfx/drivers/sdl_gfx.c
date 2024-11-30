@@ -187,7 +187,7 @@ static void sdl_render_msg(
       if (glyph_height > max_height)
          glyph_height = max_height;
 
-      out = (uint32_t*)buffer->pixels + base_y 
+      out = (uint32_t*)buffer->pixels + base_y
          * (buffer->pitch >> 2) + base_x;
 
       for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2)
@@ -203,7 +203,7 @@ static void sdl_render_msg(
             unsigned   out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
             unsigned   out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
             unsigned   out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
-            out[x]           = (out_r << rshift) | 
+            out[x]           = (out_r << rshift) |
                                (out_g << gshift) |
                                (out_b << bshift);
          }
@@ -363,9 +363,9 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    char title[128];
-   sdl_video_t                    *vid = (sdl_video_t*)data;
+   sdl_video_t   *vid = (sdl_video_t*)data;
 #ifdef HAVE_MENU
-   bool menu_is_alive                  = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
    if (!vid)
@@ -397,12 +397,12 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
             vid->screen->pitch,
             width,
             height,
-            pitch); 
+            pitch);
 
 
       if (SDL_MUSTLOCK(vid->screen))
          SDL_UnlockSurface(vid->screen);
-      
+
       if (msg)
          sdl_render_msg(vid, vid->screen,
          msg, vid->screen->w, vid->screen->h, vid->screen->format,

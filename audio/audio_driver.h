@@ -443,6 +443,8 @@ extern audio_driver_t audio_rwebaudio;
 
 audio_driver_state_t *audio_state_get_ptr(void);
 
+const char *audio_driver_get_ident(void);
+
 extern audio_driver_t *audio_drivers[];
 
 RETRO_END_DECLS

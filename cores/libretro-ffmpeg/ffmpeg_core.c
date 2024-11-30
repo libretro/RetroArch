@@ -65,6 +65,8 @@ extern "C" {
    s ##_version() >> 8 & 0xFF, \
    s ##_version() & 0xFF);
 
+#define HAVE_CH_LAYOUT (LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 28, 100))
+
 static bool reset_triggered;
 static bool libretro_supports_bitmasks = false;
 
@@ -366,7 +368,7 @@ void CORE_PREFIX(retro_reset)(void)
    reset_triggered = true;
 }
 
-static void print_ffmpeg_version()
+static void print_ffmpeg_version(void)
 {
    PRINT_VERSION(avformat)
    PRINT_VERSION(avcodec)
@@ -489,7 +491,7 @@ static void check_variables(bool firststart)
          }
          else
          {
-            sw_decoder_threads = strtoul(sw_threads_var.value, NULL, 0);
+            sw_decoder_threads = (unsigned)strtoul(sw_threads_var.value, NULL, 0);
          }
          /* Scale the sws threads based on core count but use at least 2 and at most 4 threads */
          sw_sws_threads = MIN(MAX(2, sw_decoder_threads / 2), 4);
@@ -613,7 +615,7 @@ void CORE_PREFIX(retro_run)(void)
    static bool last_l;
    static bool last_r;
    double min_pts;
-   int16_t audio_buffer[2048];
+   int16_t audio_buffer[media.sample_rate / 20];
    bool left, right, up, down, l, r;
    int16_t ret                  = 0;
    size_t to_read_frames        = 0;
@@ -875,7 +877,7 @@ void CORE_PREFIX(retro_run)(void)
          if (!temporal_interpolation)
             mix_factor = 1.0f;
 
-         glBindFramebuffer(GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+         glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)hw_render.get_current_framebuffer());
          glClearColor(0, 0, 0, 1);
          glClear(GL_COLOR_BUFFER_BIT);
          glViewport(0, 0, media.width, media.height);
@@ -980,7 +982,7 @@ void CORE_PREFIX(retro_run)(void)
 #if ENABLE_HW_ACCEL
 /*
  * Try to initialize a specific HW decoder defined by type.
- * Optionaly tests the pixel format list for a compatible pixel format.
+ * Optionally tests the pixel format list for a compatible pixel format.
  */
 static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
                                     const enum AVHWDeviceType type,
@@ -1726,8 +1728,14 @@ static void decode_thread(void *data)
    {
       swr[i] = swr_alloc();
 
+#if HAVE_CH_LAYOUT
+      AVChannelLayout out_chlayout = AV_CHANNEL_LAYOUT_STEREO;
+      av_opt_set_chlayout(swr[i], "in_chlayout", &actx[i]->ch_layout, 0);
+      av_opt_set_chlayout(swr[i], "out_chlayout", &out_chlayout, 0);
+#else
       av_opt_set_int(swr[i], "in_channel_layout", actx[i]->channel_layout, 0);
       av_opt_set_int(swr[i], "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+#endif
       av_opt_set_int(swr[i], "in_sample_rate", actx[i]->sample_rate, 0);
       av_opt_set_int(swr[i], "out_sample_rate", media.sample_rate, 0);
       av_opt_set_int(swr[i], "in_sample_fmt", actx[i]->sample_fmt, 0);
@@ -1742,7 +1750,7 @@ static void decode_thread(void *data)
    if (video_stream_index >= 0)
    {
       frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32, media.width, media.height, 1);
-      video_buffer = video_buffer_create(4, frame_size, media.width, media.height);
+      video_buffer = video_buffer_create(4, (int)frame_size, media.width, media.height);
       tpool = tpool_create(sw_sws_threads);
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n", sw_sws_threads);
    }

@@ -27,6 +27,7 @@
 #include <libretro.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include "../playlist.h"
 
@@ -44,7 +45,8 @@ RETRO_BEGIN_DECLS
 enum gfx_thumbnail_id
 {
    GFX_THUMBNAIL_RIGHT = 0,
-   GFX_THUMBNAIL_LEFT
+   GFX_THUMBNAIL_LEFT,
+   GFX_THUMBNAIL_ICON
 };
 
 /* Prevent direct access to gfx_thumbnail_path_data_t members */
@@ -57,15 +59,19 @@ struct gfx_thumbnail_path_data
 {
    enum playlist_thumbnail_mode playlist_right_mode;
    enum playlist_thumbnail_mode playlist_left_mode;
+   enum playlist_thumbnail_mode playlist_icon_mode;
    size_t playlist_index;
+   char content_label[NAME_MAX_LENGTH];
+   char content_core_name[NAME_MAX_LENGTH];
+   char system[NAME_MAX_LENGTH];
+   char content_db_name[NAME_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
    char content_img[PATH_MAX_LENGTH];
+   char content_img_short[PATH_MAX_LENGTH];
+   char content_img_full[PATH_MAX_LENGTH];
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
-   char content_label[256];
-   char content_core_name[256];
-   char system[256];
-   char content_db_name[256];
+   char icon_path[PATH_MAX_LENGTH];
 };
 
 /* Initialisation */
@@ -114,6 +120,8 @@ bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *path_data, const
  *   core name). 'Real' labels should be extracted from source */
 bool gfx_thumbnail_set_content_playlist(gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 
+bool gfx_thumbnail_set_icon_playlist(
+      gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 /* Updaters */
 
 /* Updates path for specified thumbnail identifier (right, left).
@@ -147,7 +155,7 @@ bool gfx_thumbnail_get_core_name(gfx_thumbnail_path_data_t *path_data, const cha
 /* Fetches current thumbnail image name
  * (name is the same for all thumbnail types).
  * Returns true if image name is valid. */
-bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name);
+bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name, enum playlist_thumbnail_name_flags name_flags);
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */

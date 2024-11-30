@@ -55,6 +55,10 @@ static void xdg_toplevel_handle_configure(void *data,
       int32_t width, int32_t height, struct wl_array *states)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (wl->ignore_configuration &&
+       width == SPLASH_WINDOW_WIDTH &&
+       height == SPLASH_WINDOW_HEIGHT)
+      return;
    xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
    wl->configured = false;
 }
@@ -86,10 +90,13 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    wl->last_buffer_scale = wl->buffer_scale;
-   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
+   wl->last_fractional_scale_num = wl->fractional_scale_num;
+   if (!wl->fractional_scale)
+      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
    if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
    {
+      wl->ignore_configuration = false;
       wl->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
       if (wl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
          vulkan_acquire_next_image(&wl->vk);
@@ -104,11 +111,18 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 }
 
 #ifdef HAVE_LIBDECOR_H
+#include <libdecor.h>
 static void
 libdecor_frame_handle_configure(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, void *data)
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
+   int width, height;
+   if (wl->ignore_configuration &&
+       wl->libdecor_configuration_get_content_size(configuration, frame, &width, &height) &&
+       width == SPLASH_WINDOW_WIDTH &&
+       height == SPLASH_WINDOW_HEIGHT)
+      return;
    libdecor_frame_handle_configure_common(frame, configuration, wl);
 
    wl->configured = false;

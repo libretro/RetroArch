@@ -73,9 +73,6 @@
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
-#endif
-
-#if defined(HAVE_LAKKA) || defined(HAVE_LIBNX)
 #include "../switch_performance_profiles.h"
 #endif
 
@@ -239,7 +236,27 @@ struct key_desc key_descriptors[RARCH_MAX_KEYS] =
    {RETROK_POWER,         "Power"},
    {RETROK_EURO,          {-30, -126, -84, 0}}, /* "�" */
    {RETROK_UNDO,          "Undo"},
-   {RETROK_OEM_102,       "OEM-102"}
+   {RETROK_OEM_102,       "OEM-102"},
+
+   {RETROK_BROWSER_BACK,      "Back"},
+   {RETROK_BROWSER_FORWARD,   "Forward"},
+   {RETROK_BROWSER_REFRESH,   "Refresh"},
+   {RETROK_BROWSER_STOP,      "Stop"},
+   {RETROK_BROWSER_SEARCH,    "Search"},
+   {RETROK_BROWSER_FAVORITES, "Favorites"},
+   {RETROK_BROWSER_HOME,      "Home Page"},
+   {RETROK_VOLUME_MUTE,       "Mute"},
+   {RETROK_VOLUME_DOWN,       "Volume Up"},
+   {RETROK_VOLUME_UP,         "Volume Down"},
+   {RETROK_MEDIA_NEXT,        "Next Track"},
+   {RETROK_MEDIA_PREV,        "Previous Track"},
+   {RETROK_MEDIA_STOP,        "Media Stop"},
+   {RETROK_MEDIA_PLAY_PAUSE,  "Media Play"},
+   {RETROK_LAUNCH_MAIL,       "Launch Email"},
+   {RETROK_LAUNCH_MEDIA,      "Launch Media"},
+   {RETROK_LAUNCH_APP1,       "Launch App1"},
+   {RETROK_LAUNCH_APP2,       "Launch App2"}
+
 };
 
 static void *null_menu_init(void **userdata, bool video_is_threaded)
@@ -350,7 +367,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
 {
    bool path_enabled;
-   char newpath[255];
+   char newpath[NAME_MAX_LENGTH];
    const char *path            = NULL;
    const char *entry_label     = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
@@ -363,8 +380,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    if (!list)
       return;
-  
-   path_enabled               = entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED;
+
+   path_enabled               = (entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED) ? true : false;
 
    path                       = list->list[i].path;
    entry_label                = list->list[i].label;
@@ -375,7 +392,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
    cbs                        = (menu_file_list_cbs_t*)list->list[i].actiondata;
    entry->idx                 = (unsigned)i;
 
-   if (    (entry_flags & MENU_ENTRY_FLAG_LABEL_ENABLED) 
+   if (    (entry_flags & MENU_ENTRY_FLAG_LABEL_ENABLED)
          && !string_is_empty(entry_label))
       strlcpy(entry->label, entry_label, sizeof(entry->label));
 
@@ -421,16 +438,16 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
             path_enabled = true;
       }
 
-      if ((path_enabled || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED)) &&
-          cbs->action_get_value &&
-          use_representation)
+      if ((path_enabled || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED))
+          && cbs->action_get_value
+          && use_representation)
       {
          cbs->action_get_value(list,
                &entry->spacing, entry->type,
                (unsigned)i, label,
                entry->value,
                (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED)
-               ? sizeof(entry->value) 
+               ? sizeof(entry->value)
                : 0,
                path,
                newpath,
@@ -496,7 +513,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
                 cbs
             &&  cbs->setting
             &&  cbs->setting->enum_value_idx != MSG_UNKNOWN
-            && !(cbs->setting->flags 
+            && !(cbs->setting->flags
                & SD_FLAG_DONT_USE_ENUM_IDX_REPRESENTATION))
          strlcpy(entry->path,
                msg_hash_to_str(cbs->setting->enum_value_idx),
@@ -623,7 +640,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
-void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 {
    struct menu_state *menu_st  = &menu_driver_state;
 
@@ -991,7 +1008,7 @@ void menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 
    /* Copy cached datetime string to input
     * menu_display_ctx_datetime_t struct */
-   strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
+   return strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
 }
 
 /* Display current (battery) power state */
@@ -1054,7 +1071,7 @@ int menu_entries_get_title(char *s, size_t len)
          strlcpy(s, cbs->action_title_cache, len);
          return 0;
       }
-  
+
       if (list->size)
       {
          path      = list->list[list->size - 1].path;
@@ -1446,6 +1463,7 @@ static int menu_input_key_bind_set_mode_common(
 
             bind_type                = setting->bind_type;
 
+            binds->order             = 0;
             binds->begin             = bind_type;
             binds->last              = bind_type;
             binds->output            = keybind;
@@ -1472,9 +1490,12 @@ static int menu_input_key_bind_set_mode_common(
 
             menu_displaylist_info_init(&info);
 
-            binds->begin             = MENU_SETTINGS_BIND_BEGIN;
+            binds->order             = 0;
+            binds->begin             = MENU_SETTINGS_BIND_BEGIN
+                  + input_config_bind_order[0];
             binds->last              = MENU_SETTINGS_BIND_LAST;
-            binds->output            = &input_config_binds[setting->index_offset][0];
+            binds->output            = &input_config_binds[setting->index_offset][0]
+                  + input_config_bind_order[0];
             binds->buffer            = *(binds->output);
 
             info.list                = menu_stack;
@@ -1496,10 +1517,9 @@ static int menu_input_key_bind_set_mode_common(
    return 0;
 }
 
-#ifdef ANDROID
 static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
-      struct retro_keybind * output,
+      struct retro_keybind *output,
       unsigned p)
 {
    unsigned a, b, h;
@@ -1507,11 +1527,22 @@ static bool menu_input_key_bind_poll_find_hold_pad(
       (const struct menu_bind_state_port*)
       &new_state->state[p];
 
+   for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
+   {
+      bool found = n->keys[b];
+
+      if (!found)
+         continue;
+
+      output->key = (enum retro_key)b;
+      return true;
+   }
+
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
    {
-      bool iterate = n->mouse_buttons[b];
+      bool found = n->mouse_buttons[b];
 
-      if (!iterate)
+      if (!found)
          continue;
 
       switch (b)
@@ -1532,9 +1563,9 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
    {
-      bool iterate = n->buttons[b];
+      bool found = n->buttons[b];
 
-      if (!iterate)
+      if (!found)
          continue;
 
       output->joykey = b;
@@ -1545,14 +1576,13 @@ static bool menu_input_key_bind_poll_find_hold_pad(
    /* Axes are a bit tricky ... */
    for (a = 0; a < MENU_MAX_AXES; a++)
    {
-      if (abs(n->axes[a]) >= 20000)
+      if (     abs(n->axes[a]) >= 20000
+            && n->axes[a] != new_state->axis_state[p].rested_axes[a])
       {
          /* Take care of case where axis rests on +/- 0x7fff
           * (e.g. 360 controller on Linux) */
-         output->joyaxis = n->axes[a] > 0
-            ? AXIS_POS(a) : AXIS_NEG(a);
+         output->joyaxis = n->axes[a] > 0 ? AXIS_POS(a) : AXIS_NEG(a);
          output->joykey = NO_BTN;
-
          return true;
       }
    }
@@ -1585,7 +1615,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 static bool menu_input_key_bind_poll_find_hold(
       unsigned max_users,
       struct menu_bind_state *new_state,
-      struct retro_keybind * output)
+      struct retro_keybind *output)
 {
    if (new_state)
    {
@@ -1600,12 +1630,11 @@ static bool menu_input_key_bind_poll_find_hold(
 
    return false;
 }
-#endif
 
 static bool menu_input_key_bind_poll_find_trigger_pad(
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
-      struct retro_keybind * output,
+      struct retro_keybind *output,
       unsigned p)
 {
    unsigned a, b, h;
@@ -1614,11 +1643,22 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
    const struct menu_bind_state_port *o = (const struct menu_bind_state_port*)
       &state->state[p];
 
+   for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
+   {
+      bool found = n->keys[b] && !o->keys[b];
+
+      if (!found)
+         continue;
+
+      output->key = (enum retro_key)b;
+      return true;
+   }
+
    for (b = 0; b < MENU_MAX_MBUTTONS; b++)
    {
-      bool iterate = n->mouse_buttons[b] && !o->mouse_buttons[b];
+      bool found = n->mouse_buttons[b] && !o->mouse_buttons[b];
 
-      if (!iterate)
+      if (!found)
          continue;
 
       switch (b)
@@ -1639,9 +1679,9 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
 
    for (b = 0; b < MENU_MAX_BUTTONS; b++)
    {
-      bool iterate = n->buttons[b] && !o->buttons[b];
+      bool found = n->buttons[b] && !o->buttons[b];
 
-      if (!iterate)
+      if (!found)
          continue;
 
       output->joykey = b;
@@ -1663,14 +1703,12 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       {
          /* Take care of case where axis rests on +/- 0x7fff
           * (e.g. 360 controller on Linux) */
-         output->joyaxis = (n->axes[a] > 0)
-            ? AXIS_POS(a) : AXIS_NEG(a);
+         output->joyaxis = (n->axes[a] > 0) ? AXIS_POS(a) : AXIS_NEG(a);
          output->joykey  = NO_BTN;
 
          /* Lock the current axis */
-         new_state->axis_state[p].locked_axes[a] =
-            n->axes[a] > 0 ?
-            0x7fff : -0x7fff;
+         new_state->axis_state[p].locked_axes[a] = n->axes[a] > 0
+               ? 0x7fff : -0x7fff;
          return true;
       }
 
@@ -1707,7 +1745,7 @@ static bool menu_input_key_bind_poll_find_trigger(
       unsigned max_users,
       struct menu_bind_state *state,
       struct menu_bind_state *new_state,
-      struct retro_keybind * output)
+      struct retro_keybind *output)
 {
    if (state && new_state)
    {
@@ -1845,6 +1883,8 @@ static void menu_input_get_mouse_hw_state(
    rarch_joypad_info_t joypad_info;
    static int16_t last_x           = 0;
    static int16_t last_y           = 0;
+   bool is_select_pressed          = false;
+   bool is_cancel_pressed          = false;
    static bool last_select_pressed = false;
    static bool last_cancel_pressed = false;
    bool menu_has_fb                =
@@ -1861,15 +1901,9 @@ static void menu_input_get_mouse_hw_state(
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->active                = false;
    hw_state->x                     = 0;
    hw_state->y                     = 0;
-   hw_state->select_pressed        = false;
-   hw_state->cancel_pressed        = false;
-   hw_state->up_pressed            = false;
-   hw_state->down_pressed          = false;
-   hw_state->left_pressed          = false;
-   hw_state->right_pressed         = false;
+   hw_state->flags                 = 0;
 
    if (!menu_mouse_enable)
       return;
@@ -1892,7 +1926,7 @@ static void menu_input_get_mouse_hw_state(
                   RARCH_DEVICE_MOUSE_SCREEN,
                   0,
                   RETRO_DEVICE_ID_MOUSE_X)) != last_x)
-         hw_state->active          = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       if ((hw_state->y = current_input->input_state(
                   input_st->current_data,
                   joypad,
@@ -1904,7 +1938,7 @@ static void menu_input_get_mouse_hw_state(
                   RARCH_DEVICE_MOUSE_SCREEN,
                   0,
                   RETRO_DEVICE_ID_MOUSE_Y)) != last_y)
-         hw_state->active          = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
    }
 
    last_x                          = hw_state->x;
@@ -1942,8 +1976,7 @@ static void menu_input_get_mouse_hw_state(
    {
       /* Select (LMB)
        * Note that releasing select also counts as activity */
-      hw_state->select_pressed = (bool)
-         current_input->input_state(
+      if (current_input->input_state(
                input_st->current_data,
                joypad,
                sec_joypad,
@@ -1953,11 +1986,12 @@ static void menu_input_get_mouse_hw_state(
                0,
                RETRO_DEVICE_MOUSE,
                0,
-               RETRO_DEVICE_ID_MOUSE_LEFT);
+               RETRO_DEVICE_ID_MOUSE_LEFT))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
+
       /* Cancel (RMB)
        * Note that releasing cancel also counts as activity */
-      hw_state->cancel_pressed = (bool)
-         current_input->input_state(
+      if (current_input->input_state(
                input_st->current_data,
                joypad,
                sec_joypad,
@@ -1967,10 +2001,11 @@ static void menu_input_get_mouse_hw_state(
                0,
                RETRO_DEVICE_MOUSE,
                0,
-               RETRO_DEVICE_ID_MOUSE_RIGHT);
+               RETRO_DEVICE_ID_MOUSE_RIGHT))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
+
       /* Up (mouse wheel up) */
-      if ((hw_state->up_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -1980,11 +2015,13 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_WHEELUP)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_WHEELUP))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_UP
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
+
       /* Down (mouse wheel down) */
-      if ((hw_state->down_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -1994,11 +2031,13 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_WHEELDOWN)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_DOWN
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
+
       /* Left (mouse wheel horizontal left) */
-      if ((hw_state->left_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -2008,11 +2047,13 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_LEFT
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
+
       /* Right (mouse wheel horizontal right) */
-      if ((hw_state->right_pressed = (bool)
-               current_input->input_state(
+      if (current_input->input_state(
                   input_st->current_data,
                   joypad,
                   sec_joypad,
@@ -2022,16 +2063,20 @@ static void menu_input_get_mouse_hw_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP)))
-         hw_state->active          = true;
+                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP))
+         hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_RIGHT
+                            | MENU_INP_PTR_FLG_ACTIVE
+                             );
    }
 
-   if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
-      hw_state->active             = true;
-   if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
-      hw_state->active             = true;
-   last_select_pressed             = hw_state->select_pressed;
-   last_cancel_pressed             = hw_state->cancel_pressed;
+   is_select_pressed    = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0);
+   is_cancel_pressed    = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0);
+   if (is_select_pressed || (is_select_pressed != last_select_pressed))
+      hw_state->flags  |= MENU_INP_PTR_FLG_ACTIVE;
+   if (is_cancel_pressed || (is_cancel_pressed != last_cancel_pressed))
+      hw_state->flags  |= MENU_INP_PTR_FLG_ACTIVE;
+   last_select_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0;
+   last_cancel_pressed  = (hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0;
 }
 
 static void menu_input_get_touchscreen_hw_state(
@@ -2066,37 +2111,36 @@ static void menu_input_get_touchscreen_hw_state(
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->active                             = false;
-
-   /* Touch screens don't have mouse wheels, so these
-    * are always disabled */
-   hw_state->up_pressed                         = false;
-   hw_state->down_pressed                       = false;
-   hw_state->left_pressed                       = false;
-   hw_state->right_pressed                      = false;
+   /* Touch screens don't have mouse wheels,
+    * so up/down/left/right are always disabled */
+   hw_state->flags  &= ~(MENU_INP_PTR_FLG_ACTIVE
+                       | MENU_INP_PTR_FLG_PRESS_UP
+                       | MENU_INP_PTR_FLG_PRESS_DOWN
+                       | MENU_INP_PTR_FLG_PRESS_LEFT
+                       | MENU_INP_PTR_FLG_PRESS_RIGHT
+                        );
 
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
    if (overlay_active)
-      pointer_enabled                           = false;
+      pointer_enabled   = false;
 #endif
 
    /* If touchscreen is disabled, ignore all input */
    if (!pointer_enabled)
    {
-      hw_state->x                               = 0;
-      hw_state->y                               = 0;
-      hw_state->select_pressed                  = false;
-      hw_state->cancel_pressed                  = false;
+      hw_state->x       = 0;
+      hw_state->y       = 0;
+      hw_state->flags  &= ~(MENU_INP_PTR_FLG_PRESS_SELECT
+                          | MENU_INP_PTR_FLG_PRESS_CANCEL);
       return;
    }
 
    /* TODO/FIXME - this should only be used for framebuffer-based
     * menu drivers like RGUI. Touchscreen input as a whole should
-    * NOT be dependent on this
-    */
-   fb_width                                     = p_disp->framebuf_width;
-   fb_height                                    = p_disp->framebuf_height;
+    * NOT be dependent on this */
+   fb_width             = p_disp->framebuf_width;
+   fb_height            = p_disp->framebuf_height;
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;
@@ -2123,13 +2167,13 @@ static void menu_input_get_touchscreen_hw_state(
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
    {
       if (hw_state->x != last_x)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_x = hw_state->x;
    }
    else
    {
       if (pointer_x != last_x)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_x = pointer_x;
    }
 
@@ -2149,45 +2193,63 @@ static void menu_input_get_touchscreen_hw_state(
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
    {
       if (hw_state->y != last_y)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_y = hw_state->y;
    }
    else
    {
       if (pointer_y != last_y)
-         hw_state->active = true;
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_y = pointer_y;
    }
 
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
    if (current_input->input_state)
-      hw_state->select_pressed = (bool)current_input->input_state(
+   {
+      if (current_input->input_state(
             input_st->current_data,
             joypad,
             sec_joypad,
             &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
-            0, RETRO_DEVICE_ID_POINTER_PRESSED);
-   if (hw_state->select_pressed || (hw_state->select_pressed != last_select_pressed))
-      hw_state->active = true;
-   last_select_pressed = hw_state->select_pressed;
+            0, RETRO_DEVICE_ID_POINTER_PRESSED))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
+      else
+         hw_state->flags &= ~MENU_INP_PTR_FLG_PRESS_SELECT;
+   }
+
+   {
+      bool select_pressed = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0);
+      if (select_pressed || (select_pressed != last_select_pressed))
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
+      last_select_pressed = select_pressed;
+   }
 
    /* Cancel (touch screen 'back' - don't know what is this, but whatever...)
     * Note that releasing cancel also counts as activity */
    if (current_input->input_state)
-      hw_state->cancel_pressed = (bool)current_input->input_state(
+   {
+      if (current_input->input_state(
             input_st->current_data,
             joypad,
             sec_joypad,
             &joypad_info, (*binds),
             keyboard_mapping_blocked,
             0, pointer_device,
-            0, RARCH_DEVICE_ID_POINTER_BACK);
-   if (hw_state->cancel_pressed || (hw_state->cancel_pressed != last_cancel_pressed))
-      hw_state->active = true;
-   last_cancel_pressed = hw_state->cancel_pressed;
+            0, RARCH_DEVICE_ID_POINTER_BACK))
+         hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
+      else
+         hw_state->flags &= ~MENU_INP_PTR_FLG_PRESS_CANCEL;
+   }
+
+   {
+      bool cancel_pressed = ((hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0);
+      if (cancel_pressed || (cancel_pressed != last_cancel_pressed))
+         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
+      last_cancel_pressed = cancel_pressed;
+   }
 }
 
 static void menu_entries_settings_deinit(struct menu_state *menu_st)
@@ -2887,8 +2949,7 @@ static bool menu_shader_manager_save_preset_internal(
       size_t num_target_dirs)
 {
    size_t _len;
-   char fullname[PATH_MAX_LENGTH];
-   char buffer[PATH_MAX_LENGTH];
+   char fullname[NAME_MAX_LENGTH];
    const char *preset_ext         = NULL;
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
@@ -2917,7 +2978,8 @@ static bool menu_shader_manager_save_preset_internal(
    }
    else
    {
-      char basedir[PATH_MAX_LENGTH];
+      char basedir[DIR_MAX_LENGTH];
+      char buffer[DIR_MAX_LENGTH];
 
       for (i = 0; i < num_target_dirs; i++)
       {
@@ -2978,11 +3040,10 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
       const char *dir_menu_config,
       bool apply)
 {
-   char config_directory[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    const char *preset_dirs[3]  = {0};
    settings_t *settings        = config_get_ptr();
 
-   config_directory[0]         = '\0';
 
    if (!path_is_empty(RARCH_PATH_CONFIG))
    {
@@ -2991,6 +3052,8 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
             sizeof(config_directory));
       path_basedir(config_directory);
    }
+   else
+      config_directory[0]      = '\0';
 
    preset_dirs[0] = dir_video_shader;
    preset_dirs[1] = dir_menu_config;
@@ -3012,10 +3075,9 @@ static bool menu_shader_manager_operate_auto_preset(
       const char *dir_menu_config,
       enum auto_shader_type type, bool apply)
 {
-   char old_presets_directory[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
-   char tmp[PATH_MAX_LENGTH];
    char file[PATH_MAX_LENGTH];
+   char old_presets_directory[DIR_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    settings_t *settings                           = config_get_ptr();
    bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
    struct retro_system_info *sysinfo              = &runloop_state_get_ptr()->system.info;
@@ -3023,12 +3085,10 @@ static bool menu_shader_manager_operate_auto_preset(
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
-   const char *core_name            = sysinfo ? sysinfo->library_name : NULL;
-   const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
-   const char *auto_preset_dirs[3]  = {0};
-   bool has_content                 = !string_is_empty(rarch_path_basename);
-
-   old_presets_directory[0] = config_directory[0] = tmp[0] = file[0] = '\0';
+   const char *core_name              = sysinfo ? sysinfo->library_name : NULL;
+   const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
+   const char *auto_preset_dirs[3]    = {0};
+   bool has_content                   = !string_is_empty(rarch_path_basename);
 
    if (type != SHADER_PRESET_GLOBAL && string_is_empty(core_name))
       return false;
@@ -3045,6 +3105,8 @@ static bool menu_shader_manager_operate_auto_preset(
             sizeof(config_directory));
       path_basedir(config_directory);
    }
+   else
+      config_directory[0]      = '\0';
 
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */
@@ -3054,6 +3116,8 @@ static bool menu_shader_manager_operate_auto_preset(
             dir_video_shader,
             "presets",
             sizeof(old_presets_directory));
+   else
+      old_presets_directory[0] = '\0';
 
    auto_preset_dirs[0] = dir_menu_config;
    auto_preset_dirs[1] = config_directory;
@@ -3068,9 +3132,12 @@ static bool menu_shader_manager_operate_auto_preset(
          fill_pathname_join_special(file, core_name, core_name, sizeof(file));
          break;
       case SHADER_PRESET_PARENT:
-         fill_pathname_parent_dir_name(tmp,
-               rarch_path_basename, sizeof(tmp));
-         fill_pathname_join_special(file, core_name, tmp, sizeof(file));
+         {
+            char tmp_dir[DIR_MAX_LENGTH];
+            fill_pathname_parent_dir_name(tmp_dir,
+                  rarch_path_basename, sizeof(tmp_dir));
+            fill_pathname_join_special(file, core_name, tmp_dir, sizeof(file));
+         }
          break;
       case SHADER_PRESET_GAME:
          {
@@ -3251,22 +3318,22 @@ static enum action_iterate_type action_iterate_type(const char *label)
       return ITERATE_TYPE_INFO;
    if (string_starts_with_size(label, "help", STRLEN_CONST("help")))
       if (
-            string_is_equal(label, "help") ||
-            string_is_equal(label, "help_controls") ||
-            string_is_equal(label, "help_what_is_a_core") ||
-            string_is_equal(label, "help_loading_content") ||
-            string_is_equal(label, "help_scanning_content") ||
-            string_is_equal(label, "help_change_virtual_gamepad") ||
-            string_is_equal(label, "help_audio_video_troubleshooting")
+               string_is_equal(label, "help")
+            || string_is_equal(label, "help_controls")
+            || string_is_equal(label, "help_what_is_a_core")
+            || string_is_equal(label, "help_loading_content")
+            || string_is_equal(label, "help_scanning_content")
+            || string_is_equal(label, "help_change_virtual_gamepad")
+            || string_is_equal(label, "help_audio_video_troubleshooting")
          )
          return ITERATE_TYPE_HELP;
    if (string_is_equal(label, "cheevos_description"))
          return ITERATE_TYPE_HELP;
    if (string_starts_with_size(label, "custom_bind", STRLEN_CONST("custom_bind")))
       if (
-            string_is_equal(label, "custom_bind") ||
-            string_is_equal(label, "custom_bind_all") ||
-            string_is_equal(label, "custom_bind_defaults")
+               string_is_equal(label, "custom_bind")
+            || string_is_equal(label, "custom_bind_all")
+            || string_is_equal(label, "custom_bind_defaults")
          )
          return ITERATE_TYPE_BIND;
 
@@ -3280,38 +3347,38 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
    bool filter_enabled = false;
 
    /* > Check for playlists */
-   filter_enabled = (type == MENU_SETTING_HORIZONTAL_MENU) ||
-                    (type == MENU_HISTORY_TAB) ||
-                    (type == MENU_FAVORITES_TAB) ||
-                    (type == MENU_IMAGES_TAB) ||
-                    (type == MENU_MUSIC_TAB) ||
-                    (type == MENU_VIDEO_TAB) ||
-                    (type == FILE_TYPE_PLAYLIST_COLLECTION);
+   filter_enabled =    (type == MENU_SETTING_HORIZONTAL_MENU)
+                    || (type == MENU_HISTORY_TAB)
+                    || (type == MENU_FAVORITES_TAB)
+                    || (type == MENU_IMAGES_TAB)
+                    || (type == MENU_MUSIC_TAB)
+                    || (type == MENU_VIDEO_TAB)
+                    || (type == FILE_TYPE_PLAYLIST_COLLECTION);
 
    if (!filter_enabled && !string_is_empty(label))
-      filter_enabled = string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST)) ||
+      filter_enabled =    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST))
                        /* > Core updater */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST))
                        /* > File browser (Load Content) */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
                        /* > Shader presets/passes */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_SHADER_PASS))
                        /* > Cheat files */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD)) ||
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD))
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND))
                        /* > Cheats */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS))
                        /* > Overlays */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY)) ||
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_OVERLAY))
                        /* > Manage Cores */
-                       string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST));
+                       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_MANAGER_LIST));
 
    return filter_enabled;
 }
@@ -3328,7 +3395,6 @@ static void menu_input_key_bind_poll_bind_state(
    unsigned b;
    rarch_joypad_info_t joypad_info;
    input_driver_t *current_input           = input_st->current_driver;
-   void *input_data                        = input_st->current_data;
    unsigned port                           = state->port;
    const input_device_driver_t *joypad     = input_st->primary_joypad;
 #ifdef HAVE_MFI
@@ -3347,7 +3413,7 @@ static void menu_input_key_bind_poll_bind_state(
    {
       /* Poll mouse (on the relevant port)
        *
-       * Check if key was being pressed by 
+       * Check if key was being pressed by
        * user with mouse number 'port'
        *
        * NOTE: We start iterating on 2 (RETRO_DEVICE_ID_MOUSE_LEFT),
@@ -3366,6 +3432,20 @@ static void menu_input_key_bind_poll_bind_state(
                   port,
                   RETRO_DEVICE_MOUSE, 0, b);
       }
+
+      for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
+      {
+         state->state[port].keys[b] =
+            current_input->input_state(
+                  input_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  binds,
+                  keyboard_mapping_blocked,
+                  0,
+                  RETRO_DEVICE_KEYBOARD, 0, b);
+      }
    }
 
    joypad_info.joy_idx        = 0;
@@ -3373,19 +3453,6 @@ static void menu_input_key_bind_poll_bind_state(
    joypad_info.axis_threshold = 0.0f;
 
    state->skip                = timed_out;
-   if (current_input->input_state)
-      state->skip             |=
-         current_input->input_state(
-               input_data,
-               joypad,
-               sec_joypad,
-               &joypad_info,
-               NULL,
-               keyboard_mapping_blocked,
-               0,
-               RETRO_DEVICE_KEYBOARD,
-               0,
-               RETROK_RETURN);
 
    if (joypad)
    {
@@ -3770,8 +3837,8 @@ static void menu_input_set_pointer_visibility(
    struct menu_state       *menu_st  = &menu_driver_state;
 
    /* Ensure that mouse cursor is hidden when not in use */
-   if ((menu_input->pointer.type == MENU_POINTER_MOUSE)
-         && pointer_hw_state->active)
+   if (     (menu_input->pointer.type == MENU_POINTER_MOUSE)
+         && ((pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE) > 0))
    {
       /* Show cursor */
       if ((current_time > end_time) && !cursor_shown)
@@ -3991,6 +4058,18 @@ void get_current_menu_value(struct menu_state *menu_st,
    strlcpy(s, entry_label, len);
 }
 
+static void get_current_menu_type(struct menu_state *menu_st,
+      uint8_t *setting_type)
+{
+   menu_entry_t     entry;
+
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags    = MENU_ENTRY_FLAG_VALUE_ENABLED;
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+
+   *setting_type  = entry.setting_type;
+}
+
 #ifdef HAVE_ACCESSIBILITY
 static void menu_driver_get_current_menu_label(struct menu_state *menu_st,
       char *s, size_t len)
@@ -4042,7 +4121,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
       if (path)
          *path      = list->list[list->size - 1].path;
       if (label)
-	      *label     = list->list[list->size - 1].label;
+         *label     = list->list[list->size - 1].label;
       if (file_type)
          *file_type = list->list[list->size - 1].type;
       if (entry_idx)
@@ -4527,8 +4606,10 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
       default:
          if (vercode >= 1910 && vercode < 1920)
             return " msvc2017";
-         else if (vercode >= 1920 && vercode < 2000)
+         else if (vercode >= 1920 && vercode < 1930)
             return " msvc2019";
+         else if (vercode >= 1930)
+            return " msvc2022";
          break;
    }
 
@@ -4541,23 +4622,22 @@ static const char * msvc_vercode_to_str(const unsigned vercode)
 void menu_entries_get_core_title(char *s, size_t len)
 {
    struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
-   const char *core_name             = 
+   const char *core_name             =
        (sysinfo && !string_is_empty(sysinfo->library_name))
       ? sysinfo->library_name
       : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
-   const char *core_version          = 
-      (sysinfo && sysinfo->library_version) 
-      ? sysinfo->library_version 
+   const char *core_version          =
+      (sysinfo && sysinfo->library_version)
+      ? sysinfo->library_version
       : "";
    size_t _len = strlcpy(s, PACKAGE_VERSION, len);
 #if defined(_MSC_VER)
    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif
-
+   _len += strlcpy(s + _len, " - ",     len - _len);
+   _len += strlcpy(s + _len, core_name, len - _len);
    if (!string_is_empty(core_version))
-      snprintf(s + _len, len - _len, " - %s (%s)", core_name, core_version);
-   else
-      snprintf(s + _len, len - _len, " - %s", core_name);
+      snprintf(s + _len, len - _len, " (%s)", core_version);
 }
 
 static bool menu_driver_init_internal(
@@ -4691,45 +4771,45 @@ const menu_ctx_driver_t *menu_driver_find_driver(
    return (const menu_ctx_driver_t*)menu_ctx_drivers[0];
 }
 
+#ifdef USE_CUSTOM_BIND_KEYBOARD_CB
 static bool menu_input_key_bind_custom_bind_keyboard_cb(
       void *data, unsigned code)
 {
-   uint64_t current_usec;
-   input_driver_state_t *input_st   = input_state_get_ptr();
-   struct menu_state *menu_st       = &menu_driver_state;
    settings_t     *settings         = config_get_ptr();
+   struct menu_state *menu_st       = &menu_driver_state;
    struct menu_bind_state *binds    = &menu_st->input_binds;
    uint64_t input_bind_hold_us      = settings->uints.input_bind_hold    * 1000000;
    uint64_t input_bind_timeout_us   = settings->uints.input_bind_timeout * 1000000;
+   uint64_t current_usec            = cpu_features_get_time_usec();
 
    /* Clear old mapping bit */
-   BIT512_CLEAR_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
+   input_keyboard_mapping_bits(0, binds->buffer.key);
 
-   /* store key in bind */
+   /* Store key in bind */
    binds->buffer.key                = (enum retro_key)code;
 
    /* Store new mapping bit */
-   BIT512_SET_PTR(&input_st->keyboard_mapping_bits, binds->buffer.key);
+   input_keyboard_mapping_bits(1, binds->buffer.key);
 
-   /* write out the bind */
+   /* Write out the bind */
    *(binds->output)                 = binds->buffer;
 
-   /* next bind */
+   /* Next bind */
    binds->begin++;
    binds->output++;
    binds->buffer                    =* (binds->output);
 
-   current_usec                     = cpu_features_get_time_usec();
-
    binds->timer_hold.timeout_us     = input_bind_hold_us;
    binds->timer_hold.current        = current_usec;
    binds->timer_hold.timeout_end    = current_usec + input_bind_hold_us;
+
    binds->timer_timeout.timeout_us  = input_bind_timeout_us;
    binds->timer_timeout.current     = current_usec;
-   binds->timer_timeout.timeout_end = current_usec +input_bind_timeout_us; 
+   binds->timer_timeout.timeout_end = current_usec + input_bind_timeout_us;
 
    return (binds->begin <= binds->last);
 }
+#endif
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data)
@@ -4740,7 +4820,7 @@ bool menu_input_key_bind_set_mode(
    input_driver_state_t *input_st      = input_state_get_ptr();
    struct menu_state *menu_st          = &menu_driver_state;
    menu_handle_t       *menu           = menu_st->driver_data;
-   const input_device_driver_t 
+   const input_device_driver_t
       *joypad                          = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
@@ -4759,6 +4839,7 @@ bool menu_input_key_bind_set_mode(
 
    if (!setting || !menu)
       return false;
+
    if (menu_input_key_bind_set_mode_common(menu_st,
             binds, state, setting, settings) == -1)
       return false;
@@ -4777,23 +4858,28 @@ bool menu_input_key_bind_set_mode(
          settings->floats.input_axis_threshold,
          settings->uints.input_joypad_index[binds->port],
          binds, false,
-         input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false);
 
    current_usec                        = cpu_features_get_time_usec();
 
-   binds->timer_hold   . timeout_us    = input_bind_hold_us;
-   binds->timer_hold   . current       = current_usec;
-   binds->timer_hold   . timeout_end   = current_usec + input_bind_hold_us;
+   binds->timer_hold   .timeout_us     = input_bind_hold_us;
+   binds->timer_hold   .current        = current_usec;
+   binds->timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
 
-   binds->timer_timeout. timeout_us    = input_bind_timeout_us;
-   binds->timer_timeout. current       = current_usec;
-   binds->timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+   binds->timer_timeout.timeout_us     = input_bind_timeout_us;
+   binds->timer_timeout.current        = current_usec;
+   binds->timer_timeout.timeout_end    = current_usec + input_bind_timeout_us;
 
-   input_st->keyboard_press_cb         =
-      menu_input_key_bind_custom_bind_keyboard_cb;
+#ifdef USE_CUSTOM_BIND_KEYBOARD_CB
+   input_st->keyboard_press_cb         = menu_input_key_bind_custom_bind_keyboard_cb;
    input_st->keyboard_press_data       = menu;
+#endif
+
    /* While waiting for input, we have to block all hotkeys. */
    input_st->flags                    |= INP_FLAG_KB_MAPPING_BLOCKED;
+
+   /* Wait until keys are released before starting bind timeout. */
+   input_st->flags                    |= INP_FLAG_WAIT_INPUT_RELEASE;
 
    /* Upon triggering an input bind operation,
     * pointer input must be inhibited - otherwise
@@ -4818,40 +4904,43 @@ static bool menu_input_key_bind_iterate(
    uint64_t input_bind_hold_us    = settings->uints.input_bind_hold * 1000000;
    uint64_t input_bind_timeout_us = settings->uints.input_bind_timeout * 1000000;
 
-   /* TODO/FIXME - localize */
    snprintf(bind->s, bind->len,
-         "[%s]\nPress keyboard, mouse or joypad\n(Timeout %d %s)",
-         input_config_bind_map_get_desc(
-            _binds->begin - MENU_SETTINGS_BIND_BEGIN),
-         (int)(_binds->timer_timeout.timeout_us / 1000000),
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS));
+         "%s..\n(%s %1.1f %s)\n \n%s\n \n",
+         msg_hash_to_str(MSG_INPUT_BIND_PRESS),
+         msg_hash_to_str(MSG_INPUT_BIND_TIMEOUT),
+         ((float)_binds->timer_timeout.timeout_us / 1000000),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS),
+         input_config_bind_map_get_desc(_binds->begin - MENU_SETTINGS_BIND_BEGIN));
 
    /* Tick main timers */
-   _binds->timer_timeout.current    = current_time;
-   _binds->timer_timeout.timeout_us = _binds->timer_timeout.timeout_end -
-         current_time;
    _binds->timer_hold   .current    = current_time;
-   _binds->timer_hold   .timeout_us = _binds->timer_hold   .timeout_end -
-         current_time;
+   _binds->timer_hold   .timeout_us = _binds->timer_hold   .timeout_end - current_time;
+
+   _binds->timer_timeout.current    = current_time;
+   _binds->timer_timeout.timeout_us = _binds->timer_timeout.timeout_end - current_time;
 
    if (_binds->timer_timeout.timeout_us <= 0)
    {
-      uint64_t current_usec              = cpu_features_get_time_usec();
-
       input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
-      /*skip to next bind*/
+#if 1
+      /* Give up on first timeout */
+      return true;
+#else
+      /* Skip to next bind */
       _binds->begin++;
       _binds->output++;
-      _binds->timer_hold   . timeout_us    = input_bind_hold_us;
-      _binds->timer_hold   . current       = current_usec;
-      _binds->timer_hold   . timeout_end   = current_usec + input_bind_hold_us;
 
-      _binds->timer_timeout. timeout_us    = input_bind_timeout_us;
-      _binds->timer_timeout. current       = current_usec;
-      _binds->timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+      _binds->timer_hold   .timeout_us  = input_bind_hold_us;
+      _binds->timer_hold   .current     = current_time;
+      _binds->timer_hold   .timeout_end = current_time + input_bind_hold_us;
+
+      _binds->timer_timeout.timeout_us  = input_bind_timeout_us;
+      _binds->timer_timeout.current     = current_time;
+      _binds->timer_timeout.timeout_end = current_time + input_bind_timeout_us;
 
       timed_out = true;
+#endif
    }
 
    /* binds.begin is updated in keyboard_press callback. */
@@ -4877,6 +4966,9 @@ static bool menu_input_key_bind_iterate(
    {
       bool complete                         = false;
       struct menu_bind_state new_binds      = *_binds;
+      unsigned bind_index                   = _binds->begin - MENU_SETTINGS_BIND_BEGIN;
+      const struct retro_keybind *old_binds = &input_config_binds[new_binds.port][bind_index];
+      unsigned old_key                      = old_binds->key;
 
       input_st->flags                      &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
@@ -4886,62 +4978,110 @@ static bool menu_input_key_bind_iterate(
             settings->floats.input_axis_threshold,
             settings->uints.input_joypad_index[new_binds.port],
             &new_binds, timed_out,
-            input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false);
 
-#ifdef ANDROID
-      /* Keep resetting bind during the hold period,
-       * or we'll potentially bind joystick and mouse, etc.*/
-      new_binds.buffer                     = *(new_binds.output);
+      /* Wait until keys and buttons are released */
+      if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+      {
+         if (input_bind_hold_us)
+         {
+            if (!menu_input_key_bind_poll_find_hold(
+                  settings->uints.input_max_users,
+                  &new_binds, &(new_binds.buffer)))
+               input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
+         }
+         else
+         {
+            if (!menu_input_key_bind_poll_find_trigger(
+                  settings->uints.input_max_users,
+                  _binds, &new_binds, &(new_binds.buffer)))
+               input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
+         }
 
-      if (menu_input_key_bind_poll_find_hold(
+         if (!(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE))
+         {
+            /* Reset timeout */
+            new_binds.timer_timeout.timeout_us  = input_bind_timeout_us;
+            new_binds.timer_timeout.current     = current_time;
+            new_binds.timer_timeout.timeout_end = current_time + input_bind_timeout_us;
+         }
+         else
+            snprintf(bind->s, bind->len,
+                  "%s..\n(%s %1.1f %s)\n \n--- %s ---\n \n",
+                  msg_hash_to_str(MSG_INPUT_BIND_PRESS),
+                  msg_hash_to_str(MSG_INPUT_BIND_TIMEOUT),
+                  ((float)_binds->timer_timeout.timeout_us / 1000000),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS),
+                  msg_hash_to_str(MSG_INPUT_BIND_RELEASE)
+                  );
+      }
+      else if (input_bind_hold_us)
+      {
+         /* Keep resetting bind during the hold period,
+          * or we'll potentially bind joystick and mouse, etc. */
+         new_binds.buffer                       = *(new_binds.output);
+
+         if (menu_input_key_bind_poll_find_hold(
                settings->uints.input_max_users,
                &new_binds, &new_binds.buffer))
-      {
-         uint64_t current_usec = cpu_features_get_time_usec();
-         /* Inhibit timeout*/
-         new_binds.timer_timeout. timeout_us    = input_bind_timeout_us;
-         new_binds.timer_timeout. current       = current_usec;
-         new_binds.timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+         {
+            char hold_label[NAME_MAX_LENGTH];
 
-         /* Run hold timer*/
-         new_binds.timer_hold.current    = current_time;
-         new_binds.timer_hold.timeout_us = 
-            new_binds.timer_hold.timeout_end - current_time;
+            hold_label[0]                       = '\0';
 
-         /* TODO/FIXME - localize */
-         snprintf(bind->s, bind->len,
-               "[%s]\nPress keyboard, mouse or joypad\nand hold ...",
-               input_config_bind_map_get_desc(
-                  _binds->begin - MENU_SETTINGS_BIND_BEGIN));
+            /* Inhibit timeout */
+            new_binds.timer_timeout.timeout_us  = input_bind_timeout_us;
+            new_binds.timer_timeout.current     = current_time;
+            new_binds.timer_timeout.timeout_end = current_time + input_bind_timeout_us;
 
-         /* Hold complete? */
-         if (new_binds.timer_hold.timeout_us <= 0)
-            complete = true;
+            /* Run hold timer */
+            new_binds.timer_hold.current        = current_time;
+            new_binds.timer_hold.timeout_us     = new_binds.timer_hold.timeout_end - current_time;
+
+            input_config_get_bind_string(settings, hold_label,
+                  &new_binds.buffer, NULL, sizeof(hold_label));
+
+            snprintf(bind->s, bind->len,
+                  "%s..\n(%s %1.1f %s)\n \n%s\n   %s",
+                  msg_hash_to_str(MSG_INPUT_BIND_PRESS),
+                  msg_hash_to_str(MSG_INPUT_BIND_HOLD),
+                  ((float)new_binds.timer_hold.timeout_us / 1000000),
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SECONDS),
+                  input_config_bind_map_get_desc(_binds->begin - MENU_SETTINGS_BIND_BEGIN),
+                  hold_label);
+
+            /* Hold complete? */
+            if (new_binds.timer_hold.timeout_us <= 0)
+               complete = true;
+         }
+         else
+         {
+            /* Reset hold countdown */
+            new_binds.timer_hold.timeout_us     = input_bind_hold_us;
+            new_binds.timer_hold.current        = current_time;
+            new_binds.timer_hold.timeout_end    = current_time + input_bind_hold_us;
+         }
       }
-      else
-      {
-         uint64_t current_usec = cpu_features_get_time_usec();
-
-         /* Reset hold countdown*/
-         new_binds.timer_hold   .timeout_us     = input_bind_hold_us;
-         new_binds.timer_hold   .current        = current_usec;
-         new_binds.timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
-      }
-#else
-      if (     (new_binds.skip && !_binds->skip)
+      else if ((new_binds.skip && !_binds->skip)
             || menu_input_key_bind_poll_find_trigger(
                settings->uints.input_max_users,
                _binds, &new_binds, &(new_binds.buffer)))
          complete = true;
-#endif
 
       if (complete)
       {
-	      /* Update bind */
-         uint64_t current_usec             = cpu_features_get_time_usec();
-         *(new_binds.output)               = new_binds.buffer;
+         /* Always stop binding when not binding all */
+         bool stop_binding                   = new_binds.order == 0 && new_binds.begin == new_binds.last;
 
-         input_st->flags                  &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+         /* Update bind */
+         *(new_binds.output)                 = new_binds.buffer;
+
+         /* Update keyboard mapping bits */
+         if (new_binds.buffer.key)
+         {
+            input_keyboard_mapping_bits(0, old_key);
+            input_keyboard_mapping_bits(1, new_binds.buffer.key);
+         }
 
          /* Avoid new binds triggering things right away. */
          /* Inhibits input for 2 frames
@@ -4949,25 +5089,33 @@ static bool menu_input_key_bind_iterate(
           *   after certain events - e.g. closing the OSK */
          menu_st->input_driver_flushing_input = 2;
 
-         new_binds.begin++;
+         /* Use human readable order instead */
+         new_binds.order++;
+         new_binds.begin = MENU_SETTINGS_BIND_BEGIN + input_config_bind_order[new_binds.order];
 
-         if (new_binds.begin > new_binds.last)
+         if (     new_binds.order > ARRAY_SIZE(input_config_bind_order) - 1
+               || stop_binding)
          {
-            input_st->keyboard_press_cb        = NULL;
-            input_st->keyboard_press_data      = NULL;
-            input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+            input_st->keyboard_press_cb      = NULL;
+            input_st->keyboard_press_data    = NULL;
+            input_st->flags                 &= ~INP_FLAG_KB_MAPPING_BLOCKED;
             return true;
          }
 
-         /*next bind*/
-         new_binds.output++;
+         input_st->flags                    &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+         input_st->flags                    |= INP_FLAG_WAIT_INPUT_RELEASE;
+
+         /* Next bind */
+         new_binds.output                    =
+                 &input_config_binds[new_binds.port][0]
+               + input_config_bind_order[new_binds.order];
          new_binds.buffer = *(new_binds.output);
-         new_binds.timer_hold   .timeout_us     = input_bind_hold_us;
-         new_binds.timer_hold   .current        = current_usec;
-         new_binds.timer_hold   .timeout_end    = current_usec + input_bind_hold_us;
-         new_binds.timer_timeout. timeout_us    = input_bind_timeout_us;
-         new_binds.timer_timeout. current       = current_usec;
-         new_binds.timer_timeout. timeout_end   = current_usec + input_bind_timeout_us;
+         new_binds.timer_hold   .timeout_us  = input_bind_hold_us;
+         new_binds.timer_hold   .current     = current_time;
+         new_binds.timer_hold   .timeout_end = current_time + input_bind_hold_us;
+         new_binds.timer_timeout.timeout_us  = input_bind_timeout_us;
+         new_binds.timer_timeout.current     = current_time;
+         new_binds.timer_timeout.timeout_end = current_time + input_bind_timeout_us;
       }
 
       *(_binds) = new_binds;
@@ -5006,7 +5154,7 @@ bool menu_input_dialog_get_display_kb(void)
    /* swkbd only works on "real" titles */
    if (     __nx_applet_type != AppletType_Application
          && __nx_applet_type != AppletType_SystemApplication)
-      return (menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY);
+      return ((menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY) > 0);
 
    if (!(menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
       return false;
@@ -5076,6 +5224,7 @@ unsigned menu_event(
       input_bits_t *p_trigger_input,
       bool display_kb)
 {
+   int i;
    /* Used for key repeat */
    static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
@@ -5099,7 +5248,7 @@ unsigned menu_event(
    gfx_display_t *p_disp                           = disp_get_ptr();
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_handle_t *menu                             = menu_st->driver_data;
-   bool keyboard_mapping_blocked                   = input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED;
+   bool keyboard_mapping_blocked                   = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
@@ -5110,7 +5259,7 @@ unsigned menu_event(
    unsigned menu_scroll_delay                      = settings->uints.menu_scroll_delay;
 #ifdef HAVE_OVERLAY
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
-   bool overlay_active                             = input_overlay_enable 
+   bool overlay_active                             = input_overlay_enable
          && (input_st->overlay_ptr)
          && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
 #else
@@ -5123,7 +5272,6 @@ unsigned menu_event(
          RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
    unsigned ok_current                             = BIT256_GET_PTR(p_input, menu_ok_btn);
    unsigned ok_trigger                             = ok_current & ~ok_old;
-   unsigned i                                      = 0;
    static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
    unsigned navigation_buttons[8]                  =
@@ -5153,13 +5301,6 @@ unsigned menu_event(
       menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
 
       /* Read mouse */
-#ifdef HAVE_IOS_TOUCHMOUSE
-      if (menu_mouse_enable)
-      {
-         settings->bools.menu_pointer_enable = true;
-         menu_pointer_enable = true;
-      }
-#else
       if (menu_mouse_enable)
          menu_input_get_mouse_hw_state(
                p_disp,
@@ -5173,7 +5314,7 @@ unsigned menu_event(
                input_overlay_enable,
                overlay_active,
                &mouse_hw_state);
-#endif
+
       /* Read touchscreen
        * Note: Could forgo this if mouse is currently active,
        * but this is 'cleaner' code... (if performance is a
@@ -5194,9 +5335,9 @@ unsigned menu_event(
                &touchscreen_hw_state);
 
       /* Mouse takes precedence */
-      if (mouse_hw_state.active)
+      if (mouse_hw_state.flags & MENU_INP_PTR_FLG_ACTIVE)
          menu_input->pointer.type = MENU_POINTER_MOUSE;
-      else if (touchscreen_hw_state.active)
+      else if (touchscreen_hw_state.flags & MENU_INP_PTR_FLG_ACTIVE)
          menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
 
       /* Copy input from the current device */
@@ -5205,7 +5346,7 @@ unsigned menu_event(
       else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
          memcpy(pointer_hw_state, &touchscreen_hw_state, sizeof(menu_input_pointer_hw_state_t));
 
-      if (pointer_hw_state->active)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
          menu_st->input_last_time_us = menu_st->current_time_us;
    }
 
@@ -5214,14 +5355,19 @@ unsigned menu_event(
    menu_input->pointer.x          = pointer_hw_state->x;
    menu_input->pointer.y          = pointer_hw_state->y;
    if (menu_input->select_inhibit || menu_input->cancel_inhibit)
-   {
-      menu_input->pointer.active  = false;
-      menu_input->pointer.pressed = false;
-   }
+      menu_input->pointer.flags &= ~(MENU_INP_PTR_FLG_ACTIVE
+                                   | MENU_INP_PTR_FLG_PRESS_SELECT);
    else
    {
-      menu_input->pointer.active  = pointer_hw_state->active;
-      menu_input->pointer.pressed = pointer_hw_state->select_pressed;
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
+         menu_input->pointer.flags |=  (MENU_INP_PTR_FLG_ACTIVE);
+      else
+         menu_input->pointer.flags &= ~(MENU_INP_PTR_FLG_ACTIVE);
+
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT)
+         menu_input->pointer.flags |=  (MENU_INP_PTR_FLG_PRESSED);
+      else
+         menu_input->pointer.flags &= ~(MENU_INP_PTR_FLG_PRESSED);
    }
 
    /* If menu screensaver is active, any input
@@ -5229,8 +5375,8 @@ unsigned menu_event(
    if (menu_st->flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE)
    {
       /* Check pointer input */
-      bool input_active = (menu_input->pointer.type != MENU_POINTER_DISABLED) &&
-            menu_input->pointer.active;
+      bool input_active = ( (menu_input->pointer.type != MENU_POINTER_DISABLED)
+                       &&  ((menu_input->pointer.flags & MENU_INP_PTR_FLG_ACTIVE) > 0));
 
       /* Check regular input */
       if (!input_active)
@@ -5250,14 +5396,14 @@ unsigned menu_event(
       }
 
       /* Annul received input */
-      menu_input->pointer.active      = false;
-      menu_input->pointer.pressed     = false;
+      menu_input->pointer.flags      &= ~(MENU_INP_PTR_FLG_ACTIVE
+                                        | MENU_INP_PTR_FLG_PRESSED);
+      pointer_hw_state->flags        &= ~(MENU_INP_PTR_FLG_PRESS_UP
+                                        | MENU_INP_PTR_FLG_PRESS_DOWN
+                                        | MENU_INP_PTR_FLG_PRESS_LEFT
+                                        | MENU_INP_PTR_FLG_PRESS_RIGHT);
       menu_input->select_inhibit      = true;
       menu_input->cancel_inhibit      = true;
-      pointer_hw_state->up_pressed    = false;
-      pointer_hw_state->down_pressed  = false;
-      pointer_hw_state->left_pressed  = false;
-      pointer_hw_state->right_pressed = false;
       return MENU_ACTION_NOOP;
    }
 
@@ -5391,12 +5537,29 @@ unsigned menu_event(
                   strlen(input_st->osk_grid[input_st->osk_ptr]));
       }
 
+      /* Cancel: Send backspace if buffer is not empty, otherwise close window */
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
-         input_keyboard_event(true, '\x7f', '\x7f',
-               0, RETRO_DEVICE_KEYBOARD);
+      {
+         if (input_st->keyboard_line.size)
+            input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
+         else
+            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+      }
 
-      /* send return key to close keyboard input window */
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START))
+      /* Select: Clear and close the keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
+      {
+         input_keyboard_line_clear(input_st);
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+      }
+
+      /* Scan: Clear the keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         input_keyboard_line_clear(input_st);
+
+      /* Start + Search: Send return key to close keyboard input window */
+      if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START)
+            || BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
 #ifdef HAVE_MIST
@@ -5407,6 +5570,40 @@ unsigned menu_event(
    }
    else
    {
+      static uint8_t switch_old = 0;
+      static bool down[MENU_ACTION_TOGGLE] = {false};
+      uint8_t switch_current    = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      uint8_t switch_trigger    = switch_current & ~switch_old;
+
+      switch_old                = switch_current;
+
+      /* Prevent holding down left/right with boolean settings */
+      if (switch_current)
+      {
+         uint8_t setting_type   = 0;
+
+         get_current_menu_type(menu_st, &setting_type);
+
+         if (setting_type == ST_BOOL)
+         {
+            char value[8];
+
+            get_current_menu_value(menu_st, value, sizeof(value));
+
+            /* Ignore direction if switch is already in that position */
+            if (     (  string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
+                     && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+                  || (  string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
+                     && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+               )
+               switch_trigger   = 0;
+         }
+         else
+            /* Always allow repeat direction */
+            switch_trigger      = 1;
+      }
+
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_UP))
@@ -5417,12 +5614,14 @@ unsigned menu_event(
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_DOWN))
             ret = MENU_ACTION_DOWN;
       }
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
+      if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+            && switch_trigger)
       {
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_LEFT))
             ret = MENU_ACTION_LEFT;
       }
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT)
+            && switch_trigger)
       {
          if (navigation_initial == (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT))
             ret = MENU_ACTION_RIGHT;
@@ -5448,11 +5647,24 @@ unsigned menu_event(
          menu_st->scroll.mode = (swap_scroll_btns) ? MENU_SCROLL_PAGE : MENU_SCROLL_START_LETTER;
          ret = MENU_ACTION_SCROLL_DOWN;
       }
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L3))
+
+      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3))
+         down[MENU_ACTION_SCROLL_HOME] = true;
+      else if (down[MENU_ACTION_SCROLL_HOME])
+      {
+         down[MENU_ACTION_SCROLL_HOME] = false;
          ret = MENU_ACTION_SCROLL_HOME;
-      else if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R3))
+      }
+
+      if (BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
+         down[MENU_ACTION_SCROLL_END] = true;
+      else if (down[MENU_ACTION_SCROLL_END])
+      {
+         down[MENU_ACTION_SCROLL_END] = false;
          ret = MENU_ACTION_SCROLL_END;
-      else if (ok_trigger)
+      }
+
+      if (ok_trigger)
          ret = MENU_ACTION_OK;
       else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
          ret = MENU_ACTION_CANCEL;
@@ -5476,6 +5688,11 @@ unsigned menu_event(
       if (ret != MENU_ACTION_NOOP)
          menu_st->input_last_time_us = menu_st->current_time_us;
    }
+
+   /* Menu must be alive, and input must be released after menu toggle. */
+   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+         || menu_st->input_driver_flushing_input > 0)
+      return MENU_ACTION_NOOP;
 
    return ret;
 }
@@ -5538,7 +5755,7 @@ static int menu_input_post_iterate(
     * active mouse input, highlight key under mouse cursor */
    if (    osk_active
        && (menu_input->pointer.type == MENU_POINTER_MOUSE)
-       && pointer_hw_state->active)
+       && ((pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE) > 0))
    {
       menu_ctx_pointer_t point;
 
@@ -5559,7 +5776,7 @@ static int menu_input_post_iterate(
    /* Select + X/Y position */
    if (!menu_input->select_inhibit)
    {
-      if (pointer_hw_state->select_pressed)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT)
       {
          int16_t x           = pointer_hw_state->x;
          int16_t y           = pointer_hw_state->y;
@@ -5635,13 +5852,13 @@ static int menu_input_post_iterate(
                         (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_PRESS_DIRECTION_TANGENT) + 0.5f);
 
                   enum menu_input_pointer_press_direction
-                        press_direction                          = MENU_INPUT_PRESS_DIRECTION_NONE;
-                  float press_direction_amplitude                = 0.0f;
-                  retro_time_t press_direction_delay             = MENU_INPUT_PRESS_DIRECTION_DELAY_MAX;
+                        press_direction                  = MENU_INPUT_PRESS_DIRECTION_NONE;
+                  float press_direction_amplitude        = 0.0f;
+                  retro_time_t press_direction_delay     = MENU_INPUT_PRESS_DIRECTION_DELAY_MAX;
 
                   /* Pointer has moved a sufficient distance to
                    * trigger a 'dragged' state */
-                  menu_input->pointer.dragged                    = true;
+                  menu_input->pointer.flags             |= MENU_INP_PTR_FLG_DRAGGED;
 
                   /* Here we diverge:
                    * > If onscreen keyboard or a message box is
@@ -5707,7 +5924,7 @@ static int menu_input_post_iterate(
                          (dy_start_abs <  dpi_threshold_press_direction_tangent))
                      {
                         press_direction = (dx_start > 0)
-                              ? MENU_INPUT_PRESS_DIRECTION_RIGHT 
+                              ? MENU_INPUT_PRESS_DIRECTION_RIGHT
                               : MENU_INPUT_PRESS_DIRECTION_LEFT;
 
                         /* Get effective amplitude of press direction offset */
@@ -5720,7 +5937,7 @@ static int menu_input_post_iterate(
                               && (dx_start_abs <  dpi_threshold_press_direction_tangent))
                      {
                         press_direction = (dy_start > 0)
-                              ? MENU_INPUT_PRESS_DIRECTION_DOWN 
+                              ? MENU_INPUT_PRESS_DIRECTION_DOWN
                               : MENU_INPUT_PRESS_DIRECTION_UP;
 
                         /* Get effective amplitude of press direction offset */
@@ -5769,7 +5986,7 @@ static int menu_input_post_iterate(
                    * NOTE: Of course, we must also 'reset' y acceleration
                    * whenever the onscreen keyboard or a message box is
                    * shown */
-                  if (  (!menu_input->pointer.dragged
+                  if (  (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
                       && (menu_input->pointer.press_duration > MENU_INPUT_Y_ACCEL_RESET_DELAY))
                       || (osk_active || messagebox_active))
                   {
@@ -5805,7 +6022,7 @@ static int menu_input_post_iterate(
          int16_t y;
          menu_ctx_pointer_t point;
 
-         if (menu_input->pointer.dragged)
+         if (menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
          {
             /* Pointer has moved.
              * When using a touchscreen, releasing a press
@@ -5843,7 +6060,7 @@ static int menu_input_post_iterate(
             /* If pointer has been 'dragged', then it counts as
              * a miss. Only register 'release' event if pointer
              * has remained stationary */
-            if (!menu_input->pointer.dragged)
+            if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
@@ -5875,7 +6092,7 @@ static int menu_input_post_iterate(
          else
          {
             /* Detect gesture type */
-            if (!menu_input->pointer.dragged)
+            if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                /* Pointer hasn't moved - check press duration */
                if (menu_input->pointer.press_duration
@@ -5973,7 +6190,7 @@ static int menu_input_post_iterate(
          menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
          menu_input->pointer.dx              = 0;
          menu_input->pointer.dy              = 0;
-         menu_input->pointer.dragged         = false;
+         menu_input->pointer.flags          &= ~(MENU_INP_PTR_FLG_DRAGGED);
       }
    }
 
@@ -5985,12 +6202,12 @@ static int menu_input_post_iterate(
 
    /* If select has been released, disable any existing
     * select inhibit */
-   if (!pointer_hw_state->select_pressed)
+   if (!(pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT))
       menu_input->select_inhibit   = false;
 
    /* Cancel */
    if (   !menu_input->cancel_inhibit
-       &&  pointer_hw_state->cancel_pressed
+       && (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL)
        && !last_cancel_pressed)
    {
       /* If currently showing a message box, close it */
@@ -6011,7 +6228,7 @@ static int menu_input_post_iterate(
 
    /* If cancel has been released, disable any existing
     * cancel inhibit */
-   if (!pointer_hw_state->cancel_pressed)
+   if (!(pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL))
       menu_input->cancel_inhibit = false;
 
    if (!messagebox_active)
@@ -6024,7 +6241,7 @@ static int menu_input_post_iterate(
        *   inhibit input */
 
       /* > Up */
-      if (pointer_hw_state->up_pressed)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_UP)
       {
          size_t selection = menu_st->selection_ptr;
          ret              = menu_entry_action(
@@ -6032,7 +6249,7 @@ static int menu_input_post_iterate(
       }
 
       /* > Down */
-      if (pointer_hw_state->down_pressed)
+      if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_DOWN)
       {
          size_t selection = menu_st->selection_ptr;
          ret              = menu_entry_action(
@@ -6051,7 +6268,7 @@ static int menu_input_post_iterate(
        *   inhibit input */
 
       /* > Left */
-      if (      pointer_hw_state->left_pressed
+      if (     (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_LEFT)
             && !last_left_pressed)
       {
          if (current_time - last_left_action_time
@@ -6066,7 +6283,7 @@ static int menu_input_post_iterate(
 
       /* > Right */
       if (
-                pointer_hw_state->right_pressed
+               (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_RIGHT)
             && !last_right_pressed)
       {
          if (current_time - last_right_action_time
@@ -6080,10 +6297,10 @@ static int menu_input_post_iterate(
       }
    }
 
-   last_select_pressed = pointer_hw_state->select_pressed;
-   last_cancel_pressed = pointer_hw_state->cancel_pressed;
-   last_left_pressed   = pointer_hw_state->left_pressed;
-   last_right_pressed  = pointer_hw_state->right_pressed;
+   last_select_pressed = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) > 0);
+   last_cancel_pressed = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_CANCEL) > 0);
+   last_left_pressed   = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_LEFT)   > 0);
+   last_right_pressed  = ((pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_RIGHT)  > 0);
 
    return ret;
 }
@@ -6106,12 +6323,12 @@ void menu_driver_toggle(
     * struct is NULL
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
-   bool pause_libretro                = false;
+   bool menu_pause_libretro           = false;
    bool audio_enable_menu             = false;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
-   bool runloop_shutdown_initiated    = runloop_st->flags &
-      RUNLOOP_FLAG_SHUTDOWN_INITIATED;
+   bool runloop_shutdown_initiated    = (runloop_st->flags &
+         RUNLOOP_FLAG_SHUTDOWN_INITIATED) ? true : false;
 #ifdef HAVE_OVERLAY
    bool input_overlay_hide_in_menu    = false;
    bool input_overlay_enable          = false;
@@ -6121,10 +6338,10 @@ void menu_driver_toggle(
    if (settings)
    {
 #ifdef HAVE_NETWORKING
-      pause_libretro                  = settings->bools.menu_pause_libretro &&
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+      menu_pause_libretro             = settings->bools.menu_pause_libretro
+            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
-      pause_libretro                  = settings->bools.menu_pause_libretro;
+      menu_pause_libretro             = settings->bools.menu_pause_libretro;
 #endif
 #ifdef HAVE_AUDIOMIXER
       audio_enable_menu               = settings->bools.audio_enable_menu;
@@ -6133,16 +6350,13 @@ void menu_driver_toggle(
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
       input_overlay_enable            = settings->bools.input_overlay_enable;
 #endif
-      video_adaptive_vsync            = settings->bools.video_adaptive_vsync;
    }
 
-   if (on) 
+   if (on)
    {
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_MENU);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
 #ifdef HAVE_OVERLAY
       /* If an overlay was displayed before the toggle
        * and overlays are disabled in menu, need to
@@ -6161,11 +6375,9 @@ void menu_driver_toggle(
    }
    else
    {
-#ifndef HAVE_LAKKA_SWITCH
 #ifdef HAVE_LAKKA
       set_cpu_scaling_signal(CPUSCALING_EVENT_FOCUS_CORE);
 #endif
-#endif /* #ifndef HAVE_LAKKA_SWITCH */
 #ifdef HAVE_OVERLAY
       /* Inhibits pointer 'select' and 'cancel' actions
        * (until the next time 'select'/'cancel' are released) */
@@ -6176,34 +6388,35 @@ void menu_driver_toggle(
 
    if (menu_driver_alive)
    {
+      video_adaptive_vsync          = settings->bools.video_adaptive_vsync
+            && video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+
 #ifdef WIIU
       /* Enable burn-in protection menu is running */
       IMEnableDim();
 #endif
 
-      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
-      /* Menu should always run with vsync on and
-       * a video swap interval of 1 */
-      if (current_video->set_nonblock_state)
+      /* Menu should always run with swap interval 1 if vsync is on. */
+      if (     settings->bools.video_vsync
+            && current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,
                false,
-               video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC) &&
                video_adaptive_vsync,
-               1
-               );
+               1);
+
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (pause_libretro)
-      { /* If the menu pauses the game... */
+      if (menu_pause_libretro)
+      {
+         if (!audio_enable_menu)
+            command_event(CMD_EVENT_AUDIO_STOP, NULL);
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
-
-         if (!audio_enable_menu) /* If the menu shouldn't have audio... */
-            command_event(CMD_EVENT_AUDIO_STOP, NULL);
       }
 
       /* Override keyboard callback to redirect to menu instead.
@@ -6229,16 +6442,12 @@ void menu_driver_toggle(
       if (!runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
-      if (pause_libretro)
-      { /* If the menu pauses the game... */
-
-         if (!audio_enable_menu) /* ...and the menu doesn't have audio... */
+      if (menu_pause_libretro)
+      {
+         if (!audio_enable_menu)
             command_event(CMD_EVENT_AUDIO_START, NULL);
-            /* ...then re-enable the audio driver (which we shut off earlier) */
-
 #ifdef HAVE_MICROPHONE
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
-         /* Start the microphone, if it was paused beforehand */
 #endif
       }
 
@@ -6246,6 +6455,10 @@ void menu_driver_toggle(
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
    }
+
+   /* Ignore frame delay target temporarily */
+   if (settings->bools.video_frame_delay_auto)
+      video_state_get_ptr()->frame_delay_pause = true;
 }
 
 void retroarch_menu_running(void)
@@ -6276,7 +6489,7 @@ void retroarch_menu_running(void)
             menu,
             menu_input,
             settings,
-            menu_st->flags & MENU_ST_FLAG_ALIVE,
+            (menu_st->flags & MENU_ST_FLAG_ALIVE) ? true : false,
 #ifdef HAVE_OVERLAY
                 input_st->overlay_ptr
             && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
@@ -6411,10 +6624,6 @@ void retroarch_menu_running_finished(bool quit)
       if (settings && settings->bools.input_overlay_hide_in_menu)
          input_overlay_init();
 #endif
-
-   /* Ignore frame delay target temporarily */
-   if (settings->bools.video_frame_delay_auto)
-      video_st->frame_delay_pause = true;
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -6565,7 +6774,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
-            video_driver_state_t 
+            video_driver_state_t
                *video_st              = video_state_get_ptr();
             unsigned width            = video_st->width;
             unsigned height           = video_st->height;
@@ -6753,11 +6962,11 @@ clear:
  * menu_shader_manager_append_preset:
  * @shader                   : current shader
  * @preset_path              : path to the preset to append
- * @dir_video_shader         : temporary diretory
+ * @dir_video_shader         : temporary directory
  *
  * combine current shader with a shader preset on disk
  **/
-bool menu_shader_manager_append_preset(struct video_shader *shader, 
+bool menu_shader_manager_append_preset(struct video_shader *shader,
       const char* preset_path, const bool prepend)
 {
    bool ret                      = false;
@@ -6987,7 +7196,7 @@ static int generic_menu_iterate(
                            msg_hash_to_str(
                               MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
                   {
-                     char current_sublabel[255];
+                     char current_sublabel[NAME_MAX_LENGTH];
                      menu_driver_get_current_menu_sublabel(
                            menu_st,
                            current_sublabel, sizeof(current_sublabel));
@@ -7186,7 +7395,7 @@ static int generic_menu_iterate(
       {
          bool        audio_enable_menu = settings->bools.audio_enable_menu;
          bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
-         if (audio_enable_menu && audio_enable_menu_notice && 
+         if (audio_enable_menu && audio_enable_menu_notice &&
                string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN)))
             audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_NOTICE_BACK);
       }
@@ -7293,15 +7502,15 @@ int generic_menu_entry_action(
                      menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
                   }
                   else
-		  {
-			  size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-			  size_t new_selection      = menu_list_size - 1;
+                  {
+                     size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+                     size_t new_selection      = menu_list_size - 1;
 
-			  menu_st->selection_ptr    = new_selection;
+                     menu_st->selection_ptr    = new_selection;
 
-			  if (menu_st->driver_ctx->navigation_set_last)
-				  menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
-		  }
+                     if (menu_st->driver_ctx->navigation_set_last)
+                        menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
+                  }
                }
 
                if (menu_driver_ctx->navigation_increment)
@@ -7389,15 +7598,15 @@ int generic_menu_entry_action(
                         menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
                   }
                   else
-		  {
-			  size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-			  size_t new_selection      = menu_list_size - 1;
+                  {
+                     size_t menu_list_size     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+                     size_t new_selection      = menu_list_size - 1;
 
-			  menu_st->selection_ptr    = new_selection;
+                     menu_st->selection_ptr    = new_selection;
 
-			  if (menu_st->driver_ctx->navigation_set_last)
-				  menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
-		  }
+                     if (menu_st->driver_ctx->navigation_set_last)
+                        menu_st->driver_ctx->navigation_set_last(menu_st->userdata);
+                  }
 
                   if (menu_driver_ctx->navigation_increment)
                      menu_driver_ctx->navigation_increment(menu_userdata);
@@ -7505,6 +7714,9 @@ int generic_menu_entry_action(
             ret = cbs->action_scan(entry->path,
                   entry->label, entry->type, i);
          break;
+      case MENU_ACTION_RESUME:
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         break;
       default:
          break;
    }
@@ -7528,7 +7740,7 @@ int generic_menu_entry_action(
    {
       char current_label[128];
       char current_value[128];
-      char title_name[255];
+      char title_name[NAME_MAX_LENGTH];
       char speak_string[512];
 
       speak_string[0]  = '\0';
@@ -7572,7 +7784,7 @@ int generic_menu_entry_action(
 
       if (!string_is_empty(title_name))
       {
-	      size_t _len             = strlcpy(speak_string,
+         size_t _len             = strlcpy(speak_string,
                title_name, sizeof(speak_string));
          speak_string[  _len]    = ' ';
          speak_string[++_len]    = '\0';
@@ -7613,10 +7825,10 @@ int generic_menu_entry_action(
    if (   (menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
        || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
    {
-      const char *content_path  = (menu_st->flags &
-            MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH) ?
-            menu_st->pending_env_shutdown_content_path :
-            path_get(RARCH_PATH_CONTENT);
+      const char *content_path  = (menu_st->flags
+            & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH)
+            ? menu_st->pending_env_shutdown_content_path
+            : path_get(RARCH_PATH_CONTENT);
       const char *deferred_path = menu ? menu->deferred_path : NULL;
       const char *flush_target  = msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU);
       size_t stack_offset       = 1;
@@ -7730,14 +7942,7 @@ bool menu_input_dialog_start_search(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_st->input_dialog_kb_label));
 
-   if (input_st->keyboard_line.buffer)
-      free(input_st->keyboard_line.buffer);
-   input_st->keyboard_line.buffer          = NULL;
-   input_st->keyboard_line.ptr             = 0;
-   input_st->keyboard_line.size            = 0;
-   input_st->keyboard_line.cb              = NULL;
-   input_st->keyboard_line.userdata        = NULL;
-   input_st->keyboard_line.enabled         = false;
+   input_keyboard_line_free(input_st);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -7791,14 +7996,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    menu_st->input_dialog_kb_type   = line->type;
    menu_st->input_dialog_kb_idx    = line->idx;
 
-   if (input_st->keyboard_line.buffer)
-      free(input_st->keyboard_line.buffer);
-   input_st->keyboard_line.buffer                    = NULL;
-   input_st->keyboard_line.ptr                       = 0;
-   input_st->keyboard_line.size                      = 0;
-   input_st->keyboard_line.cb                        = NULL;
-   input_st->keyboard_line.userdata                  = NULL;
-   input_st->keyboard_line.enabled                   = false;
+   input_keyboard_line_free(input_st);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -7927,3 +8125,31 @@ size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len)
       return 0;
    return strlcpy(s, system, len);
 }
+
+#ifdef HAVE_RUNAHEAD
+/**
+ * menu_update_runahead_mode
+ *
+ * Updates the menu runahead mode to match current settings for runahead
+ * and preemptive frames.
+ */
+void menu_update_runahead_mode(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+
+   if (settings->bools.run_ahead_enabled)
+   {
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+      if (settings->bools.run_ahead_secondary_instance)
+         menu_st->runahead_mode = MENU_RUNAHEAD_MODE_SECOND_INSTANCE;
+      else
+#endif
+         menu_st->runahead_mode = MENU_RUNAHEAD_MODE_SINGLE_INSTANCE;
+   }
+   else if (settings->bools.preemptive_frames_enable)
+      menu_st->runahead_mode = MENU_RUNAHEAD_MODE_PREEMPTIVE_FRAMES;
+   else
+      menu_st->runahead_mode = MENU_RUNAHEAD_MODE_OFF;
+}
+#endif

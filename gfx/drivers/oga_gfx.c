@@ -141,7 +141,7 @@ static bool oga_create_display(oga_video_t* vid)
 
    vid->connector_id = connector->connector_id;
 
-   /* Find prefered mode */
+   /* Find preferred mode */
    for (i = 0; i < connector->count_modes; i++)
    {
       drmModeModeInfo *current_mode = &connector->modes[i];
@@ -547,10 +547,13 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
       unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   oga_video_t *vid  = (oga_video_t*)data;
-   oga_framebuf_t* page = vid->pages[vid->cur_page];
+   oga_video_t *vid            = (oga_video_t*)data;
+   oga_framebuf_t* page        = vid->pages[vid->cur_page];
    oga_surface_t *page_surface = page->surface;
-   float aspect_ratio = video_driver_get_aspect_ratio();
+   float aspect_ratio          = video_driver_get_aspect_ratio();
+#ifdef HAVE_MENU
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#endif
 
    if (unlikely(!frame || width == 0 || height == 0))
       return true;
@@ -569,7 +572,22 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
 
    rga_clear_surface(page_surface, 0);
 
-   if (likely(!video_info->menu_is_alive))
+#ifdef HAVE_MENU
+   if (menu_is_alive)
+   {
+      oga_rect_t r;
+      menu_driver_frame(true, video_info);
+
+      width        = vid->menu_surface->width;
+      height       = vid->menu_surface->height;
+      aspect_ratio = (float)width / height;
+
+      oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
+      oga_blit(vid->menu_surface, 0, 0, width, height,
+            page_surface, r.y, r.x, r.h, r.w, HAL_TRANSFORM_ROT_270, vid->scale_mode, 0);
+   }
+   else
+#endif
    {
       uint8_t* src = (uint8_t*)frame;
       uint8_t* dst = (uint8_t*)vid->frame_surface->map;
@@ -581,7 +599,8 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
          int dst_pitch = vid->frame_surface->pitch;
          int yy = height;
 
-         while (yy > 0) {
+         while (yy > 0)
+         {
              memcpy(dst, src, pitch);
              src += pitch;
              dst += dst_pitch;
@@ -593,22 +612,6 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
       oga_blit(vid->frame_surface, 0, 0, width, height,
             page_surface, r.y, r.x, r.h, r.w, vid->rotation, vid->scale_mode, blend);
    }
-#ifdef HAVE_MENU
-   else
-   {
-      menu_driver_frame(true, video_info);
-
-      width = vid->menu_surface->width;
-      height = vid->menu_surface->height;
-
-      aspect_ratio = (float)width / height;
-
-      oga_rect_t r;
-      oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
-      oga_blit(vid->menu_surface, 0, 0, width, height,
-            page_surface, r.y, r.x, r.h, r.w, HAL_TRANSFORM_ROT_270, vid->scale_mode, 0);
-   }
-#endif
 
    if (msg)
    {

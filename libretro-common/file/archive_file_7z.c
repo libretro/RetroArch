@@ -407,6 +407,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 error:
    if (sevenzip_context)
       sevenzip_parse_file_free(sevenzip_context);
+   state->context = NULL;
    return -1;
 }
 

@@ -51,6 +51,7 @@
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/kd.h>
+#include <linux/version.h>
 #elif defined(__FreeBSD__)
 #include <dev/evdev/input.h>
 #endif
@@ -95,7 +96,7 @@
 
 /* Define this to use direct printf debug messages. */
 /*#define UDEV_TOUCH_PRINTF_DEBUG*/
-/* Define this to add more deep debugging messages - performace will suffer... */
+/* Define this to add more deep debugging messages - performance will suffer... */
 /*#define UDEV_TOUCH_DEEP_DEBUG*/
 
 /* TODO - Temporary debugging using direct printf */
@@ -115,17 +116,16 @@
 #define RARCH_DBG(...) do{ \
     printf("[DBG]" __VA_ARGS__); \
 } while (0)
-#endif 
+#endif
 /* UDEV_TOUCH_PRINTF_DEBUG */
 
 #ifdef UDEV_TOUCH_DEEP_DEBUG
-#define RARCH_DDBG(msg, ...) do{ \
-    RARCH_DBG(msg, __VA_ARGS__); \
+#define RARCH_DDBG(...) do{ \
+    RARCH_DBG(__VA_ARGS__); \
 } while (0)
-#else 
-/* TODO - Since C89 doesn't allow variadic macros, we have an empty function instead... */
-void RARCH_DDBG(const char *fmt, ...) { }
-#endif 
+#else
+#define RARCH_DDBG(msg, ...)
+#endif
 /* UDEV_TOUCH_DEEP_DEBUG */
 
 /* Helper macro for declaring things as unused - use sparingly. */
@@ -192,7 +192,7 @@ typedef enum udev_touch_event_type
    FINGERMOTION
 } udev_touch_event_type;
 
-#endif 
+#endif
 /* UDEV_TOUCH_SUPPORT */
 
 struct udev_input;
@@ -203,7 +203,7 @@ enum udev_input_dev_type
 {
    UDEV_INPUT_KEYBOARD = 0,
    UDEV_INPUT_MOUSE,
-   UDEV_INPUT_TOUCHPAD, 
+   UDEV_INPUT_TOUCHPAD,
    UDEV_INPUT_TOUCHSCREEN
 };
 
@@ -212,7 +212,7 @@ static const char *g_dev_type_str[] =
 {
    "ID_INPUT_KEY",
    "ID_INPUT_MOUSE",
-   "ID_INPUT_TOUCHPAD", 
+   "ID_INPUT_TOUCHPAD",
    "ID_INPUT_TOUCHSCREEN"
 };
 
@@ -225,10 +225,10 @@ typedef struct
    int32_t x_min, y_min;
    int32_t x_max, y_max;
    int32_t x_rel, y_rel;
+   int32_t abs;
    bool l, r, m, b4, b5;
    bool wu, wd, whu, whd;
    bool pp;
-   int32_t abs;
 } udev_input_mouse_t;
 
 #ifdef UDEV_TOUCH_SUPPORT
@@ -236,14 +236,14 @@ typedef struct
 /**
  * Types of slot changes
  */
-typedef enum 
+typedef enum
 {
    /* No change */
-   UDEV_TOUCH_CHANGE_NONE = 0, 
+   UDEV_TOUCH_CHANGE_NONE = 0,
    /* Touch down, start tracking */
-   UDEV_TOUCH_CHANGE_DOWN, 
+   UDEV_TOUCH_CHANGE_DOWN,
    /* Touch up, end tracking */
-   UDEV_TOUCH_CHANGE_UP, 
+   UDEV_TOUCH_CHANGE_UP,
    /* Change in position, size, or pressure */
    UDEV_TOUCH_CHANGE_MOVE
 } udev_input_touch_change_type;
@@ -251,16 +251,16 @@ typedef enum
 /**
  * Types of tap gestures.
  */
-typedef enum 
+typedef enum
 {
    /* Gesture selection timeout. */
-   UDEV_TOUCH_TGEST_TIMEOUT = 0, 
+   UDEV_TOUCH_TGEST_TIMEOUT = 0,
    /* Gesture for one finger tap. */
-   UDEV_TOUCH_TGEST_S_TAP, 
+   UDEV_TOUCH_TGEST_S_TAP,
    /* Gesture for two finger tap. */
-   UDEV_TOUCH_TGEST_D_TAP, 
+   UDEV_TOUCH_TGEST_D_TAP,
    /* Gesture for three finger tap. */
-   UDEV_TOUCH_TGEST_T_TAP, 
+   UDEV_TOUCH_TGEST_T_TAP,
    /* Sentinel and total number of gestures. */
    UDEV_TOUCH_TGEST_LAST
 } udev_input_touch_tgest_type;
@@ -271,21 +271,21 @@ typedef enum
 typedef enum
 {
    /* No move gesture in process. */
-   UDEV_TOUCH_MGEST_NONE = 0, 
+   UDEV_TOUCH_MGEST_NONE = 0,
    /* Gesture for one finger single tap drag. */
-   UDEV_TOUCH_MGEST_S_STAP_DRAG, 
+   UDEV_TOUCH_MGEST_S_STAP_DRAG,
    /* Gesture for one finger double tap drag. */
-   UDEV_TOUCH_MGEST_S_DTAP_DRAG, 
+   UDEV_TOUCH_MGEST_S_DTAP_DRAG,
    /* Gesture for one finger triple tap drag. */
-   UDEV_TOUCH_MGEST_S_TTAP_DRAG, 
+   UDEV_TOUCH_MGEST_S_TTAP_DRAG,
    /* Gesture for two finger no tap drag. */
-   UDEV_TOUCH_MGEST_D_NTAP_DRAG, 
+   UDEV_TOUCH_MGEST_D_NTAP_DRAG,
    /* Gesture for two finger single tap drag. */
-   UDEV_TOUCH_MGEST_D_STAP_DRAG, 
+   UDEV_TOUCH_MGEST_D_STAP_DRAG,
    /* Gesture for three finger no tap drag. */
-   UDEV_TOUCH_MGEST_T_NTAP_DRAG, 
+   UDEV_TOUCH_MGEST_T_NTAP_DRAG,
    /* Gesture for three finger single tap drag. */
-   UDEV_TOUCH_MGEST_T_STAP_DRAG, 
+   UDEV_TOUCH_MGEST_T_STAP_DRAG,
    /* Sentinel and total number of motion gestures. */
    UDEV_TOUCH_MGEST_LAST
 } udev_input_touch_mgest_type;
@@ -295,9 +295,6 @@ typedef enum
  */
 typedef struct
 {
-   /* Is this feature enabled? */
-   bool enabled;
-
    /* Range of values supported by this feature:  */
    int32_t min;
    int32_t max;
@@ -310,6 +307,8 @@ typedef struct
    int32_t flat;
    /* Resolution for the reported values. */
    int32_t resolution;
+   /* Is this feature enabled? */
+   bool enabled;
 } udev_input_touch_limits_t;
 
 /**
@@ -326,16 +325,16 @@ typedef struct
 /**
  * Abstraction for time-delayed callback.
  */
-typedef struct 
+typedef struct
 {
-   /* Is this event active? */
-   bool active;
    /* Execute this callback at this or later time. */
    udev_touch_ts_t execute_at;
    /* Callback to execute, providing the custom data. */
    void (*cb)(void *touch, void *data);
    /* Custom data pointer provided to the callback. */
    void *data;
+   /* Is this event active? */
+   bool active;
 } udev_touch_timed_cb_t;
 
 /**
@@ -370,23 +369,21 @@ typedef int32_t udev_input_touch_slot_id;
  */
 typedef struct
 {
-   /* Touch panel properties */
-   bool is_touch_device;
    /* Info for number of tracked fingers/touch-points/slots */
-   udev_input_touch_limits_t info_slots; 
+   udev_input_touch_limits_t info_slots;
    /* Info for x-axis limits */
-   udev_input_touch_limits_t info_x_limits; 
+   udev_input_touch_limits_t info_x_limits;
    /* Info for y-axis limits */
-   udev_input_touch_limits_t info_y_limits; 
+   udev_input_touch_limits_t info_y_limits;
    /* Info for primary touch axis limits */
-   udev_input_touch_limits_t info_major; 
+   udev_input_touch_limits_t info_major;
    /* Info for secondary touch axis limits */
-   udev_input_touch_limits_t info_minor; 
+   udev_input_touch_limits_t info_minor;
    /* Info for pressure limits */
-   udev_input_touch_limits_t info_pressure; 
+   udev_input_touch_limits_t info_pressure;
 
    /*
-    * Allocated data block compatible with the following structure: 
+    * Allocated data block compatible with the following structure:
     * struct input_mt_request_layout {
     *     __u32 code;
     *     __s32 values[info_slots->range];
@@ -404,18 +401,10 @@ typedef struct
    udev_slot_state_t *current;
    uint16_t current_active;
 
-   /* Flag used to run the state update. */
-   bool run_state_update;
-   /* Timestamp of when the last touch state update ocurred */
+   /* Timestamp of when the last touch state update occurred */
    udev_touch_ts_t last_state_update;
 
    /* Simulated pointer / touchscreen */
-   /* Enable pointer simulation? */
-   bool pointer_enabled;
-   /* Pointer pressed. */
-   bool pointer_btn_pp;
-   /* Pointer back - TODO unknown action, RETRO_DEVICE_ID_POINTER_BACK. */
-   bool pointer_btn_pb;
    /* Pointer position in the touch panel coordinates. */
    int32_t pointer_pos_x;
    int32_t pointer_pos_y;
@@ -433,10 +422,6 @@ typedef struct
    int16_t pointer_vp_pos_y;
 
    /* Simulated mouse */
-   /* Enable mouse simulation? */
-   bool mouse_enabled;
-   /* Freeze the mouse cursor in place? */
-   bool mouse_freeze_cursor;
    /* Mouse position in the original pixel coordinates. */
    int16_t mouse_pos_x;
    int16_t mouse_pos_y;
@@ -452,16 +437,8 @@ typedef struct
    /* Mouse wheel delta in number of frames to hold that value. */
    int16_t mouse_wheel_x;
    int16_t mouse_wheel_y;
-   /* Mouse buttons. */
-   bool mouse_btn_l;
-   bool mouse_btn_r;
-   bool mouse_btn_m;
-   bool mouse_btn_b4;
-   bool mouse_btn_b5;
 
    /* Mouse touchpad simulation */
-   /* Enable the touchpad mode? Switches between direct (false) and touchpad (true) modes */
-   bool touchpad_enabled;
    /* Sensitivity of the touchpad mouse. */
    float touchpad_sensitivity;
    /* High resolution touchpad pointer position mapped onto the primary screen. */
@@ -469,10 +446,6 @@ typedef struct
    float touchpad_pos_y;
 
    /* Mouse trackball simulation */
-   /* Enable the trackball mode? Switches between immediate stop and trackball-style */
-   bool trackball_enabled;
-   /* Is the trackball free to rotate under its own inertia? */
-   bool trackball_inertial;
    /* Current high resolution position of the trackball */
    float trackball_pos_x;
    float trackball_pos_y;
@@ -489,8 +462,6 @@ typedef struct
    int16_t trackball_sq_vel_cutoff;
 
    /* Gestures and multi-touch tracking */
-   /* Enable the gestures? */
-   bool gest_enabled;
    /* Primary slot used as the slot index for MT gestures */
    udev_input_touch_slot_id gest_primary_slot;
    /* Secondary slot used as the slot index for MT gestures */
@@ -505,8 +476,6 @@ typedef struct
    uint32_t gest_click_time;
    /* Number of taps in the current gesture. */
    uint16_t gest_tap_count;
-   /* Is it possible for a tap to happen? Set to false once time or distance is over limit. */
-   bool gest_tap_possible;
    /* Sensitivity of scrolling for the scroll wheel gesture. */
    uint16_t gest_scroll_sensitivity;
    /* Step of scrolling for the scroll wheel gesture. */
@@ -517,31 +486,61 @@ typedef struct
    /* Percentage of screen considered as a corner. */
    uint16_t gest_corner;
    /* Time-delayed callbacks used for tap gesture automation. */
-   udev_touch_timed_cb_t gest_tcbs[UDEV_TOUCH_TGEST_LAST]; 
+   udev_touch_timed_cb_t gest_tcbs[UDEV_TOUCH_TGEST_LAST];
    /* Current move gesture in process. */
    udev_input_touch_mgest_type gest_mgest_type;
    /* Time-delayed callbacks used for move gesture automation. */
-   udev_touch_timed_cb_t gest_mcbs[UDEV_TOUCH_MGEST_LAST]; 
+   udev_touch_timed_cb_t gest_mcbs[UDEV_TOUCH_MGEST_LAST];
 
+   /* Enable the gestures? */
+   bool gest_enabled;
+   /* Is it possible for a tap to happen? Set to false once time or distance is over limit. */
+   bool gest_tap_possible;
+   /* Enable the touchpad mode? Switches between direct (false) and touchpad (true) modes */
+   bool touchpad_enabled;
+   /* Enable the trackball mode? Switches between immediate stop and trackball-style */
+   bool trackball_enabled;
+   /* Is the trackball free to rotate under its own inertia? */
+   bool trackball_inertial;
+   /* Enable mouse simulation? */
+   bool mouse_enabled;
+   /* Freeze the mouse cursor in place? */
+   bool mouse_freeze_cursor;
+   /* Mouse buttons. */
+   bool mouse_btn_l;
+   bool mouse_btn_r;
+   bool mouse_btn_m;
+   bool mouse_btn_b4;
+   bool mouse_btn_b5;
+   /* Enable pointer simulation? */
+   bool pointer_enabled;
+   /* Pointer pressed. */
+   bool pointer_btn_pp;
+   /* Pointer back - TODO unknown action, RETRO_DEVICE_ID_POINTER_BACK. */
+   bool pointer_btn_pb;
+   /* Flag used to run the state update. */
+   bool run_state_update;
+   /* Touch panel properties */
+   bool is_touch_device;
 } udev_input_touch_t;
 
-#endif 
+#endif
 /* UDEV_TOUCH_SUPPORT */
 
 typedef struct udev_input_device
 {
    void (*handle_cb)(void *data,
-         const struct input_event *event, 
+         const struct input_event *event,
          struct udev_input_device *dev);
    int fd; /* Device file descriptor */
    dev_t dev; /* Device handle */
    udev_input_mouse_t mouse; /* State tracking for mouse-type devices */
 #ifdef UDEV_TOUCH_SUPPORT
    udev_input_touch_t touch; /* State tracking for touch-type devices */
-#endif 
+#endif
    enum udev_input_dev_type type; /* Type of this device */
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
-   char ident[255]; /* Identifier of the device */
+   char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
 
 typedef void (*device_handle_cb)(void *data,
@@ -790,7 +789,8 @@ static int16_t udev_mouse_get_pointer_x(const udev_input_mouse_t *mouse, bool sc
    if (!video_driver_get_viewport_info(&vp))
       return 0;
 
-   if (mouse->abs) /* mouse coords are absolute */
+   /* mouse coords are absolute? */
+   if (mouse->abs)
    {
       /* mouse coordinates are relative to the screen; convert them
        * to be relative to the viewport */
@@ -802,14 +802,14 @@ static int16_t udev_mouse_get_pointer_x(const udev_input_mouse_t *mouse, bool sc
    }
    else /* mouse coords are viewport relative */
    {
-      if (screen) 
+      if (screen)
       {
-         src_min = 0.0;
+         src_min   = 0.0;
          src_width = vp.full_width;
       }
-      else 
+      else
       {
-         src_min = vp.x;
+         src_min   = vp.x;
          src_width = vp.width;
       }
       x  = -32767.0 + 65535.0 / src_width * (mouse->x_abs - src_min);
@@ -835,26 +835,27 @@ static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool sc
    if (!video_driver_get_viewport_info(&vp))
       return 0;
 
-   if (mouse->abs) /* mouse coords are absolute */
+   /* Mouse coords are absolute? */
+   if (mouse->abs)
    {
       double scaled_y;
       /* mouse coordinates are relative to the screen; convert them
        * to be relative to the viewport */
-      src_min = mouse->y_min;
+      src_min    = mouse->y_min;
       src_height = mouse->y_max - mouse->y_min + 1;
-      scaled_y = vp.full_height * (mouse->y_abs - src_min) / src_height;
-      y = -32767.0 + 65535.0 / vp.height * (scaled_y - vp.y);
+      scaled_y   = vp.full_height * (mouse->y_abs - src_min) / src_height;
+      y          = -32767.0 + 65535.0 / vp.height * (scaled_y - vp.y);
    }
    else /* mouse coords are viewport relative */
    {
       if (screen)
       {
-         src_min = 0.0;
+         src_min    = 0.0;
          src_height = vp.full_height;
       }
       else
       {
-         src_min = vp.y;
+         src_min    = vp.y;
          src_height = vp.height;
       }
       y = -32767.0 + 65535.0 / src_height * (mouse->y_abs - src_min);
@@ -883,25 +884,21 @@ static void udev_handle_mouse(void *data,
             case BTN_LEFT:
                mouse->l = event->value;
                break;
-
             case BTN_RIGHT:
                mouse->r = event->value;
                break;
-
             case BTN_MIDDLE:
                mouse->m = event->value;
                break;
             case BTN_TOUCH:
                mouse->pp = event->value;
                break;
-            /*case BTN_??:
+            case BTN_SIDE:
                mouse->b4 = event->value;
-               break;*/
-
-            /*case BTN_??:
+               break;
+            case BTN_EXTRA:
                mouse->b5 = event->value;
-               break;*/
-
+               break;
             default:
                break;
          }
@@ -955,8 +952,13 @@ static void udev_handle_mouse(void *data,
  */
 static void udev_touch_event_ts_copy(const struct input_event *event, udev_touch_ts_t *ts)
 {
-   ts->s = event->input_event_sec;
-   ts->us = event->input_event_usec;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,16,0)
+  ts->s  = event->input_event_sec;
+  ts->us = event->input_event_usec;
+#else
+  ts->s  = event->time.tv_sec;
+  ts->us = event->time.tv_usec;
+#endif
 }
 
 /**
@@ -967,7 +969,7 @@ static void udev_touch_event_ts_copy(const struct input_event *event, udev_touch
  */
 static void udev_touch_ts_copy(const udev_touch_ts_t *first, udev_touch_ts_t *second)
 {
-   second->s = first->s;
+   second->s  = first->s;
    second->us = first->us;
 }
 
@@ -980,7 +982,7 @@ static void udev_touch_ts_now(udev_touch_ts_t *ts)
 {
    struct timeval now;
    gettimeofday(&now, NULL);
-   ts->s = now.tv_sec;
+   ts->s  = now.tv_sec;
    ts->us = now.tv_usec;
 }
 
@@ -992,10 +994,10 @@ static void udev_touch_ts_now(udev_touch_ts_t *ts)
  * @param us Number of microseconds to add.
  * @param dest Destination structure to store the time in.
  */
-static void udev_touch_ts_add(const udev_touch_ts_t *base, 
+static void udev_touch_ts_add(const udev_touch_ts_t *base,
         uint32_t s, uint32_t us, udev_touch_ts_t *dest)
 {
-   dest->s = base->s + s + us / UDEV_INPUT_TOUCH_S_TO_US;
+   dest->s  = base->s  + s + us / UDEV_INPUT_TOUCH_S_TO_US;
    dest->us = base->us + us % UDEV_INPUT_TOUCH_S_TO_US;
 }
 
@@ -1007,40 +1009,40 @@ static void udev_touch_ts_add(const udev_touch_ts_t *base,
  */
 static int32_t udev_touch_ts_diff(const udev_touch_ts_t *first, const udev_touch_ts_t *second)
 {
-   return (second->s - first->s) * UDEV_INPUT_TOUCH_S_TO_US + 
+   return (second->s - first->s) * UDEV_INPUT_TOUCH_S_TO_US +
           (second->us - first->us);
 }
 
 /* Touch point directions between two points. */
 enum udev_input_touch_dir
 {
-   UDEV_INPUT_TOUCH_DIR_TL, 
-   UDEV_INPUT_TOUCH_DIR_TT, 
-   UDEV_INPUT_TOUCH_DIR_TR, 
+   UDEV_INPUT_TOUCH_DIR_TL,
+   UDEV_INPUT_TOUCH_DIR_TT,
+   UDEV_INPUT_TOUCH_DIR_TR,
 
-   UDEV_INPUT_TOUCH_DIR_ML, 
-   UDEV_INPUT_TOUCH_DIR_MT, 
-   UDEV_INPUT_TOUCH_DIR_MR, 
+   UDEV_INPUT_TOUCH_DIR_ML,
+   UDEV_INPUT_TOUCH_DIR_MT,
+   UDEV_INPUT_TOUCH_DIR_MR,
 
-   UDEV_INPUT_TOUCH_DIR_BL, 
-   UDEV_INPUT_TOUCH_DIR_BT, 
+   UDEV_INPUT_TOUCH_DIR_BL,
+   UDEV_INPUT_TOUCH_DIR_BT,
    UDEV_INPUT_TOUCH_DIR_BR
 };
 
 /* Array with touch directions. */
-static const enum udev_input_touch_dir g_udev_input_touch_dir_val[] = 
+static const enum udev_input_touch_dir g_udev_input_touch_dir_val[] =
 {
-   UDEV_INPUT_TOUCH_DIR_TL, UDEV_INPUT_TOUCH_DIR_TT, UDEV_INPUT_TOUCH_DIR_TR, 
-   UDEV_INPUT_TOUCH_DIR_ML, UDEV_INPUT_TOUCH_DIR_MT, UDEV_INPUT_TOUCH_DIR_MR, 
-   UDEV_INPUT_TOUCH_DIR_BL, UDEV_INPUT_TOUCH_DIR_BT, UDEV_INPUT_TOUCH_DIR_BR, 
+   UDEV_INPUT_TOUCH_DIR_TL, UDEV_INPUT_TOUCH_DIR_TT, UDEV_INPUT_TOUCH_DIR_TR,
+   UDEV_INPUT_TOUCH_DIR_ML, UDEV_INPUT_TOUCH_DIR_MT, UDEV_INPUT_TOUCH_DIR_MR,
+   UDEV_INPUT_TOUCH_DIR_BL, UDEV_INPUT_TOUCH_DIR_BT, UDEV_INPUT_TOUCH_DIR_BR,
 };
 
 /* Array with touch directions names. */
 static const char *g_udev_input_touch_dir_str[] =
 {
-   "TopLeft", "Top", "TopRight", 
-   "MidLeft", "Mid", "MidRight", 
-   "BotLeft", "Bot", "BotRight", 
+   "TopLeft", "Top", "TopRight",
+   "MidLeft", "Mid", "MidRight",
+   "BotLeft", "Bot", "BotRight",
 };
 
 /* Convert touch direction enum to a string representation. */
@@ -1049,29 +1051,46 @@ static const char *udev_touch_dir_to_str(enum udev_input_touch_dir dir)
 
 /* Helper functions for determining touch direction. */
 static const bool udev_touch_dir_top(enum udev_input_touch_dir dir)
-{ return dir >= UDEV_INPUT_TOUCH_DIR_TL && dir <= UDEV_INPUT_TOUCH_DIR_TR; }
+{
+   return dir >= UDEV_INPUT_TOUCH_DIR_TL && dir <= UDEV_INPUT_TOUCH_DIR_TR;
+}
+
 static const bool udev_touch_dir_left(enum udev_input_touch_dir dir)
-{ return dir == UDEV_INPUT_TOUCH_DIR_TL || dir == UDEV_INPUT_TOUCH_DIR_ML || dir == UDEV_INPUT_TOUCH_DIR_BL; }
+{
+   return dir == UDEV_INPUT_TOUCH_DIR_TL || dir == UDEV_INPUT_TOUCH_DIR_ML || dir == UDEV_INPUT_TOUCH_DIR_BL;
+}
+
 static const bool udev_touch_dir_bot(enum udev_input_touch_dir dir)
-{ return dir >= UDEV_INPUT_TOUCH_DIR_BL && dir <= UDEV_INPUT_TOUCH_DIR_BR; }
+{
+   return dir >= UDEV_INPUT_TOUCH_DIR_BL && dir <= UDEV_INPUT_TOUCH_DIR_BR;
+}
+
 static const bool udev_touch_dir_right(enum udev_input_touch_dir dir)
-{ return dir == UDEV_INPUT_TOUCH_DIR_TR || dir == UDEV_INPUT_TOUCH_DIR_MR || dir == UDEV_INPUT_TOUCH_DIR_BR; }
+{
+   return dir == UDEV_INPUT_TOUCH_DIR_TR || dir == UDEV_INPUT_TOUCH_DIR_MR || dir == UDEV_INPUT_TOUCH_DIR_BR;
+}
 
 /* Get signum for given value. */
 static int16_t udev_touch_sign(int16_t val)
-{ return (val > 0) - (val < 0); }
+{
+   return (val > 0) - (val < 0);
+}
 
 /* Get max of given values. */
 static int16_t udev_touch_max(int16_t first, int16_t second)
-{ return first > second ? first : second; }
+{
+   return first > second ? first : second;
+}
 
 /* Get min of given values. */
 static int16_t udev_touch_min(int16_t first, int16_t second)
-{ return first < second ? first : second; }
+{
+   return first < second ? first : second;
+}
 
 /**
  * Calculate distance between given points and a direction.
- * Coordinates and distances are calculated with system 
+ * Coordinates and distances are calculated with system
  * origin placed in the top left corner.
  *
  * @param pos1_x X-coordinate of the first position.
@@ -1083,8 +1102,8 @@ static int16_t udev_touch_min(int16_t first, int16_t second)
  * @return Returns squared distance between the two points.
  */
 static uint32_t udev_touch_tp_diff(
-        int16_t pos1_x, int16_t pos1_y, 
-        int16_t pos2_x, int16_t pos2_y, 
+        int16_t pos1_x, int16_t pos1_y,
+        int16_t pos2_x, int16_t pos2_y,
         enum udev_input_touch_dir *dir)
 {
    /* Position differences pos1 -> pos2. */
@@ -1092,21 +1111,18 @@ static uint32_t udev_touch_tp_diff(
    int16_t diff_y = pos2_y - pos1_y;
 
    /*
-    * Directions: 
+    * Directions:
     * TL TT TR
     * ML MM MR
     * BL BB BR
     */
-   if (dir != NULL)
-   {
+   if (dir)
       *dir = g_udev_input_touch_dir_val[
          /* Index using y-axis sign. */
-         (udev_touch_sign(diff_y) + 1) * 3 + 
+           (udev_touch_sign(diff_y) + 1) * 3
          /* Index using x-axis sign. */
-         (udev_touch_sign(diff_x) + 1)
+         + (udev_touch_sign(diff_x) + 1)
       ];
-   }
-
    /* Squared distance */
    return diff_x * diff_x + diff_y * diff_y;
 }
@@ -1140,8 +1156,7 @@ static udev_input_device_t *udev_get_pointer_port_dev(
        dev_index = udev->pointers[pointer_index];
    if (dev_index < 0)
        return NULL;
-   else
-       return udev->devices[dev_index];
+   return udev->devices[dev_index];
 }
 
 /**
@@ -1152,14 +1167,14 @@ static udev_input_device_t *udev_get_pointer_port_dev(
  */
 static void udev_dump_absinfo(const char *label, const struct input_absinfo *info)
 {
-   RARCH_DBG("[udev] %s: %d %d-%d ~%d |%d r%d\n", label, 
-           info->value, info->minimum, info->maximum, 
+   RARCH_DBG("[udev] %s: %d %d-%d ~%d |%d r%d\n", label,
+           info->value, info->minimum, info->maximum,
            info->fuzz, info->flat, info->resolution);
 }
 
 /**
  * Dump information about the given touch limits structure.
- * 
+ *
  * @param label Label to prefix the message with.
  * @param limits Limits structure to dump.
  */
@@ -1167,8 +1182,8 @@ static void udev_dump_touch_limit(const char *label, const udev_input_touch_limi
 {
    if (limits->enabled)
    {
-      RARCH_DBG("[udev] %s: %d-%d [%d] ~%d |%d r%d\n", label, 
-                limits->min, limits->max, limits->range, 
+      RARCH_DBG("[udev] %s: %d-%d [%d] ~%d |%d r%d\n", label,
+                limits->min, limits->max, limits->range,
                 limits->fuzz, limits->flat, limits->resolution);
    }
    else
@@ -1182,49 +1197,50 @@ static const char *udev_mt_code_to_str(uint32_t code)
 {
    switch (code)
    {
-      case ABS_MT_SLOT: 
+      case ABS_MT_SLOT:
          return "ABS_MT_SLOT";
-      case ABS_MT_TOUCH_MAJOR: 
+      case ABS_MT_TOUCH_MAJOR:
          return "ABS_MT_TOUCH_MAJOR";
-      case ABS_MT_TOUCH_MINOR: 
+      case ABS_MT_TOUCH_MINOR:
          return "ABS_MT_TOUCH_MINOR";
-      case ABS_MT_WIDTH_MAJOR: 
+      case ABS_MT_WIDTH_MAJOR:
          return "ABS_MT_WIDTH_MAJOR";
-      case ABS_MT_WIDTH_MINOR: 
+      case ABS_MT_WIDTH_MINOR:
          return "ABS_MT_WIDTH_MINOR";
-      case ABS_MT_ORIENTATION: 
+      case ABS_MT_ORIENTATION:
          return "ABS_MT_ORIENTATION";
-      case ABS_MT_POSITION_X: 
+      case ABS_MT_POSITION_X:
          return "ABS_MT_POSITION_X";
-      case ABS_MT_POSITION_Y: 
+      case ABS_MT_POSITION_Y:
          return "ABS_MT_POSITION_Y";
-      case ABS_MT_TOOL_TYPE: 
+      case ABS_MT_TOOL_TYPE:
          return "ABS_MT_TOOL_TYPE";
-      case ABS_MT_BLOB_ID: 
+      case ABS_MT_BLOB_ID:
          return "ABS_MT_BLOB_ID";
-      case ABS_MT_TRACKING_ID: 
+      case ABS_MT_TRACKING_ID:
          return "ABS_MT_TRACKING_ID";
-      case ABS_MT_PRESSURE: 
+      case ABS_MT_PRESSURE:
          return "ABS_MT_PRESSURE";
-      case ABS_MT_DISTANCE: 
+      case ABS_MT_DISTANCE:
          return "ABS_MT_DISTANCE";
-      case ABS_MT_TOOL_X: 
+      case ABS_MT_TOOL_X:
          return "ABS_MT_TOOL_X";
-      case ABS_MT_TOOL_Y: 
+      case ABS_MT_TOOL_Y:
          return "ABS_MT_TOOL_Y";
       default:
-         return "UNKNOWN";
+         break;
    }
+   return "UNKNOWN";
 }
 
 /**
- * Dump information contained within given request_data with structure: 
+ * Dump information contained within given request_data with structure:
  * struct input_mt_request_layout {
  *     __u32 code;
  *     __s32 values[count];
  * };
  * For reference, see linux kernel: include/uapi/linux/input.h#L147
- * 
+ *
  * @param label Label to prefix the message with.
  * @param request_data Input data structure to dump.
  * @param count Number of elements in the values array.
@@ -1255,8 +1271,9 @@ static const char *udev_touch_change_to_str(uint16_t change)
       case UDEV_TOUCH_CHANGE_MOVE:
          return "MOVE";
       default:
-         return "UNKNOWN";
+         break;
    }
+   return "UNKNOWN";
 }
 
 /**
@@ -1267,19 +1284,19 @@ static const char *udev_touch_change_to_str(uint16_t change)
  */
 static void udev_dump_touch_slot(const char *label, const udev_slot_state_t *slot_state)
 {
-   RARCH_DBG("[udev] %s\t(%u,%u) %d:%hdx%hd (@%hdx%hd) %hd <%hdx%hd> %s\n", label, 
-             slot_state->td_time.s, slot_state->td_time.us, 
-             slot_state->tracking_id, 
-             slot_state->pos_x, slot_state->pos_y, 
-             slot_state->td_pos_x, slot_state->td_pos_y, 
-             slot_state->pressure, 
-             slot_state->minor, slot_state->major, 
+   RARCH_DBG("[udev] %s\t(%u,%u) %d:%hdx%hd (@%hdx%hd) %hd <%hdx%hd> %s\n", label,
+             slot_state->td_time.s, slot_state->td_time.us,
+             slot_state->tracking_id,
+             slot_state->pos_x, slot_state->pos_y,
+             slot_state->td_pos_x, slot_state->td_pos_y,
+             slot_state->pressure,
+             slot_state->minor, slot_state->major,
              udev_touch_change_to_str(slot_state->change));
 }
 
 /**
  * Dump information about tracked slots in given touchscreen device.
- * 
+ *
  * @param indent Indentation prefix for each printed line.
  * @param touch Input touchscreen device to dump.
  */
@@ -1291,9 +1308,7 @@ static void udev_dump_touch_device_slots(const char *indent, const udev_input_to
    if (touch->staging != NULL)
    {
       for (iii = 0; iii < touch->info_slots.range; ++iii)
-      {
          udev_dump_touch_slot(indent, &touch->staging[iii]);
-      }
    }
    else
    {
@@ -1305,9 +1320,7 @@ static void udev_dump_touch_device_slots(const char *indent, const udev_input_to
    if (touch->staging != NULL)
    {
       for (iii = 0; iii < touch->info_slots.range; ++iii)
-      {
          udev_dump_touch_slot(indent, &touch->current[iii]);
-      }
    }
    else
    {
@@ -1322,22 +1335,22 @@ static void udev_dump_touch_device_slots(const char *indent, const udev_input_to
  * @param info Input info structure.
  * @param limits Target limits structure.
  */
-static void udev_touch_set_limits_from(struct input_absinfo *info, 
+static void udev_touch_set_limits_from(struct input_absinfo *info,
         udev_input_touch_limits_t *limits)
 {
-   limits->enabled = true;
-   limits->min = info->minimum;
-   limits->max = info->maximum;
-   limits->range = limits->max - limits->min + 1;
-   limits->fuzz = info->fuzz;
-   limits->flat = info->flat;
+   limits->enabled    = true;
+   limits->min        = info->minimum;
+   limits->max        = info->maximum;
+   limits->range      = limits->max - limits->min + 1;
+   limits->fuzz       = info->fuzz;
+   limits->flat       = info->flat;
    limits->resolution = info->resolution;
 }
 
 /**
- * Dump information about the provided device. Works even 
+ * Dump information about the provided device. Works even
  * for non-touch devices.
- * 
+ *
  * @param dev Input device to dump information for.
  */
 static void udev_dump_touch_dev(udev_input_device_t *dev)
@@ -1356,18 +1369,18 @@ static void udev_dump_touch_dev(udev_input_device_t *dev)
 
    RARCH_DBG("[udev] \tmouse = {\n");
    RARCH_DBG("[udev] \t\tabs = %d\n", mouse->abs);
-   RARCH_DBG("[udev] \t\tx -> %d~%d (%d-%d)\n", 
-             mouse->x_abs, mouse->x_rel, 
+   RARCH_DBG("[udev] \t\tx -> %d~%d (%d-%d)\n",
+             mouse->x_abs, mouse->x_rel,
              mouse->x_min, mouse->x_max);
-   RARCH_DBG("[udev] \t\ty -> %d~%d (%d-%d)\n", 
-             mouse->y_abs, mouse->y_rel, 
+   RARCH_DBG("[udev] \t\ty -> %d~%d (%d-%d)\n",
+             mouse->y_abs, mouse->y_rel,
              mouse->y_min, mouse->y_max);
-   RARCH_DBG("[udev] \t\tL = %c | R = %c | M = %c | 4 = %c | 5 = %c\n", 
-             mouse->l ? 'X' : 'O', mouse->r ? 'X' : 'O', 
-             mouse->m ? 'X' : 'O', 
+   RARCH_DBG("[udev] \t\tL = %c | R = %c | M = %c | 4 = %c | 5 = %c\n",
+             mouse->l ? 'X' : 'O', mouse->r ? 'X' : 'O',
+             mouse->m ? 'X' : 'O',
              mouse->b4 ? 'X' : 'O', mouse->b5 ? 'X' : 'O');
-   RARCH_DBG("[udev] \t\tWU = %c | WD = %c | WHU = %c | WHD = %c\n", 
-             mouse->wu ? 'X' : 'O', mouse->wd ? 'X' : 'O', 
+   RARCH_DBG("[udev] \t\tWU = %c | WD = %c | WHU = %c | WHD = %c\n",
+             mouse->wu ? 'X' : 'O', mouse->wd ? 'X' : 'O',
              mouse->whu ? 'X' : 'O', mouse->whd ? 'X' : 'O');
    RARCH_DBG("[udev] \t\tPP = %c\n", mouse->pp ? 'X' : 'O');
    RARCH_DBG("[udev] \t}\n");
@@ -1398,20 +1411,20 @@ static void udev_destroy_touch_dev(udev_input_device_t *dev)
 
    RARCH_DBG("[udev] Destroying touch device \"%s\"\n", dev->ident);
 
-   if (touch->request_data != NULL)
+   if (touch->request_data)
    {
        free(touch->request_data);
-       touch->request_data = NULL;
+       touch->request_data      = NULL;
        touch->request_data_size = 0;
    }
 
-   if (touch->staging != NULL)
+   if (touch->staging)
    {
        free(touch->staging);
        touch->staging = NULL;
    }
 
-   if (touch->current != NULL)
+   if (touch->current)
    {
        free(touch->current);
        touch->current = NULL;
@@ -1428,54 +1441,49 @@ static void udev_destroy_touch_dev(udev_input_device_t *dev)
  */
 static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
 {
-   settings_t *settings;
-
    static bool pointer_en;
    static bool mouse_en;
    static bool touchpad_en;
    static bool trackball_en;
    static bool gest_en;
 
-   bool pointer_en_new;
    bool mouse_en_new;
    bool touchpad_en_new;
    bool trackball_en_new;
    bool gest_en_new;
-
-   settings = config_get_ptr();
-
-   pointer_en_new = UDEV_INPUT_TOUCH_POINTER_EN;
+   settings_t *settings = config_get_ptr();
+   bool pointer_en_new  = UDEV_INPUT_TOUCH_POINTER_EN;
    if (force || pointer_en_new != pointer_en)
    {
-       pointer_en = pointer_en_new;
+       pointer_en                 = pointer_en_new;
        dev->touch.pointer_enabled = pointer_en_new;
    }
 
    mouse_en_new = UDEV_INPUT_TOUCH_MOUSE_EN;
    if (force || mouse_en_new != mouse_en)
    {
-       mouse_en = mouse_en_new;
+       mouse_en                 = mouse_en_new;
        dev->touch.mouse_enabled = mouse_en_new;
    }
 
    touchpad_en_new = UDEV_INPUT_TOUCH_TOUCHPAD_EN;
    if (force || touchpad_en_new != touchpad_en)
    {
-       touchpad_en = touchpad_en_new;
+       touchpad_en                 = touchpad_en_new;
        dev->touch.touchpad_enabled = touchpad_en_new;
    }
-   
+
    trackball_en_new = UDEV_INPUT_TOUCH_TRACKBALL_EN;
    if (force || trackball_en_new != trackball_en)
    {
-       trackball_en = trackball_en_new;
+       trackball_en                 = trackball_en_new;
        dev->touch.trackball_enabled = trackball_en_new;
    }
 
    gest_en_new = UDEV_INPUT_TOUCH_GEST_EN;
    if (force || gest_en_new != gest_en)
    {
-       gest_en = gest_en_new;
+       gest_en                 = gest_en_new;
        dev->touch.gest_enabled = gest_en_new;
    }
 }
@@ -1487,14 +1495,11 @@ static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
  */
 static void udev_init_touch_dev(udev_input_device_t *dev)
 {
-   udev_input_touch_t *touch;
-   struct input_absinfo abs_info;
    int iii, ret;
+   struct input_absinfo abs_info;
    unsigned long xreq, yreq;
-   settings_t *settings;
-
-   touch = &dev->touch;
-   settings = config_get_ptr();
+   udev_input_touch_t *touch = &dev->touch;
+   settings_t *settings      = config_get_ptr();
 
    RARCH_DBG("[udev] Initializing touch device \"%s\"\n", dev->ident);
 
@@ -1511,19 +1516,17 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
 
    /* Get slot limits - number of touch points */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_SLOT), &abs_info);
-   if (ret < 0) 
+   if (ret < 0)
    {
       RARCH_WARN("[udev] Failed to get touchscreen limits\n");
 
       touch->info_slots.enabled = false;
    }
-   else 
-   {
+   else
       udev_touch_set_limits_from(&abs_info, &touch->info_slots);
-   }
 
    /* Single-touch devices use ABS_X/Y, Multi-touch use ABS_MT_POSITION_X/Y */
-   if (abs_info.maximum == 0) 
+   if (abs_info.maximum == 0)
    {
       /* TODO - Test for single-touch devices. */
       RARCH_WARN("[udev] Single-touch devices are currently untested!\n");
@@ -1531,7 +1534,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
       xreq = EVIOCGABS(ABS_X);
       yreq = EVIOCGABS(ABS_Y);
    }
-   else 
+   else
    {
       xreq = EVIOCGABS(ABS_MT_POSITION_X);
       yreq = EVIOCGABS(ABS_MT_POSITION_Y);
@@ -1539,91 +1542,81 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
 
    /* Get x-axis limits */
    ret = ioctl(dev->fd, xreq, &abs_info);
-   if (ret < 0) 
+   if (ret < 0)
    {
       RARCH_DBG("[udev] Failed to get touchscreen x-limits\n");
 
       touch->info_x_limits.enabled = false;
    }
-   else 
-   {
+   else
       udev_touch_set_limits_from(&abs_info, &touch->info_x_limits);
-   }
 
    /* Get y-axis limits */
    ret = ioctl(dev->fd, yreq, &abs_info);
-   if (ret < 0) 
+   if (ret < 0)
    {
       RARCH_DBG("[udev] Failed to get touchscreen y-limits\n");
 
       touch->info_y_limits.enabled = false;
    }
-   else 
-   {
+   else
       udev_touch_set_limits_from(&abs_info, &touch->info_y_limits);
-   }
 
    /* Get major axis limits - i.e. primary radius of the touch */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_TOUCH_MAJOR), &abs_info);
-   if (ret < 0) 
+   if (ret < 0)
    {
       RARCH_DBG("[udev] Failed to get touchscreen major limits\n");
 
       touch->info_major.enabled = false;
    }
-   else 
-   {
+   else
       udev_touch_set_limits_from(&abs_info, &touch->info_major);
-   }
 
    /* Get minor axis limits - i.e. secondary radius of the touch */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_TOUCH_MINOR), &abs_info);
-   if (ret < 0) 
+   if (ret < 0)
    {
       RARCH_DBG("[udev] Failed to get touchscreen minor limits\n");
 
       touch->info_minor.enabled = false;
    }
-   else 
-   {
+   else
       udev_touch_set_limits_from(&abs_info, &touch->info_minor);
-   }
 
    /* Get pressure limits */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_PRESSURE), &abs_info);
-   if (ret < 0) 
+   if (ret < 0)
    {
       RARCH_DBG("[udev] Failed to get touchscreen pres-limits\n");
 
       touch->info_pressure.enabled = false;
    }
-   else 
-   {
+   else
       udev_touch_set_limits_from(&abs_info, &touch->info_pressure);
-   }
 
    /* Allocate the data blocks required for state tracking */
    /* __u32 + __s32[num_slots] */
    touch->request_data_size = sizeof(int32_t) + sizeof(uint32_t) * touch->info_slots.range;
-   touch->request_data = calloc(1, touch->request_data_size);
-   if (touch->request_data == NULL)
+   touch->request_data      = calloc(1, touch->request_data_size);
+   if (!touch->request_data)
    {
       RARCH_ERR("[udev] Failed to allocate request_data for touch state tracking!\n");
       udev_destroy_touch_dev(dev);
       return;
    }
 
-   touch->staging = calloc(1, sizeof(*touch->staging) * touch->info_slots.range);
+   touch->staging        = calloc(1, sizeof(*touch->staging) * touch->info_slots.range);
    touch->staging_active = 0;
-   if (touch->staging == NULL)
+   if (!touch->staging)
    {
       RARCH_ERR("[udev] Failed to allocate staging for touch state tracking!\n");
       udev_destroy_touch_dev(dev);
       return;
    }
-   touch->current = calloc(1, sizeof(*touch->current) * touch->info_slots.range);
+   touch->current        = calloc(1, sizeof(*touch->current) * touch->info_slots.range);
    touch->current_active = 0;
-   if (touch->current == NULL)
+   if (!touch->current)
    {
       RARCH_ERR("[udev] Failed to allocate current for touch state tracking!\n");
       udev_destroy_touch_dev(dev);
@@ -1631,25 +1624,25 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    }
 
    /* Initialize touch device */
-   touch->current_slot = UDEV_INPUT_TOUCH_SLOT_ID_NONE;
-   touch->is_touch_device = true;
-   touch->run_state_update = false;
+   touch->current_slot      = UDEV_INPUT_TOUCH_SLOT_ID_NONE;
+   touch->is_touch_device   = true;
+   touch->run_state_update  = false;
    udev_touch_ts_now(&touch->last_state_update);
 
    /* Initialize pointer simulation */
-   touch->pointer_enabled = UDEV_INPUT_TOUCH_POINTER_EN;
-   touch->pointer_btn_pp = false;
-   touch->pointer_btn_pb = false;
-   touch->pointer_pos_x = 0;
-   touch->pointer_pos_y = 0;
-   touch->pointer_ma_pos_x = 0;
-   touch->pointer_ma_pos_y = 0;
-   touch->pointer_ma_rel_x = 0;
-   touch->pointer_ma_rel_y = 0;
+   touch->pointer_enabled   = UDEV_INPUT_TOUCH_POINTER_EN;
+   touch->pointer_btn_pp    = false;
+   touch->pointer_btn_pb    = false;
+   touch->pointer_pos_x     = 0;
+   touch->pointer_pos_y     = 0;
+   touch->pointer_ma_pos_x  = 0;
+   touch->pointer_ma_pos_y  = 0;
+   touch->pointer_ma_rel_x  = 0;
+   touch->pointer_ma_rel_y  = 0;
    touch->pointer_scr_pos_x = 0;
    touch->pointer_scr_pos_y = 0;
-   touch->pointer_vp_pos_x = 0;
-   touch->pointer_vp_pos_y = 0;
+   touch->pointer_vp_pos_x  = 0;
+   touch->pointer_vp_pos_y  = 0;
 
    /* Initialize mouse simulation */
    touch->mouse_enabled = UDEV_INPUT_TOUCH_MOUSE_EN;
@@ -1669,10 +1662,10 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->mouse_btn_b5 = false;
 
    /* Initialize touchpad simulation */
-   touch->touchpad_enabled = UDEV_INPUT_TOUCH_TOUCHPAD_EN;
+   touch->touchpad_enabled     = UDEV_INPUT_TOUCH_TOUCHPAD_EN;
    touch->touchpad_sensitivity = UDEV_INPUT_TOUCH_PAD_SENSITIVITY;
-   touch->touchpad_pos_x = 0.0f;
-   touch->touchpad_pos_y = 0.0f;
+   touch->touchpad_pos_x       = 0.0f;
+   touch->touchpad_pos_y       = 0.0f;
 
    /* Initialize trackball simulation */
    touch->trackball_enabled = UDEV_INPUT_TOUCH_TRACKBALL_EN;
@@ -1705,21 +1698,21 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
 
    for (iii = 0; iii < UDEV_TOUCH_TGEST_LAST; ++iii)
    {
-      touch->gest_tcbs[iii].active = false;
-      touch->gest_tcbs[iii].execute_at.s = 0;
+      touch->gest_tcbs[iii].active        = false;
+      touch->gest_tcbs[iii].execute_at.s  = 0;
       touch->gest_tcbs[iii].execute_at.us = 0;
-      touch->gest_tcbs[iii].cb = NULL;
-      touch->gest_tcbs[iii].data = NULL;
+      touch->gest_tcbs[iii].cb            = NULL;
+      touch->gest_tcbs[iii].data          = NULL;
    }
 
    touch->gest_mgest_type = UDEV_TOUCH_MGEST_NONE;
    for (iii = 0; iii < UDEV_TOUCH_MGEST_LAST; ++iii)
    {
-      touch->gest_mcbs[iii].active = false;
-      touch->gest_mcbs[iii].execute_at.s = 0;
+      touch->gest_mcbs[iii].active        = false;
+      touch->gest_mcbs[iii].execute_at.s  = 0;
       touch->gest_mcbs[iii].execute_at.us = 0;
-      touch->gest_mcbs[iii].cb = NULL;
-      touch->gest_mcbs[iii].data = NULL;
+      touch->gest_mcbs[iii].cb            = NULL;
+      touch->gest_mcbs[iii].data          = NULL;
    }
 
    /* Force load the options from settings */
@@ -1731,7 +1724,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
 
 /**
  * Fully synchronize the statue of given touch device.
- * This is inefficient compared to the event-driven 
+ * This is inefficient compared to the event-driven
  * approach, but results in fully synchronized state.
  *
  * @param dev Input touch device to synchronize.
@@ -1756,34 +1749,30 @@ static void udev_sync_touch(udev_input_device_t *dev)
    /*u64_t Vkk */
 
    /*
-    * Data block compatible with the following structure: 
+    * Data block compatible with the following structure:
     * struct input_mt_request_layout {
     *     __u32 code;
     *     __s32 values[slot_count];
     * };
     */
-   mt_request_data = touch->request_data;
+   mt_request_data      = touch->request_data;
    mt_request_data_size = touch->request_data_size;
-   slot_count = touch->info_slots.range;
-   
+   slot_count           = touch->info_slots.range;
+
    /* Get current time for initialization */
    udev_touch_ts_now(&now);
 
    if (mt_request_data == NULL)
-   {
       return;
-   }
 
-   mt_req_code = (uint32_t*) mt_request_data;
-   mt_req_values = ((int32_t*) mt_request_data) + 1;
+   mt_req_code   = (uint32_t*)mt_request_data;
+   mt_req_values = ((int32_t*)mt_request_data) + 1;
 
    /* Request tracking IDs for each slot */
-   *mt_req_code = ABS_MT_TRACKING_ID;
+   *mt_req_code  = ABS_MT_TRACKING_ID;
    ret = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
    if (ret < 0)
-   {
       return;
-   }
    RARCH_DDBG("[udev] \tTracking IDs:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
@@ -1794,11 +1783,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
 
    /* Request MT position on the x-axis for each slot */
    *mt_req_code = ABS_MT_POSITION_X;
-   ret = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
+   ret          = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
    if (ret < 0)
-   {
       return;
-   }
    RARCH_DDBG("[udev] \tMT X-Positions:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
@@ -1809,26 +1796,22 @@ static void udev_sync_touch(udev_input_device_t *dev)
 
    /* Request MT position on the y-axis for each slot */
    *mt_req_code = ABS_MT_POSITION_Y;
-   ret = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
+   ret          = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
    if (ret < 0)
-   {
       return;
-   }
    RARCH_DDBG("[udev] \tMT Y-Positions:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
       RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, staging[iii].pos_y, mt_req_values[iii]);
-      staging[iii].pos_y = mt_req_values[iii];
+      staging[iii].pos_y    = mt_req_values[iii];
       staging[iii].td_pos_y = mt_req_values[iii];
    }
 
    /* Request minor axis for each slot */
    *mt_req_code = ABS_MT_TOUCH_MINOR;
-   ret = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
+   ret          = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
    if (ret < 0)
-   {
       return;
-   }
    RARCH_DDBG("[udev] \tMinor:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
@@ -1838,11 +1821,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
 
    /* Request major axis for each slot */
    *mt_req_code = ABS_MT_TOUCH_MAJOR;
-   ret = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
+   ret          = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
    if (ret < 0)
-   {
       return;
-   }
    RARCH_DDBG("[udev] \tMajor:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
@@ -1852,24 +1833,20 @@ static void udev_sync_touch(udev_input_device_t *dev)
 
    /* Request major axis for each slot */
    *mt_req_code = ABS_MT_PRESSURE;
-   ret = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
+   ret          = ioctl(dev->fd, EVIOCGMTSLOTS(mt_request_data_size), mt_request_data);
    if (ret < 0)
-   {
       return;
-   }
    RARCH_DDBG("[udev] \tPressure:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
       RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, staging[iii].pressure, mt_req_values[iii]);
       staging[iii].pressure = mt_req_values[iii];
    }
-   
+
    /* Get the current slot */
    ret = ioctl(dev->fd, EVIOCGABS(ABS_MT_SLOT), &abs_info);
    if (ret < 0)
-   {
        return;
-   }
    RARCH_DDBG("[udev] \tCurrent slot: %d -> %d\n", touch->current_slot, abs_info.value);
    touch->current_slot = abs_info.value;
 }
@@ -1878,7 +1855,7 @@ static void udev_sync_touch(udev_input_device_t *dev)
  * Translate touch panel position into other coordinate systems.
  *
  * @param src_touch Information concerning the source touch panel.
- * @param target_vp Information about the target panel. Pre-filled 
+ * @param target_vp Information about the target panel. Pre-filled
  *   with the video_driver_get_viewport_info function.
  * @param pointer_pos_x Input x-coordinate on the touch panel.
  * @param pointer_pos_y Input y-coordinate on the touch panel.
@@ -1888,43 +1865,47 @@ static void udev_sync_touch(udev_input_device_t *dev)
  *   The resulting delta is added to this output!
  * @param pointer_ma_rel_y Output y-coordinate change on the target panel.
  *   The resulting delta is added to this output!
- * @param pointer_scr_pos_x Output x-coordinate on the target screen. 
+ * @param pointer_scr_pos_x Output x-coordinate on the target screen.
  *   Uses the scaled coordinates -0x7fff - 0x7fff.
- * @param pointer_vp_pos_x Output x-coordinate on the target window. 
+ * @param pointer_vp_pos_x Output x-coordinate on the target window.
  *   Uses the scaled coordinates -0x7fff - 0x7fff and -0x8000 when OOB.
  * @return Returns true on success.
  */
 static bool udev_translate_touch_pos(
-        const udev_input_touch_t *src_touch, 
-        video_viewport_t *target_vp, 
-        int32_t pointer_pos_x, int32_t pointer_pos_y, 
-        int32_t *pointer_ma_pos_x, int32_t *pointer_ma_pos_y, 
-        int16_t *pointer_ma_rel_x, int16_t *pointer_ma_rel_y, 
-        int16_t *pointer_scr_pos_x, int16_t *pointer_scr_pos_y, 
+        const udev_input_touch_t *src_touch,
+        video_viewport_t *target_vp,
+        int32_t pointer_pos_x, int32_t pointer_pos_y,
+        int32_t *pointer_ma_pos_x, int32_t *pointer_ma_pos_y,
+        int16_t *pointer_ma_rel_x, int16_t *pointer_ma_rel_y,
+        int16_t *pointer_scr_pos_x, int16_t *pointer_scr_pos_y,
         int16_t *pointer_vp_pos_x, int16_t *pointer_vp_pos_y)
 {
    /* Touch panel -> Main panel */
    /*
     * TODO - This keeps the precision, but might result in +-1 pixel difference
-    *   One way to fix this is to add or remove 0.5, but this needs floating 
-    *   point operations which might not be desireable.
+    *   One way to fix this is to add or remove 0.5, but this needs floating
+    *   point operations which might not be desirable.
     */
-   int32_t ma_pos_x = (((((pointer_pos_x + src_touch->info_x_limits.min) * 0x7fff) / src_touch->info_x_limits.range) * target_vp->full_width) / 0x7fff);
-   int32_t ma_pos_y = (((((pointer_pos_y + src_touch->info_y_limits.min) * 0x7fff) / src_touch->info_y_limits.range) * target_vp->full_height) / 0x7fff);
+   int32_t ma_pos_x   = (((((pointer_pos_x + src_touch->info_x_limits.min) * 0x7fff) / src_touch->info_x_limits.range) * target_vp->full_width) / 0x7fff);
+   int32_t ma_pos_y   = (((((pointer_pos_y + src_touch->info_y_limits.min) * 0x7fff) / src_touch->info_y_limits.range) * target_vp->full_height) / 0x7fff);
 
    /* Calculate relative offsets. */
    *pointer_ma_rel_x += ma_pos_x - *pointer_ma_pos_x;
    *pointer_ma_rel_y += ma_pos_y - *pointer_ma_pos_y;
 
    /* Set the new main panel positions. */
-   *pointer_ma_pos_x = ma_pos_x;
-   *pointer_ma_pos_y = ma_pos_y;
+   *pointer_ma_pos_x  = ma_pos_x;
+   *pointer_ma_pos_y  = ma_pos_y;
 
    /* Main panel -> Screen and Viewport */
    return video_driver_translate_coord_viewport(
-      target_vp, *pointer_ma_pos_x, *pointer_ma_pos_y, 
-      pointer_vp_pos_x, pointer_vp_pos_y, 
-      pointer_scr_pos_x, pointer_scr_pos_y
+      target_vp,
+      *pointer_ma_pos_x,
+      *pointer_ma_pos_y,
+      pointer_vp_pos_x,
+      pointer_vp_pos_y,
+      pointer_scr_pos_x,
+      pointer_scr_pos_y
    );
 }
 
@@ -1938,15 +1919,15 @@ static bool udev_translate_touch_pos(
  * @param data Data passed to the callback.
  */
 static void udev_input_touch_gest_set_cb(
-        udev_touch_timed_cb_t *timed_cb, 
-        const udev_touch_ts_t *now, 
-        uint32_t delay_us, 
+        udev_touch_timed_cb_t *timed_cb,
+        const udev_touch_ts_t *now,
+        uint32_t delay_us,
         void (*cb) (void*, void*), void *data)
 {
    timed_cb->active = true;
    udev_touch_ts_add(now, 0, delay_us, &timed_cb->execute_at);
-   timed_cb->cb = cb;
-   timed_cb->data = data;
+   timed_cb->cb     = cb;
+   timed_cb->data   = data;
 }
 
 /**
@@ -1956,7 +1937,7 @@ static void udev_input_touch_gest_set_cb(
  * @param touch Touch structure to pass to the callback.
  */
 static void udev_input_touch_gest_exec_cb(
-        udev_touch_timed_cb_t *timed_cb, 
+        udev_touch_timed_cb_t *timed_cb,
         udev_input_touch_t *touch)
 {
    timed_cb->active = false;
@@ -1976,23 +1957,26 @@ static void udev_input_touch_gest_disable_cb(
 
 /* Callback used for resetting boolean variable to false. */
 static void udev_input_touch_gest_reset_bool(void *touch, void *tgt)
-{ *((bool*)tgt) = false; }
+{
+   *((bool*)tgt) = false;
+}
+
 /* Callback used for resetting mouse_wheel_x/y variables to 0. */
 static void udev_input_touch_gest_reset_scroll(void *touch, void *none)
-{ 
-   ((udev_input_touch_t*)touch)->gest_scroll_x = 0; 
-   ((udev_input_touch_t*)touch)->gest_scroll_y = 0; 
+{
+   ((udev_input_touch_t*)touch)->gest_scroll_x = 0;
+   ((udev_input_touch_t*)touch)->gest_scroll_y = 0;
 }
 
 /**
- * Runner for special functions. Currently, the following 
- * functions are implemented: 
+ * Runner for special functions. Currently, the following
+ * functions are implemented:
  * * Top Left corner -> Enable/Disable mouse.
  * * Top Right corner -> Enable/Disable touchpad.
  * * Bottom Left corner -> Enable/Disable pointer.
  * * Bottom Right corner -> Enable/Disable trackball.
  */
-static bool udev_input_touch_tgest_special(udev_input_touch_t *touch, 
+static bool udev_input_touch_tgest_special(udev_input_touch_t *touch,
         const udev_touch_ts_t *now, int32_t pos_x, int32_t pos_y)
 {
    /* Did we act for the input position? */
@@ -2008,31 +1992,32 @@ static bool udev_input_touch_tgest_special(udev_input_touch_t *touch,
    /* TODO - Currently unused. */
    UDEV_INPUT_TOUCH_UNUSED(now);
 
+   /* Top Left corner */
    if (ptg_y < ptg_corner_neg && ptg_x < ptg_corner_neg)
-   { /* Top Left corner */
+   {
       touch->mouse_enabled = !touch->mouse_enabled;
-      RARCH_DBG("[udev] TGesture: SF/TT -> Top Left: Mouse %s\n", 
+      RARCH_DBG("[udev] TGesture: SF/TT -> Top Left: Mouse %s\n",
               touch->mouse_enabled ? "enabled" : "disabled");
       serviced = true;
    }
    else if (ptg_y < ptg_corner_neg && ptg_x > ptg_corner_pos)
    { /* Top Right corner */
       touch->touchpad_enabled = !touch->touchpad_enabled;
-      RARCH_DBG("[udev] TGesture: SF/TT -> Top Right: Touchpad %s\n", 
+      RARCH_DBG("[udev] TGesture: SF/TT -> Top Right: Touchpad %s\n",
               touch->touchpad_enabled ? "enabled" : "disabled");
       serviced = true;
    }
    else if (ptg_y > ptg_corner_pos && ptg_x < ptg_corner_neg)
    { /* Bottom Left corner */
       touch->pointer_enabled = !touch->pointer_enabled;
-      RARCH_DBG("[udev] TGesture: SF/TT -> Bottom Left: Pointer %s\n", 
+      RARCH_DBG("[udev] TGesture: SF/TT -> Bottom Left: Pointer %s\n",
               touch->pointer_enabled ? "enabled" : "disabled");
       serviced = true;
    }
    else if (ptg_y > ptg_corner_pos && ptg_x > ptg_corner_pos)
    { /* Bottom Right corner */
       touch->trackball_enabled = !touch->trackball_enabled;
-      RARCH_DBG("[udev] TGesture: SF/TT -> Bottom Right: Trackball %s\n", 
+      RARCH_DBG("[udev] TGesture: SF/TT -> Bottom Right: Trackball %s\n",
               touch->gest_enabled ? "enabled" : "disabled");
       serviced = true;
    }
@@ -2041,7 +2026,7 @@ static bool udev_input_touch_tgest_special(udev_input_touch_t *touch,
 }
 
 /**
- * Callback performing tap gesture selection, usually triggered 
+ * Callback performing tap gesture selection, usually triggered
  * upon reaching gesture timeout.
  *
  * @param touch_ptr Pointer to the touch structure.
@@ -2049,15 +2034,16 @@ static bool udev_input_touch_tgest_special(udev_input_touch_t *touch,
  */
 static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
 {
+   udev_touch_ts_t now;
    /* Based on the gesture, change current touch state */
    udev_input_touch_t *touch = (udev_input_touch_t*) touch_ptr;
 
    /* Get current time for measurements */
-   udev_touch_ts_t now;
    udev_touch_ts_now(&now);
 
+   /* No hold with single finger tap */
    if (touch->staging_active == 0)
-   { /* No hold with single finger tap */
+   {
       switch (touch->gest_tap_count)
       {
          case 1:
@@ -2065,8 +2051,8 @@ static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
             touch->mouse_btn_l = true;
             /* Setup callback to reset the button state. */
             udev_input_touch_gest_set_cb(
-               &touch->gest_tcbs[UDEV_TOUCH_TGEST_S_TAP], 
-               &now, touch->gest_click_time, 
+               &touch->gest_tcbs[UDEV_TOUCH_TGEST_S_TAP],
+               &now, touch->gest_click_time,
                udev_input_touch_gest_reset_bool, &touch->mouse_btn_l);
             RARCH_DDBG("[udev] TGesture: SF/ST -> Left Mouse Button\n");
             break;
@@ -2075,21 +2061,21 @@ static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
             touch->mouse_btn_r = true;
             /* Setup callback to reset the button state. */
             udev_input_touch_gest_set_cb(
-               &touch->gest_tcbs[UDEV_TOUCH_TGEST_D_TAP], 
-               &now, touch->gest_click_time, 
+               &touch->gest_tcbs[UDEV_TOUCH_TGEST_D_TAP],
+               &now, touch->gest_click_time,
                udev_input_touch_gest_reset_bool, &touch->mouse_btn_r);
             RARCH_DDBG("[udev] TGesture: SF/DT -> Right Mouse Button\n");
             break;
          case 3:
             /* Three taps -> Middle mouse button & Specials */
-            if (!udev_input_touch_tgest_special(touch, &now, 
+            if (!udev_input_touch_tgest_special(touch, &now,
                         touch->pointer_pos_x, touch->pointer_pos_y))
             {
                touch->mouse_btn_m = true;
                /* Setup callback to reset the button state. */
                udev_input_touch_gest_set_cb(
-                  &touch->gest_tcbs[UDEV_TOUCH_TGEST_T_TAP], 
-                  &now, touch->gest_click_time, 
+                  &touch->gest_tcbs[UDEV_TOUCH_TGEST_T_TAP],
+                  &now, touch->gest_click_time,
                   udev_input_touch_gest_reset_bool, &touch->mouse_btn_r);
                RARCH_DDBG("[udev] TGesture: SF/TT -> Middle Mouse Button\n");
             }
@@ -2104,8 +2090,8 @@ static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
       touch->mouse_btn_r = true;
       /* Setup callback to reset the button state. */
       udev_input_touch_gest_set_cb(
-         &touch->gest_tcbs[UDEV_TOUCH_TGEST_D_TAP], 
-         &now, touch->gest_click_time, 
+         &touch->gest_tcbs[UDEV_TOUCH_TGEST_D_TAP],
+         &now, touch->gest_click_time,
          udev_input_touch_gest_reset_bool, &touch->mouse_btn_r);
       RARCH_DDBG("[udev] TGesture: DF/ST -> Right Mouse Button\n");
    }
@@ -2114,8 +2100,8 @@ static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
       touch->mouse_btn_m = true;
       /* Setup callback to reset the button state. */
       udev_input_touch_gest_set_cb(
-         &touch->gest_tcbs[UDEV_TOUCH_TGEST_T_TAP], 
-         &now, touch->gest_click_time, 
+         &touch->gest_tcbs[UDEV_TOUCH_TGEST_T_TAP],
+         &now, touch->gest_click_time,
          udev_input_touch_gest_reset_bool, &touch->mouse_btn_m);
       RARCH_DDBG("[udev] TGesture: TF/ST -> Middle Mouse Button\n");
    }
@@ -2129,39 +2115,39 @@ static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
  *
  * @param touch Pointer to the touch structure.
  */
-static void udev_input_touch_mgest_reset(udev_input_touch_t *touch, 
-        udev_input_touch_slot_id current_slot_id, 
+static void udev_input_touch_mgest_reset(udev_input_touch_t *touch,
+        udev_input_touch_slot_id current_slot_id,
         const udev_touch_ts_t *now)
 {
    switch (touch->gest_mgest_type)
    {
-      case UDEV_TOUCH_MGEST_S_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_STAP_DRAG:
          /* Gesture for one finger single tap drag. */
          touch->mouse_btn_l = false;
          break;
-      case UDEV_TOUCH_MGEST_S_DTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_DTAP_DRAG:
          /* Gesture for one finger double tap drag. */
          touch->mouse_btn_r = false;
          break;
-      case UDEV_TOUCH_MGEST_S_TTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_TTAP_DRAG:
          /* Gesture for one finger triple tap drag. */
          touch->mouse_btn_m = false;
          break;
-      case UDEV_TOUCH_MGEST_D_NTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_D_NTAP_DRAG:
          /* Gesture for two finger no tap drag. */
          /* Completely reset the scroll after timeout. */
          udev_input_touch_gest_set_cb(
-            &touch->gest_mcbs[UDEV_TOUCH_MGEST_D_NTAP_DRAG], 
-            now, touch->gest_timeout, 
+            &touch->gest_mcbs[UDEV_TOUCH_MGEST_D_NTAP_DRAG],
+            now, touch->gest_timeout,
             udev_input_touch_gest_reset_scroll, NULL);
          break;
-      case UDEV_TOUCH_MGEST_D_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_D_STAP_DRAG:
          /* Gesture for two finger single tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_T_NTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_T_NTAP_DRAG:
          /* Gesture for three finger no tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_T_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_T_STAP_DRAG:
          /* Gesture for three finger single tap drag. */
          break;
       default:
@@ -2174,26 +2160,28 @@ static void udev_input_touch_mgest_reset(udev_input_touch_t *touch,
 }
 
 /**
- * Perform move-based gesture selection, usually triggered upon 
+ * Perform move-based gesture selection, usually triggered upon
  * movement after tap is impossible.
  *
  * @param touch Pointer to the touch structure.
- * @param current_slot_id ID of the currently serviced slot. Can be 
+ * @param current_slot_id ID of the currently serviced slot. Can be
  *   used to compare against gest_primary/secondary_slot.
  * @param now Current time.
  */
-static void udev_input_touch_mgest_select(udev_input_touch_t *touch, 
-        udev_input_touch_slot_id current_slot_id, 
+static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
+        udev_input_touch_slot_id current_slot_id,
         const udev_touch_ts_t *now)
 {
    /* Perform actions only for the primary slot */
    if (current_slot_id != touch->gest_primary_slot)
-   { return; }
+      return;
 
+   /* Determine type of move-gesture */
    if (touch->gest_mgest_type == UDEV_TOUCH_MGEST_NONE)
-   { /* Determine type of move-gesture */
+   {
+      /* Single finger hold with single tap */
       if (touch->staging_active == 1)
-      { /* Single finger hold with single tap */
+      {
          switch (touch->gest_tap_count)
          {
             case 1:
@@ -2219,8 +2207,9 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
                break;
          }
       }
+      /* Two finger hold with single tap */
       else if (touch->staging_active == 2)
-      { /* Two finger hold with single tap */
+      {
          switch (touch->gest_tap_count)
          {
             case 0:
@@ -2238,8 +2227,9 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
                break;
          }
       }
+      /* Three finger hold with single tap */
       else if (touch->staging_active == 3)
-      { /* Three finger hold with single tap */
+      {
          switch (touch->gest_tap_count)
          {
             case 0:
@@ -2265,36 +2255,36 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
    /* Update the current state of move-gesture */
    switch (touch->gest_mgest_type)
    {
-      case UDEV_TOUCH_MGEST_S_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_STAP_DRAG:
          /* Gesture for one finger single tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_S_DTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_DTAP_DRAG:
          /* Gesture for one finger double tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_S_TTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_TTAP_DRAG:
          /* Gesture for one finger triple tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_D_NTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_D_NTAP_DRAG:
          /* Gesture for two finger no tap drag. */
-         touch->gest_scroll_x += 
+         touch->gest_scroll_x +=
             (
-               touch->pointer_ma_rel_x * 
+               touch->pointer_ma_rel_x *
                touch->gest_scroll_sensitivity
             ) / touch->info_x_limits.range;
-         touch->gest_scroll_y += 
+         touch->gest_scroll_y +=
             (
-               touch->pointer_ma_rel_y * 
+               touch->pointer_ma_rel_y *
                touch->gest_scroll_sensitivity
             ) / touch->info_y_limits.range;
          RARCH_DDBG("[udev] MGesture: DF/NTD -> 3D Wheel: %hd x %hd | %hd\n", touch->gest_scroll_x, touch->gest_scroll_y, touch->gest_scroll_step);
          break;
-      case UDEV_TOUCH_MGEST_D_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_D_STAP_DRAG:
          /* Gesture for two finger single tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_T_NTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_T_NTAP_DRAG:
          /* Gesture for three finger no tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_T_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_T_STAP_DRAG:
          /* Gesture for three finger single tap drag. */
          break;
       default:
@@ -2304,7 +2294,7 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
 }
 
 /**
- * Synchronize touch events to other endpoints and 
+ * Synchronize touch events to other endpoints and
  * reset for the next event packet.
  *
  * @param udev Input udev system.
@@ -2361,50 +2351,48 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 
             /* Touchscreen update */
             if (iii == touch->gest_primary_slot)
-            { /* Use position of the primary touch point */
+            {
+               /* Use position of the primary touch point */
                touch->pointer_pos_x = slot_curr->pos_x;
                touch->pointer_pos_y = slot_curr->pos_y;
                udev_translate_touch_pos(
-                  touch, &vp, 
-                  touch->pointer_pos_x, touch->pointer_pos_y, 
-                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y, 
-                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y, 
-                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y, 
+                  touch, &vp,
+                  touch->pointer_pos_x, touch->pointer_pos_y,
+                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
+                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
+                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y,
                   &touch->pointer_vp_pos_x, &touch->pointer_vp_pos_y
                );
- 
+
                /* Reset deltas after, since first touchdown has no delta. */
                touch->pointer_ma_rel_x = 0;
                touch->pointer_ma_rel_y = 0;
             }
 
             /* Pointer section */
+            /* Simulated pointer */
             if (touch->pointer_enabled)
-            { /* Simulated pointer */
                touch->pointer_btn_pp = true;
-            }
 
             /* Mouse section */
             if (touch->mouse_enabled)
             { /* Simulated mouse */
                if (touch->touchpad_enabled)
-               { /* Touchpad mode -> Touchpad virtual mouse. */
+               {  /* Touchpad mode -> Touchpad virtual mouse. */
                   /* Initialize touchpad position to the current mouse position */
                   touch->touchpad_pos_x = (float) touch->mouse_pos_x;
                   touch->touchpad_pos_y = (float) touch->mouse_pos_y;
                }
                else
-               { /* Direct mode -> Direct virtual mouse. */
+               {  /* Direct mode -> Direct virtual mouse. */
                   /* Initialize mouse position to the current pointer position */
                   touch->mouse_pos_x = touch->pointer_ma_pos_x;
                   touch->mouse_pos_y = touch->pointer_ma_pos_y;
                }
 
+               /* Trackball mode */
                if (touch->trackball_enabled)
-               { /* Trackball mode */
-                  /* The trackball is anchored */
-                  touch->trackball_inertial = false;
-               }
+                  touch->trackball_inertial = false; /* The trackball is anchored */
             }
 
             /* Gesture section */
@@ -2419,53 +2407,60 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 
                /* Freeze the mouse cursor upon getting second contact */
                if (touch->staging_active > 1)
-               { touch->mouse_freeze_cursor = true; }
+                  touch->mouse_freeze_cursor = true;
             }
 
             break;
          case UDEV_TOUCH_CHANGE_UP:
             /* Ending tracking, touch up */
             if (touch->staging_active > 0)
-            { touch->staging_active--; }
+               touch->staging_active--;
             else
-            { RARCH_ERR("[udev] Cannot report touch up since there are no active points!\n"); }
+            {
+               RARCH_ERR("[udev] Cannot report touch up since there are no active points!\n");
+            }
 
-            /* Letting go of the primary gesture point -> Wait for full relese */
+            /* Letting go of the primary gesture point -> Wait for full release */
             if (iii == touch->gest_primary_slot)
-            { touch->gest_primary_slot = UDEV_INPUT_TOUCH_TRACKING_ID_NONE; }
-            /* Letting go of the secondary gesture point -> Wait for full relese */
+               touch->gest_primary_slot = UDEV_INPUT_TOUCH_TRACKING_ID_NONE;
+            /* Letting go of the secondary gesture point -> Wait for full release */
             if (iii == touch->gest_secondary_slot)
-            { touch->gest_secondary_slot = UDEV_INPUT_TOUCH_TRACKING_ID_NONE; }
+               touch->gest_secondary_slot = UDEV_INPUT_TOUCH_TRACKING_ID_NONE;
 
             /* Touchscreen update */
-            if (iii == touch->gest_primary_slot)
-            {
-            }
+#if 0
+            if (iii == touch->gest_primary_slot) { }
+#endif
 
             /* Pointer section */
+            /* Simulated pointer */
+            /* Release the pointer only after all contacts are released */
             if (touch->pointer_enabled)
-            { /* Simulated pointer */
-               /* Release the pointer only after all contacts are released */
                touch->pointer_btn_pp = (touch->staging_active == 0);
-            }
 
             /* Mouse section */
             if (touch->mouse_enabled)
-            { /* Simulated mouse */
+            {
+#if 0
+               /* Simulated mouse */
                if (touch->touchpad_enabled)
-               { /* Touchpad mode -> Touchpad virtual mouse. */
+               {
+                  /* Touchpad mode -> Touchpad virtual mouse. */
                   /* Mouse buttons are governed by gestures. */
                }
                else
-               { /* Direct mode -> Direct virtual mouse. */
+               {
+                  /* Direct mode -> Direct virtual mouse. */
                   /* Mouse buttons are governed by gestures. */
                }
+#endif
 
+               /* Trackball mode */
                if (touch->trackball_enabled)
-               { /* Trackball mode */
+               {
                   /* Update trackball position */
-                  touch->trackball_pos_x = (float) touch->mouse_pos_x;
-                  touch->trackball_pos_y = (float) touch->mouse_pos_y;
+                  touch->trackball_pos_x    = (float) touch->mouse_pos_x;
+                  touch->trackball_pos_y    = (float) touch->mouse_pos_y;
                   /* The trackball is free to move */
                   touch->trackball_inertial = true;
                }
@@ -2480,26 +2475,27 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   ts_diff = udev_touch_ts_diff(&slot_curr->td_time, &now);
                   /* Distance and direction of start -> end touch point */
                   tp_diff = udev_touch_tp_diff(
-                     slot_curr->td_pos_x, slot_curr->td_pos_y, 
-                     slot_curr->pos_x, slot_curr->pos_y, 
+                     slot_curr->td_pos_x, slot_curr->td_pos_y,
+                     slot_curr->pos_x, slot_curr->pos_y,
                      &tp_diff_dir
                   );
                   /* Tap is possible only if neither time nor distance is over limit. */
-                  touch->gest_tap_possible = 
-                      ts_diff < touch->gest_tap_time && 
-                      tp_diff < touch->gest_tap_dist;
+                  touch->gest_tap_possible =
+                         ts_diff < touch->gest_tap_time
+                      && tp_diff < touch->gest_tap_dist;
                }
-   
+
+               /* Tap detected */
                if (touch->gest_tap_possible)
-               { /* Tap detected */
+               {
                   /* Only single tap should be possible. */
                   touch->gest_tap_possible = false;
                   /* Add additional tap. */
                   touch->gest_tap_count++;
                   /* Setup gesture timeout after which gesture is detected. */
                   udev_input_touch_gest_set_cb(
-                     &touch->gest_tcbs[UDEV_TOUCH_TGEST_TIMEOUT], 
-                     &now, touch->gest_timeout, 
+                     &touch->gest_tcbs[UDEV_TOUCH_TGEST_TIMEOUT],
+                     &now, touch->gest_timeout,
                      /* TODO - Use the additional data? */
                      udev_input_touch_tgest_select, NULL);
                }
@@ -2509,7 +2505,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 
                /* Unfreeze the mouse cursor when releasing all contacts */
                if (touch->staging_active == 0)
-               { touch->mouse_freeze_cursor = false; }
+                  touch->mouse_freeze_cursor = false;
             }
 
             break;
@@ -2518,50 +2514,55 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 
             /* Touchscreen update */
             if (iii == touch->gest_primary_slot)
-            { /* Use position of the primary touch point */
-               touch->pointer_pos_x = slot_curr->pos_x;
-               touch->pointer_pos_y = slot_curr->pos_y;
- 
+            {
+               /* Use position of the primary touch point */
+               touch->pointer_pos_x    = slot_curr->pos_x;
+               touch->pointer_pos_y    = slot_curr->pos_y;
+
                /* Reset deltas first, so we can get new change. */
                touch->pointer_ma_rel_x = 0;
                touch->pointer_ma_rel_y = 0;
- 
+
                udev_translate_touch_pos(
-                  touch, &vp, 
-                  touch->pointer_pos_x, touch->pointer_pos_y, 
-                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y, 
-                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y, 
-                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y, 
+                  touch, &vp,
+                  touch->pointer_pos_x, touch->pointer_pos_y,
+                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
+                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
+                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y,
                   &touch->pointer_vp_pos_x, &touch->pointer_vp_pos_y
                );
             }
 
+#if 0
             /* Pointer section */
             if (touch->pointer_enabled)
-            { /* Simulated pointer */
+            {
+               /* Simulated pointer */
             }
+#endif
 
             /* Mouse section */
             if (touch->mouse_enabled && !touch->mouse_freeze_cursor)
-            { /* Simulated mouse */
+            {
+               /* Simulated mouse */
                if (touch->touchpad_enabled)
-               { /* Touchpad mode -> Touchpad virtual mouse. */
-                  
+               {
+                  /* Touchpad mode -> Touchpad virtual mouse. */
                   /* Calculate high resolution positions and clip them. */
-                  touch->touchpad_pos_x += touch->pointer_ma_rel_x * touch->touchpad_sensitivity;
+                  touch->touchpad_pos_x   += touch->pointer_ma_rel_x * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_x < 0.0f)
-                  { touch->touchpad_pos_x = 0.0f; }
+                     touch->touchpad_pos_x = 0.0f;
                   else if (touch->touchpad_pos_x > vp.full_width)
-                  { touch->touchpad_pos_x = vp.full_width; }
+                     touch->touchpad_pos_x = vp.full_width;
                   touch->touchpad_pos_y += touch->pointer_ma_rel_y * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_y < 0.0f)
-                  { touch->touchpad_pos_y = 0.0f; }
+                     touch->touchpad_pos_y = 0.0f;
                   else if (touch->touchpad_pos_y > vp.full_height)
-                  { touch->touchpad_pos_y = vp.full_height; }
+                     touch->touchpad_pos_y = vp.full_height;
 
                   /* Backup last values for delta. */
-                  last_mouse_pos_x = touch->mouse_pos_x;
-                  last_mouse_pos_y = touch->mouse_pos_y;
+                  last_mouse_pos_x   = touch->mouse_pos_x;
+                  last_mouse_pos_y   = touch->mouse_pos_y;
 
                   /* Convert high resolution (sub-pixels) -> low resolution (pixels) */
                   touch->mouse_pos_x = (int32_t) touch->touchpad_pos_x;
@@ -2569,8 +2570,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 
                   /* Translate the panel coordinates into normalized coordinates. */
                   video_driver_translate_coord_viewport(
-                     &vp, touch->mouse_pos_x, touch->mouse_pos_y, 
-                     &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y, 
+                     &vp, touch->mouse_pos_x, touch->mouse_pos_y,
+                     &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
                      &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
                   );
 
@@ -2579,25 +2580,27 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->mouse_rel_y += touch->mouse_pos_y - last_mouse_pos_y;
                }
                else
-               { /* Direct mode -> Direct virtual mouse. */
+               {
+                  /* Direct mode -> Direct virtual mouse. */
                   /* Set mouse cursor position directly from the pointer. */
-                  last_mouse_pos_x = touch->mouse_pos_x;
-                  last_mouse_pos_y = touch->mouse_pos_y;
-                  touch->mouse_rel_x += touch->pointer_ma_pos_x - touch->mouse_pos_x;
-                  touch->mouse_rel_y += touch->pointer_ma_pos_y - touch->mouse_pos_y;
-                  touch->mouse_pos_x = touch->pointer_ma_pos_x;
-                  touch->mouse_pos_y = touch->pointer_ma_pos_y;
+                  last_mouse_pos_x       = touch->mouse_pos_x;
+                  last_mouse_pos_y       = touch->mouse_pos_y;
+                  touch->mouse_rel_x    += touch->pointer_ma_pos_x - touch->mouse_pos_x;
+                  touch->mouse_rel_y    += touch->pointer_ma_pos_y - touch->mouse_pos_y;
+                  touch->mouse_pos_x     = touch->pointer_ma_pos_x;
+                  touch->mouse_pos_y     = touch->pointer_ma_pos_y;
                   touch->mouse_scr_pos_x = touch->pointer_scr_pos_x;
                   touch->mouse_scr_pos_y = touch->pointer_scr_pos_y;
-                  touch->mouse_vp_pos_x = touch->pointer_vp_pos_x;
-                  touch->mouse_vp_pos_y = touch->pointer_vp_pos_y;
+                  touch->mouse_vp_pos_x  = touch->pointer_vp_pos_x;
+                  touch->mouse_vp_pos_y  = touch->pointer_vp_pos_y;
                }
 
+               /* Trackball mode */
                if (touch->trackball_enabled)
-               { /* Trackball mode */
+               {
                   /* Update trackball position */
-                  touch->trackball_pos_x = (float) touch->mouse_pos_x;
-                  touch->trackball_pos_y = (float) touch->mouse_pos_y;
+                  touch->trackball_pos_x = (float)touch->mouse_pos_x;
+                  touch->trackball_pos_y = (float)touch->mouse_pos_y;
                   /* Accumulate trackball velocity */
                   touch->trackball_vel_x = \
                      touch->trackball_frict_x * touch->trackball_vel_x + \
@@ -2619,25 +2622,24 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   ts_diff = udev_touch_ts_diff(&slot_curr->td_time, &now);
                   /* Distance and direction of start -> end touch point */
                   tp_diff = udev_touch_tp_diff(
-                     slot_curr->td_pos_x, slot_curr->td_pos_y, 
-                     slot_curr->pos_x, slot_curr->pos_y, 
+                     slot_curr->td_pos_x, slot_curr->td_pos_y,
+                     slot_curr->pos_x, slot_curr->pos_y,
                      &tp_diff_dir
                   );
                   /* Tap is possible only if neither time nor distance is over limit. */
-                  touch->gest_tap_possible = 
-                      ts_diff < touch->gest_tap_time && 
-                      tp_diff < touch->gest_tap_dist;
+                  touch->gest_tap_possible =
+                         ts_diff < touch->gest_tap_time
+                      && tp_diff < touch->gest_tap_dist;
                }
-               if (!touch->gest_tap_possible)
-               { /* Once tap is impossible, we can detect move-based gestures. */
-                  /* 
-                   * At this moment, tap gestures are no longer possible, 
-                   * since gest_tap_possible == false
-                   */
-                  udev_input_touch_mgest_select(touch, iii, &now);
-               }
-            }
 
+               /* Once tap is impossible, we can detect move-based gestures. */
+               /*
+                * At this moment, tap gestures are no longer possible,
+                * since gest_tap_possible == false
+                */
+               if (!touch->gest_tap_possible)
+                  udev_input_touch_mgest_select(touch, iii, &now);
+            }
             break;
          default:
             RARCH_ERR("[udev] Unknown slot change %d!\n", touch->staging[iii].change);
@@ -2649,10 +2651,10 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
    /* Copy staging to current slots and prepare for next round */
    memcpy(touch->current, touch->staging, sizeof(udev_slot_state_t) * touch->info_slots.range);
    touch->current_active = touch->staging_active;
+
+   /* Reset the change flag to prepare for next round */
    for (iii = 0; iii < touch->info_slots.range; ++iii)
-   { /* Reset the change flag to prepare for next round */
       touch->staging[iii].change = UDEV_TOUCH_CHANGE_NONE;
-   }
 }
 
 /**
@@ -2665,7 +2667,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 static void udev_handle_touch(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
-   udev_input_t *udev = (udev_input_t*)data;
+   udev_input_t *udev        = (udev_input_t*)data;
    udev_input_mouse_t *mouse = &dev->mouse;
    udev_input_touch_t *touch = &dev->touch;
 
@@ -2685,31 +2687,34 @@ static void udev_handle_touch(void *data,
    /* EV_KEY: BTN_TOUCH -> Signal for any touch - 1 down and 0 up */
    /* EV_ABS: ABS_X/Y -> Absolute position of the touch */
    /* SYN_REPORT -> End of packet */
-   
+
    switch (event->type)
    {
-      case EV_ABS: 
+      case EV_ABS:
          switch (event->code)
          {
             case ABS_MT_SLOT:
+               /* Move to a specific slot */
                if (event->value >= 0 && event->value < touch->info_slots.range)
-               { /* Move to a specific slot */
-                  touch->current_slot = event->value; 
-               }
+                  touch->current_slot = event->value;
                else
-               { RARCH_WARN("[udev] handle_touch: Invalid touch slot id [%d]\n", event->value); }
+               {
+                  RARCH_WARN("[udev] handle_touch: Invalid touch slot id [%d]\n", event->value);
+               }
                break;
             case ABS_MT_TRACKING_ID:
                touch->staging[touch->current_slot].tracking_id = event->value;
 
                if (event->value >= 0)
-               { /* Starting a new tracking */
+               {
+                  /* Starting a new tracking */
                   RARCH_DDBG("[udev] handle_touch: Tracking slot [%d]\n", touch->current_slot);
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_DOWN;
                   udev_touch_event_ts_copy(event, &touch->staging[touch->current_slot].td_time);
                }
                else
-               { /* End tracking */
+               {
+                  /* End tracking */
                   RARCH_DDBG("[udev] handle_touch: End tracking slot [%d]\n", touch->current_slot);
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_UP;
                   /* TODO - Just to be sure, event->value should be negative? */
@@ -2720,75 +2725,65 @@ static void udev_handle_touch(void *data,
                /* TODO - Currently using single-touch events as touch with id 0 */
                RARCH_DDBG("[udev] handle_touch: [0] ST_X to %d\n", event->value);
                touch->staging[0].pos_x = event->value;
-               if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE) 
-               { /* Low priority event, mark the change. */
+
+               /* Low priority event, mark the change. */
+               if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[0].change = UDEV_TOUCH_CHANGE_MOVE;
-               }
-               else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN) 
-               { /* Starting tracing, remember touchdown position. */
+               /* Starting tracing, remember touchdown position. */
+               else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN)
                   touch->staging[0].td_pos_x = event->value;
-               }
                break;
             case ABS_MT_POSITION_X:
                RARCH_DDBG("[udev] handle_touch: [%d] MT_X to %d\n", touch->current_slot, event->value);
                touch->staging[touch->current_slot].pos_x = event->value;
-               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE) 
-               { /* Low priority event, mark the change. */
+               /* Low priority event, mark the change. */
+               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
-               }
-               else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN) 
-               { /* Starting tracing, remember touchdown position. */
+               /* Starting tracing, remember touchdown position. */
+               else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN)
                   touch->staging[touch->current_slot].td_pos_x = event->value;
-               }
                break;
             case ABS_Y:
                /* TODO - Currently using single-touch events as touch with id 0 */
                RARCH_DDBG("[udev] handle_touch: [0] ST_Y to %d\n", event->value);
                touch->staging[0].pos_y = event->value;
-               if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE) 
-               { /* Low priority event, mark the change. */
+               /* Low priority event, mark the change. */
+               if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[0].change = UDEV_TOUCH_CHANGE_MOVE;
-               }
-               else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN) 
-               { /* Starting tracing, remember touchdown position. */
+               /* Starting tracing, remember touchdown position. */
+               else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN)
                   touch->staging[0].td_pos_y = event->value;
-               }
                break;
             case ABS_MT_POSITION_Y:
                RARCH_DDBG("[udev] handle_touch: [%d] MT_Y to %d\n", touch->current_slot, event->value);
                touch->staging[touch->current_slot].pos_y = event->value;
-               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE) 
-               { /* Low priority event, mark the change. */
+               /* Low priority event, mark the change. */
+               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
-               }
-               else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN) 
-               { /* Starting tracing, remember touchdown position. */
+               /* Starting tracing, remember touchdown position. */
+               else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN)
                   touch->staging[touch->current_slot].td_pos_y = event->value;
-               }
                break;
             case ABS_MT_TOUCH_MINOR:
                RARCH_DDBG("[udev] handle_touch: [%d] MINOR to %d\n", touch->current_slot, event->value);
                touch->staging[touch->current_slot].minor = event->value;
-               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE) 
-               { /* Low priority event, mark the change. */
+               /* Low priority event, mark the change. */
+               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
-               }
                break;
             case ABS_MT_TOUCH_MAJOR:
                RARCH_DDBG("[udev] handle_touch: [%d] MAJOR to %d\n", touch->current_slot, event->value);
                touch->staging[touch->current_slot].major = event->value;
-               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE) 
-               { /* Low priority event, mark the change. */
+               /* Low priority event, mark the change. */
+               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
-               }
                break;
             case ABS_MT_PRESSURE:
                RARCH_DDBG("[udev] handle_touch: [%d] PRES to %d\n", touch->current_slot, event->value);
                touch->staging[touch->current_slot].pressure = event->value;
-               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE) 
-               { /* Low priority event, mark the change. */
+               /* Low priority event, mark the change. */
+               if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
-               }
                break;
             default:
                RARCH_WARN("[udev] handle_touch: EV_ABS (code %d) is not handled!\n", event->code);
@@ -2800,13 +2795,15 @@ static void udev_handle_touch(void *data,
          {
             RARCH_DDBG("[udev] handle_touch: [%d] TOUCH %d\n", touch->current_slot, event->value);
             if (event->value > 0)
-            { touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_DOWN; }
+               touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_DOWN;
             else
-            { touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_UP; }
+               touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_UP;
             break;
          }
          else
-         { RARCH_WARN("[udev] handle_touch: EV_KEY (code %d) is not handled!\n", event->code); }
+         {
+            RARCH_WARN("[udev] handle_touch: EV_KEY (code %d) is not handled!\n", event->code);
+         }
          break;
       case EV_REL:
          RARCH_WARN("[udev] handle_touch: EV_REL (code %d) is not handled!\n", event->code);
@@ -2843,7 +2840,7 @@ static void udev_handle_touch(void *data,
  * @param now Current time.
  */
 static void udev_input_touch_state_trackball(
-        udev_input_touch_t *touch, 
+        udev_input_touch_t *touch,
         const udev_touch_ts_t *now)
 {
    video_viewport_t vp;
@@ -2853,7 +2850,7 @@ static void udev_input_touch_state_trackball(
 
    /* Let's perform these only once per state polling loop */
    if (!touch->run_state_update)
-   { return; }
+      return;
 
    /* Update trackball mouse position */
    if (touch->trackball_enabled)
@@ -2877,8 +2874,8 @@ static void udev_input_touch_state_trackball(
          video_driver_get_viewport_info(&vp);
          /* Translate the raw coordinates into normalized coordinates. */
          video_driver_translate_coord_viewport(
-            &vp, touch->mouse_pos_x, touch->mouse_pos_y, 
-            &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y, 
+            &vp, touch->mouse_pos_x, touch->mouse_pos_y,
+            &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
             &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
          );
 
@@ -2891,12 +2888,12 @@ static void udev_input_touch_state_trackball(
       touch->trackball_vel_x *= touch->trackball_frict_x;
       touch->trackball_vel_y *= touch->trackball_frict_y;
       /* Automatically cut off the inertia when the velocity is low enough */
-      if ((touch->trackball_vel_x * touch->trackball_vel_x) + 
-          (touch->trackball_vel_y * touch->trackball_vel_y) <= 
-          touch->trackball_sq_vel_cutoff)
+      if (   (touch->trackball_vel_x * touch->trackball_vel_x)
+          +  (touch->trackball_vel_y * touch->trackball_vel_y)
+          <=  touch->trackball_sq_vel_cutoff)
       {
-          touch->trackball_vel_x = 0.0f;
-          touch->trackball_vel_y = 0.0f;
+          touch->trackball_vel_x    = 0.0f;
+          touch->trackball_vel_y    = 0.0f;
           touch->trackball_inertial = false;
       }
    }
@@ -2904,16 +2901,16 @@ static void udev_input_touch_state_trackball(
 
 /**
  * Gesture time-dependant processing.
- * TODO - Current implementation may result in cancelling a button 
- * state before it gets reported at least once. However, this is 
- * a better approach compared to waiting, since _state call may 
+ * TODO - Current implementation may result in cancelling a button
+ * state before it gets reported at least once. However, this is
+ * a better approach compared to waiting, since _state call may
  * never occur.
  *
  * @param touch Target touch state.
  * @param now Current time.
  */
 static void udev_input_touch_state_gest(
-        udev_input_touch_t *touch, 
+        udev_input_touch_t *touch,
         const udev_touch_ts_t *now)
 {
    int iii;
@@ -2923,10 +2920,9 @@ static void udev_input_touch_state_gest(
    { /* Process time-delayed callbacks. */
       if (touch->gest_tcbs[iii].active)
       { /* Callback is active. */
+         /* Execution time passed. */
          if (udev_touch_ts_diff(now, &touch->gest_tcbs[iii].execute_at) <= 0)
-         { /* Execution time passed. */
             udev_input_touch_gest_exec_cb(&touch->gest_tcbs[iii], touch);
-         }
       }
    }
 
@@ -2935,16 +2931,15 @@ static void udev_input_touch_state_gest(
    { /* Process time-delayed callbacks. */
       if (touch->gest_mcbs[iii].active)
       { /* Callback is active. */
+         /* Execution time passed. */
          if (udev_touch_ts_diff(now, &touch->gest_mcbs[iii].execute_at) <= 0)
-         { /* Execution time passed. */
             udev_input_touch_gest_exec_cb(&touch->gest_mcbs[iii], touch);
-         }
       }
    }
 
    /* Let's perform these only once per state polling loop */
    if (!touch->run_state_update)
-   { return; }
+      return;
 
    /* Tap-based gesture processing */
    /* TODO - Currently none */
@@ -2952,51 +2947,52 @@ static void udev_input_touch_state_gest(
    /* Move-based gesture processing */
    switch (touch->gest_mgest_type)
    {
-      case UDEV_TOUCH_MGEST_S_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_STAP_DRAG:
          /* Gesture for one finger single tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_S_DTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_DTAP_DRAG:
          /* Gesture for one finger double tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_S_TTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_S_TTAP_DRAG:
          /* Gesture for one finger triple tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_D_NTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_D_NTAP_DRAG:
          /* Gesture for two finger no tap drag. */
          /* Convert accumulated scrolls to mouse_wheel_x/y */
-         if (touch->gest_scroll_x > touch->gest_scroll_step || 
-             touch->gest_scroll_x < -touch->gest_scroll_step)
+         if (   touch->gest_scroll_x >  touch->gest_scroll_step
+             || touch->gest_scroll_x < -touch->gest_scroll_step)
          { /* Add one scroll step. TODO - Add multiple? */
             /* Add if oriented the same or simply set to one. */
             if (touch->gest_scroll_x * touch->mouse_wheel_x > 0)
-            { touch->mouse_wheel_x += 1 * udev_touch_sign(touch->gest_scroll_x); }
+               touch->mouse_wheel_x += 1 * udev_touch_sign(touch->gest_scroll_x);
             else
-            { touch->mouse_wheel_x = 1 * udev_touch_sign(touch->gest_scroll_x); }
+               touch->mouse_wheel_x  = 1 * udev_touch_sign(touch->gest_scroll_x);
             /* Reset the scroll for the next delta */
-            touch->gest_scroll_x -= touch->gest_scroll_step * 
+            touch->gest_scroll_x -= touch->gest_scroll_step *
                udev_touch_sign(touch->gest_scroll_x);
          }
-         if (touch->gest_scroll_y > touch->gest_scroll_step || 
-             touch->gest_scroll_y < -touch->gest_scroll_step)
-         { /* Add one scroll step. TODO - Add multiple? */
+         if (   touch->gest_scroll_y > touch->gest_scroll_step
+             || touch->gest_scroll_y < -touch->gest_scroll_step)
+         {
+            /* Add one scroll step. TODO - Add multiple? */
             /* TODO - Note the -sign, the vertical scroll seems inverted. */
             /* Add if oriented the same or simply set to one. */
             if (touch->gest_scroll_y * touch->mouse_wheel_x > 0)
-            { touch->mouse_wheel_y += 1 * -udev_touch_sign(touch->gest_scroll_y); }
+               touch->mouse_wheel_y += 1 * -udev_touch_sign(touch->gest_scroll_y);
             else
-            { touch->mouse_wheel_y = 1 * -udev_touch_sign(touch->gest_scroll_y); }
+               touch->mouse_wheel_y = 1 * -udev_touch_sign(touch->gest_scroll_y);
             /* Reset the scroll for the next delta */
-            touch->gest_scroll_y -= touch->gest_scroll_step * 
+            touch->gest_scroll_y -= touch->gest_scroll_step *
                udev_touch_sign(touch->gest_scroll_y);
          }
          break;
-      case UDEV_TOUCH_MGEST_D_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_D_STAP_DRAG:
          /* Gesture for two finger single tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_T_NTAP_DRAG: 
+      case UDEV_TOUCH_MGEST_T_NTAP_DRAG:
          /* Gesture for three finger no tap drag. */
          break;
-      case UDEV_TOUCH_MGEST_T_STAP_DRAG: 
+      case UDEV_TOUCH_MGEST_T_STAP_DRAG:
          /* Gesture for three finger single tap drag. */
          break;
       default:
@@ -3015,12 +3011,12 @@ static void udev_input_touch_state_gest(
  * @param port Port (player) of the device being polled.
  * @param device Type of device RETRO_DEVICE_* being polled.
  * @param idx Index of the device being polled.
- * @param id Identifier of the axis / button being polled - 
+ * @param id Identifier of the axis / button being polled -
  *   e.g. RETRO_DEVICE_ID_*.
  */
 static int16_t udev_input_touch_state(
       udev_input_t *udev,
-      udev_input_device_t *dev, 
+      udev_input_device_t *dev,
       const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port,
@@ -3042,8 +3038,9 @@ static int16_t udev_input_touch_state(
    /* Process trackball. */
    udev_input_touch_state_trackball(touch, &now);
 
+   /* Perform state update only once */
    if (touch->run_state_update)
-   { /* Perform state update only once */
+   {
       touch->run_state_update = false;
       /* Update last update timestamp */
       udev_touch_ts_copy(&now, &touch->last_state_update);
@@ -3060,15 +3057,21 @@ static int16_t udev_input_touch_state(
          {
             case RETRO_DEVICE_ID_MOUSE_X:
                if (screen)
-               { ret = touch->mouse_pos_x; }
+                  ret = touch->mouse_pos_x;
                else
-               { ret = touch->mouse_rel_x; touch->mouse_rel_x = 0; }
+               {
+                  ret = touch->mouse_rel_x;
+                  touch->mouse_rel_x = 0;
+               }
                break;
             case RETRO_DEVICE_ID_MOUSE_Y:
                if (screen)
-               { ret = touch->mouse_pos_y; }
+                  ret = touch->mouse_pos_y;
                else
-               { ret = touch->mouse_rel_y; touch->mouse_rel_y = 0; }
+               {
+                  ret = touch->mouse_rel_y;
+                  touch->mouse_rel_y = 0;
+               }
                break;
             case RETRO_DEVICE_ID_MOUSE_LEFT:
                ret = touch->mouse_btn_l;
@@ -3088,22 +3091,22 @@ static int16_t udev_input_touch_state(
             case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                ret = touch->mouse_wheel_y > 0;
                if (ret)
-               { touch->mouse_wheel_y--; }
+                  touch->mouse_wheel_y--;
                break;
             case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                ret = touch->mouse_wheel_y < 0;
                if (ret)
-               { touch->mouse_wheel_y++; }
+                  touch->mouse_wheel_y++;
                break;
             case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
                ret = touch->mouse_wheel_x > 0;
                if (ret)
-               { touch->mouse_wheel_x--; }
+                  touch->mouse_wheel_x--;
                break;
             case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
                ret = touch->mouse_wheel_x < 0;
                if (ret)
-               { touch->mouse_wheel_x++; }
+                  touch->mouse_wheel_x++;
                break;
             default:
                break;
@@ -3118,15 +3121,15 @@ static int16_t udev_input_touch_state(
          {
             case RETRO_DEVICE_ID_POINTER_X:
                if (screen)
-               { ret = touch->pointer_scr_pos_x; }
+                  ret = touch->pointer_scr_pos_x;
                else
-               { ret = touch->pointer_vp_pos_x; }
+                  ret = touch->pointer_vp_pos_x;
                break;
             case RETRO_DEVICE_ID_POINTER_Y:
                if (screen)
-               { ret = touch->pointer_scr_pos_y; }
+                  ret = touch->pointer_scr_pos_y;
                else
-               { ret = touch->pointer_vp_pos_y; }
+                  ret = touch->pointer_vp_pos_y;
                break;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
                ret = touch->pointer_btn_pp;
@@ -3169,7 +3172,7 @@ static int16_t udev_input_touch_state(
    return ret;
 }
 
-#endif 
+#endif
 /* UDEV_TOUCH_SUPPORT */
 
 #define test_bit(array, bit)    (array[bit/8] & (1<<(bit%8)))
@@ -3234,7 +3237,7 @@ static int udev_input_add_device(udev_input_t *udev,
             mouse = 1;
 
             if (!test_bit(keycaps, BTN_MOUSE))
-               RARCH_DBG("[udev]: Waring REL pointer device (%s) has no mouse button\n",device->ident);
+               RARCH_DBG("[udev]: Warning REL pointer device (%s) has no mouse button\n",device->ident);
          }
       }
 
@@ -3247,14 +3250,12 @@ static int udev_input_add_device(udev_input_t *udev,
             /* check for abs touch devices... */
             if (test_bit(keycaps, BTN_TOUCH))
             {
-               touch = 1;
+               touch             = 1;
                device->mouse.abs = 1;
             }
             /* check for light gun or any other device that might not have a touch button */
             else
-            {
                device->mouse.abs = 2;
-            }
 
             if ( !test_bit(keycaps, BTN_TOUCH) && !test_bit(keycaps, BTN_MOUSE) )
                RARCH_DBG("[udev]: Warning ABS pointer device (%s) has no touch or mouse button\n",device->ident);
@@ -3268,7 +3269,6 @@ static int udev_input_add_device(udev_input_t *udev,
 
       if (device->mouse.abs)
       {
-
          if (ioctl(fd, EVIOCGABS(ABS_X), &absinfo) == -1)
          {
             RARCH_DBG("[udev]: ABS pointer device (%s) Failed to get ABS_X parameters \n",device->ident);
@@ -3292,12 +3292,11 @@ static int udev_input_add_device(udev_input_t *udev,
 #ifdef UDEV_TOUCH_SUPPORT
           udev_init_touch_dev(device);
           udev_sync_touch(device);
-#endif 
+#endif
       }
 
       if (!mouse)
          goto end;
-
    }
 
    tmp = (udev_input_device_t**)realloc(udev->devices,
@@ -3370,10 +3369,10 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_touchscreen       = NULL;
    const char *action                = NULL;
    const char *devnode               = NULL;
-   int mouse = 0;
-   int keyboard = 0;
-   int check = 0;
-   int i = 0;
+   int mouse                         = 0;
+   int keyboard                      = 0;
+   int check                         = 0;
+   int i                             = 0;
    struct udev_device *dev           = udev_monitor_receive_device(
          udev->monitor);
 
@@ -3423,28 +3422,30 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    else if (string_is_equal(action, "remove"))
       udev_input_remove_device(udev, devnode);
 
-   /* we need to re index the mouse and keyboard indirection 
-    * structures when a device is hotplugged 
+   /* we need to re index the mouse and keyboard indirection
+    * structures when a device is hotplugged
     */
    /* first clear all */
    for (i = 0; i < MAX_USERS; i++)
    {
       input_config_set_mouse_display_name(i, "N/A");
-      udev->pointers[i] = -1;
+      udev->pointers[i]  = -1;
       udev->keyboards[i] = -1;
    }
- 
+
    /* Add what devices we have now */
    for (i = 0; i < (int)udev->num_devices; i++)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
-      { /* Pointers */
+      {
+         /* Pointers */
          input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
-         udev->pointers[mouse] = i;
+         udev->pointers[mouse]     = i;
          mouse++;
       }
       else
-      { /* Keyboard */
+      {
+         /* Keyboard */
          udev->keyboards[keyboard] = i;
          keyboard++;
       }
@@ -3479,30 +3480,30 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(
    bool r = video_driver_get_viewport_info(&view);
    int dx = udev_mouse_get_x(mouse);
    int dy = udev_mouse_get_y(mouse);
-   if (r && (dx || dy) &&
-         video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   if (      r
+         && (dx || dy)
+         && video_driver_display_type_get() != RARCH_DISPLAY_X11)
    {
-      int minX = view.x;
-      int maxX = view.x + view.width;
-      int minY = view.y;
-      int maxY = view.y + view.height;
-
+      int minX      = view.x;
+      int maxX      = view.x + view.width;
+      int minY      = view.y;
+      int maxY      = view.y + view.height;
       /* Not running in a window. */
-      noX11DispX = noX11DispX + dx;
+      noX11DispX    = noX11DispX + dx;
       if (noX11DispX < minX)
          noX11DispX = minX;
       if (noX11DispX > maxX)
          noX11DispX = maxX;
-      noX11DispY = noX11DispY + dy;
+      noX11DispY    = noX11DispY + dy;
       if (noX11DispY < minY)
          noX11DispY = minY;
       if (noX11DispY > maxY)
          noX11DispY = maxY;
-      *x = noX11DispX;
-      *y = noX11DispY;
+      *x            = noX11DispX;
+      *y            = noX11DispY;
    }
-   mouse->x_rel = 0;
-   mouse->y_rel = 0;
+   mouse->x_rel     = 0;
+   mouse->y_rel     = 0;
 }
 #endif
 
@@ -3549,7 +3550,7 @@ static void udev_input_poll(void *data)
       mouse->wd    = false;
       mouse->whu   = false;
       mouse->whd   = false;
-   
+
 #ifdef UDEV_TOUCH_SUPPORT
       /* Schedule touch state update. */
       udev->devices[i]->touch.run_state_update = true;
@@ -3600,16 +3601,13 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
 #ifdef HAVE_X11
    struct video_viewport view;
    bool r = video_driver_get_viewport_info(&view);
-
    if (r)
-      r = udev->pointer_x < 0 ||
-          udev->pointer_x >= (int)view.full_width ||
-          udev->pointer_y < 0 ||
-          udev->pointer_y >= (int)view.full_height;
-   return r;
-#else
-   return false;
+      return (udev->pointer_x < 0
+           || udev->pointer_x >= (int)view.full_width
+           || udev->pointer_y < 0
+           || udev->pointer_y >= (int)view.full_height);
 #endif
+   return false;
 }
 
 static int16_t udev_lightgun_aiming_state(
@@ -3652,8 +3650,9 @@ static int16_t udev_mouse_state(udev_input_t *udev,
 
    if (mouse)
    {
-      if (id != RETRO_DEVICE_ID_MOUSE_X && id != RETRO_DEVICE_ID_MOUSE_Y &&
-            udev_pointer_is_off_window(udev))
+      if (     id != RETRO_DEVICE_ID_MOUSE_X
+            && id != RETRO_DEVICE_ID_MOUSE_Y
+            && udev_pointer_is_off_window(udev))
          return 0;
 
       switch (id)
@@ -3689,7 +3688,7 @@ static int16_t udev_mouse_state(udev_input_t *udev,
 static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
 {
    int bit = rarch_keysym_lut[key];
-   return BIT_GET(udev->state, bit);
+   return (key) ? BIT_GET(udev->state, bit) : false;
 }
 
 static bool udev_mouse_button_pressed(
@@ -3697,29 +3696,30 @@ static bool udev_mouse_button_pressed(
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
 
-   if (!mouse)
-      return false;
-/* todo add multi touch button check pointer devices */
-   switch ( key )
+   if (mouse)
    {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return mouse->l;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return mouse->r;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return mouse->m;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return mouse->b4;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return mouse->b5;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return mouse->wu;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return mouse->wd;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         return mouse->whu;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return mouse->whd;
+      /* TODO/FIXME - add multi touch button check pointer devices */
+      switch ( key )
+      {
+         case RETRO_DEVICE_ID_MOUSE_LEFT:
+            return mouse->l;
+         case RETRO_DEVICE_ID_MOUSE_RIGHT:
+            return mouse->r;
+         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+            return mouse->m;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+            return mouse->b4;
+         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+            return mouse->b5;
+         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+            return mouse->wu;
+         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+            return mouse->wd;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+            return mouse->whu;
+         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+            return mouse->whd;
+      }
    }
 
    return false;
@@ -3744,6 +3744,7 @@ static int16_t udev_pointer_state(udev_input_t *udev,
             return mouse->l;
       }
    }
+
    return 0;
 }
 
@@ -3794,7 +3795,7 @@ static int16_t udev_input_state(
       unsigned idx,
       unsigned id)
 {
-   udev_input_t *udev         = (udev_input_t*)data;
+   udev_input_t *udev               = (udev_input_t*)data;
 #ifdef UDEV_TOUCH_SUPPORT
    udev_input_device_t *pointer_dev = udev_get_pointer_port_dev(udev, port);
 #endif
@@ -3815,14 +3816,15 @@ static int16_t udev_input_state(
                      ret |= (1 << i);
                }
             }
+
             if (!keyboard_mapping_blocked)
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
                   if (binds[port][i].valid)
                   {
-                     if ((binds[port][i].key < RETROK_LAST) &&
-                           udev_keyboard_pressed(udev, binds[port][i].key))
+                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                           && udev_keyboard_pressed(udev, binds[port][i].key))
                         ret |= (1 << i);
                   }
                }
@@ -3835,21 +3837,12 @@ static int16_t udev_input_state(
          {
             if (binds[port][id].valid)
             {
-               if (
-                     (binds[port][id].key < RETROK_LAST) &&
-                     udev_keyboard_pressed(udev, binds[port][id].key)
-                     && ((    id != RARCH_GAME_FOCUS_TOGGLE)
-                        && !keyboard_mapping_blocked)
-                     )
+               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+                     && udev_keyboard_pressed(udev, binds[port][id].key)
+                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                  )
                   return 1;
-               else if (
-                     (binds[port][id].key < RETROK_LAST) &&
-                     udev_keyboard_pressed(udev, binds[port][id].key)
-                     && (    id == RARCH_GAME_FOCUS_TOGGLE)
-                     )
-                  return 1;
-               else if (udev_mouse_button_pressed(udev, port,
-                        binds[port][id].mbutton))
+               else if (udev_mouse_button_pressed(udev, port, binds[port][id].mbutton))
                   return 1;
             }
          }
@@ -3872,13 +3865,13 @@ static int16_t udev_input_state(
             id_minus_key          = binds[port][id_minus].key;
             id_plus_key           = binds[port][id_plus].key;
 
-            if (id_plus_valid && id_plus_key < RETROK_LAST)
+            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
                if BIT_GET(udev->state, sym)
                   ret = 0x7fff;
             }
-            if (id_minus_valid && id_minus_key < RETROK_LAST)
+            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
                unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
                if (BIT_GET(udev->state, sym))
@@ -3889,13 +3882,12 @@ static int16_t udev_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
-
+         return (id && id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
          if (pointer_dev && pointer_dev->touch.is_touch_device)
-             return udev_input_touch_state(udev, pointer_dev, binds, 
+             return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
          return udev_mouse_state(udev, port, id,
@@ -3905,7 +3897,7 @@ static int16_t udev_input_state(
       case RARCH_DEVICE_POINTER_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
          if (pointer_dev && pointer_dev->touch.is_touch_device)
-             return udev_input_touch_state(udev, pointer_dev, binds, 
+             return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
          if (idx == 0) /* multi-touch unsupported (for now) */
@@ -3916,7 +3908,7 @@ static int16_t udev_input_state(
       case RETRO_DEVICE_LIGHTGUN:
 #ifdef UDEV_TOUCH_SUPPORT
          if (pointer_dev && pointer_dev->touch.is_touch_device)
-             return udev_input_touch_state(udev, pointer_dev, binds, 
+             return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
          switch ( id )
@@ -3946,17 +3938,13 @@ static int16_t udev_input_state(
                   const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
                   const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
                   const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-                  uint16_t joyport                  = joypad_info->joy_idx;
+                  uint16_t joyport               = joypad_info->joy_idx;
                   float axis_threshold           = joypad_info->axis_threshold;
                   const uint64_t joykey          = (bind_joykey != NO_BTN)
                      ? bind_joykey  : autobind_joykey;
                   const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                      ? bind_joyaxis : autobind_joyaxis;
-                  if (!keyboard_mapping_blocked)
-                     if ((binds[port][new_id].key < RETROK_LAST)
-                           && udev_keyboard_pressed(udev, binds[port]
-                              [new_id].key))
-                        return 1;
+
                   if (binds[port][new_id].valid)
                   {
                      if ((uint16_t)joykey != NO_BTN && joypad->button(
@@ -3966,8 +3954,12 @@ static int16_t udev_input_state(
                            ((float)abs(joypad->axis(joyport, joyaxis))
                             / 0x8000) > axis_threshold)
                         return 1;
-                     if (udev_mouse_button_pressed(udev, port,
-                              binds[port][new_id].mbutton))
+                     else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                           && !keyboard_mapping_blocked
+                           && udev_keyboard_pressed(udev, binds[port][new_id].key)
+                        )
+                        return 1;
+                     else if (udev_mouse_button_pressed(udev, port, binds[port][new_id].mbutton))
                         return 1;
                   }
                }
@@ -4027,14 +4019,11 @@ static void udev_input_free(void *data)
 static bool open_devices(udev_input_t *udev,
       enum udev_input_dev_type type, device_handle_cb cb)
 {
+   struct udev_device *dev;
    const char             *type_str = g_dev_type_str[type];
    struct udev_list_entry     *devs = NULL;
    struct udev_list_entry     *item = NULL;
    struct udev_enumerate *enumerate = udev_enumerate_new(udev->udev);
-   const char *name;
-   struct udev_device *dev;
-   const char *devnode;
-   int fd;
 
    RARCH_DBG("[udev] Adding devices of type %u -> \"%s\"\n", type, type_str);
    if (!enumerate)
@@ -4047,18 +4036,19 @@ static bool open_devices(udev_input_t *udev,
 
    for (item = devs; item; item = udev_list_entry_get_next(item))
    {
-      name = udev_list_entry_get_name(item);
+      const char *devnode;
+      const char *name = udev_list_entry_get_name(item);
 
       RARCH_DBG("[udev] Adding device (t%u) \"%s\"\n", type, name);
 
       /* Get the filename of the /sys entry for the device
        * and create a udev_device object (dev) representing it. */
-      dev = udev_device_new_from_syspath(udev->udev, name);
+      dev     = udev_device_new_from_syspath(udev->udev, name);
       devnode = udev_device_get_devnode(dev);
 
       if (devnode)
       {
-         fd = open(devnode, O_RDONLY | O_NONBLOCK);
+         int fd = open(devnode, O_RDONLY | O_NONBLOCK);
 
          if (fd != -1)
          {
@@ -4138,7 +4128,7 @@ static void *udev_input_init(const char *joypad_driver)
 #ifdef UDEV_TOUCH_SUPPORT
    if (!open_devices(udev, UDEV_INPUT_TOUCHSCREEN, udev_handle_touch))
       goto error;
-#endif 
+#endif
 
    /* If using KMS and we forgot this,
     * we could lock ourselves out completely. */

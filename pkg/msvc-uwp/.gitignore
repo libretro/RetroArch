@@ -1,16 +1,12 @@
 AppPackages/
 */BundleArtifacts/
 .vs/
-/RetroArch-msvcUWP/ARM
 /RetroArch-msvcUWP/ARM64
 /RetroArch-msvcUWP/DebugANGLE
 /RetroArch-msvcUWP/ReleaseANGLE
 /RetroArch-msvcUWP/x64
-/RetroArch-msvcUWP/x86
 /RetroArch-msvcUWP/Generated Files
 /DebugANGLE
 /ReleaseANGLE
 /x64
-/x86
-/ARM
 /ARM64

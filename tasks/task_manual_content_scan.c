@@ -38,6 +38,7 @@
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif
+#include "../runloop.h"
 #endif
 
 enum manual_scan_status
@@ -187,6 +188,7 @@ static void task_manual_content_scan_free(retro_task_t *task)
 
 static void task_manual_content_scan_handler(retro_task_t *task)
 {
+   uint8_t flg;
    manual_scan_handle_t *manual_scan = NULL;
 
    if (!task)
@@ -195,7 +197,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
    if (!(manual_scan = (manual_scan_handle_t*)task->state))
       goto task_finished;
 
-   if (task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (manual_scan->status)
@@ -208,7 +212,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      manual_scan->task_config->file_exts, "|");
 
             /* Get content list */
-            if (!(manual_scan->content_list 
+            if (!(manual_scan->content_list
                      = manual_content_scan_get_content_list(
                         manual_scan->task_config)))
             {
@@ -246,7 +250,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                playlist_clear(manual_scan->playlist);
 
             /* Get initial playlist size */
-            manual_scan->playlist_size = 
+            manual_scan->playlist_size =
                playlist_size(manual_scan->playlist);
 
             /* Set default core, if required */
@@ -273,6 +277,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->task_config->search_archives);
             playlist_set_scan_filter_dat_content(manual_scan->playlist,
                   manual_scan->task_config->filter_dat_content);
+            playlist_set_scan_overwrite_playlist(manual_scan->playlist,
+                  manual_scan->task_config->overwrite_playlist);
 
             /* All good - can start iterating
              * > If playlist has content and 'validate
@@ -501,13 +507,12 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          task_set_progress(task, 100);
          goto task_finished;
    }
-   
-   return;
-   
-task_finished:
 
+   return;
+
+task_finished:
    if (task)
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
@@ -608,10 +613,10 @@ bool task_push_manual_content_scan(
    task->handler                 = task_manual_content_scan_handler;
    task->state                   = manual_scan;
    task->title                   = strdup(task_title);
-   task->alternative_look        = true;
    task->progress                = 0;
    task->callback                = cb_task_manual_content_scan;
    task->cleanup                 = task_manual_content_scan_free;
+   task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* > Push task */
    task_queue_push(task);

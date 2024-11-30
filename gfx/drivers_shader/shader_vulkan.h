@@ -27,6 +27,8 @@
 
 #include "../include/vulkan/vulkan.h"
 
+#define VULKAN_ROLLING_SCANLINE_SIMULATION
+
 RETRO_BEGIN_DECLS
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
@@ -49,7 +51,7 @@ struct vulkan_filter_chain_pass_info
    float scale_x;
    float scale_y;
 
-   /* Ignored for the last pass, swapchain info 
+   /* Ignored for the last pass, swapchain info
     * will be used instead. */
    VkFormat rt_format;
    /* For the last pass, make sure VIEWPORT scale
@@ -100,7 +102,7 @@ void vulkan_filter_chain_set_shader(vulkan_filter_chain_t *chain,
 
 VkFormat vulkan_filter_chain_get_pass_rt_format(
       vulkan_filter_chain_t *chain,
-      unsigned pass);      
+      unsigned pass);
 
 bool vulkan_filter_chain_update_swapchain_info(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_swapchain_info *info);
@@ -120,11 +122,34 @@ void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
       unsigned pass,
       unsigned period);
 
+void vulkan_filter_chain_set_shader_subframes(vulkan_filter_chain_t *chain,
+      uint32_t tot_subframes);
+
+void vulkan_filter_chain_set_current_shader_subframe(vulkan_filter_chain_t *chain,
+      uint32_t cur_subframe);
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+void vulkan_filter_chain_set_simulate_scanline(vulkan_filter_chain_t *chain,
+      bool simulate_scanline);
+#endif // VULKAN_ROLLING_SCANLINE_SIMULATION
+
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);
 
+void vulkan_filter_chain_set_frame_time_delta(vulkan_filter_chain_t *chain,
+      uint32_t time_delta);
+
+void vulkan_filter_chain_set_original_fps(vulkan_filter_chain_t *chain,
+      float fps);
+
 void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *chain,
       uint32_t rot);
+
+void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *chain,
+      float coreaspect);
+
+void vulkan_filter_chain_set_core_aspect_rot(vulkan_filter_chain_t *chain,
+      float coreaspectrot);
 
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);

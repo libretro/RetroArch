@@ -56,7 +56,7 @@ static mpv_render_context *mpv_gl;
 /* Save the current playback time for context changes */
 static int64_t playback_time = 0;
 
-/* filepath required globaly as mpv is reopened on context change */
+/* filepath required globally as mpv is reopened on context change */
 static char *filepath = NULL;
 
 static volatile int frame_queue = 0;

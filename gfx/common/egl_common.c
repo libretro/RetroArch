@@ -542,7 +542,7 @@ bool egl_init_context_common(
 
    if (i == *count)
    {
-      RARCH_ERR("[EGL]: No EGL config found which satifies requirements.\n");
+      RARCH_ERR("[EGL]: No EGL config found which satisfies requirements.\n");
       return false;
    }
 

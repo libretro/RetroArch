@@ -55,7 +55,7 @@ struct dispmanx_surface
    struct dispmanx_page *pages;
    /* the page that's currently on screen */
    struct dispmanx_page *current_page;
-   /*The page to wich we will dump the render. We need to know this
+   /* The page where we will dump the render. We need to know this
     * already when we enter the surface update function. No time to wait
     * for free pages before blitting and showing the just rendered frame! */
    struct dispmanx_page *next_page;
@@ -156,7 +156,7 @@ static struct dispmanx_page *dispmanx_get_free_page(struct dispmanx_video *_disp
       }
    }
 
-   /* We mark the choosen page as used */
+   /* We mark the chosen page as used */
    slock_lock(page->page_used_mutex);
    page->used = true;
    slock_unlock(page->page_used_mutex);
@@ -202,7 +202,7 @@ static void dispmanx_surface_free(struct dispmanx_video *_dispvars,
    struct dispmanx_surface *surface = *sp;
 
    /* What if we run into the vsync cb code after freeing the surface?
-    * We could be trying to get non-existant lock, signal non-existant condition..
+    * We could be trying to get non-existent lock, signal non-existent condition..
     * So we wait for any pending flips to complete before freeing any surface. */
    slock_lock(_dispvars->pending_mutex);
    if (_dispvars->pageflip_pending > 0)
@@ -276,7 +276,7 @@ static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
    dst_height = _dispvars->dispmanx_height;
 
    /* If we obtain a scaled image width that is bigger than the physical screen width,
-    * then we keep the physical screen width as our maximun width. */
+    * then we keep the physical screen width as our maximum width. */
    if (dst_width > _dispvars->dispmanx_width)
       dst_width = _dispvars->dispmanx_width;
 
@@ -376,7 +376,7 @@ static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
          -1,
          &_dispvars->back_surface);
 
-   /* Updating 1-page surface synchronously asks for truble, since the 1st CB will
+   /* Updating 1-page surface synchronously causes problems, since the 1st CB will
     * signal but not free because the only page is on screen, so get_free will wait forever. */
    dispmanx_surface_update_async(image, _dispvars->back_surface);
 }
@@ -438,14 +438,14 @@ static bool dispmanx_frame(void *data, const void *frame, unsigned width,
    struct dispmanx_video *_dispvars = data;
    float                     aspect = video_driver_get_aspect_ratio();
    unsigned    max_swapchain_images = video_info->max_swapchain_images;
-   bool menu_is_alive               = video_info->menu_is_alive;
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 
    if (!frame)
       return true;
 
-   if (  (width != _dispvars->core_width)   ||
-         (height != _dispvars->core_height) ||
-         (_dispvars->aspect_ratio != aspect))
+   if (     (width  != _dispvars->core_width)
+         || (height != _dispvars->core_height)
+         || (_dispvars->aspect_ratio != aspect))
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
