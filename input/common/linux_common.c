@@ -32,6 +32,8 @@
 #include <retro_timers.h>
 #include <rthreads/rthreads.h>
 
+/* We can assume that pthreads are available on Linux. */
+#include <pthread.h>
 #include <string.h>
 
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
@@ -164,15 +166,31 @@ static void linux_poll_illuminance_sensor(void *data)
 
    while (!sensor->done)
    { /* Aligned int reads are atomic on most CPUs */
-        double lux = linux_read_illuminance_sensor(sensor);
-        int millilux = (int)(lux * 1000.0);
+        double lux;
+        int millilux;
         unsigned poll_rate = sensor->poll_rate;
+
+        /* Don't allow cancellation inside the critical section,
+         * as it opens up a file; we don't want to leak it! */
+        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+        lux = linux_read_illuminance_sensor(sensor);
+        millilux = (int)(lux * 1000.0);
         retro_assert(poll_rate != 0);
 
         sensor->millilux = millilux;
+        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 
+        /* Allow cancellation here so that the main thread doesn't block
+         * while waiting for this thread to wake up and exit. */
         retro_sleep(1000 / poll_rate);
+        if (errno == EINTR)
+        {
+           RARCH_ERR("Illuminance sensor thread interrupted\n");
+           break;
+        }
    }
+
+   RARCH_DBG("Illuminance sensor thread for %s exiting\n", sensor->path);
 }
 
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
@@ -267,7 +285,17 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
 
    if (sensor->thread)
    {
+      pthread_t thread = sthread_get_thread_id(sensor->thread);
       sensor->done = true;
+
+      if (pthread_cancel(thread) != 0)
+      {
+         int err = errno;
+         char errmesg[PATH_MAX];
+         strerror_r(err, errmesg, sizeof(errmesg));
+         RARCH_ERR("Failed to cancel illuminance sensor thread: %s\n", errmesg);
+      }
+
       sthread_join(sensor->thread);
       /* sthread_join will free the thread */
    }
