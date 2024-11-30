@@ -177,7 +177,7 @@ static void linux_poll_illuminance_sensor(void *data)
 
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
-   DIR *devices = opendir(IIO_DEVICES_DIR);
+   DIR *devices = NULL;
    struct dirent *d = NULL;
    linux_illuminance_sensor_t *sensor = malloc(sizeof(*sensor));
 
@@ -189,6 +189,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
    sensor->done      = false;
 
+   devices = opendir(IIO_DEVICES_DIR);
    if (!devices)
    { /* If we couldn't find the IIO device directory... */
       char errmesg[PATH_MAX];
@@ -223,7 +224,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
       snprintf(sensor->path, sizeof(sensor->path), IIO_DEVICES_DIR "/%s/" IIO_ILLUMINANCE_SENSOR, d->d_name);
 
       lux = linux_read_illuminance_sensor(sensor);
-      if (lux > 0)
+      if (lux >= 0)
       { /* If we found an illuminance sensor that works... */
          sensor->millilux = (int)(lux * 1000.0); /* Set the first reading */
          sensor->thread = sthread_create(linux_poll_illuminance_sensor, sensor);
