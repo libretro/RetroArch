@@ -25,6 +25,7 @@
 - INPUT: Enable Caps, Num, Scroll Lock modifiers on multiple platforms
 - INPUT: Autoconfig extension with alternative name/vid/pid
 - INPUT/HID: Fix crash on macOS when disconnecting the controller a second time
+- INPUT/LINUX: Add illuminance sensor support to the linuxraw, sdl2, udev, and x11 input drivers
 - INPUT/Remaps: Sort and apply remaps based on the specific connected controller
 - INPUT/UDEV: Enable mouse buttons 4 and 5
 - INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
