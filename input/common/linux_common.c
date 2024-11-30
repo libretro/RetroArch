@@ -212,6 +212,10 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
       int err = errno;
       double lux;
 
+      if (d->d_name[0] == '.')
+         /* Skip hidden files, ".", and ".." */
+         continue;
+
       if (err != 0)
       {
          char errmesg[PATH_MAX];
