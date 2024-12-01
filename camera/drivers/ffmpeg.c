@@ -17,6 +17,7 @@
 #include <libretro.h>
 
 #include "../camera_driver.h"
+#include "lists/string_list.h"
 #include "verbosity.h"
 
 typedef struct ffmpeg_camera
@@ -76,11 +77,31 @@ bool ffmpeg_camera_poll(
    return false;
 }
 
+static struct string_list *ffmpeg_camera_device_list_new(const void *driver_context)
+{
+   struct string_list *list = string_list_new();
+
+   if (!list)
+      return NULL;
+
+   return list;
+}
+
+static void ffmpeg_camera_device_list_free(const void *driver_context, struct string_list *devices)
+{
+   struct string_list *sl = (struct string_list*)devices;
+
+   if (sl)
+      string_list_free(sl);
+}
+
 camera_driver_t camera_ffmpeg = {
    ffmpeg_camera_init,
    ffmpeg_camera_free,
    ffmpeg_camera_start,
    ffmpeg_camera_stop,
    ffmpeg_camera_poll,
+   ffmpeg_camera_device_list_new,
+   ffmpeg_camera_device_list_free,
    "ffmpeg",
 };

@@ -34,6 +34,8 @@ static bool nullcamera_start(void *data) { return true; }
 static bool nullcamera_poll(void *a,
       retro_camera_frame_raw_framebuffer_t b,
       retro_camera_frame_opengl_texture_t c) { return true; }
+static struct string_list *nullcamera_device_list_new(const void *data) { return NULL; }
+static void nullcamera_device_list_free(const void *data, struct string_list *devices) {}
 
 static camera_driver_t camera_null = {
    nullcamera_init,
@@ -41,6 +43,8 @@ static camera_driver_t camera_null = {
    nullcamera_start,
    nullcamera_stop,
    nullcamera_poll,
+   nullcamera_device_list_new,
+   nullcamera_device_list_free,
    "null",
 };
 
