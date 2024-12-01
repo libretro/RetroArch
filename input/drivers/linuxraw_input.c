@@ -197,8 +197,10 @@ static bool linuxraw_input_set_sensor_state(void *data, unsigned port, enum retr
 
          return linuxraw->illuminance_sensor != NULL;
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 
 static float linuxraw_input_get_sensor_input(void *data, unsigned port, unsigned id)
@@ -214,8 +216,10 @@ static float linuxraw_input_get_sensor_input(void *data, unsigned port, unsigned
          if (linuxraw->illuminance_sensor)
             return linux_get_illuminance_reading(linuxraw->illuminance_sensor);
       default:
-         return 0.0f;
+         break;
    }
+
+   return 0.0f;
 }
 
 static void linuxraw_input_poll(void *data)

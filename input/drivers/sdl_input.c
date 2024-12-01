@@ -374,6 +374,7 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
 
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
 #ifdef __linux__
+         /* Unsupported on non-Linux platforms */
          if (sdl->illuminance_sensor)
             /* If we already have a sensor, just set the rate */
             linux_set_illuminance_sensor_rate(sdl->illuminance_sensor, rate);
@@ -382,10 +383,11 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
 
          return sdl->illuminance_sensor != NULL;
 #endif
-      /* Unsupported on non-Linux platforms */
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 
 static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
@@ -404,8 +406,10 @@ static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
 #endif
       /* Unsupported on non-Linux platforms */
       default:
-         return 0.0f;
+         break;
    }
+
+   return 0.0f;
 }
 
 #ifdef HAVE_SDL2

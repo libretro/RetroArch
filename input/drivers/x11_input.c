@@ -475,8 +475,10 @@ static bool x_set_sensor_state(void *data, unsigned port, enum retro_sensor_acti
          return x11->illuminance_sensor != NULL;
 #endif
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 
 static float x_get_sensor_input(void *data, unsigned port, unsigned id)
@@ -494,8 +496,10 @@ static float x_get_sensor_input(void *data, unsigned port, unsigned id)
             return linux_get_illuminance_reading(x11->illuminance_sensor);
 #endif
       default:
-         return 0.0f;
+         break;
    }
+
+   return 0.0f;
 }
 
 static void x_input_poll(void *data)

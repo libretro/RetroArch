@@ -61,7 +61,7 @@ struct linux_illuminance_sensor
    /* If true, the associated thread must finish its work and exit. */
    volatile bool done;
 
-   char path[PATH_MAX];
+   char path[PATH_MAX_LENGTH];
 };
 static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *sensor);
 
@@ -210,7 +210,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    devices = opendir(IIO_DEVICES_DIR);
    if (!devices)
    { /* If we couldn't find the IIO device directory... */
-      char errmesg[PATH_MAX];
+      char errmesg[NAME_MAX_LENGTH];
       strerror_r(errno, errmesg, sizeof(errmesg));
       RARCH_ERR("Failed to open " IIO_DEVICES_DIR ": %s\n", errmesg);
       goto error;
@@ -236,7 +236,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
       if (err != 0)
       {
-         char errmesg[PATH_MAX];
+         char errmesg[NAME_MAX_LENGTH];
          strerror_r(err, errmesg, sizeof(errmesg));
          RARCH_ERR("readdir(" IIO_DEVICES_DIR ") failed: %s\n", errmesg);
          goto error;
@@ -291,7 +291,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
       if (pthread_cancel(thread) != 0)
       {
          int err = errno;
-         char errmesg[PATH_MAX];
+         char errmesg[NAME_MAX_LENGTH];
          strerror_r(err, errmesg, sizeof(errmesg));
          RARCH_ERR("Failed to cancel illuminance sensor thread: %s\n", errmesg);
       }
@@ -340,7 +340,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    in_illuminance_input = fopen(sensor->path, "r");
    if (!in_illuminance_input)
    {
-      char errmesg[PATH_MAX];
+      char errmesg[NAME_MAX_LENGTH];
       strerror_r(errno, errmesg, sizeof(errmesg));
       RARCH_ERR("Failed to open %s: %s\n", sensor->path, errmesg);
       illuminance = -1.0;
@@ -349,7 +349,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
 
    if (!fgets(buffer, sizeof(buffer), in_illuminance_input))
    { /* Read the illuminance value from the file. If that fails... */
-      char errmesg[PATH_MAX];
+      char errmesg[NAME_MAX_LENGTH];
       strerror_r(errno, errmesg, sizeof(errmesg));
       RARCH_ERR("Illuminance sensor read failed: %s\n", errmesg);
       illuminance = -1.0;
@@ -362,7 +362,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    err = errno;
    if (err != 0)
    {
-      char errmesg[PATH_MAX];
+      char errmesg[NAME_MAX_LENGTH];
       strerror_r(err, errmesg, sizeof(errmesg));
       RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s", buffer, errmesg);
       illuminance = -1.0;
