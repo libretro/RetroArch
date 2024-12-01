@@ -443,7 +443,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
       {
          if (!(fp = (FILE*)fopen_utf8(path, mode_str)))
+         {
+#ifdef IOS
+            if (errno == EEXIST)
+            {
+               retro_vfs_file_remove_impl(path);
+               fp = (FILE*)fopen_utf8(path, mode_str);
+            }
+            if (!fp)
+#endif
             goto error;
+         }
 
          stream->fp  = fp;
       }
