@@ -527,7 +527,7 @@ enum
 
 - (void)setupMetalLayer {
     self.metalLayer.device = MTLCreateSystemDefaultDevice();
-    self.metalLayer.contentsScale = [UIScreen mainScreen].scale;
+    self.metalLayer.contentsScale = [UIScreen mainScreen].nativeScale;
     self.metalLayer.opaque = YES;
 }
 
