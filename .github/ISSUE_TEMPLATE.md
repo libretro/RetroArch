@@ -1,4 +1,5 @@
 # First and foremost consider this:
+
 - Only RetroArch bugs should be filed here. Not core bugs or game bugs
 - This is not a forum or a help section, this is strictly developer oriented
 
@@ -14,6 +15,10 @@
 
 [What is actually happening]
 
+[Attach [log file](https://docs.libretro.com/guides/generating-retroarch-logs/)]
+
+[Providing [debugging info](https://docs.libretro.com/development/retroarch/debugging/) would also be helpful]
+
 ### Steps to reproduce the bug
 
 1. [First step]
@@ -25,6 +30,7 @@
 [Try to bisect and tell us when this started happening]
 
 ### Version/Commit
+
 You can find this information under Information/System Information
 
 - RetroArch: [version/commit]
