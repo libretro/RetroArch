@@ -163,6 +163,8 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       return;
    }
 
+   task_queue_check();
+
    runloop_flags = runloop_get_flags();
    if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
       CFRunLoopWakeUp(CFRunLoopGetMain());
