@@ -464,8 +464,9 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
              settings->paths.bundle_assets_dst,
              application_data
        );
-       /* TODO/FIXME: Just hardcode this for now */
-       configuration_set_uint(settings, settings->uints.bundle_assets_extract_version_current, 1);
+       NSString *bundleVersionString = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+       NSInteger bundleVersion = [bundleVersionString integerValue];
+       configuration_set_uint(settings, settings->uints.bundle_assets_extract_version_current, (uint)bundleVersion);
     }
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
