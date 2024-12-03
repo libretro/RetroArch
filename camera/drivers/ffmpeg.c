@@ -24,7 +24,7 @@ typedef struct ffmpeg_camera
 {
 } ffmpeg_camera_t;
 
-void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    ffmpeg_camera_t *ffmpeg = NULL;
 
@@ -44,7 +44,7 @@ void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsi
    return ffmpeg;
 }
 
-void ffmpeg_camera_free(void *data)
+static void ffmpeg_camera_free(void *data)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
@@ -54,20 +54,20 @@ void ffmpeg_camera_free(void *data)
    free(ffmpeg);
 }
 
-bool ffmpeg_camera_start(void *data)
+static bool ffmpeg_camera_start(void *data)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
    return false;
 }
 
-void ffmpeg_camera_stop(void *data)
+static void ffmpeg_camera_stop(void *data)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
 }
 
-bool ffmpeg_camera_poll(
+static bool ffmpeg_camera_poll(
    void *data,
    retro_camera_frame_raw_framebuffer_t frame_raw_cb,
    retro_camera_frame_opengl_texture_t frame_gl_cb)
