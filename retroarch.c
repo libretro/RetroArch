@@ -310,7 +310,7 @@ struct rarch_state
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
    unsigned perf_ptr_rarch;
-   uint16_t flags;
+   uint32_t flags;
 
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
@@ -5555,6 +5555,9 @@ void retroarch_override_setting_set(
       case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
          p_rarch->flags |= RARCH_FLAGS_CLI_DATABASE_SCAN;
          break;
+      case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_OVERLAY_PRESET;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -5636,6 +5639,9 @@ void retroarch_override_setting_unset(
          break;
       case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
          p_rarch->flags &= ~RARCH_FLAGS_CLI_DATABASE_SCAN;
+         break;
+      case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_OVERLAY_PRESET;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -8112,6 +8118,8 @@ bool retroarch_override_setting_is_set(
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_LOG_TO_FILE) > 0);
       case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
          return ((p_rarch->flags & RARCH_FLAGS_CLI_DATABASE_SCAN) > 0);
+      case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_OVERLAY_PRESET) > 0);
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;

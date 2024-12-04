@@ -48,9 +48,11 @@
 #include "../command.h"
 #include "../config.def.keybinds.h"
 #include "../configuration.h"
+#include "../core_info.h"
 #include "../driver.h"
 #include "../frontend/frontend_driver.h"
 #include "../list_special.h"
+#include "../paths.h"
 #include "../performance_counters.h"
 #include "../retroarch.h"
 #ifdef HAVE_BSV_MOVIE
@@ -5235,6 +5237,103 @@ static void input_overlay_loaded(retro_task_t *task,
 #endif
 }
 
+static const char *input_overlay_path(bool want_osk)
+{
+   static char   system_overlay_path[PATH_MAX_LENGTH] = {0};
+   char          overlay_directory[PATH_MAX_LENGTH];
+   settings_t   *settings                             = config_get_ptr();
+   playlist_t   *playlist                             = playlist_get_cached();
+   core_info_t  *core_info                            = NULL;
+   const char   *content_path                         = path_get(RARCH_PATH_CONTENT);
+
+   if (want_osk)
+      return settings->paths.path_osk_overlay;
+   /* if the option is set to turn this off, just return default */
+   if (!settings->bools.input_overlay_enable_autopreferred)
+       return settings->paths.path_overlay;
+   /* if there's an override, use it */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL))
+       return settings->paths.path_overlay;
+
+   /* let's go hunting */
+   fill_pathname_expand_special(overlay_directory,
+         settings->paths.directory_overlay,
+         sizeof(overlay_directory));
+
+#define SYSTEM_OVERLAY_DIR "gamepads/Named_Overlays"
+
+   /* try based on the playlist entry first */
+   if (playlist)
+   {
+#ifdef HAVE_MENU
+      menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+      if (menu)
+      {
+         const char *playlist_db_name = NULL;
+         playlist_get_db_name(playlist, menu->rpl_entry_selection_ptr, &playlist_db_name);
+         if (playlist_db_name)
+         {
+            fill_pathname_join_special_ext(system_overlay_path,
+                  overlay_directory, SYSTEM_OVERLAY_DIR, playlist_db_name, "",
+                  sizeof(system_overlay_path));
+            strlcpy(path_get_extension_mutable(system_overlay_path), ".cfg", 5);
+            if (path_is_valid(system_overlay_path))
+               return system_overlay_path;
+         }
+      }
+#endif
+      if (!string_is_empty(content_path))
+      {
+         const struct playlist_entry *entry;
+         playlist_get_index_by_path(playlist, content_path, &entry);
+         if (entry && entry->db_name)
+         {
+            fill_pathname_join_special_ext(system_overlay_path,
+                  overlay_directory, SYSTEM_OVERLAY_DIR, entry->db_name, "",
+                  sizeof(system_overlay_path));
+            strlcpy(path_get_extension_mutable(system_overlay_path), ".cfg", 5);
+            if (path_is_valid(system_overlay_path))
+               return system_overlay_path;
+         }
+      }
+   }
+
+   /* maybe the core info will have some clues */
+   core_info_get_current_core(&core_info);
+   if (core_info)
+   {
+      if (core_info->databases_list && core_info->databases_list->size == 1)
+      {
+         fill_pathname_join_special_ext(system_overlay_path,
+               overlay_directory, SYSTEM_OVERLAY_DIR, core_info->databases_list->elems[0].data, ".cfg",
+               sizeof(system_overlay_path));
+         if (path_is_valid(system_overlay_path))
+            return system_overlay_path;
+      }
+
+      fill_pathname_join_special_ext(system_overlay_path,
+            overlay_directory, SYSTEM_OVERLAY_DIR, core_info->display_name, ".cfg",
+            sizeof(system_overlay_path));
+      if (path_is_valid(system_overlay_path))
+         return system_overlay_path;
+   }
+
+   /* maybe based on the content's directory name */
+   if (!string_is_empty(content_path))
+   {
+      char dirname[PATH_MAX_LENGTH];
+      fill_pathname_parent_dir_name(dirname, content_path, sizeof(dirname));
+      fill_pathname_join_special_ext(system_overlay_path,
+            overlay_directory, SYSTEM_OVERLAY_DIR, dirname, ".cfg",
+            sizeof(system_overlay_path));
+      if (path_is_valid(system_overlay_path))
+         return system_overlay_path;
+   }
+
+   /* I give up */
+   return settings->paths.path_overlay;
+}
+
 void input_overlay_init(void)
 {
    settings_t *settings           = config_get_ptr();
@@ -5244,9 +5343,7 @@ void input_overlay_init(void)
    bool want_osk                  =
             (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
          && !string_is_empty(settings->paths.path_osk_overlay);
-   const char *path_overlay       = want_osk
-         ? settings->paths.path_osk_overlay
-         : settings->paths.path_overlay;
+   const char *path_overlay       = input_overlay_path(want_osk);
    bool want_hidden               = input_overlay_want_hidden();
    bool overlay_shown             = ol
          && (ol->flags & INPUT_OVERLAY_ENABLE)

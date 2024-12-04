@@ -2438,6 +2438,7 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_PATH_OVERLAY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
          ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH_OSK_OVERLAY:

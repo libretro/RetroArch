@@ -5427,6 +5427,10 @@ MSG_HASH(
    "Autoload Preferred Overlay"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Prefer loading overlays based on system name before falling back to the default preset. Will be ignored if an override is set for the overlay preset."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Overlay Opacity"
    )

@@ -3679,6 +3679,10 @@ static bool config_load_file(global_t *global,
        * variable. */
       char tmp_append_path[PATH_MAX_LENGTH];
       const char *extra_path = NULL;
+#ifdef HAVE_OVERLAY
+      char old_overlay_path[PATH_MAX_LENGTH], new_overlay_path[PATH_MAX_LENGTH];
+      config_get_path(conf, "input_overlay", old_overlay_path, sizeof(old_overlay_path));
+#endif
       strlcpy(tmp_append_path, path_get(RARCH_PATH_CONFIG_OVERRIDE),
             sizeof(tmp_append_path));
       extra_path = strtok_r(tmp_append_path, "|", &save);
@@ -3699,6 +3703,11 @@ static bool config_load_file(global_t *global,
 
       /* Re-check verbosity settings */
       check_verbosity_settings(conf, settings);
+#ifdef HAVE_OVERLAY
+      config_get_path(conf, "input_overlay", new_overlay_path, sizeof(new_overlay_path));
+      if (!string_is_equal(old_overlay_path, new_overlay_path))
+          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
+#endif
    }
 
 #if 0
