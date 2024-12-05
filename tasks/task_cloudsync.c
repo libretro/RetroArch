@@ -799,7 +799,10 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
    else if (!CS_FILE_DELETED(server_file))
       task_cloud_sync_fetch_server_file(sync_state);
    else
+   {
       task_cloud_sync_delete_current_file(sync_state);
+      task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), CS_FILE_HASH(server_file), false);
+   }
 }
 
 static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool success, RFILE *file)
@@ -952,10 +955,10 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
          /* the file has been deleted locally */
          if (!CS_FILE_DELETED(server_file))
          {
-            if (CS_FILE_DELETED(current_file))
+            if (CS_FILE_DELETED(local_file))
                /* previously saw the delete, now it's resurrected */
                task_cloud_sync_fetch_server_file(sync_state);
-            else if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(current_file)))
+            else if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(local_file)))
                /* server didn't change, delete from the server */
                task_cloud_sync_delete_server_file(sync_state);
             else
