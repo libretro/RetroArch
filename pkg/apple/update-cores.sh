@@ -245,6 +245,7 @@ else
                 virtualxt
                 wasm4
                 xrick
+                yabause
             )
             if [ "$PLATFORM" = "osx" ] ; then
                 exports+=(
