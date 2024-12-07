@@ -49,7 +49,7 @@ static char core_name[NAME_MAX_LENGTH]; /* Same size as library_name on retroarc
 static char content_dir[DIR_MAX_LENGTH];
 
 #if defined(HAVE_VIDEOCORE) /* Need to add video core to SR2 */
-#include "include/userland/interface/vmcs_host/vc_vchi_gencmd.h"
+#include <interface/vmcs_host/vc_vchi_gencmd.h>
 static void crt_rpi_switch(videocrt_switch_t *p_switch,int width, int height, float hz, int xoffset, int native_width);
 #endif
 
