@@ -2837,12 +2837,12 @@ static bool playlist_read_file(playlist_t *playlist)
                   {
                      /* Right thumbnail mode */
                      unsigned thumbnail_mode = string_to_unsigned(elem0);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
                         playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
 
                      /* Left thumbnail mode */
                      thumbnail_mode = string_to_unsigned(tok);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
                         playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                   }
                   free(elem0);

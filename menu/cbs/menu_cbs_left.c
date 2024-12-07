@@ -504,7 +504,7 @@ static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thu
    if (thumbnail_mode > PLAYLIST_THUMBNAIL_MODE_DEFAULT)
       thumbnail_mode = (enum playlist_thumbnail_mode)((unsigned)thumbnail_mode - 1);
    else if (wraparound)
-      thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_BOXARTS;
+      thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_LOGOS;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
    playlist_write_file(playlist);
@@ -1218,7 +1218,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_VIDEO_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
-            if (  
+            if (
                   string_ends_with_size(menu_label, "_tab",
                      menu_lbl_len, STRLEN_CONST("_tab"))
                   || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
@@ -1280,7 +1280,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
 
    if (type == MENU_SETTING_NO_ITEM)
    {
-      if (  
+      if (
                string_ends_with_size(menu_label, "_tab",
                   menu_lbl_len, STRLEN_CONST("_tab"))
             || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))

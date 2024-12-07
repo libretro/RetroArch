@@ -67,7 +67,7 @@ static void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src,
 }
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,
- * Named_Titles, Named_Boxarts) for specified thumbnail
+ * Named_Titles, Named_Boxarts, Named_Logos) for specified thumbnail
  * identifier (right, left) */
 static const char *gfx_thumbnail_get_type(
       settings_t *settings,
