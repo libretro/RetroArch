@@ -883,6 +883,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_separation_portrait,   MEN
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_enable,                  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_autoload_preferred,      MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_preset,                  MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_osk_overlay_preset,              MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_pointer_enable,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE)
@@ -3743,6 +3744,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_ip_address);
+            break;
+         case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_autoload_preferred);
             break;
          case MENU_ENUM_LABEL_OVERLAY_PRESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_preset);
