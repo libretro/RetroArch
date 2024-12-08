@@ -14493,7 +14493,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
-   "%s подключен к порту %u"
+   "%s подключен в порт %u"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
