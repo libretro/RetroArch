@@ -5339,6 +5339,10 @@ MSG_HASH(
    "Tercih Edilen Kaplamayı Otomatik Yükle"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Varsayılan ön ayara geri dönmeden önce sistem adına göre katmanları yüklemeyi tercih edin. Yer paylaşımı ön ayarı için özelleştirme ayarlanmışsa göz ardı edilecektir."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Kaplama Şeffaflığı"
    )
