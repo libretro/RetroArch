@@ -5295,6 +5295,10 @@ MSG_HASH(
    "Charger la surimpression préférée"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Préférer le chargement des surimpressions basées sur le nom du système avant de revenir au préréglage par défaut. Cette option sera ignorée si une configuration de substitution est définie pour le préréglage de surimpression."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Opacité de la surimpression "
    )

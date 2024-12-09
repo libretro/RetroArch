@@ -5335,6 +5335,10 @@ MSG_HASH(
    "Cargar automáticamente la superposición preferida"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Da preferencia a la carga de superposiciones según el nombre del sistema en vez de utilizar el preajuste predeterminado como respaldo. Esta opción se ignorará si se ha establecido una personalización para el preajuste de superposiciones."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Opacidad de superposición"
    )
