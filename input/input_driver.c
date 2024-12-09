@@ -5273,10 +5273,13 @@ static const char *input_overlay_path(bool want_osk)
          playlist_get_db_name(playlist, menu->rpl_entry_selection_ptr, &playlist_db_name);
          if (playlist_db_name)
          {
-            fill_pathname_join_special_ext(system_overlay_path,
+            size_t _len = fill_pathname_join_special_ext(system_overlay_path,
                   overlay_directory, SYSTEM_OVERLAY_DIR, playlist_db_name, "",
                   sizeof(system_overlay_path));
-            strlcpy(path_get_extension_mutable(system_overlay_path), ".cfg", 5);
+            char *ext = path_get_extension_mutable(system_overlay_path);
+            if (!ext)
+               ext = system_overlay_path + _len;
+            strlcpy(ext, ".cfg", 5);
             if (path_is_valid(system_overlay_path))
                return system_overlay_path;
          }
@@ -5288,10 +5291,13 @@ static const char *input_overlay_path(bool want_osk)
          playlist_get_index_by_path(playlist, content_path, &entry);
          if (entry && entry->db_name)
          {
-            fill_pathname_join_special_ext(system_overlay_path,
+            size_t _len = fill_pathname_join_special_ext(system_overlay_path,
                   overlay_directory, SYSTEM_OVERLAY_DIR, entry->db_name, "",
                   sizeof(system_overlay_path));
-            strlcpy(path_get_extension_mutable(system_overlay_path), ".cfg", 5);
+            char *ext = path_get_extension_mutable(system_overlay_path);
+            if (!ext)
+               ext = system_overlay_path + _len;
+            strlcpy(ext, ".cfg", 5);
             if (path_is_valid(system_overlay_path))
                return system_overlay_path;
          }
