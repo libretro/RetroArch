@@ -1,7 +1,7 @@
 #!/bin/sh
 
 . ../version.all
-PLATFORM=$1
+PLATFORM=emscripten
 CLEAN=$2
 PTHREADS=$3
 LEGACY=$4
@@ -140,16 +140,12 @@ for f in `ls -v *_${platform}.${EXT}`; do
        fi
     fi
 
-    if [ $pthread != 0 ] ; then
-       7z a ${out_dir}/${out_name} ../${name}_libretro.wasm ../${name}_libretro.js ../${name}_libretro.worker.js
+    if [ $wasm = 0 ]; then
+      7z a ${out_dir}/${out_name} ../${name}_libretro.js.mem ../${name}_*.js
+      rm ../${name}_libretro.js.mem
     else
-       if [ $wasm = 0 ]; then
-         7z a ${out_dir}/${out_name} ../${name}_libretro.js.mem ../${name}_libretro.js
-         rm ../${name}_libretro.js.mem
-       else
-         7z a ${out_dir}/${out_name} ../${name}_libretro.wasm ../${name}_libretro.js
-         rm ../${name}_libretro.wasm
-       fi
+      7z a ${out_dir}/${out_name} ../${name}_libretro.wasm ../${name}_*.js
+      rm ../${name}_libretro.wasm
     fi
     rm ../${name}_libretro.js
     
