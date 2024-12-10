@@ -6443,6 +6443,7 @@ static enum runloop_state_enum runloop_check_state(
             current_bits, RARCH_FAST_FORWARD_KEY);
       bool new_hold_button_state              = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
+#endif
       bool check2                             = new_button_state && !old_button_state;
 
       if (!check2)
