@@ -4452,75 +4452,7 @@ enum retro_sensor_action
    RETRO_SENSOR_DUMMY = INT_MAX
 };
 
-/** @defgroup RETRO_SENSOR_ID Sensor Value IDs
- * @{
- */
-/* Id values for SENSOR types. */
 
-/**
- * Returns the device's acceleration along its local X axis minus the effect of gravity, in m/s^2.
- *
- * Positive values mean that the device is accelerating to the right.
- * assuming the user is looking at it head-on.
- */
-#define RETRO_SENSOR_ACCELEROMETER_X 0
-
-/**
- * Returns the device's acceleration along its local Y axis minus the effect of gravity, in m/s^2.
- *
- * Positive values mean that the device is accelerating upwards,
- * assuming the user is looking at it head-on.
- */
-#define RETRO_SENSOR_ACCELEROMETER_Y 1
-
-/**
- * Returns the the device's acceleration along its local Z axis minus the effect of gravity, in m/s^2.
- *
- * Positive values indicate forward acceleration towards the user,
- * assuming the user is looking at the device head-on.
- */
-#define RETRO_SENSOR_ACCELEROMETER_Z 2
-
-/**
- * Returns the angular velocity of the device around its local X axis, in radians per second.
- *
- * Positive values indicate counter-clockwise rotation.
- *
- * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
- * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
- * for guidance on using this value to derive a device's orientation.
- */
-#define RETRO_SENSOR_GYROSCOPE_X 3
-
-/**
- * Returns the angular velocity of the device around its local Z axis, in radians per second.
- *
- * Positive values indicate counter-clockwise rotation.
- *
- * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
- * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
- * for guidance on using this value to derive a device's orientation.
- */
-#define RETRO_SENSOR_GYROSCOPE_Y 4
-
-/**
- * Returns the angular velocity of the device around its local Z axis, in radians per second.
- *
- * Positive values indicate counter-clockwise rotation.
- *
- * @note A radian is about 57 degrees, and a full 360-degree rotation is 2*pi radians.
- * @see https://developer.android.com/reference/android/hardware/SensorEvent#sensor.type_gyroscope
- * for guidance on using this value to derive a device's orientation.
- */
-#define RETRO_SENSOR_GYROSCOPE_Z 5
-
-/**
- * Returns the ambient illuminance (light intensity) of the device's environment, in lux.
- *
- * @see https://en.wikipedia.org/wiki/Lux for a table of common lux values.
- */
-#define RETRO_SENSOR_ILLUMINANCE 6
-/** @} */
 
 /**
  * Adjusts the state of a sensor.
