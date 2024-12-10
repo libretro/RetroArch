@@ -193,6 +193,8 @@ QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) con
          return getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
       case THUMBNAIL_TYPE_TITLE_SCREEN:
          return getThumbnailPath(index, THUMBNAIL_TITLE);
+      case THUMBNAIL_TYPE_LOGO:
+         return getThumbnailPath(index, THUMBNAIL_LOGO);
       default:
          break;
    }
