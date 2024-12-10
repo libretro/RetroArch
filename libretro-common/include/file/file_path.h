@@ -222,7 +222,7 @@ void path_parent_dir(char *path, size_t len);
  * Note: Symlinks are only resolved on Unix-likes
  * Note: The current working dir might not be what you expect,
  *       e.g. on Android it is "/"
- *       Use of fill_pathname_resolve_relative() should be prefered
+ *       Use of fill_pathname_resolve_relative() should be preferred
  **/
 char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks);
 
@@ -550,6 +550,20 @@ size_t fill_pathname_abbreviate_special(char *out_path,
  **/
 size_t fill_pathname_abbreviated_or_relative(char *out_path,
 		const char *in_refpath, const char *in_path, size_t size);
+
+/**
+ * sanitize_path_part:
+ *
+ * @path_part          : directory or filename
+ * @size               : length of path_part
+ *
+ * Takes single part of a path eg. single filename
+ * or directory, and removes any special chars that are
+ * unavailable.
+ *
+ * @returns new string that has been sanitized
+ **/
+const char *sanitize_path_part(const char *path_part, size_t size);
 
 /**
  * pathname_conform_slashes_to_os:

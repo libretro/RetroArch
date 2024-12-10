@@ -205,6 +205,7 @@ const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
    { "madrid",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2 },
    { "saopaulo",  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3 },
    { "singapore", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4 },
+   { "chuncheon", MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5 },
    { "custom",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM }
 };
 
@@ -3232,10 +3233,10 @@ static int handle_connection(netplay_t *netplay, netplay_address_t *addr,
 
 #define INET_TO_NETPLAY(in_addr, out_addr) \
    { \
-      uint16_t *preffix = (uint16_t*)&(out_addr)->addr[10]; \
+      uint16_t *prefix = (uint16_t*)&(out_addr)->addr[10]; \
       uint32_t *addr4   = (uint32_t*)&(out_addr)->addr[12]; \
       memset(&(out_addr)->addr[0], 0, 10); \
-      *preffix = 0xffff; \
+      *prefix = 0xffff; \
       memcpy(addr4, &((struct sockaddr_in*)(in_addr))->sin_addr, \
          sizeof(*addr4)); \
    }

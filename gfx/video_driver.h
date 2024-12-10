@@ -405,6 +405,8 @@ typedef struct video_frame_info
    unsigned crt_switch_resolution_super;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
    unsigned xmb_theme;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
@@ -456,6 +458,8 @@ typedef struct video_frame_info
    uint32_t video_st_flags;
    uint16_t menu_st_flags;
 
+   uint16_t frame_time_target;
+
    char stat_text[1024];
 
    bool widgets_active;
@@ -485,7 +489,6 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool fastforward_frameskip;
-   bool frame_rest;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
@@ -575,7 +578,7 @@ typedef struct gfx_ctx_driver
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
    /* Returns true if this context supports EGLImage buffers for
-    * screen drawing and was initalized correctly. */
+    * screen drawing and was initialized correctly. */
    bool (*image_buffer_init)(void*, const video_info_t*);
 
    /* Writes the frame to the EGLImage and sets image_handle to it.
@@ -779,7 +782,6 @@ typedef struct
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
    uint64_t frame_time_count;
    uint64_t frame_count;
-   uint64_t frame_rest_time_count;
    uint8_t *record_gpu_buffer;
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *state_filter;
@@ -837,6 +839,8 @@ typedef struct
    unsigned frame_cache_height;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
 
    float core_hz;
    float aspect_ratio;
@@ -865,7 +869,8 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
-   uint8_t frame_rest;
+   uint16_t frame_drop_count;
+   uint16_t frame_time_reserve;
    uint8_t frame_delay_target;
    uint8_t frame_delay_effective;
    bool frame_delay_pause;
@@ -909,6 +914,10 @@ void video_driver_set_stub_frame(void);
 void video_driver_unset_stub_frame(void);
 
 float video_driver_get_core_aspect(void);
+
+uint32_t video_driver_get_frame_time_delta_usec(void);
+
+float video_driver_get_original_fps(void);
 
 void video_driver_set_viewport_core(void);
 
@@ -1044,14 +1053,6 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 void video_monitor_set_refresh_rate(float hz);
 
 /**
- * video_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-void video_monitor_compute_fps_statistics(uint64_t
-      frame_time_count);
-
-/**
  * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.
@@ -1126,15 +1127,10 @@ bool *video_driver_get_threaded(void);
 void video_driver_set_threaded(bool val);
 
 void video_frame_delay(video_driver_state_t *video_st,
-      settings_t *settings,
-      bool core_paused);
+      settings_t *settings);
 
 void video_frame_delay_auto(video_driver_state_t *video_st,
       video_frame_delay_auto_t *vfda);
-
-void video_frame_rest(video_driver_state_t *video_st,
-      settings_t *settings,
-      retro_time_t current_time);
 
 /**
  * video_context_driver_init:

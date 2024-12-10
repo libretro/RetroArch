@@ -81,7 +81,7 @@ typedef struct rwebinput_input
 } rwebinput_input_t;
 
 /* KeyboardEvent.keyCode has been deprecated for a while and doesn't have
- * separate left/right modifer codes, so we have to map string labels from
+ * separate left/right modifier codes, so we have to map string labels from
  * KeyboardEvent.code to retro keys */
 static const rwebinput_key_to_code_map_entry_t rwebinput_key_to_code_map[] =
 {
@@ -489,7 +489,7 @@ static int16_t rwebinput_input_state(
             }
             if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
-               if (rwebinput_is_pressed(rwebinput, 
+               if (rwebinput_is_pressed(rwebinput,
                         binds[port], idx, id_minus,
                         keyboard_mapping_blocked))
                   ret += -0x7fff;
@@ -508,10 +508,10 @@ static int16_t rwebinput_input_state(
          if (idx == 0)
          {
             struct video_viewport vp;
-            rwebinput_mouse_state_t 
+            rwebinput_mouse_state_t
                *mouse                   = &rwebinput->mouse;
             const int edge_detect       = 32700;
-            bool screen                 = device == 
+            bool screen                 = device ==
                RARCH_DEVICE_POINTER_SCREEN;
             bool inside                 = false;
             int16_t res_x               = 0;
@@ -537,7 +537,7 @@ static int16_t rwebinput_input_state(
                res_y = res_screen_y;
             }
 
-            inside =    (res_x >= -edge_detect) 
+            inside =    (res_x >= -edge_detect)
                && (res_y >= -edge_detect)
                && (res_x <= edge_detect)
                && (res_y <= edge_detect);
@@ -586,7 +586,7 @@ static void rwebinput_process_keyboard_events(
    uint32_t character                       = 0;
    uint16_t mod                             = 0;
    const EmscriptenKeyboardEvent *key_event = &event->event;
-   bool keydown                             = 
+   bool keydown                             =
       event->type == EMSCRIPTEN_EVENT_KEYDOWN;
 
    /* a printable key: populate character field */
@@ -620,8 +620,8 @@ static void rwebinput_process_keyboard_events(
    if (translated_keycode != RETROK_UNKNOWN)
       input_keyboard_event(keydown, translated_keycode, character, mod,
          RETRO_DEVICE_KEYBOARD);
-   
-   if (     translated_keycode  < RETROK_LAST 
+
+   if (     translated_keycode  < RETROK_LAST
          && translated_keycode != RETROK_UNKNOWN)
       rwebinput->keys[translated_keycode] = keydown;
 }

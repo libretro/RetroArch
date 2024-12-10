@@ -148,6 +148,24 @@ static int action_get_title_remap_port(
    return 1;
 }
 
+static int action_get_title_icon_thumbnails(
+      const char *path, const char *label, unsigned menu_type,
+      char *s, size_t len)
+{
+   const char *title               = NULL;
+   enum msg_hash_enums label_value = MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS;
+
+   title = msg_hash_to_str(label_value);
+
+   if (s && !string_is_empty(title))
+   {
+      SANITIZE_TO_STRING(s, title, len);
+      return 1;
+   }
+
+   return 0;
+}
+
 static int action_get_title_thumbnails(
       const char *path, const char *label, unsigned menu_type,
       char *s, size_t len)
@@ -395,7 +413,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
       /* Handle collection playlists */
       else
       {
-         char playlist_name[PATH_MAX_LENGTH];
+         char playlist_name[NAME_MAX_LENGTH];
          strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
          path_remove_extension(playlist_name);
 
@@ -516,7 +534,7 @@ static int action_get_title_dropdown_input_description_common(
 {
    size_t _len;
    const char *input_label_ptr = input_name;
-   char input_label[256];
+   char input_label[NAME_MAX_LENGTH];
 
    if (!string_is_empty(input_label_ptr))
    {
@@ -813,7 +831,7 @@ static int action_get_title_generic(char *s, size_t len,
       if ((tok = strtok_r(path_cpy, "|", &save)))
       {
          size_t _len;
-         char elem0_path[256];
+         char elem0_path[NAME_MAX_LENGTH];
          strlcpy(elem0_path, tok, sizeof(elem0_path));
          _len      = strlcpy(s, text, len);
          path_remove_extension(elem0_path);
@@ -927,13 +945,12 @@ static int action_get_title_group_settings(const char *path, const char *label,
    }
 
    {
-      size_t _len;
-      char *tok, *save;
-      char *label_cpy = strdup(label);
+      char *tok, *save = NULL;
+      char *label_cpy  = strdup(label);
 
       if ((tok = strtok_r(label_cpy, "|", &save)))
       {
-         _len = strlcpy(s, tok, len);
+         size_t _len = strlcpy(s, tok, len);
          if ((tok = strtok_r(NULL, "|", &save)))
          {
             s[  _len] = ' ';
@@ -1814,6 +1831,7 @@ int menu_cbs_init_bind_title(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_SORT_MODE,                       action_get_title_dropdown_playlist_sort_mode_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE,            action_get_title_thumbnails},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_LEFT_THUMBNAIL_MODE,             action_get_title_left_thumbnails},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_PLAYLIST_ICON_THUMBNAIL_MODE,             action_get_title_icon_thumbnails},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_SYSTEM_NAME,          action_get_title_dropdown_manual_content_scan_system_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME,            action_get_title_dropdown_manual_content_scan_core_name_item},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX,                               action_get_title_dropdown_disk_index},

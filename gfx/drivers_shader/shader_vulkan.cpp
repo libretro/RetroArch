@@ -253,7 +253,11 @@ class Pass
       void set_simulate_scanline(bool simulate) { simulate_scanline = simulate; }
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
+      void set_frame_time_delta(uint32_t time_delta) { frame_time_delta = time_delta; }
+      void set_original_fps(float fps) { original_fps = fps; }
       void set_rotation(uint32_t rot) { rotation = rot; }
+      void set_core_aspect(float coreaspect) { core_aspect = coreaspect; }
+      void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
       glslang_filter_chain_filter get_source_filter() const {
@@ -328,6 +332,7 @@ class Pass
             unsigned width, unsigned height);
       void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
       void build_semantic_int(uint8_t *data, slang_semantic semantic, int32_t value);
+      void build_semantic_float(uint8_t *data,slang_semantic semantic, float value);
       void build_semantic_parameter(uint8_t *data, unsigned index, float value);
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
@@ -342,7 +347,11 @@ class Pass
 
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
+      uint32_t frame_time_delta   = 0;
+      float original_fps          = 0;
       uint32_t rotation           = 0;
+      float core_aspect           = 0;
+      float core_aspect_rot       = 0;
       unsigned frame_count_period = 0;
       unsigned pass_number        = 0;
       uint32_t total_subframes    = 1;
@@ -410,7 +419,11 @@ struct vulkan_filter_chain
       void set_simulate_scanline(bool simulate_scanline);
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t direction);
+      void set_frame_time_delta(uint32_t time_delta);
+      void set_original_fps(float fps);
       void set_rotation(uint32_t rot);
+      void set_core_aspect(float coreaspect);
+      void set_core_aspect_rot(float coreaspect);
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(std::unique_ptr<StaticTexture> texture);
@@ -1434,11 +1447,40 @@ void vulkan_filter_chain::set_frame_direction(int32_t direction)
       passes[i]->set_frame_direction(direction);
 }
 
+void vulkan_filter_chain::set_frame_time_delta(uint32_t time_delta)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_time_delta(time_delta);
+}
+
+void vulkan_filter_chain::set_original_fps(float fps)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_original_fps(fps);
+}
+
 void vulkan_filter_chain::set_rotation(uint32_t rot)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_rotation(rot);
+}
+
+
+void vulkan_filter_chain::set_core_aspect(float coreaspect)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect(coreaspect);
+}
+
+void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect_rot(coreaspectrot);
 }
 
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
@@ -2279,6 +2321,19 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
       *reinterpret_cast<int32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
 }
 
+void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
+                              float value)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+      *reinterpret_cast<float*>(data + reflection.semantics[semantic].ubo_offset) = value;
+
+   if (refl.push_constant)
+      *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+}
+
+
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -2341,8 +2396,20 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
                       current_subframe);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
+                      frame_time_delta);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
+                      original_fps);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
+                      core_aspect);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      core_aspect_rot);
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -2619,7 +2686,7 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.extent.width        = size.width;
    info.extent.height       = size.height;
    info.extent.depth        = 1;
-   info.mipLevels           = MIN(max_levels, _y);
+   info.mipLevels           = (uint32_t)MIN(max_levels, _y);
    info.arrayLayers         = 1;
    info.samples             = VK_SAMPLE_COUNT_1_BIT;
    info.tiling              = VK_IMAGE_TILING_OPTIMAL;
@@ -3181,11 +3248,39 @@ void vulkan_filter_chain_set_frame_direction(
    chain->set_frame_direction(direction);
 }
 
+void vulkan_filter_chain_set_frame_time_delta(
+      vulkan_filter_chain_t *chain,
+      uint32_t time_delta)
+{
+   chain->set_frame_time_delta(time_delta);
+}
+
+void vulkan_filter_chain_set_original_fps(
+      vulkan_filter_chain_t *chain,
+      float fps)
+{
+   chain->set_original_fps(fps);
+}
+
 void vulkan_filter_chain_set_rotation(
       vulkan_filter_chain_t *chain,
       uint32_t rot)
 {
    chain->set_rotation(rot);
+}
+
+void vulkan_filter_chain_set_core_aspect(
+      vulkan_filter_chain_t *chain,
+      float coreaspect)
+{
+   chain->set_core_aspect(coreaspect);
+}
+
+void vulkan_filter_chain_set_core_aspect_rot(
+      vulkan_filter_chain_t *chain,
+      float coreaspectrot)
+{
+   chain->set_core_aspect_rot(coreaspectrot);
 }
 
 void vulkan_filter_chain_set_pass_name(

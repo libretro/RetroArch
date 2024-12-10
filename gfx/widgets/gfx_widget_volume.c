@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_miscellaneous.h>
+
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
@@ -92,8 +94,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
    if (state->alpha > 0.0f)
    {
-      char msg[255];
-      char percentage_msg[255];
+      char msg[128];
+      char percentage_msg[128];
       video_frame_info_t *video_info       = (video_frame_info_t*)data;
       dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
@@ -126,8 +128,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
        * that extends below the baseline, so we shift
        * the text down by the font descender to achieve
        * better spacing */
-      unsigned volume_text_y               = (bar_y / 2.0f) 
-         + font_regular->line_centre_offset 
+      unsigned volume_text_y               = (bar_y / 2.0f)
+         + font_regular->line_centre_offset
          + font_regular->line_descender;
 
       msg[0]                               = '\0';
@@ -218,7 +220,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
             gfx_widgets_draw_text(font_regular,
                   text,
                   state->widget_width / 2,
-                  state->widget_height / 2.0f 
+                  state->widget_height / 2.0f
                   + font_regular->line_centre_offset,
                   video_width, video_height,
                   text_color, TEXT_ALIGN_CENTER,

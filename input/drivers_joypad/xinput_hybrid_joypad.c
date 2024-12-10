@@ -16,14 +16,14 @@
 
 /* Support 360 controllers on Windows.
  * Said controllers do show under DInput but they have limitations in this mode;
- * The triggers are combined rather than seperate and it is not possible to use
+ * The triggers are combined rather than separate and it is not possible to use
  * the guide button.
  *
  * Some wrappers for other controllers also simulate xinput (as it is easier to implement)
  * so this may be useful for those also.
  **/
 
-/* Specialized version of xinput_joypad.c, 
+/* Specialized version of xinput_joypad.c,
  * has both DirectInput and XInput codepaths */
 
 /* TODO/FIXME - integrate dinput_joypad into this version */
@@ -92,9 +92,9 @@ static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 
 /* Buttons are provided by XInput as bits of a uint16.
- * Map from rarch button index (0..10) to a mask to 
+ * Map from rarch button index (0..10) to a mask to
  * bitwise-& the buttons against.
- * dpad is handled seperately. */
+ * dpad is handled separately. */
 static const uint16_t button_index_to_bitmap_code[] =  {
    XINPUT_GAMEPAD_A,
    XINPUT_GAMEPAD_B,
@@ -170,7 +170,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
 
       rdi.cbSize      = rdi_size;
 
-      /* 
+      /*
        * Step 1 -
        * Check if device type is HID
        * Step 2 -
@@ -182,7 +182,7 @@ static bool guid_is_xinput_device(const GUID* product_guid)
        * Step 5 -
        * Check if the device ID contains "IG_".
        * If it does, then it's an XInput device
-       * This information can not be found from DirectInput 
+       * This information can not be found from DirectInput
        */
       if (
                (raw_devs[i].dwType == RIM_TYPEHID)                    /* 1 */
@@ -242,7 +242,7 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
-   while (!g_xinput_states[g_last_xinput_pad_idx].connected && g_last_xinput_pad_idx < 3) 
+   while (!g_xinput_states[g_last_xinput_pad_idx].connected && g_last_xinput_pad_idx < 3)
    {
       g_last_xinput_pad_idx++;
    }
@@ -258,9 +258,9 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
 #endif
       return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name          = 
+   g_pads[g_joypad_cnt].joy_name          =
       strdup((const char*)inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name = 
+   g_pads[g_joypad_cnt].joy_friendly_name =
       strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID,
@@ -420,7 +420,7 @@ static void *xinput_joypad_init(void *data)
       g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
-      g_xinput_states[i].connected                    = 
+      g_xinput_states[i].connected                    =
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
 
@@ -480,7 +480,7 @@ succeeded:
 error:
    /* non-hat button. */
    g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
-   
+
    return NULL;
 }
 
@@ -543,12 +543,12 @@ static int16_t xinput_joypad_state_func(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && xinput_joypad_button_state(
                xuser, btn_word, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

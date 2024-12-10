@@ -6,6 +6,8 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>ALTDeviceID</key>
 	<string>$(TARGET_DEVICE_IDENTIFIER)</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -79,6 +81,10 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_altserver._tcp</string>
@@ -86,6 +92,8 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RetroArch uses the local network to find local Netplay participants.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Some cores are able to provide microphone input to games.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>ConfigurationIntent</string>

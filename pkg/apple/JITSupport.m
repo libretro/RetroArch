@@ -20,10 +20,6 @@
 #include <pthread.h>
 #include <dirent.h>
 
-#if defined(HAVE_ALTKIT)
-@import AltKit;
-#endif
-
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
@@ -39,13 +35,13 @@ extern int ptrace(int request, pid_t pid, caddr_t addr, int data);
 #define PT_TRACE_ME     0       /* child declares it's being traced */
 #define PT_SIGEXC       12      /* signals as exceptions for current_proc */
 
-static void *exception_handler(void *argument) {
 #if !TARGET_OS_TV
+static void *exception_handler(void *argument) {
     mach_port_t port = *(mach_port_t *)argument;
     mach_msg_server(exc_server, 2048, port, 0);
-#endif
     return NULL;
 }
+#endif
 
 static bool jb_has_debugger_attached(void) {
     int flags;
@@ -96,35 +92,6 @@ bool jb_enable_ptrace_hack(void) {
 #endif
     
     return true;
-}
-
-void jb_start_altkit(void) {
-#if HAVE_ALTKIT
-   // asking AltKit/AltServer to debug us when we're already debugged is bad, very bad
-   if (jit_available())
-      return;
-
-   char fwpath[PATH_MAX_LENGTH] = {0};
-   fill_pathname_expand_special(fwpath, ":/Frameworks/flycast_libretro.framework", sizeof(fwpath));
-   if (!path_is_valid(fwpath))
-      return;
-
-   [[ALTServerManager sharedManager] autoconnectWithCompletionHandler:^(ALTServerConnection *connection, NSError *error) {
-      if (error)
-         return;
-
-      [connection enableUnsignedCodeExecutionWithCompletionHandler:^(BOOL success, NSError *error) {
-         if (success)
-            [[ALTServerManager sharedManager] stopDiscovering];
-         else
-            RARCH_WARN("AltServer failed: %s\n", [error.description UTF8String]);
-
-         [connection disconnect];
-      }];
-   }];
-
-   [[ALTServerManager sharedManager] startDiscovering];
-#endif
 }
 
 bool jit_available(void)

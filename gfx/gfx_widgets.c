@@ -250,9 +250,9 @@ void gfx_widgets_msg_queue_push(
 
             if (!string_is_empty(task->error))
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-            if (task->cancelled)
+            if ((task->flags & RETRO_TASK_FLG_CANCELLED) > 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
-            if (task->finished)
+            if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
             msg_widget->task_progress           = task->progress;
             msg_widget->task_ident              = task->ident;
@@ -379,7 +379,7 @@ void gfx_widgets_msg_queue_push(
             msg_widget->msg_len                    = len;
             msg_widget->msg_transition_animation   = 0;
 
-            if (!task->alternative_look)
+            if (!((task->flags & RETRO_TASK_FLG_ALTERNATIVE_LOOK) > 0))
             {
                gfx_animation_ctx_entry_t entry;
 
@@ -403,9 +403,9 @@ void gfx_widgets_msg_queue_push(
 
          if (!string_is_empty(task->error))
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-         if (task->cancelled)
+         if ((task->flags & RETRO_TASK_FLG_CANCELLED) > 0)
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
-         if (task->finished)
+         if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
          msg_widget->task_progress     = task->progress;
       }

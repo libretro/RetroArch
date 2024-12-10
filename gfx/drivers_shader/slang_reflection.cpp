@@ -50,7 +50,11 @@ static const char *semantic_uniform_names[] = {
    "FinalViewportSize",
    "FrameCount",
    "FrameDirection",
+   "FrameTimeDelta",
+   "OriginalFPS",
    "Rotation",
+   "OriginalAspect",
+   "OriginalAspectRotated",
    "TotalSubFrames",
    "CurrentSubFrame",
 };
@@ -266,8 +270,26 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
          /* uint */
+      case SLANG_SEMANTIC_FRAME_TIME_DELTA:
+         return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+         /* uint */
+      case SLANG_SEMANTIC_ORIGINAL_FPS:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+         /* uint */
       case SLANG_SEMANTIC_ROTATION:
          return type.basetype == spirv_cross::SPIRType::UInt
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_CORE_ASPECT:
+         return type.basetype == spirv_cross::SPIRType::Float
+            &&  type.vecsize  == 1
+            &&  type.columns  == 1;
+      case SLANG_SEMANTIC_CORE_ASPECT_ROT:
+         return type.basetype == spirv_cross::SPIRType::Float
             &&  type.vecsize  == 1
             &&  type.columns  == 1;
          /* float */

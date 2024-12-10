@@ -66,7 +66,7 @@ typedef struct
    unsigned frame;
    unsigned action;
    unsigned param_num;
-   char param_str[255];
+   char param_str[NAME_MAX_LENGTH];
    bool handled;
 } input_test_step_t;
 
@@ -107,7 +107,7 @@ static bool KTifJSONObjectEndHandler(void* context)
       input_test_steps[current_test_step].frame  = input_test_steps[current_test_step-1].frame + 60;
    else
       input_test_steps[current_test_step].frame  = pCtx->frame;
-   
+
    input_test_steps[current_test_step].action    = pCtx->action;
    input_test_steps[current_test_step].param_num = pCtx->param_num;
    input_test_steps[current_test_step].handled   = false;
@@ -118,7 +118,7 @@ static bool KTifJSONObjectEndHandler(void* context)
             sizeof(input_test_steps[current_test_step].param_str));
    else
       input_test_steps[current_test_step].param_str[0] = '\0';
-   
+
    current_test_step++;
    last_test_step = current_test_step;
    pCtx->frame = 0xffff;
@@ -197,7 +197,7 @@ static bool input_test_file_read(const char* file_path)
       RARCH_DBG("[Test input driver]: No test input file supplied.\n");
       return false;
    }
-      
+
    /* Attempt to open test input file */
    file = filestream_open(
          file_path,
@@ -374,7 +374,7 @@ static void* test_input_init(const char *joypad_driver)
    input_test_file_read(settings->paths.test_input_file_general);
    if (last_test_step > MAX_TEST_STEPS)
       last_test_step = 0;
-      
+
    /* No need for keyboard mapping look-up table */
    /* input_keymaps_init_keyboard_lut(rarch_key_map_test);*/
    return (void*)-1;
@@ -407,7 +407,7 @@ static void test_input_poll(void *data)
    video_driver_state_t *video_st = video_state_get_ptr();
    uint64_t curr_frame            = video_st->frame_count;
    unsigned i;
-   
+
    for (i=0; i<last_test_step; i++)
    {
       if (!input_test_steps[i].handled && curr_frame > input_test_steps[i].frame)

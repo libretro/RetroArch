@@ -260,7 +260,7 @@ int main(int argc, const char** argv)
       else if (node->name == "Line")
          *out << node->token << std::endl;
       else
-         std::cout << "Unexcpected node " << node->name << std::endl;
+         std::cout << "Unexpected node " << node->name << std::endl;
    }
 
    {

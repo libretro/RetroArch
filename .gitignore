@@ -250,8 +250,13 @@ param.sfo
 # Visual Studio Code
 .vscode/
 
+<<<<<<< HEAD
 *.wasm.*
 *.tmp*
 *.tmp
 obj-emscripten/*
 obj-emscripten/
+=======
+# Clazy
+*.clazy.yaml
+>>>>>>> upstream/master

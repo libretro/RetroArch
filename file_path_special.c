@@ -210,13 +210,13 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
-            char s1[PATH_MAX_LENGTH];
-            char s8[PATH_MAX_LENGTH];
+            char tmp_path[PATH_MAX_LENGTH];
+            char tmp_dir[DIR_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-            fill_pathname_join_special(s8, dir_assets, "xmb", sizeof(s8));
-            fill_pathname_join_special(s1, s8, xmb_theme_ident(), sizeof(s1));
-            fill_pathname_join_special(s, s1, "png", len);
+            fill_pathname_join_special(tmp_dir, dir_assets, "xmb", sizeof(tmp_dir));
+            fill_pathname_join_special(tmp_path, tmp_dir, xmb_theme_ident(), sizeof(tmp_path));
+            fill_pathname_join_special(s, tmp_path, "png", len);
          }
 #endif
          break;
@@ -230,14 +230,14 @@ void fill_pathname_application_special(char *s,
                strlcpy(s, path_menu_wallpaper, len);
             else
             {
-               char s1[PATH_MAX_LENGTH];
-               char s8[PATH_MAX_LENGTH];
-               char s3[PATH_MAX_LENGTH];
+               char tmp_dir[DIR_MAX_LENGTH];
+               char tmp_dir2[DIR_MAX_LENGTH];
+               char tmp_path[PATH_MAX_LENGTH];
                const char *dir_assets   = settings->paths.directory_assets;
-               fill_pathname_join_special(s8, dir_assets, "xmb", sizeof(s8));
-               fill_pathname_join_special(s1, s8, xmb_theme_ident(), sizeof(s1));
-               fill_pathname_join_special(s3, s1, "png", sizeof(s3));
-               fill_pathname_join_special(s, s3, FILE_PATH_BACKGROUND_IMAGE, len);
+               fill_pathname_join_special(tmp_dir, dir_assets, "xmb", sizeof(tmp_dir));
+               fill_pathname_join_special(tmp_dir2,  tmp_dir, xmb_theme_ident(), sizeof(tmp_dir2));
+               fill_pathname_join_special(tmp_path, tmp_dir2, "png", sizeof(tmp_path));
+               fill_pathname_join_special(s, tmp_path, FILE_PATH_BACKGROUND_IMAGE, len);
             }
          }
 #endif
@@ -254,11 +254,11 @@ void fill_pathname_application_special(char *s,
 #ifdef HAVE_XMB
             if (string_is_equal(menu_ident, "xmb"))
             {
-               char s8[PATH_MAX_LENGTH];
-               char s4[PATH_MAX_LENGTH];
-               fill_pathname_join_special(s8, dir_assets, menu_ident, sizeof(s8));
-               fill_pathname_join_special(s4, s8, xmb_theme_ident(), sizeof(s4));
-               fill_pathname_join_special(s, s4, "sounds", len);
+               char tmp_dir[DIR_MAX_LENGTH];
+               char tmp_path[PATH_MAX_LENGTH];
+               fill_pathname_join_special(tmp_dir, dir_assets, menu_ident, sizeof(tmp_dir));
+               fill_pathname_join_special(tmp_path, tmp_dir, xmb_theme_ident(), sizeof(tmp_path));
+               fill_pathname_join_special(s, tmp_path, "sounds", len);
             }
             else
 #endif
@@ -266,9 +266,9 @@ void fill_pathname_application_special(char *s,
             if (     string_is_equal(menu_ident, "glui")
                   || string_is_equal(menu_ident, "ozone"))
             {
-               char s4[PATH_MAX_LENGTH];
-               fill_pathname_join_special(s4, dir_assets, menu_ident, sizeof(s4));
-               fill_pathname_join_special(s, s4, "sounds", len);
+               char tmp_dir[DIR_MAX_LENGTH];
+               fill_pathname_join_special(tmp_dir, dir_assets, menu_ident, sizeof(tmp_dir));
+               fill_pathname_join_special(s, tmp_dir, "sounds", len);
             }
             else
 #endif
@@ -291,12 +291,12 @@ void fill_pathname_application_special(char *s,
 #ifdef HAVE_XMB
             if (string_is_equal(menu_ident, "xmb"))
             {
-               char s1[PATH_MAX_LENGTH];
-               char s8[PATH_MAX_LENGTH];
+               char tmp_dir[DIR_MAX_LENGTH];
+               char tmp_path[PATH_MAX_LENGTH];
                const char *dir_assets   = settings->paths.directory_assets;
-               fill_pathname_join_special(s8, dir_assets, menu_ident, sizeof(s8));
-               fill_pathname_join_special(s1, s8, xmb_theme_ident(), sizeof(s1));
-               fill_pathname_join_special(s, s1, "png", len);
+               fill_pathname_join_special(tmp_dir, dir_assets, menu_ident, sizeof(tmp_dir));
+               fill_pathname_join_special(tmp_path, tmp_dir, xmb_theme_ident(), sizeof(tmp_path));
+               fill_pathname_join_special(s, tmp_path, "png", len);
             }
             else
 #endif
@@ -304,20 +304,20 @@ void fill_pathname_application_special(char *s,
 		    if (    string_is_equal(menu_ident, "ozone")
                || string_is_equal(menu_ident, "glui"))
             {
-               char s5[PATH_MAX_LENGTH];
-               char s6[PATH_MAX_LENGTH];
+               char tmp_dir[DIR_MAX_LENGTH];
+               char tmp_path[PATH_MAX_LENGTH];
                const char *dir_assets   = settings->paths.directory_assets;
 
 #if defined(WIIU) || defined(VITA)
                /* Smaller 46x46 icons look better on low-DPI devices */
-               fill_pathname_join_special(s5, dir_assets, "ozone", sizeof(s5));
-               fill_pathname_join_special(s6, "png", "icons", sizeof(s6));
+               fill_pathname_join_special(tmp_dir, dir_assets, "ozone", sizeof(tmp_dir));
+               fill_pathname_join_special(tmp_path, "png", "icons", sizeof(tmp_path));
 #else
                /* Otherwise, use large 256x256 icons */
-               fill_pathname_join_special(s5, dir_assets, "xmb", sizeof(s5));
-               fill_pathname_join_special(s6, "monochrome", "png", sizeof(s6));
+               fill_pathname_join_special(tmp_dir, dir_assets, "xmb", sizeof(tmp_dir));
+               fill_pathname_join_special(tmp_path, "monochrome", "png", sizeof(tmp_path));
 #endif
-               fill_pathname_join_special(s, s5, s6, len);
+               fill_pathname_join_special(s, tmp_dir, tmp_path, len);
             }
             else
 #endif
@@ -329,20 +329,20 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_OZONE_ICONS:
 #ifdef HAVE_OZONE
          {
-            char s5[PATH_MAX_LENGTH];
-            char s6[PATH_MAX_LENGTH];
+            char tmp_dir[DIR_MAX_LENGTH];
+            char tmp_path[PATH_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
 #if defined(WIIU) || defined(VITA)
             /* Smaller 46x46 icons look better on low-DPI devices */
-            fill_pathname_join_special(s5, dir_assets, "ozone", sizeof(s5));
-            fill_pathname_join_special(s6, "png", "icons", sizeof(s6));
+            fill_pathname_join_special(tmp_dir, dir_assets, "ozone", sizeof(tmp_dir));
+            fill_pathname_join_special(tmp_path, "png", "icons", sizeof(tmp_path));
 #else
             /* Otherwise, use large 256x256 icons */
-            fill_pathname_join_special(s5, dir_assets, "xmb", sizeof(s5));
-            fill_pathname_join_special(s6, "monochrome", "png", sizeof(s6));
+            fill_pathname_join_special(tmp_dir, dir_assets, "xmb", sizeof(tmp_dir));
+            fill_pathname_join_special(tmp_path, "monochrome", "png", sizeof(tmp_path));
 #endif
-            fill_pathname_join_special(s, s5, s6, len);
+            fill_pathname_join_special(s, tmp_dir, tmp_path, len);
          }
 #endif
          break;
@@ -350,11 +350,11 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_RGUI_FONT:
 #ifdef HAVE_RGUI
          {
-            char s7[PATH_MAX_LENGTH];
+            char tmp_dir[DIR_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-            fill_pathname_join_special(s7, dir_assets, "rgui", sizeof(s7));
-            fill_pathname_join_special(s, s7, "font", len);
+            fill_pathname_join_special(tmp_dir, dir_assets, "rgui", sizeof(tmp_dir));
+            fill_pathname_join_special(s, tmp_dir, "font", len);
          }
 #endif
          break;
@@ -362,11 +362,11 @@ void fill_pathname_application_special(char *s,
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {
-            char s8[PATH_MAX_LENGTH];
+            char tmp_dir[DIR_MAX_LENGTH];
             settings_t *settings     = config_get_ptr();
             const char *dir_assets   = settings->paths.directory_assets;
-            fill_pathname_join_special(s8, dir_assets, "xmb", sizeof(s8));
-            fill_pathname_join_special(s, s8, xmb_theme_ident(), len);
+            fill_pathname_join_special(tmp_dir, dir_assets, "xmb", sizeof(tmp_dir));
+            fill_pathname_join_special(s, tmp_dir, xmb_theme_ident(), len);
          }
 #endif
          break;
@@ -380,35 +380,35 @@ void fill_pathname_application_special(char *s,
                strlcpy(s, path_menu_xmb_font, len);
             else
             {
-               char s9[PATH_MAX_LENGTH];
+               char tmp_dir[DIR_MAX_LENGTH];
 
                switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
                {
                   case RETRO_LANGUAGE_ARABIC:
                   case RETRO_LANGUAGE_PERSIAN:
-                     fill_pathname_join_special(s9,
-                           settings->paths.directory_assets, "pkg", sizeof(s9));
-                     fill_pathname_join_special(s, s9, "fallback-font.ttf", len);
+                     fill_pathname_join_special(tmp_dir,
+                           settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+                     fill_pathname_join_special(s, tmp_dir, "fallback-font.ttf", len);
                      break;
                   case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
                   case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-                     fill_pathname_join_special(s9,
-                           settings->paths.directory_assets, "pkg", sizeof(s9));
-                     fill_pathname_join_special(s, s9, "chinese-fallback-font.ttf", len);
+                     fill_pathname_join_special(tmp_dir,
+                           settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+                     fill_pathname_join_special(s, tmp_dir, "chinese-fallback-font.ttf", len);
                      break;
                   case RETRO_LANGUAGE_KOREAN:
-                     fill_pathname_join_special(s9,
-                           settings->paths.directory_assets, "pkg", sizeof(s9));
-                     fill_pathname_join_special(s, s9, "korean-fallback-font.ttf", len);
+                     fill_pathname_join_special(tmp_dir,
+                           settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+                     fill_pathname_join_special(s, tmp_dir, "korean-fallback-font.ttf", len);
                      break;
                   default:
                      {
-                        char s8[PATH_MAX_LENGTH];
+                        char tmp_dir2[DIR_MAX_LENGTH];
                         settings_t *settings     = config_get_ptr();
                         const char *dir_assets   = settings->paths.directory_assets;
-                        fill_pathname_join_special(s8, dir_assets, "xmb", sizeof(s8));
-                        fill_pathname_join_special(s9, s8, xmb_theme_ident(), sizeof(s9));
-                        fill_pathname_join_special(s, s9, FILE_PATH_TTF_FONT, len);
+                        fill_pathname_join_special(tmp_dir2, dir_assets, "xmb", sizeof(tmp_dir2));
+                        fill_pathname_join_special(tmp_dir, tmp_dir2, xmb_theme_ident(), sizeof(tmp_dir));
+                        fill_pathname_join_special(s, tmp_dir, FILE_PATH_TTF_FONT, len);
                      }
                      break;
                }
@@ -418,21 +418,21 @@ void fill_pathname_application_special(char *s,
          break;
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS:
       {
-        char s10[PATH_MAX_LENGTH];
+        char tmp_dir[DIR_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
-        fill_pathname_join_special(s10, dir_thumbnails, "discord", sizeof(s10));
-        fill_pathname_join_special(s, s10, "avatars", len);
+        fill_pathname_join_special(tmp_dir, dir_thumbnails, "discord", sizeof(tmp_dir));
+        fill_pathname_join_special(s, tmp_dir, "avatars", len);
       }
       break;
 
       case APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES:
       {
-        char s12[PATH_MAX_LENGTH];
+        char tmp_dir[DIR_MAX_LENGTH];
         settings_t *settings       = config_get_ptr();
         const char *dir_thumbnails = settings->paths.directory_thumbnails;
-        fill_pathname_join_special(s12, dir_thumbnails, "cheevos", len);
-        fill_pathname_join_special(s, s12, "badges", len);
+        fill_pathname_join_special(tmp_dir, dir_thumbnails, "cheevos", sizeof(tmp_dir));
+        fill_pathname_join_special(s, tmp_dir, "badges", len);
       }
       break;
 

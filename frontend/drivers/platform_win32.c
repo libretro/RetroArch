@@ -750,24 +750,19 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
 {
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
-   char executable_args[PATH_MAX_LENGTH];
    char executable_path[PATH_MAX_LENGTH] = {0};
 
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
 
-   fill_pathname_application_path(executable_path,
-         sizeof(executable_path));
+   GetModuleFileName(NULL, executable_path, PATH_MAX_LENGTH);
    path_set(RARCH_PATH_CORE, executable_path);
-
-   /* Remove executable path from arguments given to CreateProcess */
-   strlcpy(executable_args, strstr(args, ".exe") + 4, sizeof(executable_args));
 
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&pi, 0, sizeof(pi));
 
-   if (!CreateProcess(executable_path, executable_args,
+   if (!CreateProcess(executable_path, GetCommandLine(),
          NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
       RARCH_ERR("Failed to restart RetroArch\n");
 }

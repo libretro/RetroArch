@@ -95,6 +95,7 @@ RetroArch has been ported to the following platforms:
    - PlayStation Vita
    - Raspberry Pi
    - ReactOS
+   - Redox OS
    - RetroFW
    - RS90
    - SerenityOS
@@ -123,7 +124,7 @@ following dependencies come as recommended:
    - GL headers / Vulkan headers
    - X11 headers and libs, or EGL/KMS/GBM
 
-OSX port of RetroArch requires latest versions of XCode to build.
+OSX port of RetroArch requires latest versions of Xcode to build.
 
 RetroArch can utilize these libraries if enabled:
 

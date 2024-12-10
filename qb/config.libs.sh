@@ -12,6 +12,7 @@ if [ "$HAVE_C99" = 'no' ]; then
 fi
 
 check_switch cxx CXX11 -std=c++11 ''
+check_switch cxx CXX17 -std=c++17 ''
 check_switch '' NOUNUSED -Wno-unused-result ''
 check_switch '' NOUNUSED_VARIABLE -Wno-unused-variable ''
 
@@ -277,30 +278,58 @@ if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
 fi
 
 check_enabled CXX11 CXX C++ 'C++11 support is' false
+check_enabled CXX17 CXX C++ 'C++17 support is' false
 
 check_platform Haiku DISCORD 'Discord is' false
 check_enabled CXX DISCORD discord 'The C++ compiler is' false
 check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
 if [ "$HAVE_QT" != 'no' ]; then
-   check_pkgconf QT5CORE Qt5Core 5.2
-   check_pkgconf QT5GUI Qt5Gui 5.2
-   check_pkgconf QT5WIDGETS Qt5Widgets 5.2
-   check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
-   check_pkgconf QT5NETWORK Qt5Network 5.2
-   #check_pkgconf QT5WEBENGINE Qt5WebEngine 5.4
+   if [ "$HAVE_CXX17" = 'yes' ]; then
+      check_pkgconf QT6CORE Qt6Core 6.2
+      check_pkgconf QT6GUI Qt6Gui 6.2
+      check_pkgconf QT6WIDGETS Qt6Widgets 6.2
+      check_pkgconf QT6CONCURRENT Qt6Concurrent 6.2
+      check_pkgconf QT6NETWORK Qt6Network 6.2
+      #check_pkgconf QT6WEBENGINE Qt6WebEngine 6.2
 
-   # pkg-config is needed to reliably find Qt5 libraries.
+      # pkg-config is needed to reliably find Qt6 libraries.
 
-   check_enabled QT5CORE QT Qt 'Qt5Core is' true
-   check_enabled QT5GUI QT Qt 'Qt5GUI is' true
-   check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
-   check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
-   check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
-   #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
+      check_enabled QT6CORE QT Qt 'Qt6Core is' true
+      check_enabled QT6GUI QT Qt 'Qt6GUI is' true
+      check_enabled QT6WIDGETS QT Qt 'Qt6Widgets is' true
+      check_enabled QT6CONCURRENT QT Qt 'Qt6Concurrent is' true
+      check_enabled QT6NETWORK QT Qt 'Qt6Network is' true
+      #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' true
 
-   if [ "$HAVE_QT" != yes ]; then
-      die : 'Notice: Qt support disabled, required libraries were not found.'
+      if [ "$HAVE_QT" != yes ]; then
+         die : 'Notice: Qt support disabled, required libraries were not found.'
+      else
+         HAVE_QT6='yes'
+         add_define MAKEFILE HAVE_QT6 1
+      fi
+   fi
+   if [ "$HAVE_QT6" != 'yes' ]; then
+      HAVE_QT='auto'
+      check_pkgconf QT5CORE Qt5Core 5.2
+      check_pkgconf QT5GUI Qt5Gui 5.2
+      check_pkgconf QT5WIDGETS Qt5Widgets 5.2
+      check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
+      check_pkgconf QT5NETWORK Qt5Network 5.2
+      #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
+
+      # pkg-config is needed to reliably find Qt5 libraries.
+
+      check_enabled QT5CORE QT Qt 'Qt5Core is' true
+      check_enabled QT5GUI QT Qt 'Qt5GUI is' true
+      check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
+      check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
+      check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
+      #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
+
+      if [ "$HAVE_QT" != yes ]; then
+         die : 'Notice: Qt support disabled, required libraries were not found.'
+      fi
    fi
 
    check_pkgconf OPENSSL openssl 1.0.0
@@ -399,6 +428,10 @@ if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
    elif [ "$OS" = 'Win32' ]; then
       check_header '' OPENGL "GL/gl.h"
       check_lib '' OPENGL -lopengl32
+   elif [ "$HAVE_GLX" = 'no' ]; then
+      # Use vendor-neutral OpenGL implementation instead of GLX
+      check_header '' OPENGL "GL/gl.h"
+      check_lib '' OPENGL -lOpenGL
    else
       check_header '' OPENGL "GL/gl.h"
       check_lib '' OPENGL -lGL

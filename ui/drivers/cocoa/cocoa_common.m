@@ -42,6 +42,7 @@
 #include "../../../content.h"
 #include "../../../core_info.h"
 #include "../../../defaults.h"
+#include "../../../frontend/frontend.h"
 #include "../../../file_path_special.h"
 #include "../../../menu/menu_cbs.h"
 #include "../../../paths.h"
@@ -104,6 +105,31 @@ void cocoa_file_load_with_detect_core(const char *filename);
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
+#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+-(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
+{
+#if defined(IOS)
+   if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive)
+      return;
+
+   int ret = runloop_iterate();
+
+   task_queue_check();
+
+   if (ret == -1)
+   {
+      main_exit(NULL);
+      exit(0);
+      return;
+   }
+
+   uint32_t runloop_flags = runloop_get_flags();
+   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+#endif
+}
+#endif
+
 + (CocoaView*)get
 {
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
@@ -111,6 +137,21 @@ void cocoa_file_load_with_detect_core(const char *filename);
    {
       view = [CocoaView new];
       nsview_set_ptr(view);
+#if defined(IOS)
+      view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+      if (@available(iOS 15.0, tvOS 15.0, *))
+         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeDefault];
+#endif
+      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+      if (@available(macOS 14.0, *))
+      {
+         view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
+         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
+         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+      }
+#endif
    }
    return view;
 }
@@ -244,7 +285,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
     static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        map = @{
+        NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
             @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
             @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
             @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
@@ -253,10 +294,16 @@ void cocoa_file_load_with_detect_core(const char *filename);
             @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
             @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
             @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
+        }];
 
-            @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
-            @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
-        };
+        if (@available(tvOS 14.3, *))
+        {
+            [dict addEntriesFromDictionary:@{
+                @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
+                @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
+            }];
+        }
+        map = dict;
     });
     NSArray<NSNumber*>* keyvals = map[@(type)];
     if (!keyvals)
@@ -270,12 +317,15 @@ void cocoa_file_load_with_detect_core(const char *filename);
 {
     for (UIPress *press in presses)
     {
+        bool has_key = false;
+        if (@available(tvOS 14, *))
+            has_key = !![press key];
         /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
             [super pressesBegan:presses withEvent:event];
-        else if (!press.key && [self didMicroGamepadPress:press.type])
+        else if (!has_key && [self didMicroGamepadPress:press.type])
             [self sendKeyForPress:press.type down:true];
-        else
+        else if (has_key)
             [super pressesBegan:[NSSet setWithObject:press] withEvent:event];
     }
 }
@@ -578,6 +628,14 @@ void cocoa_file_load_with_detect_core(const char *filename);
 
 #ifdef HAVE_COCOATOUCH
 
+-(BOOL) prefersPointerLocked API_AVAILABLE(ios(14.0))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return NO;
+   return apple->mouse_grabbed;
+}
+
 #pragma mark - UIViewController Lifecycle
 
 -(void)loadView {
@@ -597,10 +655,12 @@ void cocoa_file_load_with_detect_core(const char *filename);
     swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
 #ifdef HAVE_IOS_TOUCHMOUSE
-    [self setupMouseSupport];
+    if (@available(iOS 13, *))
+        [self setupMouseSupport];
 #endif
 #ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self setupEmulatorKeyboard];
+    if (@available(iOS 13, *))
+        [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired   = 3;
     showKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionUp;
@@ -612,8 +672,9 @@ void cocoa_file_load_with_detect_core(const char *filename);
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
 #endif
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
-    [self setupHelperBar];
+#if defined(HAVE_IOS_TOUCHMOUSE) || defined(HAVE_IOS_CUSTOMKEYBOARDS)
+    if (@available(iOS 13, *))
+        [self setupHelperBar];
 #endif
 #elif TARGET_OS_TV
     UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
@@ -652,7 +713,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
 {
     [super viewWillAppear:animated];
 #if TARGET_OS_TV
-    [[WebServer sharedInstance] startUploader];
+    [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
 #endif
 }
@@ -686,16 +747,6 @@ void cocoa_file_load_with_detect_core(const char *filename);
       apple->window_pos_x = 0;
       apple->window_pos_y = 0;
    }
-}
-
--(void)handlePointerMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)
-      input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->window_pos_x = (int16_t)x;
-   apple->window_pos_y = (int16_t)y;
 }
 
 #endif
@@ -732,7 +783,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
 #elif TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
-            [[WebServer sharedInstance] stopUploader];
+            [[WebServer sharedInstance] stopServers];
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{
@@ -771,8 +822,8 @@ void *cocoa_screen_get_chosen(void)
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
-    return ([[UIApplication sharedApplication] applicationState]
-            == UIApplicationStateActive);
+    /* if we are running, we are foregrounded */
+    return true;
 #else
     return [NSApp isActive];
 #endif

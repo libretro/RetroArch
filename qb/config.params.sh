@@ -183,6 +183,7 @@ HAVE_VIDEOCORE=auto        # Broadcom Videocore 4 support
 HAVE_DRMINGW=no            # DrMingw exception handler
 HAVE_CDROM=auto            # CD-ROM support
 HAVE_GLSL=yes              # GLSL shaders support
+HAVE_GLX=auto              # GLX support (set this to 'off' for vendor-neutral OpenGL impl)
 HAVE_SLANG=auto            # slang support
 C89_SLANG=no
 HAVE_GLSLANG=auto          # glslang support (requires C++11)

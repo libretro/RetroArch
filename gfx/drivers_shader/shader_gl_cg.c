@@ -87,12 +87,16 @@ struct shader_program_cg
    CGparameter frame_cnt_f;
    CGparameter frame_dir_f;
    CGparameter rotation_f;
+   CGparameter originalaspect_f;
+   CGparameter originalaspectrotated_f;
    CGparameter vid_size_v;
    CGparameter tex_size_v;
    CGparameter out_size_v;
    CGparameter frame_cnt_v;
    CGparameter frame_dir_v;
    CGparameter rotation_v;
+   CGparameter originalaspect_v;
+   CGparameter originalaspectrotated_v;
    CGparameter mvp;
 
    struct cg_fbo_params fbo[GFX_MAX_SHADERS];
@@ -310,7 +314,9 @@ static void gl_cg_set_texture_info(
 
 static void gl_cg_set_params(void *dat, void *shader_data)
 {
-   unsigned i;
+   unsigned int i;
+   int rot;
+   float originalaspectrotated;
    video_shader_ctx_params_t          *params =
       (video_shader_ctx_params_t*)dat;
    unsigned width                             = params->width;
@@ -361,11 +367,22 @@ static void gl_cg_set_params(void *dat, void *shader_data)
    cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_f, (float)retroarch_get_rotation());
    cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_v, (float)retroarch_get_rotation());
 
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspect_f, (float)video_driver_get_core_aspect());
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspect_v, (float)video_driver_get_core_aspect());
+
+   /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+   rot = retroarch_get_rotation();
+   originalaspectrotated = video_driver_get_core_aspect();
+   if (rot == 1 || rot == 3)
+      originalaspectrotated = 1/originalaspectrotated;
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspectrotated_f, (float)originalaspectrotated);
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspectrotated_v, (float)originalaspectrotated);
+
    set_param_2f(cg->prg[cg->active_idx].vid_size_v, width, height);
    set_param_2f(cg->prg[cg->active_idx].tex_size_v, tex_width, tex_height);
    set_param_2f(cg->prg[cg->active_idx].out_size_v, out_width, out_height);
 
-   if (  cg->prg[cg->active_idx].frame_cnt_f || 
+   if (  cg->prg[cg->active_idx].frame_cnt_f ||
          cg->prg[cg->active_idx].frame_cnt_v)
    {
       unsigned modulo = cg->shader->pass[cg->active_idx - 1].frame_count_mod;
@@ -797,12 +814,16 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    cg->prg[i].frame_cnt_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.frame_count");
    cg->prg[i].frame_dir_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.frame_direction");
    cg->prg[i].rotation_f  = cgGetNamedParameter(cg->prg[i].fprg, "IN.rotation");
+   cg->prg[i].originalaspect_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.originalaspect");
+   cg->prg[i].originalaspectrotated_f = cgGetNamedParameter(cg->prg[i].fprg, "IN.originalaspectrotated");
    cg->prg[i].vid_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.video_size");
    cg->prg[i].tex_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.texture_size");
    cg->prg[i].out_size_v = cgGetNamedParameter (cg->prg[i].vprg, "IN.output_size");
    cg->prg[i].frame_cnt_v = cgGetNamedParameter(cg->prg[i].vprg, "IN.frame_count");
    cg->prg[i].frame_dir_v = cgGetNamedParameter(cg->prg[i].vprg, "IN.frame_direction");
    cg->prg[i].rotation_v  = cgGetNamedParameter(cg->prg[i].vprg, "IN.rotation");
+   cg->prg[i].originalaspect_v = cgGetNamedParameter(cg->prg[i].fprg, "IN.originalaspect");
+   cg->prg[i].originalaspectrotated_v = cgGetNamedParameter(cg->prg[i].fprg, "IN.originalaspectrotated");
 
    cg->prg[i].mvp                 = cgGetNamedParameter(cg->prg[i].vprg, "modelViewProj");
    if (!cg->prg[i].mvp)

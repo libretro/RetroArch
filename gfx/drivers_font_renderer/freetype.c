@@ -216,9 +216,9 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    unsigned i, x, y;
    freetype_atlas_slot_t* slot = NULL;
 
-   unsigned max_width          = round((handle->face->bbox.xMax - handle->face->bbox.xMin) 
+   unsigned max_width          = round((handle->face->bbox.xMax - handle->face->bbox.xMin)
          * font_size / handle->face->units_per_EM);
-   unsigned max_height         = round((handle->face->bbox.yMax - handle->face->bbox.yMin) 
+   unsigned max_height         = round((handle->face->bbox.yMax - handle->face->bbox.yMin)
          * font_size / handle->face->units_per_EM);
 
    unsigned atlas_width        = (max_width  + FT_ATLAS_PADDING) * FT_ATLAS_COLS;
@@ -306,13 +306,13 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       int face_index         = 0;
       /* select Sans fonts */
       FcPattern* pattern     = FcNameParse((const FcChar8*)"Sans");
-      /* since fontconfig uses LL-TT style, we need to normalize 
+      /* since fontconfig uses LL-TT style, we need to normalize
        * locale names */
       FcChar8* locale        = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
-      /* configure fontconfig substitute policies, this 
+      /* configure fontconfig substitute policies, this
        * will increase the search scope */
       FcConfigSubstitute(config, pattern, FcMatchPattern);
-      /* pull in system-wide defaults, so the 
+      /* pull in system-wide defaults, so the
        * font selection respects system (or user) configurations */
       FcDefaultSubstitute(pattern);
 
@@ -320,7 +320,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       locale_boxed.type = FcTypeString;
       locale_boxed.u.s  = locale;
 
-      /* Override locale settins, since we are not using the system locale */
+      /* Override locale settings, since we are not using the system locale */
       FcPatternAdd(pattern, FC_LANG, locale_boxed, false);
 
       /* Let's find the best matching font given our search criteria */
@@ -349,7 +349,7 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       FcPatternDestroy(found);
       FcStrFree(locale);
       FcConfigDestroy(config);
-      
+
       if (err)
          goto error;
       handle->file_data = font_data;

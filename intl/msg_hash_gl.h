@@ -383,7 +383,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Anovar as trampas"
+   "Actualizar trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
@@ -505,7 +505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Camiño completo do núcleo"
+   "Ruta completa"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -537,7 +537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Buscando en: '%s'"
+   "- Buscando en: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1227,7 +1227,15 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
    "Sincronización: Ficheiros de Configuración"
-   )      
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Sincronizar: Imaxes en miniatura"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Sincronizar: Ficheiros do sistema"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
    "Cando está activado, os gardados/estados sincronizaranse coa nube."
@@ -1237,9 +1245,17 @@ MSG_HASH(
    "Cando está habilitado, os ficheiros de configuración sincronizaranse coa nube."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "Cando está activado, as imaxes en miniatura serán sincronizadas ca nube. Non se recomenda xeralmente a menos que se trate de grandes coleccións de imaxes en miniatura personalizadas; de non ser así, o descargador de miniaturas é unha mellor opción."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "Cando está activado, os ficheiros do sistema serán sincronizados na nube. Isto pode aumentar significativamente o tempo que tarda en sincronizar; utilizar con precaución."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Cando está desactivado, os ficheiros móvense a un cartafol de copia de seguranza antes de sobrescribilos ou eliminalos."
-   )      
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    "Backend de sincronización na nube"
@@ -2471,15 +2487,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Escala o vídeo só en pasos enteiros. O tamaño base depende da xeometría e relación de aspecto informadas polo sistema. Se non se define a \"Forzar relación de aspecto\", X/Y escalarase enteiro de forma independente."
+   "Escalar o vídeo só en pasos enteiros. O tamaño base depende da xeometría e da relación de aspecto informadas polo núcleo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Sobreescala de escala enteira"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Eixo de escala enteira"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Forza a escala de enteiros a redondear cara arriba ao seguinte número enteiro maior en lugar de redondear abaixo."
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Escalar só a altura, ou tanto a altura como o ancho. Os pasos medios aplícanse a fontes de alta resolución."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Escalado de escala enteira"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Redondear cara abaixo ou arriba ao próximo enteiro. 'Intelixente' reduce a escala cando a imaxe está recortada en exceso."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Subescala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Sobreescala"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Intelixente"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2685,15 +2721,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Retraso de fotogramas (ms)"
+   "Retraso de fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Reduce a latencia ao custo dun maior risco de tartamudeo de vídeo. Engade un atraso en milisegundos despois da presentación do vídeo e antes do cadro principal."
+   "Reduce a latencia ao custo dun maior risco de entrecortamento do vídeo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Establece cantos milisegundos hai que atrasar despois da presentación do vídeo antes de executar o núcleo. Pode reducir a latencia a costa dun maior risco de tartamudeo. O máximo é %d."
+   "Establece cantos milisegundos debe durmir antes de executar o núcleo despois da presentación do vídeo. Reduce a latencia ao custo dun maior risco de entrecortamento.\nOs valores de 20 ou máis considéranse porcentaxes do tempo do fotograma."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2701,11 +2737,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Reduce temporalmente o \"Retraso de fotogramas\" efectivo para evitar caídas de fotogramas futuras. O punto de partida é a metade do tempo cando o \"Retraso de fotograma\" é 0."
+   "Axustar dinámicamente o 'Retraso de fotograma' efectivo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Diminúe temporalmente o \"Retraso de fotogramas\" efectivo ata que a taxa de actualización obxectivo sexa estable. A medición comeza a partir da metade do tempo de fotograma cando o \"Retraso de fotograma\" é 0. Por exemplo. 8 para NTSC e 10 para PAL."
+   "Intenta manter o obxectivo de 'Retraso de fotogramas' desexado e minimizar as caídas de fotogramas. O punto de partida é 3/4 do tempo de cadro cando o 'Retraso de fotogramas' é 0 (Automático)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -3238,6 +3274,14 @@ MSG_HASH(
    "Anular os enlaces de entrada cos enlaces reasignados definidos para o núcleo actual."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Ordenar reasignacións por mando"
+   )   
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "As reasignacións só se aplicarán ao mando activo no que foron gardadas."
+   )   
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Auto configurar"
    )
@@ -3550,6 +3594,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "Se está activado, ignoraranse as pulsacións do botón Buscar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Desactivar o analóxico esquerdo no menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Previr que a panca (stick) analóxica esquerda navegue no menú."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Desactivar o analóxico dereito no menú"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Previr que a panca (stick) analóxica dereita navegue no menú."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -4041,7 +4101,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Activar/desactivar atenuado do chat no Xogo en rede"
+   "Esvaecer o chat do xogo en rede (activar/desactivar)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -4307,12 +4367,8 @@ MSG_HASH(
    "O núcleo actual é incompatible con adiante debido á falta de soporte determinista para o estado de gardado."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Run-ahead para reducir a latencia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Execute a lóxica central un ou máis fotogramas por diante e despois cargue o estado de novo para reducir o atraso de entrada percibido."
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "Adiantar a execución"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -4323,12 +4379,26 @@ MSG_HASH(
    "O número de fotogramas que se van adiante. Causa problemas de xogo, como tremores, se se supera o número de fotogramas de atraso internos do xogo."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Use a segunda instancia para Run-Ahead"
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Executar lóxica adicional do núcleo para reducir a latencia. A Instancia Única avanza a un fotograma futuro e, despois, recarga o estado actual. A Segunda Instancia mantén unha instancia do núcleo só para vídeo nun fotograma futuro para evitar problemas co estado do audio. Os Fotogramas Preemptivos avanzan a través de fotogramas con nova entrada cando é necesario, para maior eficiencia."
+   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Executar lóxica adicional do núcleo para reducir a latencia. A Instancia Única avanza a un fotograma futuro e, despois, recarga o estado actual. Os Fotogramas Preemptivos avanzan a través de cadros con nova entrada cando é necesario, para maior eficiencia."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "Modo de Instancia Única"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Use unha segunda instancia do núcleo de RetroArch para avanzar. Evita problemas de audio debido ao estado de carga."
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "Modo de Segunda Instancia"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "Modo de Fotogramas Preemptivos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4339,36 +4409,12 @@ MSG_HASH(
    "Oculta a mensaxe de aviso que aparece ao usar Run-Ahead e o núcleo non admite os estados de gardar."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Fotogramas preventivos non dispoñibles]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "O núcleo actual é incompatible con fotogramas preventivos debido á falta de soporte determinista para o estado de gardar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Executar fotogramas preventivos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Volve executar a lóxica principal coa entrada máis recente cando o estado do controlador cambie. Máis rápido que Run-Ahead, pero non evita problemas de audio que poden ter os núcleos cos estados de carga."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Número de fotogramas preventivos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "O número de fotogramas para volver executar. Causa problemas de xogo, como tremores, se se supera o número de fotogramas de atraso internos do xogo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Ocultar avisos de fotogramas preventivos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Oculta a mensaxe de aviso que aparece cando un núcleo é incompatible cos fotogramas preventivos."
    )
 
 /* Settings > Core */
@@ -5990,7 +6036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
-   "Menú Salvapantallas Animación"
+   "Animación do protector de pantalla do menú"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
@@ -6018,7 +6064,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Toca Soporte"
+   "Soporte táctil"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_POINTER_ENABLE,
@@ -6026,7 +6072,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Tarefas roscadas"
+   "Tarefas en fío"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
@@ -6764,6 +6810,14 @@ MSG_HASH(
    "Mostrar \"Usuario\""
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Iconas de listas de reprodución"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Tipo de miniatura da icona da lista de reprodución a amosar."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Mostrar a configuración de \"Usuario\"."
    )
@@ -6972,7 +7026,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Desactiva as trampas, o rebobinado, a cámara lenta e os estados de gardado de carga. Os logros obtidos no modo hardcore están marcados de xeito exclusivo para que poidas mostrar aos demais o que conseguiches sen as funcións de asistencia do emulador. Cambiar esta configuración no tempo de execución reiniciarase o xogo."
+   "Desactiva os trucos, o rebobinado, a cámara lenta e os estados de gardado de carga. Os logros obtidos no modo hardcore están marcados de xeito exclusivo para que poidas mostrar aos demais o que conseguiches sen as funcións de asistencia do emulador. Cambiar esta configuración no tempo de execución reiniciarase o xogo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
@@ -7252,6 +7306,10 @@ MSG_HASH(
    "Sueste asiático"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "Asia Oriental (Chuncheon, Corea do Sur)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Personalizado"
    )
@@ -7317,7 +7375,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
-   "Desvanece Chat"
+   "Esvaece Chat"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
@@ -7746,6 +7804,14 @@ MSG_HASH(
    "Cando estea activado, atopará miniaturas polo nome do ficheiro da entrada, en lugar da súa etiqueta."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Permitir todos os tipos de imaxes compatibles para miniaturas"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   "Cando está activado, pódense engadir miniaturas locais en todos os tipos de imaxes compatibles con RetroArch (como jpeg). Pode ter un pequeno impacto no rendemento."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Xestionar"
    )
@@ -8010,7 +8076,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
-   "Os ficheiros de trampas almacénanse neste directorio."
+   "Os ficheiros de trucos almacénanse neste directorio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
@@ -9207,7 +9273,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
@@ -9219,7 +9285,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Cargue un ficheiro de trampas e substitúa os trucos existentes."
+   "Cargue un ficheiro de trucos e substitúa os trucos existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
@@ -9227,7 +9293,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
-   "Cargue un ficheiro de trampas e engádeo ós trucos existentes."
+   "Cargue un ficheiro de trucos e engádeo aos trucos existentes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
@@ -9235,7 +9301,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-   "Gardar o ficheiro de trampas como"
+   "Gardar o ficheiro de trucos como"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
@@ -9934,7 +10000,7 @@ MSG_HASH(
 )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Todas as solicitudes pendentes sincronizáronse correctamente co servidor de RetroAchievements."
+   "Todas as solicitudes pendentes foron sincronizadas correctamente co servidor de RetroAchievements."
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
@@ -10404,6 +10470,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
    "Titulo en Pantalla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   "Logo do contido"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
@@ -11168,7 +11238,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
-   "Factor de desvanecemento vertical"
+   "Factor de esvaecemento vertical"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -11735,7 +11805,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
-   "S&air"
+   "&Sair"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
@@ -12366,7 +12436,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -12689,7 +12759,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_SEARCH,
@@ -12724,7 +12794,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
-   "Inicia ou continúa a busca de trampas"
+   "Inicia ou continúa a busca de trucos"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST,
@@ -13344,10 +13414,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Non se pode inferir a nova ruta de configuración. Usa a hora actual."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Logros Modo Hardcore activado, estado de gardar e rebobinado desactiváronse."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -14419,7 +14485,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_INIT_SUCCESS,
-   "Iniciouse correctamente a busca de trampas."
+   "Iniciouse correctamente a busca de trucos."
    )
 MSG_HASH(
    MSG_CHEAT_INIT_FAIL,
@@ -14455,7 +14521,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "Non hai espazo suficiente. O número máximo de trampas simultáneas é de 100."
+   "Non hai espazo suficiente. O número máximo de trucos simultáneos é de 100."
    )
 MSG_HASH(
    MSG_CHEAT_ADD_TOP_SUCCESS,
@@ -14518,6 +14584,10 @@ MSG_HASH(
    "Produciuse un erro ao recibir a cabeceira do host."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroLogros: Conectado como \"%s\"."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Debes pausar ou desactivar o modo Hardcore de logros para cargar estados."
    )
@@ -14536,6 +14606,70 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Completado %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Logros Modo Hardcore activado, estado de gardar e rebobinado desactiváronse."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Este xogo non ten logros."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Todos os %d logros activados para esta sesión"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Activados %d logros non oficiais"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Tes %d de %d logros desbloqueados"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d non soportado"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Espectando %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Modo hardcore en pausa. A configuración manual do retraso de fotograma de vídeo non está permitida."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
+   "Modo hardcore en pausa. Os subfotogramas de sombreadores non están permitidos."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Modo hardcore en pausa. O intervalo de intercambio de vsync por riba de 1 non está permitido."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Modo hardcore en pausa. A inserción de cadros negros non está permitida."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Modo hardcore en pausa. Configuración non permitida: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Modo hardcore en pausa. Non podes conseguir logros hardcore para %s utilizando %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroLogros: Non se puido identificar o xogo."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "Erro ao cargar o xogo de RetroLogros: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "Erro ao cambiar o medio en RetroLogros: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15012,14 +15146,6 @@ MSG_HASH(
    "A activación de Linux GameMode pode mellorar a latencia, solucionar problemas de crepitación de audio e maximizar o rendemento xeral configurando automaticamente a CPU e a GPU para obter o mellor rendemento.\nPara que funcione, é necesario instalar o software GameMode. Consulte https://github.com/FeralInteractive/gamemode para obter información sobre como instalar GameMode."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_REST,
-   "Pausa de fotogramas"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_REST,
-   "Tentar reducir o uso da CPU pola sincronía vertical durmindo o máximo posible tras a presentación do fotograma. Deseñado principalmente para a sincronización de terceiros por scanlines."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
    "Use o modo PAL60"
    )
@@ -15441,6 +15567,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "O rato táctil está desactivado"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "O micrófono sdl2 require o controlador de audio sdl2"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

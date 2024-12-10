@@ -31,7 +31,7 @@ static bool load_xinput_dll(void)
     * wrapper DLL (such as x360ce); support these by checking
     * the working directory first.
     *
-    * No need to check for existance as we will be checking dylib_load's
+    * No need to check for existence as we will be checking dylib_load's
     * success anyway.
     */
 

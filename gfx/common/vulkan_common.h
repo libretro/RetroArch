@@ -573,7 +573,7 @@ typedef struct vk
    video_info_t video;
 
    VkFormat tex_fmt;
-   math_matrix_4x4 mvp, mvp_no_rot; /* float alignment */
+   math_matrix_4x4 mvp, mvp_no_rot, mvp_menu; /* float alignment */
    VkViewport vk_vp;
    VkRenderPass render_pass;
    struct video_viewport vp;

@@ -78,6 +78,8 @@ typedef struct d3d9_video
 #endif
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 final_viewport;
+   float translate_x;
+   float translate_y;
 
    char *shader_path;
 

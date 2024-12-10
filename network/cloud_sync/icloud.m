@@ -88,8 +88,10 @@ static void icloud_query_path(const char *path, void(^cb)(CKRecord * results, NS
    }];
 }
 
-static bool icloud_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data)
+static bool icloud_read(const char *p, const char *f, cloud_sync_complete_handler_t cb, void *user_data)
 {
+   char *path = strdup(p);
+   char *file = strdup(f);
    icloud_query_path(path, ^(CKRecord *result, NSError *error) {
       if (result)
       {
@@ -116,16 +118,23 @@ static bool icloud_read(const char *path, const char *file, cloud_sync_complete_
                }
                cb(user_data, path, true, rfile);
             }
+            free(path);
+            free(file);
          }];
       }
       else
+      {
          cb(user_data, path, error == nil, NULL);
+         free(path);
+         free(file);
+      }
    });
    return true;
 }
 
-static bool icloud_update(const char *path, RFILE *rfile, cloud_sync_complete_handler_t cb, void *user_data)
+static bool icloud_update(const char *p, RFILE *rfile, cloud_sync_complete_handler_t cb, void *user_data)
 {
+   char *path = strdup(p);
    icloud_query_path(path, ^(CKRecord *record, NSError *error) {
       bool update = true;
       if (error || !record)
@@ -142,16 +151,18 @@ static bool icloud_update(const char *path, RFILE *rfile, cloud_sync_complete_ha
          if (error)
             RARCH_DBG("[iCloud] error: %s\n", [[error debugDescription] UTF8String]);
          cb(user_data, path, error == nil, rfile);
+         free(path);
       }];
    });
    return true;
 }
 
-static bool icloud_delete(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
+static bool icloud_delete(const char *p, cloud_sync_complete_handler_t cb, void *user_data)
 {
+   NSString *path = [NSString stringWithUTF8String:p];
    NSPredicate *pred = [NSComparisonPredicate
                         predicateWithLeftExpression:[NSExpression expressionForKeyPath:@"path"]
-                        rightExpression:[NSExpression expressionForConstantValue:[NSString stringWithUTF8String:path]]
+                        rightExpression:[NSExpression expressionForConstantValue:path]
                         modifier:NSDirectPredicateModifier
                         type:NSEqualToPredicateOperatorType
                         options:0];
@@ -159,17 +170,17 @@ static bool icloud_delete(const char *path, cloud_sync_complete_handler_t cb, vo
    [CKContainer.defaultContainer.privateCloudDatabase performQuery:query
                                                       inZoneWithID:nil
                                                  completionHandler:^(NSArray<CKRecord *> * _Nullable results, NSError * _Nullable error) {
-      RARCH_DBG("[iCloud] deleting %d records for %s\n", [results count], path);
+      RARCH_DBG("[iCloud] deleting %d records for %s\n", [results count], [path UTF8String]);
       for (CKRecord *record in results)
       {
          [CKContainer.defaultContainer.privateCloudDatabase deleteRecordWithID:record.recordID
                                                              completionHandler:^(CKRecordID * _Nullable recordID, NSError * _Nullable error) {
-            RARCH_DBG("[iCloud] delete callback for %s %s\n", path, error == nil ? "succeeded" : "failed");
+            RARCH_DBG("[iCloud] delete callback for %s %s\n", [path UTF8String], error == nil ? "succeeded" : "failed");
             if (error)
                RARCH_DBG("[iCloud] error: %s\n", [[error debugDescription] UTF8String]);
          }];
       }
-      cb(user_data, path, error == nil, NULL);
+      cb(user_data, [path UTF8String], error == nil, NULL);
    }];
    return true;
 }

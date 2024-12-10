@@ -443,7 +443,7 @@ finished:
       task_set_title(task, strdup(title));
    }
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 #ifndef HAVE_DYNAMIC

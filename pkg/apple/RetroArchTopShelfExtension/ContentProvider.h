@@ -12,6 +12,7 @@
 #define kRetroArchAppGroup @"group.com.libretro.dist.tvos.RetroArchAppGroup"
 #endif
 
+API_AVAILABLE(tvos(13.0))
 @interface ContentProvider : TVTopShelfContentProvider
 
 

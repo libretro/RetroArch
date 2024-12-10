@@ -407,7 +407,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       goto error;
    }
 
-   if (!egl_create_surface(&wl->egl, (EGLNativeWindowType)wl->win))
+   if (!egl_create_surface(&wl->egl, (void*)wl->win))
       goto error;
    egl_set_swap_interval(&wl->egl, wl->egl.interval);
 #endif

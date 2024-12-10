@@ -441,7 +441,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    return 0;
 }
 
-/* Recieves backend info from server that is of interest to the client. (This mini-protocol might be extended later on.) */
+/* Receives backend info from server that is of interest to the client. (This mini-protocol might be extended later on.) */
 static int rsnd_get_backend_info ( rsound_t *rd )
 {
 #define RSND_HEADER_SIZE 8
@@ -563,7 +563,7 @@ static int rsnd_create_connection(rsound_t *rd)
    {
       /* Part of the uber simple protocol.
          1. Send wave header.
-         2. Recieve backend info like latency and preferred packet size.
+         2. Receive backend info like latency and preferred packet size.
          3. Starts the playback thread. */
 
       rc = rsnd_send_header_info(rd);
@@ -602,7 +602,7 @@ static int rsnd_create_connection(rsound_t *rd)
 }
 
 /* Sends a chunk over the network. Makes sure that everything is sent if blocking. Returns -1 if connection is lost, non-negative if success.
- * If blocking, and not enough data is recieved, it will return -1. */
+ * If blocking, and not enough data is received, it will return -1. */
 static ssize_t rsnd_send_chunk(int socket, const void* buf, size_t size, int blocking)
 {
    ssize_t rc = 0;
@@ -652,8 +652,8 @@ static ssize_t rsnd_send_chunk(int socket, const void* buf, size_t size, int blo
    return (ssize_t)wrote;
 }
 
-/* Recieved chunk. Makes sure that everything is recieved if blocking. Returns -1 if connection is lost, non-negative if success.
- * If blocking, and not enough data is recieved, it will return -1. */
+/* Received chunk. Makes sure that everything is received if blocking. Returns -1 if connection is lost, non-negative if success.
+ * If blocking, and not enough data is received, it will return -1. */
 static ssize_t rsnd_recv_chunk(int socket, void *buf, size_t size, int blocking)
 {
    ssize_t rc = 0;
@@ -960,7 +960,7 @@ static int rsnd_close_ctl(rsound_t *rd)
       if (fd.revents & POLLIN)
       {
          const char *subchar;
-         /* We just read everything in large chunks until we find 
+         /* We just read everything in large chunks until we find
           * what we're looking for */
          int rc = net_recv(rd->conn.ctl_socket, buf + index, RSD_PROTO_MAXSIZE*2 - 1 - index, 0);
 
@@ -991,7 +991,7 @@ static int rsnd_close_ctl(rsound_t *rd)
    return 0;
 }
 
-/* Sends delay info request to server on the ctl socket. 
+/* Sends delay info request to server on the ctl socket.
  * This code section isn't critical, and will work if it works.
  * It will never block. */
 static int rsnd_send_info_query(rsound_t *rd)
@@ -1026,7 +1026,7 @@ static int rsnd_update_server_info(rsound_t *rd)
       char *tmpstr;
       memset(temp, 0, sizeof(temp));
 
-      /* We first recieve the small header. We just use the larger buffer as it is disposable. */
+      /* We first receive the small header. We just use the larger buffer as it is disposable. */
       rc = rsnd_recv_chunk(rd->conn.ctl_socket, temp, RSD_PROTO_CHUNKSIZE, 0);
       if ( rc == 0 )
          break;
@@ -1044,7 +1044,7 @@ static int rsnd_update_server_info(rsound_t *rd)
       /* The length of the argument message is stored in the small 8 byte header. */
       long int len = strtol(substr, NULL, 0);
 
-      /* Recieve the rest of the data. */
+      /* Receive the rest of the data. */
       if ( rsnd_recv_chunk(rd->conn.ctl_socket, temp, len, 0) < len )
          return -1;
 

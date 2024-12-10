@@ -421,12 +421,13 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
 {
    nbio_handle_t             *nbio  = (nbio_handle_t*)task->state;
    struct audio_mixer_handle *mixer = (struct audio_mixer_handle*)nbio->data;
+   uint8_t flg                      = task_get_flags(task);
 
    if (
          nbio->is_finished
          && (mixer && !mixer->is_finished)
          && (mixer->copy_data_over)
-         && (!task_get_cancelled(task)))
+         && (!((flg & RETRO_TASK_FLG_CANCELLED) > 0)))
    {
       nbio_buf_t *img = (nbio_buf_t*)malloc(sizeof(*img));
 
@@ -521,7 +522,7 @@ bool task_push_audio_mixer_load_and_play(
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac_and_play;
    }
-   else if (	
+   else if (
          string_is_equal(ext_lower, "mod") ||
          string_is_equal(ext_lower, "s3m") ||
          string_is_equal(ext_lower, "xm"))
@@ -648,7 +649,7 @@ bool task_push_audio_mixer_load(
       nbio->type      = NBIO_TYPE_FLAC;
       t->callback     = task_audio_mixer_handle_upload_flac;
    }
-   else if (	
+   else if (
          string_is_equal(ext_lower, "mod") ||
          string_is_equal(ext_lower, "s3m") ||
          string_is_equal(ext_lower, "xm"))

@@ -48,18 +48,6 @@ const uint8_t lr_char_props[256] = {
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, /* Fx                  */
 };
 
-char *string_init(const char *src)
-{
-   return src ? strdup(src) : NULL;
-}
-
-void string_set(char **string, const char *src)
-{
-   free(*string);
-   *string = string_init(src);
-}
-
-
 char *string_to_upper(char *s)
 {
    char *cs = (char *)s;
@@ -437,7 +425,7 @@ size_t word_wrap_wideglyph(char *dst, size_t dst_size,
 /**
  * string_tokenize:
  *
- * Splits string into tokens seperated by @delim
+ * Splits string into tokens separated by @delim
  * > Returned token string must be free()'d
  * > Returns NULL if token is not found
  * > After each call, @str is set to the position after the
