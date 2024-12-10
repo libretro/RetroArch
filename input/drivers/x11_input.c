@@ -27,6 +27,7 @@
 #include "../input_keymaps.h"
 
 #include "../common/input_x11_common.h"
+#include "../common/linux_common.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -45,6 +46,10 @@ typedef struct x11_input
    bool mouse_l;
    bool mouse_r;
    bool mouse_m;
+#ifdef __linux__
+   /* X11 is mostly used on Linux, but not exclusively. */
+   linux_illuminance_sensor_t *illuminance_sensor;
+#endif
 } x11_input_t;
 
 /* Public global variable */
@@ -342,7 +347,7 @@ static int16_t x_input_state(
                               x11->mouse_x, x11->mouse_y,
                               &res_x, &res_y, &res_screen_x, &res_screen_y))
                      {
-                        inside =    (res_x >= -edge_detect) 
+                        inside =    (res_x >= -edge_detect)
                            && (res_y >= -edge_detect)
                            && (res_x <= edge_detect)
                            && (res_y <= edge_detect);
@@ -397,10 +402,10 @@ static int16_t x_input_state(
                                  joyport, (uint16_t)joykey))
                            return 1;
                         if (joyaxis != AXIS_NONE &&
-                              ((float)abs(joypad->axis(joyport, joyaxis)) 
+                              ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
-                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST) 
+                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
                               && !keyboard_mapping_blocked
                               && x_keyboard_pressed(x11, binds[port][new_id].key)
                            )
@@ -431,7 +436,70 @@ static void x_input_free(void *data)
    x11_input_t *x11 = (x11_input_t*)data;
 
    if (x11)
+   {
+#ifdef __linux__
+      linux_close_illuminance_sensor(x11->illuminance_sensor);
+#endif
       free(x11);
+   }
+}
+
+static bool x_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
+{
+   x11_input_t *x11 = (x11_input_t*)data;
+
+   if (!x11)
+      return false;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         /* If already disabled, then do nothing */
+#ifdef __linux__
+         linux_close_illuminance_sensor(x11->illuminance_sensor); /* noop if NULL */
+         x11->illuminance_sensor = NULL;
+#endif
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         /** Unimplemented sensor actions that probably shouldn't fail */
+         return true;
+
+#ifdef __linux__
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         if (x11->illuminance_sensor)
+           /* If we already have a sensor, just set the rate */
+           linux_set_illuminance_sensor_rate(x11->illuminance_sensor, rate);
+         else
+           x11->illuminance_sensor = linux_open_illuminance_sensor(rate);
+
+         return x11->illuminance_sensor != NULL;
+#endif
+      default:
+         break;
+   }
+
+   return false;
+}
+
+static float x_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   x11_input_t *x11 = (x11_input_t*)data;
+
+   if (!x11)
+      return 0.0f;
+
+   switch (id)
+   {
+#ifdef __linux__
+      case RETRO_SENSOR_ILLUMINANCE:
+         if (x11->illuminance_sensor)
+            return linux_get_illuminance_reading(x11->illuminance_sensor);
+#endif
+      default:
+         break;
+   }
+
+   return 0.0f;
 }
 
 static void x_input_poll(void *data)
@@ -488,7 +556,7 @@ static void x_input_poll(void *data)
    x11->mouse_m             = mask & Button2Mask;
    x11->mouse_r             = mask & Button3Mask;
    /* Buttons 4 and 5 are not returned here, so they are handled elsewhere. */
-   
+
    /* > Mouse pointer */
    if (!x11->mouse_grabbed)
    {
@@ -538,13 +606,13 @@ static void x_input_poll(void *data)
       x11->mouse_y         += x11->mouse_delta_y;
 
       /* Clamp X */
-      if (x11->mouse_x < 0) 
+      if (x11->mouse_x < 0)
          x11->mouse_x       = 0;
       if (x11->mouse_x >= win_attr.width)
       x11->mouse_x          = (win_attr.width - 1);
 
       /* Clamp Y */
-      if (x11->mouse_y < 0) 
+      if (x11->mouse_y < 0)
          x11->mouse_y       = 0;
       if (x11->mouse_y >= win_attr.height)
          x11->mouse_y       = (win_attr.height - 1);
@@ -604,8 +672,14 @@ input_driver_t input_x = {
    x_input_poll,
    x_input_state,
    x_input_free,
+#ifdef __linux__
+   /* Right now this driver only supports the illuminance sensor on Linux. */
+   x_set_sensor_state,
+   x_get_sensor_input,
+#else
    NULL,
    NULL,
+#endif
    x_input_get_capabilities,
    "x",
    x_grab_mouse,

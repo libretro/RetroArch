@@ -30,6 +30,10 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
+#ifdef __linux__
+#include "../common/linux_common.h"
+#endif
+
 #ifdef HAVE_SDL2
 #include "../../gfx/common/sdl2_common.h"
 #endif
@@ -54,6 +58,10 @@ typedef struct sdl_input
    int mouse_wd;
    int mouse_wl;
    int mouse_wr;
+#ifdef __linux__
+   /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
+   linux_illuminance_sensor_t *illuminance_sensor;
+#endif
 } sdl_input_t;
 
 #ifdef WEBOS
@@ -249,7 +257,7 @@ static int16_t sdl_input_state(
          if (idx == 0)
          {
             struct video_viewport vp;
-            bool screen                 = device == 
+            bool screen                 = device ==
                RARCH_DEVICE_POINTER_SCREEN;
             const int edge_detect       = 32700;
             bool inside                 = false;
@@ -275,7 +283,7 @@ static int16_t sdl_input_state(
                   res_y = res_screen_y;
                }
 
-               inside =    (res_x >= -edge_detect) 
+               inside =    (res_x >= -edge_detect)
                   && (res_y >= -edge_detect)
                   && (res_x <= edge_detect)
                   && (res_y <= edge_detect);
@@ -325,6 +333,7 @@ static void sdl_input_free(void *data)
 #ifndef HAVE_SDL2
    SDL_Event event;
 #endif
+   sdl_input_t *sdl = (sdl_input_t*)data;
 
    if (!data)
       return;
@@ -336,7 +345,71 @@ static void sdl_input_free(void *data)
    while (SDL_PollEvent(&event));
 #endif
 
+#ifdef __linux__
+   linux_close_illuminance_sensor(sdl->illuminance_sensor); /* noop if NULL */
+#endif
+
    free(data);
+}
+
+static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+
+   if (!sdl)
+      return false;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+#ifdef __linux__
+         /* If already disabled, then do nothing */
+         linux_close_illuminance_sensor(sdl->illuminance_sensor); /* noop if NULL */
+         sdl->illuminance_sensor = NULL;
+#endif
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         /** Unimplemented sensor actions that probably shouldn't fail */
+         return true;
+
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+#ifdef __linux__
+         /* Unsupported on non-Linux platforms */
+         if (sdl->illuminance_sensor)
+            /* If we already have a sensor, just set the rate */
+            linux_set_illuminance_sensor_rate(sdl->illuminance_sensor, rate);
+         else
+            sdl->illuminance_sensor = linux_open_illuminance_sensor(rate);
+
+         return sdl->illuminance_sensor != NULL;
+#endif
+      default:
+         break;
+   }
+
+   return false;
+}
+
+static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+
+   if (!sdl)
+      return 0.0f;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ILLUMINANCE:
+#ifdef __linux__
+         if (sdl->illuminance_sensor)
+            return linux_get_illuminance_reading(sdl->illuminance_sensor);
+#endif
+      /* Unsupported on non-Linux platforms */
+      default:
+         break;
+   }
+
+   return 0.0f;
 }
 
 #ifdef HAVE_SDL2
@@ -397,7 +470,7 @@ static void sdl_input_poll(void *data)
          switch ((int) event.key.keysym.scancode)
          {
             case SDL_WEBOS_SCANCODE_BACK:
-               /* Because webOS is sending DOWN/UP at the same time, 
+               /* Because webOS is sending DOWN/UP at the same time,
                   we save this flag for later */
                sdl_webos_special_keymap[sdl_webos_spkey_back] |= event.type == SDL_KEYDOWN;
                code = RETROK_BACKSPACE;
@@ -478,8 +551,8 @@ input_driver_t input_sdl = {
    sdl_input_poll,
    sdl_input_state,
    sdl_input_free,
-   NULL,
-   NULL,
+   sdl_set_sensor_state,
+   sdl_get_sensor_input,
    sdl_get_capabilities,
 #ifdef HAVE_SDL2
    "sdl2",
