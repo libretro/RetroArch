@@ -5323,6 +5323,10 @@ MSG_HASH(
    "A preferált rátét automatikus betöltése"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Rendszer nevén alapuló rátét betöltése az alapértelmezett preset helyett. Hatástalan, ha a rátét preset felül van bírálva."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Rátét átlátszatlansága"
    )
