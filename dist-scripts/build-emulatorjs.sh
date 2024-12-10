@@ -67,8 +67,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
       gles3=1
       heap_mem=536870912
    elif [ $name = "ppsspp" ] ; then
-      gles3=0
-      pthread=12
+      gles3=1
+      pthread=32
       heap_mem=536870912
    fi
    echo "-- Building core: $name --"

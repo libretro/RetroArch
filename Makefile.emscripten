@@ -194,6 +194,10 @@ CFLAGS += $(DEF_FLAGS) -Ideps -Ideps/stb
 
 libretro :=
 
+ifneq (,$(findstring ppsspp,$(TARGET)))
+  libretro += ffmpeg/libavcodec.a ffmpeg/libavformat.a ffmpeg/libavutil.a ffmpeg/libswresample.a ffmpeg/libswscale.a
+endif
+
 ifeq ($(HAVE_STATIC_DUMMY),1)
   DEFINES += -DHAVE_STATIC_DUMMY
 else
