@@ -5265,26 +5265,6 @@ static const char *input_overlay_path(bool want_osk)
    /* try based on the playlist entry first */
    if (playlist)
    {
-#ifdef HAVE_MENU
-      menu_handle_t *menu = menu_state_get_ptr()->driver_data;
-      if (menu)
-      {
-         const char *playlist_db_name = NULL;
-         playlist_get_db_name(playlist, menu->rpl_entry_selection_ptr, &playlist_db_name);
-         if (playlist_db_name)
-         {
-            size_t _len = fill_pathname_join_special_ext(system_overlay_path,
-                  overlay_directory, SYSTEM_OVERLAY_DIR, playlist_db_name, "",
-                  sizeof(system_overlay_path));
-            char *ext = path_get_extension_mutable(system_overlay_path);
-            if (!ext)
-               ext = system_overlay_path + _len;
-            strlcpy(ext, ".cfg", 5);
-            if (path_is_valid(system_overlay_path))
-               return system_overlay_path;
-         }
-      }
-#endif
       if (!string_is_empty(content_path))
       {
          const struct playlist_entry *entry;
