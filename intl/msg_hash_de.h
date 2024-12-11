@@ -5223,6 +5223,10 @@ MSG_HASH(
    "Bevorzugtes Overlay automatisch laden"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Bevorzugt das Laden von Overlays basierend auf Systemnamen, bevor auf die Standardeinstellung zurückgegriffen wird. Wird ignoriert, wenn eine Überschreibung für die Overlay-Voreinstellung festgelegt ist."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
    "Overlay-Deckkraft"
    )
