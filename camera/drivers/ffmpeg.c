@@ -298,8 +298,8 @@ static bool ffmpeg_camera_start(void *data)
       ffmpeg->decoder_context->width,
       ffmpeg->decoder_context->height,
       ffmpeg->decoder_context->pix_fmt,
-      ffmpeg->target_width ? ffmpeg->target_width : ffmpeg->decoder_context->width,
-      ffmpeg->target_height ? ffmpeg->target_height : ffmpeg->decoder_context->height,
+      ffmpeg->target_width ? ffmpeg->target_width : (unsigned)ffmpeg->decoder_context->width,
+      ffmpeg->target_height ? ffmpeg->target_height : (unsigned)ffmpeg->decoder_context->height,
       AV_PIX_FMT_ARGB,
       SWS_BILINEAR,
       NULL, NULL, NULL
