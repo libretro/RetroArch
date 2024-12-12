@@ -275,7 +275,7 @@ static bool ffmpeg_camera_start(void *data)
 
    /* target buffer aligned to 4 bytes because it's exposed to the core as a uint32_t[] */
    ffmpeg->target_buffer_length = buffer_length;
-   ffmpeg->target_buffer = memalign_alloc(buffer_length, 4);
+   ffmpeg->target_buffer = memalign_alloc(4, buffer_length);
    if (!ffmpeg->target_buffer)
    {
       RARCH_ERR("[FFMPEG]: Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
