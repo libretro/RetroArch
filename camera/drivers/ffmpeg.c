@@ -23,6 +23,7 @@
 
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
+#include <libswscale/swscale.h>
 #include <retro_assert.h>
 
 /* ffmpeg supports a specific range of video devices;
@@ -81,12 +82,13 @@ typedef struct ffmpeg_camera
    const AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
    AVDictionary *demuxer_options;
    AVPacket *packet;
-   AVFrame *frame;
-   unsigned width;
-   unsigned height;
-   uint8_t *video_data[4];
-   int video_linesize[4];
-   int video_buffer_size;
+   AVFrame *camera_frame;
+   AVFrame *target_frame;
+   unsigned target_width;
+   unsigned target_height;
+   uint8_t *target_buffer;
+   size_t target_buffer_length;
+   struct SwsContext *scale_context;
 
    /* "name" for the camera device.
     * (Not just the reported name, there may be a bit of extra syntax.) */
@@ -121,8 +123,8 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       return NULL;
    }
 
-   ffmpeg->width = width;
-   ffmpeg->height = height;
+   ffmpeg->target_width = width;
+   ffmpeg->target_height = height;
 
    avdevice_register_all();
    RARCH_LOG("[FFMPEG]: Initialized libavdevice.\n");
@@ -155,6 +157,7 @@ error:
    return NULL;
 }
 
+static void ffmpeg_camera_stop(void *data);
 static void ffmpeg_camera_free(void *data)
 {
    ffmpeg_camera_t *ffmpeg = data;
@@ -162,13 +165,17 @@ static void ffmpeg_camera_free(void *data)
    if (!ffmpeg)
       return;
 
+   ffmpeg_camera_stop(ffmpeg);
+
    /* these functions are noops for NULL pointers */
    avcodec_free_context(&ffmpeg->decoder_context);
    avformat_close_input(&ffmpeg->format_context);
-   av_frame_free(&ffmpeg->frame);
+   av_frame_free(&ffmpeg->camera_frame);
+   av_frame_free(&ffmpeg->target_frame);
    av_packet_free(&ffmpeg->packet);
    av_dict_free(&ffmpeg->demuxer_options);
-   av_freep(&ffmpeg->video_data[0]);
+   sws_freeContext(ffmpeg->scale_context);
+   free(ffmpeg->target_buffer);
 
    free(ffmpeg);
 }
@@ -223,6 +230,12 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
+   if (!sws_isSupportedInput(ffmpeg->decoder_context->pix_fmt))
+   {
+      RARCH_ERR("[FFMPEG]: Unsupported scaler input pixel format: %s\n", av_get_pix_fmt_name(ffmpeg->decoder_context->pix_fmt));
+      goto error;
+   }
+
    AVDictionary *opts = NULL;
    result = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, &opts);
    if (result < 0)
@@ -238,36 +251,73 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   ffmpeg->frame = av_frame_alloc();
-   if (!ffmpeg->frame)
+   ffmpeg->camera_frame = av_frame_alloc();
+   if (!ffmpeg->camera_frame)
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate frame.\n");
+      RARCH_ERR("[FFMPEG]: Failed to allocate camera frame.\n");
       goto error;
    }
 
-   result = av_image_alloc(ffmpeg->video_data, ffmpeg->video_linesize, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height, ffmpeg->decoder_context->pix_fmt, 1);
-   if (result < 0)
+   ffmpeg->target_frame = av_frame_alloc();
+   if (!ffmpeg->target_frame)
    {
-      RARCH_ERR("[FFMPEG]: Failed to allocate video data: %s\n", av_err2str(result));
+      RARCH_ERR("[FFMPEG]: Failed to allocate target frame.\n");
       goto error;
    }
-   ffmpeg->video_buffer_size = result;
+
+   int buffer_length = av_image_get_buffer_size(AV_PIX_FMT_ARGB, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height, 4);
+   if (buffer_length < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to get buffer size for target frame: %s\n", av_err2str(buffer_length));
+      goto error;
+   }
+
+   ffmpeg->target_buffer_length = buffer_length;
+   ffmpeg->target_buffer = (uint8_t*)av_malloc(buffer_length);
+   if (!ffmpeg->target_buffer)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
+         buffer_length,
+         ffmpeg->decoder_context->width,
+         ffmpeg->decoder_context->height,
+         av_get_pix_fmt_name(AV_PIX_FMT_ARGB)
+      );
+      goto error;
+   }
 
    RARCH_LOG("[FFMPEG]: Allocated %d bytes for %dx%d %s-formatted video data.\n",
-      ffmpeg->video_buffer_size,
+      buffer_length,
       ffmpeg->decoder_context->width,
       ffmpeg->decoder_context->height,
       av_get_pix_fmt_name(ffmpeg->decoder_context->pix_fmt)
    );
 
+   ffmpeg->scale_context = sws_getContext(
+      ffmpeg->decoder_context->width,
+      ffmpeg->decoder_context->height,
+      ffmpeg->decoder_context->pix_fmt,
+      ffmpeg->target_width ? ffmpeg->target_width : ffmpeg->decoder_context->width,
+      ffmpeg->target_height ? ffmpeg->target_height : ffmpeg->decoder_context->height,
+      AV_PIX_FMT_ARGB,
+      SWS_BILINEAR,
+      NULL, NULL, NULL
+   );
+   if (!ffmpeg->scale_context)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to create scale context.\n");
+      goto error;
+   }
+
    return true;
 error:
    /* these functions are noops for NULL pointers */
-   av_freep(&ffmpeg->video_data[0]);
-   av_frame_free(&ffmpeg->frame);
+   free(ffmpeg->target_buffer);
+   av_frame_free(&ffmpeg->target_frame);
+   av_frame_free(&ffmpeg->camera_frame);
    av_packet_free(&ffmpeg->packet);
    avcodec_free_context(&ffmpeg->decoder_context);
    avformat_close_input(&ffmpeg->format_context);
+   sws_freeContext(ffmpeg->scale_context);
 
    return false;
 }
@@ -278,19 +328,24 @@ static void ffmpeg_camera_stop(void *data)
 
    if (!ffmpeg->format_context)
    {
-      RARCH_LOG("[FFMPEG]: Camera %s is already stopped, no action needed.\n", ffmpeg->url);
-      return;
+      RARCH_LOG("[FFMPEG]: Camera %s is already stopped, no flush needed.\n", ffmpeg->url);
    }
-
-   int result = avcodec_send_packet(ffmpeg->decoder_context, NULL);
-   if (result < 0)
+   else
    {
-      RARCH_ERR("[FFMPEG]: Failed to flush decoder: %s\n", av_err2str(result));
+      int result = avcodec_send_packet(ffmpeg->decoder_context, NULL);
+      if (result < 0)
+      {
+         RARCH_ERR("[FFMPEG]: Failed to flush decoder: %s\n", av_err2str(result));
+      }
    }
 
-   av_freep(&ffmpeg->video_data[0]);
+   free(ffmpeg->target_buffer);
+   ffmpeg->target_buffer = NULL;
+   ffmpeg->target_buffer_length = 0;
    avcodec_free_context(&ffmpeg->decoder_context);
    avformat_close_input(&ffmpeg->format_context);
+   sws_freeContext(ffmpeg->scale_context);
+   ffmpeg->scale_context = NULL;
    RARCH_LOG("[FFMPEG]: Closed video input device %s.\n", ffmpeg->url);
 }
 
@@ -330,23 +385,40 @@ static bool ffmpeg_camera_poll(
    }
 
    /* video streams consist of exactly one frame per packet */
-   result = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->frame);
+   result = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->camera_frame);
    if (result < 0)
    { // TODO: Handle AVERROR_EOF and AVERROR(EAGAIN)
-      RARCH_ERR("[FFMPEG]: Failed to receive frame from decoder: %s\n", av_err2str(result));
+      RARCH_ERR("[FFMPEG]: Failed to receive camera frame from decoder: %s\n", av_err2str(result));
       goto error;
    }
 
    retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
 
-   av_image_copy2(ffmpeg->video_data, ffmpeg->video_linesize, ffmpeg->frame->data, ffmpeg->frame->linesize, ffmpeg->decoder_context->pix_fmt, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height);
+   result = sws_scale_frame(ffmpeg->scale_context, ffmpeg->target_frame, ffmpeg->camera_frame);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to scale frame: %s\n", av_err2str(result));
+      goto error;
+   }
 
-   // TODO: Convert the frame to XRGB8888
-   // TODO: Send the frame to the callback
+   result = av_image_copy_to_buffer(
+      ffmpeg->target_buffer,
+      ffmpeg->target_buffer_length,
+      (const uint8_t* const *)ffmpeg->target_frame->data,
+      ffmpeg->target_frame->linesize,
+      ffmpeg->target_frame->format,
+      ffmpeg->target_frame->width,
+      ffmpeg->target_frame->height,
+      4
+   );
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to copy frame to buffer: %s\n", av_err2str(result));
+      goto error;
+   }
 
-   // TODO: Ensure I'm unreferencing the packet correctly (use the return status of the functions that reference them)
+   frame_raw_cb((uint32_t*)ffmpeg->target_buffer, ffmpeg->target_frame->width, ffmpeg->target_frame->height, ffmpeg->target_frame->linesize[0]);
    av_packet_unref(ffmpeg->packet);
-   av_frame_unref(ffmpeg->frame);
 
    return false;
 error:
