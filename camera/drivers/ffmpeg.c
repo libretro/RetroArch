@@ -24,6 +24,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
+#include <memalign.h>
 #include <retro_assert.h>
 
 /* ffmpeg supports a specific range of video devices;
@@ -175,7 +176,7 @@ static void ffmpeg_camera_free(void *data)
    av_packet_free(&ffmpeg->packet);
    av_dict_free(&ffmpeg->demuxer_options);
    sws_freeContext(ffmpeg->scale_context);
-   free(ffmpeg->target_buffer);
+   memalign_free(ffmpeg->target_buffer);
 
    free(ffmpeg);
 }
@@ -272,8 +273,9 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
+   /* target buffer aligned to 4 bytes because it's exposed to the core as a uint32_t[] */
    ffmpeg->target_buffer_length = buffer_length;
-   ffmpeg->target_buffer = (uint8_t*)av_malloc(buffer_length);
+   ffmpeg->target_buffer = memalign_alloc(buffer_length, 4);
    if (!ffmpeg->target_buffer)
    {
       RARCH_ERR("[FFMPEG]: Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
@@ -310,14 +312,7 @@ static bool ffmpeg_camera_start(void *data)
 
    return true;
 error:
-   /* these functions are noops for NULL pointers */
-   free(ffmpeg->target_buffer);
-   av_frame_free(&ffmpeg->target_frame);
-   av_frame_free(&ffmpeg->camera_frame);
-   av_packet_free(&ffmpeg->packet);
-   avcodec_free_context(&ffmpeg->decoder_context);
-   avformat_close_input(&ffmpeg->format_context);
-   sws_freeContext(ffmpeg->scale_context);
+   ffmpeg_camera_stop(ffmpeg);
 
    return false;
 }
@@ -339,7 +334,8 @@ static void ffmpeg_camera_stop(void *data)
       }
    }
 
-   free(ffmpeg->target_buffer);
+   /* these functions are noops for NULL pointers */
+   memalign_free(ffmpeg->target_buffer);
    ffmpeg->target_buffer = NULL;
    ffmpeg->target_buffer_length = 0;
    avcodec_free_context(&ffmpeg->decoder_context);
