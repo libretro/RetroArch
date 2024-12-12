@@ -256,7 +256,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   int buffer_length = av_image_get_buffer_size(AV_PIX_FMT_ARGB, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height, 4);
+   int buffer_length = av_image_get_buffer_size(AV_PIX_FMT_BGRA, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height, 4);
    if (buffer_length < 0)
    {
       RARCH_ERR("[FFMPEG]: Failed to get buffer size for target frame: %s\n", av_err2str(buffer_length));
@@ -272,7 +272,7 @@ static bool ffmpeg_camera_start(void *data)
          buffer_length,
          ffmpeg->decoder_context->width,
          ffmpeg->decoder_context->height,
-         av_get_pix_fmt_name(AV_PIX_FMT_ARGB)
+         av_get_pix_fmt_name(AV_PIX_FMT_BGRA)
       );
       goto error;
    }
@@ -290,7 +290,7 @@ static bool ffmpeg_camera_start(void *data)
       ffmpeg->decoder_context->pix_fmt,
       ffmpeg->target_width ? ffmpeg->target_width : (unsigned)ffmpeg->decoder_context->width,
       ffmpeg->target_height ? ffmpeg->target_height : (unsigned)ffmpeg->decoder_context->height,
-      AV_PIX_FMT_ARGB,
+      AV_PIX_FMT_BGRA,
       SWS_BILINEAR,
       NULL, NULL, NULL
    );
