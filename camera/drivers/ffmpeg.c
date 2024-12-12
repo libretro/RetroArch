@@ -346,6 +346,7 @@ static bool ffmpeg_camera_poll(
    retro_camera_frame_raw_framebuffer_t frame_raw_cb,
    retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
+   bool ok = false;
    ffmpeg_camera_t *ffmpeg = data;
    int result = 0;
 
@@ -378,8 +379,12 @@ static bool ffmpeg_camera_poll(
    /* video streams consist of exactly one frame per packet */
    result = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->camera_frame);
    if (result < 0)
-   { // TODO: Handle AVERROR_EOF and AVERROR(EAGAIN)
-      RARCH_ERR("[FFMPEG]: Failed to receive camera frame from decoder: %s\n", av_err2str(result));
+   {
+      if (!(result == AVERROR_EOF || result == AVERROR(EAGAIN)))
+      { /* these error codes mean no new frame, but not necessarily a problem */
+         RARCH_ERR("[FFMPEG]: Failed to receive camera frame from decoder: %s\n", av_err2str(result));
+      }
+
       goto error;
    }
 
@@ -389,7 +394,7 @@ static bool ffmpeg_camera_poll(
    if (result < 0)
    {
       RARCH_ERR("[FFMPEG]: Failed to scale frame: %s\n", av_err2str(result));
-      goto error;
+      goto done;
    }
 
    result = av_image_copy_to_buffer(
@@ -405,17 +410,19 @@ static bool ffmpeg_camera_poll(
    if (result < 0)
    {
       RARCH_ERR("[FFMPEG]: Failed to copy frame to buffer: %s\n", av_err2str(result));
-      goto error;
+      goto done;
    }
 
    frame_raw_cb((uint32_t*)ffmpeg->target_buffer, ffmpeg->target_frame->width, ffmpeg->target_frame->height, ffmpeg->target_frame->linesize[0]);
+   ok = true;
+done:
+   /* must be called when we're done with it */
+   av_frame_unref(ffmpeg->camera_frame);
+error:
+   /* every operation in this function needs this packet */
    av_packet_unref(ffmpeg->packet);
 
-   return false;
-error:
-   /* must be called when we're done with it */
-   av_packet_unref(ffmpeg->packet);
-   return false;
+   return ok;
 }
 
 static struct string_list *ffmpeg_camera_device_list_new(const void *driver_context)
