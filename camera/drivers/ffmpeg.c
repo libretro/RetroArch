@@ -15,18 +15,98 @@
 */
 
 #include <libretro.h>
+#include <libavdevice/avdevice.h>
 
 #include "../camera_driver.h"
 #include "lists/string_list.h"
 #include "verbosity.h"
 
+#include <libavcodec/avcodec.h>
+#include <libavutil/imgutils.h>
+#include <retro_assert.h>
+
+/* ffmpeg supports a specific range of video devices;
+ * some video backends are better than others,
+ * so we'll prioritize those as defaults.
+ */
+const char *const FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[] = {
+   /* Recommended camera backends */
+#ifdef ANDROID
+   "android_camera",
+#endif
+#ifdef __linux__
+   "v4l2",
+#endif
+#ifdef __APPLE__
+   "avfoundation",
+#endif
+#ifdef __WIN32__
+   "dshow",
+   "vfwcap",
+#endif
+
+   /* Uncommon backends */
+#ifdef __linux__
+   "fbdev",
+   "kmsgrab",
+   "x11grab",
+#endif
+#ifdef __WIN32__
+   "gdigrab",
+#endif
+
+   "iec61883", /* FireWire */
+   "decklink",
+   "libdc1394",
+   "lavfi", /* Libavfilter */
+
+   /* Deprecated backends */
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
+   "bktr",
+#endif
+   NULL
+
+   /* Unlisted backends lack video support
+    * or were introduced after this driver was written
+    * (it's okay, we can still use them if they're available).
+    */
+};
+
+
 typedef struct ffmpeg_camera
 {
+   AVFormatContext *format_context;
+   AVCodecContext *decoder_context;
+   const AVCodec *decoder;
+   const AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
+   AVDictionary *demuxer_options;
+   AVPacket *packet;
+   AVFrame *frame;
+   unsigned width;
+   unsigned height;
+   uint8_t *video_data[4];
+   int video_linesize[4];
+   int video_buffer_size;
+
+   /* "name" for the camera device.
+    * (Not just the reported name, there may be a bit of extra syntax.) */
+   char url[512];
 } ffmpeg_camera_t;
 
+static void ffmpeg_camera_free(void *data);
+
+static const AVInputFormat *ffmpeg_camera_choose_format(const char *device)
+{
+   // TODO: If `device` is not NULL or empty, parse it to get the backend and device name
+   // TODO: Pick the best backend for the current platform, don't just return the first
+   return av_input_video_device_next(NULL);
+}
+
+// TODO: device format shall be: "<device type>/<device name>"
 static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    ffmpeg_camera_t *ffmpeg = NULL;
+   AVDictionary *options = NULL;
 
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
    { /* If the core didn't ask for raw framebuffers... */
@@ -41,48 +121,254 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       return NULL;
    }
 
+   ffmpeg->width = width;
+   ffmpeg->height = height;
+
+   avdevice_register_all();
+   RARCH_LOG("[FFMPEG]: Initialized libavdevice.\n");
+
+   ffmpeg->input_format = ffmpeg_camera_choose_format(device);
+   if (!ffmpeg->input_format)
+   {
+      RARCH_ERR("[FFMPEG]: No suitable video input devices found.\n");
+      goto error;
+   }
+
+   AVDeviceInfoList *device_list = NULL;
+   int num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, NULL, &device_list);
+   // TODO: Handle case where zero sources are returned
+   if (num_sources < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to list video input sources: %s\n", av_err2str(num_sources));
+      goto error;
+   }
+
+   RARCH_LOG("[FFMPEG]: Using video input device: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
+   snprintf(ffmpeg->url, sizeof(ffmpeg->url), "video=%s", device_list->devices[0]->device_name);
+   // TODO: this url is specific to dshow, need to generalize it
+
+   avdevice_free_list_devices(&device_list);
    return ffmpeg;
+error:
+   avdevice_free_list_devices(&device_list);
+   ffmpeg_camera_free(ffmpeg);
+   return NULL;
 }
 
 static void ffmpeg_camera_free(void *data)
 {
-   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
+   ffmpeg_camera_t *ffmpeg = data;
 
    if (!ffmpeg)
       return;
+
+   /* these functions are noops for NULL pointers */
+   avcodec_free_context(&ffmpeg->decoder_context);
+   avformat_close_input(&ffmpeg->format_context);
+   av_frame_free(&ffmpeg->frame);
+   av_packet_free(&ffmpeg->packet);
+   av_dict_free(&ffmpeg->demuxer_options);
+   av_freep(&ffmpeg->video_data[0]);
 
    free(ffmpeg);
 }
 
 static bool ffmpeg_camera_start(void *data)
 {
-   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
+   ffmpeg_camera_t *ffmpeg = data;
+   int result = 0;
+   AVStream *stream = NULL;
+
+   if (ffmpeg->format_context)
+   { // TODO: Check the actual format context, not just the pointer
+      RARCH_LOG("[FFMPEG]: Camera %s is already started, no action needed.\n", ffmpeg->format_context->url);
+      return true;
+   }
+
+   result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &ffmpeg->demuxer_options);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to open video input device: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   result = avformat_find_stream_info(ffmpeg->format_context, NULL);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to find stream info: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   result = av_find_best_stream(ffmpeg->format_context, AVMEDIA_TYPE_VIDEO, -1, -1, &ffmpeg->decoder, 0);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to find video stream: %s\n", av_err2str(result));
+      goto error;
+   }
+   stream = ffmpeg->format_context->streams[result];
+
+   RARCH_LOG("[FFMPEG]: Using video stream #%d with decoder \"%s\" (%s).\n", result, ffmpeg->decoder->name, ffmpeg->decoder->long_name);
+
+   ffmpeg->decoder_context = avcodec_alloc_context3(ffmpeg->decoder);
+   if (!ffmpeg->decoder_context)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to allocate decoder context.\n");
+      goto error;
+   }
+
+   result = avcodec_parameters_to_context(ffmpeg->decoder_context, stream->codecpar);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to copy codec parameters to decoder context: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   AVDictionary *opts = NULL;
+   result = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, &opts);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to open decoder: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   ffmpeg->packet = av_packet_alloc();
+   if (!ffmpeg->packet)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to allocate packet.\n");
+      goto error;
+   }
+
+   ffmpeg->frame = av_frame_alloc();
+   if (!ffmpeg->frame)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to allocate frame.\n");
+      goto error;
+   }
+
+   result = av_image_alloc(ffmpeg->video_data, ffmpeg->video_linesize, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height, ffmpeg->decoder_context->pix_fmt, 1);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to allocate video data: %s\n", av_err2str(result));
+      goto error;
+   }
+   ffmpeg->video_buffer_size = result;
+
+   RARCH_LOG("[FFMPEG]: Allocated %d bytes for %dx%d %s-formatted video data.\n",
+      ffmpeg->video_buffer_size,
+      ffmpeg->decoder_context->width,
+      ffmpeg->decoder_context->height,
+      av_get_pix_fmt_name(ffmpeg->decoder_context->pix_fmt)
+   );
+
+   return true;
+error:
+   /* these functions are noops for NULL pointers */
+   av_freep(&ffmpeg->video_data[0]);
+   av_frame_free(&ffmpeg->frame);
+   av_packet_free(&ffmpeg->packet);
+   avcodec_free_context(&ffmpeg->decoder_context);
+   avformat_close_input(&ffmpeg->format_context);
 
    return false;
 }
 
 static void ffmpeg_camera_stop(void *data)
 {
-   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
+   ffmpeg_camera_t *ffmpeg = data;
 
+   if (!ffmpeg->format_context)
+   {
+      RARCH_LOG("[FFMPEG]: Camera %s is already stopped, no action needed.\n", ffmpeg->url);
+      return;
+   }
+
+   int result = avcodec_send_packet(ffmpeg->decoder_context, NULL);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to flush decoder: %s\n", av_err2str(result));
+   }
+
+   av_freep(&ffmpeg->video_data[0]);
+   avcodec_free_context(&ffmpeg->decoder_context);
+   avformat_close_input(&ffmpeg->format_context);
+   RARCH_LOG("[FFMPEG]: Closed video input device %s.\n", ffmpeg->url);
 }
 
+// TODO: Put this in another thread
 static bool ffmpeg_camera_poll(
    void *data,
    retro_camera_frame_raw_framebuffer_t frame_raw_cb,
    retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
-   ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
+   ffmpeg_camera_t *ffmpeg = data;
+   int result = 0;
 
+   if (!ffmpeg->format_context)
+   {
+      RARCH_ERR("[FFMPEG]: Camera is not started, cannot poll.\n");
+      return false;
+   }
+
+   if (!frame_raw_cb)
+   {
+      RARCH_ERR("[FFMPEG]: No callback provided, cannot poll.\n");
+      return false;
+   }
+
+   result = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to read frame: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   result = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to send packet to decoder: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   /* video streams consist of exactly one frame per packet */
+   result = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->frame);
+   if (result < 0)
+   { // TODO: Handle AVERROR_EOF and AVERROR(EAGAIN)
+      RARCH_ERR("[FFMPEG]: Failed to receive frame from decoder: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
+
+   av_image_copy2(ffmpeg->video_data, ffmpeg->video_linesize, ffmpeg->frame->data, ffmpeg->frame->linesize, ffmpeg->decoder_context->pix_fmt, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height);
+
+   // TODO: Convert the frame to XRGB8888
+   // TODO: Send the frame to the callback
+
+   // TODO: Ensure I'm unreferencing the packet correctly (use the return status of the functions that reference them)
+   av_packet_unref(ffmpeg->packet);
+   av_frame_unref(ffmpeg->frame);
+
+   return false;
+error:
+   /* must be called when we're done with it */
+   av_packet_unref(ffmpeg->packet);
    return false;
 }
 
 static struct string_list *ffmpeg_camera_device_list_new(const void *driver_context)
 {
+   const AVInputFormat *input = NULL;
    struct string_list *list = string_list_new();
 
    if (!list)
       return NULL;
+
+   for (input = av_input_video_device_next(NULL); input != NULL; input = av_input_video_device_next(input))
+   {
+      // if (input->priv_class && input->priv_class->category == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT)
+      RARCH_LOG("[FFMPEG]: Found input device: %s (%s, %x)\n", input->name, input->long_name, input->flags);
+      // TODO: Find guide for creating and using a camera
+   }
 
    return list;
 }
