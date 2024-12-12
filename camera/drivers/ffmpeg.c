@@ -168,16 +168,6 @@ static void ffmpeg_camera_free(void *data)
 
    ffmpeg_camera_stop(ffmpeg);
 
-   /* these functions are noops for NULL pointers */
-   avcodec_free_context(&ffmpeg->decoder_context);
-   avformat_close_input(&ffmpeg->format_context);
-   av_frame_free(&ffmpeg->camera_frame);
-   av_frame_free(&ffmpeg->target_frame);
-   av_packet_free(&ffmpeg->packet);
-   av_dict_free(&ffmpeg->demuxer_options);
-   sws_freeContext(ffmpeg->scale_context);
-   memalign_free(ffmpeg->target_buffer);
-
    free(ffmpeg);
 }
 
@@ -335,13 +325,18 @@ static void ffmpeg_camera_stop(void *data)
    }
 
    /* these functions are noops for NULL pointers */
+   sws_freeContext(ffmpeg->scale_context);
+   ffmpeg->scale_context = NULL;
+
    memalign_free(ffmpeg->target_buffer);
    ffmpeg->target_buffer = NULL;
    ffmpeg->target_buffer_length = 0;
+
+   av_frame_free(&ffmpeg->target_frame);
+   av_frame_free(&ffmpeg->camera_frame);
+   av_packet_free(&ffmpeg->packet);
    avcodec_free_context(&ffmpeg->decoder_context);
    avformat_close_input(&ffmpeg->format_context);
-   sws_freeContext(ffmpeg->scale_context);
-   ffmpeg->scale_context = NULL;
    RARCH_LOG("[FFMPEG]: Closed video input device %s.\n", ffmpeg->url);
 }
 
@@ -405,7 +400,7 @@ static bool ffmpeg_camera_poll(
       ffmpeg->target_frame->format,
       ffmpeg->target_frame->width,
       ffmpeg->target_frame->height,
-      4
+      1
    );
    if (result < 0)
    {
