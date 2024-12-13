@@ -5267,7 +5267,7 @@ static const char *input_overlay_path(bool want_osk)
    {
       if (!string_is_empty(content_path))
       {
-         const struct playlist_entry *entry;
+         const struct playlist_entry *entry = NULL;
          playlist_get_index_by_path(playlist, content_path, &entry);
          if (entry && entry->db_name)
          {
