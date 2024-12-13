@@ -437,7 +437,6 @@ static struct string_list *ffmpeg_camera_device_list_new(const void *driver_cont
    {
       // if (input->priv_class && input->priv_class->category == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT)
       RARCH_LOG("[FFMPEG]: Found input device: %s (%s, %x)\n", input->name, input->long_name, input->flags);
-      // TODO: Find guide for creating and using a camera
    }
 
    return list;
