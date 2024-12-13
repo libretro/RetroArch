@@ -3003,10 +3003,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Ses Gecikmesi (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Mili saniye cinsinden istenen ses gecikmesi. Ses sürücüsü verilen gecikmeyi sağlayamıyorsa ses duyulmayabilir."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

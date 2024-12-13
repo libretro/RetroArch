@@ -2639,10 +2639,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Ljudfördröjning (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Önskad ljudfördröjning i millisekunder. Kanske inte är hedrad om ljuddrivrutinen inte kan tillhandahålla given latens."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
