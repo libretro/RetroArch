@@ -2167,10 +2167,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Latensi Audio (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Latensi audio sekeinginan dalam milidetik. Mungkin akan diabaikan jika kandar audio tidak mendukung latensi ini."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

@@ -2955,10 +2955,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "音频延迟 (毫秒)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "音频延迟，单位为毫秒。如果音频驱动程序不支持，则不会生效。"
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

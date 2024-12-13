@@ -3023,10 +3023,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Затримка звуку (мс)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Бажана затримка аудіо в мілісекундах. Не може бути відзначено, якщо звуковий драйвер не може забезпечити задану затримку."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -4888,7 +4884,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "Встановлює рівень журналювання для ядер. Якщо рівень журналу, виданий ядром, нижче цього значення, він ігнорується."
+   "Встановлює рівень журналювання для зовнішнього інтерфейсу. Якщо рівень журналу, виданий інтерфейсом, нижче цього значення, він ігнорується."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,

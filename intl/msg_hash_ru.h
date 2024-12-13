@@ -3023,10 +3023,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Задержка звука (мс)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Желаемая задержка звука в миллисекундах. Не учитывается, если драйвер не поддерживает заданное значение."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

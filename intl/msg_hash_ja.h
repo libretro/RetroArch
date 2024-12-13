@@ -2971,10 +2971,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "オーディオレイテンシ (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "オーディオレイテンシをミリ秒単位で指定します。マイクドライバが指定したレイテンシを提供できない場合、この値は使用されない可能性があります。"
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

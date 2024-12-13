@@ -419,10 +419,6 @@ MSG_HASH(
 
 /* Settings > Audio > Output */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Desired audio latency in milliseconds. Might not be honoured if the audio driver cannot provide the given latency."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

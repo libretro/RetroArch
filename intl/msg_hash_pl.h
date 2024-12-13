@@ -2883,10 +2883,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Opóźnienie dźwięku (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Żądane opóźnienie dźwięku w milisekundach. Może nie być honorowane, jeśli sterownik audio nie może zapewnić określonego opóźnienia."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

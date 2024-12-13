@@ -3005,7 +3005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Selecciona la latencia deseada para el audio en milisegundos. Este valor podría ignorarse si el controlador no puede generar dicha latencia."
+   "La latencia máxima del audio en milisegundos. El controlador intentará mantener la latencia real en un 50 % de este valor. El valor podría no ser respetado si el controlador de audio no puede producir dicha latencia."
    )
 
 #ifdef HAVE_MICROPHONE
