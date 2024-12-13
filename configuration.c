@@ -149,6 +149,7 @@ enum audio_driver_enum
    AUDIO_PS2,
    AUDIO_CTR,
    AUDIO_SWITCH,
+   AUDIO_PIPEWIRE,
    AUDIO_NULL
 };
 
@@ -509,6 +510,8 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 #elif defined(HAVE_PULSE)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
+#elif defined(HAVE_PIPEWIRE)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PIPEWIRE;
 #elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
@@ -921,6 +924,8 @@ const char *config_get_default_audio(void)
          return "xaudio";
       case AUDIO_PULSE:
          return "pulse";
+      case AUDIO_PIPEWIRE:
+         return "pipewire";
       case AUDIO_EXT:
          return "ext";
       case AUDIO_XENON360:

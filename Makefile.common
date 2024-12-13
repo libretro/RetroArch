@@ -921,6 +921,12 @@ ifeq ($(HAVE_PULSE), 1)
    DEF_FLAGS += $(PULSE_CFLAGS)
 endif
 
+ifeq ($(HAVE_PIPEWIRE), 1)
+   OBJ += audio/drivers/pipewire.o
+   LIBS += $(PIPEWIRE_LIBS)
+   DEF_FLAGS += $(PIPEWIRE_CFLAGS)
+endif
+
 ifeq ($(HAVE_OSS_LIB), 1)
    LIBS += -lossaudio
 endif
@@ -2192,7 +2198,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifneq ($(findstring Linux,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
-   
+
    ifneq ($(findstring Win,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
