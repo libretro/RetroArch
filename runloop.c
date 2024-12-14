@@ -8282,20 +8282,19 @@ char* get_core_options(void)
         size_t opt_idx;
         size_t val_idx1;
         struct core_option *option = (struct core_option*)&runloop_st->core_options->opts[i];
-        if (core_option_manager_get_idx(runloop_st->core_options, runloop_st->core_options->opts[i].key, &opt_idx) && core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data, &val_idx1)) {
+
+        if (core_option_manager_get_idx(runloop_st->core_options, option->key, &opt_idx)) {
             if (o>0) size++;
             o++;
             size += 3;
-            size += strlen(runloop_st->core_options->opts[i].key);
-            size += strlen(option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data);
+            size += strlen(option->key);
+            size += strlen(core_option_manager_get_val(runloop_st->core_options, opt_idx));
             int w = 0;
-            for (int j=0; j<option->val_labels->size; j++) {
+            for (int j=0; j<option->vals->size; j++) {
                 size_t val_idx;
-                if (core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[j].data, &val_idx)) {
-                    if (w>0) size++;
-                    size += strlen(option->val_labels->elems[j].data);
-                    w++;
-                }
+                if (w>0) size++;
+                size += strlen(option->vals->elems[j].data);
+                w++;
             }
         }
     }
@@ -8307,21 +8306,20 @@ char* get_core_options(void)
         size_t opt_idx;
         size_t val_idx1;
         struct core_option *option = (struct core_option*)&runloop_st->core_options->opts[i];
-        if (core_option_manager_get_idx(runloop_st->core_options, runloop_st->core_options->opts[i].key, &opt_idx) && core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data, &val_idx1)) {
+
+        if (core_option_manager_get_idx(runloop_st->core_options, option->key, &opt_idx)) {
             if (o>0) strcat(rv, "\n");
             o++;
-            strcat(rv, runloop_st->core_options->opts[i].key);
+            strcat(rv, option->key);
             strcat(rv, "|");
-            strcat(rv, option->val_labels->elems[runloop_st->core_options->opts[i].default_index].data);
+            strcat(rv, core_option_manager_get_val(runloop_st->core_options, opt_idx));
             strcat(rv, "; ");
             int w = 0;
-            for (int j=0; j<option->val_labels->size; j++) {
+            for (int j=0; j<option->vals->size; j++) {
                 size_t val_idx;
-                if (core_option_manager_get_val_idx(runloop_st->core_options, i, option->val_labels->elems[j].data, &val_idx)) {
-                    if (w>0) strcat(rv, "|");
-                    strcat(rv, option->val_labels->elems[j].data);
-                    w++;
-                }
+                if (w>0) strcat(rv, "|");
+                strcat(rv, option->vals->elems[j].data);
+                w++;
             }
         }
     }
