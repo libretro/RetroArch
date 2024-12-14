@@ -1334,31 +1334,36 @@ static void task_push_load_and_save_state(const char *path, void *data,
 
 #ifdef EMULATORJS
 
-void save_state_info(void)
+char state_data[300];
+void* save_data;
+
+char* save_state_info(void)
 {
+   memset(state_data, '\0', sizeof(state_data));
+
+   if (save_data)
+      free(save_data);
+
    size_t serial_size;
-   void *data  = NULL;
 
    if (!core_info_current_supports_savestate()) {
-      return;
+      strcpy(state_data, "Not supported||0");
+      return state_data;
    }
 
    serial_size = core_serialize_size();
    if (serial_size == 0) {
-      return;
+      strcpy(state_data, "Size is zero||0");
+      return state_data;
    }
 
-   data = content_get_serialized_data(&serial_size);
-   if (!data) {
-      return;
+   save_data = content_get_serialized_data(&serial_size);
+   if (!save_data) {
+      strcpy(state_data, "Error writing data||0");
+      return state_data;
    }
-   remove("/current.state");
-   FILE *f = fopen("/current.state", "wb");
-   if (f == NULL) {
-      return;
-   }
-   fwrite(data, 1, serial_size, f);
-   fclose(f);
+   sprintf(state_data, "%zu|%zu|1", serial_size, (unsigned long)save_data);
+   return state_data;
 }
 
 bool supports_states(void)
