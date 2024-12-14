@@ -14,11 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <signal.h>
-#include <sys/types.h>
 
 #include <dirent.h>
 #include <linux/input.h>
@@ -34,6 +32,8 @@
 
 /* We can assume that pthreads are available on Linux. */
 #include <pthread.h>
+#include <retro_dirent.h>
+#include <streams/file_stream.h>
 #include <string.h>
 
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
@@ -195,8 +195,7 @@ static void linux_poll_illuminance_sensor(void *data)
 
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
-   DIR *devices = NULL;
-   struct dirent *d = NULL;
+   RDIR *device = NULL;
    linux_illuminance_sensor_t *sensor = malloc(sizeof(*sensor));
 
    if (!sensor)
@@ -207,43 +206,23 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
    sensor->done      = false;
 
-   devices = opendir(IIO_DEVICES_DIR);
-   if (!devices)
-   { /* If we couldn't find the IIO device directory... */
-      char errmesg[NAME_MAX_LENGTH];
-      strerror_r(errno, errmesg, sizeof(errmesg));
-      RARCH_ERR("Failed to open " IIO_DEVICES_DIR ": %s\n", errmesg);
-      goto error;
-   }
-
-   /*
-    * Must clear errno at the start of each iteration,
-    * as an error code that came from one run of the loop
-    * can leak into the next iteration and hide serious errors.
-    * (Ex: trying to open a file that doesn't exist,
-    * which we handle here.)
-    */
-   errno = 0;
-   for (d = readdir(devices); d != NULL; errno = 0, d = readdir(devices))
+   while (retro_readdir(device))
    { /* For each IIO device... */
-      /* First ensure that the readdir call succeeded... */
-      int err = errno;
-      double lux;
+      const char *name = retro_dirent_get_name(device);
+      double lux = 0.0;
 
-      if (d->d_name[0] == '.')
-         /* Skip hidden files, ".", and ".." */
-         continue;
-
-      if (err != 0)
+      if (!name)
       {
-         char errmesg[NAME_MAX_LENGTH];
-         strerror_r(err, errmesg, sizeof(errmesg));
-         RARCH_ERR("readdir(" IIO_DEVICES_DIR ") failed: %s\n", errmesg);
+         RARCH_ERR("Error reading " IIO_DEVICES_DIR "\n");
          goto error;
       }
 
+      if (name[0] == '.')
+         /* Skip hidden files, ".", and ".." */
+         continue;
+
       /* If that worked out, look to see if this device represents an illuminance sensor */
-      snprintf(sensor->path, sizeof(sensor->path), IIO_DEVICES_DIR "/%s/" IIO_ILLUMINANCE_SENSOR, d->d_name);
+      snprintf(sensor->path, sizeof(sensor->path), IIO_DEVICES_DIR "/%s/" IIO_ILLUMINANCE_SENSOR, name);
 
       lux = linux_read_illuminance_sensor(sensor);
       if (lux >= 0)
@@ -265,15 +244,13 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
 error:
    RARCH_ERR("Failed to find an illuminance sensor\n");
-   if (devices)
-      closedir(devices);
+   retro_closedir(device);
 
    free(sensor);
 
    return NULL;
 done:
-   if (devices)
-      closedir(devices);
+   retro_closedir(device);
 
    return sensor;
 }
@@ -294,6 +271,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
          char errmesg[NAME_MAX_LENGTH];
          strerror_r(err, errmesg, sizeof(errmesg));
          RARCH_ERR("Failed to cancel illuminance sensor thread: %s\n", errmesg);
+         /* this doesn't happen often, it should probably be logged */
       }
 
       sthread_join(sensor->thread);
@@ -331,47 +309,37 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
 {
    char buffer[256];
    double illuminance = 0.0;
-   int err;
-   FILE* in_illuminance_input = NULL;
+   RFILE *in_illuminance_input = NULL;
 
    if (!sensor || sensor->path[0] == '\0')
       return -1.0;
 
-   in_illuminance_input = fopen(sensor->path, "r");
+   in_illuminance_input = filestream_open(sensor->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!in_illuminance_input)
    {
-      char errmesg[NAME_MAX_LENGTH];
-      strerror_r(errno, errmesg, sizeof(errmesg));
-      RARCH_ERR("Failed to open %s: %s\n", sensor->path, errmesg);
-      illuminance = -1.0;
+      RARCH_ERR("Failed to open %s\n", sensor->path);
       goto done;
    }
 
-   if (!fgets(buffer, sizeof(buffer), in_illuminance_input))
+   if (!filestream_gets(in_illuminance_input, buffer, sizeof(buffer)))
    { /* Read the illuminance value from the file. If that fails... */
-      char errmesg[NAME_MAX_LENGTH];
-      strerror_r(errno, errmesg, sizeof(errmesg));
-      RARCH_ERR("Illuminance sensor read failed: %s\n", errmesg);
+      RARCH_ERR("Illuminance sensor read failed\n");
       illuminance = -1.0;
       goto done;
    }
 
    /* TODO: This may be locale-sensitive */
-   errno = 0;
    illuminance = strtod(buffer, NULL);
-   err = errno;
-   if (err != 0)
+   if (errno != 0)
    {
-      char errmesg[NAME_MAX_LENGTH];
-      strerror_r(err, errmesg, sizeof(errmesg));
-      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s", buffer, errmesg);
+      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value\n", buffer);
       illuminance = -1.0;
       goto done;
    }
 
 done:
    if (in_illuminance_input)
-      fclose(in_illuminance_input);
+      filestream_close(in_illuminance_input);
 
    return illuminance;
 }
