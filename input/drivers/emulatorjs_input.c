@@ -739,6 +739,7 @@ static int16_t rwebinput_input_state(
                device == RARCH_DEVICE_MOUSE_SCREEN);
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
+      case RETRO_DEVICE_LIGHTGUN:
          if (idx == 0)
          {
             struct video_viewport vp;
@@ -779,13 +780,11 @@ static int16_t rwebinput_input_state(
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_X:
-                  if (inside)
-                     return res_x;
-                  break;
+               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+                  return res_x;
                case RETRO_DEVICE_ID_POINTER_Y:
-                  if (inside)
-                     return res_y;
-                  break;
+               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+                  return res_y;
                case RETRO_DEVICE_ID_POINTER_PRESSED:
                   return !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
                case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
