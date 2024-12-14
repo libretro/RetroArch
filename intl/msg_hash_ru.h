@@ -3023,6 +3023,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Задержка звука (мс)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Максимальная задержка звука в миллисекундах. Драйвер будет пытаться сохранять задержку на 50% от заданного значения. Может не учитываться, если значение не поддерживается аудиодрайвером."
+   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -5357,6 +5361,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Автозагрузка оверлея"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Вместо установки стандартного оверлея предпочитать загрузку оверлея по названию текущей системы. Игнорируется, если пресет оверлея изменён переопределением."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
