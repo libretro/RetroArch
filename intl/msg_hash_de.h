@@ -2915,6 +2915,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Audiolatenz (ms)"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   "Maximale Audio-Latenz in Millisekunden. Der Treiber versucht, die tatsächliche Latenz bei 50 % dieses Wertes zu halten. Dieser Wert kann nicht eingehalten werden, wenn der Audiotreiber die angegebene Latenz nicht liefern kann."
+   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
