@@ -1563,25 +1563,32 @@ static int16_t input_state_device(
                {
                   /* Works pretty much the same as classic mode above
                    * but with a toggle mechanic */
+
+                  /* Check if it's to enable the turbo func, if we're still holding
+                   * the button from previous toggle then ignore */
+                  if (   (res)
+                      && (input_st->turbo_btns.frame_enable[port]))
+                  {
+                     if (!(input_st->turbo_btns.turbo_pressed[port] & (1 << id)))
+                     {
+                        input_st->turbo_btns.enable[port] ^= (1 << id);
+                        /* Remember for the toggle check */
+                        input_st->turbo_btns.turbo_pressed[port] |= (1 << id);
+                     }
+                  }
+                  else
+                  {
+                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
+                  }
+
                   if (res)
                   {
-                     /* Check if it's a new press, if we're still holding
-                      * the button from previous toggle then ignore */
-                     if (     input_st->turbo_btns.frame_enable[port]
-                           && !(input_st->turbo_btns.turbo_pressed[port] & (1 << id)))
-                        input_st->turbo_btns.enable[port] ^= (1 << id);
-
                      if (input_st->turbo_btns.enable[port] & (1 << id))
                         /* If turbo button is enabled for this key ID */
                         res = ((   input_st->turbo_btns.count
                                  % settings->uints.input_turbo_period)
                               < settings->uints.input_turbo_duty_cycle);
-                  }
-                  /* Remember for the toggle check */
-                  if (input_st->turbo_btns.frame_enable[port])
-                     input_st->turbo_btns.turbo_pressed[port] |= (1 << id);
-                  else
-                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
+                  }  
                }
             }
          }
