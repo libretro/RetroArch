@@ -717,6 +717,8 @@ static void retro_task_gcd_wait(retro_task_condition_fn_t cond, void* data)
 
 static void retro_task_gcd_init(void)
 {
+   retro_task_t *task = NULL;
+
    running_lock    = slock_new();
    finished_lock   = slock_new();
    property_lock   = slock_new();
@@ -725,6 +727,12 @@ static void retro_task_gcd_init(void)
 
    slock_lock(running_lock);
    worker_continue = true;
+   for (task = tasks_running.front; task; task = task->next)
+   {
+      gcd_queue_count++;
+      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+                     ^{ gcd_worker(task); });
+   };
    slock_unlock(running_lock);
 }
 
