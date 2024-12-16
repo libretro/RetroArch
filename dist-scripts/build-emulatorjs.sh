@@ -61,7 +61,7 @@ fi
 
 lastGles=0
 
-largeStack=("mupen64plus_next")
+largeStack=("mupen64plus_next" "ppsspp")
 largeHeap=("mupen64plus_next" "picodrive" "pcsx_rearmed" "genesis_plus_gx" "mednafen_psx" "mednafen_psx_hw" "parallel_n64" "ppsspp")
 needsGles3=("ppsspp")
 needsThreads=("ppsspp")
