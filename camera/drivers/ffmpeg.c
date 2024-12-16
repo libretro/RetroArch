@@ -86,7 +86,10 @@ typedef struct ffmpeg_camera
    AVDictionary *demuxer_options;
    AVPacket *packet;
    AVFrame *camera_frame;
-   AVFrame *target_frame;
+   unsigned requested_width;
+   unsigned requested_height;
+   uint8_t *target_planes[4];
+   int target_linesizes[4];
    unsigned target_width;
    unsigned target_height;
    struct SwsContext *scale_context;
@@ -130,8 +133,8 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       return NULL;
    }
 
-   ffmpeg->target_width = width;
-   ffmpeg->target_height = height;
+   ffmpeg->requested_width = width;
+   ffmpeg->requested_height = height;
 
    avdevice_register_all();
    RARCH_LOG("[FFMPEG]: Initialized libavdevice.\n");
@@ -257,29 +260,32 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   ffmpeg->target_frame = av_frame_alloc();
-   if (!ffmpeg->target_frame)
-   {
-      RARCH_ERR("[FFMPEG]: Failed to allocate target frame.\n");
-      goto error;
-   }
+   ffmpeg->target_width = ffmpeg->requested_width ? ffmpeg->requested_width : (unsigned)ffmpeg->decoder_context->width;
+   ffmpeg->target_height = ffmpeg->requested_height ? ffmpeg->requested_height : (unsigned)ffmpeg->decoder_context->height;
 
-   int buffer_length = av_image_get_buffer_size(AV_PIX_FMT_BGRA, ffmpeg->decoder_context->width, ffmpeg->decoder_context->height, 4);
-   if (buffer_length < 0)
+   int target_buffer_length = av_image_alloc(
+      ffmpeg->target_planes,
+      ffmpeg->target_linesizes,
+      ffmpeg->target_width,
+      ffmpeg->target_height,
+      AV_PIX_FMT_BGRA,
+      1
+   );
+   if (target_buffer_length < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to get buffer size for target frame: %s\n", av_err2str(buffer_length));
+      RARCH_ERR("[FFMPEG]: Failed to allocate target plane: %s\n", av_err2str(target_buffer_length));
       goto error;
    }
 
    /* target buffer aligned to 4 bytes because it's exposed to the core as a uint32_t[] */
-   ffmpeg->target_buffer_length = buffer_length;
-   ffmpeg->target_buffers[0] = memalign_alloc(4, buffer_length);
-   ffmpeg->target_buffers[1] = memalign_alloc(4, buffer_length);
+   ffmpeg->target_buffer_length = target_buffer_length;
+   ffmpeg->target_buffers[0] = memalign_alloc(4, target_buffer_length);
+   ffmpeg->target_buffers[1] = memalign_alloc(4, target_buffer_length);
    ffmpeg->active_buffer = ffmpeg->target_buffers[0];
    if (!ffmpeg->target_buffers[0] || !ffmpeg->target_buffers[1])
    {
       RARCH_ERR("[FFMPEG]: Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
-         buffer_length,
+         target_buffer_length,
          ffmpeg->decoder_context->width,
          ffmpeg->decoder_context->height,
          av_get_pix_fmt_name(AV_PIX_FMT_BGRA)
@@ -288,7 +294,7 @@ static bool ffmpeg_camera_start(void *data)
    }
 
    RARCH_LOG("[FFMPEG]: Allocated %d bytes for %dx%d %s-formatted video data.\n",
-      buffer_length,
+      target_buffer_length,
       ffmpeg->decoder_context->width,
       ffmpeg->decoder_context->height,
       av_get_pix_fmt_name(ffmpeg->decoder_context->pix_fmt)
@@ -298,8 +304,8 @@ static bool ffmpeg_camera_start(void *data)
       ffmpeg->decoder_context->width,
       ffmpeg->decoder_context->height,
       ffmpeg->decoder_context->pix_fmt,
-      ffmpeg->target_width ? ffmpeg->target_width : (unsigned)ffmpeg->decoder_context->width,
-      ffmpeg->target_height ? ffmpeg->target_height : (unsigned)ffmpeg->decoder_context->height,
+      ffmpeg->target_width,
+      ffmpeg->target_height,
       AV_PIX_FMT_BGRA,
       SWS_BILINEAR,
       NULL, NULL, NULL
@@ -365,9 +371,13 @@ static void ffmpeg_camera_stop(void *data)
    ffmpeg->target_buffers[0] = NULL;
    ffmpeg->target_buffers[1] = NULL;
    ffmpeg->target_buffer_length = 0;
+   ffmpeg->target_width = 0;
+   ffmpeg->target_height = 0;
 
-   av_frame_free(&ffmpeg->target_frame);
    av_frame_free(&ffmpeg->camera_frame);
+   av_freep(&ffmpeg->target_buffers[0]);
+   memset(ffmpeg->target_linesizes, 0, sizeof(ffmpeg->target_linesizes));
+
    av_packet_free(&ffmpeg->packet);
    avcodec_free_context(&ffmpeg->decoder_context);
    avformat_close_input(&ffmpeg->format_context);
@@ -393,8 +403,16 @@ static void ffmpeg_camera_poll_thread(void *data)
       result = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
       if (result < 0)
       { /* Send the raw data to the decoder. If that fails... */
-         RARCH_ERR("[FFMPEG]: Failed to send packet to decoder: %s\n", av_err2str(result));
-         continue;
+         if (result == AVERROR_EOF)
+         {
+            RARCH_DBG("[FFMPEG]: Video capture device closed\n");
+         }
+         else
+         {
+            RARCH_ERR("[FFMPEG]: Failed to send packet to decoder: %s\n", av_err2str(result));
+         }
+
+         goto done_loop;
       }
 
       /* video streams consist of exactly one frame per packet */
@@ -411,7 +429,16 @@ static void ffmpeg_camera_poll_thread(void *data)
 
       retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
 
-      result = sws_scale_frame(ffmpeg->scale_context, ffmpeg->target_frame, ffmpeg->camera_frame);
+      /* sws_scale_frame is tidier but isn't as widely available */
+      result = sws_scale(
+         ffmpeg->scale_context,
+         (const uint8_t *const *)ffmpeg->camera_frame->data,
+         ffmpeg->camera_frame->linesize,
+         0,
+         ffmpeg->camera_frame->height,
+         ffmpeg->target_planes,
+         ffmpeg->target_linesizes
+      );
       if (result < 0)
       { /* Scale and convert the frame to the target format. If that fails... */
          RARCH_ERR("[FFMPEG]: Failed to scale frame: %s\n", av_err2str(result));
@@ -422,11 +449,11 @@ static void ffmpeg_camera_poll_thread(void *data)
       result = av_image_copy_to_buffer(
          ffmpeg->active_buffer,
          ffmpeg->target_buffer_length,
-         (const uint8_t *const *)ffmpeg->target_frame->data,
-         ffmpeg->target_frame->linesize,
-         ffmpeg->target_frame->format,
-         ffmpeg->target_frame->width,
-         ffmpeg->target_frame->height,
+         (const uint8_t *const *)ffmpeg->target_planes,
+         ffmpeg->target_linesizes,
+         AV_PIX_FMT_BGRA,
+         ffmpeg->target_width,
+         ffmpeg->target_height,
          1
       );
       if (result >= 0) {
@@ -467,7 +494,7 @@ static bool ffmpeg_camera_poll(
    }
 
    slock_lock(ffmpeg->target_buffer_lock);
-   frame_raw_cb((uint32_t*)ffmpeg->active_buffer, ffmpeg->target_frame->width, ffmpeg->target_frame->height, ffmpeg->target_frame->linesize[0]);
+   frame_raw_cb((uint32_t*)ffmpeg->active_buffer, ffmpeg->target_width, ffmpeg->target_height, ffmpeg->target_linesizes[0]);
    slock_unlock(ffmpeg->target_buffer_lock);
 
    return true;
