@@ -2152,6 +2152,65 @@ ifeq ($(HAVE_V4L2),1)
    LIBS += $(V4L2_LIBS)
 endif
 
+# FFmpeg
+
+ifeq ($(HAVE_FFMPEG), 1)
+   DEFINES += -DHAVE_FFMPEG
+   INCLUDE_DIRS += -Iffmpeg
+   DEF_FLAGS += $(FFMPEG_CFLAGS) -Wno-deprecated-declarations
+   LIBS += $(FFMPEG_LIBS)
+
+   ifeq ($(HAVE_AVCODEC), 1)
+      DEFINES += -DHAVE_AVCODEC
+      DEF_FLAGS += $(AVCODEC_CFLAGS)
+      LIBS += $(AVCODEC_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVDEVICE), 1)
+      DEFINES += -DHAVE_AVDEVICE
+      DEF_FLAGS += $(AVDEVICE_CFLAGS)
+      LIBS += $(AVDEVICE_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVFORMAT), 1)
+      DEFINES += -DHAVE_AVFORMAT
+      DEF_FLAGS += $(AVFORMAT_CFLAGS)
+      LIBS += $(AVFORMAT_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVUTIL), 1)
+      DEFINES += -DHAVE_AVUTIL
+      DEF_FLAGS += $(AVUTIL_CFLAGS)
+      LIBS += $(AVUTIL_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWSCALE), 1)
+      DEFINES += -DHAVE_SWSCALE
+      DEF_FLAGS += $(SWSCALE_CFLAGS)
+      LIBS += $(SWSCALE_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWRESAMPLE), 1)
+      DEFINES += -DHAVE_SWRESAMPLE
+      DEF_FLAGS += $(SWRESAMPLE_CFLAGS)
+      LIBS += $(SWRESAMPLE_LIBS)
+   endif
+endif
+
+ifeq ($(HAVE_FFMPEG), 1)
+ifeq ($(HAVE_AVFORMAT), 1)
+ifeq ($(HAVE_AVDEVICE), 1)
+ifeq ($(HAVE_AVCODEC), 1)
+ifeq ($(HAVE_AVUTIL), 1)
+ifeq ($(HAVE_SWSCALE), 1)
+   OBJ += camera/drivers/ffmpeg.o
+endif
+endif
+endif
+endif
+endif
+endif
+
 # Accessibility
 ifeq ($(HAVE_ACCESSIBILITY), 1)
    DEFINES += -DHAVE_ACCESSIBILITY
@@ -2193,7 +2252,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifneq ($(findstring Linux,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
-   
+
    ifneq ($(findstring Win,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
