@@ -32,7 +32,7 @@
  * some video backends are better than others,
  * so we'll prioritize those as defaults.
  */
-const char *const FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[] = {
+static const char *const FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[] = {
    /* Recommended camera backends */
 #ifdef ANDROID
    "android_camera",
