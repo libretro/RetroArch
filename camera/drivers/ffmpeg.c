@@ -81,8 +81,8 @@ typedef struct ffmpeg_camera
    sthread_t *poll_thread;
    AVFormatContext *format_context;
    AVCodecContext *decoder_context;
-   const AVCodec *decoder;
-   const AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
+   AVCodec *decoder;
+   AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
    AVDictionary *demuxer_options;
    AVPacket *packet;
    AVFrame *camera_frame;
