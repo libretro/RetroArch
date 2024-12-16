@@ -419,8 +419,6 @@ static void ffmpeg_camera_poll_thread(void *data)
       }
 
       slock_lock(ffmpeg->target_buffer_lock);
-      ffmpeg->active_buffer = ffmpeg->active_buffer == ffmpeg->target_buffers[0] ? ffmpeg->target_buffers[1] : ffmpeg->target_buffers[0];
-      // TODO: When should I swap the buffers?
       result = av_image_copy_to_buffer(
          ffmpeg->active_buffer,
          ffmpeg->target_buffer_length,
@@ -431,6 +429,9 @@ static void ffmpeg_camera_poll_thread(void *data)
          ffmpeg->target_frame->height,
          1
       );
+      if (result >= 0) {
+         ffmpeg->active_buffer = ffmpeg->active_buffer == ffmpeg->target_buffers[0] ? ffmpeg->target_buffers[1] : ffmpeg->target_buffers[0];
+      }
       slock_unlock(ffmpeg->target_buffer_lock);
       if (result < 0)
       {
