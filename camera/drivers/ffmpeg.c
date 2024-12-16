@@ -26,6 +26,7 @@
 #include <libswscale/swscale.h>
 #include <memalign.h>
 #include <retro_assert.h>
+#include <rthreads/rthreads.h>
 
 /* ffmpeg supports a specific range of video devices;
  * some video backends are better than others,
@@ -77,6 +78,7 @@ const char *const FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[] = {
 
 typedef struct ffmpeg_camera
 {
+   sthread_t *poll_thread;
    AVFormatContext *format_context;
    AVCodecContext *decoder_context;
    const AVCodec *decoder;
@@ -87,13 +89,17 @@ typedef struct ffmpeg_camera
    AVFrame *target_frame;
    unsigned target_width;
    unsigned target_height;
-   uint8_t *target_buffer;
-   size_t target_buffer_length;
    struct SwsContext *scale_context;
 
    /* "name" for the camera device.
     * (Not just the reported name, there may be a bit of extra syntax.) */
    char url[512];
+
+   uint8_t *target_buffers[2];
+   size_t target_buffer_length;
+   slock_t *target_buffer_lock;
+   volatile bool done;
+   uint8_t *active_buffer;
 } ffmpeg_camera_t;
 
 static void ffmpeg_camera_free(void *data);
@@ -170,6 +176,8 @@ static void ffmpeg_camera_free(void *data)
 
    free(ffmpeg);
 }
+
+static void ffmpeg_camera_poll_thread(void *data);
 
 static bool ffmpeg_camera_start(void *data)
 {
@@ -265,8 +273,10 @@ static bool ffmpeg_camera_start(void *data)
 
    /* target buffer aligned to 4 bytes because it's exposed to the core as a uint32_t[] */
    ffmpeg->target_buffer_length = buffer_length;
-   ffmpeg->target_buffer = memalign_alloc(4, buffer_length);
-   if (!ffmpeg->target_buffer)
+   ffmpeg->target_buffers[0] = memalign_alloc(4, buffer_length);
+   ffmpeg->target_buffers[1] = memalign_alloc(4, buffer_length);
+   ffmpeg->active_buffer = ffmpeg->target_buffers[0];
+   if (!ffmpeg->target_buffers[0] || !ffmpeg->target_buffers[1])
    {
       RARCH_ERR("[FFMPEG]: Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
          buffer_length,
@@ -300,6 +310,20 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
+   ffmpeg->target_buffer_lock = slock_new();
+   if (!ffmpeg->target_buffer_lock)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to create target buffer lock.\n");
+      goto error;
+   }
+
+   ffmpeg->poll_thread = sthread_create(ffmpeg_camera_poll_thread, ffmpeg);
+   if (!ffmpeg->poll_thread)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to create poll thread.\n");
+      goto error;
+   }
+
    return true;
 error:
    ffmpeg_camera_stop(ffmpeg);
@@ -325,11 +349,21 @@ static void ffmpeg_camera_stop(void *data)
    }
 
    /* these functions are noops for NULL pointers */
+   ffmpeg->done = true;
+   sthread_join(ffmpeg->poll_thread); /* wait for the thread to finish, then free it */
+   ffmpeg->poll_thread = NULL;
+
+   slock_free(ffmpeg->target_buffer_lock);
+   ffmpeg->target_buffer_lock = NULL;
+
    sws_freeContext(ffmpeg->scale_context);
    ffmpeg->scale_context = NULL;
 
-   memalign_free(ffmpeg->target_buffer);
-   ffmpeg->target_buffer = NULL;
+   memalign_free(ffmpeg->target_buffers[0]);
+   memalign_free(ffmpeg->target_buffers[1]);
+   ffmpeg->active_buffer = NULL;
+   ffmpeg->target_buffers[0] = NULL;
+   ffmpeg->target_buffers[1] = NULL;
    ffmpeg->target_buffer_length = 0;
 
    av_frame_free(&ffmpeg->target_frame);
@@ -340,15 +374,84 @@ static void ffmpeg_camera_stop(void *data)
    RARCH_LOG("[FFMPEG]: Closed video input device %s.\n", ffmpeg->url);
 }
 
-// TODO: Put this in another thread
+static void ffmpeg_camera_poll_thread(void *data)
+{
+   ffmpeg_camera_t *ffmpeg = data;
+
+   if (!ffmpeg)
+      return;
+
+   while (!ffmpeg->done)
+   {
+      int result = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
+      if (result < 0)
+      { /* Read the raw data from the camera. If that fails... */
+         RARCH_ERR("[FFMPEG]: Failed to read frame: %s\n", av_err2str(result));
+         continue;
+      }
+
+      result = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
+      if (result < 0)
+      { /* Send the raw data to the decoder. If that fails... */
+         RARCH_ERR("[FFMPEG]: Failed to send packet to decoder: %s\n", av_err2str(result));
+         continue;
+      }
+
+      /* video streams consist of exactly one frame per packet */
+      result = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->camera_frame);
+      if (result < 0)
+      { /* Send the decoded data to the camera frame. If that fails... */
+         if (!(result == AVERROR_EOF || result == AVERROR(EAGAIN)))
+         { /* these error codes mean no new frame, but not necessarily a problem */
+            RARCH_ERR("[FFMPEG]: Failed to receive camera frame from decoder: %s\n", av_err2str(result));
+         }
+
+         goto done_loop;
+      }
+
+      retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
+
+      result = sws_scale_frame(ffmpeg->scale_context, ffmpeg->target_frame, ffmpeg->camera_frame);
+      if (result < 0)
+      { /* Scale and convert the frame to the target format. If that fails... */
+         RARCH_ERR("[FFMPEG]: Failed to scale frame: %s\n", av_err2str(result));
+         goto done_loop;
+      }
+
+      slock_lock(ffmpeg->target_buffer_lock);
+      ffmpeg->active_buffer = ffmpeg->active_buffer == ffmpeg->target_buffers[0] ? ffmpeg->target_buffers[1] : ffmpeg->target_buffers[0];
+      // TODO: When should I swap the buffers?
+      result = av_image_copy_to_buffer(
+         ffmpeg->active_buffer,
+         ffmpeg->target_buffer_length,
+         (const uint8_t *const *)ffmpeg->target_frame->data,
+         ffmpeg->target_frame->linesize,
+         ffmpeg->target_frame->format,
+         ffmpeg->target_frame->width,
+         ffmpeg->target_frame->height,
+         1
+      );
+      slock_unlock(ffmpeg->target_buffer_lock);
+      if (result < 0)
+      {
+         RARCH_ERR("[FFMPEG]: Failed to copy frame to buffer: %s\n", av_err2str(result));
+         goto done_loop;
+      }
+   done_loop:
+      /* must be called when we're done with it */
+      av_frame_unref(ffmpeg->camera_frame);
+   }
+
+   /* every operation in this function needs this packet */
+   av_packet_unref(ffmpeg->packet);
+}
+
 static bool ffmpeg_camera_poll(
    void *data,
    retro_camera_frame_raw_framebuffer_t frame_raw_cb,
    retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
-   bool ok = false;
    ffmpeg_camera_t *ffmpeg = data;
-   int result = 0;
 
    if (!ffmpeg->format_context)
    {
@@ -362,67 +465,11 @@ static bool ffmpeg_camera_poll(
       return false;
    }
 
-   result = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
-   if (result < 0)
-   {
-      RARCH_ERR("[FFMPEG]: Failed to read frame: %s\n", av_err2str(result));
-      goto error;
-   }
+   slock_lock(ffmpeg->target_buffer_lock);
+   frame_raw_cb((uint32_t*)ffmpeg->active_buffer, ffmpeg->target_frame->width, ffmpeg->target_frame->height, ffmpeg->target_frame->linesize[0]);
+   slock_unlock(ffmpeg->target_buffer_lock);
 
-   result = avcodec_send_packet(ffmpeg->decoder_context, ffmpeg->packet);
-   if (result < 0)
-   {
-      RARCH_ERR("[FFMPEG]: Failed to send packet to decoder: %s\n", av_err2str(result));
-      goto error;
-   }
-
-   /* video streams consist of exactly one frame per packet */
-   result = avcodec_receive_frame(ffmpeg->decoder_context, ffmpeg->camera_frame);
-   if (result < 0)
-   {
-      if (!(result == AVERROR_EOF || result == AVERROR(EAGAIN)))
-      { /* these error codes mean no new frame, but not necessarily a problem */
-         RARCH_ERR("[FFMPEG]: Failed to receive camera frame from decoder: %s\n", av_err2str(result));
-      }
-
-      goto error;
-   }
-
-   retro_assert(ffmpeg->decoder->type == AVMEDIA_TYPE_VIDEO);
-
-   result = sws_scale_frame(ffmpeg->scale_context, ffmpeg->target_frame, ffmpeg->camera_frame);
-   if (result < 0)
-   {
-      RARCH_ERR("[FFMPEG]: Failed to scale frame: %s\n", av_err2str(result));
-      goto done;
-   }
-
-   result = av_image_copy_to_buffer(
-      ffmpeg->target_buffer,
-      ffmpeg->target_buffer_length,
-      (const uint8_t* const *)ffmpeg->target_frame->data,
-      ffmpeg->target_frame->linesize,
-      ffmpeg->target_frame->format,
-      ffmpeg->target_frame->width,
-      ffmpeg->target_frame->height,
-      1
-   );
-   if (result < 0)
-   {
-      RARCH_ERR("[FFMPEG]: Failed to copy frame to buffer: %s\n", av_err2str(result));
-      goto done;
-   }
-
-   frame_raw_cb((uint32_t*)ffmpeg->target_buffer, ffmpeg->target_frame->width, ffmpeg->target_frame->height, ffmpeg->target_frame->linesize[0]);
-   ok = true;
-done:
-   /* must be called when we're done with it */
-   av_frame_unref(ffmpeg->camera_frame);
-error:
-   /* every operation in this function needs this packet */
-   av_packet_unref(ffmpeg->packet);
-
-   return ok;
+   return true;
 }
 
 static struct string_list *ffmpeg_camera_device_list_new(const void *driver_context)
