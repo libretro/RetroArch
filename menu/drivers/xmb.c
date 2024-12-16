@@ -1141,11 +1141,11 @@ static void xmb_render_messagebox_internal(
 
 static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 {
+   char path[PATH_MAX_LENGTH];
    settings_t *settings               = config_get_ptr();
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
    unsigned xmb_color_theme           = settings->uints.menu_xmb_color_theme;
    const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
-   char path[PATH_MAX_LENGTH];
 
    path[0]                            = '\0';
 
@@ -1162,15 +1162,11 @@ static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
     * then comes 'menu_wallpaper', and then iconset 'bg.png' */
    if (settings->bools.menu_dynamic_wallpaper_enable)
    {
-      size_t len                         = 0;
-      const char *tmp                    = string_replace_substring(xmb->title_name, "/", STRLEN_CONST("/"), " ", STRLEN_CONST(" "));
       const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
-
-      if (tmp)
-         len = fill_pathname_join_special(
+      size_t len = fill_pathname_join_special(
                path,
                dir_dynamic_wallpapers,
-               tmp,
+               xmb->title_name,
                sizeof(path));
 
       path[  len] = '.';
@@ -2115,6 +2111,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
 static void xmb_set_title(xmb_handle_t *xmb)
 {
+   char *scrub_char_ptr   = NULL;
    xmb->title_name_alt[0] = '\0';
 
    if (     (xmb->categories_selection_ptr <= xmb->system_tab_end)
@@ -2148,6 +2145,8 @@ static void xmb_set_title(xmb_handle_t *xmb)
                xmb->title_name_alt, sizeof(xmb->title_name_alt));
       }
    }
+   while ((scrub_char_ptr = strpbrk(xmb->title_name, "/")))
+      *scrub_char_ptr = ' ';
 }
 
 static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
