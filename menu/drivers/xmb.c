@@ -2145,7 +2145,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
                xmb->title_name_alt, sizeof(xmb->title_name_alt));
       }
    }
-   while ((scrub_char_ptr = strpbrk(xmb->title_name, "/")))
+   while ((scrub_char_ptr = strchr(xmb->title_name, '/')))
       *scrub_char_ptr = ' ';
 }
 
