@@ -5304,11 +5304,14 @@ static const char *input_overlay_path(bool want_osk)
             return system_overlay_path;
       }
 
-      fill_pathname_join_special_ext(system_overlay_path,
-            overlay_directory, SYSTEM_OVERLAY_DIR, core_info->display_name, ".cfg",
-            sizeof(system_overlay_path));
-      if (path_is_valid(system_overlay_path))
-         return system_overlay_path;
+      if (core_info->display_name)
+      {
+         fill_pathname_join_special_ext(system_overlay_path,
+               overlay_directory, SYSTEM_OVERLAY_DIR, core_info->display_name, ".cfg",
+               sizeof(system_overlay_path));
+         if (path_is_valid(system_overlay_path))
+            return system_overlay_path;
+      }
    }
 
    /* maybe based on the content's directory name */
