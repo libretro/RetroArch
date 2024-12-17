@@ -72,8 +72,8 @@ for f in $(ls -v *_emscripten.bc); do
   async=1
   wasm=1
   gles3=1
-  stack_mem=8388608
-  heap_mem=268435456
+  stack_mem=4718592 # 4.5mb
+  heap_mem=268435456 # 256mb
   pthread=0
 
   if [ "$LEGACY" = "YES" ]; then
@@ -89,10 +89,10 @@ for f in $(ls -v *_emscripten.bc); do
   fi
 
   if [[ $(containsElement $name "${largeStack[@]}") = 1 ]]; then
-    stack_mem=268435456
+    stack_mem=268435456 # 256mb
   fi
   if [[ $(containsElement $name "${largeHeap[@]}") = 1 ]]; then
-    heap_mem=536870912
+    heap_mem=536870912 # 512mb
   fi
   if [[ $(containsElement $name "${needsThreads[@]}") = 1 && $pthread = 0 ]]; then
     echo "$name"' requires threads! Please build with --threads! Exiting...'
