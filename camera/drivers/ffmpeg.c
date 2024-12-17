@@ -75,7 +75,6 @@ static const char *const FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[] = {
     */
 };
 
-
 typedef struct ffmpeg_camera
 {
    sthread_t *poll_thread;
