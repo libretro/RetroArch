@@ -1569,25 +1569,32 @@ static int16_t input_state_device(
                {
                   /* Works pretty much the same as classic mode above
                    * but with a toggle mechanic */
+
+                  /* Check if it's to enable the turbo func, if we're still holding
+                   * the button from previous toggle then ignore */
+                  if (   (res)
+                      && (input_st->turbo_btns.frame_enable[port]))
+                  {
+                     if (!(input_st->turbo_btns.turbo_pressed[port] & (1 << id)))
+                     {
+                        input_st->turbo_btns.enable[port] ^= (1 << id);
+                        /* Remember for the toggle check */
+                        input_st->turbo_btns.turbo_pressed[port] |= (1 << id);
+                     }
+                  }
+                  else
+                  {
+                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
+                  }
+
                   if (res)
                   {
-                     /* Check if it's a new press, if we're still holding
-                      * the button from previous toggle then ignore */
-                     if (     input_st->turbo_btns.frame_enable[port]
-                           && !(input_st->turbo_btns.turbo_pressed[port] & (1 << id)))
-                        input_st->turbo_btns.enable[port] ^= (1 << id);
-
                      if (input_st->turbo_btns.enable[port] & (1 << id))
                         /* If turbo button is enabled for this key ID */
                         res = ((   input_st->turbo_btns.count
                                  % settings->uints.input_turbo_period)
                               < settings->uints.input_turbo_duty_cycle);
-                  }
-                  /* Remember for the toggle check */
-                  if (input_st->turbo_btns.frame_enable[port])
-                     input_st->turbo_btns.turbo_pressed[port] |= (1 << id);
-                  else
-                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
+                  }  
                }
             }
          }
@@ -5271,29 +5278,9 @@ static const char *input_overlay_path(bool want_osk)
    /* try based on the playlist entry first */
    if (playlist)
    {
-#ifdef HAVE_MENU
-      menu_handle_t *menu = menu_state_get_ptr()->driver_data;
-      if (menu)
-      {
-         const char *playlist_db_name = NULL;
-         playlist_get_db_name(playlist, menu->rpl_entry_selection_ptr, &playlist_db_name);
-         if (playlist_db_name)
-         {
-            size_t _len = fill_pathname_join_special_ext(system_overlay_path,
-                  overlay_directory, SYSTEM_OVERLAY_DIR, playlist_db_name, "",
-                  sizeof(system_overlay_path));
-            char *ext = path_get_extension_mutable(system_overlay_path);
-            if (!ext)
-               ext = system_overlay_path + _len;
-            strlcpy(ext, ".cfg", 5);
-            if (path_is_valid(system_overlay_path))
-               return system_overlay_path;
-         }
-      }
-#endif
       if (!string_is_empty(content_path))
       {
-         const struct playlist_entry *entry;
+         const struct playlist_entry *entry = NULL;
          playlist_get_index_by_path(playlist, content_path, &entry);
          if (entry && entry->db_name)
          {
@@ -5323,11 +5310,14 @@ static const char *input_overlay_path(bool want_osk)
             return system_overlay_path;
       }
 
-      fill_pathname_join_special_ext(system_overlay_path,
-            overlay_directory, SYSTEM_OVERLAY_DIR, core_info->display_name, ".cfg",
-            sizeof(system_overlay_path));
-      if (path_is_valid(system_overlay_path))
-         return system_overlay_path;
+      if (core_info->display_name)
+      {
+         fill_pathname_join_special_ext(system_overlay_path,
+               overlay_directory, SYSTEM_OVERLAY_DIR, core_info->display_name, ".cfg",
+               sizeof(system_overlay_path));
+         if (path_is_valid(system_overlay_path))
+            return system_overlay_path;
+      }
    }
 
    /* maybe based on the content's directory name */

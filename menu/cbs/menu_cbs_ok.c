@@ -1000,7 +1000,12 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
          if (menu)
          {
+#if IOS
+            fill_pathname_expand_special(tmp, menu->scratch2_buf, sizeof(tmp));
+            menu_path    = tmp;
+#else
             menu_path    = menu->scratch2_buf;
+#endif
             content_path = menu->scratch_buf;
          }
          if (content_path)
@@ -2008,8 +2013,16 @@ static int file_load_with_detect_core_wrapper(
          if (path_is_absolute(menu->scratch_buf))
             strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
          else
+         {
+#if IOS
+            fill_pathname_join_special(tmp_path,
+                  menu->scratch2_buf, menu->scratch_buf, sizeof(tmp_path));
+            fill_pathname_expand_special(menu_path_new, tmp_path, sizeof(menu_path_new));
+#else
             fill_pathname_join_special(menu_path_new,
                   menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+#endif
+         }
       }
       else if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))

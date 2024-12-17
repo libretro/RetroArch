@@ -3005,7 +3005,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Mili saniye cinsinden istenen ses gecikmesi. Ses sürücüsü verilen gecikmeyi sağlayamıyorsa ses duyulmayabilir."
+   "Milisaniye cinsinden azami ses gecikmesi. Sürücü, gerçek gecikmeyi bu değerin %50 oranında tutmayı hedefler. Ses sürücüsünün belirtilen gecikmeyi sağlayamaması durumunda bu durum kabul edilmeyebilir."
    )
 
 #ifdef HAVE_MICROPHONE

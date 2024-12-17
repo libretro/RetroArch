@@ -197,7 +197,6 @@ ACHIEVEMENTS
 #define RC_CLIENT_SUPPORTS_HASH 1
 
 #include "../libretro-common/formats/cdfs/cdfs.c"
-#include "../network/net_http_special.c"
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"

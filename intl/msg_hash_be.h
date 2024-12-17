@@ -69,7 +69,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Выбраць ядро для выкарыстання."
+   "Выбраць ядро на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Выбраць змесціва для запуску."
+   "Выбраць змесціва на запуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
@@ -151,7 +151,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Сцягнуць дадатковыя кампаненты ды змесціва для RetroArch."
+   "Сцягнуць дадатковыя кампаненты ды змесціва на RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -343,7 +343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Сцягнуць поўны пакет мініяцюр для выбранай сістэмы."
+   "Сцягнуць поўны пакет мініяцюр на выбраную сістэму."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
@@ -351,7 +351,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Сцягнуць мініяцюры для запісаў выбранага плэй-ліста."
+   "Сцягнуць мініяцюры да запісаў выбранага плэй-ліста."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -359,7 +359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Сцягвае вольнае змесціва для выбранага ядра."
+   "Сцягвае вольнае змесціва да выбранага ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -1258,7 +1258,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
-   "Калі ўключана, сістэмныя файлы будуць сінхранізавацца з воблакам. Гэта можа значна павялічыць час, неабходны для сінхранізацыі; выкарыстоўвайце ўсвядомлена."
+   "Калі ўключана, сістэмныя файлы будуць сінхранізавацца з воблакам. Гэта можа значна павялічыць час на сінхранізацыю; выкарыстоўвайце ўсвядомлена."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -1278,7 +1278,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
-   "URL-адрас для пункту ўваходу API у воблачнае сховішча."
+   "URL-адрас на пункт увахода API у воблачнае сховішча."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
@@ -1542,7 +1542,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Драйвер увода для выкарыстання. Некаторыя драйверы відэа прымусова ўжываюць іншыя драйверы ўвода."
+   "Драйвер увода на выкарыстанне. Некаторыя драйверы відэа прымусова ўжываюць іншыя драйверы ўвода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
@@ -1562,7 +1562,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Драйвер кантролера для выкарыстання. (Патрабуецца перазапуск)"
+   "Драйвер кантролера на выкарыстанне. (Патрабуецца перазапуск)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1599,7 +1599,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Драйвер відэа для выкарыстання."
+   "Драйвер відэа на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1627,7 +1627,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
-   "Драйвер Metal для платформаў Apple. Падтрымлівае фармат шэйдараў Slang."
+   "Драйвер Metal на платформы Apple. Падтрымлівае фармат шэйдараў Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
@@ -1655,15 +1655,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
-   "Драйвер DispmanX. Ужывае DispmanX API для Videocore IV GPU у Raspberry Pi 0..3. Накладкі ды шэйдары не падтрымліваюцца."
+   "Драйвер DispmanX. Ужывае DispmanX API на Videocore IV GPU у Raspberry Pi 0..3. Накладкі ды шэйдары не падтрымліваюцца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
-   "Драйвер LibCACA. Стварае сімвальны вывад замест графічнага. Не рэкамендуецца для практычнага выкарыстання."
+   "Драйвер LibCACA. Стварае сімвальны вывад замест графічнага. Не рэкамендуецца дзеля практычнага выкарыстання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
-   "Нізкаўзроўневы драйвер Exynos, які ўжывае блок G2D для аперацый блітавання ў аднакрыштальных сістэмах Samsung Exynos. Забяспечвае аптымальную прадукцыйнасць для ядраў з праграмным рэндэрынгам."
+   "Нізкаўзроўневы драйвер Exynos, які ўжывае блок G2D на аперацыі блітавання ў аднакрыштальных сістэмах Samsung Exynos. Забяспечвае аптымальную прадукцыйнасць у ядрах з праграмным рэндэрынгам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
@@ -1699,7 +1699,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Гукавы драйвер для выкарыстання."
+   "Гукавы драйвер на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1756,7 +1756,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Драйвер мікрафона для выкарыстання."
+   "Драйвер мікрафона на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1764,7 +1764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
-   "Драйвер перадыскрэтызацыі мікрафона для выкарыстання."
+   "Драйвер перадыскрэтызацыі мікрафона на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
@@ -1777,7 +1777,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Драйвер перадыскрэтызацыі гуку для выкарыстання."
+   "Драйвер перадыскрэтызацыі гуку на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
@@ -1797,15 +1797,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Драйвер камеры для выкарыстання."
+   "Драйвер камеры на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Драйвер Bluetooth для выкарыстання."
+   "Драйвер Bluetooth на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Драйвер Wi-Fi для выкарыстання."
+   "Драйвер Wi-Fi на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1813,7 +1813,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Драйвер месцазнаходжання для выкарыстання."
+   "Драйвер месцазнаходжання на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1821,7 +1821,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Драйвер меню для выкарыстання. (Патрабуецца перазапуск)"
+   "Драйвер меню на выкарыстанне. (Патрабуецца перазапуск)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1845,11 +1845,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Драйвер запісу для выкарыстання."
+   "Драйвер запісу на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Драйвер MIDI для выкарыстання."
+   "Драйвер MIDI на выкарыстанне."
    )
 
 /* Settings > Video */
@@ -1860,7 +1860,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Вывад уласных сігналаў нізкай раздзяляльнасці для выкарыстання на ЭПТ-дысплэях."
+   "Вывад уласных сігналаў нізкай раздзяляльнасці на выкарыстанне разам з ЭПТ-дысплэямі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -2288,7 +2288,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   "Выбраць графічную картку для выкарыстання."
+   "Выбраць графічную картку на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
@@ -3025,7 +3025,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Пажаданая латэнтнасць гуку ў мілісекундах. Можа не ўлічвацца, калі гукавы драйвер не зможа забяспечыць зададзенае значэнне."
+   "Максімальная латэнтнасць гуку ў мілісекундах. Драйвер імкнецца падтрымліваць фактычную латэнтнасць на ўзроўні 50% ад гэтага значэння. Не будзе прытрымлівацца, калі гукавы драйвер не зможа забяспечыць атрыманае значэнне."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -4896,11 +4896,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   "Узровень лагавання франтэнда"
+   "Узровень вядзення журнала франтэнда"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "Устанаўлівае ўзровень лагавання франтэнда. Паведамленні франтэнда ніжэй зададзенага ўзроўню ігнаруюцца."
+   "Задае ўзровень вядзення журнала франтэнда. Паведамленні франтэнда ніжэй гэтага ўзроўню ігнаруюцца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
@@ -4908,7 +4908,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-   "Устанаўлівае ўзровень лагавання ядраў. Паведамленні ядра ніжэй зададзенага ўзроўню ігнаруюцца."
+   "Задае ўзровень вядзення журнала ядраў. Паведамленні ядра ніжэй гэтага ўзроўню ігнаруюцца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
@@ -7090,7 +7090,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
-   "Адрас http:// URL, які накіроўвае на сэрвіс перакладу для выкарыстання."
+   "Адрас http:// URL, які накіроўвае на сэрвіс перакладу на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
@@ -7690,7 +7690,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Адлюстроўваць у спісе сцягвальніка 'эксперыментальныя' ядры. Звычайна яны выкарыстоўваюцца для адладкі/тэставання і не рэкамендаваныя для сталага выкарыстання."
+   "Адлюстроўваць у спісе сцягвальніка 'эксперыментальныя' ядры. Звычайна яны выкарыстоўваюцца для адладкі/тэставання і не рэкамендаваныя дзеля сталага выкарыстання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
@@ -7733,7 +7733,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Максімальны лік запісаў для плэйліста 'Абранае'. Пры дасягненні межавага значэння новыя запісы не будуць дадавацца да выдалення старых. Значэнне '-1' здымае абмежаванне на колькасць запісаў.\nУВАГА: памяншэнне значэння выдаліць існуючыя запісы!"
+   "Максімальны лік запісаў для плэйліста 'Абранае'. Пры дасягненні межавага значэння новыя запісы не будуць дадавацца да выдалення старых. Значэнне '-1' здымае абмежаванне на колькасць запісаў.\nУВАГА: памяншэнне значэння выдаліць існыя запісы!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -8687,7 +8687,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Пры ўключэнні налады існуючы плэйліст будзе выдалены перад сканаваннем кантэнту. Калі выключана, у плэйліст дадаюцца толькі новыя запісы, а існуючыя застаюцца без зменаў."
+   "Пры ўключэнні налады існы плэйліст будзе выдалены перад сканаваннем кантэнту. Калі выключана, у плэйліст дадаюцца толькі новыя запісы, а існуючыя застаюцца без зменаў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
@@ -11000,7 +11000,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Змяняць памер і становішча элементаў меню для аптымальнага выкарыстання месца. Адключыце, каб выкарыстоўваць стандартны макет у два слупка фіксаванай шырыні."
+   "Змяняць памер і становішча элементаў меню дзеля аптымальнага выкарыстання месца. Адключыце, каб выкарыстоўваць стандартны макет у два слупка фіксаванай шырыні."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -12153,7 +12153,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
-   "<Пытацца>"
+   "<Запытваць>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,

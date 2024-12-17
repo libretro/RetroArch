@@ -2979,10 +2979,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Latencia de audio (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Latencia de audio desexada en milisegundos. Pode non ser honrado se o controlador de audio non pode proporcionar unha latencia determinada."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */

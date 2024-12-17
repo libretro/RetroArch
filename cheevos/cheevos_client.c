@@ -29,7 +29,6 @@
 #include <string/stdstring.h>
 
 #include "../frontend/frontend_driver.h"
-#include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_PRESENCE

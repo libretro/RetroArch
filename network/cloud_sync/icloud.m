@@ -78,7 +78,7 @@ static void icloud_query_path(const char *path, void(^cb)(CKRecord * results, NS
          RARCH_DBG("[iCloud] could not find %s (%s)\n", path, error == nil ? "successfully" : "failure");
          if (error)
             RARCH_DBG("[iCloud] error: %s\n", [[error debugDescription] UTF8String]);
-         cb(nil, nil);
+         cb(nil, error);
       }
       else
       {

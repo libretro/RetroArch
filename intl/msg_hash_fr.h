@@ -2977,7 +2977,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Latence audio désirée en millisecondes. Peut être ignorée si le pilote audio ne peut fournir une telle valeur."
+   "Latence audio maximale en millisecondes. Le pilote vise à maintenir la latence réelle à 50% de cette valeur. Peut ne pas être honoré si le pilote audio ne peut pas fournir la latence donnée."
    )
 
 #ifdef HAVE_MICROPHONE
