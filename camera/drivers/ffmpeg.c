@@ -500,7 +500,7 @@ static bool ffmpeg_camera_poll(
    return true;
 }
 
-static struct string_list *ffmpeg_camera_device_list_new(const void *driver_context)
+static struct string_list *ffmpeg_camera_device_list_new(void)
 {
    const AVInputFormat *input = NULL;
    struct string_list *list = string_list_new();
@@ -517,7 +517,7 @@ static struct string_list *ffmpeg_camera_device_list_new(const void *driver_cont
    return list;
 }
 
-static void ffmpeg_camera_device_list_free(const void *driver_context, struct string_list *devices)
+static void ffmpeg_camera_device_list_free(struct string_list *devices)
 {
    struct string_list *sl = (struct string_list*)devices;
 
