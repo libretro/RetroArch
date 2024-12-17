@@ -72,7 +72,7 @@ for f in $(ls -v *_emscripten.bc); do
   async=1
   wasm=1
   gles3=1
-  stack_mem=4718592 # 4.5mb
+  stack_mem=8388608 # 8mb
   heap_mem=268435456 # 256mb
   pthread=0
 
