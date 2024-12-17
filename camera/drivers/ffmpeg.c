@@ -118,7 +118,9 @@ static const AVInputFormat *ffmpeg_camera_choose_format(const char *device)
 static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    ffmpeg_camera_t *ffmpeg = NULL;
-   AVDictionary *options = NULL;
+   AVDeviceInfoList *device_list = NULL;
+   int result = 0;
+   int num_sources = 0;
 
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
    { /* If the core didn't ask for raw framebuffers... */
@@ -146,17 +148,18 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       goto error;
    }
 
-   AVDeviceInfoList *device_list = NULL;
+   RARCH_LOG("[FFMPEG]: Using default camera backend: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
+
 
    // TODO: Pick the best size for the camera
-   int result = av_dict_set(&ffmpeg->options, "video_size", "640x480", 0);
+   result = av_dict_set(&ffmpeg->options, "video_size", "640x480", 0);
    if (result < 0)
    {
       RARCH_ERR("[FFMPEG]: Failed to set option: %s\n", av_err2str(result));
       goto error;
    }
 
-   int num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, ffmpeg->options, &device_list);
+   num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, ffmpeg->options, &device_list);
    if (num_sources == 0)
    {
       RARCH_ERR("[FFMPEG]: No video input sources found.\n");
