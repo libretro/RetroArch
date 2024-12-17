@@ -83,7 +83,7 @@ typedef struct ffmpeg_camera
    AVCodecContext *decoder_context;
    AVCodec *decoder;
    AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
-   AVDictionary *demuxer_options;
+   AVDictionary *options;
    AVPacket *packet;
    AVFrame *camera_frame;
    unsigned requested_width;
@@ -147,8 +147,22 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
    }
 
    AVDeviceInfoList *device_list = NULL;
-   int num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, NULL, &device_list);
-   // TODO: Handle case where zero sources are returned
+
+   // TODO: Pick the best size for the camera
+   int result = av_dict_set(&ffmpeg->options, "video_size", "640x480", 0);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to set option: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   int num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, ffmpeg->options, &device_list);
+   if (num_sources == 0)
+   {
+      RARCH_ERR("[FFMPEG]: No video input sources found.\n");
+      goto error;
+   }
+
    if (num_sources < 0)
    {
       RARCH_ERR("[FFMPEG]: Failed to list video input sources: %s\n", av_err2str(num_sources));
@@ -177,6 +191,8 @@ static void ffmpeg_camera_free(void *data)
 
    ffmpeg_camera_stop(ffmpeg);
 
+   av_dict_free(&ffmpeg->options);
+
    free(ffmpeg);
 }
 
@@ -187,6 +203,8 @@ static bool ffmpeg_camera_start(void *data)
    ffmpeg_camera_t *ffmpeg = data;
    int result = 0;
    AVStream *stream = NULL;
+   AVDictionary *options = NULL;
+   const AVDictionaryEntry *e = NULL;
 
    if (ffmpeg->format_context)
    { // TODO: Check the actual format context, not just the pointer
@@ -194,12 +212,25 @@ static bool ffmpeg_camera_start(void *data)
       return true;
    }
 
-   result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &ffmpeg->demuxer_options);
+   result = av_dict_copy(&options, ffmpeg->options, 0);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to copy options: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
    if (result < 0)
    {
       RARCH_ERR("[FFMPEG]: Failed to open video input device: %s\n", av_err2str(result));
       goto error;
    }
+
+   while ((e = av_dict_iterate(options, e))) {
+      RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
+   }
+
+   av_dict_free(&options);
 
    result = avformat_find_stream_info(ffmpeg->format_context, NULL);
    if (result < 0)
@@ -238,13 +269,25 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   AVDictionary *opts = NULL;
-   result = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, &opts);
+   result = av_dict_copy(&ffmpeg->options, options, 0);
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to copy options: %s\n", av_err2str(result));
+      goto error;
+   }
+
+   result = avcodec_open2(ffmpeg->decoder_context, ffmpeg->decoder, &options);
    if (result < 0)
    {
       RARCH_ERR("[FFMPEG]: Failed to open decoder: %s\n", av_err2str(result));
       goto error;
    }
+
+   while ((e = av_dict_iterate(options, e))) {
+      RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
+   }
+
+   av_dict_free(&options);
 
    ffmpeg->packet = av_packet_alloc();
    if (!ffmpeg->packet)
