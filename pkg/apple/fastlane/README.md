@@ -15,39 +15,63 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## Mac
 
-### mac beta
+### mac build
 
 ```sh
-[bundle exec] fastlane mac beta
+[bundle exec] fastlane mac build
 ```
 
-Push a new beta build to TestFlight
+Build and optionally upload the app to App Store Connect.
+
+Command-line options (all are optional):
+- `version`: Override the marketing version string; otherwise read from version.all
+- `dirty`: Pass `true` to allow building from a dirty git repo
+- `branch`: The name of the branch to build from; default is current. Cannot be used with `dirty`
+- `upload`: Pass `false` to prevent uploading to App Store Connect
+- `public`: Pass `false` to prevent making the build available to TestFlight users (still uploads)
+
 
 ----
 
 
 ## iOS
 
-### ios beta
+### ios build
 
 ```sh
-[bundle exec] fastlane ios beta
+[bundle exec] fastlane ios build
 ```
 
-Push a new beta build to TestFlight
+Build and optionally upload the app to App Store Connect.
+
+Command-line options (all are optional):
+- `version`: Override the marketing version string; otherwise read from version.all
+- `dirty`: Pass `true` to allow building from a dirty git repo
+- `branch`: The name of the branch to build from; default is current. Cannot be used with `dirty`
+- `upload`: Pass `false` to prevent uploading to App Store Connect
+- `public`: Pass `false` to prevent making the build available to TestFlight users (still uploads)
+
 
 ----
 
 
 ## appletvos
 
-### appletvos beta
+### appletvos build
 
 ```sh
-[bundle exec] fastlane appletvos beta
+[bundle exec] fastlane appletvos build
 ```
 
-Push a new beta build to TestFlight
+Build and optionally upload the app to App Store Connect.
+
+Command-line options (all are optional):
+- `version`: Override the marketing version string; otherwise read from version.all
+- `dirty`: Pass `true` to allow building from a dirty git repo
+- `branch`: The name of the branch to build from; default is current. Cannot be used with `dirty`
+- `upload`: Pass `false` to prevent uploading to App Store Connect
+- `public`: Pass `false` to prevent making the build available to TestFlight users (still uploads)
+
 
 ----
 
