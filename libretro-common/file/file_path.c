@@ -1368,7 +1368,7 @@ void path_basedir_wrapper(char *path)
 }
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-void fill_pathname_application_path(char *s, size_t len)
+size_t fill_pathname_application_path(char *s, size_t len)
 {
    size_t i;
 #ifdef __APPLE__
@@ -1385,7 +1385,7 @@ void fill_pathname_application_path(char *s, size_t len)
    (void)i;
 
    if (!len)
-      return;
+      return 0;
 
 #if defined(_WIN32)
 #ifdef LEGACY_WIN32
@@ -1405,9 +1405,11 @@ void fill_pathname_application_path(char *s, size_t len)
    }
 #endif
    s[ret] = '\0';
+   return ret;
 #elif defined(__APPLE__)
    if (bundle)
    {
+      size_t rv               = 0;
       CFURLRef bundle_url     = CFBundleCopyBundleURL(bundle);
       CFStringRef bundle_path = CFURLCopyPath(bundle_url);
       CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
@@ -1422,35 +1424,35 @@ void fill_pathname_application_path(char *s, size_t len)
             size_t _len = strlcpy(s, resolved_bundle_dir_buf, len - 1);
             s[  _len]   = '/';
             s[++_len]   = '\0';
+            rv = _len;
          }
       }
+#else
+      rv = CFStringGetLength(bundle_path);
 #endif
 
       CFRelease(bundle_path);
       CFRelease(bundle_url);
-#ifndef HAVE_COCOATOUCH
-      /* Not sure what this does but it breaks
-       * stuff for iOS, so skipping */
-      strlcat(s, "nobin", len);
-#endif
-      return;
+      return rv;
    }
+   return 0;
 #elif defined(__HAIKU__)
    while (get_next_image_info(0, &cookie, &info) == B_OK)
    {
       if (info.type == B_APP_IMAGE)
       {
-         strlcpy(s, info.name, len);
-         return;
+         return strlcpy(s, info.name, len);
       }
    }
 #elif defined(__QNX__)
    char *buff = malloc(len);
+   size_t rv = 0;
 
    if (_cmdname(buff))
-      strlcpy(s, buff, len);
+      rv = strlcpy(s, buff, len);
 
    free(buff);
+   return rv;
 #else
    {
       static const char *exts[] = { "exe", "file", "path/a.out" };
@@ -1470,9 +1472,10 @@ void fill_pathname_application_path(char *s, size_t len)
          if ((ret = readlink(link_path, s, len - 1)) >= 0)
          {
             s[ret] = '\0';
-            return;
+            return ret;
          }
       }
+      return 0;
    }
 #endif
 }
