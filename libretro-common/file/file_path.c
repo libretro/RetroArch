@@ -358,7 +358,8 @@ char *find_last_slash(const char *str)
 {
    const char *slash     = strrchr(str, '/');
    const char *backslash = strrchr(str, '\\');
-   return (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   char       *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   return last_slash;
 }
 
 /**
@@ -374,7 +375,7 @@ size_t fill_pathname_slash(char *path, size_t size)
    size_t path_len;
    const char *slash      = strrchr(path, '/');
    const char *backslash  = strrchr(path, '\\');
-   const char *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   char       *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (!last_slash)
       return strlcat(path, PATH_DEFAULT_SLASH(), size);
    path_len            = strlen(path);

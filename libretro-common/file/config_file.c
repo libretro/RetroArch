@@ -413,7 +413,11 @@ size_t config_file_add_reference(config_file_t *conf, char *path)
    /* It is expected that the conf has it's path already set */
    char short_path[NAME_MAX_LENGTH];
    if (!conf->references)
-      conf->references = path_linked_list_new();
+   {
+      conf->references       = (struct path_linked_list*)malloc(sizeof(*conf->references));
+      conf->references->next = NULL;
+      conf->references->path = NULL;
+   }
    len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
    path_linked_list_add_path(conf->references, short_path);
    return len;
