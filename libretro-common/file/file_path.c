@@ -1480,7 +1480,7 @@ void fill_pathname_application_dir(char *s, size_t len)
    strlcpy(s, uwp_dir_install, len);
 #else
    fill_pathname_application_path(s, len);
-   path_basedir_wrapper(s);
+   path_basedir(s);
 #endif
 }
 
