@@ -150,6 +150,7 @@ else
                 #blastem
                 bluemsx
                 bsnes
+                bsnes-jg
                 bsnes_hd_beta
                 cap32
                 crocods
