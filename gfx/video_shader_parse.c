@@ -126,7 +126,7 @@ static path_change_data_t *file_change_data = NULL;
  * out_path is filled with the absolute path
  **/
 static void fill_pathname_expanded_and_absolute(
-      char *out_path, size_t out_size,
+      char *out_path, size_t out_len,
       const char *in_refpath,
       const char *in_path)
 {
@@ -140,10 +140,10 @@ static void fill_pathname_expanded_and_absolute(
 
    /* Resolve the reference path relative to the config */
    if (path_is_absolute(expanded_path))
-      strlcpy(out_path, expanded_path, out_size);
+      strlcpy(out_path, expanded_path, out_len);
    else
       fill_pathname_resolve_relative(out_path, in_refpath,
-            in_path, out_size);
+            in_path, out_len);
 
    pathname_conform_slashes_to_os(out_path);
 }
@@ -151,7 +151,7 @@ static void fill_pathname_expanded_and_absolute(
 /**
  * video_shader_replace_wildcards:
  *
- * @param inout_absolute_path
+ * @param s
  * Absolute path to replace wildcards in
  *
  * @param in_preset_path
@@ -230,16 +230,15 @@ static void fill_pathname_expanded_and_absolute(
  * after replacing the wildcards does not exist on disk,
  * the path returned will be uneffected.
  **/
-static void video_shader_replace_wildcards(char *inout_absolute_path,
-      const unsigned in_absolute_path_length, char *in_preset_path)
+static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_path)
 {
    int i = 0;
    char replaced_path[PATH_MAX_LENGTH];
 
-   if (!strstr(inout_absolute_path, RARCH_WILDCARD_DELIMITER))
+   if (!strstr(s, RARCH_WILDCARD_DELIMITER))
       return;
 
-   strlcpy(replaced_path, inout_absolute_path, sizeof(replaced_path));
+   strlcpy(replaced_path, s, sizeof(replaced_path));
 
    /* Step through the wildcards while we can still find the
     * delimiter in the replaced path
@@ -440,7 +439,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
    }
 
    if (path_is_valid(replaced_path))
-      strlcpy(inout_absolute_path, replaced_path, in_absolute_path_length);
+      strlcpy(s, replaced_path, len);
    else
    {
       /* If a file does not exist at the location of the replaced path
@@ -448,7 +447,7 @@ static void video_shader_replace_wildcards(char *inout_absolute_path,
       RARCH_DBG("\n[Shaders]: Filepath after wildcard replacement can't be found:\n");
       RARCH_DBG("                \"%s\" \n", replaced_path);
       RARCH_DBG("           Falling back to original Filepath\n");
-      RARCH_DBG("                \"%s\" \n\n", inout_absolute_path);
+      RARCH_DBG("                \"%s\" \n\n", s);
    }
 }
 
