@@ -259,7 +259,7 @@ static int action_right_scroll(unsigned type, const char *label,
       }
    }
 #ifdef HAVE_AUDIOMIXER
-   if (selection != menu_st->selection_ptr) 
+   if (selection != menu_st->selection_ptr)
       audio_driver_mixer_play_scroll_sound(false);
 #endif
 
@@ -287,11 +287,11 @@ static int action_right_mainmenu(unsigned type, const char *label,
 #ifdef HAVE_XMB
    struct menu_state    *menu_st       = menu_state_get_ptr();
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
-   const char *menu_ident              = (driver_ctx && driver_ctx->ident) 
-      ? driver_ctx->ident 
+   const char *menu_ident              = (driver_ctx && driver_ctx->ident)
+      ? driver_ctx->ident
       : NULL;
-   size_t size                         = (driver_ctx && driver_ctx->list_get_size) 
-      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) 
+   size_t size                         = (driver_ctx && driver_ctx->list_get_size)
+      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN)
       : 0;
    /* Tab switching functionality only applies
     * to XMB */
@@ -303,8 +303,8 @@ static int action_right_mainmenu(unsigned type, const char *label,
       bool menu_nav_wraparound_enable  = settings->bools.menu_navigation_wraparound_enable;
       if (driver_ctx)
       {
-         selection          = (driver_ctx->list_get_selection) 
-            ? driver_ctx->list_get_selection(menu_st->userdata) 
+         selection          = (driver_ctx->list_get_selection)
+            ? driver_ctx->list_get_selection(menu_st->userdata)
             : 0;
          if (driver_ctx->list_get_size)
          {
@@ -613,7 +613,7 @@ static void playlist_thumbnail_mode_right(playlist_t *playlist, enum playlist_th
    enum playlist_thumbnail_mode thumbnail_mode =
          playlist_get_thumbnail_mode(playlist, thumbnail_id);
 
-   if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+   if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_LOGOS)
       thumbnail_mode = (enum playlist_thumbnail_mode)((unsigned)thumbnail_mode + 1);
    else if (wraparound)
       thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -1308,7 +1308,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
          return 0;
       }
    }
-   
+
    if (menu_cbs_init_bind_right_compare_label(cbs, label, lbl_len, menu_lbl, menu_lbl_len
             ) == 0)
       return 0;

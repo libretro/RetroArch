@@ -1244,6 +1244,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
+               m_pendingThumbnailDownloadTypes.append(THUMBNAIL_LOGO);
                downloadThumbnail(system, title);
             }
             else
