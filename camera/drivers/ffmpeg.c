@@ -114,35 +114,6 @@ static const AVInputFormat *ffmpeg_camera_choose_format(const char *device)
 }
 
 // TODO: device format shall be: "<device type>/<device name>"
-
-static void ffmpeg_camera_log(void *avcl, int level, const char *fmt, va_list args)
-{
-   AVClass *class = *(AVClass **)avcl;
-   char buffer[1024];
-   vsnprintf(buffer, sizeof(buffer), fmt, args);
-
-   switch (level)
-   {
-      case AV_LOG_PANIC:
-      case AV_LOG_FATAL:
-      case AV_LOG_ERROR:
-         RARCH_ERR("[FFMPEG %s]: %s\n", class->class_name, buffer);
-         break;
-      case AV_LOG_WARNING:
-         RARCH_WARN("[FFMPEG %s]: %s\n", class->class_name, buffer);
-         break;
-      case AV_LOG_INFO:
-         RARCH_LOG("[FFMPEG %s]: %s\n", class->class_name, buffer);
-         break;
-      case AV_LOG_VERBOSE:
-         RARCH_DBG("[FFMPEG %s]: %s\n", class->class_name, buffer);
-         break;
-      default:
-         /* AV_LOG_DEBUG isn't useful for RetroArch, and AV_LOG_TRACE is too noisy */
-         break;
-   }
-}
-
 static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    ffmpeg_camera_t *ffmpeg = NULL;
@@ -165,9 +136,6 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
 
    ffmpeg->requested_width = width;
    ffmpeg->requested_height = height;
-
-   /* Forward ffmpeg's logs to RetroArch */
-   av_log_set_callback(ffmpeg_camera_log);
 
    avdevice_register_all();
    RARCH_LOG("[FFMPEG]: Initialized libavdevice.\n");
@@ -228,8 +196,6 @@ static void ffmpeg_camera_free(void *data)
    av_dict_free(&ffmpeg->options);
 
    free(ffmpeg);
-
-   av_log_set_callback(av_log_default_callback);
 }
 
 static void ffmpeg_camera_poll_thread(void *data);
