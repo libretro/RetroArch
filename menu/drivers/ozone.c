@@ -11146,19 +11146,19 @@ static void ozone_draw_footer(
             false);
 
    /* > Resume */
-      gfx_display_draw_text(
-            ozone->fonts.footer.font,
-            ozone->footer_labels.resume.str,
-            resume_x + icon_size + icon_padding_small,
-            footer_text_y,
-            video_width,
-            video_height,
-            ozone->theme->text_rgba,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
+   gfx_display_draw_text(
+         ozone->fonts.footer.font,
+         ozone->footer_labels.resume.str,
+         resume_x + icon_size + icon_padding_small,
+         footer_text_y,
+         video_width,
+         video_height,
+         ozone->theme->text_rgba,
+         TEXT_ALIGN_LEFT,
+         1.0f,
+         false,
+         1.0f,
+         false);
 
    /* > Reset to default */
    if (reset_to_default_available)
