@@ -2058,7 +2058,8 @@ static int file_load_with_detect_core_wrapper(
                sizeof(new_core_path)))
          ret = -1;
 
-      if (     !is_carchive && !string_is_empty(path)
+      if (     !is_carchive
+            && !string_is_empty(path)
             && !string_is_empty(menu_path_new))
          fill_pathname_join_special(menu->detect_content_path,
                menu_path_new, path,
@@ -2123,7 +2124,7 @@ static int action_ok_file_load_with_detect_core_carchive(
          menu->detect_content_path, path,
          '#', sizeof(menu->detect_content_path));
 
-   type = 0;
+   type  = 0;
    label = NULL;
 
    return file_load_with_detect_core_wrapper(
@@ -2137,11 +2138,11 @@ static int action_ok_file_load_with_detect_core(const char *path,
    bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
          && string_is_equal(label,
                   msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
-   if (is_dir) path = NULL;
+   if (is_dir)
+      path     = NULL;
 
-   type  = 0;
-   label = NULL;
-
+   type        = 0;
+   label       = NULL;
    return file_load_with_detect_core_wrapper(
          MSG_UNKNOWN, idx, entry_idx,
          path, label, type, false);
