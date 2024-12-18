@@ -2328,7 +2328,9 @@ bool video_shader_load_preset_into_shader(const char *path,
 #endif
 
    /* Gather all the paths of all of the presets in all reference chains */
-   override_paths_list = path_linked_list_new();
+   override_paths_list = (struct path_linked_list*)malloc(sizeof(*override_paths_list));
+   override_paths_list->next = NULL;
+   override_paths_list->path = NULL;
    video_shader_gather_reference_path_list(override_paths_list, conf->path, 0);
 
    /*
