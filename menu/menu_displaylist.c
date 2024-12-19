@@ -6852,7 +6852,6 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_OPTIONS_OVERRIDES:
          {
             char config_directory[DIR_MAX_LENGTH];
-            char content_dir_name[DIR_MAX_LENGTH];
             char override_path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st      = runloop_state_get_ptr();
             rarch_system_info_t *sys_info    = &runloop_st->system;
@@ -6865,7 +6864,6 @@ unsigned menu_displaylist_build_list(
             bool game_override_remove        = false;
 
             config_directory[0]              = '\0';
-            content_dir_name[0]              = '\0';
             override_path[0]                 = '\0';
 
             fill_pathname_application_special(config_directory,
@@ -6874,6 +6872,8 @@ unsigned menu_displaylist_build_list(
 
             if (has_content)
             {
+               char content_dir_name[DIR_MAX_LENGTH];
+
                /* Game-specific path */
                fill_pathname_join_special_ext(override_path,
                      config_directory, core_name,

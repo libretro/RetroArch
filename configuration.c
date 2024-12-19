@@ -4312,7 +4312,6 @@ bool config_load_override(void *data)
    char core_path[PATH_MAX_LENGTH];
    char game_path[PATH_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
-   char content_dir_name[DIR_MAX_LENGTH];
    char config_directory[DIR_MAX_LENGTH];
    bool should_append                     = false;
    bool show_notification                 = true;
@@ -4327,7 +4326,6 @@ bool config_load_override(void *data)
    core_path[0]        = '\0';
    game_path[0]        = '\0';
    content_path[0]     = '\0';
-   content_dir_name[0] = '\0';
    config_directory[0] = '\0';
 
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
@@ -4345,6 +4343,7 @@ bool config_load_override(void *data)
     * game_path, content_path */
    if (has_content)
    {
+      char content_dir_name[DIR_MAX_LENGTH];
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, sizeof(content_dir_name));
       game_name = path_basename_nocompression(rarch_path_basename);
@@ -4612,7 +4611,6 @@ bool config_unload_override(void)
 bool config_load_remap(const char *directory_input_remapping,
       void *data)
 {
-   char content_dir_name[DIR_MAX_LENGTH];
    /* final path for core-specific configuration (prefix+suffix) */
    char core_path[PATH_MAX_LENGTH];
    /* final path for game-specific configuration (prefix+suffix) */
@@ -4637,7 +4635,6 @@ bool config_load_remap(const char *directory_input_remapping,
    size_t remap_path_total_len            = 0;
    size_t _len                            = 0;
 
-   content_dir_name[0] = '\0';
    core_path[0]        = '\0';
    game_path[0]        = '\0';
    content_path[0]     = '\0';
@@ -4682,6 +4679,7 @@ bool config_load_remap(const char *directory_input_remapping,
     * game_path, content_path */
    if (has_content)
    {
+      char content_dir_name[DIR_MAX_LENGTH];
       fill_pathname_parent_dir_name(content_dir_name,
             rarch_path_basename, sizeof(content_dir_name));
       game_name = path_basename_nocompression(rarch_path_basename);
@@ -5515,7 +5513,6 @@ int8_t config_save_overrides(enum override_type type,
    struct config_path_setting *path_overrides  = NULL;
    char config_directory[DIR_MAX_LENGTH];
    char override_directory[DIR_MAX_LENGTH];
-   char content_dir_name[DIR_MAX_LENGTH];
    char override_path[PATH_MAX_LENGTH];
    settings_t *overrides                       = config_st;
    int bool_settings_size                      = sizeof(settings->bools)  / sizeof(settings->bools.placeholder);
@@ -5531,7 +5528,6 @@ int8_t config_save_overrides(enum override_type type,
    const char *game_name                       = NULL;
    bool has_content                            = !string_is_empty(rarch_path_basename);
 
-   content_dir_name[0]   = '\0';
    override_path[0]      = '\0';
 
    /* > Cannot save an override if we have no core
@@ -5790,13 +5786,17 @@ int8_t config_save_overrides(enum override_type type,
                   sizeof(override_path));
             break;
          case OVERRIDE_CONTENT_DIR:
-            fill_pathname_parent_dir_name(content_dir_name,
-                  rarch_path_basename, sizeof(content_dir_name));
-            fill_pathname_join_special_ext(override_path,
-                  config_directory, core_name,
-                  content_dir_name,
-                  FILE_PATH_CONFIG_EXTENSION,
-                  sizeof(override_path));
+            {
+               char content_dir_name[DIR_MAX_LENGTH];
+               content_dir_name[0]   = '\0';
+               fill_pathname_parent_dir_name(content_dir_name,
+                     rarch_path_basename, sizeof(content_dir_name));
+               fill_pathname_join_special_ext(override_path,
+                     config_directory, core_name,
+                     content_dir_name,
+                     FILE_PATH_CONFIG_EXTENSION,
+                     sizeof(override_path));
+            }
             break;
          case OVERRIDE_AS:
             fill_pathname_join_special_ext(override_path,
