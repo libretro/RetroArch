@@ -451,17 +451,18 @@ void fill_pathname_basedir(char *s, const char *in_path, size_t len)
 
 /**
  * fill_pathname_parent_dir_name:
- * @s                  : output directory
+ * @s                  : output string
  * @in_dir             : input directory
- * @len                : size of output directory
+ * @len                : size of @s
  *
  * Copies only the parent directory name of @in_dir into @s.
  * The two buffers must not overlap. Removes trailing '/'.
  *
- * @return true on success, false if a slash was not found in the path.
+ * @return Length of the string copied into @s
  **/
-bool fill_pathname_parent_dir_name(char *s, const char *in_dir, size_t len)
+size_t fill_pathname_parent_dir_name(char *s, const char *in_dir, size_t len)
 {
+   size_t _len           = 0;
    char *tmp             = strdup(in_dir);
    const char *slash     = strrchr(tmp, '/');
    const char *backslash = strrchr(tmp, '\\');
@@ -493,15 +494,13 @@ bool fill_pathname_parent_dir_name(char *s, const char *in_dir, size_t len)
    {
        /* If path starts with an slash, eliminate it. */
        if (path_is_absolute(in_dir))
-           strlcpy(s, in_dir + 1, len);
+           _len = strlcpy(s, in_dir + 1, len);
        else
-           strlcpy(s, in_dir,     len);
-       free(tmp);
-       return true;
+           _len = strlcpy(s, in_dir,     len);
    }
 
    free(tmp);
-   return false;
+   return _len;
 }
 
 /**
