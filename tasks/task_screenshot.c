@@ -323,8 +323,8 @@ static bool screenshot_dump(
 
             /* Append content directory name to screenshot
              * path, if required */
-            if (settings->bools.sort_screenshots_by_content_enable &&
-                !string_is_empty(content_dir))
+            if (    settings->bools.sort_screenshots_by_content_enable
+                && !string_is_empty(content_dir))
             {
                char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,

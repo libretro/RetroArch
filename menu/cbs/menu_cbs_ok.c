@@ -3683,7 +3683,6 @@ static int generic_action_ok_remap_file_operation(const char *path,
       unsigned action_type)
 {
 #ifdef HAVE_CONFIGFILE
-   char content_dir_name[DIR_MAX_LENGTH];
    char remap_file_path[PATH_MAX_LENGTH];
    struct menu_state *menu_st             = menu_state_get_ptr();
    rarch_system_info_t *sys_info          = &runloop_state_get_ptr()->system;
@@ -3700,7 +3699,6 @@ static int generic_action_ok_remap_file_operation(const char *path,
    size_t remap_path_total_len            = 0;
    size_t _len                            = 0;
 
-   content_dir_name[0] = '\0';
    remap_file_path[0]  = '\0';
 
    /* Cannot perform remap file operation if we
@@ -3768,9 +3766,9 @@ static int generic_action_ok_remap_file_operation(const char *path,
       case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
          if (has_content)
          {
+            char content_dir_name[DIR_MAX_LENGTH];
             fill_pathname_parent_dir_name(content_dir_name,
                   rarch_path_basename, sizeof(content_dir_name));
-
             fill_pathname_join_special_ext(remap_file_path,
                   directory_input_remapping, remap_path,
                   content_dir_name,

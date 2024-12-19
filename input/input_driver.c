@@ -1588,7 +1588,7 @@ static int16_t input_state_device(
                         res = ((   input_st->turbo_btns.count
                                  % settings->uints.input_turbo_period)
                               < settings->uints.input_turbo_duty_cycle);
-                  }  
+                  }
                }
             }
          }
@@ -5317,7 +5317,7 @@ static const char *input_overlay_path(bool want_osk)
    /* maybe based on the content's directory name */
    if (!string_is_empty(content_path))
    {
-      char dirname[PATH_MAX_LENGTH];
+      char dirname[DIR_MAX_LENGTH];
       fill_pathname_parent_dir_name(dirname, content_path, sizeof(dirname));
       fill_pathname_join_special_ext(system_overlay_path,
             overlay_directory, SYSTEM_OVERLAY_DIR, dirname, ".cfg",
