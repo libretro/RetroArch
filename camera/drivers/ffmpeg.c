@@ -106,11 +106,21 @@ typedef struct ffmpeg_camera
 
 static void ffmpeg_camera_free(void *data);
 
-static const AVInputFormat *ffmpeg_camera_choose_format(const char *device)
+// TODO: Pick a backend based on the settings, too
+static const AVInputFormat *ffmpeg_camera_get_default_backend(void)
 {
-   // TODO: If `device` is not NULL or empty, parse it to get the backend and device name
-   // TODO: Pick the best backend for the current platform, don't just return the first
-   return av_input_video_device_next(NULL);
+   const AVInputFormat *format = NULL;
+   for (unsigned i = 0; FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[i]; i++)
+   {
+      format = av_find_input_format(FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[i]);
+      if (format)
+         break;
+   }
+
+   if (!format)
+      format = av_input_video_device_next(NULL);
+
+   return format;
 }
 
 // TODO: device format shall be: "<device type>/<device name>"
@@ -140,10 +150,10 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
    avdevice_register_all();
    RARCH_LOG("[FFMPEG]: Initialized libavdevice.\n");
 
-   ffmpeg->input_format = ffmpeg_camera_choose_format(device);
+   ffmpeg->input_format = ffmpeg_camera_get_default_backend();
    if (!ffmpeg->input_format)
    {
-      RARCH_ERR("[FFMPEG]: No suitable video input devices found.\n");
+      RARCH_ERR("[FFMPEG]: No suitable video input backend found.\n");
       goto error;
    }
 
