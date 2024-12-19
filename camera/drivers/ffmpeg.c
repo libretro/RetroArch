@@ -28,6 +28,7 @@
 #include <memalign.h>
 #include <retro_assert.h>
 #include <rthreads/rthreads.h>
+#include <string/stdstring.h>
 
 /* ffmpeg supports a specific range of video devices;
  * some video backends are better than others,
@@ -164,10 +165,31 @@ error:
 
 }
 
+/* Device URL syntax varies by backend.
+ * See https://ffmpeg.org/ffmpeg-devices.html for details. */
 static void ffmpeg_camera_get_source_url(ffmpeg_camera_t *ffmpeg, const AVDeviceInfo *device)
 {
-   snprintf(ffmpeg->url, sizeof(ffmpeg->url), "video=%s", device->device_description);
-   // TODO: this url is specific to dshow, need to generalize it
+#ifdef __WIN32__
+   if (string_is_equal(ffmpeg->input_format->name, "dshow"))
+   {
+      snprintf(ffmpeg->url, sizeof(ffmpeg->url), "video=%s", device->device_description);
+      return;
+   }
+#elif defined(__APPLE__)
+   if (string_is_equal(ffmpeg->input_format->name, "avfoundation"))
+   {
+      /* we only want video, not audio */
+      snprintf(ffmpeg->url, sizeof(ffmpeg->url), "%s:none", device->device_description);
+      return;
+   }
+#endif
+
+   /* Other backends that support listing available sources use the name as-is;
+    * some advanced backends have extra syntax (e.g. gdigrab)
+    * but they don't support listing available sources,
+    * so players will have to enter them manually.
+    */
+   strlcpy(ffmpeg->url, device->device_description, sizeof(ffmpeg->url));
 }
 
 static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
