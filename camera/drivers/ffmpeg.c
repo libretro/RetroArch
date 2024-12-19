@@ -21,6 +21,7 @@
 #include "lists/string_list.h"
 #include "verbosity.h"
 
+#include <configuration.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
@@ -80,8 +81,8 @@ typedef struct ffmpeg_camera
    sthread_t *poll_thread;
    AVFormatContext *format_context;
    AVCodecContext *decoder_context;
-   AVCodec *decoder;
-   AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
+   const AVCodec *decoder;
+   const AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
    AVDictionary *options;
    AVPacket *packet;
    AVFrame *camera_frame;
@@ -123,7 +124,99 @@ static const AVInputFormat *ffmpeg_camera_get_default_backend(void)
    return format;
 }
 
-// TODO: device format shall be: "<device type>/<device name>"
+static int ffmpeg_camera_get_initial_options(
+   const AVInputFormat *backend,
+   AVDictionary **options,
+   uint64_t caps,
+   unsigned width,
+   unsigned height
+)
+{
+   int result = 0;
+   char dimensions[128];
+   if (width != 0 && height != 0)
+   { /* If the core is letting the frontend pick the size... */
+      snprintf(dimensions, sizeof(dimensions), "%ux%u", width, height);
+
+      result = av_dict_set(options, "video_size", dimensions, 0);
+
+      if (result < 0)
+      {
+         RARCH_ERR("[FFMPEG]: Failed to set option: %s\n", av_err2str(result));
+         goto error;
+      }
+   }
+   /* I wanted to list supported formats and pick the most appropriate size
+    * if the requested size isn't available,
+    * but ffmpeg doesn't seem to offer a way to do that.
+    */
+
+   if (!options)
+   {
+      RARCH_DBG("[FFMPEG]: No options set, not allocating a dict (this isn't an error)");
+   }
+
+   return result;
+
+error:
+   av_dict_free(options);
+   return result;
+
+}
+
+static void ffmpeg_camera_get_source_url(ffmpeg_camera_t *ffmpeg, const AVDeviceInfo *device)
+{
+   snprintf(ffmpeg->url, sizeof(ffmpeg->url), "video=%s", device->device_description);
+   // TODO: this url is specific to dshow, need to generalize it
+}
+
+static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
+{
+   AVDictionaryEntry *e = NULL;
+   AVDictionary *options = NULL;
+   int result = ffmpeg->options ? av_dict_copy(&options, ffmpeg->options, 0) : 0;
+   /* copy the options dict so that other steps in start() can use it,
+    * as avformat_open_input clears it and adds unrecognized settings */
+
+   if (result < 0)
+   {
+      RARCH_ERR("[FFMPEG]: Failed to copy options: %s\n", av_err2str(result));
+      goto done;
+   }
+
+   result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
+   if (result < 0)
+   {
+      RARCH_WARN("[FFMPEG]: Failed to open video input device \"%s\": %s\n", ffmpeg->url, av_err2str(result));
+
+      if (ffmpeg->options)
+      { /* If we're not already requesting the default format... */
+
+         result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, NULL);
+         if (result < 0)
+         {
+            RARCH_ERR("[FFMPEG]: Failed to open the same device in its default format: %s\n", av_err2str(result));
+            goto done;
+         }
+      }
+   }
+
+done:
+   if (options)
+   {
+      while ((e = av_dict_iterate(options, e))) {
+         RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
+      }
+   }
+
+   av_dict_free(&options); /* noop if NULL */
+   if (result == 0)
+   {
+      RARCH_LOG("[FFMPEG]: Opened video input device \"%s\".\n", ffmpeg->url);
+   }
+   return result;
+}
+
 static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
 {
    ffmpeg_camera_t *ffmpeg = NULL;
@@ -159,12 +252,10 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
 
    RARCH_LOG("[FFMPEG]: Using default camera backend: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
-
-   // TODO: Pick the best size for the camera
-   result = av_dict_set(&ffmpeg->options, "video_size", "640x480", 0);
+   result = ffmpeg_camera_get_initial_options(ffmpeg->input_format, &ffmpeg->options, caps, width, height);
    if (result < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to set option: %s\n", av_err2str(result));
+      RARCH_ERR("[FFMPEG]: Failed to get initial options: %s\n", av_err2str(result));
       goto error;
    }
 
@@ -181,9 +272,8 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       goto error;
    }
 
+   ffmpeg_camera_get_source_url(ffmpeg, device_list->devices[0]);
    RARCH_LOG("[FFMPEG]: Using video input device: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
-   snprintf(ffmpeg->url, sizeof(ffmpeg->url), "video=%s", device_list->devices[0]->device_name);
-   // TODO: this url is specific to dshow, need to generalize it
 
    avdevice_free_list_devices(&device_list);
    return ffmpeg;
@@ -212,6 +302,7 @@ static void ffmpeg_camera_poll_thread(void *data);
 
 static bool ffmpeg_camera_start(void *data)
 {
+   const settings_t *settings = config_get_ptr();
    ffmpeg_camera_t *ffmpeg = data;
    int result = 0;
    AVStream *stream = NULL;
@@ -224,6 +315,10 @@ static bool ffmpeg_camera_start(void *data)
       return true;
    }
 
+   result = ffmpeg_camera_open_device(ffmpeg);
+   if (result < 0)
+      goto error;
+
    result = av_dict_copy(&options, ffmpeg->options, 0);
    if (result < 0)
    {
@@ -231,24 +326,15 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   result = avformat_open_input(&ffmpeg->format_context, ffmpeg->url, ffmpeg->input_format, &options);
+   result = avformat_find_stream_info(ffmpeg->format_context, &options);
    if (result < 0)
    {
-      RARCH_ERR("[FFMPEG]: Failed to open video input device: %s\n", av_err2str(result));
+      RARCH_ERR("[FFMPEG]: Failed to find stream info: %s\n", av_err2str(result));
       goto error;
    }
 
    while ((e = av_dict_iterate(options, e))) {
       RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
-   }
-
-   av_dict_free(&options);
-
-   result = avformat_find_stream_info(ffmpeg->format_context, NULL);
-   if (result < 0)
-   {
-      RARCH_ERR("[FFMPEG]: Failed to find stream info: %s\n", av_err2str(result));
-      goto error;
    }
 
    result = av_find_best_stream(ffmpeg->format_context, AVMEDIA_TYPE_VIDEO, -1, -1, &ffmpeg->decoder, 0);
