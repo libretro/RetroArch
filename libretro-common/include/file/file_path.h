@@ -408,9 +408,9 @@ void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
 
 /**
  * fill_pathname_parent_dir_name:
- * @out_dir            : output directory
+ * @s                  : output string
  * @in_dir             : input directory
- * @size               : size of output directory
+ * @len                : size of @s
  *
  * Copies only the parent directory name of @in_dir into @out_dir.
  * The two buffers must not overlap. Removes trailing '/'.
@@ -420,10 +420,10 @@ void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
  * - Calls find_last_slash() x times
  * - Can call strlcpy
  *
- * @return true on success, false if a slash was not found in the path.
+ * @return Length of the string copied into @s
  **/
-bool fill_pathname_parent_dir_name(char *out_dir,
-      const char *in_dir, size_t size);
+size_t fill_pathname_parent_dir_name(char *s,
+      const char *in_dir, size_t len);
 
 /**
  * fill_pathname_parent_dir:
