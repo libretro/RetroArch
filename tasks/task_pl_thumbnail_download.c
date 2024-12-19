@@ -92,8 +92,8 @@ typedef struct pl_entry_id
 /*********************/
 
 /* Fetches the thumbnail subdirectory (Named_Snaps,
- * Named_Titles, Named_Boxarts) corresponding to the
- * specified 'type index' (1, 2, 3).
+ * Named_Titles, Named_Boxarts, Named_Logos) corresponding to the
+ * specified 'type index' (1, 2, 3, 4).
  * Returns true if 'type index' is valid */
 static bool gfx_thumbnail_get_sub_directory(
       unsigned type_idx, const char **sub_directory)
@@ -111,6 +111,9 @@ static bool gfx_thumbnail_get_sub_directory(
          return true;
       case 3:
          *sub_directory = "Named_Boxarts";
+         return true;
+      case 4:
+         *sub_directory = "Named_Logos";
          return true;
       case 0:
       default:
@@ -456,7 +459,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
          pl_thumb->http_task = NULL;
 
          /* Check whether all thumbnail types have been processed */
-         if (pl_thumb->type_idx > 3)
+         if (pl_thumb->type_idx > 4)
          {
             next_flag = playlist_get_next_thumbnail_name_flag(pl_thumb->playlist,pl_thumb->list_index);
             if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE) {
@@ -469,8 +472,8 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
                   pl_thumb->status = PL_THUMB_END;
                break;
             } else {
-               /* Increment the name flag to cover the 3 supported naming conventions.
-                * Side-effect: all combinations will be tried (3x3 requests for 1 playlist entry)
+               /* Increment the name flag to cover the 4 supported naming conventions.
+                * Side-effect: all combinations will be tried (4x4 requests for 1 playlist entry)
                 * even if some files were already downloaded, but that may be useful if later on
                 * different view priorities are implemented. */
                pl_thumb->type_idx = 1;
@@ -777,14 +780,14 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             pl_thumb->http_task = NULL;
 
             /* Check whether all thumbnail types have been processed */
-            if (pl_thumb->type_idx > 3)
+            if (pl_thumb->type_idx > 4)
             {
                pl_thumb->status = PL_THUMB_END;
                break;
             }
 
             /* Update progress */
-            task_set_progress(task, ((pl_thumb->type_idx - 1) * 100) / 3);
+            task_set_progress(task, ((pl_thumb->type_idx - 1) * 100) / 4);
 
             /* Download current thumbnail */
             if (pl_thumb)
