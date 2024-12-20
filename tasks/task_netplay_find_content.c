@@ -205,9 +205,11 @@ static bool find_content_by_name(playlist_config_t *playlist_config,
                   continue;
             }
 
-            strlcpy(buf, path_basename(entry->path), sizeof(buf));
             if (!with_extension)
-               path_remove_extension(buf);
+               fill_pathname(buf, path_basename(entry->path),
+                     "", sizeof(buf));
+            else
+               strlcpy(buf, path_basename(entry->path), sizeof(buf));
 
             if (string_is_equal_case_insensitive(buf, name))
             {

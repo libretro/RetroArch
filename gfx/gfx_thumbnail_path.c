@@ -334,8 +334,6 @@ bool gfx_thumbnail_set_content_image(
       gfx_thumbnail_path_data_t *path_data,
       const char *img_dir, const char *img_name)
 {
-   char *content_img_no_ext = NULL;
-
    if (!path_data)
       return false;
 
@@ -368,14 +366,9 @@ bool gfx_thumbnail_set_content_image(
    strlcpy(path_data->content_img,
             img_name, sizeof(path_data->content_img));
 
-   /* Get image label */
-   content_img_no_ext = path_remove_extension(path_data->content_img);
-   if (!string_is_empty(content_img_no_ext))
-      strlcpy(path_data->content_label,
-            content_img_no_ext, sizeof(path_data->content_label));
-   else
-      strlcpy(path_data->content_label,
-            path_data->content_img, sizeof(path_data->content_label));
+   fill_pathname(path_data->content_label,
+         path_data->content_img, "",
+         sizeof(path_data->content_label));
 
    /* Set file path */
    fill_pathname_join_special(path_data->content_path,
@@ -519,27 +512,17 @@ bool gfx_thumbnail_set_content_playlist(
       else
       {
          char tmp_buf[NAME_MAX_LENGTH];
-         char *db_name_no_ext = NULL;
          const char *pos      = strchr(db_name, '|');
-
          /* If db_name comes from core info, and there are multiple
           * databases mentioned separated by |, use only first one */
          if (pos && (size_t) (pos - db_name) + 1 < sizeof(tmp_buf))
             strlcpy(tmp_buf, db_name, (size_t)(pos - db_name) + 1);
          else
-            /* Remove .lpl extension
-             * > path_remove_extension() requires a char * (not const)
-             *   so have to use a temporary buffer... */
             strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
 
-         db_name_no_ext = path_remove_extension(tmp_buf);
-
-         if (!string_is_empty(db_name_no_ext))
-            strlcpy(path_data->content_db_name,
-                  db_name_no_ext, sizeof(path_data->content_db_name));
-         else
-            strlcpy(path_data->content_db_name,
-                  tmp_buf, sizeof(path_data->content_db_name));
+         fill_pathname(path_data->content_db_name,
+               tmp_buf, "",
+               sizeof(path_data->content_db_name));
       }
    }
 
@@ -669,7 +652,6 @@ bool gfx_thumbnail_set_icon_playlist(
       else
       {
          char tmp_buf[NAME_MAX_LENGTH];
-         char *db_name_no_ext = NULL;
          const char* pos      = strchr(db_name, '|');
 
          /* If db_name comes from core info, and there are multiple
@@ -677,18 +659,11 @@ bool gfx_thumbnail_set_icon_playlist(
          if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf))
             strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
          else
-            /* Remove .lpl extension
-             * > path_remove_extension() requires a char * (not const)
-             *   so have to use a temporary buffer... */
             strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
-         db_name_no_ext = path_remove_extension(tmp_buf);
 
-         if (!string_is_empty(db_name_no_ext))
-            strlcpy(path_data->content_db_name,
-                  db_name_no_ext, sizeof(path_data->content_db_name));
-         else
-            strlcpy(path_data->content_db_name,
-                  tmp_buf, sizeof(path_data->content_db_name));
+         fill_pathname(path_data->content_db_name,
+               tmp_buf, "",
+               sizeof(path_data->content_db_name));
       }
    }
 
