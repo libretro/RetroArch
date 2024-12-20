@@ -481,7 +481,7 @@ vaguerant
 Val Packett (valpackett)
 Valerio Proietti (kamicane)
 vgmoose
-Viachaslau Khalikn (viachaslavic)
+Viachaslau Khalikin (viachaslavic)
 Vicki Pfau (endrift)
 Vicky C Lau (vickychenglau)
 vin (suseme)
