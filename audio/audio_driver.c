@@ -132,6 +132,9 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_PULSE
    &audio_pulse,
 #endif
+#ifdef HAVE_PIPEWIRE
+   &audio_pipewire,
+#endif
 #if defined(__PSL1GHT__) || defined(__PS3__)
    &audio_ps3,
 #endif
