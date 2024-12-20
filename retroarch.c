@@ -6132,6 +6132,9 @@ static void retroarch_print_features(void)
 #ifdef HAVE_THREADS
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_THREAD,          "Threads",         "Threading support");
 #endif
+#ifdef HAVE_GDI
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_GDI,            "GDI",               "Video driver");
+#endif
 #ifdef HAVE_D3D8
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D8,            "Direct3D 8",       "Video driver");
 #endif
