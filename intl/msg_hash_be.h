@@ -14913,23 +14913,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
-   "Найніжэйшы"
+   "Найніжэйшая"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWER,
-   "Ніжэйшы"
+   "Ніжэйшая"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
-   "Звычайна"
+   "Звычайная"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHER,
-   "Вышэйшы"
+   "Вышэйшая"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
-   "Найвышэйшы"
+   "Найвышэйшая"
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
