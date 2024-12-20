@@ -334,32 +334,17 @@ runtime_log_t *runtime_log_init(
          size_t path_length = last_slash + 1 - content_path;
          if (path_length < PATH_MAX_LENGTH)
          {
-            size_t _len;
             memset(tmp_buf, 0, sizeof(tmp_buf));
             strlcpy(tmp_buf,
                   content_path, path_length * sizeof(char));
-            _len = strlcpy(content_name,
-                  path_basename(tmp_buf), sizeof(content_name));
-            strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
+            fill_pathname(content_name,
+                  path_basename(tmp_buf), ".lrtl", sizeof(content_name));
          }
       }
    }
    else
-   {
-      size_t _len;
-      /* path_remove_extension() requires a char * (not const)
-       * so have to use a temporary buffer... */
-      char *tmp_buf_no_ext = NULL;
-      tmp_buf[0]           = '\0';
-      strlcpy(tmp_buf, path_basename(content_path), sizeof(tmp_buf));
-      tmp_buf_no_ext       = path_remove_extension(tmp_buf);
-
-      if (string_is_empty(tmp_buf_no_ext))
-         return NULL;
-
-      _len = strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
-      strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
-   }
+      fill_pathname(content_name, path_basename(content_path), ".lrtl",
+            sizeof(content_name));
 
    if (string_is_empty(content_name))
       return NULL;

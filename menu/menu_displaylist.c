@@ -2399,8 +2399,8 @@ static int menu_displaylist_parse_playlist(
       else if (!string_is_empty(info_path))
       {
          char lpl_basename[NAME_MAX_LENGTH];
-         fill_pathname_base(lpl_basename, info_path, sizeof(lpl_basename));
-         path_remove_extension(lpl_basename);
+         fill_pathname(lpl_basename, path_basename(info_path), "",
+               sizeof(lpl_basename));
          menu_driver_set_thumbnail_system(
                menu_st->userdata, lpl_basename, sizeof(lpl_basename));
       }
@@ -2661,7 +2661,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    fill_pathname(path_base, path_basename(info->path), "",
          sizeof(path_base));
-   path_remove_extension(path_base);
 
    menu_driver_set_thumbnail_system(
          menu_st->userdata, path_base, sizeof(path_base));
@@ -3525,8 +3524,8 @@ static int menu_displaylist_parse_horizontal_list(
 
          /* Thumbnail system must be set *after* playlist
           * is loaded/cached */
-         fill_pathname_base(lpl_basename, item->path, sizeof(lpl_basename));
-         path_remove_extension(lpl_basename);
+         fill_pathname(lpl_basename, path_basename(item->path), "",
+               sizeof(lpl_basename));
          menu_driver_set_thumbnail_system(
                menu_st->userdata, lpl_basename, sizeof(lpl_basename));
       }
@@ -4657,8 +4656,8 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(
                || string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
             continue;
 
-         strlcpy(playlist_display_name, playlist_file, sizeof(playlist_display_name));
-         path_remove_extension(playlist_display_name);
+         fill_pathname(playlist_display_name, playlist_file, "",
+               sizeof(playlist_display_name));
 
          menu_entries_append(list, playlist_display_name, path,
                MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
@@ -4920,8 +4919,7 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
                   "lpl"))
             continue;
 
-         strlcpy(path_base, path, sizeof(path_base));
-         path_remove_extension(path_base);
+         fill_pathname(path_base, path, "", sizeof(path_base));
 
          menu_entries_append(list, path_base, path,
                MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_ENTRY,
@@ -5013,12 +5011,9 @@ static unsigned menu_displaylist_parse_content_information(
 
          if (!string_is_empty(entry->label))
             strlcpy(content_label, entry->label, sizeof(content_label));
-         else if (!string_is_empty(content_path))
-         {
-            /* Create content label from the path */
-            strlcpy(content_label, path_basename(content_path), sizeof(content_label));
-            path_remove_extension(content_label);
-         }
+         else if (!string_is_empty(content_path)) /* Create content label from the path */
+            fill_pathname(content_label, path_basename(content_path), "",
+                  sizeof(content_label));
 
          /* Only display core name if both core name and
           * core path are valid */
@@ -5037,8 +5032,8 @@ static unsigned menu_displaylist_parse_content_information(
       core_path      = loaded_core_path;
 
       /* Create content label from the path */
-      strlcpy(content_label, path_basename(content_path), sizeof(content_label));
-      path_remove_extension(content_label);
+      fill_pathname(content_label, path_basename(content_path), "",
+            sizeof(content_label));
 
       if (core_info_find(core_path, &core_info))
       {
@@ -5076,15 +5071,11 @@ static unsigned menu_displaylist_parse_content_information(
    /* Database */
    if (!string_is_empty(db_name))
    {
-      char *db_name_no_ext = NULL;
       char db_name_no_ext_buff[NAME_MAX_LENGTH];
-      /* Remove .lpl extension
-      * > path_remove_extension() requires a char * (not const)
-      *   so have to use a temporary buffer... */
-      strlcpy(db_name_no_ext_buff, db_name, sizeof(db_name_no_ext_buff));
-      db_name_no_ext = path_remove_extension(db_name_no_ext_buff);
+      fill_pathname(db_name_no_ext_buff, db_name, "",
+            sizeof(db_name_no_ext_buff));
 
-      if (!string_is_empty(db_name_no_ext))
+      if (!string_is_empty(db_name_no_ext_buff))
       {
          size_t _len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
@@ -5092,7 +5083,7 @@ static unsigned menu_displaylist_parse_content_information(
          tmp[  _len] = ':';
          tmp[++_len] = ' ';
          tmp[++_len] = '\0';
-         strlcpy(tmp + _len, db_name_no_ext, sizeof(tmp) - _len);
+         strlcpy(tmp + _len, db_name_no_ext_buff, sizeof(tmp) - _len);
          if (menu_entries_append(info_list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
                MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,

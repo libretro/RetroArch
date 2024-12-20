@@ -505,7 +505,6 @@ enum manual_content_scan_playlist_refresh_status
             const char *path_content_database, bool show_hidden_files)
 {
    const char *playlist_path    = NULL;
-   const char *playlist_file    = NULL;
    const char *content_dir      = NULL;
    const char *core_name        = NULL;
    const char *file_exts        = NULL;
@@ -555,11 +554,8 @@ enum manual_content_scan_playlist_refresh_status
       goto end;
    }
 
-   if ((playlist_file = path_basename(playlist_path)))
-   {
-      strlcpy(system_name, playlist_file, sizeof(system_name));
-      path_remove_extension(system_name);
-   }
+   fill_pathname(system_name, path_basename(playlist_path),
+         "", sizeof(system_name));
 
    if (string_is_empty(system_name))
    {
@@ -604,9 +600,8 @@ enum manual_content_scan_playlist_refresh_status
          if (string_is_empty(rdb_file))
             continue;
 
-         /* Remove file extension */
-         strlcpy(rdb_name, rdb_file, sizeof(rdb_name));
-         path_remove_extension(rdb_name);
+         fill_pathname(rdb_name, rdb_file, "",
+               sizeof(rdb_name));
 
          if (string_is_empty(rdb_name))
             continue;
@@ -865,9 +860,8 @@ struct string_list *manual_content_scan_get_menu_system_name_list(
             if (string_is_empty(rdb_file))
                continue;
 
-            /* Remove file extension */
-            strlcpy(rdb_name, rdb_file, sizeof(rdb_name));
-            path_remove_extension(rdb_name);
+            fill_pathname(rdb_name, rdb_file, "",
+                  sizeof(rdb_name));
 
             if (string_is_empty(rdb_name))
                continue;

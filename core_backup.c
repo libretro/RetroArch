@@ -62,11 +62,8 @@ static bool core_backup_get_backup_dir(
        || (len < 1))
       return false;
 
-   strlcpy(core_file_id, core_filename, sizeof(core_file_id));
-
-   /* > Remove file extension */
-   path_remove_extension(core_file_id);
-
+   fill_pathname(core_file_id, core_filename, "",
+         sizeof(core_file_id));
    if (string_is_empty(core_file_id))
       return false;
 

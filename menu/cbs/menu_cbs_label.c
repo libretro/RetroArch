@@ -77,13 +77,7 @@ static int action_bind_label_playlist_collection_entry(
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
       /* Handle collection playlists */
       else
-      {
-         char playlist_name[NAME_MAX_LENGTH];
-         strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
-         path_remove_extension(playlist_name);
-
-         strlcpy(s, playlist_name, len);
-      }
+         fill_pathname(s, playlist_file, "", len);
    }
    /* This should never happen, but if it does just set
     * the label to the file name (it's better than nothing...) */

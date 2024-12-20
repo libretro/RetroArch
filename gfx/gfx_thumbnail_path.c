@@ -257,15 +257,13 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
                 && string_is_equal(playlist_file,
                    FILE_PATH_CONTENT_FAVORITES));
 
+            /* This means we have to work a little harder
+             * i.e. check whether the cached playlist file
+             * matches the database name */
             if (!playlist_valid)
             {
-               /* This means we have to work a little harder
-                * i.e. check whether the cached playlist file
-                * matches the database name */
-               char *playlist_name = NULL;
-               char tmp[NAME_MAX_LENGTH];
-               strlcpy(tmp, playlist_file, sizeof(tmp));
-               playlist_name  = path_remove_extension(tmp);
+               char playlist_name[NAME_MAX_LENGTH];
+               fill_pathname(playlist_name, playlist_file, "", sizeof(playlist_name));
                playlist_valid = string_is_equal(playlist_name, system);
             }
 
@@ -479,20 +477,12 @@ bool gfx_thumbnail_set_content_playlist(
 
    /* Determine content image name */
    {
-      char* content_name_no_ext = NULL;
       char tmp_buf[NAME_MAX_LENGTH];
-      /* Remove rom file extension
-       * > path_remove_extension() requires a char * (not const)
-       *   so have to use a temporary buffer... */
-
-      const char* base_name = path_basename(path_data->content_path);
-      strlcpy(tmp_buf, base_name, sizeof(tmp_buf));
-      content_name_no_ext = path_remove_extension(tmp_buf);
-      if (!content_name_no_ext)
-         content_name_no_ext = tmp_buf;
+      fill_pathname(tmp_buf, path_basename(path_data->content_path),
+            "", sizeof(tmp_buf));
 
       gfx_thumbnail_fill_content_img(path_data->content_img_full,
-         sizeof(path_data->content_img_full), content_name_no_ext,false);
+         sizeof(path_data->content_img_full), tmp_buf, false);
       gfx_thumbnail_fill_content_img(path_data->content_img,
          sizeof(path_data->content_img), path_data->content_label,false);
 
@@ -638,18 +628,11 @@ bool gfx_thumbnail_set_icon_playlist(
    /* Determine content image name */
    {
       char tmp_buf[NAME_MAX_LENGTH];
-      char* content_name_no_ext = NULL;
-      /* Remove rom file extension
-       * > path_remove_extension() requires a char * (not const)
-       *   so have to use a temporary buffer... */
-      const char* base_name     = path_basename(path_data->content_path);
-      strlcpy(tmp_buf, base_name, sizeof(tmp_buf));
-      content_name_no_ext = path_remove_extension(tmp_buf);
-      if (!content_name_no_ext)
-         content_name_no_ext = tmp_buf;
+      fill_pathname(tmp_buf, path_basename(path_data->content_path), "",
+            sizeof(tmp_buf));
 
       gfx_thumbnail_fill_content_img(path_data->content_img_full,
-         sizeof(path_data->content_img_full), content_name_no_ext,false);
+         sizeof(path_data->content_img_full), tmp_buf, false);
       gfx_thumbnail_fill_content_img(path_data->content_img,
          sizeof(path_data->content_img), path_data->content_label,false);
 
