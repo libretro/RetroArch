@@ -66,6 +66,15 @@ typedef struct
    struct string_list *devicelist;
 } pw_t;
 
+void clear_buf(void *buf, int len)
+{
+   if (!len)
+      return;
+
+   memset(buf, 0x00, len);
+   return;
+}
+
 size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
 {
    uint32_t sample_size = 1;
@@ -122,65 +131,70 @@ static void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHAN
          break;
       default:
          RARCH_ERR("[PipeWire]: Internal error: unsupported channel count %d\n", channels);
-    }
+   }
 }
 
 static void stream_destroy(void *data)
 {
-    pw_t *pw = (pw_t*)data;
-    spa_hook_remove(&pw->stream_listener);
-    pw->stream = NULL;
+   pw_t *pw = (pw_t*)data;
+   spa_hook_remove(&pw->stream_listener);
+   pw->stream = NULL;
 }
 
 static void on_process(void *data)
 {
-    pw_t *pw = (pw_t*)data;
-    void *p;
-    struct pw_buffer *b;
-    struct spa_buffer *buf;
-    uint32_t req, index, n_bytes;
-    int32_t avail;
+   pw_t *pw = (pw_t*)data;
+   void *p;
+   struct pw_buffer *b;
+   struct spa_buffer *buf;
+   uint32_t req, index, n_bytes;
+   int32_t avail;
 
-    retro_assert(pw->stream);
+   retro_assert(pw->stream);
 
-    if ((b = pw_stream_dequeue_buffer(pw->stream)) == NULL)
-    {
-       RARCH_WARN("[PipeWire]: Out of buffers: %s", strerror(errno));
-       return;
-    }
+   if ((b = pw_stream_dequeue_buffer(pw->stream)) == NULL)
+   {
+      RARCH_WARN("[PipeWire]: Out of buffers: %s\n", strerror(errno));
+      return;
+   }
 
-    buf = b->buffer;
-    p = buf->datas[0].data;
-    if (p == NULL)
-       return;
+   buf = b->buffer;
+   p = buf->datas[0].data;
+   if (p == NULL)
+      return;
 
-    /* calculate the total no of bytes to read data from buffer */
-    req = b->requested * pw->frame_size;
+   /* calculate the total no of bytes to read data from buffer */
+   req = b->requested * pw->frame_size;
 
-    if (req == 0)
-       req = pw->req;
+   if (req == 0)
+      req = pw->req;
 
-    n_bytes = SPA_MIN(req, buf->datas[0].maxsize);
+   n_bytes = SPA_MIN(req, buf->datas[0].maxsize);
 
-    /* get no of available bytes to read data from buffer */
-    avail = spa_ringbuffer_get_read_index(&pw->ring, &index);
+   /* get no of available bytes to read data from buffer */
+   avail = spa_ringbuffer_get_read_index(&pw->ring, &index);
 
-    if (avail < (int32_t)n_bytes)
-       n_bytes = avail;
+   if (avail <= 0)
+      clear_buf(p, n_bytes);
+   else
+   {
+      if (avail < (int32_t)n_bytes)
+         n_bytes = avail;
 
-    spa_ringbuffer_read_data(&pw->ring,
-                              pw->buffer, RINGBUFFER_SIZE,
-                              index & RINGBUFFER_MASK, p, n_bytes);
+      spa_ringbuffer_read_data(&pw->ring,
+                               pw->buffer, RINGBUFFER_SIZE,
+                               index & RINGBUFFER_MASK, p, n_bytes);
 
-    index += n_bytes;
-    spa_ringbuffer_read_update(&pw->ring, index);
+      index += n_bytes;
+      spa_ringbuffer_read_update(&pw->ring, index);
+   }
 
-    buf->datas[0].chunk->offset = 0;
-    buf->datas[0].chunk->stride = pw->frame_size;
-    buf->datas[0].chunk->size   = n_bytes;
+   buf->datas[0].chunk->offset = 0;
+   buf->datas[0].chunk->stride = pw->frame_size;
+   buf->datas[0].chunk->size   = n_bytes;
 
-    /* queue the buffer for playback */
-    pw_stream_queue_buffer(pw->stream, b);
+   /* queue the buffer for playback */
+   pw_stream_queue_buffer(pw->stream, b);
 }
 
 static void on_stream_state_changed(void *data,
@@ -309,13 +323,15 @@ static void registry_event_global(void *data, uint32_t id,
    }
    else if (spa_streq(type, PW_TYPE_INTERFACE_Node))
    {
-      const char* media = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
+      media = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
       if (media && strcmp(media, "Audio/Sink") == 0)
       {
-         sink = spa_dict_lookup(props, PW_KEY_NODE_NAME);
-         attr.i = id;
-         string_list_append(pw->devicelist, sink, attr);
-         RARCH_LOG("[PipeWire]: Found Sink: %s\n", sink);
+         if ((sink = spa_dict_lookup(props, PW_KEY_NODE_NAME)) != NULL)
+         {
+            attr.i = id;
+            string_list_append(pw->devicelist, sink, attr);
+            RARCH_LOG("[PipeWire]: Found Sink: %s\n", sink);
+         }
       }
    }
 
