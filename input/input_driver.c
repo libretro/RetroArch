@@ -7452,8 +7452,12 @@ void input_keyboard_event(bool down, unsigned code,
        * - not with Game Focus
        * - not from keyboard device type mappings
        * - not from overlay keyboard input
-       * - with 'enable_hotkey' modifier set and unpressed. */
-      if (     !input_st->game_focus_state.enabled
+       * - with 'enable_hotkey' modifier set and unpressed.
+       *
+       * Also do not block key up events, because keys will
+       * get stuck if Game Focus key is also pressing a key. */
+      if (     down
+            && !input_st->game_focus_state.enabled
             && BIT512_GET(input_st->keyboard_mapping_bits, code)
             && device != RETRO_DEVICE_POINTER)
       {
