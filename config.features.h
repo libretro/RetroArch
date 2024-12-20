@@ -74,6 +74,36 @@
 #define SUPPORTS_OPENGL false
 #endif
 
+#ifdef HAVE_D3D8
+#define SUPPORTS_D3D8 true
+#else
+#define SUPPORTS_D3D8 false
+#endif
+
+#ifdef HAVE_D3D9
+#define SUPPORTS_D3D9 true
+#else
+#define SUPPORTS_D3D9 false
+#endif
+
+#ifdef HAVE_D3D10
+#define SUPPORTS_D3D10 true
+#else
+#define SUPPORTS_D3D10 false
+#endif
+
+#ifdef HAVE_D3D11
+#define SUPPORTS_D3D11 true
+#else
+#define SUPPORTS_D3D11 false
+#endif
+
+#ifdef HAVE_D3D12
+#define SUPPORTS_D3D12 true
+#else
+#define SUPPORTS_D3D12 false
+#endif
+
 #ifdef HAVE_VULKAN
 #define SUPPORTS_VULKAN true
 #else
@@ -132,6 +162,12 @@
 #define SUPPORTS_XVIDEO true
 #else
 #define SUPPORTS_XVIDEO false
+#endif
+
+#ifdef HAVE_SLANG
+#define SUPPORTS_SLANG true
+#else
+#define SUPPORTS_SLANG false
 #endif
 
 #ifdef HAVE_ALSA
@@ -318,6 +354,12 @@
 #define SUPPORTS_QT true
 #else
 #define SUPPORTS_QT false
+#endif
+
+#ifdef HAVE_QT6
+#define SUPPORTS_QT6 true
+#else
+#define SUPPORTS_QT6 false
 #endif
 
 #ifdef HAVE_RPNG

@@ -2261,8 +2261,12 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_COMMAND
          {SUPPORTS_COMMAND,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT},
 #endif
+#ifdef HAVE_NETWORK_CMD
          {SUPPORTS_NETWORK_COMMAND,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT},
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
          {SUPPORTS_NETWORK_GAMEPAD,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT},
+#endif
 #ifdef HAVE_COCOA
          {SUPPORTS_COCOA          ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT},
 #endif
@@ -2278,9 +2282,26 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RTGA
          {SUPPORTS_RTGA        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT},
 #endif
+#ifdef HAVE_SDL
          {SUPPORTS_SDL         ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT},
+#endif
 #ifdef HAVE_SDL2
          {SUPPORTS_SDL2        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT},
+#endif
+#ifdef HAVE_D3D8
+         {SUPPORTS_D3D8        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT},
+#endif
+#ifdef HAVE_D3D9
+         {SUPPORTS_D3D9        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT},
+#endif
+#ifdef HAVE_D3D10
+         {SUPPORTS_D3D10       ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT},
+#endif
+#ifdef HAVE_D3D11
+         {SUPPORTS_D3D11       ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT},
+#endif
+#ifdef HAVE_D3D12
+         {SUPPORTS_D3D12       ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT},
 #endif
 #ifdef HAVE_VULKAN
          {SUPPORTS_VULKAN      ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT},
@@ -2375,6 +2396,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_HLSL
          {SUPPORTS_HLSL        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_HLSL_SUPPORT},
 #endif
+#ifdef HAVE_SLANG
+         {SUPPORTS_SLANG       ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT},
+#endif
 #ifdef HAVE_SDL_IMAGE
          {SUPPORTS_SDL_IMAGE   ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SDL_IMAGE_SUPPORT},
 #endif
@@ -2393,7 +2417,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_STB_FONT
          {SUPPORTS_STBFONT     ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_STB_TRUETYPE_SUPPORT},
 #endif
-#ifdef HAVE_NETPLAY
+#ifdef HAVE_NETWORKING
          {SUPPORTS_NETPLAY     ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT},
 #endif
 #ifdef HAVE_V4L2
