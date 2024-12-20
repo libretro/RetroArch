@@ -104,6 +104,12 @@
 #define SUPPORTS_D3D12 false
 #endif
 
+#ifdef HAVE_GDI
+#define SUPPORTS_GDI true
+#else
+#define SUPPORTS_GDI false
+#endif
+
 #ifdef HAVE_VULKAN
 #define SUPPORTS_VULKAN true
 #else
