@@ -218,6 +218,12 @@
 #define SUPPORTS_WASAPI false
 #endif
 
+#ifdef HAVE_PIPEWIRE
+#define SUPPORTS_PIPEWIRE true
+#else
+#define SUPPORTS_PIPEWIRE false
+#endif
+
 #ifdef HAVE_XAUDIO
 #define SUPPORTS_XAUDIO true
 #else
