@@ -178,6 +178,10 @@ MSG_HASH(
    "pulse"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PIPEWIRE,
+   "pipewire"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_EXT,
    "ext"
    )
