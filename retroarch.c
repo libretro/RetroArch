@@ -6269,7 +6269,7 @@ static void retroarch_print_features(void)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_QT6,             "Qt6",              "Qt 6.x support");
 #endif
 #ifdef HAVE_V4L2
-   _PSUPP_BUF(buf, _len, SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
 #endif
 
    fputs(buf, stdout);
