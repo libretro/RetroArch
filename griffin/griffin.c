@@ -268,7 +268,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/w_vk_ctx.c"
 #endif
 
-#if !defined(__WINRT__) 
+#if !defined(__WINRT__)
 #include "../gfx/display_servers/dispserv_win32.c"
 #endif
 
@@ -904,6 +904,10 @@ AUDIO
 
 #ifdef HAVE_SL
 #include "../audio/drivers/opensl.c"
+#endif
+
+#ifdef HAVE_PIPEWIRE
+#include "../audio/drivers/pipewire.c"
 #endif
 
 #ifdef HAVE_ALSA
