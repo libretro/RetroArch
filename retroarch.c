@@ -6107,55 +6107,170 @@ static void retroarch_print_features(void)
    frontend_driver_attach_console();
 
    _len  = strlcpy(buf, "Features:\n", sizeof(buf));
+#ifdef HAVE_LIBRETRODB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
+#endif
+#ifdef HAVE_COMMAND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COMMAND,         "Command",         "Command interface support");
+#endif
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_NETWORK_COMMAND, "Network Command", "Network Command interface support");
-   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL,             "SDL",             "SDL input/audio/video drivers");
+#ifdef HAVE_SDL
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL,             "SDL1",            "SDL1 input/audio/video drivers");
+#endif
+#ifdef HAVE_SDL2
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
+#endif
+#ifdef HAVE_X11
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
+#endif
+#ifdef HAVE_UDEV
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_UDEV,            "UDEV",            "UDEV/EVDEV input driver");
+#endif
+#ifdef HAVE_WAYLAND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_WAYLAND,         "Wayland",         "Wayland input/video drivers");
+#endif
+#ifdef HAVE_THREADS
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_THREAD,          "Threads",         "Threading support");
+#endif
+#ifdef HAVE_D3D8
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D8,            "Direct3D 8",       "Video driver");
+#endif
+#ifdef HAVE_D3D9
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D9,            "Direct3D 9",       "Video driver");
+#endif
+#ifdef HAVE_D3D10
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D10,           "Direct3D 10",      "Video driver");
+#endif
+#ifdef HAVE_D3D11
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D11,           "Direct3D 11",      "Video driver");
+#endif
+#ifdef HAVE_D3D12
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D12,           "Direct3D 12",      "Video driver");
+#endif
+#ifdef HAVE_VULKAN
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_VULKAN,          "Vulkan",          "Video driver");
+#endif
+#ifdef HAVE_METAL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_METAL,           "Metal",           "Video driver");
+#endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_OPENGL,          "OpenGL",          "Video driver");
+#endif
+#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES3_1) || defined(HAVE_OPENGLES3_2)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_OPENGLES,        "OpenGLES",        "Video driver");
+#endif
+#ifdef HAVE_XVIDEO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_XVIDEO,          "XVideo",          "Video driver");
+#endif
+#ifdef HAVE_EGL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_EGL,             "EGL",             "Video context driver");
+#endif
+#ifdef HAVE_KMS
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_KMS,             "KMS",             "Video context driver");
+#endif
+#ifdef HAVE_VG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_VG,              "OpenVG",          "Video context driver");
+#endif
+#ifdef HAVE_COREAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO,       "CoreAudio",       "Audio driver");
+#endif
+#ifdef HAVE_COREAUDIO3
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO3,      "CoreAudioV3",     "Audio driver");
+#endif
+#ifdef HAVE_ALSA
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ALSA,            "ALSA",            "Audio driver");
+#endif
+#ifdef HAVE_PIPEWIRE
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_PIPEWIRE,        "PipeWire",        "Audio driver");
+#endif
+#ifdef HAVE_OSS
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_OSS,             "OSS",             "Audio driver");
+#endif
+#ifdef HAVE_JACK
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_JACK,            "Jack",            "Audio driver");
+#endif
+#ifdef HAVE_RSOUND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RSOUND,          "RSound",          "Audio driver");
+#endif
+#ifdef HAVE_ROAR
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ROAR,            "RoarAudio",       "Audio driver");
+#endif
+#ifdef HAVE_PULSE
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_PULSE,           "PulseAudio",      "Audio driver");
+#endif
+#ifdef HAVE_DSOUND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DSOUND,          "DirectSound",     "Audio driver");
+#endif
+#ifdef HAVE_WASAPI
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_WASAPI,          "WASAPI",          "Audio driver");
+#endif
+#ifdef HAVE_XAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
+#endif
+#ifdef HAVE_AL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_AL,              "OpenAL",          "Audio driver");
+#endif
+#ifdef HAVE_SL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SL,              "OpenSL",          "Audio driver");
+#endif
+#ifdef HAVE_7ZIP
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_7ZIP,            "7zip",            "7zip extraction support");
+#endif
+#ifdef HAVE_ZLIB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ZLIB,            "zlib",            "zip extraction support");
+#endif
+#ifdef HAVE_DYLIB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DYLIB,           "External",        "External filter and plugin support");
+#endif
+#ifdef HAVE_CG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_CG,              "Cg",              "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_GLSL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_GLSL,            "GLSL",            "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_HLSL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_HLSL,            "HLSL",            "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_SLANG
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SLANG,           "glslang",         "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_SDL_IMAGE
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL_IMAGE,       "SDL_image",       "SDL_image image loading");
+#endif
+#ifdef HAVE_RPNG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RPNG,            "rpng",            "PNG image loading/encoding");
+#endif
+#ifdef HAVE_RJPEG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RJPEG,           "rjpeg",           "JPEG image loading");
+#endif
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DYNAMIC,         "Dynamic",         "Dynamic run-time loading of libretro library");
+#ifdef HAVE_FFMPEG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay with libavcodec");
+#endif
+#ifdef HAVE_FREETYPE
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
+#endif
+#ifdef HAVE_CORETEXT
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver");
+#endif
+#ifdef HAVE_NETWORKING
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
+#endif
+#ifdef HAVE_LIBUSB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
+#endif
+#ifdef HAVE_COCOA
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support (for OSX and/or iOS)");
+#endif
+#ifdef HAVE_QT
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_QT,              "Qt",              "Qt UI companion support");
+#endif
+#ifdef HAVE_QT6
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_QT6,             "Qt6",              "Qt 6.x support");
+#endif
+#ifdef HAVE_V4L2
    _PSUPP_BUF(buf, _len, SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
+#endif
 
    fputs(buf, stdout);
 }
