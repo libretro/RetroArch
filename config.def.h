@@ -1452,11 +1452,7 @@
  * a new one) */
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
 
-#if defined(ANDROID) || defined(__APPLE__)
-#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
-#else
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
-#endif
 
 /* Number of entries that will be kept in content history playlist file. */
 #define DEFAULT_CONTENT_HISTORY_SIZE 200
