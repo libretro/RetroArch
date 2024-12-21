@@ -162,13 +162,13 @@ static struct descriptor mouse = {
 };
 
 static struct descriptor pointer = {
-   .device = RETRO_DEVICE_POINTER/* | 0x10000*/,
+   .device = RETRO_DEVICE_POINTER,
    .port_min = 0,
    .port_max = 0,
    .index_min = 0,
    .index_max = 2,
    .id_min = RETRO_DEVICE_ID_POINTER_X,
-   .id_max = RETRO_DEVICE_ID_POINTER_COUNT
+   .id_max = RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN
 };
 
 static struct descriptor lightgun = {
@@ -710,7 +710,7 @@ static void retropad_update_input(void)
                      }
                      else if (id == RETRO_DEVICE_ID_MOUSE_Y || id == RETRO_DEVICE_ID_LIGHTGUN_Y)
                      {
-                        int32_t large = pointer_y + (int16_t)state*273;
+                        int32_t large = pointer_y + (int16_t)state*327;
                         if (large < -32768)
                            pointer_y = -32768;
                         else if (large > 32767)
@@ -721,6 +721,7 @@ static void retropad_update_input(void)
                   }
                   else if (mouse_type == NETRETROPAD_POINTER  || mouse_type == NETRETROPAD_LIGHTGUN)
                   {
+                     /* NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_DEBUG, "Pointer state: %d %d %d (%d %d)\n",i,id, (int16_t)state,pointer_x,pointer_y); */
                      if (id == RETRO_DEVICE_ID_POINTER_X || id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X)
                         pointer_x = (int16_t)state;
                      else if (id == RETRO_DEVICE_ID_POINTER_Y || id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y)
@@ -1114,14 +1115,17 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    {
       int offset;
 
-      offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
+      offset = DESC_OFFSET(&pointer, 0, 0, RETRO_DEVICE_ID_POINTER_PRESSED);
       sensor_item_colors[104] = pointer.value[offset] ? 0xA000 : 0x0000;
 
-      offset = DESC_OFFSET(&lightgun, 0, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
+      offset = DESC_OFFSET(&pointer, 0, 1, RETRO_DEVICE_ID_POINTER_PRESSED);
       sensor_item_colors[105] = pointer.value[offset] ? 0xA000 : 0x0000;
 
-      offset = DESC_OFFSET(&lightgun, 0, 2, RETRO_DEVICE_ID_POINTER_PRESSED);
+      offset = DESC_OFFSET(&pointer, 0, 2, RETRO_DEVICE_ID_POINTER_PRESSED);
       sensor_item_colors[106] = pointer.value[offset] ? 0xA000 : 0x0000;
+
+      offset = DESC_OFFSET(&pointer, 0, 0, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN);
+      sensor_item_colors[77] = pointer.value[offset] ? 0xA000 : 0x0000;
 
    }
    /* Edge / offscreen indicators */
