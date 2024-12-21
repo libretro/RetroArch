@@ -1335,8 +1335,8 @@ bool playlist_push(playlist_t *playlist,
    if (string_is_empty(core_name))
    {
       static char base_path[NAME_MAX_LENGTH] = {0};
-      fill_pathname_base(base_path, real_core_path, sizeof(base_path));
-      path_remove_extension(base_path);
+      fill_pathname(base_path, path_basename(real_core_path), "",
+            sizeof(base_path));
 
       core_name = base_path;
 

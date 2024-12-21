@@ -207,12 +207,8 @@ static void task_pl_manager_reset_cores_handler(retro_task_t *task)
                if (!string_is_empty(entry->label))
                   strlcpy(task_title + _len, entry->label, sizeof(task_title) - _len);
                else if (!string_is_empty(entry->path))
-               {
-                  char entry_name[128];
-                  fill_pathname_base(entry_name, entry->path, sizeof(entry_name));
-                  path_remove_extension(entry_name);
-                  strlcpy(task_title + _len, entry_name, sizeof(task_title) - _len);
-               }
+                  fill_pathname(task_title + _len, path_basename(entry->path), "",
+                        sizeof(task_title) - _len);
 
                task_set_title(task, strdup(task_title));
                task_set_progress(task, (pl_manager->list_index * 100) / pl_manager->list_size);
@@ -294,9 +290,9 @@ bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config)
    if (string_is_empty(playlist_config->path))
       goto error;
 
-   fill_pathname_base(playlist_name,
-         playlist_config->path, sizeof(playlist_name));
-   path_remove_extension(playlist_name);
+   fill_pathname(playlist_name,
+         path_basename(playlist_config->path), "",
+         sizeof(playlist_name));
 
    if (string_is_empty(playlist_name))
       goto error;
@@ -721,9 +717,9 @@ bool task_push_pl_manager_clean_playlist(
    if (string_is_empty(playlist_config->path))
       goto error;
 
-   fill_pathname_base(playlist_name,
-         playlist_config->path, sizeof(playlist_name));
-   path_remove_extension(playlist_name);
+   fill_pathname(playlist_name,
+         path_basename(playlist_config->path), "",
+         sizeof(playlist_name));
 
    if (string_is_empty(playlist_name))
       goto error;

@@ -412,13 +412,7 @@ static int action_get_title_deferred_playlist_list(const char *path, const char 
          strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
       /* Handle collection playlists */
       else
-      {
-         char playlist_name[NAME_MAX_LENGTH];
-         strlcpy(playlist_name, playlist_file, sizeof(playlist_name));
-         path_remove_extension(playlist_name);
-
-         strlcpy(s, playlist_name, len);
-      }
+         fill_pathname(s, playlist_file, "", len);
    }
    /* This should never happen, but if it does just set
     * the label to the file name (it's better than nothing...) */
@@ -832,13 +826,13 @@ static int action_get_title_generic(char *s, size_t len,
       {
          size_t _len;
          char elem0_path[NAME_MAX_LENGTH];
-         strlcpy(elem0_path, tok, sizeof(elem0_path));
+         fill_pathname(elem0_path, path_basename(tok), "",
+               sizeof(elem0_path));
          _len      = strlcpy(s, text, len);
-         path_remove_extension(elem0_path);
          s[  _len] = ':';
          s[++_len] = ' ';
          s[++_len] = '\0';
-         strlcpy(s + _len, path_basename(elem0_path), len - _len);
+         strlcpy(s + _len, elem0_path, len - _len);
          free(path_cpy);
          return 0;
       }
