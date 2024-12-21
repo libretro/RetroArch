@@ -844,6 +844,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
       dir.mkpath(dirString + "/" + system + "/" + THUMBNAIL_BOXART);
       dir.mkpath(dirString + "/" + system + "/" + THUMBNAIL_SCREENSHOT);
       dir.mkpath(dirString + "/" + system + "/" + THUMBNAIL_TITLE);
+      dir.mkpath(dirString + "/" + system + "/" + THUMBNAIL_LOGO);
 
       m_playlistThumbnailDownloadFile.setFileName(fileName);
 
@@ -921,6 +922,7 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
       QHash<QString, QString> hash;
       QHash<QString, QString> hash2;
       QHash<QString, QString> hash3;
+      QHash<QString, QString> hash4;
       const QHash<QString, QString> &itemHash = m_playlistModel->index(i, 0).data(PlaylistModel::HASH).value< QHash<QString, QString> >();
 
       hash["db_name"]     = itemHash.value("db_name");
@@ -929,13 +931,16 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
 
       hash2               = hash;
       hash3               = hash;
+      hash4               = hash;
 
       hash2["type"]       = THUMBNAIL_SCREENSHOT;
       hash3["type"]       = THUMBNAIL_TITLE;
+      hash4["type"]       = THUMBNAIL_LOGO;
 
       m_pendingPlaylistThumbnails.append(hash);
       m_pendingPlaylistThumbnails.append(hash2);
       m_pendingPlaylistThumbnails.append(hash3);
+      m_pendingPlaylistThumbnails.append(hash4);
    }
 
    m_playlistThumbnailDownloadProgressDialog->setWindowModality(Qt::NonModal);
