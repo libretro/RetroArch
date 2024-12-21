@@ -807,6 +807,10 @@ MSG_HASH(
    "Підтримка PulseAudio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "Підтримка PipeWire"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "Підтримка CoreAudio"
    )
@@ -1746,6 +1750,10 @@ MSG_HASH(
    "Драйвер PulseAudio. Якщо система використовує PulseAudio, переконайтеся, що ви використовуєте цей драйвер, а не, наприклад, ALSA."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "Драйвер PulseAudio. Якщо система використовує PulseAudio, переконайтеся, що ви використовуєте цей драйвер, а не, наприклад, Alsa."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Драйвер Jack Audio Connection Kit."
    )
@@ -2628,11 +2636,11 @@ MSG_HASH(
    "Зсув прив’язки вікна перегляду Y"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "Настроюване зміщення вікна перегляду, яке використовується для зсуву вікна перегляду по горизонталі (якщо ширше за висоту вмісту).  0,0 означає крайній ліворуч, а 1,0 означає крайній правий."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Настроюване зміщення вікна перегляду, яке використовується для зсуву вікна перегляду по вертикалі (якщо вище за висоту вмісту).  0,0 означає верх і 1,0 означає низ."
    )
 #if defined(RARCH_MOBILE)
@@ -2653,11 +2661,11 @@ MSG_HASH(
    "Перегляд упередженості якоря Y (портретна орієнтація)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "Настроюване зміщення вікна перегляду, яке використовується для зміщення вікна перегляду по горизонталі (якщо ширше за висоту вмісту).  0,0 означає крайній ліворуч, а 1,0 означає крайній правий. (Книжкова орієнтація)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Настроюване зміщення вікна перегляду, яке використовується для зсуву вікна перегляду по вертикалі (якщо вище за висоту вмісту).  0,0 означає верх і 1,0 означає низ. (Книжкова орієнтація)"
    )
 #endif
@@ -3328,11 +3336,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Сортувати Remaps за геймпадом"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Перепризначення буде застосовано лише до активного геймпада, у якому вони були збережені."
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Автоналаштування"
