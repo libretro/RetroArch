@@ -712,10 +712,8 @@ void cocoa_file_load_with_detect_core(const char *filename);
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-#if TARGET_OS_TV
     [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
-#endif
 }
 
 #if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
