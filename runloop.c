@@ -8325,4 +8325,46 @@ char* get_core_options(void)
     }
     return rv;
 }
+
+void set_video_rotation(int rotation)
+{  
+   settings_t *settings = config_get_ptr();
+   settings->uints.video_rotation = rotation;
+   video_viewport_t vp;
+   runloop_state_t *runloop_st    = &runloop_state;
+   rarch_system_info_t *sys_info  = &runloop_st->system;
+   video_driver_state_t *video_st       = video_state_get_ptr();
+   struct retro_system_av_info *av_info = &video_st->av_info;
+   video_viewport_t *custom_vp          = &settings->video_viewport_custom;
+   if (sys_info)
+   {
+      unsigned base_width              = 0;
+      unsigned base_height             = 0;
+      struct retro_game_geometry *geom = (struct retro_game_geometry*)&av_info->geometry;
+      video_driver_set_rotation(rotation);
+      video_driver_get_viewport_info(&vp);
+      custom_vp->x         = 0;
+      custom_vp->y         = 0;
+      base_width           = (geom->base_width)  ? geom->base_width  : video_st->frame_cache_width;
+      base_height          = (geom->base_height) ? geom->base_height : video_st->frame_cache_height;
+      if (base_width <= 4 || base_height <= 4)
+      {
+         base_width        = (rotation % 2) ? 240 : 320;
+         base_height       = (rotation % 2) ? 320 : 240;
+      }
+      if (rotation % 2)
+      {
+         custom_vp->width  = MAX(1, (custom_vp->width  / base_height)) * base_height;
+         custom_vp->height = MAX(1, (custom_vp->height / base_width )) * base_width;
+      }
+      else
+      {
+         custom_vp->width  = ((custom_vp->width  + base_width  - 1) / base_width)  * base_width;
+         custom_vp->height = ((custom_vp->height + base_height - 1) / base_height) * base_height;
+      }
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom_vp->width / custom_vp->height;
+      video_driver_set_aspect_ratio();
+   }
+   RARCH_LOG("[Rotation]: Set rotation to %d\n", retroarch_get_rotation());
+}
 #endif

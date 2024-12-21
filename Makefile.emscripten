@@ -117,7 +117,7 @@ endif
 LIBS    := -s USE_ZLIB=1
 
 LDFLAGS := -L. --no-heap-copy $(LIBS) -s TOTAL_STACK=$(STACK_MEMORY) -s TOTAL_MEMORY=$(HEAP_MEMORY) -s NO_EXIT_RUNTIME=1 -s EXPORTED_RUNTIME_METHODS="['callMain', 'cwrap', 'getValue', 'FS', 'PATH', 'ERRNO_CODES', 'AL', 'abort']" \
-           -s EXPORTED_FUNCTIONS=['_main','_malloc','_load_state','_ejs_set_variable','_simulate_input','_shader_enable','_save_state_info','_set_cheat','_cmd_take_screenshot','_system_restart','_cmd_savefiles','_get_core_options','_cmd_save_state','_supports_states','_reset_cheat','_toggleMainLoop','_save_file_path','_get_disk_count','_set_current_disk','_get_current_disk','_refresh_save_files','_toggle_fastforward','_set_ff_ratio','_toggle_slow_motion','_set_sm_ratio','_toggle_rewind','_set_rewind_granularity','_get_current_frame_count','_ejs_set_keyboard_enabled','_set_vsync'] \
+           -s EXPORTED_FUNCTIONS=['_main','_malloc','_load_state','_ejs_set_variable','_simulate_input','_shader_enable','_save_state_info','_set_cheat','_cmd_take_screenshot','_system_restart','_cmd_savefiles','_get_core_options','_cmd_save_state','_supports_states','_reset_cheat','_toggleMainLoop','_save_file_path','_get_disk_count','_set_current_disk','_get_current_disk','_refresh_save_files','_toggle_fastforward','_set_ff_ratio','_toggle_slow_motion','_set_sm_ratio','_toggle_rewind','_set_rewind_granularity','_get_current_frame_count','_ejs_set_keyboard_enabled','_set_vsync','_set_video_rotation'] \
            -lidbfs.js \
            -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
            -s GL_ENABLE_GET_PROC_ADDRESS=1 \
