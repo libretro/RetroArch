@@ -2592,11 +2592,11 @@ MSG_HASH(
    "表示領域 Y 座標補正"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "表示領域がコンテンツの幅より広い場合、水平方向のオフセットに使用される補正値です。0.0 は左端を、1.0 は右端を表します。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "表示領域がコンテンツの高さより高い場合、垂直方向のオフセットに使用される補正値です。0.0 は上端を、1.0 は下端を表します。"
    )
 #if defined(RARCH_MOBILE)
@@ -2617,11 +2617,11 @@ MSG_HASH(
    "表示領域 Y 座標補正 (縦向き)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "表示領域がコンテンツの幅より広い場合、水平方向のオフセットに使用される補正値です。0.0 は左端を、1.0 は右端を表します (縦向き)。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "表示領域がコンテンツの高さより高い場合、垂直方向のオフセットに使用される補正値です。0.0 は上端を、1.0 は下端を表します (縦向き)。"
    )
 #endif
@@ -3269,14 +3269,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "入力割り当てを現在のコアに設定されているリマップ設定で上書きします。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sort Remaps By Gamepad"
-   )   
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Remaps will only apply to the active gamepad in which they were saved."
-   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "自動設定"

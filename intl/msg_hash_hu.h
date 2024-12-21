@@ -2600,11 +2600,11 @@ MSG_HASH(
    "Nézőablak függőleges eltolása"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "Az egyedi nézőablak vízszintes középrehelyezése, ha a nézőablak szélesebb, mint a tartalom. 0.0 esetén teljesen balra, 1.0 esetén teljesen jobbra igazodik."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Az egyedi nézőablak függőleges középrehelyezése, ha a nézőablak magasabb, mint a tartalom. 0.0 esetén teljesen fentre, 1.0 esetén teljesen lentre igazodik."
    )
 #if defined(RARCH_MOBILE)
@@ -2625,11 +2625,11 @@ MSG_HASH(
    "Nézőablak függőleges eltolása (álló nézetben)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "Az egyedi nézőablak vízszintes középrehelyezése, ha a nézőablak szélesebb, mint a tartalom. 0.0 esetén teljesen balra, 1.0 esetén teljesen jobbra igazodik. (Álló nézet esetén.)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Az egyedi nézőablak függőleges középrehelyezése, ha a nézőablak magasabb, mint a tartalom. 0.0 esetén teljesen fentre, 1.0 esetén teljesen lentre igazodik. (Álló nézet esetén.)"
    )
 #endif
@@ -3296,11 +3296,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Remap fájlok rendezése kontroller szerint"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "A remap fájlok csak arra az aktív kontrollerre lesznek érvényesek, amivel el voltak mentve."
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Automatikus beállítás"

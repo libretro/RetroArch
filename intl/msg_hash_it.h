@@ -711,6 +711,26 @@ MSG_HASH(
    "Supporto SDL2"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Supporto Direct3D 8"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Supporto Direct3D 9"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Supporto Direct3D 10"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Supporto Direct3D 11"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Supporto Direct3D 12"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Supporto Vulkan"
    )
@@ -789,6 +809,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
    "Supporto PulseAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "Supporto PipeWire"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
@@ -1686,6 +1710,10 @@ MSG_HASH(
    "Driver PulseAudio. Se il sistema utilizza PulseAudio, assicurati di usare questo driver invece di ALSA."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "Driver PipeWire. Se il sistema utilizza PipeWire, assicurarsi di utilizzare questo driver invece di PulseAudio."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Driver Jack Audio Connection Kit."
    )
@@ -2568,11 +2596,11 @@ MSG_HASH(
    "Bias Di Ancoraggio Di Viewport Y"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "Bias di visualizzazione personalizzata utilizzato per spostare la vista orizzontalmente (se più ampia dell'altezza del contenuto). 0.0 significa lontano a sinistra e 1.0 significa lontano a destra."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Bias di visualizzazione personalizzata utilizzato per spostare la porta di visualizzazione verticalmente (se più alta dell'altezza del contenuto). 0.0 significa superiore e 1.0 significa basso."
    )
 #if defined(RARCH_MOBILE)
@@ -2593,11 +2621,11 @@ MSG_HASH(
    "Bias Di Ancoraggio Di Viewport Y (Orientamento Verticale)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "Bias di visualizzazione personalizzata utilizzato per spostare la vista orizzontalmente (se più ampia dell'altezza del contenuto). 0.0 significa lontano a sinistra e 1.0 significa lontano a destra. (Orientamento verticale)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Bias di visualizzazione personalizzata utilizzato per spostare la porta di visualizzazione verticalmente (se più alta dell'altezza del contenuto). 0.0 significa superiore e 1.0 significa inferiore. (Orientamento verticale)"
    )
 #endif
@@ -3244,11 +3272,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Ordina Remap Per Gamepad"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "I Remap si applicheranno solo al gamepad attivo in cui sono stati salvati."
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Abilita Autoconfigurazione"
