@@ -644,6 +644,17 @@ static bool input_driver_button_combo_hold(
    return false;
 }
 
+bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
+{
+   const int edge_detect = 32700;
+   if ((x >= -edge_detect) &&
+       (y >= -edge_detect) &&
+       (x <=  edge_detect) &&
+       (y <=  edge_detect))
+      return false;
+   return true;
+}
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
