@@ -91,6 +91,8 @@ typedef struct pl_entry_id
 /* Utility Functions */
 /*********************/
 
+/* TODO/FIXME - Disable fetching of Named_Logos so far */
+
 /* Fetches the thumbnail subdirectory (Named_Snaps,
  * Named_Titles, Named_Boxarts, Named_Logos) corresponding to the
  * specified 'type index' (1, 2, 3, 4).
@@ -112,9 +114,11 @@ static bool gfx_thumbnail_get_sub_directory(
       case 3:
          *sub_directory = "Named_Boxarts";
          return true;
+#if 0
       case 4:
          *sub_directory = "Named_Logos";
          return true;
+#endif
       case 0:
       default:
          break;
@@ -459,10 +463,12 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
          pl_thumb->http_task = NULL;
 
          /* Check whether all thumbnail types have been processed */
-         if (pl_thumb->type_idx > 4)
+         /* TODO/FIXME - turn 3 into 4 when we re-enable Named_Logos for fetching */
+         if (pl_thumb->type_idx > 3)
          {
             next_flag = playlist_get_next_thumbnail_name_flag(pl_thumb->playlist,pl_thumb->list_index);
-            if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE) {
+            if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
+            {
                if (pl_thumb->playlist )
                /* Time to move on to the next entry */
                pl_thumb->list_index++;
@@ -471,9 +477,11 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
                else
                   pl_thumb->status = PL_THUMB_END;
                break;
-            } else {
-               /* Increment the name flag to cover the 4 supported naming conventions.
-                * Side-effect: all combinations will be tried (4x4 requests for 1 playlist entry)
+            }
+            else
+            {
+               /* Increment the name flag to cover the 3 supported naming conventions.
+                * Side-effect: all combinations will be tried (3x3 requests for 1 playlist entry)
                 * even if some files were already downloaded, but that may be useful if later on
                 * different view priorities are implemented. */
                pl_thumb->type_idx = 1;
@@ -780,14 +788,14 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             pl_thumb->http_task = NULL;
 
             /* Check whether all thumbnail types have been processed */
-            if (pl_thumb->type_idx > 4)
+            if (pl_thumb->type_idx > 3)
             {
                pl_thumb->status = PL_THUMB_END;
                break;
             }
 
             /* Update progress */
-            task_set_progress(task, ((pl_thumb->type_idx - 1) * 100) / 4);
+            task_set_progress(task, ((pl_thumb->type_idx - 1) * 100) / 3);
 
             /* Download current thumbnail */
             if (pl_thumb)
@@ -908,7 +916,8 @@ bool task_push_pl_entry_thumbnail_download(
       next_flag = playlist_get_next_thumbnail_name_flag(playlist,idx);
       playlist_update_thumbnail_name_flag(playlist, idx, next_flag);
    }
-   if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE) {
+   if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
+   {
       runloop_msg_queue_push(
          msg_hash_to_str(MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE),
          1, 100, true,
