@@ -33,6 +33,7 @@
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
+
 #define APPNAME "RetroArch"
 #define DEFAULT_CHANNELS 2
 #define QUANTUM 1024  /* TODO: detect */
@@ -68,11 +69,8 @@ typedef struct
 
 void clear_buf(void *buf, int len)
 {
-   if (!len)
-      return;
-
-   memset(buf, 0x00, len);
-   return;
+   if (len)
+      memset(buf, 0x00, len);
 }
 
 size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
@@ -305,10 +303,10 @@ static void registry_event_global(void *data, uint32_t id,
                 uint32_t permissions, const char *type, uint32_t version,
                 const struct spa_dict *props)
 {
-   pw_t *pw = (pw_t*)data;
    union string_list_elem_attr attr;
-   const char* media = NULL;
-   const char* sink = NULL;
+   pw_t                        *pw = (pw_t*)data;
+   const char               *media = NULL;
+   const char                *sink = NULL;
 
    if (!pw)
      return;
@@ -356,13 +354,13 @@ static void *pipewire_init(const char *device, unsigned rate,
       unsigned *new_rate)
 {
    int                           res;
+   uint64_t              buf_samples;
    const struct spa_pod   *params[1];
    uint8_t              buffer[1024];
    struct pw_properties       *props = NULL;
    const char                 *error = NULL;
    pw_t                          *pw = (pw_t*)calloc(1, sizeof(*pw));
    struct spa_pod_builder          b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
-   uint64_t buf_samples;
 
    if (!pw)
       goto error;
@@ -487,11 +485,11 @@ static bool pipewire_start(void *data, bool is_shutdown);
 
 static ssize_t pipewire_write(void *data, const void *buf_, size_t size)
 {
-   pw_t            *pw = (pw_t*)data;
-   const char   *error = NULL;
-   int32_t     writable;
+   int32_t    writable;
    int32_t       avail;
    uint32_t      index;
+   pw_t            *pw = (pw_t*)data;
+   const char   *error = NULL;
 
    /* Workaround buggy menu code.
     * If a write happens while we're paused, we might never progress. */
@@ -575,7 +573,6 @@ static bool pipewire_start(void *data, bool is_shutdown)
 static bool pipewire_alive(void *data)
 {
    pw_t *pw = (pw_t*)data;
-
    if (!pw)
       return false;
    return !pw->is_paused;
