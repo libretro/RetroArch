@@ -712,19 +712,19 @@ bool video_driver_translate_coord_viewport(
        || (norm_full_vp_height <= 0))
       return false;
 
-   if (mouse_x >= 0 && mouse_x <= norm_full_vp_width)
-      scaled_screen_x = ((2 * mouse_x * 0x7fff)
+   if (mouse_x >= 0 && mouse_x < norm_full_vp_width)
+      scaled_screen_x = ((mouse_x * 0x10000)
             / norm_full_vp_width)  - 0x7fff;
 
-   if (mouse_y >= 0 && mouse_y <= norm_full_vp_height)
-      scaled_screen_y = ((2 * mouse_y * 0x7fff)
+   if (mouse_y >= 0 && mouse_y < norm_full_vp_height)
+      scaled_screen_y = ((mouse_y * 0x10000)
             / norm_full_vp_height) - 0x7fff;
 
    mouse_x           -= vp->x;
    mouse_y           -= vp->y;
 
-   if (mouse_x >= 0 && mouse_x <= norm_vp_width)
-      scaled_x        = ((2 * mouse_x * 0x7fff)
+   if (mouse_x >= 0 && mouse_x < norm_vp_width)
+      scaled_x        = ((mouse_x * 0x10000)
             / norm_vp_width) - 0x7fff;
    else if (!report_oob)
    {
@@ -734,8 +734,8 @@ bool video_driver_translate_coord_viewport(
          scaled_x =  0x7fff;
    }
 
-   if (mouse_y >= 0 && mouse_y <= norm_vp_height)
-      scaled_y        = ((2 * mouse_y * 0x7fff)
+   if (mouse_y >= 0 && mouse_y < norm_vp_height)
+      scaled_y        = ((mouse_y * 0x10000)
             / norm_vp_height) - 0x7fff;
    else if (!report_oob)
    {
