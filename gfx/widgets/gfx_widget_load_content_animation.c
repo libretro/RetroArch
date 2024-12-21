@@ -378,9 +378,8 @@ bool gfx_widget_start_load_content_animation(void)
          /* Get entry db_name, */
          if (!string_is_empty(entry->db_name))
          {
-            strlcpy(state->system_name, entry->db_name,
+            fill_pathname(state->system_name, entry->db_name, "",
                   sizeof(state->system_name));
-            path_remove_extension(state->system_name);
 
             has_system  = true;
             has_db_name = true;
@@ -398,8 +397,7 @@ bool gfx_widget_start_load_content_animation(void)
          if (!string_is_empty(playlist_path))
          {
             char new_system_name[512];
-            strlcpy(new_system_name, playlist_path, sizeof(new_system_name));
-            path_remove_extension(new_system_name);
+            fill_pathname(new_system_name, playlist_path, "", sizeof(new_system_name));
             state->system_name_len = fill_pathname_base(
                   state->system_name, new_system_name,
                   sizeof(state->system_name));
@@ -423,11 +421,8 @@ bool gfx_widget_start_load_content_animation(void)
    /* If we haven't yet set the content name,
     * use content file name as a fallback */
    if (!has_content)
-   {
-      fill_pathname_base(state->content_name, content_path,
-            sizeof(state->content_name));
-      path_remove_extension(state->content_name);
-   }
+      fill_pathname(state->content_name, path_basename(content_path),
+            "", sizeof(state->content_name));
 
    /* Check whether system name has been set */
    if (!has_system)

@@ -262,14 +262,12 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                            rarch_path_basename,
                            sizeof(content_dir_name));
                   if (string_is_not_equal_fast(content_dir_name, "", sizeof("")))
-                     strlcpy(content_dir_name,
-                           path_basename_nocompression(content_dir_name),
+                     fill_pathname(content_dir_name,
+                           path_basename_nocompression(content_dir_name), "",
                            sizeof(content_dir_name));
-                  if (string_is_not_equal_fast(content_dir_name, "", sizeof("")))
-                     path_remove_extension(content_dir_name);
 
                   if (string_is_not_equal_fast(content_dir_name, "", sizeof("")))
-                     replace_len = strlcpy(replace_text, content_dir_name, sizeof(replace_text));
+                     replace_len     = strlcpy(replace_text, content_dir_name, sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }
@@ -379,11 +377,10 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                   char preset_dir_name[DIR_MAX_LENGTH];
                   fill_pathname_parent_dir_name(preset_dir_name, in_preset_path, sizeof(preset_dir_name));
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
-                     strlcpy(preset_dir_name, path_basename_nocompression(preset_dir_name), sizeof(preset_dir_name));
+                     fill_pathname(preset_dir_name, path_basename_nocompression(preset_dir_name),
+                           "", sizeof(preset_dir_name));
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
-                     path_remove_extension(preset_dir_name);
-                  if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
-                     replace_len = strlcpy(replace_text, preset_dir_name, sizeof(replace_text));
+                     replace_len     = strlcpy(replace_text, preset_dir_name, sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }
@@ -391,11 +388,11 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
             case RARCH_WILDCARD_PRESET:
                {
                   char preset_name[NAME_MAX_LENGTH];
-                  strlcpy(preset_name, path_basename_nocompression(in_preset_path), sizeof(preset_name));
+                  fill_pathname(preset_name,
+                        path_basename_nocompression(in_preset_path), "",
+                        sizeof(preset_name));
                   if (string_is_not_equal_fast(preset_name, "", sizeof("")))
-                     path_remove_extension(preset_name);
-                  if (string_is_not_equal_fast(preset_name, "", sizeof("")))
-                     replace_len = strlcpy(replace_text, preset_name, sizeof(replace_text));
+                     replace_len     = strlcpy(replace_text, preset_name, sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }

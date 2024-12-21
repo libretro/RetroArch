@@ -1581,8 +1581,8 @@ int generic_action_ok_displaylist_push(
                   settings->paths.path_content_database,
                   path, sizeof(tmp));
 
-            fill_pathname_base(lpl_basename, path, sizeof(lpl_basename));
-            path_remove_extension(lpl_basename);
+            fill_pathname(lpl_basename, path_basename(path), "",
+                  sizeof(lpl_basename));
             menu_driver_set_thumbnail_system(
                   menu_st->userdata, lpl_basename, sizeof(lpl_basename));
 
@@ -8597,12 +8597,9 @@ static int action_ok_playlist_refresh(const char *path,
          case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME:
             {
                const char *playlist_file = NULL;
-
                if ((playlist_file = path_basename(playlist_config->path)))
-               {
-                  strlcpy(system_name, playlist_file, sizeof(system_name));
-                  path_remove_extension(system_name);
-               }
+                  fill_pathname(system_name, playlist_file, "",
+                        sizeof(system_name));
                else
                   system_name[0] = '\0';
 

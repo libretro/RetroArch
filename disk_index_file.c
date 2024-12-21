@@ -205,7 +205,6 @@ bool disk_index_file_init(
       const char *dir_savefile)
 {
    size_t len;
-   const char *content_file = NULL;
    char content_name[NAME_MAX_LENGTH];
    char disk_index_file_dir[DIR_MAX_LENGTH];
 
@@ -220,14 +219,8 @@ bool disk_index_file_init(
       goto error;
 
    /* Build disk index file path */
-
-   /* > Get content name */
-   content_file = path_basename(content_path);
-   if (string_is_empty(content_file))
-      goto error;
-
-   strlcpy(content_name, content_file, sizeof(content_name));
-   path_remove_extension(content_name);
+   fill_pathname(content_name, path_basename(content_path), "",
+         sizeof(content_name));
    if (string_is_empty(content_name))
       goto error;
 

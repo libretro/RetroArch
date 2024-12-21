@@ -4872,10 +4872,9 @@ static void ozone_init_horizontal_list(
          continue;
       }
 
-      /* Remove extension */
-      fill_pathname_base(playlist_file_noext,
-            playlist_file, sizeof(playlist_file_noext));
-      path_remove_extension(playlist_file_noext);
+      fill_pathname(playlist_file_noext,
+            path_basename(playlist_file), "",
+            sizeof(playlist_file_noext));
 
       console_name = playlist_file_noext;
 
@@ -5911,8 +5910,7 @@ border_iterate:
                for (offset = 0; offset < ozone->horizontal_list.size; offset++)
                {
                   char playlist_file_noext[NAME_MAX_LENGTH];
-                  strlcpy(playlist_file_noext, ozone->horizontal_list.list[offset].path, sizeof(playlist_file_noext));
-                  path_remove_extension(playlist_file_noext);
+                  fill_pathname(playlist_file_noext, ozone->horizontal_list.list[offset].path, "", sizeof(playlist_file_noext));
                   if (string_is_equal(playlist_file_noext, entry.rich_label))
                      break;
                }

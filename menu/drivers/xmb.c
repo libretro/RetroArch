@@ -2130,8 +2130,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
          return;
 
       /* Use real title for dynamic backgrounds */
-      fill_pathname_base(xmb->title_name, path, sizeof(xmb->title_name));
-      path_remove_extension(xmb->title_name);
+      fill_pathname(xmb->title_name, path_basename(path), "", sizeof(xmb->title_name));
 
       /* Set alternative title for visible header */
       if (node && node->console_name)
@@ -2491,8 +2490,8 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
          }
 
          /* Remove extension */
-         fill_pathname_base(playlist_file_noext, playlist_file, sizeof(playlist_file_noext));
-         path_remove_extension(playlist_file_noext);
+         fill_pathname(playlist_file_noext, path_basename(playlist_file), "",
+               sizeof(playlist_file_noext));
 
          console_name = playlist_file_noext;
 
@@ -4869,8 +4868,8 @@ static int xmb_draw_item(
             for (offset = 0; offset < xmb->horizontal_list.size; offset++)
             {
                char playlist_file_noext[NAME_MAX_LENGTH];
-               strlcpy(playlist_file_noext, xmb->horizontal_list.list[offset].path, sizeof(playlist_file_noext));
-               path_remove_extension(playlist_file_noext);
+               fill_pathname(playlist_file_noext, xmb->horizontal_list.list[offset].path, "",
+                     sizeof(playlist_file_noext));
                if (string_is_equal(playlist_file_noext, entry.rich_label))
                   break;
             }

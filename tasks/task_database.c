@@ -791,7 +791,6 @@ static int database_info_list_iterate_found_match(
 
    fill_pathname(db_playlist_base_str,
          path_basename_nocompression(db_path), "", str_len);
-   path_remove_extension(db_playlist_base_str);
 
    strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
 
@@ -827,7 +826,6 @@ static int database_info_list_iterate_found_match(
          *delim = '\0';
       fill_pathname(entry_lbl,
             path_basename_nocompression(entry_path), "", str_len);
-      path_remove_extension(entry_lbl);
 
       RARCH_LOG("[Scanner]: No match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
    }
@@ -1049,7 +1047,6 @@ static int task_database_iterate_playlist_lutro(
       char game_title[NAME_MAX_LENGTH];
       fill_pathname(game_title,
             path_basename(path), "", sizeof(game_title));
-      path_remove_extension(game_title);
 
       /* the push function reads our entry as const,
        * so these casts are safe */
