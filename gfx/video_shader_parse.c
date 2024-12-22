@@ -2776,8 +2776,6 @@ static bool video_shader_load_shader_preset_internal(
 {
    int i;
    gfx_ctx_flags_t flags;
-   flags.flags     = 0;
-
    static enum rarch_shader_type types[] =
    {
       /* Shader preset priority, highest to lowest
@@ -2791,6 +2789,7 @@ static bool video_shader_load_shader_preset_internal(
       GFX_CTX_FLAGS_SHADERS_GLSL, GFX_CTX_FLAGS_SHADERS_SLANG, GFX_CTX_FLAGS_SHADERS_CG, GFX_CTX_FLAGS_SHADERS_HLSL
    };
 
+   flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
    for (i = 0; i < (int)ARRAY_SIZE(types); i++)
