@@ -4198,14 +4198,10 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
       from the main SRAM location. */
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-   {
-      size_t len = strlcpy(runloop_st->name.savefile,
+      fill_pathname(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.savefile));
-      strlcpy(runloop_st->name.savefile       + len,
             ".srm",
-            sizeof(runloop_st->name.savefile) - len);
-   }
+            sizeof(runloop_st->name.savefile));
 
    if (path_is_directory(runloop_st->name.savefile))
    {
@@ -4883,44 +4879,28 @@ void runloop_path_fill_names(void)
       return;
 
    if (string_is_empty(runloop_st->name.ups))
-   {
-      size_t len = strlcpy(runloop_st->name.ups,
+      fill_pathname(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.ups));
-      strlcpy(runloop_st->name.ups       + len,
             ".ups",
-            sizeof(runloop_st->name.ups) - len);
-   }
+            sizeof(runloop_st->name.ups));
 
    if (string_is_empty(runloop_st->name.bps))
-   {
-      size_t len = strlcpy(runloop_st->name.bps,
+      fill_pathname(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.bps));
-      strlcpy(runloop_st->name.bps       + len,
             ".bps",
-            sizeof(runloop_st->name.bps) - len);
-   }
+            sizeof(runloop_st->name.bps));
 
    if (string_is_empty(runloop_st->name.ips))
-   {
-      size_t len = strlcpy(runloop_st->name.ips,
+      fill_pathname(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.ips));
-      strlcpy(runloop_st->name.ips       + len,
             ".ips",
-            sizeof(runloop_st->name.ips) - len);
-   }
+            sizeof(runloop_st->name.ips));
 
    if (string_is_empty(runloop_st->name.xdelta))
-   {
-      size_t len = strlcpy(runloop_st->name.xdelta,
+      fill_pathname(runloop_st->name.xdelta,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.xdelta));
-      strlcpy(runloop_st->name.xdelta       + len,
             ".xdelta",
-            sizeof(runloop_st->name.xdelta) - len);
-   }
+            sizeof(runloop_st->name.xdelta));
 }
 
 
@@ -7878,52 +7858,35 @@ void runloop_path_set_names(void)
    runloop_state_t *runloop_st = &runloop_state;
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-   {
-      size_t len = strlcpy(runloop_st->name.savefile,
-            runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.savefile));
-      strlcpy(runloop_st->name.savefile       + len,
-            ".srm",
-            sizeof(runloop_st->name.savefile) - len);
-   }
+      fill_pathname(runloop_st->name.savefile,
+             runloop_st->runtime_content_path_basename,
+             ".srm",
+             sizeof(runloop_st->name.savefile));
 
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-   {
-      size_t len                        = strlcpy(
-            runloop_st->name.savestate,
+      fill_pathname(runloop_st->name.savestate,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.savestate));
-      strlcpy(runloop_st->name.savestate       + len,
             ".state",
-            sizeof(runloop_st->name.savestate) - len);
-   }
+            sizeof(runloop_st->name.savestate));
 
 #ifdef HAVE_BSV_MOVIE
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-   {
-      size_t len                        = strlcpy(
+      fill_pathname(
             runloop_st->name.replay,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.replay));
-      strlcpy(runloop_st->name.replay          + len,
             ".replay",
-            sizeof(runloop_st->name.replay)    - len);
-   }
+            sizeof(runloop_st->name.replay));
 #endif
 
 #ifdef HAVE_CHEATS
    if (!string_is_empty(runloop_st->runtime_content_path_basename))
-   {
-      size_t len                        = strlcpy(
+      fill_pathname(
             runloop_st->name.cheatfile,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.cheatfile));
-      strlcpy(runloop_st->name.cheatfile       + len,
             ".cht",
-            sizeof(runloop_st->name.cheatfile) - len);
-   }
+            sizeof(runloop_st->name.cheatfile));
 #endif
 }
 
@@ -8025,7 +7988,6 @@ void runloop_path_set_redirect(settings_t *settings,
                   RARCH_LOG("%s %s\n",
                             msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
                             intermediate_savefile_dir);
-
                   strlcpy(new_savefile_dir, intermediate_savefile_dir, sizeof(new_savefile_dir));
                }
          }
@@ -8198,9 +8160,9 @@ void runloop_path_set_special(char **argv, unsigned num_content)
    if (is_dir)
    {
       strlcpy(runloop_st->name.savestate, savestate_dir,
-              sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fill_pathname_dir? */
+              sizeof(runloop_st->name.savestate));
       strlcpy(runloop_st->name.replay, savestate_dir,
-              sizeof(runloop_st->name.replay)); /* TODO/FIXME - as above */
+              sizeof(runloop_st->name.replay));
    }
    else
       is_dir   = path_is_directory(runloop_st->name.savestate);

@@ -150,15 +150,11 @@ static void menu_action_setting_disp_set_label_remap_file_info(
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *remap_path      = runloop_st->name.remapfile;
-   const char *remap_file      = NULL;
 
    *w = 19;
 
    if (!string_is_empty(remap_path))
-      remap_file = path_basename_nocompression(remap_path);
-
-   if (!string_is_empty(remap_file))
-      strlcpy(s, remap_file, len);
+      strlcpy(s, path_basename_nocompression(remap_path), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
@@ -174,15 +170,11 @@ static void menu_action_setting_disp_set_label_override_file_info(
       char *s2, size_t len2)
 {
    const char *override_path   = path_get(RARCH_PATH_CONFIG_OVERRIDE);
-   const char *override_file   = NULL;
 
    *w = 19;
 
    if (!string_is_empty(override_path))
-      override_file = path_basename_nocompression(override_path);
-
-   if (!string_is_empty(override_file))
-      strlcpy(s, override_file, len);
+      strlcpy(s, path_basename_nocompression(override_path), len);
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 
