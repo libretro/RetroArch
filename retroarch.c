@@ -2222,7 +2222,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
          type == DIR_LIST_CORE_INFO, recursive);
 }
 
-struct string_list *string_list_new_special(enum string_list_type type,
+static struct string_list *string_list_new_special(
+      enum string_list_type type,
       void *data, unsigned *len, size_t *list_size)
 {
    union string_list_elem_attr attr;
@@ -2506,7 +2507,6 @@ char *path_get_ptr(enum rarch_path_type type)
 const char *path_get(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
@@ -2514,14 +2514,10 @@ const char *path_get(enum rarch_path_type type)
          return p_rarch->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
-      case RARCH_PATH_BASENAME:
-         return runloop_st->runtime_content_path_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             return p_rarch->path_core_options_file;
          break;
-      case RARCH_PATH_SUBSYSTEM:
-         return runloop_st->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
@@ -2539,6 +2535,10 @@ const char *path_get(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
+      case RARCH_PATH_BASENAME:
+         return runloop_state_get_ptr()->runtime_content_path_basename;
+      case RARCH_PATH_SUBSYSTEM:
+         return runloop_state_get_ptr()->subsystem_path;
    }
 
    return NULL;
@@ -2554,12 +2554,8 @@ size_t path_get_realsize(enum rarch_path_type type)
          return sizeof(p_rarch->path_content);
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return sizeof(p_rarch->path_default_shader_preset);
-      case RARCH_PATH_BASENAME:
-         return sizeof(runloop_state_get_ptr()->runtime_content_path_basename);
       case RARCH_PATH_CORE_OPTIONS:
          return sizeof(p_rarch->path_core_options_file);
-      case RARCH_PATH_SUBSYSTEM:
-         return sizeof(runloop_state_get_ptr()->subsystem_path);
       case RARCH_PATH_CONFIG:
          return sizeof(p_rarch->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
@@ -2571,6 +2567,10 @@ size_t path_get_realsize(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
+      case RARCH_PATH_BASENAME:
+         return sizeof(runloop_state_get_ptr()->runtime_content_path_basename);
+      case RARCH_PATH_SUBSYSTEM:
+         return sizeof(runloop_state_get_ptr()->subsystem_path);
    }
 
    return 0;
@@ -2620,6 +2620,8 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_content, path,
                sizeof(p_rarch->path_content));
          break;
+      case RARCH_PATH_NONE:
+         break;
       case RARCH_PATH_BASENAME:
          runloop_st = runloop_state_get_ptr();
          strlcpy(runloop_st->runtime_content_path_basename, path,
@@ -2629,8 +2631,6 @@ bool path_set(enum rarch_path_type type, const char *path)
          runloop_st = runloop_state_get_ptr();
          strlcpy(runloop_st->subsystem_path, path,
                sizeof(runloop_st->subsystem_path));
-         break;
-      case RARCH_PATH_NONE:
          break;
    }
 
@@ -3060,7 +3060,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
    video_driver_state_t *video_st  = video_state_get_ptr();
    settings_t *settings            = config_get_ptr();
-   recording_state_t *recording_st = recording_state_get_ptr();
+   recording_state_t *rec_st       = recording_state_get_ptr();
 
    switch (cmd)
    {
@@ -3186,7 +3186,7 @@ bool command_event(enum event_command cmd, void *data)
             break;
          }
       case CMD_EVENT_STREAMING_TOGGLE:
-         if (recording_st->streaming_enable)
+         if (rec_st->streaming_enable)
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          else
          {
@@ -3296,7 +3296,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RECORDING_TOGGLE:
-         if (recording_st->enable)
+         if (rec_st->enable)
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          else
             command_event(CMD_EVENT_RECORD_INIT, NULL);
@@ -3338,7 +3338,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             rarch_system_info_t *sys_info     = &runloop_st->system;
             struct retro_system_info *sysinfo = &sys_info->info;
-            const char *core_path             = path_get(RARCH_PATH_CORE);
+            const char *core_path             = p_rarch->path_libretro;
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(core_path))
@@ -3596,7 +3596,7 @@ bool command_event(enum event_command cmd, void *data)
             const char *dir_screenshot      = settings->paths.directory_screenshot;
             video_driver_state_t *video_st  = video_state_get_ptr();
             if (!take_screenshot(dir_screenshot,
-                     path_get(RARCH_PATH_BASENAME),
+                     runloop_st->runtime_content_path_basename,
                      false,
                      video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
                      false,
@@ -4018,13 +4018,13 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RECORD_DEINIT:
-         recording_st->enable = false;
+         rec_st->enable = false;
          streaming_set_state(false);
          if (!recording_deinit())
             return false;
          break;
       case CMD_EVENT_RECORD_INIT:
-         recording_st->enable = true;
+         rec_st->enable = true;
          if (!recording_init())
          {
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -4610,7 +4610,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CONFIGFILE
          if (!command_event_save_core_config(
                   settings->paths.directory_menu_config,
-                  path_get(RARCH_PATH_CONFIG)))
+                  p_rarch->path_config_file))
             return false;
 #endif
          break;
@@ -5784,8 +5784,8 @@ void main_exit(void *args)
 #endif
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(
-         path_get_ptr(RARCH_PATH_CORE),
-         path_get_realsize(RARCH_PATH_CORE),
+         p_rarch->path_libretro,
+         sizeof(p_rarch->path_libretro),
          p_rarch->launch_arguments);
 
    p_rarch->flags                  &= ~RARCH_FLAGS_HAS_SET_USERNAME;
@@ -6567,7 +6567,9 @@ static void retroarch_print_help(const char *arg0)
 }
 
 #ifdef HAVE_DYNAMIC
-static void retroarch_parse_input_libretro_path(const char *path, size_t path_len)
+static void retroarch_parse_input_libretro_path(
+      struct rarch_state *p_rarch,
+      const char *path, size_t path_len)
 {
    settings_t *settings   = config_get_ptr();
    int path_stats         = 0;
@@ -6709,7 +6711,8 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
 end:
    if (!string_is_empty(core_path))
    {
-      path_set(RARCH_PATH_CORE, core_path);
+      strlcpy(p_rarch->path_libretro, core_path,
+            sizeof(p_rarch->path_libretro));
       retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
 
       /* We requested an explicit core, so use PLAIN core type. */
@@ -6753,7 +6756,7 @@ static bool retroarch_parse_input_and_config(
    bool                 cli_active = false;
    bool               cli_core_set = false;
    bool            cli_content_set = false;
-   recording_state_t *recording_st = recording_state_get_ptr();
+   recording_state_t *rec_st       = recording_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = runloop_state_get_ptr();
    settings_t          *settings   = config_get_ptr();
@@ -6956,10 +6959,12 @@ static bool retroarch_parse_input_and_config(
 
 #ifdef HAVE_CONFIGFILE
             case 'c':
-               path_set(RARCH_PATH_CONFIG, optarg);
+               strlcpy(p_rarch->path_config_file, optarg,
+                     sizeof(p_rarch->path_config_file));
                break;
             case RA_OPT_APPENDCONFIG:
-               path_set(RARCH_PATH_CONFIG_APPEND, optarg);
+               strlcpy(p_rarch->path_config_append_file, optarg,
+                     sizeof(p_rarch->path_config_append_file));
                break;
 #endif
 
@@ -7145,10 +7150,9 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case 'r':
-               strlcpy(recording_st->path, optarg,
-                     sizeof(recording_st->path));
-               if (recording_st->enable)
-                  recording_st->enable = true;
+               strlcpy(rec_st->path, optarg, sizeof(rec_st->path));
+               if (rec_st->enable)
+                  rec_st->enable = true;
                break;
 
             case RA_OPT_SET_SHADER:
@@ -7173,7 +7177,7 @@ static bool retroarch_parse_input_and_config(
 
 #ifdef HAVE_DYNAMIC
             case 'L':
-               retroarch_parse_input_libretro_path(optarg, strlen(optarg));
+               retroarch_parse_input_libretro_path(p_rarch, optarg, strlen(optarg));
                break;
 #endif
             case 'P':
@@ -7324,8 +7328,7 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_SIZE:
                if (sscanf(optarg, "%ux%u",
-                        &recording_st->width,
-                        &recording_st->height) != 2)
+                        &rec_st->width, &rec_st->height) != 2)
                {
                   RARCH_ERR("Wrong format for --size.\n");
                   retroarch_print_help(argv[0]);
@@ -7334,8 +7337,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_RECORDCONFIG:
-               strlcpy(recording_st->config, optarg,
-                     sizeof(recording_st->config));
+               strlcpy(rec_st->config, optarg, sizeof(rec_st->config));
                break;
 
             case RA_OPT_MAX_FRAMES:
@@ -7357,7 +7359,8 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_SUBSYSTEM:
-               path_set(RARCH_PATH_SUBSYSTEM, optarg);
+               strlcpy(runloop_st->subsystem_path, optarg,
+                     sizeof(runloop_st->subsystem_path));
                break;
 
             case RA_OPT_EOF_EXIT:
@@ -7479,7 +7482,12 @@ static bool retroarch_parse_input_and_config(
       runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
 
       if (subsystem_path_is_empty)
-         path_set(RARCH_PATH_NAMES, (const char*)argv[optind]);
+      {
+         runloop_path_set_basename((const char*)argv[optind]);
+         runloop_path_set_names();
+         runloop_path_set_redirect(settings, p_rarch->dir_savefile,
+               p_rarch->dir_savestate);
+      }
       else
          runloop_path_set_special(argv + optind, argc - optind);
 
@@ -7581,8 +7589,7 @@ bool retroarch_main_init(int argc, char *argv[])
       *input_st                  = input_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
-   recording_state_t
-      *recording_st              = recording_state_get_ptr();
+   recording_state_t *rec_st     = recording_state_get_ptr();
    global_t            *global   = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
@@ -7704,7 +7711,7 @@ bool retroarch_main_init(int argc, char *argv[])
    retroarch_init_task_queue();
 
    {
-      const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
+      const char    *fullpath  = p_rarch->path_content;
 
       if (!string_is_empty(fullpath))
       {
@@ -7883,7 +7890,7 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
    command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
-   if (!string_is_empty(recording_st->path))
+   if (!string_is_empty(rec_st->path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
@@ -7981,7 +7988,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             {
                /* Get loaded core file name */
                const char *loaded_core_file = path_basename_nocompression(
-                     path_get(RARCH_PATH_CORE));
+                     p_rarch->path_libretro);
                /* Check whether specified core and currently
                 * loaded core are the same */
                if (!string_is_empty(loaded_core_file))

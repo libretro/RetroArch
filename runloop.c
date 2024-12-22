@@ -7841,7 +7841,8 @@ void runloop_path_set_basename(const char *path)
    char *dst                   = NULL;
 
    path_set(RARCH_PATH_CONTENT,  path);
-   path_set(RARCH_PATH_BASENAME, path);
+   strlcpy(runloop_st->runtime_content_path_basename, path,
+         sizeof(runloop_st->runtime_content_path_basename));
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
