@@ -1332,6 +1332,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
    const char *val_on_str          = NULL;
    const char *val_off_str         = NULL;
    const char *opt                 = NULL;
+   struct menu_state *menu_st      = menu_state_get_ptr();
 
    /* Fetch options */
    retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
@@ -1393,7 +1394,6 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 
    if (checked_found)
    {
-      struct menu_state *menu_st = menu_state_get_ptr();
       menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
             info_list->list[checked].actiondata;
 
@@ -2514,19 +2514,15 @@ static int menu_displaylist_parse_playlist(
             || string_is_equal(path_playlist, "favorites")
             || string_ends_with_size(path_playlist, "_history",
                path_playlist_size, STRLEN_CONST("_history")))
-      {
-         char system_name[15];
-         strlcpy(system_name, path_playlist, sizeof(system_name));
-         menu_driver_set_thumbnail_system(
-               menu_st->userdata, system_name, sizeof(system_name));
-      }
+         gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
+               path_playlist, playlist_get_cached());
       else if (!string_is_empty(info_path))
       {
          char lpl_basename[NAME_MAX_LENGTH];
          fill_pathname(lpl_basename, path_basename(info_path), "",
                sizeof(lpl_basename));
-         menu_driver_set_thumbnail_system(
-               menu_st->userdata, lpl_basename, sizeof(lpl_basename));
+         gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
+               lpl_basename, playlist_get_cached());
       }
    }
 
@@ -2786,8 +2782,8 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    fill_pathname(path_base, path_basename(info->path), "",
          sizeof(path_base));
 
-   menu_driver_set_thumbnail_system(
-         menu_st->userdata, path_base, sizeof(path_base));
+   gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
+         path_base, playlist_get_cached());
 
    strlcat(path_base, ".lpl", sizeof(path_base));
 
@@ -3631,7 +3627,6 @@ static int menu_displaylist_parse_horizontal_list(
       menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings);
    else
    {
-      struct menu_state *menu_st   = menu_state_get_ptr();
       playlist_t *playlist         = NULL;
       if (!string_is_empty(item->path))
       {
@@ -3650,8 +3645,8 @@ static int menu_displaylist_parse_horizontal_list(
           * is loaded/cached */
          fill_pathname(lpl_basename, path_basename(item->path), "",
                sizeof(lpl_basename));
-         menu_driver_set_thumbnail_system(
-               menu_st->userdata, lpl_basename, sizeof(lpl_basename));
+         gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
+               lpl_basename, playlist_get_cached());
       }
 
       if ((playlist = playlist_get_cached()))
@@ -4052,10 +4047,11 @@ static int menu_displaylist_parse_load_content_settings(
 static int menu_displaylist_parse_horizontal_content_actions(
       menu_handle_t *menu, settings_t *settings, file_list_t *list)
 {
-   bool content_loaded             = false;
-   playlist_t *playlist            = playlist_get_cached();
-   const char *fullpath            = path_get(RARCH_PATH_CONTENT);
-   unsigned idx                    = menu->rpl_entry_selection_ptr;
+   bool content_loaded                 = false;
+   playlist_t *playlist                = playlist_get_cached();
+   const char *fullpath                = path_get(RARCH_PATH_CONTENT);
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   unsigned idx                        = menu->rpl_entry_selection_ptr;
    const struct playlist_entry *entry  = NULL;
 
    if (playlist)
@@ -4127,10 +4123,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
                break;
             case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
                {
+                  const char *tmp;
                   char sys_thumb[64];
-                  struct menu_state *menu_st  = menu_state_get_ptr();
-                  size_t sys_len              = menu_driver_get_thumbnail_system(
-                        menu_st->userdata, sys_thumb, sizeof(sys_thumb));
+                  size_t sys_len    = 0;
+
+                  if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
+                     sys_len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
 
                   if (!string_is_empty(sys_thumb))
                      remove_entry_enabled =
@@ -4156,7 +4154,6 @@ static int menu_displaylist_parse_horizontal_content_actions(
          /* Remove 'Remove' from Explore lists for now since it does not work correctly */
          if (remove_entry_enabled)
          {
-            struct menu_state *menu_st  = menu_state_get_ptr();
             menu_list_t *menu_list      = menu_st->entries.list;
             file_list_t *menu_stack     = MENU_LIST_GET(menu_list, 0);
             struct item_file *stack_top = menu_stack->list;
@@ -4224,11 +4221,13 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
             if (download_enabled)
             {
-               char sys_thumb[64];
-               struct menu_state *menu_st = menu_state_get_ptr();
                /* Only show 'Download Thumbnails' on supported playlists */
-               size_t sys_len             = menu_driver_get_thumbnail_system(
-                     menu_st->userdata, sys_thumb, sizeof(sys_thumb));
+               char sys_thumb[64];
+               const char *tmp  = NULL;
+               size_t sys_len   = 0;
+
+               if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
+                  sys_len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
 
                if (!string_is_empty(sys_thumb))
                   download_enabled = !string_ends_with_size(
@@ -5413,6 +5412,7 @@ static int menu_displaylist_parse_audio_device_list(
       file_list_t *info_list, const char *info_path,
       settings_t *settings)
 {
+   struct menu_state *menu_st   = menu_state_get_ptr();
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
    size_t menu_index            = 0;
@@ -5452,7 +5452,6 @@ static int menu_displaylist_parse_audio_device_list(
           * mapped to this entry */
          if (audio_device_index == i)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
                cbs->checked = true;
@@ -5483,7 +5482,6 @@ static int menu_displaylist_parse_audio_device_list(
           * mapped to this entry */
          if (audio_device_index == i)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
                cbs->checked            = true;
@@ -5503,6 +5501,7 @@ static int menu_displaylist_parse_microphone_device_list(
       file_list_t *info_list, const char *info_path,
       settings_t *settings)
 {
+   struct menu_state *menu_st   = menu_state_get_ptr();
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
    size_t menu_index            = 0;
@@ -5542,7 +5541,6 @@ static int menu_displaylist_parse_microphone_device_list(
           * mapped to this entry */
          if (mic_device_index == i)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
                cbs->checked = true;
@@ -5573,7 +5571,6 @@ static int menu_displaylist_parse_microphone_device_list(
           * mapped to this entry */
          if (mic_device_index == i)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
                cbs->checked            = true;
@@ -5592,26 +5589,27 @@ static int menu_displaylist_parse_microphone_device_list(
 static int menu_displaylist_parse_input_device_type_list(
       file_list_t *info_list, const char *info_path, settings_t *settings)
 {
-   const struct retro_controller_description *desc = NULL;
-   const char *name             = NULL;
-   const char *val_none         = NULL;
-   const char *val_retropad     = NULL;
-   const char *val_retropad_an  = NULL;
-   const char *val_unknown      = NULL;
-   rarch_system_info_t *sys_info= &runloop_state_get_ptr()->system;
-   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
-   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
-   size_t menu_index            = 0;
-   unsigned count               = 0;
-
-   unsigned i                   = 0;
-   unsigned types               = 0;
-   unsigned port                = 0;
-   unsigned current_device      = 0;
-   unsigned devices[128]        = {0};
-
    char device_id[10];
-   device_id[0]                 = '\0';
+   const struct retro_controller_description *desc = NULL;
+   const char *name              = NULL;
+   const char *val_none          = NULL;
+   const char *val_retropad      = NULL;
+   const char *val_retropad_an   = NULL;
+   const char *val_unknown       = NULL;
+   size_t menu_index             = 0;
+   unsigned count                = 0;
+
+   unsigned i                    = 0;
+   unsigned types                = 0;
+   unsigned port                 = 0;
+   unsigned current_device       = 0;
+   unsigned devices[128]         = {0};
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   enum msg_hash_enums enum_idx  = (enum msg_hash_enums)atoi(info_path);
+   rarch_setting_t     *setting  = menu_setting_find_enum(enum_idx);
+   struct menu_state *menu_st    = menu_state_get_ptr();
+
+   device_id[0]                  = '\0';
 
    if (!sys_info || !settings || !setting)
       return 0;
@@ -5674,7 +5672,6 @@ static int menu_displaylist_parse_input_device_type_list(
           * mapped to this entry */
          if (current_device == devices[i])
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
                cbs->checked            = true;
@@ -5911,16 +5908,17 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
 static int menu_displaylist_parse_input_description_list(
       menu_displaylist_info_t *info, settings_t *settings)
 {
-   unsigned count                = 0;
-   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
-   size_t menu_index             = 0;
-   bool current_input_mapped     = false;
+   size_t i, j;
+   char entry_label[21];
    unsigned user_idx;
    unsigned btn_idx;
    unsigned current_remap_idx;
    unsigned mapped_port;
-   size_t i, j;
-   char entry_label[21];
+   unsigned count                = 0;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   size_t menu_index             = 0;
+   bool current_input_mapped     = false;
+   struct menu_state *menu_st    = menu_state_get_ptr();
 
    entry_label[0] = '\0';
 
@@ -6001,7 +5999,6 @@ static int menu_displaylist_parse_input_description_list(
              * mapped to this entry */
             if (current_remap_idx == i)
             {
-               struct menu_state *menu_st = menu_state_get_ptr();
                menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
                if (cbs)
                   cbs->checked            = true;
@@ -6026,7 +6023,6 @@ static int menu_displaylist_parse_input_description_list(
       /* Add checkmark if input is currently unmapped */
       if (!current_input_mapped)
       {
-         struct menu_state *menu_st = menu_state_get_ptr();
          menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[menu_index].actiondata;
          if (cbs)
             cbs->checked            = true;
@@ -6045,7 +6041,8 @@ static unsigned menu_displaylist_parse_netplay_mitm_server_list(
       file_list_t *info_list, settings_t *settings)
 {
    size_t i;
-   unsigned count = 0;
+   unsigned count                  = 0;
+   struct menu_state *menu_st      = menu_state_get_ptr();
    const char *netplay_mitm_server = settings->arrays.netplay_mitm_server;
 
    for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
@@ -6060,7 +6057,6 @@ static unsigned menu_displaylist_parse_netplay_mitm_server_list(
       {
          if (string_is_equal(server->name, netplay_mitm_server))
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  =
                (menu_file_list_cbs_t*)info_list->list[count].actiondata;
             if (cbs)
@@ -6080,12 +6076,12 @@ static int menu_displaylist_parse_input_description_kbd_list(
       file_list_t *info_list, unsigned info_type, settings_t *settings)
 {
    size_t i;
-   unsigned user_idx;
-   unsigned btn_idx;
-   unsigned current_key_id;
    char entry_label[21];
-   unsigned count       = 0;
-   size_t menu_index    = 0;
+   unsigned current_key_id;
+   unsigned user_idx, btn_idx;
+   unsigned count             = 0;
+   size_t menu_index          = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
 
    entry_label[0] = '\0';
 
@@ -6149,7 +6145,6 @@ static int menu_displaylist_parse_input_description_kbd_list(
           * mapped to this entry */
          if (current_key_id == key_id)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
                cbs->checked            = true;
@@ -6421,8 +6416,9 @@ typedef struct menu_displaylist_build_info_selective
 static unsigned populate_playlist_thumbnail_mode_dropdown_list(
       file_list_t *list, enum playlist_thumbnail_id thumbnail_id)
 {
-   unsigned count       = 0;
-   playlist_t *playlist = playlist_get_cached();
+   unsigned count             = 0;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   playlist_t *playlist       = playlist_get_cached();
 
    if (list && playlist)
    {
@@ -6479,7 +6475,6 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
          /* Add checkmark if item is currently selected */
          if (current_thumbnail_mode == thumbnail_mode)
          {
-            struct menu_state *menu_st = menu_state_get_ptr();
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
             if (cbs)
                cbs->checked            = true;
@@ -6962,8 +6957,9 @@ unsigned menu_displaylist_build_list(
       bool include_everything)
 {
    unsigned i;
-   unsigned count = 0;
-   uint32_t flags = runloop_get_flags();
+   unsigned count             = 0;
+   uint32_t flags             = runloop_get_flags();
+   struct menu_state *menu_st = menu_state_get_ptr();
 
    switch (type)
    {
@@ -8527,7 +8523,6 @@ unsigned menu_displaylist_build_list(
 
                   if (video_list[i].current)
                   {
-                     struct menu_state *menu_st = menu_state_get_ptr();
                      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
                         cbs->checked            = true;
@@ -8551,7 +8546,6 @@ unsigned menu_displaylist_build_list(
             if (core_info_list && playlist)
             {
                size_t i;
-               struct menu_state *menu_st    = menu_state_get_ptr();
                const char *current_core_name = playlist_get_default_core_name(playlist);
                core_info_t *core_info        = NULL;
 
@@ -8654,7 +8648,6 @@ unsigned menu_displaylist_build_list(
 
                   if (current_display_mode == display_mode)
                   {
-                     struct menu_state *menu_st = menu_state_get_ptr();
                      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
                         cbs->checked            = true;
@@ -8718,7 +8711,6 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (current_sort_mode == sort_mode)
                   {
-                     struct menu_state *menu_st = menu_state_get_ptr();
                      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
                         cbs->checked            = true;
@@ -8772,7 +8764,6 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_system_name, system_name))
                   {
-                     struct menu_state *menu_st = menu_state_get_ptr();
                      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
                         cbs->checked            = true;
@@ -8819,7 +8810,6 @@ unsigned menu_displaylist_build_list(
                   /* Check whether current entry is checked */
                   if (string_is_equal(current_core_name, core_name))
                   {
-                     struct menu_state *menu_st = menu_state_get_ptr();
                      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                      if (cbs)
                         cbs->checked            = true;
@@ -8907,7 +8897,6 @@ unsigned menu_displaylist_build_list(
                      /* Check whether current disk is selected */
                      if (i == current_image)
                      {
-                        struct menu_state *menu_st = menu_state_get_ptr();
                         menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
                         if (cbs)
                            cbs->checked            = true;
@@ -9462,7 +9451,6 @@ unsigned menu_displaylist_build_list(
 #if defined(HAVE_QT) || defined(HAVE_COCOA)
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
 #endif
-            struct menu_state    *menu_st   = menu_state_get_ptr();
             bool menu_screensaver_supported = ((menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED) > 0);
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
             enum menu_screensaver_effect menu_screensaver_animation =
@@ -10220,7 +10208,6 @@ unsigned menu_displaylist_build_list(
 #if defined(HAVE_OVERLAY)
       case DISPLAYLIST_ONSCREEN_OVERLAY_SETTINGS_LIST:
          {
-            struct menu_state *menu_st      = menu_state_get_ptr();
             bool input_overlay_enable       = settings->bools.input_overlay_enable;
             bool input_overlay_ptr_enable   = settings->bools.input_overlay_pointer_enable;
             bool input_overlay_auto_scale   = settings->bools.input_overlay_auto_scale;
@@ -11864,6 +11851,7 @@ static unsigned menu_displaylist_build_shader_parameter(
    bool     checked_found               = false;
    struct video_shader_parameter *param = NULL;
    unsigned offset                      = entry_type - _offset;
+   struct menu_state *menu_st           = menu_state_get_ptr();
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -11922,7 +11910,6 @@ static unsigned menu_displaylist_build_shader_parameter(
 
    if (checked_found)
    {
-      struct menu_state *menu_st = menu_state_get_ptr();
       menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)list->list[checked].actiondata;
       if (cbs)
          cbs->checked            = true;
@@ -12259,7 +12246,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_OPTIONS_REMAPPINGS_PORT:
             {
                unsigned max_users          = settings->uints.input_max_users;
-               struct menu_state *menu_st  = menu_state_get_ptr();
                const char *menu_driver     = menu_driver_ident();
                bool is_rgui                = string_is_equal(menu_driver, "rgui");
                file_list_t *list           = info->list;
@@ -13360,7 +13346,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                core_updater_list_t *core_list   = core_updater_list_get_cached();
                menu_search_terms_t *search_terms= menu_entries_search_get_terms();
-               struct menu_state *menu_st       = menu_state_get_ptr();
                bool show_experimental_cores     = settings->bools.network_buildbot_show_experimental_cores;
                size_t selection                 = menu_st->selection_ptr;
 
@@ -13799,7 +13784,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * current selection index is less than the current
                 * number of menu entries - if not, we reset the
                 * navigation pointer */
-               struct menu_state *menu_st = menu_state_get_ptr();
                size_t selection           = menu_st->selection_ptr;
 
                menu_entries_clear(info->list);
@@ -13835,7 +13819,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * the navigation pointer if the current size is
                 * different */
                static size_t prev_count   = 0;
-               struct menu_state *menu_st = menu_state_get_ptr();
                size_t selection           = menu_st->selection_ptr;
                menu_entries_clear(info->list);
                count                    = menu_displaylist_parse_core_manager_list
@@ -13898,7 +13881,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          case DISPLAYLIST_CONTENTLESS_CORES:
             {
-               struct menu_state *menu_st  = menu_state_get_ptr();
                size_t contentless_core_ptr = menu_st->contentless_core_ptr;
 
                menu_entries_clear(info->list);
@@ -14024,7 +14006,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * we therefore have to check that the current selection
                 * index is less than the current number of menu entries
                 * - if not, we reset the navigation pointer */
-               struct menu_state *menu_st   = menu_state_get_ptr();
                size_t selection             = menu_st->selection_ptr;
                runloop_state_t *runloop_st  = runloop_state_get_ptr();
 
@@ -14137,7 +14118,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * current selection index is less than the current
                 * number of menu entries - if not, we reset the
                 * navigation pointer */
-               struct menu_state *menu_st   = menu_state_get_ptr();
                size_t selection             = menu_st->selection_ptr;
 
                menu_entries_clear(info->list);
@@ -14169,7 +14149,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                 * current selection index is less than the current
                 * number of menu entries - if not, we reset the
                 * navigation pointer */
-               struct menu_state *menu_st   = menu_state_get_ptr();
                size_t selection             = menu_st->selection_ptr;
 
                menu_entries_clear(info->list);
@@ -15596,7 +15575,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 struct menu_state *menu_st = menu_state_get_ptr();
                                  menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
                                     cbs->checked            = true;
@@ -15673,7 +15651,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 struct menu_state *menu_st = menu_state_get_ptr();
                                  menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
                                     cbs->checked            = true;
@@ -15749,7 +15726,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 struct menu_state *menu_st = menu_state_get_ptr();
                                  menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
                                     cbs->checked            = true;
@@ -15825,7 +15801,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (checked_found)
                               {
-                                 struct menu_state *menu_st = menu_state_get_ptr();
                                  menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                                  if (cbs)
                                     cbs->checked            = true;
@@ -15866,7 +15841,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   if (i == pass_count)
                   {
-                     struct menu_state *menu_st = menu_state_get_ptr();
                      menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[i].actiondata;
                      if (cbs)
                         cbs->checked            = true;
@@ -15926,7 +15900,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              struct menu_state *menu_st = menu_state_get_ptr();
                               menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                               if (cbs)
                                  cbs->checked            = true;
@@ -16002,7 +15975,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              struct menu_state *menu_st = menu_state_get_ptr();
                               menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                               if (cbs)
                                  cbs->checked            = true;
@@ -16077,7 +16049,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              struct menu_state *menu_st = menu_state_get_ptr();
                               menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                               if (cbs)
                                  cbs->checked            = true;
@@ -16153,7 +16124,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                            if (checked_found)
                            {
-                              struct menu_state *menu_st = menu_state_get_ptr();
                               menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info->list->list[checked].actiondata;
                               if (cbs)
                                  cbs->checked            = true;
@@ -16188,7 +16158,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          }
          else
          {
-            const char *pending_selection              = menu_state_get_ptr()->pending_selection;
+            const char *pending_selection              = menu_st->pending_selection;
             bool show_hidden_files                     = settings->bools.show_hidden_files;
             bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
             bool multimedia_builtin_imageviewer_enable = settings->bools.multimedia_builtin_imageviewer_enable;
@@ -16208,7 +16178,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                if (menu_entries_list_search(pending_selection, &selection_idx))
                {
-                  struct menu_state *menu_st = menu_state_get_ptr();
                   menu_st->selection_ptr     = selection_idx;
                   if (menu_st->driver_ctx->navigation_set)
                      menu_st->driver_ctx->navigation_set(menu_st->userdata, true);

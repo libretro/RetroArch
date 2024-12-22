@@ -167,7 +167,6 @@ char *path_remove_extension(char *path);
  *
  * Hidden non-leaf function cost:
  * - Calls path_get_archive_delim()
- *   - can call find_last_slash() once if it returns NULL
  *
  * @return basename from path.
  **/
@@ -179,9 +178,6 @@ const char *path_basename(const char *path);
  *
  * Specialized version of path_basename().
  * Get basename from @path.
- *
- * Hidden non-leaf function cost:
- * - Calls find_last_slash()
  *
  * @return basename from path.
  **/
@@ -417,7 +413,6 @@ void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
  *
  * Hidden non-leaf function cost:
  * - Calls strdup
- * - Calls find_last_slash() x times
  * - Can call strlcpy
  *
  * @return Length of the string copied into @s
@@ -499,7 +494,6 @@ size_t fill_pathname_join(char *out_path, const char *dir,
  *
  * Hidden non-leaf function cost:
  * - calls strlcpy 2x
- * - calls find_last_slash()
  *
  * @return Length of the string copied into @out_path
  **/
@@ -635,8 +629,7 @@ void path_basedir_wrapper(char *path);
  * if not already there.
 
  * Hidden non-leaf function cost:
- * - calls find_last_slash()
- *   - can call strlcat once if it returns false
+ * - can call strlcat once if it returns false
  * - calls strlen
  **/
 size_t fill_pathname_slash(char *path, size_t size);

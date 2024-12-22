@@ -672,10 +672,8 @@ const char *path_basename(const char *path)
    const char *slash     = strrchr(path, '/');
    const char *backslash = strrchr(path, '\\');
    char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
-   if (     (ptr = path_get_archive_delim(path))
-         || (ptr = last_slash))
-      return ptr + 1;
-   return path;
+   return ((ptr = path_get_archive_delim(path)) || (ptr = last_slash))
+      ? (ptr + 1) : path;
 }
 
 /* Specialized version */

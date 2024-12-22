@@ -1580,11 +1580,10 @@ int generic_action_ok_displaylist_push(
             fill_pathname_join_special(tmp,
                   settings->paths.path_content_database,
                   path, sizeof(tmp));
-
             fill_pathname(lpl_basename, path_basename(path), "",
                   sizeof(lpl_basename));
-            menu_driver_set_thumbnail_system(
-                  menu_st->userdata, lpl_basename, sizeof(lpl_basename));
+            gfx_thumbnail_set_system(menu_st->thumbnail_path_data, lpl_basename,
+                  playlist_get_cached());
 
             info.directory_ptr = idx;
             info_path          = tmp;
@@ -8501,6 +8500,7 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char system[PATH_MAX_LENGTH];
+   const char *tmp             = NULL;
    struct menu_state *menu_st  = menu_state_get_ptr();
    playlist_t *playlist        = playlist_get_cached();
    menu_handle_t *menu         = menu_st->driver_data;
@@ -8510,8 +8510,8 @@ static int action_ok_pl_entry_content_thumbnails(const char *path,
 
    system[0] = '\0';
 
-   menu_driver_get_thumbnail_system(
-         menu_st->userdata, system, sizeof(system));
+   if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
+      strlcpy(system, tmp, sizeof(system));
 
    task_push_pl_entry_thumbnail_download(system,
          playlist, menu->rpl_entry_selection_ptr,
