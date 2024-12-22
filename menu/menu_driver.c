@@ -2704,12 +2704,16 @@ static void menu_driver_get_last_shader_path_int(
       const char *shader_dir, const char *shader_file_name,
       const char **dir_out, const char **file_name_out)
 {
+   gfx_ctx_flags_t flags;
    bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
    const char *video_shader_dir = settings->paths.directory_video_shader;
 
    /* File name is NULL by default */
    if (file_name_out)
       *file_name_out = NULL;
+
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
 
    /* If any of the following are true:
     * - Directory caching is disabled
@@ -2722,7 +2726,7 @@ static void menu_driver_get_last_shader_path_int(
        || (type == RARCH_SHADER_NONE)
        || string_is_empty(shader_dir)
        || !path_is_directory(shader_dir)
-       || !video_shader_is_supported(type))
+       || !BIT32_GET(flags.flags, video_shader_type_to_flag(type)))
    {
       if (dir_out)
          *dir_out = video_shader_dir;
@@ -2950,7 +2954,6 @@ static bool menu_shader_manager_save_preset_internal(
 {
    size_t _len;
    char fullname[NAME_MAX_LENGTH];
-   const char *preset_ext         = NULL;
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
@@ -2960,13 +2963,13 @@ static bool menu_shader_manager_save_preset_internal(
    if ((type = menu_shader_manager_get_type(shader)) == RARCH_SHADER_NONE)
       return false;
 
-   preset_ext = video_shader_get_preset_extension(type);
-
    if (!string_is_empty(basename))
       _len = strlcpy(fullname, basename, sizeof(fullname));
    else
       _len = strlcpy(fullname, "retroarch", sizeof(fullname));
-   strlcpy(fullname + _len, preset_ext, sizeof(fullname) - _len);
+   strlcpy(fullname + _len,
+         video_shader_get_preset_extension(type),
+         sizeof(fullname) - _len);
 
    if (path_is_absolute(fullname))
    {
@@ -3081,9 +3084,13 @@ static bool menu_shader_manager_operate_auto_preset(
    settings_t *settings                           = config_get_ptr();
    bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
    struct retro_system_info *sysinfo              = &runloop_state_get_ptr()->system.info;
-   static enum rarch_shader_type shader_types[]   =
+   static enum rarch_shader_type shader_types[]       =
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
+   };
+   static enum rarch_shader_type shader_types_flags[] =
+   {
+      GFX_CTX_FLAGS_SHADERS_GLSL, GFX_CTX_FLAGS_SHADERS_SLANG, GFX_CTX_FLAGS_SHADERS_CG
    };
    const char *core_name              = sysinfo ? sysinfo->library_name : NULL;
    const char *rarch_path_basename    = path_get(RARCH_PATH_BASENAME);
@@ -3166,12 +3173,14 @@ static bool menu_shader_manager_operate_auto_preset(
             /* remove all supported auto-shaders of given type */
             char *end;
             size_t i, j, m;
-
             char preset_path[PATH_MAX_LENGTH];
-
+            gfx_ctx_flags_t flags;
             /* n = amount of relevant shader presets found
              * m = amount of successfully deleted shader presets */
-            size_t n = m = 0;
+            size_t n = m    = 0;
+
+            flags.flags     = 0;
+            video_context_driver_get_flags(&flags);
 
             for (i = 0; i < ARRAY_SIZE(auto_preset_dirs); i++)
             {
@@ -3185,13 +3194,10 @@ static bool menu_shader_manager_operate_auto_preset(
 
                for (j = 0; j < ARRAY_SIZE(shader_types); j++)
                {
-                  const char *preset_ext;
-
-                  if (!video_shader_is_supported(shader_types[j]))
+                  if (!(BIT32_GET(flags.flags, shader_types_flags[j])))
                      continue;
-
-                  preset_ext = video_shader_get_preset_extension(shader_types[j]);
-                  strlcpy(end, preset_ext, sizeof(preset_path) - (end - preset_path));
+                  strlcpy(end, video_shader_get_preset_extension(shader_types[j]),
+                        sizeof(preset_path) - (end - preset_path));
 
                   if (path_is_valid(preset_path))
                   {
@@ -3215,8 +3221,12 @@ static bool menu_shader_manager_operate_auto_preset(
             /* test if any supported auto-shaders of given type exists */
             char *end;
             size_t i, j;
-
+            gfx_ctx_flags_t flags;
             char preset_path[PATH_MAX_LENGTH];
+
+            flags.flags     = 0;
+            video_context_driver_get_flags(&flags);
+
 
             for (i = 0; i < ARRAY_SIZE(auto_preset_dirs); i++)
             {
@@ -3230,13 +3240,11 @@ static bool menu_shader_manager_operate_auto_preset(
 
                for (j = 0; j < ARRAY_SIZE(shader_types); j++)
                {
-                  const char *preset_ext;
-
-                  if (!video_shader_is_supported(shader_types[j]))
+                  if (!(BIT32_GET(flags.flags, shader_types[j])))
                      continue;
 
-                  preset_ext = video_shader_get_preset_extension(shader_types[j]);
-                  strlcpy(end, preset_ext, sizeof(preset_path) - (end - preset_path));
+                  strlcpy(end, video_shader_get_preset_extension(shader_types[j]),
+                        sizeof(preset_path) - (end - preset_path));
 
                   if (path_is_valid(preset_path))
                      return true;
@@ -6817,7 +6825,15 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 struct video_shader *menu_shader_get(void)
 {
-   if (video_shader_any_supported())
+   gfx_ctx_flags_t flags;
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
+
+  if (
+         BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG)
+      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
+      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
+      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
    {
       video_driver_state_t *video_st = video_state_get_ptr();
       if (video_st)
@@ -6833,6 +6849,7 @@ struct video_shader *menu_shader_get(void)
  **/
 bool menu_shader_manager_init(void)
 {
+   gfx_ctx_flags_t flags;
    video_driver_state_t *video_st   = video_state_get_ptr();
    enum rarch_shader_type type      = RARCH_SHADER_NONE;
    bool ret                         = true;
@@ -6856,10 +6873,7 @@ bool menu_shader_manager_init(void)
 
    menu_shader_manager_free();
 
-   menu_shader                    = (struct video_shader*)
-      calloc(1, sizeof(*menu_shader));
-
-   if (!menu_shader)
+   if (!(menu_shader = (struct video_shader*)calloc(1, sizeof(*menu_shader))))
    {
       ret = false;
       goto end;
@@ -6868,10 +6882,12 @@ bool menu_shader_manager_init(void)
    if (string_is_empty(path_shader))
       goto end;
 
-   type = video_shader_get_type_from_ext(path_get_extension(path_shader),
-         &is_preset);
+   type            = video_shader_get_type_from_ext(
+         path_get_extension(path_shader), &is_preset);
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
 
-   if (!video_shader_is_supported(type))
+   if (!BIT32_GET(flags.flags, video_shader_type_to_flag(type)))
    {
       ret = false;
       goto end;
