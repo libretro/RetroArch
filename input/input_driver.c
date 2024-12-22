@@ -655,6 +655,42 @@ bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
    return true;
 }
 
+unsigned input_driver_lightgun_id_convert(unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+         return RARCH_LIGHTGUN_DPAD_RIGHT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+         return RARCH_LIGHTGUN_DPAD_LEFT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+         return RARCH_LIGHTGUN_DPAD_UP;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+         return RARCH_LIGHTGUN_DPAD_DOWN;
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+         return RARCH_LIGHTGUN_SELECT;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return RARCH_LIGHTGUN_START;
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+         return RARCH_LIGHTGUN_RELOAD;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return RARCH_LIGHTGUN_TRIGGER;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+         return RARCH_LIGHTGUN_AUX_A;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+         return RARCH_LIGHTGUN_AUX_B;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+         return RARCH_LIGHTGUN_AUX_C;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return RARCH_LIGHTGUN_START;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,

@@ -712,20 +712,34 @@ bool video_driver_translate_coord_viewport(
        || (norm_full_vp_height <= 0))
       return false;
 
-   if (mouse_x >= 0 && mouse_x < norm_full_vp_width)
-      scaled_screen_x = ((mouse_x * 0x10000)
-            / norm_full_vp_width)  - 0x7fff;
+   /* The conditions may look a bit unnecessarily complex, *
+    * but there are following edge cases to consider:      *
+    * - 0 should map to -0x7fff (not -0x8000)              *
+    * - edge (vp_width -1) should map to 0x7fff            *
+    * This should make it possible to hit the edges on all *
+    * screen resolutions, even when pointer cannot be      *
+    * moved offscreen. */
+    
+   if (mouse_x > 0 && mouse_x < norm_full_vp_width)
+      scaled_screen_x = ((mouse_x * 0xffff)
+            / (norm_full_vp_width - 1)) - 0x8000;
+   else if (mouse_x == 0)
+      scaled_screen_x = -0x7fff;
 
-   if (mouse_y >= 0 && mouse_y < norm_full_vp_height)
-      scaled_screen_y = ((mouse_y * 0x10000)
-            / norm_full_vp_height) - 0x7fff;
+   if (mouse_y > 0 && mouse_y < norm_full_vp_height)
+      scaled_screen_y = ((mouse_y * 0xffff)
+            / (norm_full_vp_height - 1)) - 0x8000;
+   else if (mouse_y == 0)
+      scaled_screen_y = -0x7fff;
 
    mouse_x           -= vp->x;
    mouse_y           -= vp->y;
 
-   if (mouse_x >= 0 && mouse_x < norm_vp_width)
-      scaled_x        = ((mouse_x * 0x10000)
-            / norm_vp_width) - 0x7fff;
+   if (mouse_x > 0 && mouse_x < norm_vp_width)
+      scaled_x        = ((mouse_x * 0xffff)
+            / (norm_vp_width - 1)) - 0x8000;
+   else if (mouse_x == 0)
+      scaled_x        = -0x7fff;
    else if (!report_oob)
    {
       if (mouse_x < 0)
@@ -734,9 +748,11 @@ bool video_driver_translate_coord_viewport(
          scaled_x =  0x7fff;
    }
 
-   if (mouse_y >= 0 && mouse_y < norm_vp_height)
-      scaled_y        = ((mouse_y * 0x10000)
-            / norm_vp_height) - 0x7fff;
+   if (mouse_y > 0 && mouse_y < norm_vp_height)
+      scaled_y        = ((mouse_y * 0xffff)
+            / (norm_vp_height - 1)) - 0x8000;
+   else if (mouse_y == 0)
+      scaled_y        = -0x7fff;
    else if (!report_oob)
    {
       if (mouse_y < 0)
