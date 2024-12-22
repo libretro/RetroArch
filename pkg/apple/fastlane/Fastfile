@@ -37,6 +37,10 @@ private_lane :ra_appstore_login do
 end
 
 private_lane :ra_reset_git_repo do |options|
+  if !options[:dirty].nil? && options[:dirty]
+    next
+  end
+
   reset_git_repo(
     force: true,
     files: [
@@ -47,29 +51,47 @@ private_lane :ra_reset_git_repo do |options|
       "./tvOS/Info.plist"
     ]
   )
-  if options[:dirty].nil? || !options[:dirty]
-    ensure_git_status_clean
-    git_pull
-    if !options[:branch].to_s.empty?
-      branch = options[:branch].to_s
-      sh("git checkout -b " + branch + " --track origin/" + branch)
-    end
+
+  ensure_git_status_clean
+  git_pull
+  if !options[:branch].to_s.empty?
+    branch = options[:branch].to_s
+    sh("git checkout -b " + branch + " --track origin/" + branch)
   end
   sh("git log -1")
 end
 
 private_lane :ra_update_versions do |options|
+  app_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+  plat = lane_context[SharedValues::PLATFORM_NAME] == :mac ? "osx" : lane_context[SharedValues::PLATFORM_NAME].to_s
+  username = CredentialsManager::AppfileConfig.try_fetch_value(:apple_id)
+  team_id = CredentialsManager::AppfileConfig.try_fetch_value(:itc_team_id)
+
   begin
     latest_testflight_build_number(
-      app_identifier: CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier),
-      platform: lane_context[SharedValues::PLATFORM_NAME] == :mac ? "osx" : lane_context[SharedValues::PLATFORM_NAME].to_s,
-      username: CredentialsManager::AppfileConfig.try_fetch_value(:apple_id),
-      team_id: CredentialsManager::AppfileConfig.try_fetch_value(:itc_team_id)
+      app_identifier: app_id,
+      platform: plat,
+      username: username,
+      team_id: team_id
     )
     next_build_number = lane_context[SharedValues::LATEST_TESTFLIGHT_BUILD_NUMBER]
   rescue => ex
     next_build_number = 45
   end
+
+  begin
+    app_store_build_number(
+      app_identifier: app_id,
+      platform: plat,
+      username: username,
+      team_id: team_id,
+      live: true
+    )
+    current_version_number = lane_context[SharedValues::LATEST_VERSION]
+  rescue => ex
+    current_version_number = "1.19.1"
+  end
+  UI.message("Current published version: #{current_version_number}")
 
   if options[:version].to_s.empty?
     version_file_path = File.expand_path("../../../../version.all", __FILE__)
@@ -87,6 +109,18 @@ private_lane :ra_update_versions do |options|
     next_version_number = options[:version]
   end
   UI.message("Extracted version: #{next_version_number}")
+
+  require 'rubygems'
+
+  if Gem::Version.new(current_version_number) >= Gem::Version.new(next_version_number)
+    # if the version is already in the app store, Apple rules prevent
+    # uploading more builds on that version
+    version_array = current_version_number.split(".").map(&:to_i)
+    version_array[-1] += 1
+    next_version_number = version_array.join(".")
+    UI.message("Bumping to version: #{next_version_number}")
+  end
+
   # can't use update_build_number/agvtool to update this as it
   # doesn't deal with multiple projects in the same folder
   update_info_plist(
