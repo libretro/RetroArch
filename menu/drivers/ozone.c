@@ -4144,7 +4144,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
    if ( (playlist
          && (   (ozone->flags   & OZONE_FLAG_IS_PLAYLIST)
             ||  (ozone->flags   & OZONE_FLAG_IS_EXPLORE_LIST)
-            ||  ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && !menu_is_running_quick_menu())))
+            || ((ozone->flags2  & OZONE_FLAG2_IS_QUICK_MENU) && !menu_is_running_quick_menu())))
          || (   (ozone->flags   & OZONE_FLAG_IS_DB_MANAGER_LIST) && ozone->depth == 4))
    {
       size_t _len;
@@ -8067,7 +8067,7 @@ static enum menu_action ozone_parse_menu_entry_action(
    {
       case MENU_ACTION_START:
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
-         if (     (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)
+         if (      (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT)
                || ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && menu_is_running_quick_menu()))
             break;
 
@@ -8155,9 +8155,9 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->flags2 |= OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
             new_action     = MENU_ACTION_NOOP;
          }
-         else if (  (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
-               && ( (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT) ||
-                    ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && menu_is_running_quick_menu())))
+         else if (   (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+               && (  (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT)
+               ||   ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && menu_is_running_quick_menu())))
          {
             ozone_hide_fullscreen_thumbnails(ozone, true);
             ozone->flags2 &= ~OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
@@ -12151,8 +12151,18 @@ static void ozone_populate_entries(
 #if defined(HAVE_LIBRETRODB)
    if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
    {
+      menu_entry_t entry;
+
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
+      menu_entry_get(&entry, 0, 0, NULL, true);
+
       /* Quick Menu under Explore list must also be Quick Menu */
-      if (menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu())
+      if (      string_is_equal(entry.label, "collection")
+            || (string_is_equal(entry.label, "resume_content")
+            ||  string_is_equal(entry.label, "state_slot"))
+         )
          ozone->flags2 |= OZONE_FLAG2_IS_QUICK_MENU;
       if (!menu_explore_is_content_list() || (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU))
          ozone->flags &= ~OZONE_FLAG_IS_EXPLORE_LIST;

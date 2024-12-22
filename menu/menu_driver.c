@@ -8098,18 +8098,6 @@ bool menu_is_running_quick_menu(void)
           || string_is_equal(entry.label, "state_slot");
 }
 
-bool menu_is_nonrunning_quick_menu(void)
-{
-   menu_entry_t entry;
-
-   MENU_ENTRY_INITIALIZE(entry);
-   entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
-                | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
-   menu_entry_get(&entry, 0, 0, NULL, true);
-
-   return string_is_equal(entry.label, "collection");
-}
-
 #ifdef HAVE_RUNAHEAD
 /**
  * menu_update_runahead_mode
