@@ -126,26 +126,16 @@ static path_change_data_t *file_change_data = NULL;
  * out_path is filled with the absolute path
  **/
 static void fill_pathname_expanded_and_absolute(
-      char *out_path, size_t out_len,
+      char *s, size_t len,
       const char *in_refpath,
       const char *in_path)
 {
-   char expanded_path[PATH_MAX_LENGTH];
-
-   expanded_path[0] = '\0';
-
    /* Expand paths which start with :\ to an absolute path */
-   fill_pathname_expand_special(expanded_path,
-         in_path, sizeof(expanded_path));
-
+   fill_pathname_expand_special(s, in_path, len);
    /* Resolve the reference path relative to the config */
-   if (path_is_absolute(expanded_path))
-      strlcpy(out_path, expanded_path, out_len);
-   else
-      fill_pathname_resolve_relative(out_path, in_refpath,
-            in_path, out_len);
-
-   pathname_conform_slashes_to_os(out_path);
+   if (!path_is_absolute(s))
+      fill_pathname_resolve_relative(s, in_refpath, in_path, len);
+   pathname_conform_slashes_to_os(s);
 }
 
 /**
@@ -233,11 +223,13 @@ static void fill_pathname_expanded_and_absolute(
 static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_path)
 {
    int i = 0;
+   settings_t *settings;
    char replaced_path[PATH_MAX_LENGTH];
 
    if (!strstr(s, RARCH_WILDCARD_DELIMITER))
       return;
 
+   settings = config_get_ptr();
    strlcpy(replaced_path, s, sizeof(replaced_path));
 
    /* Step through the wildcards while we can still find the
@@ -256,108 +248,95 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
             case RARCH_WILDCARD_CONTENT_DIR:
                {
                   char content_dir_name[DIR_MAX_LENGTH] = "";
-                  const char* rarch_path_basename = path_get(RARCH_PATH_BASENAME);
+                  const char *rarch_path_basename = path_get(RARCH_PATH_BASENAME);
                   if (rarch_path_basename)
                      fill_pathname_parent_dir_name(content_dir_name,
                            rarch_path_basename,
                            sizeof(content_dir_name));
                   if (string_is_not_equal_fast(content_dir_name, "", sizeof("")))
-                     fill_pathname(content_dir_name,
+                     replace_len = fill_pathname(replace_text,
                            path_basename_nocompression(content_dir_name), "",
-                           sizeof(content_dir_name));
-
-                  if (string_is_not_equal_fast(content_dir_name, "", sizeof("")))
-                     replace_len     = strlcpy(replace_text, content_dir_name, sizeof(replace_text));
+                           sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }
                break;
             case RARCH_WILDCARD_CORE:
-               strlcpy(replace_text, runloop_state_get_ptr()->system.info.library_name, sizeof(replace_text));
+               replace_len = strlcpy(replace_text, runloop_state_get_ptr()->system.info.library_name, sizeof(replace_text));
                break;
             case RARCH_WILDCARD_GAME:
                {
-                  const char* path_basename = path_get(RARCH_PATH_BASENAME);
-                  if (path_basename)
-                     path_basename = path_basename_nocompression(path_basename);
-                  if (path_basename)
-                     replace_len = strlcpy(replace_text, path_basename, sizeof(replace_text));
+                  const char *rarch_path_basename = path_get(RARCH_PATH_BASENAME);
+                  if (rarch_path_basename)
+                     replace_len    = strlcpy(replace_text,
+                           path_basename_nocompression(rarch_path_basename),
+                           sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }
                break;
             case RARCH_WILDCARD_VIDEO_DRIVER:
-               strlcpy(replace_text, config_get_ptr()->arrays.video_driver, sizeof(replace_text));
+               replace_len = strlcpy(replace_text, settings->arrays.video_driver, sizeof(replace_text));
                break;
             case RARCH_WILDCARD_CORE_REQUESTED_ROTATION:
-               {
-                  char rotation_replace_strings[4][64] = {
-                     "CORE-REQ-ROT-0",
-                     "CORE-REQ-ROT-90",
-                     "CORE-REQ-ROT-180",
-                     "CORE-REQ-ROT-270"
-                  };
-                  replace_len = strlcpy(replace_text,
-                        rotation_replace_strings[retroarch_get_core_requested_rotation()],
-                        sizeof(replace_text));
-               }
+               replace_len = strlcpy(replace_text, "CORE-REQ-ROT-",
+                     sizeof(replace_text));
+               replace_len += snprintf(
+                            replace_text  + replace_len,
+                     sizeof(replace_text) - replace_len,
+                     "%d",
+                     retroarch_get_core_requested_rotation() * 90);
                break;
             case RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION:
-               if (config_get_ptr()->bools.video_allow_rotate)
-                  replace_len = strlcpy(replace_text, "VID-ALLOW-CORE-ROT-ON",
-                        sizeof(replace_text));
+               replace_len = strlcpy(replace_text, "VID-ALLOW-CORE-ROT-O",
+                     sizeof(replace_text));
+               if (settings->bools.video_allow_rotate)
+                  replace_len += strlcpy(replace_text  + replace_len, "N",
+                                  sizeof(replace_text) - replace_len);
                else
-                  replace_len = strlcpy(replace_text, "VID-ALLOW-CORE-ROT-OFF",
-                        sizeof(replace_text));
+                  replace_len += strlcpy(replace_text  + replace_len, "FF",
+                                  sizeof(replace_text) - replace_len);
                break;
             case RARCH_WILDCARD_VIDEO_USER_ROTATION:
-               {
-                  char rotation_replace_strings[4][64] = {
-                     "VID-USER-ROT-0",
-                     "VID-USER-ROT-90",
-                     "VID-USER-ROT-180",
-                     "VID-USER-ROT-270"
-                  };
-                  settings_t *settings           = config_get_ptr();
-                  replace_len = strlcpy(replace_text,
-                        rotation_replace_strings[settings->uints.video_rotation],
-                        sizeof(replace_text));
-               }
+               replace_len = strlcpy(replace_text, "VID-USER-ROT-",
+                     sizeof(replace_text));
+               replace_len += snprintf(
+                            replace_text  + replace_len,
+                     sizeof(replace_text) - replace_len,
+                     "%d",
+                     settings->uints.video_rotation * 90);
                break;
             case RARCH_WILDCARD_VIDEO_FINAL_ROTATION:
-               {
-                  char rotation_replace_strings[4][64] = {
-                     "VID-FINAL-ROT-0",
-                     "VID-FINAL-ROT-90",
-                     "VID-FINAL-ROT-180",
-                     "VID-FINAL-ROT-270"
-                  };
-                  replace_len = strlcpy(replace_text,
-                        rotation_replace_strings[retroarch_get_rotation()],
-                        sizeof(replace_text));
-               }
+               replace_len = strlcpy(replace_text,
+                     "VID-FINAL-ROT-",
+                     sizeof(replace_text));
+               replace_len += snprintf(
+                            replace_text  + replace_len,
+                     sizeof(replace_text) - replace_len,
+                     "%d",
+                     settings->uints.video_rotation * 90);
                break;
             case RARCH_WILDCARD_SCREEN_ORIENTATION:
-               {
-                  char rotation_replace_strings[4][64] = {
-                     "SCREEN-ORIENT-0",
-                     "SCREEN-ORIENT-90",
-                     "SCREEN-ORIENT-180",
-                     "SCREEN-ORIENT-270"
-                  };
-                  replace_len = strlcpy(replace_text,
-                        rotation_replace_strings[config_get_ptr()->uints.screen_orientation],
-                        sizeof(replace_text));
-               }
+               replace_len = strlcpy(replace_text,
+                     "SCREEN-ORIENT-",
+                     sizeof(replace_text));
+               replace_len += snprintf(
+                            replace_text  + replace_len,
+                     sizeof(replace_text) - replace_len,
+                     "%d",
+                     settings->uints.screen_orientation * 90);
                break;
             case RARCH_WILDCARD_CORE_ASPECT_ORIENTATION:
                {
-                  const int requested_rotation = retroarch_get_core_requested_rotation();
+                  int requested_rotation;
                   replace_len = strlcpy(replace_text,
-                        (video_driver_get_core_aspect() < 1 || requested_rotation == 1 || requested_rotation == 3)
-                        ? "CORE-ASPECT-ORIENT-VERT"
-                        : "CORE-ASPECT-ORIENT-HORZ",
+                        "CORE-ASPECT-ORIENT-",
                         sizeof(replace_text));
+                  requested_rotation = retroarch_get_core_requested_rotation();
+                  replace_len       += strlcpy(replace_text + replace_len,
+                        (video_driver_get_core_aspect() < 1 || requested_rotation == 1 || requested_rotation == 3)
+                        ? "VERT" : "HORZ",
+                        sizeof(replace_text) - replace_len);
                }
                break;
             case RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION:
@@ -365,11 +344,13 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                   unsigned viewport_width  = 0;
                   unsigned viewport_height = 0;
                   video_driver_get_size(&viewport_width, &viewport_height);
-                  replace_len = strlcpy(replace_text,
-                        ((float)viewport_width / viewport_height < 1)
-                        ? "VIEW-ASPECT-ORIENT-VERT"
-                        : "VIEW-ASPECT-ORIENT-HORZ",
+                  replace_len  = strlcpy(replace_text,
+                        "VIEW-ASPECT-ORIENT-",
                         sizeof(replace_text));
+                  replace_len += strlcpy(replace_text + replace_len,
+                        ((float)viewport_width / viewport_height < 1)
+                        ? "VERT" : "HORZ",
+                        sizeof(replace_text) - replace_len);
                }
                break;
             case RARCH_WILDCARD_PRESET_DIR:
@@ -377,10 +358,9 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                   char preset_dir_name[DIR_MAX_LENGTH];
                   fill_pathname_parent_dir_name(preset_dir_name, in_preset_path, sizeof(preset_dir_name));
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
-                     fill_pathname(preset_dir_name, path_basename_nocompression(preset_dir_name),
-                           "", sizeof(preset_dir_name));
-                  if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
-                     replace_len     = strlcpy(replace_text, preset_dir_name, sizeof(replace_text));
+                     replace_len = fill_pathname(replace_text,
+                           path_basename_nocompression(preset_dir_name),
+                           "", sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }
@@ -476,7 +456,6 @@ static void video_shader_gather_reference_path_list(
       while (ref_tmp)
       {
          char* reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
-
          /* Get the absolute path and replace wildcards in the path */
          fill_pathname_expanded_and_absolute(reference_preset_path, PATH_MAX_LENGTH, conf->path, ref_tmp->path);
          video_shader_replace_wildcards(reference_preset_path, PATH_MAX_LENGTH, conf->path);
@@ -593,8 +572,10 @@ static bool video_shader_parse_pass(config_file_t *conf,
    }
 
    /* Get the absolute path and replace wildcards in the path */
-   fill_pathname_expanded_and_absolute(pass->source.path, PATH_MAX_LENGTH, conf->path, tmp_path);
-   video_shader_replace_wildcards(pass->source.path, PATH_MAX_LENGTH, conf->path);
+   fill_pathname_expanded_and_absolute(pass->source.path,
+         PATH_MAX_LENGTH, conf->path, tmp_path);
+   video_shader_replace_wildcards(pass->source.path,
+         PATH_MAX_LENGTH, conf->path);
 
    /* Smooth */
    _len  = strlcpy(shader_var, "filter_linear", sizeof(shader_var));
@@ -826,8 +807,10 @@ static bool video_shader_parse_textures(config_file_t *conf,
          config_get_path(conf, id, texture_path, sizeof(texture_path));
 
          /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path, PATH_MAX_LENGTH, conf->path, texture_path);
-         video_shader_replace_wildcards(shader->lut[shader->luts].path, PATH_MAX_LENGTH, conf->path);
+         fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path,
+               PATH_MAX_LENGTH, conf->path, texture_path);
+         video_shader_replace_wildcards(shader->lut[shader->luts].path,
+               PATH_MAX_LENGTH, conf->path);
 
          strlcpy(shader->lut[shader->luts].id, id,
                sizeof(shader->lut[shader->luts].id));
@@ -1303,8 +1286,10 @@ static config_file_t *video_shader_get_root_preset_config(const char *path)
       }
 
       /* Get the absolute path and replace wildcards in the path */
-      fill_pathname_expanded_and_absolute(nested_reference_path, PATH_MAX_LENGTH, conf->path, conf->references->path);
-      video_shader_replace_wildcards(nested_reference_path, PATH_MAX_LENGTH, conf->path);
+      fill_pathname_expanded_and_absolute(nested_reference_path,
+            PATH_MAX_LENGTH, conf->path, conf->references->path);
+      video_shader_replace_wildcards(nested_reference_path,
+            PATH_MAX_LENGTH, conf->path);
 
       /* Create a new config from the referenced path */
       config_file_free(conf);
@@ -1389,8 +1374,10 @@ static bool video_shader_check_reference_chain_for_save(
          }
 
          /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(nested_ref_path, PATH_MAX_LENGTH, conf->path, conf->references->path);
-         video_shader_replace_wildcards(nested_ref_path, PATH_MAX_LENGTH, conf->path);
+         fill_pathname_expanded_and_absolute(nested_ref_path,
+               PATH_MAX_LENGTH, conf->path, conf->references->path);
+         video_shader_replace_wildcards(nested_ref_path,
+               PATH_MAX_LENGTH, conf->path);
 
          /* If one of the reference paths is the same as the file we want to save then this reference chain would be
           * self-referential / cyclical and we can't save this as a simple preset*/
@@ -2069,8 +2056,10 @@ static bool video_shader_override_values(config_file_t *override_conf,
             config_get_path(override_conf, shader->lut[i].id, tex_path, PATH_MAX_LENGTH);
 
             /* Get the absolute path and replace wildcards in the path */
-            fill_pathname_expanded_and_absolute(override_tex_path, PATH_MAX_LENGTH, override_conf->path, tex_path);
-            video_shader_replace_wildcards(override_tex_path, PATH_MAX_LENGTH, override_conf->path);
+            fill_pathname_expanded_and_absolute(override_tex_path, PATH_MAX_LENGTH,
+                  override_conf->path, tex_path);
+            video_shader_replace_wildcards(override_tex_path, PATH_MAX_LENGTH,
+                  override_conf->path);
 
             strlcpy(shader->lut[i].path, override_tex_path, sizeof(shader->lut[i].path));
 
