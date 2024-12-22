@@ -191,7 +191,8 @@ static void manual_content_scan_scrub_file_exts(char *file_exts)
 
    string_remove_all_chars(file_exts, '.');
    string_to_lower(file_exts);
-   string_trim_whitespace(file_exts);
+   string_trim_whitespace_right(file_exts);
+   string_trim_whitespace_left(file_exts);
 }
 
 /* Removes invalid characters from

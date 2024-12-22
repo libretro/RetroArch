@@ -7176,12 +7176,13 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 
       while (tok)
       {
-         const char *line = string_trim_whitespace(tok);
-         if (!string_is_empty(line))
+         string_trim_whitespace_right(tok);
+         string_trim_whitespace_left(tok);
+         if (!string_is_empty(tok))
          {
             if (!prev_line_empty)
                strlcat(rgui->menu_sublabel, sublabel_spacer, sizeof(rgui->menu_sublabel));
-            strlcat(rgui->menu_sublabel, line, sizeof(rgui->menu_sublabel));
+            strlcat(rgui->menu_sublabel, tok, sizeof(rgui->menu_sublabel));
             prev_line_empty = false;
          }
          tok = strtok_r(NULL, "\n", &save);
