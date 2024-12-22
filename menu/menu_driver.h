@@ -742,7 +742,6 @@ size_t menu_update_fullscreen_thumbnail_label(
       bool is_quick_menu, const char *title);
 
 bool menu_is_running_quick_menu(void);
-bool menu_is_nonrunning_quick_menu(void);
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);

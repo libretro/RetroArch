@@ -7328,7 +7328,18 @@ static void rgui_populate_entries(
    /* Quick Menu under Explore list must also be Quick Menu */
    if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
    {
-      if (menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu())
+      menu_entry_t entry;
+
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
+      menu_entry_get(&entry, 0, 0, NULL, true);
+
+      /* Quick Menu under Explore list must also be Quick Menu */
+      if (      string_is_equal(entry.label, "collection")
+            || (string_is_equal(entry.label, "resume_content")
+            ||  string_is_equal(entry.label, "state_slot"))
+         )
          rgui->flags |= RGUI_FLAG_IS_QUICK_MENU;
       if (rgui->flags & RGUI_FLAG_IS_QUICK_MENU)
          rgui->flags &= ~RGUI_FLAG_IS_EXPLORE_LIST;

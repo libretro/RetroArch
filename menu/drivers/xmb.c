@@ -2924,8 +2924,21 @@ static void xmb_populate_entries(void *data,
 #if defined(HAVE_LIBRETRODB)
    if (xmb->is_explore_list)
    {
+      menu_entry_t entry;
+
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
+      menu_entry_get(&entry, 0, 0, NULL, true);
+
       /* Quick Menu under Explore list must also be Quick Menu */
-      xmb->is_quick_menu |= menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu();
+      bool is_quick_menu =
+         (      string_is_equal(entry.label, "collection")
+            || (string_is_equal(entry.label, "resume_content")
+            ||  string_is_equal(entry.label, "state_slot"))
+         );
+      /* Quick Menu under Explore list must also be Quick Menu */
+      xmb->is_quick_menu |= is_quick_menu;
 
       if (!menu_explore_is_content_list() || xmb->is_quick_menu)
          xmb->is_explore_list = false;
@@ -3023,9 +3036,7 @@ static void xmb_populate_entries(void *data,
       xmb->fullscreen_thumbnails_available = true;
    }
    else if (xmb->is_quick_menu)
-   {
       xmb->fullscreen_thumbnails_available = !menu_is_running_quick_menu();
-   }
    else if (xmb->is_explore_list)
    {
       xmb_set_thumbnail_content(xmb, "");
