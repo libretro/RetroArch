@@ -3175,12 +3175,13 @@ static bool menu_shader_manager_operate_auto_preset(
 
             for (i = 0; i < ARRAY_SIZE(auto_preset_dirs); i++)
             {
+               size_t _len2;
                if (string_is_empty(auto_preset_dirs[i]))
                   continue;
 
-               fill_pathname_join(preset_path,
+               _len2 = fill_pathname_join(preset_path,
                      auto_preset_dirs[i], file, sizeof(preset_path));
-               end = preset_path + strlen(preset_path);
+               end = preset_path + _len2;
 
                for (j = 0; j < ARRAY_SIZE(shader_types); j++)
                {
@@ -3219,12 +3220,13 @@ static bool menu_shader_manager_operate_auto_preset(
 
             for (i = 0; i < ARRAY_SIZE(auto_preset_dirs); i++)
             {
+               size_t _len2;
                if (string_is_empty(auto_preset_dirs[i]))
                   continue;
 
-               fill_pathname_join(preset_path,
+               _len2 = fill_pathname_join(preset_path,
                      auto_preset_dirs[i], file, sizeof(preset_path));
-               end = preset_path + strlen(preset_path);
+               end = preset_path + _len2;
 
                for (j = 0; j < ARRAY_SIZE(shader_types); j++)
                {

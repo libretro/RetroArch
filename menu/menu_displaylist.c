@@ -914,9 +914,7 @@ static int menu_displaylist_parse_core_info(
 
    if (core_path)
    {
-      size_t _len;
-
-      _len = strlcpy(tmp,
+      size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH),
             sizeof(tmp));
       tmp[  _len] = ':';

@@ -9362,10 +9362,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          char filename[64];
 #ifdef HAVE_DISCORD_OWN_AVATAR
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
-         {
-            size_t _len = strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
-            strlcpy(filename + _len, FILE_PATH_PNG_EXTENSION, sizeof(filename) - _len);
-         }
+            fill_pathname(filename, discord_get_own_avatar(),
+                  ".png", sizeof(filename));
          else
 #endif
          {
