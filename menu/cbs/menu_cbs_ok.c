@@ -6793,17 +6793,19 @@ static int action_ok_push_downloads_dir(const char *path,
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   menu_entry_t entry;
    char current_value[PATH_MAX_LENGTH];
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_handle_t *menu        = menu_st->driver_data;
-
-   current_value[0] = '\0';
 
    if (!menu)
       return -1;
 
    /* Start browsing from current directory */
-   get_current_menu_value(menu_st, current_value, sizeof(current_value));
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+   strlcpy(current_value, entry.value, sizeof(current_value));
 #if IOS
    char tmp[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
@@ -6813,7 +6815,6 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
    if (!path_is_directory(current_value))
       current_value[0] = '\0';
 #endif
-
    filebrowser_set_type(FILEBROWSER_SELECT_DIR);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));
    return generic_action_ok_displaylist_push(

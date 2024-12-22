@@ -4040,8 +4040,8 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
    }
 }
 
-void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len)
+static void get_current_menu_value(
+      struct menu_state *menu_st, char *s, size_t len)
 {
    menu_entry_t     entry;
    const char*      entry_label;
@@ -4056,18 +4056,6 @@ void get_current_menu_value(struct menu_state *menu_st,
       entry_label  = entry.value;
 
    strlcpy(s, entry_label, len);
-}
-
-static void get_current_menu_type(struct menu_state *menu_st,
-      uint8_t *setting_type)
-{
-   menu_entry_t     entry;
-
-   MENU_ENTRY_INITIALIZE(entry);
-   entry.flags    = MENU_ENTRY_FLAG_VALUE_ENABLED;
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
-   *setting_type  = entry.setting_type;
 }
 
 #ifdef HAVE_ACCESSIBILITY
@@ -5582,14 +5570,21 @@ unsigned menu_event(
       if (switch_current)
       {
          uint8_t setting_type   = 0;
+         menu_entry_t     entry;
 
-         get_current_menu_type(menu_st, &setting_type);
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags    = MENU_ENTRY_FLAG_VALUE_ENABLED;
+         menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+         setting_type   = entry.setting_type;
 
          if (setting_type == ST_BOOL)
          {
             char value[8];
 
-            get_current_menu_value(menu_st, value, sizeof(value));
+            if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+               strlcpy(value, entry.password_value, sizeof(value));
+            else
+               strlcpy(value, entry.value, sizeof(value));
 
             /* Ignore direction if switch is already in that position */
             if (     (  string_is_equal(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))

@@ -672,9 +672,6 @@ void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
       file_list_t *list);
 
-void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len);
-
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
       struct menu_state *menu_st);
