@@ -697,7 +697,8 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    }
    else
    {
-      string_trim_whitespace(raw_game_id);
+      string_trim_whitespace_right(raw_game_id);
+      string_trim_whitespace_left(raw_game_id);
       strlcpy(s, raw_game_id, len);
       return true;
    }
@@ -742,7 +743,8 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       return false;
    }
 
-   string_trim_whitespace(raw_game_id);
+   string_trim_whitespace_right(raw_game_id);
+   string_trim_whitespace_left(raw_game_id);
 
    /** Dissect this raw serial into parts **/
    length             = strlen(raw_game_id);
@@ -832,7 +834,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       return false;
    }
 
-   string_trim_whitespace(raw_game_id);
+   string_trim_whitespace_right(raw_game_id);
+   string_trim_whitespace_left(raw_game_id);
    string_replace_multi_space_with_single_space(raw_game_id);
    string_replace_whitespace_with_single_character(raw_game_id, '-');
    length        = strlen(raw_game_id);

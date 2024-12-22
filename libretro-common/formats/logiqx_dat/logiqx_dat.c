@@ -229,7 +229,8 @@ static void logiqx_dat_sanitise_element_data(
 
    /* Element data includes leading/trailing
     * newline characters - trim them away */
-   string_trim_whitespace(sanitised_data);
+   string_trim_whitespace_right(sanitised_data);
+   string_trim_whitespace_left(sanitised_data);
 
    if (string_is_empty(sanitised_data))
       return;

@@ -145,7 +145,8 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
             strlcpy(
                   entry_label, line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL),
                   sizeof(entry_label));
-            string_trim_whitespace(entry_label);
+            string_trim_whitespace_right(entry_label);
+            string_trim_whitespace_left(entry_label);
          }
       }
       /* > '#EXTINF:' */
@@ -164,7 +165,8 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
             if (!string_is_empty(label_ptr))
             {
                strlcpy(entry_label, label_ptr, sizeof(entry_label));
-               string_trim_whitespace(entry_label);
+               string_trim_whitespace_right(entry_label);
+               string_trim_whitespace_left(entry_label);
             }
          }
       }
@@ -190,7 +192,8 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
                      entry_path, line,
                      ((len < PATH_MAX_LENGTH ?
                            len : PATH_MAX_LENGTH) * sizeof(char)));
-               string_trim_whitespace(entry_path);
+               string_trim_whitespace_right(entry_path);
+               string_trim_whitespace_left(entry_path);
             }
 
             /* Get entry_label segment */
@@ -198,14 +201,16 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
             if (*token_ptr != '\0')
             {
                strlcpy(entry_label, token_ptr, sizeof(entry_label));
-               string_trim_whitespace(entry_label);
+               string_trim_whitespace_right(entry_label);
+               string_trim_whitespace_left(entry_label);
             }
          }
          else
          {
             /* Just a normal file name/path */
             strlcpy(entry_path, line, sizeof(entry_path));
-            string_trim_whitespace(entry_path);
+            string_trim_whitespace_right(entry_path);
+            string_trim_whitespace_left(entry_path);
          }
 
          /* Add entry to file
