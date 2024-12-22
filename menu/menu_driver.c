@@ -3088,7 +3088,7 @@ static bool menu_shader_manager_operate_auto_preset(
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
-   static enum rarch_shader_type shader_types_flags[] =
+   static enum display_flags shader_types_flags[] =
    {
       GFX_CTX_FLAGS_SHADERS_GLSL, GFX_CTX_FLAGS_SHADERS_SLANG, GFX_CTX_FLAGS_SHADERS_CG
    };
