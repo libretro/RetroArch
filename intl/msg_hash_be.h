@@ -12172,6 +12172,10 @@ MSG_HASH(
    "Тытульны экран"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "Лагатып"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    "Усе плэй-лісты"
    )
