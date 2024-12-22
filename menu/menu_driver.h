@@ -747,10 +747,6 @@ bool menu_is_nonrunning_quick_menu(void);
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
 
-void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
-
-size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
-
 #ifdef HAVE_RUNAHEAD
 void menu_update_runahead_mode(void);
 #endif

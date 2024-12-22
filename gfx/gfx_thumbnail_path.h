@@ -35,7 +35,7 @@ RETRO_BEGIN_DECLS
 
 /* Note: This implementation reflects the current
  * setup of:
- * - menu_driver_set_thumbnail_system()
+ * - gfx_thumbnail_set_system()
  * - menu_driver_set_thumbnail_content()
  * - menu_driver_update_thumbnail_path()
  * This is absolutely not the best way to handle things,

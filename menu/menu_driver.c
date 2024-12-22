@@ -8110,22 +8110,6 @@ bool menu_is_nonrunning_quick_menu(void)
    return string_is_equal(entry.label, "collection");
 }
 
-void menu_driver_set_thumbnail_system(void *data, char *s, size_t len)
-{
-   struct menu_state               *menu_st = &menu_driver_state;
-   gfx_thumbnail_set_system(
-         menu_st->thumbnail_path_data, s, playlist_get_cached());
-}
-
-size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len)
-{
-   const char *system         = NULL;
-   struct menu_state *menu_st = &menu_driver_state;
-   if (!gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &system))
-      return 0;
-   return strlcpy(s, system, len);
-}
-
 #ifdef HAVE_RUNAHEAD
 /**
  * menu_update_runahead_mode
