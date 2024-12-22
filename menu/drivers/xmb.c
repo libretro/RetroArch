@@ -2932,13 +2932,11 @@ static void xmb_populate_entries(void *data,
       menu_entry_get(&entry, 0, 0, NULL, true);
 
       /* Quick Menu under Explore list must also be Quick Menu */
-      bool is_quick_menu =
-         (      string_is_equal(entry.label, "collection")
+      xmb->is_quick_menu |= (
+                string_is_equal(entry.label, "collection")
             || (string_is_equal(entry.label, "resume_content")
             ||  string_is_equal(entry.label, "state_slot"))
          );
-      /* Quick Menu under Explore list must also be Quick Menu */
-      xmb->is_quick_menu |= is_quick_menu;
 
       if (!menu_explore_is_content_list() || xmb->is_quick_menu)
          xmb->is_explore_list = false;
