@@ -2166,10 +2166,14 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_SHADERS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
+            gfx_ctx_flags_t flags;
             size_t _len         = 0;
+            flags.flags         = 0;
             ext_shaders[0]      = '\0';
 
-            if (video_shader_is_supported(RARCH_SHADER_CG))
+            video_context_driver_get_flags(&flags);
+
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
             {
                _len    += strlcpy(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
                if (ext_shaders[_len-1] != '\0')
@@ -2177,7 +2181,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
                _len    += strlcpy(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
             }
 
-            if (video_shader_is_supported(RARCH_SHADER_GLSL))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
             {
                if (ext_shaders[_len-1] != '\0')
                   _len += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
@@ -2187,7 +2191,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
                _len    += strlcpy(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
             }
 
-            if (video_shader_is_supported(RARCH_SHADER_SLANG))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
             {
                if (ext_shaders[_len-1] != '\0')
                   _len += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);

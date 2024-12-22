@@ -4014,16 +4014,26 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-      if (video_shader_any_supported())
       {
-         if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
+         gfx_ctx_flags_t flags;
+         flags.flags     = 0;
+         video_context_driver_get_flags(&flags);
+
+         if (
+                  BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG)
+               || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
+               || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
+               || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
          {
-            if (menu_entries_append(list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
-                  MENU_ENUM_LABEL_SHADER_OPTIONS,
-                  MENU_SETTING_ACTION, 0, 0, NULL))
-               count++;
+            if (settings->bools.quick_menu_show_shaders && !settings->bools.kiosk_mode_enable)
+            {
+               if (menu_entries_append(list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+                        msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS),
+                        MENU_ENUM_LABEL_SHADER_OPTIONS,
+                        MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
+            }
          }
       }
 #endif
@@ -11227,12 +11237,22 @@ unsigned menu_displaylist_build_list(
          }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         if (video_shader_any_supported())
          {
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
-                     PARSE_ONLY_BOOL, false) == 0)
-               count++;
+            gfx_ctx_flags_t flags;
+            flags.flags     = 0;
+            video_context_driver_get_flags(&flags);
+
+            if (
+                     BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG)
+                  || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
+                  || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
+                  || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_QUICK_MENU_SHOW_SHADERS,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+               }
          }
 #endif
 
@@ -14624,6 +14644,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_OPTIONS:
             menu_entries_clear(info->list);
             {
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+               gfx_ctx_flags_t flags;
+               flags.flags     = 0;
+               video_context_driver_get_flags(&flags);
+#endif
 #ifdef HAVE_LAKKA
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
@@ -14806,7 +14831,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   count++;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               if (video_shader_is_supported(RARCH_SHADER_CG))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
                {
                   if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
@@ -14816,7 +14841,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
                }
 
-               if (video_shader_is_supported(RARCH_SHADER_GLSL))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                {
                   if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
@@ -14826,7 +14851,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      count++;
                }
 
-               if (video_shader_is_supported(RARCH_SHADER_SLANG))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                {
                   if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
@@ -15140,22 +15165,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             {
                char new_exts[PATH_MAX_LENGTH];
-               size_t _len = 0;
-               new_exts[0] = '\0';
+               gfx_ctx_flags_t flags;
+               size_t _len     = 0;
+               new_exts[0]     = '\0';
+               flags.flags     = 0;
+
                filebrowser_clear_type();
+               video_context_driver_get_flags(&flags);
+
                switch (type)
                {
                   case DISPLAYLIST_SHADER_PRESET:
                      info->type_default = FILE_TYPE_SHADER_PRESET;
-                     if (video_shader_is_supported(RARCH_SHADER_CG))
+                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
                         _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
-                     if (video_shader_is_supported(RARCH_SHADER_GLSL))
+                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                      {
                         if (new_exts[_len-1] != '\0')
                            _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                         _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
                      }
-                     if (video_shader_is_supported(RARCH_SHADER_SLANG))
+                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                      {
                         if (new_exts[_len-1] != '\0')
                            _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
@@ -15165,15 +15195,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   case DISPLAYLIST_SHADER_PASS:
                      info->type_default = FILE_TYPE_SHADER;
-                     if (video_shader_is_supported(RARCH_SHADER_CG))
+                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
                         _len    += strlcpy(new_exts + _len, "cg", sizeof(new_exts) - _len);
-                     if (video_shader_is_supported(RARCH_SHADER_GLSL))
+                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                      {
                         if (new_exts[_len-1] != '\0')
                            _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                         _len    += strlcpy(new_exts + _len, "glsl", sizeof(new_exts) - _len);
                      }
-                     if (video_shader_is_supported(RARCH_SHADER_SLANG))
+                     if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                      {
                         if (new_exts[_len-1] != '\0')
                            _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
@@ -15196,20 +15226,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             {
+               gfx_ctx_flags_t flags;
                char new_exts[PATH_MAX_LENGTH];
-               size_t _len = 0;
-               new_exts[0] = '\0';
+               size_t _len     = 0;
+
+               flags.flags     = 0;
+               new_exts[0]     = '\0';
+
                filebrowser_clear_type();
+               video_context_driver_get_flags(&flags);
+
                info->type_default = FILE_TYPE_SHADER_PRESET;
-               if (video_shader_is_supported(RARCH_SHADER_CG))
+
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
                   _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
-               if (video_shader_is_supported(RARCH_SHADER_GLSL))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                {
                   if (new_exts[_len-1] != '\0')
                      _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
                   _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
                }
-               if (video_shader_is_supported(RARCH_SHADER_SLANG))
+               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                {
                   if (new_exts[_len-1] != '\0')
                      _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);

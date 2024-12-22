@@ -1853,7 +1853,11 @@ bool command_set_shader(command_t *cmd, const char *arg)
 
    if (!string_is_empty(arg))
    {
-      if (!video_shader_is_supported(type))
+      gfx_ctx_flags_t flags;
+      flags.flags     = 0;
+      video_context_driver_get_flags(&flags);
+
+      if (!BIT32_GET(flags.flags, video_shader_type_to_flag(type)))
          return false;
 
       /* rebase on shader directory */

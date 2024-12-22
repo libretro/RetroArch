@@ -378,24 +378,36 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                }
                break;
             case RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT:
-               if (video_shader_is_supported(RARCH_SHADER_CG))
-                  replace_len = strlcpy(replace_text, "cg", sizeof(replace_text));
-               else if (video_shader_is_supported(RARCH_SHADER_GLSL))
-                  replace_len = strlcpy(replace_text, "glsl", sizeof(replace_text));
-               else if (video_shader_is_supported(RARCH_SHADER_SLANG))
-                  replace_len = strlcpy(replace_text, "slang", sizeof(replace_text));
-               else
-                  replace_text[0] = '\0';
+               {
+                  gfx_ctx_flags_t flags;
+                  flags.flags     = 0;
+                  video_context_driver_get_flags(&flags);
+
+                  if      (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+                     replace_len = strlcpy(replace_text, "slang", sizeof(replace_text));
+                  else if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+                     replace_len = strlcpy(replace_text, "glsl", sizeof(replace_text));
+                  else if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+                     replace_len = strlcpy(replace_text, "cg", sizeof(replace_text));
+                  else
+                     replace_text[0] = '\0';
+               }
                break;
             case RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT:
-               if (video_shader_is_supported(RARCH_SHADER_CG))
-                  replace_len = strlcpy(replace_text, "cgp", sizeof(replace_text));
-               else if (video_shader_is_supported(RARCH_SHADER_GLSL))
-                  replace_len = strlcpy(replace_text, "glslp", sizeof(replace_text));
-               else if (video_shader_is_supported(RARCH_SHADER_SLANG))
-                  replace_len = strlcpy(replace_text, "slangp", sizeof(replace_text));
-               else
-                  replace_text[0] = '\0';
+               {
+                  gfx_ctx_flags_t flags;
+                  flags.flags     = 0;
+                  video_context_driver_get_flags(&flags);
+
+                  if      (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+                     replace_len = strlcpy(replace_text, "slangp", sizeof(replace_text));
+                  else if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+                     replace_len = strlcpy(replace_text, "glslp", sizeof(replace_text));
+                  else if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+                     replace_len = strlcpy(replace_text, "cgp", sizeof(replace_text));
+                  else
+                     replace_text[0] = '\0';
+               }
                break;
             default:
                replace_text[0] = '\0';
@@ -455,11 +467,10 @@ static void video_shader_gather_reference_path_list(
       struct path_linked_list *ref_tmp = (struct path_linked_list*)conf->references;
       while (ref_tmp)
       {
-         char* reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
+         char *reference_preset_path = (char*)malloc(PATH_MAX_LENGTH);
          /* Get the absolute path and replace wildcards in the path */
          fill_pathname_expanded_and_absolute(reference_preset_path, PATH_MAX_LENGTH, conf->path, ref_tmp->path);
          video_shader_replace_wildcards(reference_preset_path, PATH_MAX_LENGTH, conf->path);
-
          video_shader_gather_reference_path_list(in_path_linked_list, reference_preset_path, reference_depth + 1);
 
          free(reference_preset_path);
@@ -2371,41 +2382,23 @@ const char *video_shader_type_to_str(enum rarch_shader_type type)
    return "???";
 }
 
-/**
- * video_shader_is_supported:
- * Tests if a shader type is supported.
- * This is only accurate once the context driver was initialized.
-
- * @return true on success, otherwise false on failure.
- **/
-bool video_shader_is_supported(enum rarch_shader_type type)
+enum display_flags video_shader_type_to_flag(enum rarch_shader_type type)
 {
-   gfx_ctx_flags_t flags;
-   enum display_flags testflag = GFX_CTX_FLAGS_NONE;
-
-   flags.flags     = 0;
-
    switch (type)
    {
       case RARCH_SHADER_SLANG:
-         testflag = GFX_CTX_FLAGS_SHADERS_SLANG;
-         break;
+         return GFX_CTX_FLAGS_SHADERS_SLANG;
       case RARCH_SHADER_GLSL:
-         testflag = GFX_CTX_FLAGS_SHADERS_GLSL;
-         break;
+         return GFX_CTX_FLAGS_SHADERS_GLSL;
       case RARCH_SHADER_CG:
-         testflag = GFX_CTX_FLAGS_SHADERS_CG;
-         break;
+         return GFX_CTX_FLAGS_SHADERS_CG;
       case RARCH_SHADER_HLSL:
-         testflag = GFX_CTX_FLAGS_SHADERS_HLSL;
-         break;
+         return GFX_CTX_FLAGS_SHADERS_HLSL;
       case RARCH_SHADER_NONE:
       default:
-         return false;
+         break;
    }
-   video_context_driver_get_flags(&flags);
-
-   return BIT32_GET(flags.flags, testflag);
+   return GFX_CTX_FLAGS_NONE;
 }
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type)
@@ -2424,19 +2417,6 @@ const char *video_shader_get_preset_extension(enum rarch_shader_type type)
    }
 
    return NULL;
-}
-
-bool video_shader_any_supported(void)
-{
-   gfx_ctx_flags_t flags;
-   flags.flags     = 0;
-   video_context_driver_get_flags(&flags);
-
-   return
-         BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG)
-      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
-      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
-      || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL);
 }
 
 enum rarch_shader_type video_shader_get_type_from_ext(
@@ -2795,6 +2775,8 @@ static bool video_shader_load_shader_preset_internal(
       const char *special_name)
 {
    int i;
+   gfx_ctx_flags_t flags;
+   flags.flags     = 0;
 
    static enum rarch_shader_type types[] =
    {
@@ -2802,10 +2784,18 @@ static bool video_shader_load_shader_preset_internal(
        * only important for video drivers with multiple shader backends */
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
    };
+   static enum rarch_shader_type types_trans[] =
+   {
+      /* Shader preset priority, highest to lowest
+       * only important for video drivers with multiple shader backends */
+      GFX_CTX_FLAGS_SHADERS_GLSL, GFX_CTX_FLAGS_SHADERS_SLANG, GFX_CTX_FLAGS_SHADERS_CG, GFX_CTX_FLAGS_SHADERS_HLSL
+   };
+
+   video_context_driver_get_flags(&flags);
 
    for (i = 0; i < (int)ARRAY_SIZE(types); i++)
    {
-      if (!video_shader_is_supported(types[i]))
+      if (!BIT32_GET(flags.flags, types_trans[i]))
          continue;
 
       /* Concatenate strings into full paths */
@@ -2849,7 +2839,7 @@ static bool video_shader_load_shader_preset_internal(
  * For compatibility purposes with versions 1.8.7 and older, the presets
  * subdirectory on the Video Shader path is used as a fallback directory.
  *
- * Note: Uses video_shader_is_supported() which only works after
+ * Note: Uses video_context_driver_get_flags() which only works after
  *       context driver initialization.
  *
  * Returns: false if there was an error or no action was performed.
@@ -3122,9 +3112,13 @@ const char *video_shader_get_current_shader_preset(void)
    if (     (video_st->flags & VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD)
          && !cli_shader_disable)
    {
+      gfx_ctx_flags_t flags;
+      flags.flags     = 0;
+      video_context_driver_get_flags(&flags);
+
       video_st->flags &= ~VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
 
-      if (video_shader_is_supported(
+      if (BIT32_GET(flags.flags,
                video_shader_parse_type(video_st->cli_shader_path)))
          strlcpy(runloop_st->runtime_shader_preset_path,
                video_st->cli_shader_path,
