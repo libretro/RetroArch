@@ -2782,7 +2782,7 @@ static bool video_shader_load_shader_preset_internal(
        * only important for video drivers with multiple shader backends */
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
    };
-   static enum rarch_shader_type types_trans[] =
+   static enum display_flags types_flags[] =
    {
       /* Shader preset priority, highest to lowest
        * only important for video drivers with multiple shader backends */
@@ -2794,7 +2794,7 @@ static bool video_shader_load_shader_preset_internal(
 
    for (i = 0; i < (int)ARRAY_SIZE(types); i++)
    {
-      if (!BIT32_GET(flags.flags, types_trans[i]))
+      if (!BIT32_GET(flags.flags, types_flags[i]))
          continue;
 
       /* Concatenate strings into full paths */
