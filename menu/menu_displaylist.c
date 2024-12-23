@@ -2753,7 +2753,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    size_t path_len;
    unsigned i, j, k;
    char query[256];
-   char path_playlist[PATH_MAX_LENGTH];
    char path_base[NAME_MAX_LENGTH];
    playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
@@ -2766,6 +2765,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
    playlist_config.compress            = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+
    playlist_config_set_base_content_directory(&playlist_config,
            settings->bools.playlist_portable_paths
          ? settings->paths.directory_menu_content
@@ -2785,14 +2785,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    strlcat(path_base, ".lpl", sizeof(path_base));
 
-   fill_pathname_join_special(path_playlist, dir_playlist, path_base,
-         sizeof(path_playlist));
+   fill_pathname_join_special(menu->db_playlist_file,
+         dir_playlist, path_base,
+         sizeof(menu->db_playlist_file));
 
-   playlist_config_set_path(&playlist_config, path_playlist);
+   playlist_config_set_path(&playlist_config, menu->db_playlist_file);
 
-   if ((playlist = playlist_init(&playlist_config)))
-      strlcpy(menu->db_playlist_file, path_playlist,
-            sizeof(menu->db_playlist_file));
+   playlist = playlist_init(&playlist_config);
 
    for (i = 0; i < db_info->count; i++)
    {
