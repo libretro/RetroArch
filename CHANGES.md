@@ -2,6 +2,7 @@
 - AUDIO: Fix audio handling in case of RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE
 - AUDIO: Include missing audio filters on some platforms
 - AUDIO/PIPEWIRE: Add PipeWire audio driver
+- AUDIO/PIPEWIRE: Add PipeWire microphone driver
 - APPLE: Hide threaded video setting
 - APPLE: Use mfi joypad driver by default
 - APPLE: Include holani, noods, mrboom, yabause core in App Store builds

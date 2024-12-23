@@ -159,6 +159,7 @@ enum microphone_driver_enum
    MICROPHONE_ALSATHREAD,
    MICROPHONE_SDL2,
    MICROPHONE_WASAPI,
+   MICROPHONE_PIPEWIRE,
    MICROPHONE_NULL
 };
 
@@ -568,6 +569,8 @@ static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSATHREAD;
 #elif defined(HAVE_ALSA)
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSA;
+#elif defined(HAVE_PIPEWIRE)
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_PIPEWIRE;
 #elif defined(HAVE_SDL2)
 /* The default fallback driver is SDL2, if available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
@@ -983,6 +986,8 @@ const char *config_get_default_microphone(void)
          return "alsa";
       case MICROPHONE_ALSATHREAD:
          return "alsathread";
+      case MICROPHONE_PIPEWIRE:
+         return "pipewire";
       case MICROPHONE_WASAPI:
          return "wasapi";
       case MICROPHONE_SDL2:
