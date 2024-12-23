@@ -11939,13 +11939,14 @@ static unsigned menu_displaylist_build_shader_parameter(
 }
 
 #ifdef HAVE_NETWORKING
-static unsigned print_buf_lines(file_list_t *list, char *buf,
-      const char *label, int buf_size,
+#if 0
+static size_t print_buf_lines(file_list_t *list, char *buf,
+      const char *label, size_t buf_size,
       enum msg_file_type type, bool append, bool extended)
 {
    char c;
-   unsigned count   = 0;
-   int i            = 0;
+   size_t i;
+   size_t count     = 0;
    char *line_start = buf;
 
    if (!buf || !buf_size)
@@ -12057,6 +12058,64 @@ static unsigned print_buf_lines(file_list_t *list, char *buf,
 
    return count;
 }
+#else
+static size_t print_buf_lines(file_list_t *list, char *buf,
+      const char *label, size_t buf_size,
+      enum msg_file_type type, bool append)
+{
+   char c;
+   size_t i;
+   size_t count     = 0;
+   char *line_start = buf;
+
+   if (!buf || !buf_size)
+      return 0;
+
+   for (i = 0; i < buf_size; i++)
+   {
+      size_t ln;
+
+      /* The end of the buffer, print the last bit */
+      if (*(buf + i) == '\0')
+         break;
+
+      if (*(buf + i) != '\n')
+         continue;
+
+      /* Found a line ending, print the line and compute new line_start */
+      c              = *(buf + i + 1); /* Save the next character  */
+      *(buf + i + 1) = '\0';           /* Replace with \0          */
+
+      /* We need to strip the newline. */
+      ln             = strlen(line_start) - 1;
+      if (line_start[ln] == '\n')
+         line_start[ln] = '\0';
+
+      if (append)
+      {
+         if (menu_entries_append(list, line_start, label,
+                  MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0, NULL))
+            count++;
+      }
+      else
+      {
+         menu_entries_prepend(list, line_start, label,
+               MENU_ENUM_LABEL_URL_ENTRY, type, 0, 0);
+         count++;
+      }
+
+      /* Restore the saved character */
+      *(buf + i + 1) = c;
+      line_start     = buf + i + 1;
+   }
+
+   if (append && type != FILE_TYPE_DOWNLOAD_LAKKA)
+      file_list_sort_on_alt(list);
+   /* If the buffer was completely full, and didn't end
+    * with a newline, just ignore the partial last line. */
+   return count;
+}
+#endif
 
 static unsigned menu_displaylist_netplay_kick(file_list_t *list)
 {
@@ -13264,8 +13323,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
             count = print_buf_lines(info->list, menu->core_buf, "",
-                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT,
-                  true, false);
+                  menu->core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT,
+                  true);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -13298,8 +13357,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                if ((count = print_buf_lines(
                            info->list, menu->core_buf, new_label,
-                           (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL,
-                           false, false)) == 0)
+                           menu->core_len, FILE_TYPE_DOWNLOAD_URL,
+                           false)) == 0)
                   menu_entries_append(info->list,
                         msg_hash_to_str(
                            MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
@@ -13327,7 +13386,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      "cores", sizeof(new_label));
 
                if ((count = print_buf_lines(info->list, menu->core_buf, new_label,
-                           (int)menu->core_len, FILE_TYPE_DOWNLOAD_URL, true, false)) == 0)
+                           menu->core_len, FILE_TYPE_DOWNLOAD_URL, true)) == 0)
                   menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                         msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
@@ -13344,8 +13403,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
             count = print_buf_lines(info->list, menu->core_buf, "",
-                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES,
-                  true, false);
+                  menu->core_len, FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES,
+                  true);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -13448,8 +13507,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
             count = print_buf_lines(info->list, menu->core_buf, "",
-                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
-                  true, false);
+                  menu->core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
+                  true);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -13486,8 +13545,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
             count = print_buf_lines(info->list, menu->core_buf, "",
-                  (int)menu->core_len, FILE_TYPE_DOWNLOAD_LAKKA,
-                  true, false);
+                  menu->core_len, FILE_TYPE_DOWNLOAD_LAKKA,
+                  true);
 
             if (count == 0)
                menu_entries_append(info->list,

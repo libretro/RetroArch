@@ -410,9 +410,10 @@ typedef struct
 
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
-   char *core_buf;
 
-   size_t                     core_len;
+   char *core_buf;
+   size_t core_len;
+
    /* This is used for storing intermediary variables
     * that get used later on during menu actions -
     * for instance, selecting a shader pass for a shader
