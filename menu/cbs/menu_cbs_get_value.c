@@ -688,7 +688,7 @@ static void menu_action_cpu_managed_freq_label(
                   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ), len2);
          freq = opts.max_freq;
          break;
-   };
+   }
 
    if (freq == 1)
       strlcpy(s, "Min.", len);
@@ -727,7 +727,7 @@ static void menu_action_cpu_freq_label(
                   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR), len2);
          strlcpy(s, d->scaling_governor, len);
          break;
-   };
+   }
 }
 
 static void menu_action_cpu_governor_label(
@@ -1160,7 +1160,7 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
       char *s2, size_t len2)
 {
    unsigned width = 0, height = 0;
-   char desc[64] = {0};
+   char desc[64]  = {0};
    *w = 19;
    *s = '\0';
 

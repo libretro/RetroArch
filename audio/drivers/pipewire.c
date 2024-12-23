@@ -229,12 +229,13 @@ static const struct pw_stream_events playback_stream_events = {
 
 static int wait_resync(pw_t *pw)
 {
+   int res;
+
    retro_assert(pw != NULL);
 
-   int res;
    pw->pending_seq = pw_core_sync(pw->core, PW_ID_CORE, pw->pending_seq);
 
-   while (true)
+   for (;;)
    {
       pw_thread_loop_wait(pw->thread_loop);
 

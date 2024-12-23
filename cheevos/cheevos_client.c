@@ -155,7 +155,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
    else
       ++start;
 
-   do
+   for (;;)
    {
       next = strchr(start, '&');
 
@@ -175,7 +175,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
          return;
 
       start = next + 1;
-   } while (1);
+   }
 }
 #endif
 #endif

@@ -464,14 +464,10 @@ static void handle_relative_motion(void *data,
 }
 
 static void
-locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
-{
-}
+locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *lockptr) { }
 
 static void
-locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
-{
-}
+locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *lockptr) { }
 
 static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
 
@@ -551,13 +547,15 @@ static bool wl_update_scale(gfx_ctx_wayland_data_t *wl)
 
    wl_list_for_each(os, &wl->current_outputs, link)
    {
-      if (os->output->scale > largest_scale) {
+      if (os->output->scale > largest_scale)
+      {
          largest_scale = os->output->scale;
          new_output    = os->output;
       }
    };
 
-   if (new_output && wl->current_output != new_output) {
+   if (new_output && wl->current_output != new_output)
+   {
       wl->current_output       = new_output;
       wl->pending_buffer_scale = new_output->scale;
       return true;
@@ -1125,7 +1123,7 @@ const struct zwp_relative_pointer_v1_listener relative_pointer_listener = {
 };
 
 const struct zwp_locked_pointer_v1_listener locked_pointer_listener = {
-   .locked = locked_pointer_locked,
+   .locked   = locked_pointer_locked,
    .unlocked = locked_pointer_unlocked,
 };
 

@@ -416,8 +416,9 @@ typedef struct retro_unaligned_uint64_s retro_unaligned_uint64_t;
  * @return The first two bytes of \c addr as a 16-bit unsigned integer,
  * byteswapped from big-endian to host-native order if necessary.
  */
-static INLINE uint16_t retro_get_unaligned_16be(void *addr) {
-  return retro_be_to_cpu16(retro_unaligned16(addr));
+static INLINE uint16_t retro_get_unaligned_16be(void *addr)
+{
+   return retro_be_to_cpu16(retro_unaligned16(addr));
 }
 
 /**
@@ -431,8 +432,9 @@ static INLINE uint16_t retro_get_unaligned_16be(void *addr) {
  * @return The first four bytes of \c addr as a 32-bit unsigned integer,
  * byteswapped from big-endian to host-native order if necessary.
  */
-static INLINE uint32_t retro_get_unaligned_32be(void *addr) {
-  return retro_be_to_cpu32(retro_unaligned32(addr));
+static INLINE uint32_t retro_get_unaligned_32be(void *addr)
+{
+   return retro_be_to_cpu32(retro_unaligned32(addr));
 }
 
 /**
@@ -446,8 +448,9 @@ static INLINE uint32_t retro_get_unaligned_32be(void *addr) {
  * @return The first eight bytes of \c addr as a 64-bit unsigned integer,
  * byteswapped from big-endian to host-native order if necessary.
  */
-static INLINE uint64_t retro_get_unaligned_64be(void *addr) {
-  return retro_be_to_cpu64(retro_unaligned64(addr));
+static INLINE uint64_t retro_get_unaligned_64be(void *addr)
+{
+   return retro_be_to_cpu64(retro_unaligned64(addr));
 }
 
 /**
@@ -461,8 +464,9 @@ static INLINE uint64_t retro_get_unaligned_64be(void *addr) {
  * @return The first two bytes of \c addr as a 16-bit unsigned integer,
  * byteswapped from little-endian to host-native order if necessary.
  */
-static INLINE uint16_t retro_get_unaligned_16le(void *addr) {
-  return retro_le_to_cpu16(retro_unaligned16(addr));
+static INLINE uint16_t retro_get_unaligned_16le(void *addr)
+{
+   return retro_le_to_cpu16(retro_unaligned16(addr));
 }
 
 /**
@@ -476,8 +480,9 @@ static INLINE uint16_t retro_get_unaligned_16le(void *addr) {
  * @return The first four bytes of \c addr as a 32-bit unsigned integer,
  * byteswapped from little-endian to host-native order if necessary.
  */
-static INLINE uint32_t retro_get_unaligned_32le(void *addr) {
-  return retro_le_to_cpu32(retro_unaligned32(addr));
+static INLINE uint32_t retro_get_unaligned_32le(void *addr)
+{
+   return retro_le_to_cpu32(retro_unaligned32(addr));
 }
 
 /**
@@ -491,8 +496,9 @@ static INLINE uint32_t retro_get_unaligned_32le(void *addr) {
  * @return The first eight bytes of \c addr as a 64-bit unsigned integer,
  * byteswapped from little-endian to host-native order if necessary.
  */
-static INLINE uint64_t retro_get_unaligned_64le(void *addr) {
-  return retro_le_to_cpu64(retro_unaligned64(addr));
+static INLINE uint64_t retro_get_unaligned_64le(void *addr)
+{
+   return retro_le_to_cpu64(retro_unaligned64(addr));
 }
 
 /**
@@ -505,8 +511,9 @@ static INLINE uint64_t retro_get_unaligned_64le(void *addr) {
  * the way a \c uint16_t* usually would be.
  * @param v The value to write.
  */
-static INLINE void retro_set_unaligned_16le(void *addr, uint16_t v) {
-  retro_unaligned16(addr) = retro_cpu_to_le16(v);
+static INLINE void retro_set_unaligned_16le(void *addr, uint16_t v)
+{
+   retro_unaligned16(addr) = retro_cpu_to_le16(v);
 }
 
 /**
@@ -519,8 +526,9 @@ static INLINE void retro_set_unaligned_16le(void *addr, uint16_t v) {
  * the way a \c uint32_t* usually would be.
  * @param v The value to write.
  */
-static INLINE void retro_set_unaligned_32le(void *addr, uint32_t v) {
-  retro_unaligned32(addr) = retro_cpu_to_le32(v);
+static INLINE void retro_set_unaligned_32le(void *addr, uint32_t v)
+{
+   retro_unaligned32(addr) = retro_cpu_to_le32(v);
 }
 
 /**
@@ -533,8 +541,9 @@ static INLINE void retro_set_unaligned_32le(void *addr, uint32_t v) {
  * the way a \c uint64_t* usually would be.
  * @param v The value to write.
  */
-static INLINE void retro_set_unaligned_64le(void *addr, uint64_t v) {
-  retro_unaligned64(addr) = retro_cpu_to_le64(v);
+static INLINE void retro_set_unaligned_64le(void *addr, uint64_t v)
+{
+   retro_unaligned64(addr) = retro_cpu_to_le64(v);
 }
 
 /**
@@ -547,8 +556,9 @@ static INLINE void retro_set_unaligned_64le(void *addr, uint64_t v) {
  * the way a \c uint16_t* usually would be.
  * @param v The value to write.
  */
-static INLINE void retro_set_unaligned_16be(void *addr, uint16_t v) {
-  retro_unaligned16(addr) = retro_cpu_to_be16(v);
+static INLINE void retro_set_unaligned_16be(void *addr, uint16_t v)
+{
+   retro_unaligned16(addr) = retro_cpu_to_be16(v);
 }
 
 /**
@@ -561,8 +571,9 @@ static INLINE void retro_set_unaligned_16be(void *addr, uint16_t v) {
  * the way a \c uint32_t* usually would be.
  * @param v The value to write.
  */
-static INLINE void retro_set_unaligned_32be(void *addr, uint32_t v) {
-  retro_unaligned32(addr) = retro_cpu_to_be32(v);
+static INLINE void retro_set_unaligned_32be(void *addr, uint32_t v)
+{
+   retro_unaligned32(addr) = retro_cpu_to_be32(v);
 }
 
 /**
@@ -575,8 +586,9 @@ static INLINE void retro_set_unaligned_32be(void *addr, uint32_t v) {
  * the way a \c uint64_t* usually would be.
  * @param v The value to write.
  */
-static INLINE void retro_set_unaligned_64be(void *addr, uint64_t v) {
-  retro_unaligned64(addr) = retro_cpu_to_be64(v);
+static INLINE void retro_set_unaligned_64be(void *addr, uint64_t v)
+{
+   retro_unaligned64(addr) = retro_cpu_to_be64(v);
 }
 
 
