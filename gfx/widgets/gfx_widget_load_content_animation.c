@@ -445,11 +445,10 @@ bool gfx_widget_start_load_content_animation(void)
     * > Use db_name, if available */
    if (has_db_name)
    {
-      size_t len = strlcpy(state->icon_file, state->system_name,
-            sizeof(state->icon_file));
-      strlcpy(state->icon_file       + len,
+      size_t len = fill_pathname(state->icon_file,
+            state->system_name,
             ".png",
-            sizeof(state->icon_file) - len);
+            sizeof(state->icon_file));
 
       fill_pathname_join_special(icon_path,
             state->icon_directory, state->icon_file,
@@ -477,11 +476,10 @@ bool gfx_widget_start_load_content_animation(void)
       if (   !string_is_empty(core_db_name)
           && !string_is_equal(core_db_name, state->system_name))
       {
-         size_t len = strlcpy(state->icon_file, core_db_name,
-               sizeof(state->icon_file));
-         strlcpy(state->icon_file       + len,
+         size_t len = fill_pathname(state->icon_file,
+               core_db_name,
                ".png",
-               sizeof(state->icon_file) - len);
+               sizeof(state->icon_file));
 
          fill_pathname_join_special(icon_path,
                state->icon_directory, state->icon_file,
