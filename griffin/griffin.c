@@ -908,6 +908,11 @@ AUDIO
 
 #ifdef HAVE_PIPEWIRE
 #include "../audio/drivers/pipewire.c"
+#include "../audio/common/pipewire.c"
+
+#ifdef HAVE_MICROPHONE
+#include "../audio/drivers_microphone/pipewire.c"
+#endif
 #endif
 
 #ifdef HAVE_ALSA

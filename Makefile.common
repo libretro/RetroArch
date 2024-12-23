@@ -922,7 +922,13 @@ ifeq ($(HAVE_PULSE), 1)
 endif
 
 ifeq ($(HAVE_PIPEWIRE), 1)
-   OBJ += audio/drivers/pipewire.o
+   OBJ += audio/drivers/pipewire.o \
+          audio/common/pipewire.o
+
+   ifeq ($(HAVE_MICROPHONE), 1)
+      OBJ += audio/drivers_microphone/pipewire.o
+   endif
+
    LIBS += $(PIPEWIRE_LIBS)
    DEF_FLAGS += $(PIPEWIRE_CFLAGS)
 endif
