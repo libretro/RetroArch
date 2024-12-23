@@ -642,6 +642,9 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
  * */
 size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
 {
+   /* Storage container for current menu datetime
+    * representation string */
+   static char datetime_cache[NAME_MAX_LENGTH];
    struct menu_state *menu_st  = &menu_driver_state;
 
    /* Trigger an update, if required */
@@ -999,16 +1002,16 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
       }
 
       if (has_am_pm)
-         strftime_am_pm(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+         strftime_am_pm(datetime_cache, sizeof(datetime_cache),
                format_str, &tm_);
       else
-         strftime(menu_st->datetime_cache, sizeof(menu_st->datetime_cache),
+         strftime(datetime_cache, sizeof(datetime_cache),
                format_str, &tm_);
    }
 
    /* Copy cached datetime string to input
     * menu_display_ctx_datetime_t struct */
-   return strlcpy(datetime->s, menu_st->datetime_cache, datetime->len);
+   return strlcpy(datetime->s, datetime_cache, datetime->len);
 }
 
 /* Display current (battery) power state */
