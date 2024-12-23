@@ -113,9 +113,9 @@ struct path_linked_list* path_linked_list_new(void)
  *
  * Free the entire linked list
  **/
-void path_linked_list_free(struct path_linked_list *in_path_linked_list)
+void path_linked_list_free(struct path_linked_list *in_path_llist)
 {
-   struct path_linked_list *node_tmp = (struct path_linked_list*)in_path_linked_list;
+   struct path_linked_list *node_tmp = (struct path_linked_list*)in_path_llist;
    while (node_tmp)
    {
       struct path_linked_list *hold = NULL;
@@ -135,35 +135,34 @@ void path_linked_list_free(struct path_linked_list *in_path_linked_list)
  * If the first node's path if it's not yet set the path
  * on this node instead
 **/
-void path_linked_list_add_path(struct path_linked_list *in_path_linked_list,
+void path_linked_list_add_path(struct path_linked_list *in_path_llist,
       char *path)
 {
     /* If the first item does not have a path this is
       a list which has just been created, so we just fill
       the path for the first item
    */
-   if (!in_path_linked_list->path)
-      in_path_linked_list->path = strdup(path);
+   if (!in_path_llist->path)
+      in_path_llist->path = strdup(path);
    else
    {
       struct path_linked_list *node = (struct path_linked_list*) malloc(sizeof(*node));
 
       if (node)
       {
-         struct path_linked_list *head = in_path_linked_list;
+         struct path_linked_list *head = in_path_llist;
 
-         node->next                    = NULL;
-         node->path                    = strdup(path);
+         node->next        = NULL;
+         node->path        = strdup(path);
 
          if (head)
          {
             while (head->next)
                head        = head->next;
-
             head->next     = node;
          }
          else
-            in_path_linked_list = node;
+            in_path_llist  = node;
       }
    }
 }
@@ -377,7 +376,7 @@ size_t fill_pathname_slash(char *s, size_t len)
    char       *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (!last_slash)
       return strlcat(s, PATH_DEFAULT_SLASH(), len);
-   len                    = strlen(s);
+   len         = strlen(s);
    /* Try to preserve slash type. */
    if (last_slash != (s + len - 1))
    {
@@ -407,10 +406,9 @@ size_t fill_pathname_slash(char *s, size_t len)
 size_t fill_pathname_dir(char *s, const char *in_basename,
       const char *replace, size_t len)
 {
-   size_t _len      = fill_pathname_slash(s, len);
-   const char *base = path_basename(in_basename);
-   _len            += strlcpy(s + _len, base,    len - _len);
-   _len            += strlcpy(s + _len, replace, len - _len);
+   size_t _len  = fill_pathname_slash(s, len);
+   _len        += strlcpy(s + _len, path_basename(in_basename), len - _len);
+   _len        += strlcpy(s + _len, replace, len - _len);
    return _len;
 }
 
@@ -518,10 +516,10 @@ void fill_pathname_parent_dir(char *s,
       const char *in_dir, size_t len)
 {
    size_t _len = 0;
-   if (s != in_dir)
-      _len = strlcpy(s, in_dir, len);
-   else
+   if (s == in_dir)
       _len = strlen(s);
+   else
+      _len = strlcpy(s, in_dir, len);
    path_parent_dir(s, _len);
 }
 
@@ -1051,13 +1049,13 @@ size_t fill_pathname_join_delim(char *s, const char *dir,
    size_t _len;
    /* Behavior of strlcpy is undefined if dst and src overlap */
    if (s == dir)
-      _len          = strlen(dir);
+      _len     = strlen(dir);
    else
-      _len          = strlcpy(s, dir, len);
-   s[_len]          = delim;
-   s[_len+1]        = '\0';
+      _len     = strlcpy(s, dir, len);
+   s[_len++]   = delim;
+   s[_len  ]   = '\0';
    if (path)
-      return strlcat(s, path, len);
+      _len    += strlcpy(s + _len, path, len - _len);
    return _len;
 }
 
@@ -1135,8 +1133,8 @@ size_t fill_pathname_abbreviate_special(char *s,
 
    for (i = 0; candidates[i]; i++)
    {
-      if (!string_is_empty(candidates[i]) &&
-          string_starts_with(in_path, candidates[i]))
+      if (  !string_is_empty(candidates[i])
+          && string_starts_with(in_path, candidates[i]))
       {
          size_t _len      = strlcpy(s, notations[i], len);
 
@@ -1275,35 +1273,30 @@ static int get_pathname_num_slashes(const char *in_path)
 size_t fill_pathname_abbreviated_or_relative(char *s,
       const char *in_refpath, const char *in_path, size_t len)
 {
+   size_t _len;
    char in_path_conformed[PATH_MAX_LENGTH];
    char in_refpath_conformed[PATH_MAX_LENGTH];
-   char expanded_path[PATH_MAX_LENGTH];
    char absolute_path[PATH_MAX_LENGTH];
    char relative_path[PATH_MAX_LENGTH];
-   char abbreviated_path[PATH_MAX_LENGTH];
 
-   expanded_path[0]        = '\0';
    absolute_path[0]        = '\0';
    relative_path[0]        = '\0';
-   abbreviated_path[0]     = '\0';
 
-   strlcpy(in_path_conformed, in_path, sizeof(in_path_conformed));
+   strlcpy(in_path_conformed,    in_path,    sizeof(in_path_conformed));
    strlcpy(in_refpath_conformed, in_refpath, sizeof(in_refpath_conformed));
 
    pathname_conform_slashes_to_os(in_path_conformed);
    pathname_conform_slashes_to_os(in_refpath_conformed);
 
    /* Expand paths which start with :\ to an absolute path */
-   fill_pathname_expand_special(expanded_path,
-         in_path_conformed, sizeof(expanded_path));
+   fill_pathname_expand_special(absolute_path,
+         in_path_conformed, sizeof(absolute_path));
 
    /* Get the absolute path if it is not already */
-   if (path_is_absolute(expanded_path))
-      strlcpy(absolute_path, expanded_path, PATH_MAX_LENGTH);
-   else
+   if (!path_is_absolute(absolute_path))
       fill_pathname_resolve_relative(absolute_path,
-            in_refpath_conformed, in_path_conformed, PATH_MAX_LENGTH);
-
+            in_refpath_conformed, in_path_conformed,
+            sizeof(absolute_path));
    pathname_conform_slashes_to_os(absolute_path);
 
    /* Get the relative path and see how many directories long it is */
@@ -1311,14 +1304,13 @@ size_t fill_pathname_abbreviated_or_relative(char *s,
          in_refpath_conformed, sizeof(relative_path));
 
    /* Get the abbreviated path and see how many directories long it is */
-   fill_pathname_abbreviate_special(abbreviated_path,
-         absolute_path, sizeof(abbreviated_path));
+   _len = fill_pathname_abbreviate_special(s, absolute_path, len);
 
    /* Use the shortest path, preferring the relative path*/
-   if (  get_pathname_num_slashes(relative_path) <=
-         get_pathname_num_slashes(abbreviated_path))
+   if (     get_pathname_num_slashes(relative_path)
+         <= get_pathname_num_slashes(s))
       return strlcpy(s, relative_path, len);
-   return strlcpy(s, abbreviated_path, len);
+   return _len;
 }
 
 /**
@@ -1395,7 +1387,7 @@ size_t fill_pathname_application_path(char *s, size_t len)
                size_t _len = strlcpy(s, resolved_bundle_dir_buf, len - 1);
                s[  _len]   = '/';
                s[++_len]   = '\0';
-               rv = _len;
+               rv          = _len;
             }
          }
 #else
