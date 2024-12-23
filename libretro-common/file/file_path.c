@@ -569,20 +569,15 @@ size_t fill_str_dated_filename(char *s,
       const char *in_str, const char *ext, size_t len)
 {
    struct tm tm_;
-   char format[NAME_MAX_LENGTH];
    size_t _len     = 0;
    time_t cur_time = time(NULL);
    rtime_localtime(&cur_time, &tm_);
    _len      = strlcpy(s, in_str, len);
    if (string_is_empty(ext))
-   {
-      strftime(format, sizeof(format), "-%y%m%d-%H%M%S", &tm_);
-      _len  += strlcpy(s + _len, format, len - _len);
-   }
+      _len += strftime(s + _len, len - _len, "-%y%m%d-%H%M%S", &tm_);
    else
    {
-      strftime(format, sizeof(format), "-%y%m%d-%H%M%S.", &tm_);
-      _len  += strlcpy(s + _len, format, len - _len);
+      _len  += strftime(s + _len, len - _len, "-%y%m%d-%H%M%S.", &tm_);
       _len  += strlcpy(s + _len, ext,    len - _len);
    }
    return _len;
