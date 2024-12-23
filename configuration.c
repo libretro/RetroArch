@@ -3711,7 +3711,7 @@ static bool config_load_file(global_t *global,
 #ifdef HAVE_OVERLAY
       config_get_path(conf, "input_overlay", new_overlay_path, sizeof(new_overlay_path));
       if (!string_is_equal(old_overlay_path, new_overlay_path))
-          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
 #endif
    }
 
@@ -3926,94 +3926,94 @@ static bool config_load_file(global_t *global,
    path_config = path_get(RARCH_PATH_CONFIG);
 
    if (string_is_empty(settings->paths.path_content_favorites))
-         strlcpy(settings->paths.directory_content_favorites, "default",
-               sizeof(settings->paths.directory_content_favorites));
+      strlcpy(settings->paths.directory_content_favorites, "default",
+            sizeof(settings->paths.directory_content_favorites));
 
    if (     string_is_empty(settings->paths.directory_content_favorites)
          || string_is_equal(settings->paths.directory_content_favorites, "default"))
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_favorites,
-               path_config,
-               FILE_PATH_CONTENT_FAVORITES,
-               sizeof(settings->paths.path_content_favorites));
+      fill_pathname_resolve_relative(
+            settings->paths.path_content_favorites,
+            path_config,
+            FILE_PATH_CONTENT_FAVORITES,
+            sizeof(settings->paths.path_content_favorites));
    else
-         fill_pathname_join_special(
-               settings->paths.path_content_favorites,
-               settings->paths.directory_content_favorites,
-               FILE_PATH_CONTENT_FAVORITES,
-               sizeof(settings->paths.path_content_favorites));
+      fill_pathname_join_special(
+            settings->paths.path_content_favorites,
+            settings->paths.directory_content_favorites,
+            FILE_PATH_CONTENT_FAVORITES,
+            sizeof(settings->paths.path_content_favorites));
 
    if (string_is_empty(settings->paths.path_content_history))
-         strlcpy(settings->paths.directory_content_history, "default",
-               sizeof(settings->paths.directory_content_history));
+      strlcpy(settings->paths.directory_content_history, "default",
+            sizeof(settings->paths.directory_content_history));
 
    if (     string_is_empty(settings->paths.directory_content_history)
          || string_is_equal(settings->paths.directory_content_history, "default"))
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_history,
-               path_config,
-               FILE_PATH_CONTENT_HISTORY,
-               sizeof(settings->paths.path_content_history));
+      fill_pathname_resolve_relative(
+            settings->paths.path_content_history,
+            path_config,
+            FILE_PATH_CONTENT_HISTORY,
+            sizeof(settings->paths.path_content_history));
    else
-         fill_pathname_join_special(
-               settings->paths.path_content_history,
-               settings->paths.directory_content_history,
-               FILE_PATH_CONTENT_HISTORY,
-               sizeof(settings->paths.path_content_history));
+      fill_pathname_join_special(
+            settings->paths.path_content_history,
+            settings->paths.directory_content_history,
+            FILE_PATH_CONTENT_HISTORY,
+            sizeof(settings->paths.path_content_history));
 
    if (string_is_empty(settings->paths.path_content_image_history))
-         strlcpy(settings->paths.directory_content_image_history, "default",
-               sizeof(settings->paths.directory_content_image_history));
+      strlcpy(settings->paths.directory_content_image_history, "default",
+            sizeof(settings->paths.directory_content_image_history));
 
    if (     string_is_empty(settings->paths.directory_content_image_history)
          || string_is_equal(settings->paths.directory_content_image_history, "default"))
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_image_history,
-               path_config,
-               FILE_PATH_CONTENT_IMAGE_HISTORY,
-               sizeof(settings->paths.path_content_image_history));
+      fill_pathname_resolve_relative(
+            settings->paths.path_content_image_history,
+            path_config,
+            FILE_PATH_CONTENT_IMAGE_HISTORY,
+            sizeof(settings->paths.path_content_image_history));
    else
-         fill_pathname_join_special(
-               settings->paths.path_content_image_history,
-               settings->paths.directory_content_image_history,
-               FILE_PATH_CONTENT_IMAGE_HISTORY,
-               sizeof(settings->paths.path_content_image_history));
+      fill_pathname_join_special(
+            settings->paths.path_content_image_history,
+            settings->paths.directory_content_image_history,
+            FILE_PATH_CONTENT_IMAGE_HISTORY,
+            sizeof(settings->paths.path_content_image_history));
 
    if (string_is_empty(settings->paths.path_content_music_history))
-         strlcpy(settings->paths.directory_content_music_history, "default",
-               sizeof(settings->paths.directory_content_music_history));
+      strlcpy(settings->paths.directory_content_music_history, "default",
+            sizeof(settings->paths.directory_content_music_history));
 
    if (     string_is_empty(settings->paths.directory_content_music_history)
          || string_is_equal(settings->paths.directory_content_music_history, "default"))
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_music_history,
-               path_config,
-               FILE_PATH_CONTENT_MUSIC_HISTORY,
-               sizeof(settings->paths.path_content_music_history));
+      fill_pathname_resolve_relative(
+            settings->paths.path_content_music_history,
+            path_config,
+            FILE_PATH_CONTENT_MUSIC_HISTORY,
+            sizeof(settings->paths.path_content_music_history));
    else
-         fill_pathname_join_special(
-               settings->paths.path_content_music_history,
-               settings->paths.directory_content_music_history,
-               FILE_PATH_CONTENT_MUSIC_HISTORY,
-               sizeof(settings->paths.path_content_music_history));
+      fill_pathname_join_special(
+            settings->paths.path_content_music_history,
+            settings->paths.directory_content_music_history,
+            FILE_PATH_CONTENT_MUSIC_HISTORY,
+            sizeof(settings->paths.path_content_music_history));
 
    if (string_is_empty(settings->paths.path_content_video_history))
-         strlcpy(settings->paths.directory_content_video_history, "default",
-               sizeof(settings->paths.directory_content_video_history));
+      strlcpy(settings->paths.directory_content_video_history, "default",
+            sizeof(settings->paths.directory_content_video_history));
 
    if (     string_is_empty(settings->paths.directory_content_video_history)
          || string_is_equal(settings->paths.directory_content_video_history, "default"))
-         fill_pathname_resolve_relative(
-               settings->paths.path_content_video_history,
-               path_config,
-               FILE_PATH_CONTENT_VIDEO_HISTORY,
-               sizeof(settings->paths.path_content_video_history));
+      fill_pathname_resolve_relative(
+            settings->paths.path_content_video_history,
+            path_config,
+            FILE_PATH_CONTENT_VIDEO_HISTORY,
+            sizeof(settings->paths.path_content_video_history));
    else
-         fill_pathname_join_special(
-               settings->paths.path_content_video_history,
-               settings->paths.directory_content_video_history,
-               FILE_PATH_CONTENT_VIDEO_HISTORY,
-               sizeof(settings->paths.path_content_video_history));
+      fill_pathname_join_special(
+            settings->paths.path_content_video_history,
+            settings->paths.directory_content_video_history,
+            FILE_PATH_CONTENT_VIDEO_HISTORY,
+            sizeof(settings->paths.path_content_video_history));
 
    if (!string_is_empty(settings->paths.directory_screenshot))
    {
@@ -4028,9 +4028,9 @@ static bool config_load_file(global_t *global,
 
 #if defined(__APPLE__) && defined(OSX)
    if (     ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_X86_64) &&
-             string_ends_with(settings->paths.network_buildbot_url, "/arm64/latest/"))
+            string_ends_with(settings->paths.network_buildbot_url, "/arm64/latest/"))
          || ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_ARMV8) &&
-             string_ends_with(settings->paths.network_buildbot_url, "/x86_64/latest/")))
+            string_ends_with(settings->paths.network_buildbot_url, "/x86_64/latest/")))
       /* Wrong architecture, set it back */
       configuration_set_string(settings,
             settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
@@ -4052,9 +4052,9 @@ static bool config_load_file(global_t *global,
       *settings->paths.directory_assets = '\0';
 #ifdef _3DS
    if (string_is_equal(settings->paths.directory_bottom_assets, "default"))
-         configuration_set_string(settings,
-               settings->paths.directory_bottom_assets,
-               g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS]);
+      configuration_set_string(settings,
+            settings->paths.directory_bottom_assets,
+            g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS]);
 #endif
    if (string_is_equal(settings->paths.directory_dynamic_wallpapers, "default"))
       *settings->paths.directory_dynamic_wallpapers = '\0';
@@ -4218,29 +4218,34 @@ static bool config_load_file(global_t *global,
 #endif
 
 #ifdef HAVE_LAKKA_SWITCH
-    FILE* f = fopen(SWITCH_OC_TOGGLE_PATH, "w");
-    if (settings->bools.switch_oc == true) {
-	  fprintf(f, "1\n");
-	} else {
-	  fprintf(f, "0\n");
-    }
-    fclose(f);
-    if (settings->bools.switch_cec == true) {
+   FILE* f = fopen(SWITCH_OC_TOGGLE_PATH, "w");
+   if (settings->bools.switch_oc)
+      fprintf(f, "1\n");
+   else
+      fprintf(f, "0\n");
+   fclose(f);
+
+   if (settings->bools.switch_cec)
+   {
       FILE* f = fopen(SWITCH_CEC_TOGGLE_PATH, "w");
-	  fprintf(f, "\n");
+      fprintf(f, "\n");
       fclose(f);
-	} else {
-	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);
-    }
-   if (settings->bools.bluetooth_ertm_disable == true) {
+   }
+   else
+      filestream_delete(SWITCH_CEC_TOGGLE_PATH);
+
+   if (settings->bools.bluetooth_ertm_disable)
+   {
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
-	  fprintf(f, "1\n");
+      fprintf(f, "1\n");
       fclose(f);
-	} else {
+   }
+   else
+   {
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
-	  fprintf(f, "0\n");
+      fprintf(f, "0\n");
       fclose(f);
-    }
+   }
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
@@ -4250,8 +4255,8 @@ static bool config_load_file(global_t *global,
       msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, frontend_driver_get_user_language());
 
    if (frontend_driver_has_gamemode() &&
-       !frontend_driver_set_gamemode(settings->bools.gamemode_enable) &&
-       settings->bools.gamemode_enable)
+         !frontend_driver_set_gamemode(settings->bools.gamemode_enable) &&
+         settings->bools.gamemode_enable)
    {
       RARCH_WARN("[Config]: GameMode unsupported - disabling..\n");
       configuration_set_bool(settings,
@@ -4265,7 +4270,7 @@ static bool config_load_file(global_t *global,
     * users with large custom history size limits may lose
     * favourites entries when updating RetroArch...) */
    if (    (bool)RHMAP_HAS_STR(conf->entries_map, "content_history_size")
-       && !(bool)RHMAP_HAS_STR(conf->entries_map, "content_favorites_size"))
+         && !(bool)RHMAP_HAS_STR(conf->entries_map, "content_favorites_size"))
    {
       if (settings->uints.content_history_size > 999)
          settings->ints.content_favorites_size = -1;
