@@ -3683,6 +3683,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
 {
 #ifdef HAVE_CONFIGFILE
    char remap_file_path[PATH_MAX_LENGTH];
+   char remap_path[PATH_MAX_LENGTH];
    struct menu_state *menu_st             = menu_state_get_ptr();
    rarch_system_info_t *sys_info          = &runloop_state_get_ptr()->system;
    const char *core_name                  = sys_info ? sys_info->info.library_name : NULL;
@@ -3693,9 +3694,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
    const char *input_device_name          = input_config_get_device_display_name(joypad_port);
    const char *input_device_dir           = NULL;
-   char *remap_path                       = NULL;
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
-   size_t remap_path_total_len            = 0;
    size_t _len                            = 0;
 
    remap_file_path[0]  = '\0';
@@ -3713,27 +3712,17 @@ static int generic_action_ok_remap_file_operation(const char *path,
       input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
 
       /* Allocate memory for the new path */
-      remap_path_total_len = strlen(core_name) + strlen(input_device_dir) + 2;
-      remap_path = (char *)malloc(remap_path_total_len);
-
       /* Build the new path with the controller name */
-      _len  = strlcpy(remap_path, core_name, remap_path_total_len);
-      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), remap_path_total_len - _len);
-      _len += strlcpy(remap_path + _len, input_device_dir, remap_path_total_len - _len);
+      _len  = strlcpy(remap_path, core_name, sizeof(remap_path));
+      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), sizeof(remap_path) - _len);
+      _len += strlcpy(remap_path + _len, input_device_dir,     sizeof(remap_path) - _len);
 
       /* Deallocate as we no longer this */
       free((char*)input_device_dir);
       input_device_dir = NULL;
    }
-   else
-   {
-      /* Allocate memory for the new path */
-      remap_path_total_len = strlen(core_name) + 1;
-      remap_path = (char *)malloc(remap_path_total_len);
-
-      /* We're not using controller path, just use core name */
-      strlcpy(remap_path, core_name, remap_path_total_len);
-   }
+   else /* We're not using controller path, just use core name */
+      strlcpy(remap_path, core_name, sizeof(remap_path));
 
    switch (action_type)
    {
@@ -3776,8 +3765,6 @@ static int generic_action_ok_remap_file_operation(const char *path,
          }
          break;
    }
-
-   free(remap_path);
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {
