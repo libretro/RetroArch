@@ -5744,14 +5744,16 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char* idx_placeholder = "%u";
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         int idxpos = string_find_index_substring_string(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idx_placeholder);
+         int idxpos      = string_find_index_substring_string(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idx_placeholder);
+         size_t _lbl_len = strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx));
          if (   (idxpos > 0)
               && string_starts_with_size(label, msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idxpos)
-              && (((size_t)idxpos == strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2)
-              || ((size_t)idxpos   <  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2          && string_ends_with_size(label,
+              && (((size_t)idxpos == _lbl_len - 2)
+              || ((size_t)idxpos  <  _lbl_len - 2
+              && string_ends_with_size(label,
                   msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx) + idxpos + 2,
                   lbl_len,
-                  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx))-idxpos-2))))
+                  _lbl_len - idxpos - 2))))
          {
             BIND_ACTION_SUBLABEL(cbs, info_list[i].cb);
             return 0;

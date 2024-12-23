@@ -756,6 +756,7 @@ static void menu_action_setting_disp_set_label_core_lock(
       const char *path,
       char *s2, size_t len2)
 {
+   size_t _len;
    core_info_t *core_info = NULL;
    const char *alt        = list->list[i].alt
          ? list->list[i].alt
@@ -770,11 +771,11 @@ static void menu_action_setting_disp_set_label_core_lock(
     *   don't want to perform disk access every frame */
    if (   core_info_find(path, &core_info)
        && core_info->is_locked)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
 
-   *w  = (unsigned)strlen(s);
+   *w  = (unsigned)_len;
 }
 
 static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
@@ -785,6 +786,7 @@ static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
       const char *path,
       char *s2, size_t len2)
 {
+   size_t _len;
    core_info_t *core_info = NULL;
    const char *alt        = list->list[i].alt
          ? list->list[i].alt
@@ -802,11 +804,11 @@ static void menu_action_setting_disp_set_label_core_set_standalone_exempt(
    if (   core_info_find(path, &core_info)
        && core_info->supports_no_game
        && core_info->is_standalone_exempt)
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
    else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
 
-   *w  = (unsigned)strlen(s);
+   *w  = (unsigned)_len;
 }
 
 static void menu_action_setting_disp_set_label_input_desc(
