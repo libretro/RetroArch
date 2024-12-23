@@ -642,6 +642,11 @@ extern microphone_driver_t microphone_sdl;
 extern microphone_driver_t microphone_wasapi;
 
 /**
+ * The PipeWire-backed microphone driver.
+ */
+extern microphone_driver_t microphone_pipewire;
+
+/**
  * @return Pointer to the global microphone driver state.
  */
 microphone_driver_state_t *microphone_state_get_ptr(void);
