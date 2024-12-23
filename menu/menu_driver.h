@@ -524,9 +524,6 @@ struct menu_state
     * the entry with a label matching 'pending_selection' will
     * be selected automatically */
    char pending_selection[PATH_MAX_LENGTH];
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[NAME_MAX_LENGTH];
    /* Filled with current content path when a core calls
     * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
     * generic_menu_entry_action(), and must be cached
