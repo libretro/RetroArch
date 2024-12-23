@@ -409,8 +409,6 @@ static void frontend_ctr_init(void* data)
 #ifndef IS_SALAMANDER
    extern audio_driver_t audio_null;
 
-   (void)data;
-
    verbosity_enable();
 
    gfxInit(GSP_BGR8_OES, GSP_BGR8_OES, false);
@@ -465,7 +463,8 @@ static void frontend_ctr_init(void* data)
    if (csndInit() != 0)
       audio_ctr_csnd = audio_null;
    ctr_check_dspfirm();
-   if (ndspInit() != 0) {
+   if (ndspInit() != 0)
+   {
       audio_ctr_dsp = audio_null;
 #ifdef HAVE_THREADS
       audio_ctr_dsp_thread = audio_null;

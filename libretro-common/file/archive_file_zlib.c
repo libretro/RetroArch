@@ -156,7 +156,8 @@ static bool zlib_stream_decompress_data_to_file_init(
       zip_context->zstream->zfree     = NULL;
       zip_context->zstream->opaque    = NULL;
 
-      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK) {
+      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK)
+      {
          free(zip_context->zstream);
          zip_context->zstream = NULL;
          goto error;

@@ -419,17 +419,15 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    NSURL *url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
-   if (url) {
+   if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   } else {
+   else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   }
    url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
-   if (url) {
+   if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   } else {
+   else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   }
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], application_data, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], application_data, "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));

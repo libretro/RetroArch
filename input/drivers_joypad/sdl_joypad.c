@@ -190,7 +190,7 @@ static void sdl_pad_connect(unsigned id)
    }
 
    pad->haptic    = NULL;
-   
+
    if (g_has_haptic)
    {
       pad->haptic = SDL_HapticOpenFromJoystick(pad->joypad);
@@ -217,7 +217,8 @@ static void sdl_pad_connect(unsigned id)
       }
    }
 #if SDL_VERSION_ATLEAST(2, 0, 9)
-   if (!pad->haptic || pad->rumble_effect == -2) {
+   if (!pad->haptic || pad->rumble_effect == -2)
+   {
       pad->rumble_effect = -3;
       RARCH_LOG("[SDL]: Falling back to joystick rumble\n");
    }
@@ -296,7 +297,7 @@ static void *sdl_joypad_init(void *data)
    }
    else
       g_has_haptic = true;
-      
+
 #if SDL_VERSION_ATLEAST(2, 0, 9)
    /* enable extended hid reports to support ps4/ps5 rumble over bluetooth */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
@@ -389,7 +390,7 @@ static int16_t sdl_joypad_axis_state(
       if (val < 0)
       {
          /* Clamp - -0x8000 can cause trouble if we later abs() it. */
-         if (val < -0x7fff) 
+         if (val < -0x7fff)
             return -0x7fff;
          return val;
       }
@@ -435,12 +436,12 @@ static int16_t sdl_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && sdl_joypad_button_state(pad, port_idx, (uint16_t)joykey)
          )
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(sdl_joypad_axis_state(pad, port_idx, joyaxis)) 
+            ((float)abs(sdl_joypad_axis_state(pad, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

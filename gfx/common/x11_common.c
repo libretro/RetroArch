@@ -209,11 +209,11 @@ void x11_set_window_attr(Display *dpy, Window win)
 static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 {
     int dummy, min, maj;
-    if (!XScreenSaverQueryExtension(dpy, &dummy, &dummy) ||
-        !XScreenSaverQueryVersion(dpy, &maj, &min) ||
-            maj < 1 || (maj == 1 && min < 1)) {
+    if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
+            || !XScreenSaverQueryVersion(dpy, &maj, &min)
+            || (maj < 1)
+            || (maj == 1 && min < 1))
             return false;
-        }
     XScreenSaverSuspend(dpy, enable);
     XResetScreenSaver(dpy);
     return true;
@@ -276,10 +276,13 @@ bool x11_suspend_screensaver(void *data, bool enable)
        return true;
 #endif
     if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
-       if (xdg_screensaver_available) {
+    {
+       if (xdg_screensaver_available)
+       {
           xdg_screensaver_inhibit(wnd);
           return xdg_screensaver_available;
        }
+    }
     return true;
 }
 

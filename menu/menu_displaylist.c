@@ -11883,7 +11883,8 @@ static unsigned menu_displaylist_build_shader_parameter(
    current_value               = min;
    original_value              = param->current;
 
-   if (half_step <= 0.0) { /* safety check */
+   if (half_step <= 0.0) /* safety check */
+   {
       char val_s[16], val_d[16];
       snprintf(val_s, sizeof(val_s), "%.2f", current_value);
       snprintf(val_d, sizeof(val_d), "%d", 0);
@@ -12793,7 +12794,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      case CPUSCALING_BALANCED:
                         /* No settings for these modes */
                         break;
-                  };
+                  }
                }
 
                info->flags       |= MD_FLAG_NEED_REFRESH

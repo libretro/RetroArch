@@ -9508,38 +9508,39 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
 static void switch_oc_enable_toggle_change_handler(rarch_setting_t *setting)
 {
    FILE* f = fopen(SWITCH_OC_TOGGLE_PATH, "w");
-    if (*setting->value.target.boolean == true) {
-	  fprintf(f, "1\n");
-	} else {
-	  fprintf(f, "0\n");
-    }
-    fclose(f);
+   if (*setting->value.target.boolean)
+      fprintf(f, "1\n");
+   else
+      fprintf(f, "0\n");
+   fclose(f);
 }
 
 static void switch_cec_enable_toggle_change_handler(rarch_setting_t *setting)
 {
-    if (*setting->value.target.boolean == true) {
+   if (*setting->value.target.boolean)
+   {
       FILE* f = fopen(SWITCH_CEC_TOGGLE_PATH, "w");
-	  fprintf(f, "\n");
+      fprintf(f, "\n");
       fclose(f);
-	} else {
-	  filestream_delete(SWITCH_CEC_TOGGLE_PATH);
-    }
-
+   }
+   else
+      filestream_delete(SWITCH_CEC_TOGGLE_PATH);
 }
 
 static void bluetooth_ertm_disable_toggle_change_handler(rarch_setting_t *setting)
 {
-    if (*setting->value.target.boolean == true) {
+   if (*setting->value.target.boolean)
+   {
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
-	  fprintf(f, "1\n");
+      fprintf(f, "1\n");
       fclose(f);
-	} else {
+   }
+   else
+   {
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
-	  fprintf(f, "0\n");
+      fprintf(f, "0\n");
       fclose(f);
-    }
-
+   }
 }
 #endif
 
