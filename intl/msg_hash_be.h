@@ -5187,7 +5187,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "Захопліваць малюнак пасля прымянення фільтраў (але не шэйдараў). Запісанае відэа будзе выглядаць гэтак жа, як на экране."
+   "Захопліваць выяву пасля ўжывання фільтраў (але не шэйдараў). Запісанае відэа будзе выглядаць гэтак жа, як на экране."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
@@ -5195,7 +5195,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-   "Калі падтрымліваецца, запісваць малюнак пасля апрацоўкі GPU."
+   "Пры магчымасці запісваць выяву пасля апрацоўкі графічным працэсарам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
