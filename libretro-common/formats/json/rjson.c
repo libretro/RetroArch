@@ -107,12 +107,9 @@ static enum rjson_type _rjson_error_char(rjson_t *json,
    char buf[16];
    if (json->stack_top->type == RJSON_ERROR)
       return RJSON_ERROR;
-   if (chr == _rJSON_EOF)
-      strlcpy(buf, "end of stream", sizeof(buf));
-   else if (chr >= ' ' && chr <= '~')
-      snprintf(buf, sizeof(buf), "'%c'", chr);
-   else
-      snprintf(buf, sizeof(buf), "byte 0x%02X", chr);
+   snprintf(buf, sizeof(buf),
+         (chr == _rJSON_EOF ? "end of stream" :
+         (chr >= ' ' && chr <= '~' ? "'%c'" : "byte 0x%02X")), chr);
    return _rjson_error(json, fmt, buf);
 }
 
