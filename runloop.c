@@ -4197,7 +4197,6 @@ static void runloop_path_init_savefile_internal(runloop_state_t *runloop_st)
 {
    path_deinit_savefile();
    path_init_savefile_new();
-
    if (!runloop_path_init_subsystem(runloop_st))
       path_init_savefile_rtc(runloop_st->name.savefile);
 }
@@ -7893,7 +7892,7 @@ void runloop_path_set_redirect(settings_t *settings,
 
    /* Get content directory name, if per-content-directory
     * saves/states are enabled */
-   if ((sort_savefiles_by_content_enable
+   if ((   sort_savefiles_by_content_enable
         || sort_savestates_by_content_enable)
        && !string_is_empty(runloop_st->runtime_content_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,

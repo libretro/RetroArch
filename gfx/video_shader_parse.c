@@ -804,8 +804,6 @@ static bool video_shader_parse_textures(config_file_t *conf,
          bool smooth                     = false;
          struct config_entry_list *entry = NULL;
 
-         idx[0]                          = '\0';
-
          if ( !(entry = config_get_entry(conf, id))
              || string_is_empty(entry->value))
          {

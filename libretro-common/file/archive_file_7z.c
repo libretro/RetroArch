@@ -412,10 +412,16 @@ error:
 }
 
 static int sevenzip_parse_file_iterate_step_internal(
-      struct sevenzip_context_t *sevenzip_context, char *filename,
-      const uint8_t **cdata, unsigned *cmode,
-      uint32_t *size, uint32_t *csize, uint32_t *checksum,
-      unsigned *payback, struct archive_extract_userdata *userdata)
+      struct sevenzip_context_t *sevenzip_context,
+      char *s,
+      size_t len,
+      const uint8_t **cdata,
+      unsigned *cmode,
+      uint32_t *size,
+      uint32_t *csize,
+      uint32_t *checksum,
+      unsigned *payback,
+      struct archive_extract_userdata *userdata)
 {
    if (sevenzip_context->parse_index < sevenzip_context->db.NumFiles)
    {
@@ -431,32 +437,27 @@ static int sevenzip_parse_file_iterate_step_internal(
          sevenzip_context->packIndex++;
       }
 
-      if (len < PATH_MAX_LENGTH &&
-          !SzArEx_IsDir(&sevenzip_context->db, sevenzip_context->parse_index))
+      if (   (len < PATH_MAX_LENGTH)
+          && !SzArEx_IsDir(&sevenzip_context->db, sevenzip_context->parse_index))
       {
-         char infile[PATH_MAX_LENGTH];
-         SRes res                     = SZ_ERROR_FAIL;
-         uint16_t *temp               = (uint16_t*)malloc(len * sizeof(uint16_t));
+         SRes res       = SZ_ERROR_FAIL;
+         uint16_t *temp = (uint16_t*)malloc(len * sizeof(uint16_t));
 
          if (!temp)
             return -1;
-
-         infile[0] = '\0';
 
          SzArEx_GetFileNameUtf16(&sevenzip_context->db, sevenzip_context->parse_index,
                temp);
 
          if (temp)
          {
-            res  = utf16_to_char_string(temp, infile, sizeof(infile))
+            res  = utf16_to_char_string(temp, s, len)
                ? SZ_OK : SZ_ERROR_FAIL;
             free(temp);
          }
 
          if (res != SZ_OK)
             return -1;
-
-         strlcpy(filename, infile, PATH_MAX_LENGTH);
 
          *cmode    = 0; /* unused for 7zip */
          *checksum = sevenzip_context->db.CRCs.Vals[sevenzip_context->parse_index];
@@ -491,6 +492,7 @@ static int sevenzip_parse_file_iterate_step(void *context,
 
    ret = sevenzip_parse_file_iterate_step_internal(sevenzip_context,
          userdata->current_file_path,
+         sizeof(userdata->current_file_path),
          &cdata, &cmode, &size, &csize,
          &checksum, &payload, userdata);
 

@@ -902,8 +902,8 @@ size_t path_relative_to(char *s,
       if (path[i] == PATH_DEFAULT_SLASH_C())
          j = i + 1;
 
-   trimmed_path = path+j;
-   trimmed_base = base+i;
+   trimmed_path = path + j;
+   trimmed_base = base + i;
 
    /* Each segment of base turns into ".." */
    s[0] = '\0';
@@ -935,9 +935,7 @@ void fill_pathname_resolve_relative(char *s,
       return;
    }
 
-   if (s != in_refpath)
-      strlcpy(s, in_refpath, len);
-   path_basedir(s);
+   fill_pathname_basedir(s, in_refpath, len);
    strlcat(s, in_path, len);
    path_resolve_realpath(s, len, false);
 }

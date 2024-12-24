@@ -497,11 +497,9 @@ void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
          len);
    s[_len  ]   = ' ';
    if (runtime_log)
-   {
       snprintf(s + _len + 1, len - _len - 1, "%02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
-   }
    else
    {
       s[_len+1]   = '0';

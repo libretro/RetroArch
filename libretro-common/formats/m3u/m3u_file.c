@@ -477,8 +477,6 @@ bool m3u_file_save(
       m3u_file_t *m3u_file, enum m3u_file_label_type label_type)
 {
    size_t i;
-   const char *slash;
-   const char *backslash;
    char base_dir[DIR_MAX_LENGTH];
    char *last_slash = NULL;
    RFILE *file      = NULL;
@@ -490,16 +488,9 @@ bool m3u_file_save(
    if (string_is_empty(m3u_file->path))
       return false;
 
-   slash            = strrchr(m3u_file->path, '/');
-   backslash        = strrchr(m3u_file->path, '\\');
-   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
-
    /* Get M3U file base directory */
-   if (last_slash)
-   {
-      strlcpy(base_dir, m3u_file->path, sizeof(base_dir));
-      path_basedir(base_dir);
-   }
+   if ((last_slash = find_last_slash(m3u_file->path)))
+      fill_pathname_basedir(base_dir, m3u_file->path, sizeof(base_dir));
    else
       base_dir[0]   = '\0';
 

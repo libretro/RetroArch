@@ -136,13 +136,12 @@ static void gfx_thumbnail_get_db_name(
       *db_name = path_data->content_db_name;
 }
 
-
 /* Fetches local and remote paths for current thumbnail
  * of current type */
 static bool task_pl_thumbnail_get_thumbnail_paths(
    pl_thumb_handle_t *pl_thumb,
    char *path, size_t path_size,
-   char *url, size_t url_size)
+   char *s, size_t len)
 {
    char content_dir[DIR_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
@@ -210,10 +209,7 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
    /* Generate remote path */
    snprintf(raw_url, raw_url_len, "%s/%s/%s/%s",
          FILE_PATH_CORE_THUMBNAILS_URL,
-         system_name,
-         sub_dir,
-         img_name
-         );
+         system_name, sub_dir, img_name);
 
    if (string_is_empty(raw_url))
    {
@@ -221,10 +217,10 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
       return false;
    }
 
-   net_http_urlencode_full(url, raw_url, url_size);
+   net_http_urlencode_full(s, raw_url, len);
    free(raw_url);
 
-   return !string_is_empty(url);
+   return !string_is_empty(s);
 }
 
 /* Thumbnail download http task callback function
