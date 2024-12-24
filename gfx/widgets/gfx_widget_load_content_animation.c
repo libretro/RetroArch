@@ -469,8 +469,8 @@ bool gfx_widget_start_load_content_animation(void)
 
       /* We can only use the core db_name if the
        * core is associated with exactly one database */
-      if (databases_list &&
-          (databases_list->size == 1))
+      if (    databases_list
+          && (databases_list->size == 1))
          core_db_name = databases_list->elems[0].data;
 
       if (   !string_is_empty(core_db_name)
@@ -580,8 +580,9 @@ static void gfx_widget_load_content_animation_layout(
       state->system_name_width  = (system_name_width > 0) ?
             (unsigned)system_name_width : 0;
 
-      text_width = (state->content_name_width > state->system_name_width) ?
-            (int)state->content_name_width : (int)state->system_name_width;
+      text_width = (state->content_name_width > state->system_name_width)
+            ? (int)state->content_name_width
+            : (int)state->system_name_width;
 
       /* Now we have the text width, can determine
        * final icon/text x draw positions */
@@ -637,8 +638,9 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       state->system_name_width  = (system_name_width > 0) ?
             (unsigned)system_name_width : 0;
 
-      text_width = (state->content_name_width > state->system_name_width) ?
-            (int)state->content_name_width : (int)state->system_name_width;
+      text_width = (state->content_name_width > state->system_name_width)
+         ? (int)state->content_name_width
+         : (int)state->system_name_width;
 
       /* Now we have the text width, can determine
        * final icon/text x draw positions */

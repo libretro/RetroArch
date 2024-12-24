@@ -568,12 +568,11 @@ static enum frontend_powerstate frontend_ctr_get_powerstate(
    return FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 }
 
-static void frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
+static size_t frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
 {
    OS_VersionBin cver;
    OS_VersionBin nver;
-
-   strlcpy(s, "3DS OS", len);
+   size_t _len = strlcpy(s, "3DS OS", len);
    Result data_invalid = osGetSystemVersionData(&nver, &cver);
    if (data_invalid == 0)
    {
@@ -585,7 +584,7 @@ static void frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
       *major = 0;
       *minor = 0;
    }
-
+   return _len;
 }
 
 static void frontend_ctr_get_name(char* s, size_t len)

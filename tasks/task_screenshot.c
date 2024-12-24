@@ -306,13 +306,8 @@ static bool screenshot_dump(
    if (!fullpath)
    {
       if (savestate)
-      {
-         size_t len             = strlcpy(state->filename,
-               name_base, sizeof(state->filename));
-         strlcpy(state->filename       + len,
-               ".png",
-               sizeof(state->filename) - len);
-      }
+         fill_pathname(state->filename,
+               name_base, ".png", sizeof(state->filename));
       else
       {
          char new_screenshot_dir[DIR_MAX_LENGTH];
@@ -365,14 +360,9 @@ static bool screenshot_dump(
                   IMG_EXT, sizeof(state->shotname));
          }
          else
-         {
-            size_t len = strlcpy(state->shotname,
+            fill_pathname(state->shotname,
                   path_basename_nocompression(name_base),
-                  sizeof(state->shotname));
-            strlcpy(state->shotname       + len,
-                  ".png",
-                  sizeof(state->shotname) - len);
-         }
+                  ".png", sizeof(state->shotname));
 
          if (     string_is_empty(new_screenshot_dir)
                || settings->bools.screenshots_in_content_dir)

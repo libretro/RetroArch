@@ -280,31 +280,24 @@ static void frontend_darwin_get_name(char *s, size_t len)
 #endif
 }
 
-static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
+static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
+   size_t _len;
 #if defined(IOS)
    get_ios_version(major, minor);
 #if TARGET_OS_TV
-   s[0] = 't';
-   s[1] = 'v';
-   s[2] = 'O';
-   s[3] = 'S';
-   s[4] = '\0';
+   _len = strlcpy(s, "tvOS", len);
 #else
-   s[0] = 'i';
-   s[1] = 'O';
-   s[2] = 'S';
-   s[3] = '\0';
+   _len = strlcpy(s, "iOS", len);
 #endif
 #elif defined(OSX)
-
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
    NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
    *major = (int)version.majorVersion;
    *minor = (int)version.minorVersion;
 #else
-    /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
-    /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
+   /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
+   /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
    {
       typedef struct
@@ -313,12 +306,12 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
          NSInteger minorVersion;
          NSInteger patchVersion;
       } NSMyOSVersion;
-       NSMyOSVersion version;
-       NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
-       NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
-       invoke.selector = @selector(operatingSystemVersion);
-       [invoke invokeWithTarget:[NSProcessInfo processInfo]];
-       [invoke getReturnValue:&version];
+      NSMyOSVersion version;
+      NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
+      NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
+      invoke.selector = @selector(operatingSystemVersion);
+      [invoke invokeWithTarget:[NSProcessInfo processInfo]];
+      [invoke getReturnValue:&version];
       *major = (int)version.majorVersion;
       *minor = (int)version.minorVersion;
    }
@@ -328,11 +321,9 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
       Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
    }
 #endif
-   s[0] = 'O';
-   s[1] = 'S';
-   s[2] = 'X';
-   s[3] = '\0';
+   _len = strlcpy(s, "OSX", len);
 #endif
+   return _len;
 }
 
 static void frontend_darwin_get_env(int *argc, char *argv[],

@@ -375,9 +375,9 @@ bool gfx_thumbnail_set_content_image(
       img_dir, img_name, sizeof(path_data->content_path));
 
    /* Set core name to "imageviewer" */
-   strlcpy(
-         path_data->content_core_name,
-         "imageviewer", sizeof(path_data->content_core_name));
+   strlcpy(path_data->content_core_name,
+         "imageviewer",
+         sizeof(path_data->content_core_name));
 
    /* Set database name (arbitrarily) to "_images_"
     * (required for compatibility with gfx_thumbnail_update_path(),

@@ -670,7 +670,7 @@ static bool win32_browser(
        * FIXME: We should really handle the
        * error case when this isn't big enough. */
       char new_title[PATH_MAX];
-      char new_file[32768];
+      char new_file[32768]; /* TODO/FIXME - is this not way too big? */
 
       new_title[0] = '\0';
       new_file[0]  = '\0';

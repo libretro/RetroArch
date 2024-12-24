@@ -177,8 +177,6 @@ typedef struct gfx_display_ctx_coord_draw
 
 typedef struct gfx_display_ctx_datetime
 {
-   char *s;
-   size_t len;
    unsigned time_mode;
    unsigned date_separator;
 } gfx_display_ctx_datetime_t;
@@ -297,7 +295,7 @@ bool gfx_display_reset_icon_texture(
       const char *texture_path,
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height);
-      
+
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item,
         enum texture_filter_type filter_type,

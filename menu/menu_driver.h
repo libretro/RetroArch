@@ -628,7 +628,7 @@ bool menu_driver_init(bool video_is_threaded);
 
 retro_time_t menu_driver_get_current_time(void);
 
-size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len);
 
 void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
 

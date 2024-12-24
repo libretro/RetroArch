@@ -10576,12 +10576,10 @@ static void ozone_draw_header(
       gfx_display_ctx_datetime_t datetime;
       char timedate[256];
 
-      datetime.s              = timedate;
       datetime.time_mode      = settings->uints.menu_timedate_style;
       datetime.date_separator = settings->uints.menu_timedate_date_separator;
-      datetime.len            = sizeof(timedate);
 
-      menu_display_timedate(&datetime);
+      menu_display_timedate(&datetime, timedate, sizeof(timedate));
 
       gfx_display_draw_text(
             ozone->fonts.time.font,

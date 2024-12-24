@@ -124,9 +124,9 @@ static void task_database_scan_console_output(const char *label, const char *db_
       unsigned reset  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
       size_t _len     = strlcpy(string, " ", sizeof(string));
       _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
-      strlcpy(string + _len, " ", sizeof(string) - _len);
+      _len += strlcpy(string + _len, " ",    sizeof(string) - _len);
       SetConsoleTextAttribute(con, (add) ? green : (db_name) ? yellow : red);
-      WriteConsole(con, string, strlen(string), NULL, NULL);
+      WriteConsole(con, string, _len, NULL, NULL);
       SetConsoleTextAttribute(con, reset);
    }
 #else

@@ -5857,15 +5857,10 @@ static void materialui_render_header(
    {
       gfx_display_ctx_datetime_t datetime;
       char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
-
-      timedate_str[0]         = '\0';
-
-      datetime.s              = timedate_str;
-      datetime.len            = sizeof(timedate_str);
       datetime.time_mode      = menu_timedate_style;
       datetime.date_separator = menu_timedate_date_separator;
 
-      menu_display_timedate(&datetime);
+      menu_display_timedate(&datetime, timedate_str, sizeof(timedate_str));
 
       /* Need to determine pixel width of time string
        * > This is somewhat expensive, so utilise a cache
