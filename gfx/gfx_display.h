@@ -183,8 +183,6 @@ typedef struct gfx_display_ctx_datetime
 
 typedef struct gfx_display_ctx_powerstate
 {
-   char *s;
-   size_t len;
    unsigned percent;
    bool battery_enabled;
    bool charging;

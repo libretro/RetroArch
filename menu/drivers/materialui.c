@@ -5763,13 +5763,8 @@ static void materialui_render_header(
    {
       gfx_display_ctx_powerstate_t powerstate;
       char percent_str[MUI_BATTERY_PERCENT_MAX_LENGTH];
-
       percent_str[0] = '\0';
-
-      powerstate.s   = percent_str;
-      powerstate.len = sizeof(percent_str);
-
-      menu_display_powerstate(&powerstate);
+      menu_display_powerstate(&powerstate, percent_str, sizeof(percent_str));
 
       if (powerstate.battery_enabled)
       {

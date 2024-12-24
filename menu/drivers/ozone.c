@@ -10512,11 +10512,7 @@ static void ozone_draw_header(
       char msg[12];
 
       msg[0] = '\0';
-
-      powerstate.s   = msg;
-      powerstate.len = sizeof(msg);
-
-      menu_display_powerstate(&powerstate);
+      menu_display_powerstate(&powerstate, msg, sizeof(msg));
 
       if (powerstate.battery_enabled)
       {

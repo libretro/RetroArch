@@ -5332,10 +5332,7 @@ static void rgui_render(
 
          percent_str[0] = '\0';
 
-         powerstate.s   = percent_str;
-         powerstate.len = sizeof(percent_str);
-
-         menu_display_powerstate(&powerstate);
+         menu_display_powerstate(&powerstate, percent_str, sizeof(percent_str));
 
          if (powerstate.battery_enabled)
          {

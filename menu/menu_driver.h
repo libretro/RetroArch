@@ -630,7 +630,7 @@ retro_time_t menu_driver_get_current_time(void);
 
 size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len);
 
-void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
+size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len);
 
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,

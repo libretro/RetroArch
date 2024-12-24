@@ -1014,7 +1014,7 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size
 }
 
 /* Display current (battery) power state */
-void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
+size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len)
 {
    int percent                    = 0;
    struct menu_state    *menu_st  = &menu_driver_state;
@@ -1043,64 +1043,55 @@ void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate)
          powerstate->charging  = true;
       if (percent > 0)
          powerstate->percent   = (unsigned)percent;
-      snprintf(powerstate->s, powerstate->len, "%u%%", powerstate->percent);
+      return snprintf(s, len, "%u%%", powerstate->percent);
    }
+   return 0;
 }
 
 
 /* Sets title to what the name of the current menu should be. */
-int menu_entries_get_title(char *s, size_t len)
+size_t menu_entries_get_title(char *s, size_t len)
 {
-   unsigned menu_type            = 0;
-   const char *path              = NULL;
-   const char *label             = NULL;
-   struct menu_state *menu_st    = &menu_driver_state;
-   menu_handle_t *menu           = menu_st->driver_data;
-   const file_list_t *list       = menu_st->entries.list ?
-      MENU_LIST_GET(menu_st->entries.list, 0) : NULL;
-   menu_file_list_cbs_t *cbs     = list
+   struct menu_state *menu_st = &menu_driver_state;
+   menu_handle_t *menu        = menu_st->driver_data;
+   const file_list_t *list    = menu_st->entries.list
+      ? MENU_LIST_GET(menu_st->entries.list, 0)
+      : NULL;
+   menu_file_list_cbs_t *cbs  = list
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
-
-   if (!cbs)
-      return -1;
-
-   if (cbs->action_get_title)
+   if (cbs && cbs->action_get_title)
    {
-      int ret = 0;
+      const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
       if (!string_is_empty(cbs->action_title_cache))
-      {
-         strlcpy(s, cbs->action_title_cache, len);
-         return 0;
-      }
-
-      if (list->size)
-      {
-         path      = list->list[list->size - 1].path;
-         label     = list->list[list->size - 1].label;
-         menu_type = list->list[list->size - 1].type;
-      }
+         return strlcpy(s, cbs->action_title_cache, len);
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, "deferred_rpl_entry_actions"))
       {
-         playlist_t *playlist                  = playlist_get_cached();
+         playlist_t *playlist  = playlist_get_cached();
          if (playlist)
          {
             const struct playlist_entry *entry = NULL;
             playlist_get_index(playlist, menu->rpl_entry_selection_ptr, &entry);
             if (entry)
-               strlcpy(s,
+               return strlcpy(s,
                      !string_is_empty(entry->label) ? entry->label : entry->path,
                      len);
          }
       }
       else
-         ret = cbs->action_get_title(path, label, menu_type, s, len);
-
-      if (ret == 1)
-         strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
-      return ret;
+      {
+         const char *path      = NULL;
+         unsigned menu_type    = 0;
+         if (list->size)
+         {
+            path               = list->list[list->size - 1].path;
+            menu_type          = list->list[list->size - 1].type;
+         }
+         if (cbs->action_get_title(path, label, menu_type, s, len) == 1)
+            return strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
+      }
    }
    return 0;
 }
@@ -7740,14 +7731,11 @@ int generic_menu_entry_action(
             access_st->enabled)
          && !menu_input_dialog_get_display_kb())
    {
-      char current_label[128];
       char current_value[128];
       char title_name[NAME_MAX_LENGTH];
       char speak_string[512];
 
-      speak_string[0]  = '\0';
       title_name  [0]  = '\0';
-      current_label[0] = '\0';
 
       get_current_menu_value(menu_st,
             current_value, sizeof(current_value));
@@ -7776,7 +7764,6 @@ int generic_menu_entry_action(
          case MENU_ACTION_SELECT:
          case MENU_ACTION_SEARCH:
          case MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL:
-            menu_driver_get_current_menu_label(menu_st, current_label, sizeof(current_label));
             break;
          case MENU_ACTION_SCAN:
          case MENU_ACTION_INFO:
@@ -7790,9 +7777,10 @@ int generic_menu_entry_action(
                title_name, sizeof(speak_string));
          speak_string[  _len]    = ' ';
          speak_string[++_len]    = '\0';
-         _len += strlcpy(speak_string + _len,
-               current_label,
-               sizeof(speak_string)   - _len);
+         _len += menu_driver_get_current_menu_label(
+               menu_st,
+               speak_string + _len,
+               sizeof(speak_string) - _len);
          if (!string_is_equal(current_value, "..."))
          {
             speak_string[  _len] = ' ';
@@ -7804,8 +7792,10 @@ int generic_menu_entry_action(
       }
       else
       {
-         size_t _len = strlcpy(speak_string,
-               current_label, sizeof(speak_string));
+         size_t _len = menu_driver_get_current_menu_label(
+               menu_st,
+               speak_string,
+               sizeof(speak_string));
          if (!string_is_equal(current_value, "..."))
          {
             speak_string[  _len] = ' ';

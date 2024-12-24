@@ -6896,13 +6896,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       gfx_display_ctx_powerstate_t powerstate;
       char msg[12];
-
       msg[0] = '\0';
 
-      powerstate.s   = msg;
-      powerstate.len = sizeof(msg);
-
-      menu_display_powerstate(&powerstate);
+      menu_display_powerstate(&powerstate, msg, sizeof(msg));
 
       if (powerstate.battery_enabled)
       {
