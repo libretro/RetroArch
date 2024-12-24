@@ -634,7 +634,7 @@ static int menu_displaylist_parse_core_info(
       tmp[  _len] = ':';
       tmp[++_len] = ' ';
       tmp[++_len] = '\0';
-      string_list_join_concat(tmp, sizeof(tmp),
+      string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->categories_list, ", ");
       if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -649,7 +649,7 @@ static int menu_displaylist_parse_core_info(
       tmp[  _len] = ':';
       tmp[++_len] = ' ';
       tmp[++_len] = '\0';
-      string_list_join_concat(tmp, sizeof(tmp),
+      string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->authors_list, ", ");
       if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -664,7 +664,7 @@ static int menu_displaylist_parse_core_info(
       tmp[  _len] = ':';
       tmp[++_len] = ' ';
       tmp[++_len] = '\0';
-      string_list_join_concat(tmp, sizeof(tmp),
+      string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->permissions_list, ", ");
       if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -679,7 +679,7 @@ static int menu_displaylist_parse_core_info(
       tmp[  _len] = ':';
       tmp[++_len] = ' ';
       tmp[++_len] = '\0';
-      string_list_join_concat(tmp, sizeof(tmp),
+      string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->licenses_list, ", ");
       if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -695,7 +695,7 @@ static int menu_displaylist_parse_core_info(
       tmp[  _len] = ':';
       tmp[++_len] = ' ';
       tmp[++_len] = '\0';
-      string_list_join_concat(tmp, sizeof(tmp),
+      string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->supported_extensions_list, ", ");
       if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
@@ -710,7 +710,7 @@ static int menu_displaylist_parse_core_info(
       tmp[  _len] = ':';
       tmp[++_len] = ' ';
       tmp[++_len] = '\0';
-      string_list_join_concat(tmp, sizeof(tmp),
+      string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->required_hw_api_list, ", ");
       if (menu_entries_append(list, tmp, "",
             MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
