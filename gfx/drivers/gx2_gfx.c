@@ -923,29 +923,27 @@ static void gx2_set_projection(wiiu_video_t *wiiu)
 
 static void gx2_update_viewport(wiiu_video_t *wiiu)
 {
-   unsigned viewport_width         = wiiu->color_buffer.surface.width;
-   unsigned viewport_height        = wiiu->color_buffer.surface.height;
+   unsigned vp_width               = wiiu->color_buffer.surface.width;
+   unsigned vp_height              = wiiu->color_buffer.surface.height;
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
 
    if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&wiiu->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(), wiiu->keep_aspect, true);
-      viewport_width  = wiiu->vp.width;
-      viewport_height = wiiu->vp.height;
+      vp_width  = wiiu->vp.width;
+      vp_height = wiiu->vp.height;
    }
    else if (wiiu->keep_aspect)
-   {
-      video_viewport_get_scaled_aspect(&wiiu->vp, viewport_width, viewport_height, true);
-   }
+      video_viewport_get_scaled_aspect(&wiiu->vp, vp_width, vp_height, true);
    else
    {
       wiiu->vp.x      = 0;
       wiiu->vp.y      = 0;
-      wiiu->vp.width  = viewport_width;
-      wiiu->vp.height = viewport_height;
+      wiiu->vp.width  = vp_width;
+      wiiu->vp.height = vp_height;
    }
 
    gx2_set_projection(wiiu);

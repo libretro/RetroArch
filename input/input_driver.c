@@ -1200,10 +1200,10 @@ static int16_t input_overlay_device_mouse_state(input_overlay_t *ol, unsigned id
 static int16_t input_overlay_lightgun_state(settings_t *settings,
       input_overlay_t *ol, unsigned id)
 {
+   int16_t edge;
+   unsigned rarch_id;
    struct video_viewport vp;
    input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
-   unsigned rarch_id;
-   int16_t edge;
 
    switch(id)
    {

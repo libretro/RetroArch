@@ -2396,12 +2396,12 @@ static void metal_free(void *data)
    md = nil;
 }
 
-static void metal_set_viewport(void *data, unsigned viewport_width,
-                               unsigned viewport_height, bool force_full, bool allow_rotate)
+static void metal_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md)
-      [md setViewportWidth:viewport_width height:viewport_height forceFull:force_full allowRotate:allow_rotate];
+      [md setViewportWidth:vp_width height:vp_height forceFull:force_full allowRotate:allow_rotate];
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)

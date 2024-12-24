@@ -130,8 +130,8 @@ static const float rsx_tex_coords[8] = {
  * FORWARD DECLARATIONS
  */
 
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate);
+static void rsx_set_viewport(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate);
 
 /*
  * DISPLAY DRIVER
@@ -977,9 +977,8 @@ static void rsx_set_projection(rsx_t *rsx,
    matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
 }
 
-
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate)
 {
 	int i;
    rsx_viewport_t vp;
@@ -991,24 +990,24 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
    if (video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&rsx->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(), rsx->keep_aspect,
             true);
-      viewport_width          = rsx->vp.width;
-      viewport_height         = rsx->vp.height;
+      vp_width               = rsx->vp.width;
+      vp_height              = rsx->vp.height;
    }
    else if (rsx->keep_aspect && !force_full)
    {
-      video_viewport_get_scaled_aspect(&rsx->vp, viewport_width, viewport_height, true);
-      viewport_width          = rsx->vp.width;
-      viewport_height         = rsx->vp.height;
+      video_viewport_get_scaled_aspect(&rsx->vp, vp_width, vp_height, true);
+      vp_width               = rsx->vp.width;
+      vp_height              = rsx->vp.height;
    }
    else
    {
       rsx->vp.x               = 0;
       rsx->vp.y               = 0;
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
+      rsx->vp.width           = vp_width;
+      rsx->vp.height          = vp_height;
    }
 
    vp.min                     = 0.0f;
@@ -1036,8 +1035,8 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
+      rsx->vp.width           = vp_width;
+      rsx->vp.height          = vp_height;
    }
 }
 
@@ -1440,20 +1439,20 @@ static void rsx_update_viewport(rsx_t* rsx)
 {
    int x                     = 0;
    int y                     = 0;
-   unsigned viewport_width   = rsx->width;
-   unsigned viewport_height  = rsx->height;
-   float device_aspect       = ((float)viewport_width) / viewport_height;
+   unsigned vp_width         = rsx->width;
+   unsigned vp_height        = rsx->height;
+   float device_aspect       = ((float)vp_width) / vp_height;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
    unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (video_scale_integer)
    {
-      video_viewport_get_scaled_integer(&rsx->vp, viewport_width,
-            viewport_height, video_driver_get_aspect_ratio(), rsx->keep_aspect,
+      video_viewport_get_scaled_integer(&rsx->vp, vp_width, vp_height,
+            video_driver_get_aspect_ratio(), rsx->keep_aspect,
             true);
-      viewport_width         = rsx->vp.width;
-      viewport_height        = rsx->vp.height;
+      vp_width               = rsx->vp.width;
+      vp_height              = rsx->vp.height;
    }
    else if (rsx->keep_aspect)
    {
@@ -1462,12 +1461,12 @@ static void rsx_update_viewport(rsx_t* rsx)
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
+         video_viewport_t *custom_vp = &settings->video_vp_custom;
          /* RSX/libgcm has top-left origin viewport. */
          x                           = custom_vp->x;
          y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
+         vp_width                    = custom_vp->width;
+         vp_height                   = custom_vp->height;
       }
       else
 #endif
@@ -1483,33 +1482,33 @@ static void rsx_update_viewport(rsx_t* rsx)
          }
          else if (device_aspect > desired_aspect)
          {
-            float viewport_bias = settings->floats.video_viewport_bias_x;
+            float viewport_bias = settings->floats.video_vp_bias_x;
             delta           = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
-            x               = (int)roundf(viewport_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            viewport_width  = (unsigned)roundf(2.0f * viewport_width * delta);
+            x               = (int)roundf(vp_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
+            vp_width        = (unsigned)roundf(2.0f * vp_width * delta);
          }
          else
          {
-            float viewport_bias = 1.0 - settings->floats.video_viewport_bias_y;
+            float viewport_bias = 1.0 - settings->floats.video_vp_bias_y;
             delta           = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
-            y               = (int)roundf(viewport_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
+            y               = (int)roundf(vp_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
+            vp_height       = (unsigned)roundf(2.0f * vp_height * delta);
          }
       }
 
       rsx->vp.x             = x;
       rsx->vp.y             = y;
-      rsx->vp.width         = viewport_width;
-      rsx->vp.height        = viewport_height;
+      rsx->vp.width         = vp_width;
+      rsx->vp.height        = vp_height;
    }
    else
    {
       rsx->vp.x             = 0;
       rsx->vp.y             = 0;
-      rsx->vp.width         = viewport_width;
-      rsx->vp.height        = viewport_height;
+      rsx->vp.width         = vp_width;
+      rsx->vp.height        = vp_height;
    }
 
    rsx->should_resize       = false;
