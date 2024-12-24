@@ -1240,39 +1240,38 @@ static enum frontend_architecture frontend_unix_get_arch(void)
    return FRONTEND_ARCH_NONE;
 }
 
-static void frontend_unix_get_os(char *s,
+static size_t frontend_unix_get_os(char *s,
       size_t len, int *major, int *minor)
 {
+   size_t _len = 0;
 #ifdef ANDROID
    int rel;
    frontend_android_get_version(major, minor, &rel);
-
-   strlcpy(s, "Android", len);
+   _len = strlcpy(s, "Android", len);
 #else
    char *ptr;
    struct utsname buffer;
-
    if (uname(&buffer) != 0)
       return;
-
    *major = (int)strtol(buffer.release, &ptr, 10);
    *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
-   strlcpy(s, "FreeBSD", len);
+   _len = strlcpy(s, "FreeBSD", len);
 #elif defined(__NetBSD__)
-   strlcpy(s, "NetBSD", len);
+   _len = strlcpy(s, "NetBSD", len);
 #elif defined(__OpenBSD__)
-   strlcpy(s, "OpenBSD", len);
+   _len = strlcpy(s, "OpenBSD", len);
 #elif defined(__DragonFly__)
-   strlcpy(s, "DragonFly BSD", len);
+   _len = strlcpy(s, "DragonFly BSD", len);
 #elif defined(BSD)
-   strlcpy(s, "BSD", len);
+   _len = strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
-   strlcpy(s, "Haiku", len);
+   _len = strlcpy(s, "Haiku", len);
 #else
-   strlcpy(s, "Linux", len);
+   _len = strlcpy(s, "Linux", len);
 #endif
 #endif
+   return _len;
 }
 
 #ifdef HAVE_LAKKA

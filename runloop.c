@@ -1127,23 +1127,17 @@ static bool validate_game_options(
  * @return true if a game specific core
  * options path has been found, otherwise false.
  **/
-static bool validate_game_specific_options(char **output)
+static bool validate_game_specific_options(char *s, size_t len)
 {
-   char game_options_path[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st = &runloop_state;
-   game_options_path[0]        = '\0';
-
    if (!validate_game_options(
             runloop_st->system.info.library_name,
-            game_options_path,
-            sizeof(game_options_path), false)
-       || !path_is_valid(game_options_path))
+            s, len, false)
+       || !path_is_valid(s))
       return false;
-
    RARCH_LOG("[Core]: %s \"%s\".\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         game_options_path);
-   *output = strdup(game_options_path);
+         s);
    return true;
 }
 
@@ -1172,22 +1166,14 @@ static bool validate_folder_options(
  * @return true if a folder specific core
  * options path has been found, otherwise false.
  **/
-static bool validate_folder_specific_options(
-      char **output)
+static bool validate_folder_specific_options(char *s, size_t len)
 {
-   char folder_options_path[PATH_MAX_LENGTH];
-   folder_options_path[0] ='\0';
-
-   if (!validate_folder_options(
-            folder_options_path,
-            sizeof(folder_options_path), false)
-       || !path_is_valid(folder_options_path))
+   if (!validate_folder_options(s, len, false)
+       || !path_is_valid(s))
       return false;
-
    RARCH_LOG("[Core]: %s \"%s\".\n",
          msg_hash_to_str(MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         folder_options_path);
-   *output = strdup(folder_options_path);
+         s);
    return true;
 }
 
@@ -1207,39 +1193,31 @@ static bool validate_folder_specific_options(
  **/
 static void runloop_init_core_options_path(
       settings_t *settings,
-      char *path, size_t len,
+      char *s, size_t len,
       char *src_path, size_t src_len)
 {
-   char *options_path             = NULL;
    runloop_state_t *runloop_st    = &runloop_state;
    bool game_specific_options     = settings->bools.game_specific_options;
 
    /* Check whether game-specific options exist */
    if (   game_specific_options
-       && validate_game_specific_options(&options_path))
+       && validate_game_specific_options(s, len))
    {
       /* Notify system that we have a valid core options
        * override */
-      path_set(RARCH_PATH_CORE_OPTIONS, options_path);
+      path_set(RARCH_PATH_CORE_OPTIONS, s);
       runloop_st->flags &= ~RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
       runloop_st->flags |=  RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
-
-      strlcpy(path, options_path, len);
-      free(options_path);
    }
    /* Check whether folder-specific options exist */
    else if (   game_specific_options
-            && validate_folder_specific_options(
-               &options_path))
+            && validate_folder_specific_options(s, len))
    {
       /* Notify system that we have a valid core options
        * override */
-      path_set(RARCH_PATH_CORE_OPTIONS, options_path);
+      path_set(RARCH_PATH_CORE_OPTIONS, s);
       runloop_st->flags &= ~RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
       runloop_st->flags |=  RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
-
-      strlcpy(path, options_path, len);
-      free(options_path);
    }
    else
    {
@@ -1287,13 +1265,13 @@ static void runloop_init_core_options_path(
       /* Allocate correct path/src_path strings */
       if (per_core_options)
       {
-         strlcpy(path, per_core_options_path, len);
+         strlcpy(s, per_core_options_path, len);
 
          if (!per_core_options_exist)
             strlcpy(src_path, global_options_path, src_len);
       }
       else
-         strlcpy(path, global_options_path, len);
+         strlcpy(s, global_options_path, len);
 
       /* Notify system that we *do not* have a valid core options
        * options override */

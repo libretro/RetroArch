@@ -640,7 +640,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
-size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len)
 {
    /* Storage container for current menu datetime
     * representation string */
@@ -1008,10 +1008,9 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime)
          strftime(datetime_cache, sizeof(datetime_cache),
                format_str, &tm_);
    }
-
    /* Copy cached datetime string to input
     * menu_display_ctx_datetime_t struct */
-   return strlcpy(datetime->s, datetime_cache, datetime->len);
+   return strlcpy(s, datetime_cache, len);
 }
 
 /* Display current (battery) power state */
@@ -4053,31 +4052,23 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
    }
 }
 
-static void get_current_menu_value(
+static size_t get_current_menu_value(
       struct menu_state *menu_st, char *s, size_t len)
 {
    menu_entry_t     entry;
-   const char*      entry_label;
-
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
    if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
-      entry_label  = entry.password_value;
-   else
-      entry_label  = entry.value;
-
-   strlcpy(s, entry_label, len);
+      return strlcpy(s, entry.password_value, len);
+   return strlcpy(s, entry.value, len);
 }
 
 #ifdef HAVE_ACCESSIBILITY
-static void menu_driver_get_current_menu_label(struct menu_state *menu_st,
+static size_t menu_driver_get_current_menu_label(struct menu_state *menu_st,
       char *s, size_t len)
 {
    menu_entry_t     entry;
-   const char*      entry_label;
-
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
                 | MENU_ENTRY_FLAG_LABEL_ENABLED
@@ -4085,26 +4076,21 @@ static void menu_driver_get_current_menu_label(struct menu_state *menu_st,
                 | MENU_ENTRY_FLAG_VALUE_ENABLED
                 | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-
    if (!string_is_empty(entry.rich_label))
-      entry_label              = entry.rich_label;
-   else
-      entry_label              = entry.path;
-
-   strlcpy(s, entry_label, len);
+      return strlcpy(s, entry.rich_label, len);
+   return strlcpy(s, entry.path, len);
 }
 #endif
 
-static void menu_driver_get_current_menu_sublabel(
+static size_t menu_driver_get_current_menu_sublabel(
       struct menu_state *menu_st,
       char *s, size_t len)
 {
    menu_entry_t     entry;
-
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   strlcpy(s, entry.sublabel, len);
+   return strlcpy(s, entry.sublabel, len);
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
@@ -8038,20 +8024,16 @@ size_t menu_update_fullscreen_thumbnail_label(
       char *s, size_t len,
       bool is_quick_menu, const char *title)
 {
-   char tmpstr[64];
    menu_entry_t selected_entry;
    struct menu_state *menu_st      = &menu_driver_state;
-   const char *thumbnail_label     = NULL;
-
    /* > Get menu entry */
    MENU_ENTRY_INITIALIZE(selected_entry);
    selected_entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
                          | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&selected_entry, 0, menu_st->selection_ptr, NULL, true);
-
    /* > Get entry label */
    if (!string_is_empty(selected_entry.rich_label))
-      thumbnail_label = selected_entry.rich_label;
+      return strlcpy(s, selected_entry.rich_label, len);
    /* > State slot label */
    else if (   is_quick_menu
             && (
@@ -8061,11 +8043,12 @@ size_t menu_update_fullscreen_thumbnail_label(
                )
            )
    {
-      size_t _len = strlcpy(tmpstr, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
-            sizeof(tmpstr));
-      snprintf(tmpstr + _len, sizeof(tmpstr) - _len, " %d",
+      size_t _len = strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            len);
+      _len += snprintf(s + _len, len - _len, " %d",
             config_get_ptr()->ints.state_slot);
-      thumbnail_label = tmpstr;
+      return _len;
    }
    else if (   is_quick_menu
             && (
@@ -8075,41 +8058,41 @@ size_t menu_update_fullscreen_thumbnail_label(
             || string_is_equal(selected_entry.label, "halt_replay")
          ))
    {
-      size_t _len = strlcpy(tmpstr, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REPLAY_SLOT),
-            sizeof(tmpstr));
-      snprintf(tmpstr + _len, sizeof(tmpstr) - _len, " %d",
+      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REPLAY_SLOT),
+            len);
+      _len += snprintf(s + _len, len - _len, " %d",
                config_get_ptr()->ints.replay_slot);
-      thumbnail_label = tmpstr;
+      return _len;
    }
    else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
    {
-      size_t _len = strlcpy(tmpstr, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
-            sizeof(tmpstr));
-      snprintf(tmpstr + _len, sizeof(tmpstr) - _len, " %d",
+      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+            len);
+      _len += snprintf(s + _len, len - _len, " %d",
             string_to_unsigned(selected_entry.path));
-      thumbnail_label = tmpstr;
+      return _len;
    }
    /* > Quick Menu playlist label */
    else if (is_quick_menu && title)
-      thumbnail_label = title;
+   {
+      if (!string_is_empty(title))
+         return strlcpy(s, title, len);
+   }
    else
-      thumbnail_label = selected_entry.path;
-
-   /* > Sanity check */
-   if (!string_is_empty(thumbnail_label))
-      return strlcpy(s, thumbnail_label, len);
+   {
+      if (!string_is_empty(selected_entry.path))
+         return strlcpy(s, selected_entry.path, len);
+   }
    return 0;
 }
 
 bool menu_is_running_quick_menu(void)
 {
    menu_entry_t entry;
-
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
                 | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
-
    return    string_is_equal(entry.label, "resume_content")
           || string_is_equal(entry.label, "state_slot");
 }

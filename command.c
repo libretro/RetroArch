@@ -1434,7 +1434,6 @@ void command_event_load_auto_state(void)
 static void scan_states(settings_t *settings,
       unsigned *last_index, char *file_to_delete)
 {
-
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    bool show_hidden_files             = settings->bools.show_hidden_files;
    unsigned savestate_max_keep        = settings->uints.savestate_max_keep;

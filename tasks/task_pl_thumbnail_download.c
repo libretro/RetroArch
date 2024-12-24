@@ -139,7 +139,7 @@ static void gfx_thumbnail_get_db_name(
 
 /* Fetches local and remote paths for current thumbnail
  * of current type */
-static bool get_thumbnail_paths(
+static bool task_pl_thumbnail_get_thumbnail_paths(
    pl_thumb_handle_t *pl_thumb,
    char *path, size_t path_size,
    char *url, size_t url_size)
@@ -301,7 +301,9 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
    url[0]  = '\0';
 
    /* Check if paths are valid */
-   if (get_thumbnail_paths(pl_thumb, path, sizeof(path), url, sizeof(url)))
+   if (task_pl_thumbnail_get_thumbnail_paths(pl_thumb,
+            path, sizeof(path),
+            url,  sizeof(url)))
    {
       /* Only download missing thumbnails */
       if (!path_is_valid(path) || (pl_thumb->flags & PL_THUMB_FLAG_OVERWRITE))

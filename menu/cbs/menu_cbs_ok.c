@@ -567,8 +567,8 @@ static void action_ok_get_file_browser_start_path(
    /* If current path is invalid, use default path */
    if (!current_path_valid)
    {
-      if (string_is_empty(default_path) ||
-          !path_is_directory(default_path))
+      if (    string_is_empty(default_path)
+          || !path_is_directory(default_path))
       {
          start_path[0] = '\0';
          return;
@@ -5001,23 +5001,18 @@ finish:
             STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
             ))
    {
-      char parent_dir[DIR_MAX_LENGTH];
       char parent_dir_encoded[DIR_MAX_LENGTH];
-      file_transfer_t *transf     = NULL;
-
+      file_transfer_t *transf     = (file_transfer_t*)malloc(sizeof(*transf));
       parent_dir_encoded[0]       = '\0';
 
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-      strlcat(parent_dir, FILE_PATH_INDEX_DIRS_URL,
-            sizeof(parent_dir));
+      transf->enum_idx            = MSG_UNKNOWN;
 
-      transf           = (file_transfer_t*)malloc(sizeof(*transf));
+      fill_pathname_parent_dir(transf->path,
+            state->path, sizeof(transf->path));
+      strlcat(transf->path, FILE_PATH_INDEX_DIRS_URL,
+            sizeof(transf->path));
 
-      transf->enum_idx = MSG_UNKNOWN;
-      strlcpy(transf->path, parent_dir, sizeof(transf->path));
-
-      net_http_urlencode_full(parent_dir_encoded, parent_dir,
+      net_http_urlencode_full(parent_dir_encoded, transf->path,
             sizeof(parent_dir_encoded));
       task_push_http_transfer_file(parent_dir_encoded, true,
             "index_dirs", cb_net_generic_subdir, transf);
@@ -6781,6 +6776,9 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_entry_t entry;
+#if IOS
+   char tmp[PATH_MAX_LENGTH];
+#endif
    char current_value[PATH_MAX_LENGTH];
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_handle_t *menu        = menu_st->driver_data;
@@ -6794,7 +6792,6 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
    strlcpy(current_value, entry.value, sizeof(current_value));
 #if IOS
-   char tmp[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
    if (!path_is_directory(tmp))
       current_value[0] = '\0';
@@ -7287,9 +7284,9 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
 static int action_ok_push_dropdown_item_audio_device(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path        = NULL;
    enum msg_hash_enums enum_idx;
    rarch_setting_t     *setting;
+   const char *menu_path        = NULL;
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
    enum_idx = (enum msg_hash_enums)atoi(menu_path);
    setting  = menu_setting_find_enum(enum_idx);
@@ -7549,8 +7546,7 @@ static int action_ok_push_dropdown_item_netplay_mitm_server(const char *path,
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string,
-           label, setting->size);
+   strlcpy(setting->value.target.string, label, setting->size);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7981,7 +7977,6 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char image_path[PATH_MAX_LENGTH];
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_handle_t *menu           = menu_st->driver_data;
@@ -7992,8 +7987,6 @@ static int action_ok_disk_image_append(const char *path,
    bool audio_enable_menu_ok     = settings->bools.audio_enable_menu_ok;
 #endif
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
-
-   image_path[0]                 = '\0';
 
    if (!menu)
       return -1;
@@ -8009,6 +8002,7 @@ static int action_ok_disk_image_append(const char *path,
 
    if (!string_is_empty(menu_path))
    {
+      char image_path[PATH_MAX_LENGTH];
       bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
             && string_is_equal(label,
                      msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
@@ -8017,17 +8011,17 @@ static int action_ok_disk_image_append(const char *path,
          size_t past_slash;
          strlcpy(image_path, menu_path, sizeof(image_path));
          past_slash = fill_pathname_slash(image_path, sizeof(image_path));
-         if (past_slash > 1) image_path[past_slash - 1] = '\0';
+         if (past_slash > 1)
+            image_path[past_slash - 1] = '\0';
       }
       else if (!string_is_empty(path))
          fill_pathname_join_special(image_path,
                menu_path, path, sizeof(image_path));
       else
          strlcpy(image_path, menu_path, sizeof(image_path));
+      /* Append image */
+      command_event(CMD_EVENT_DISK_APPEND_IMAGE, image_path);
    }
-
-   /* Append image */
-   command_event(CMD_EVENT_DISK_APPEND_IMAGE, image_path);
 
    /* In all cases, return to the disk options menu */
    menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS), 0);
@@ -8104,7 +8098,6 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
             1, 480, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
-
          menu_input_dialog_end();
       }
       else

@@ -1063,7 +1063,7 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
          frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
-            m->location.push_vertex = vert;
+            m->location.push_vertex   = vert;
          if (frag >= 0)
             m->location.push_fragment = frag;
       }

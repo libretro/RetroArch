@@ -5785,17 +5785,12 @@ static void rgui_render(
       /* Print clock (if required) */
       if (menu_timedate_enable)
       {
-         gfx_display_ctx_datetime_t datetime;
          char timedate[16];
-
-         timedate[0]             = '\0';
-
-         datetime.s              = timedate;
-         datetime.len            = sizeof(timedate);
+         gfx_display_ctx_datetime_t datetime;
          datetime.time_mode      = MENU_TIMEDATE_STYLE_HM;
          datetime.date_separator = MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
 
-         menu_display_timedate(&datetime);
+         menu_display_timedate(&datetime, timedate, sizeof(timedate));
 
          rgui_blit_line(rgui,
                fb_width,

@@ -443,14 +443,13 @@ static int general_push(menu_displaylist_info_t *info,
       else
       {
          char tmp_path[PATH_MAX_LENGTH];
-         fill_pathname_expand_special(tmp_path, menu->scratch2_buf, sizeof(tmp_path));
-         const char *menu_path = tmp_path;
-         fill_pathname_join_special(tmp_str, menu_path,
+         fill_pathname_expand_special(tmp_path,
+               menu->scratch2_buf, sizeof(tmp_path));
+         fill_pathname_join_special(tmp_str, tmp_path,
                menu->scratch_buf, sizeof(tmp_str));
       }
 #else
-      const char *menu_path = menu->scratch2_buf;
-      fill_pathname_join_special(tmp_str, menu_path,
+      fill_pathname_join_special(tmp_str, menu->scratch2_buf,
             menu->scratch_buf, sizeof(tmp_str));
 #endif
 
@@ -517,11 +516,9 @@ static int general_push(menu_displaylist_info_t *info,
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
             if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-            {
                _len += strlcpy(newstr2 + _len,
                      sysinfo->valid_extensions,
                      sizeof(newstr2)   - _len);
-            }
 
             if (!filter_by_current_core)
             {

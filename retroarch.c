@@ -7665,8 +7665,9 @@ bool retroarch_main_init(int argc, char *argv[])
             _len += strlcpy(str_output + _len,
                   FILE_PATH_LOG_INFO " CPU Model Name: ",
                   sizeof(str_output)   - _len);
-            _len              += strlcpy(str_output + _len, cpu_model,
-                                 sizeof(str_output) - _len);
+            _len += strlcpy(str_output + _len,
+                  cpu_model,
+                  sizeof(str_output) - _len);
             str_output[  _len] = '\n';
             str_output[++_len] = '\0';
          }
@@ -8350,8 +8351,8 @@ void retroarch_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
-   strlcpy(global->error_string,
-         error, sizeof(global->error_string));
+   strlcpy(global->error_string, error,
+         sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);
 }
 

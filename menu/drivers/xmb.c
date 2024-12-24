@@ -6998,14 +6998,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             dispctx->blend_end(userdata);
       }
 
-      timedate[0]             = '\0';
-
-      datetime.s              = timedate;
-      datetime.len            = sizeof(timedate);
       datetime.time_mode      = settings->uints.menu_timedate_style;
       datetime.date_separator = settings->uints.menu_timedate_date_separator;
-
-      _len = menu_display_timedate(&datetime);
+      _len = menu_display_timedate(&datetime, timedate, sizeof(timedate));
 
       title_header_max_width = x_pos + font_driver_get_message_width(
             xmb->font, timedate, _len, 1.0f);

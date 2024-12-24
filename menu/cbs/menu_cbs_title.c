@@ -391,36 +391,34 @@ static int action_get_title_mixer_stream_actions(const char *path, const char *l
 
 static int action_get_title_deferred_playlist_list(const char *path, const char *label, unsigned menu_type, char *s, size_t len)
 {
-   const char *playlist_file = NULL;
-
-   if (string_is_empty(path))
-      return 0;
-
-   playlist_file = path_basename_nocompression(path);
-
-   if (string_is_empty(playlist_file))
-      return 0;
-
-   if (string_is_equal_noncase(path_get_extension(playlist_file),
-            "lpl"))
+   if (!string_is_empty(path))
    {
-      /* Handle content history */
-      if (string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY))
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
-      /* Handle favourites */
-      else if (string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
-         strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
-      /* Handle collection playlists */
-      else
-         fill_pathname(s, playlist_file, "", len);
-   }
-   /* This should never happen, but if it does just set
-    * the label to the file name (it's better than nothing...) */
-   else
-      strlcpy(s, playlist_file, len);
+      const char *playlist_file = path_basename_nocompression(path);
 
-   /* Add current search terms */
-   menu_entries_search_append_terms_string(s, len);
+      if (!string_is_empty(playlist_file))
+      {
+         if (string_is_equal_noncase(path_get_extension(playlist_file),
+                  "lpl"))
+         {
+            /* Handle content history */
+            if (string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
+            /* Handle favourites */
+            else if (string_is_equal(playlist_file, FILE_PATH_CONTENT_FAVORITES))
+               strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB), len);
+            /* Handle collection playlists */
+            else
+               fill_pathname(s, playlist_file, "", len);
+         }
+         /* This should never happen, but if it does just set
+          * the label to the file name (it's better than nothing...) */
+         else
+            strlcpy(s, playlist_file, len);
+
+         /* Add current search terms */
+         menu_entries_search_append_terms_string(s, len);
+      }
+   }
 
    return 0;
 }

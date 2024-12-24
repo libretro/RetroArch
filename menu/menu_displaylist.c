@@ -757,13 +757,13 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->firmware_count > 0)
    {
+      char tmp_path[PATH_MAX_LENGTH];
       core_info_ctx_firmware_t firmware_info;
       uint8_t flags                   = content_get_flags();
       bool update_missing_firmware    = false;
       bool set_missing_firmware       = false;
       bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
       bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
-      char tmp_path[PATH_MAX_LENGTH];
 
       firmware_info.path             = core_info->path;
 
@@ -771,8 +771,9 @@ static int menu_displaylist_parse_core_info(
        * adjust the path to check for firmware files */
       if (systemfiles_in_content_dir && content_is_inited)
       {
-         strlcpy(tmp_path, path_get(RARCH_PATH_CONTENT), sizeof(tmp_path));
-         path_basedir(tmp_path);
+         fill_pathname_basedir(tmp_path,
+               path_get(RARCH_PATH_CONTENT),
+               sizeof(tmp_path));
 
          /* If content path is empty, fall back to global system dir path */
          if (string_is_empty(tmp_path))
@@ -866,16 +867,16 @@ static int menu_displaylist_parse_core_info(
             /* Show relevant note row and skip showing it later */
             if (core_info->notes)
             {
-               unsigned pos;
                unsigned j;
                char firmware_basename[64];
+               fill_pathname_base(firmware_basename,
+                     core_info->firmware[i].desc, sizeof(firmware_basename));
 
-               strlcpy(firmware_basename, core_info->firmware[i].desc, sizeof(firmware_basename));
-               path_basename(firmware_basename);
                firmware_basename[string_find_index_substring_string(firmware_basename, " ")] = '\0';
 
                for (j = 0; j < core_info->note_list->size; j++)
                {
+                  unsigned pos;
                   if (     !strstr(core_info->note_list->elems[j].data, firmware_basename)
                         || !strstr(core_info->note_list->elems[j].data, "(md5)"))
                      continue;
@@ -884,7 +885,7 @@ static int menu_displaylist_parse_core_info(
 
                   core_info_list_hide[j] = true;
                   len = strlcpy(tmp, "- ", sizeof(tmp));
-                  strlcat(tmp, core_info->note_list->elems[j].data + pos, sizeof(tmp));
+                  strlcpy(tmp + len, core_info->note_list->elems[j].data + pos, sizeof(tmp) - len);
 
                   if (menu_entries_append(list, tmp, "",
                         MENU_ENUM_LABEL_CORE_INFO_ENTRY,
@@ -2043,15 +2044,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* Lakka Version */
          if (frontend->get_lakka_version)
          {
-            char lakka_ver[64];
-            frontend->get_lakka_version(lakka_ver, sizeof(lakka_ver));
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
                   sizeof(entry));
             entry[  _len]   = ':';
             entry[++_len]   = ' ';
             entry[++_len]   = '\0';
-            strlcpy(entry + _len, lakka_ver, sizeof(entry) - _len);
+            frontend->get_lakka_version(entry + _len, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
@@ -2061,15 +2060,13 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* Frontend name */
          if (frontend->get_name)
          {
-            char frontend_name[64];
-            frontend->get_name(frontend_name, sizeof(frontend_name));
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
                   sizeof(entry));
             entry[  _len]   = ':';
             entry[++_len]   = ' ';
             entry[++_len]   = '\0';
-            strlcpy(entry + _len, frontend_name, sizeof(entry) - _len);
+            frontend->get_name(entry + _len, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                   0, 0, NULL))
@@ -2079,17 +2076,16 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* Frontend OS */
          if (frontend->get_os)
          {
-            char os_ver[64];
             int major = 0;
             int minor = 0;
-            frontend->get_os(os_ver, sizeof(os_ver), &major, &minor);
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                   sizeof(entry));
             entry[  _len]   = ':';
             entry[++_len]   = ' ';
             entry[++_len]   = '\0';
-            _len           += strlcpy (entry + _len, os_ver, sizeof(entry) - _len);
+            _len           += frontend->get_os(entry + _len,
+                  sizeof(entry) - _len, &major, &minor);
             snprintf(entry + _len,
                   sizeof(entry) - _len,
                   " (v%d.%d)", major, minor);
@@ -2750,6 +2746,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       settings_t *settings,
       menu_displaylist_info_t *info)
 {
+   size_t _len;
    size_t path_len;
    unsigned i, j, k;
    char query[256];
@@ -2777,13 +2774,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    if (!(db_info = database_info_list_new(info->path, query)))
       return -1;
 
-   fill_pathname(path_base, path_basename(info->path), "",
+   _len = fill_pathname(path_base, path_basename(info->path), "",
          sizeof(path_base));
 
    gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
          path_base, playlist_get_cached());
 
-   strlcat(path_base, ".lpl", sizeof(path_base));
+   strlcpy(path_base + _len, ".lpl", sizeof(path_base) - _len);
 
    fill_pathname_join_special(menu->db_playlist_file,
          dir_playlist, path_base,
@@ -4132,17 +4129,17 @@ static int menu_displaylist_parse_horizontal_content_actions(
                {
                   const char *tmp;
                   char sys_thumb[64];
-                  size_t sys_len    = 0;
+                  size_t __len    = 0;
 
                   if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-                     sys_len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
+                     __len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
 
                   if (!string_is_empty(sys_thumb))
                      remove_entry_enabled =
                            string_is_equal(sys_thumb, "history")
                         || string_is_equal(sys_thumb, "favorites")
                         || string_ends_with_size(sys_thumb, "_history",
-                              sys_len, STRLEN_CONST("_history"));
+                              __len, STRLEN_CONST("_history"));
 
                   /* An annoyance: if the user navigates to the information menu,
                    * then to the database entry, the thumbnail system will be changed.
@@ -4231,14 +4228,14 @@ static int menu_displaylist_parse_horizontal_content_actions(
                /* Only show 'Download Thumbnails' on supported playlists */
                char sys_thumb[64];
                const char *tmp  = NULL;
-               size_t sys_len   = 0;
+               size_t __len     = 0;
 
                if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-                  sys_len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
+                  __len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
 
                if (!string_is_empty(sys_thumb))
                   download_enabled = !string_ends_with_size(
-                        sys_thumb, "_history", sys_len, STRLEN_CONST("_history"));
+                        sys_thumb, "_history", __len, STRLEN_CONST("_history"));
                else
                   download_enabled = false;
             }
@@ -5201,25 +5198,18 @@ static unsigned menu_displaylist_parse_content_information(
    /* Database */
    if (!string_is_empty(db_name))
    {
-      char db_name_no_ext_buff[NAME_MAX_LENGTH];
-      fill_pathname(db_name_no_ext_buff, db_name, "",
-            sizeof(db_name_no_ext_buff));
-
-      if (!string_is_empty(db_name_no_ext_buff))
-      {
-         size_t _len = strlcpy(tmp,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
-               sizeof(tmp));
-         tmp[  _len] = ':';
-         tmp[++_len] = ' ';
-         tmp[++_len] = '\0';
-         strlcpy(tmp + _len, db_name_no_ext_buff, sizeof(tmp) - _len);
-         if (menu_entries_append(info_list, tmp,
+      size_t _len = strlcpy(tmp,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
+            sizeof(tmp));
+      tmp[  _len] = ':';
+      tmp[++_len] = ' ';
+      tmp[++_len] = '\0';
+      fill_pathname(tmp + _len, db_name, "", sizeof(tmp) - _len);
+      if (menu_entries_append(info_list, tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_INFO_DATABASE),
                MENU_ENUM_LABEL_CONTENT_INFO_DATABASE,
                0, 0, 0, NULL))
-            count++;
-      }
+         count++;
    }
 
    /* If content path is empty and core supports
@@ -7245,12 +7235,12 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          {
+            char os_ver[64];
+            int major, minor;
             input_driver_t *current_input =
                   input_state_get_ptr()->current_driver;
             const frontend_ctx_driver_t *frontend =
                   frontend_get_ptr();
-            char os_ver[64] = {0};
-            int major, minor;
 
             if (frontend && frontend->get_os)
                frontend->get_os(os_ver, sizeof(os_ver), &major, &minor);
@@ -12984,15 +12974,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_AUDIOMIXER
             {
                char lbl[128];
-               char mixer_stream_str[128];
                unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
-               size_t _len                 = strlcpy(mixer_stream_str, "mixer_stream_", sizeof(mixer_stream_str));
-
-               lbl[0]                      = '\0';
-
-               snprintf(mixer_stream_str + _len, sizeof(mixer_stream_str) - _len, "%d", id);
-
-               _len = strlcpy(lbl, mixer_stream_str, sizeof(lbl));
+               size_t _len                 = strlcpy(lbl, "mixer_stream_", sizeof(lbl));
+               _len += snprintf(lbl + _len, sizeof(lbl) - _len, "%d", id);
 
                strlcpy(lbl + _len, "_action_play", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,

@@ -434,7 +434,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       const char* type,
       retro_task_callback_t cb, file_transfer_t* transfer_data)
 {
-   size_t len;
+   size_t _len;
    const char *s               = NULL;
    char tmp[NAME_MAX_LENGTH]   = "";
    retro_task_t *t             = NULL;
@@ -449,19 +449,19 @@ void* task_push_http_transfer_file(const char* url, bool mute,
       return NULL;
 
    if (transfer_data)
-      s       = transfer_data->path;
+      s        = transfer_data->path;
    else
-      s       = url;
+      s        = url;
 
-   len        = strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
-   tmp[  len] = ' ';
-   tmp[++len] = '\0';
+   _len        = strlcpy(tmp, msg_hash_to_str(MSG_DOWNLOADING), sizeof(tmp));
+   tmp[  _len] = ' ';
+   tmp[++_len] = '\0';
 
    if (string_ends_with_size(s, ".index",
             strlen(s), STRLEN_CONST(".index")))
       s       = msg_hash_to_str(MSG_INDEX_FILE);
 
-   strlcpy(tmp + len, s, sizeof(tmp) - len);
+   strlcpy(tmp + _len, s, sizeof(tmp) - _len);
 
    t->title = strdup(tmp);
    return t;
