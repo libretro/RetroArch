@@ -4632,27 +4632,18 @@ bool config_load_remap(const char *directory_input_remapping,
    char game_path[PATH_MAX_LENGTH];
    /* final path for content-dir-specific configuration (prefix+suffix) */
    char content_path[PATH_MAX_LENGTH];
+   char remap_path[PATH_MAX_LENGTH];
 
    config_file_t *new_conf                = NULL;
    rarch_system_info_t *sys_info          = (rarch_system_info_t*)data;
    const char *core_name                  = sys_info ? sys_info->info.library_name : NULL;
    const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
-   const char *game_name                  = NULL;
-   bool has_content                       = !string_is_empty(rarch_path_basename);
    enum msg_hash_enums msg_remap_loaded   = MSG_GAME_REMAP_FILE_LOADED;
    settings_t *settings                   = config_st;
    bool notification_show_remap_load      = settings->bools.notification_show_remap_load;
    unsigned joypad_port                   = settings->uints.input_joypad_index[0];
-   const char *input_device_name          = input_config_get_device_display_name(joypad_port);
-   const char *input_device_dir           = NULL;
-   char *remap_path                       = NULL;
+   const char *inp_dev_name               = input_config_get_device_display_name(joypad_port);
    bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
-   size_t remap_path_total_len            = 0;
-   size_t _len                            = 0;
-
-   core_path[0]        = '\0';
-   game_path[0]        = '\0';
-   content_path[0]     = '\0';
 
    /* > Cannot load remaps if we have no core
     * > Cannot load remaps if remap directory is unset */
@@ -4660,56 +4651,76 @@ bool config_load_remap(const char *directory_input_remapping,
        || string_is_empty(directory_input_remapping))
       return false;
 
+   game_path[0]        = '\0';
+   content_path[0]     = '\0';
+
    if (   sort_remaps_by_controller
-       && input_device_name != NULL
-       && !string_is_empty(input_device_name))
+       && !string_is_empty(inp_dev_name)
+       )
    {
       /* Ensure directory does not contain special chars */
-      input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
-
-      /* Allocate memory for the new path */
-      remap_path_total_len = strlen(core_name) + strlen(input_device_dir) + 2;
-      remap_path = (char *)malloc(remap_path_total_len);
-
+      const char *inp_dev_dir = sanitize_path_part(inp_dev_name, strlen(inp_dev_name));
       /*  Build the new path with the controller name */
-      _len  = strlcpy(remap_path, core_name, remap_path_total_len);
-      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), remap_path_total_len - _len);
-      _len += strlcpy(remap_path + _len, input_device_dir, remap_path_total_len - _len);
+      size_t _len = strlcpy(remap_path, core_name, sizeof(remap_path));
+      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), sizeof(remap_path) - _len);
+      _len += strlcpy(remap_path + _len, inp_dev_dir, sizeof(remap_path) - _len);
 
       /* Deallocate as we no longer this */
-      free((char*)input_device_dir);
-      input_device_dir = NULL;
+      free((char*)inp_dev_dir);
+      inp_dev_dir = NULL;
    }
-   else
-   {
-      /* Allocate memory for the new path */
-      remap_path_total_len = strlen(core_name) + 1;
-      remap_path = (char *)malloc(remap_path_total_len);
+   else /* We're not using controller path, just use core name */
+      strlcpy(remap_path, core_name, sizeof(remap_path));
 
-      /* We're not using controller path, just use core name */
-      strlcpy(remap_path, core_name, remap_path_total_len);
-   }
-
-   /* Concatenate strings into full paths for core_path,
-    * game_path, content_path */
-   if (has_content)
+   if (!string_is_empty(rarch_path_basename))
    {
       char content_dir_name[DIR_MAX_LENGTH];
-      fill_pathname_parent_dir_name(content_dir_name,
-            rarch_path_basename, sizeof(content_dir_name));
-      game_name = path_basename_nocompression(rarch_path_basename);
 
       fill_pathname_join_special_ext(game_path,
             directory_input_remapping, remap_path,
-            game_name,
+            path_basename_nocompression(rarch_path_basename),
             FILE_PATH_REMAP_EXTENSION,
             sizeof(game_path));
+
+      /* If a game remap file exists, load it. */
+      if ((new_conf = config_file_new_from_path_to_string(game_path)))
+      {
+         bool ret = input_remapping_load_file(new_conf, game_path);
+         config_file_free(new_conf);
+         new_conf = NULL;
+         RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
+         if (ret)
+         {
+            retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
+            /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
+             * by default - no need to change it here */
+            goto success;
+         }
+      }
+
+      fill_pathname_parent_dir_name(content_dir_name,
+            rarch_path_basename, sizeof(content_dir_name));
 
       fill_pathname_join_special_ext(content_path,
             directory_input_remapping, remap_path,
             content_dir_name,
             FILE_PATH_REMAP_EXTENSION,
             sizeof(content_path));
+
+      /* If a content-dir remap file exists, load it. */
+      if ((new_conf = config_file_new_from_path_to_string(content_path)))
+      {
+         bool ret = input_remapping_load_file(new_conf, content_path);
+         config_file_free(new_conf);
+         new_conf = NULL;
+         RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
+         if (ret)
+         {
+            retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
+            msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
+            goto success;
+         }
+      }
    }
 
    fill_pathname_join_special_ext(core_path,
@@ -4717,39 +4728,6 @@ bool config_load_remap(const char *directory_input_remapping,
          core_name,
          FILE_PATH_REMAP_EXTENSION,
          sizeof(core_path));
-
-   free(remap_path);
-
-   /* If a game remap file exists, load it. */
-   if (has_content && (new_conf = config_file_new_from_path_to_string(game_path)))
-   {
-      bool ret = input_remapping_load_file(new_conf, game_path);
-      config_file_free(new_conf);
-      new_conf = NULL;
-      RARCH_LOG("[Remaps]: Game-specific remap found at \"%s\".\n", game_path);
-      if (ret)
-      {
-         retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
-         /* msg_remap_loaded is set to MSG_GAME_REMAP_FILE_LOADED
-          * by default - no need to change it here */
-         goto success;
-      }
-   }
-
-   /* If a content-dir remap file exists, load it. */
-   if (has_content && (new_conf = config_file_new_from_path_to_string(content_path)))
-   {
-      bool ret = input_remapping_load_file(new_conf, content_path);
-      config_file_free(new_conf);
-      new_conf = NULL;
-      RARCH_LOG("[Remaps]: Content-dir-specific remap found at \"%s\".\n", content_path);
-      if (ret)
-      {
-         retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-         msg_remap_loaded = MSG_DIRECTORY_REMAP_FILE_LOADED;
-         goto success;
-      }
-   }
 
    /* If a core remap file exists, load it. */
    if ((new_conf = config_file_new_from_path_to_string(core_path)))
@@ -4822,29 +4800,29 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
       const struct retro_keybind *bind)
 {
    size_t _len;
-   char config[16];
-   config[0] = '\0';
-   _len      = snprintf(config, sizeof(config), "h%u", GET_HAT(bind->joykey));
+   char s[16];
+   s[0]      = '\0';
+   _len      = snprintf(s, sizeof(s), "h%u", GET_HAT(bind->joykey));
 
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         strlcpy(config + _len, "up", sizeof(config) - _len);
+         strlcpy(s + _len, "up", sizeof(s) - _len);
          break;
       case HAT_DOWN_MASK:
-         strlcpy(config + _len, "down", sizeof(config) - _len);
+         strlcpy(s + _len, "down", sizeof(s) - _len);
          break;
       case HAT_LEFT_MASK:
-         strlcpy(config + _len, "left", sizeof(config) - _len);
+         strlcpy(s + _len, "left", sizeof(s) - _len);
          break;
       case HAT_RIGHT_MASK:
-         strlcpy(config + _len, "right", sizeof(config) - _len);
+         strlcpy(s + _len, "right", sizeof(s) - _len);
          break;
       default:
          break;
    }
 
-   config_set_string(conf, key, config);
+   config_set_string(conf, key, s);
 }
 
 static void save_keybind_joykey(config_file_t *conf,
@@ -4948,29 +4926,6 @@ static void save_keybind_mbutton(config_file_t *conf,
    }
 }
 
-
-
-/**
- * input_config_save_keybind:
- * @conf               : pointer to config file object
- * @prefix             : prefix name of keybind
- * @base               : base name   of keybind
- * @bind               : pointer to key binding object
- * @kb                 : save keyboard binds
- *
- * Save a key binding to the config file.
- */
-static void input_config_save_keybind(config_file_t *conf,
-      const char *prefix,
-      const char *base,
-      const struct retro_keybind *bind,
-      bool save_empty)
-{
-   save_keybind_joykey (conf, prefix, base, bind, save_empty);
-   save_keybind_axis   (conf, prefix, base, bind, save_empty);
-   save_keybind_mbutton(conf, prefix, base, bind, save_empty);
-}
-
 const char *input_config_get_prefix(unsigned user, bool meta)
 {
    static const char *bind_user_prefix[MAX_USERS] = {
@@ -5034,7 +4989,9 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
       input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
 
       config_set_string(conf, key, btn);
-      input_config_save_keybind(conf, prefix, base, bind, true);
+      save_keybind_joykey (conf, prefix, base, bind, true);
+      save_keybind_axis   (conf, prefix, base, bind, true);
+      save_keybind_mbutton(conf, prefix, base, bind, true);
    }
 }
 
