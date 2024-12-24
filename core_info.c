@@ -2617,27 +2617,18 @@ bool core_info_database_supports_content_path(
    return false;
 }
 
-bool core_info_list_get_display_name(
+size_t core_info_list_get_display_name(
       core_info_list_t *core_info_list,
       const char *core_path, char *s, size_t len)
 {
-   core_info_t *info;
-
-   if (!core_info_list)
-     return false;
-
-   info = core_info_find_internal(
-         core_info_list, core_path);
-
-   if (   s
-       && info
-       && !string_is_empty(info->display_name))
+   if (core_info_list)
    {
-      strlcpy(s, info->display_name, len);
-      return true;
+      core_info_t *info = core_info_find_internal(
+            core_info_list, core_path);
+      if (s && info && !string_is_empty(info->display_name))
+         return strlcpy(s, info->display_name, len);
    }
-
-   return false;
+   return 0;
 }
 
 /* Returns core_info parameters required for

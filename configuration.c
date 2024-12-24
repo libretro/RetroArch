@@ -1471,31 +1471,27 @@ const char *config_get_all_timezones(void)
    return char_list_new_special(STRING_LIST_TIMEZONES, NULL);
 }
 
-static void load_timezone(char *s)
+static void load_timezone(char *s, size_t len)
 {
    char haystack[TIMEZONE_LENGTH+32];
-   static char *needle     = "TIMEZONE=";
    RFILE *tzfp             = filestream_open(LAKKA_TIMEZONE_PATH,
                        RETRO_VFS_FILE_ACCESS_READ,
                        RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (tzfp)
    {
-      char *start          = NULL;
+      static char *needle = "TIMEZONE=";
+      char *start = NULL;
 
       filestream_gets(tzfp, haystack, sizeof(haystack)-1);
       filestream_close(tzfp);
 
       if ((start = strstr(haystack, needle)))
-      {
-         size_t needle_len = STRLEN_CONST("TIMEZONE=");
-         strlcpy(s, start + needle_len, TIMEZONE_LENGTH);
-      }
+         strlcpy(s, start + STRLEN_CONST("TIMEZONE="), len);
       else
-         strlcpy(s, DEFAULT_TIMEZONE,   TIMEZONE_LENGTH);
+         strlcpy(s, DEFAULT_TIMEZONE, len);
    }
    else
-      strlcpy(s, DEFAULT_TIMEZONE, TIMEZONE_LENGTH);
-
+      strlcpy(s, DEFAULT_TIMEZONE, len);
    config_set_timezone(s);
 }
 #endif
@@ -1547,19 +1543,10 @@ static struct config_array_setting *populate_settings_array(
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      size_t _len;
-      char formatted_number[4];
-      char prefix[16];
       char key[32];
-
-      formatted_number[0] = '\0';
-
-      snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
-      _len = strlcpy(prefix, "input_player",   sizeof(prefix));
-      strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
-      _len = strlcpy(key, prefix, sizeof(key));
+      size_t _len  = strlcpy(key, "input_player", sizeof(key));
+      _len += snprintf(key + _len, sizeof(key) - _len, "%u", i + 1);
       strlcpy(key + _len, "_reserved_device", sizeof(key) - _len);
-
       SETTING_ARRAY(strdup(key), settings->arrays.input_reserved_devices[i], false, NULL, true);
    }
 
@@ -2947,7 +2934,7 @@ void config_set_defaults(void *data)
    configuration_set_bool(settings,
          settings->bools.bluetooth_enable, filestream_exists(LAKKA_BLUETOOTH_PATH));
    configuration_set_bool(settings, settings->bools.localap_enable, false);
-   load_timezone(settings->arrays.timezone);
+   load_timezone(settings->arrays.timezone, TIMEZONE_LENGTH);
 #endif
 
 #if __APPLE__
@@ -4393,7 +4380,7 @@ bool config_load_override(void *data)
    /* Create a new config file from core_path */
    if (path_is_valid(core_path))
    {
-      char tmp_path[PATH_MAX_LENGTH + 1];
+      char tmp_path[PATH_MAX_LENGTH];
 
       RARCH_LOG("[Overrides]: Core-specific overrides found at \"%s\".\n",
             core_path);
@@ -4423,7 +4410,7 @@ bool config_load_override(void *data)
       /* Create a new config file from content_path */
       if (path_is_valid(content_path))
       {
-         char tmp_path[PATH_MAX_LENGTH + 1];
+         char tmp_path[PATH_MAX_LENGTH];
 
          RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
                content_path);
@@ -4451,7 +4438,7 @@ bool config_load_override(void *data)
       /* Create a new config file from game_path */
       if (path_is_valid(game_path))
       {
-         char tmp_path[PATH_MAX_LENGTH + 1];
+         char tmp_path[PATH_MAX_LENGTH];
 
          RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
                game_path);
@@ -4659,12 +4646,14 @@ bool config_load_remap(const char *directory_input_remapping,
        )
    {
       /* Ensure directory does not contain special chars */
-      const char *inp_dev_dir = sanitize_path_part(inp_dev_name, strlen(inp_dev_name));
+      const char *inp_dev_dir = sanitize_path_part(
+            inp_dev_name, strlen(inp_dev_name));
       /*  Build the new path with the controller name */
       size_t _len = strlcpy(remap_path, core_name, sizeof(remap_path));
-      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), sizeof(remap_path) - _len);
-      _len += strlcpy(remap_path + _len, inp_dev_dir, sizeof(remap_path) - _len);
-
+      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(),
+            sizeof(remap_path) - _len);
+      _len += strlcpy(remap_path + _len, inp_dev_dir,
+            sizeof(remap_path) - _len);
       /* Deallocate as we no longer this */
       free((char*)inp_dev_dir);
       inp_dev_dir = NULL;
@@ -5103,13 +5092,9 @@ void config_get_autoconf_profile_filename(
 
    /* Driver specific autoconf dir may not exist, if autoconfs are not downloaded. */
    if (!path_is_directory(buf))
-   {
       len = strlcpy(buf, sanitised_name, len_buf);
-   }
    else
-   {
       len = fill_pathname_join_special(buf, joypad_driver, sanitised_name, len_buf);
-   }
    strlcpy(buf + len, ".cfg", len_buf - len);
 
 end:
@@ -6047,8 +6032,8 @@ bool input_remapping_save_file(const char *path)
       return false;
 
    /* Create output directory, if required */
-   _len = strlcpy(remap_file_dir, path, sizeof(remap_file_dir));
-   path_parent_dir(remap_file_dir, _len);
+   fill_pathname_parent_dir(remap_file_dir, path,
+         sizeof(remap_file_dir));
 
    if (   !string_is_empty(remap_file_dir)
        && !path_is_directory(remap_file_dir)

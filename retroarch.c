@@ -1128,161 +1128,90 @@ size_t midi_driver_get_event_size(uint8_t status)
  * Returns: NULL if no driver based on @label found, otherwise
  * pointer to driver.
  **/
-static const void *find_driver_nonempty(
-      const char *label, int i,
-      char *s, size_t len)
+static size_t find_driver_nonempty(
+      const char *label, int i, char *s, size_t len)
 {
    if (string_is_equal(label, "camera_driver"))
    {
       if (camera_drivers[i])
-      {
-         const char *ident = camera_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return camera_drivers[i];
-      }
+         return strlcpy(s, camera_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "location_driver"))
    {
       if (location_drivers[i])
-      {
-         const char *ident = location_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return location_drivers[i];
-      }
+         return strlcpy(s, location_drivers[i]->ident, len);
    }
 #ifdef HAVE_MENU
    else if (string_is_equal(label, "menu_driver"))
    {
       if (menu_ctx_drivers[i])
-      {
-         const char *ident = menu_ctx_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return menu_ctx_drivers[i];
-      }
+         return strlcpy(s, menu_ctx_drivers[i]->ident, len);
    }
 #endif
    else if (string_is_equal(label, "input_driver"))
    {
       if (input_drivers[i])
-      {
-         const char *ident = input_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return input_drivers[i];
-      }
+         return strlcpy(s, input_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "input_joypad_driver"))
    {
       if (joypad_drivers[i])
-      {
-         const char *ident = joypad_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return joypad_drivers[i];
-      }
+         return strlcpy(s, joypad_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "video_driver"))
    {
       if (video_drivers[i])
-      {
-         const char *ident = video_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return video_drivers[i];
-      }
+         return strlcpy(s, video_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "audio_driver"))
    {
       if (audio_drivers[i])
-      {
-         const char *ident = audio_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return audio_drivers[i];
-      }
+         return strlcpy(s, audio_drivers[i]->ident, len);
    }
 #ifdef HAVE_MICROPHONE
    else if (string_is_equal(label, "microphone_driver"))
    {
       if (microphone_drivers[i])
-      {
-         const char *ident = microphone_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return microphone_drivers[i];
-      }
+         return strlcpy(s, microphone_drivers[i]->ident, len);
    }
 #endif
    else if (string_is_equal(label, "record_driver"))
    {
       if (record_drivers[i])
-      {
-         const char *ident = record_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return record_drivers[i];
-      }
+         return strlcpy(s, record_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "midi_driver"))
    {
       if (midi_driver_find_handle(i))
-      {
-         const char *ident = midi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return midi_drivers[i];
-      }
+         return strlcpy(s, midi_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "audio_resampler_driver"))
    {
       if (audio_resampler_driver_find_handle(i))
-      {
-         const char *ident = audio_resampler_driver_find_ident(i);
-
-         strlcpy(s, ident, len);
-         return audio_resampler_driver_find_handle(i);
-      }
+         return strlcpy(s, audio_resampler_driver_find_ident(i), len);
    }
 #ifdef HAVE_BLUETOOTH
    else if (string_is_equal(label, "bluetooth_driver"))
    {
       if (bluetooth_drivers[i])
-      {
-         const char *ident = bluetooth_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return bluetooth_drivers[i];
-      }
+         return strlcpy(s, bluetooth_drivers[i]->ident, len);
    }
 #endif
 #ifdef HAVE_WIFI
    else if (string_is_equal(label, "wifi_driver"))
    {
       if (wifi_drivers[i])
-      {
-         const char *ident = wifi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return wifi_drivers[i];
-      }
+         return strlcpy(s, wifi_drivers[i]->ident, len);
    }
 #endif
 #ifdef HAVE_CLOUDSYNC
    else if (string_is_equal(label, "cloud_sync_driver"))
    {
       if (cloud_sync_drivers[i])
-      {
-         const char *ident = cloud_sync_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return cloud_sync_drivers[i];
-      }
+         return strlcpy(s, cloud_sync_drivers[i]->ident, len);
    }
 #endif
-   return NULL;
+   return 0;
 }
 
 int driver_find_index(const char *label, const char *drv)
@@ -1293,7 +1222,7 @@ int driver_find_index(const char *label, const char *drv)
    str[0] = '\0';
 
    for (i = 0;
-         find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
+         find_driver_nonempty(label, i, str, sizeof(str)) > 0; i++)
    {
       if (string_is_empty(str))
          break;
@@ -1317,7 +1246,7 @@ static void driver_find_last(const char *label, char *s, size_t len)
    unsigned i;
 
    for (i = 0;
-         find_driver_nonempty(label, i, s, len) != NULL; i++) { }
+         find_driver_nonempty(label, i, s, len) > 0; i++) { }
 
    if (i)
       i = i - 1;
@@ -8259,8 +8188,8 @@ bool retroarch_override_setting_is_set(
    return false;
 }
 
-int retroarch_get_capabilities(enum rarch_capabilities type,
-      char *str_out, size_t str_len)
+size_t retroarch_get_capabilities(enum rarch_capabilities type,
+      char *s, size_t len)
 {
    size_t _len = 0;
    switch (type)
@@ -8269,80 +8198,79 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
          {
             uint64_t cpu = cpu_features_get();
             if (cpu & RETRO_SIMD_MMX)
-               _len += strlcpy(str_out + _len, "MMX ", str_len - _len);
+               _len += strlcpy(s + _len, "MMX ", len - _len);
             if (cpu & RETRO_SIMD_MMXEXT)
-               _len += strlcpy(str_out + _len, "MMXEXT ", str_len - _len);
+               _len += strlcpy(s + _len, "MMXEXT ", len - _len);
             if (cpu & RETRO_SIMD_SSE)
-               _len += strlcpy(str_out + _len, "SSE ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE ", len - _len);
             if (cpu & RETRO_SIMD_SSE2)
-               _len += strlcpy(str_out + _len, "SSE2 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE2 ", len - _len);
             if (cpu & RETRO_SIMD_SSE3)
-               _len += strlcpy(str_out + _len, "SSE3 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE3 ", len - _len);
             if (cpu & RETRO_SIMD_SSSE3)
-               _len += strlcpy(str_out + _len, "SSSE3 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSSE3 ", len - _len);
             if (cpu & RETRO_SIMD_SSE4)
-               _len += strlcpy(str_out + _len, "SSE4 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE4 ", len - _len);
             if (cpu & RETRO_SIMD_SSE42)
-               _len += strlcpy(str_out + _len, "SSE42 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE42 ", len - _len);
             if (cpu & RETRO_SIMD_AES)
-               _len += strlcpy(str_out + _len, "AES ", str_len - _len);
+               _len += strlcpy(s + _len, "AES ", len - _len);
             if (cpu & RETRO_SIMD_AVX)
-               _len += strlcpy(str_out + _len, "AVX ", str_len - _len);
+               _len += strlcpy(s + _len, "AVX ", len - _len);
             if (cpu & RETRO_SIMD_AVX2)
-               _len += strlcpy(str_out + _len, "AVX2 ", str_len - _len);
+               _len += strlcpy(s + _len, "AVX2 ", len - _len);
             if (cpu & RETRO_SIMD_NEON)
-               _len += strlcpy(str_out + _len, "NEON ", str_len - _len);
+               _len += strlcpy(s + _len, "NEON ", len - _len);
             if (cpu & RETRO_SIMD_VFPV3)
-               _len += strlcpy(str_out + _len, "VFPV3 ", str_len - _len);
+               _len += strlcpy(s + _len, "VFPV3 ", len - _len);
             if (cpu & RETRO_SIMD_VFPV4)
-               _len += strlcpy(str_out + _len, "VFPV4 ", str_len - _len);
+               _len += strlcpy(s + _len, "VFPV4 ", len - _len);
             if (cpu & RETRO_SIMD_VMX)
-               _len += strlcpy(str_out + _len, "VMX ", str_len - _len);
+               _len += strlcpy(s + _len, "VMX ", len - _len);
             if (cpu & RETRO_SIMD_VMX128)
-               _len += strlcpy(str_out + _len, "VMX128 ", str_len - _len);
+               _len += strlcpy(s + _len, "VMX128 ", len - _len);
             if (cpu & RETRO_SIMD_VFPU)
-               _len += strlcpy(str_out + _len, "VFPU ", str_len - _len);
+               _len += strlcpy(s + _len, "VFPU ", len - _len);
             if (cpu & RETRO_SIMD_PS)
-               _len += strlcpy(str_out + _len, "PS ", str_len - _len);
+               _len += strlcpy(s + _len, "PS ", len - _len);
             if (cpu & RETRO_SIMD_ASIMD)
-               _len += strlcpy(str_out + _len, "ASIMD ", str_len - _len);
+               _len += strlcpy(s + _len, "ASIMD ", len - _len);
             break;
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": MSVC (%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": MSVC (%d)",
                _MSC_VER);
 #elif defined(__SNC__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": SNC (%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": SNC (%d)",
                __SN_VER__);
 #elif defined(_WIN32) && defined(__GNUC__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": MinGW (%d.%d.%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": MinGW (%d.%d.%d)",
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #elif defined(__clang__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += strlcpy(str_out + _len, ": Clang/LLVM (", str_len - _len);
-         _len += strlcpy(str_out + _len, __clang_version__, str_len - _len);
-         _len += strlcpy(str_out + _len, ")", str_len - _len);
+         _len += strlcpy(s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += strlcpy(s + _len, ": Clang/LLVM (", len - _len);
+         _len += strlcpy(s + _len, __clang_version__, len - _len);
+         _len += strlcpy(s + _len, ")", len - _len);
 #elif defined(__GNUC__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": GCC (%d.%d.%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": GCC (%d.%d.%d)",
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #else
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_UNKNOWN_COMPILER), str_len);
+         _len += strlcpy(s + _len, msg_hash_to_str(MSG_UNKNOWN_COMPILER), len - _len);
 #endif
-         snprintf(str_out + _len, str_len - _len, " %u-bit",
+         _len += snprintf(s + _len, len - _len, " %u-bit",
                (unsigned)(CHAR_BIT * sizeof(size_t)));
          break;
       default:
       case RARCH_CAPABILITIES_NONE:
          break;
    }
-
-   return 0;
+   return _len;
 }
 
 void retroarch_fail(int error_code, const char *error)

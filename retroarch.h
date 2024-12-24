@@ -112,7 +112,7 @@ enum rarch_state_flags
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
-int retroarch_get_capabilities(enum rarch_capabilities type,
+size_t retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);
 
 void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data);

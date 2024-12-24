@@ -1266,7 +1266,6 @@ static void runloop_init_core_options_path(
       if (per_core_options)
       {
          strlcpy(s, per_core_options_path, len);
-
          if (!per_core_options_exist)
             strlcpy(src_path, global_options_path, src_len);
       }
@@ -1957,8 +1956,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                                 fullpath);
 
-                  strlcpy(tmp_path, fullpath, sizeof(tmp_path));
-                  path_basedir(tmp_path);
+                  fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
 
                   /* Removes trailing slash (unless root dir) */
                   len = strlen(tmp_path);
@@ -7903,7 +7901,8 @@ void runloop_path_set_redirect(settings_t *settings,
                                     sizeof(content_dir_name));
 
    /* Set savefile directory if empty to content directory */
-   if (string_is_empty(intermediate_savefile_dir) || savefiles_in_content_dir)
+   if (     string_is_empty(intermediate_savefile_dir)
+         || savefiles_in_content_dir)
    {
       strlcpy(intermediate_savefile_dir,
               runloop_st->runtime_content_path_basename,
@@ -7915,7 +7914,7 @@ void runloop_path_set_redirect(settings_t *settings,
    }
 
    /* Set savestate directory if empty based on content directory */
-   if (string_is_empty(intermediate_savestate_dir)
+   if (   string_is_empty(intermediate_savestate_dir)
        || savestates_in_content_dir)
    {
       strlcpy(intermediate_savestate_dir,
@@ -8013,11 +8012,12 @@ void runloop_path_set_redirect(settings_t *settings,
          && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)
          && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
    {
-      fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
-         sizeof(new_savefile_dir));
+      fill_pathname_join(new_savefile_dir,
+            new_savefile_dir, ".netplay",
+            sizeof(new_savefile_dir));
 
-      if (!path_is_directory(new_savefile_dir) &&
-            !path_mkdir(new_savefile_dir))
+      if (     !path_is_directory(new_savefile_dir)
+            && !path_mkdir(new_savefile_dir))
          path_basedir(new_savefile_dir);
    }
 #endif
@@ -8038,7 +8038,8 @@ void runloop_path_set_redirect(settings_t *settings,
                  sizeof(runloop_st->name.savestate));
          strlcpy(runloop_st->name.replay, new_savestate_dir,
                  sizeof(runloop_st->name.replay));
-      } else
+      }
+      else
          savestate_is_dir = path_is_directory(runloop_st->name.savestate);
 
       if (savefile_is_dir)
