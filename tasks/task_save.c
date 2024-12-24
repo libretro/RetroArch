@@ -581,8 +581,6 @@ static void task_save_handler(retro_task_t *task)
       else
       {
          char new_msg[128];
-         new_msg[0] = '\0';
-
          snprintf(new_msg, sizeof(new_msg),
                msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
                state->state_slot);

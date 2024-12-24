@@ -1354,8 +1354,8 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          {
             filebrowser_clear_type();
-            strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
-            path_basedir(tmp);
+            fill_pathname_basedir(tmp,
+                  path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
             info.type          = type;
             info.directory_ptr = idx;

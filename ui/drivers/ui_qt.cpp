@@ -2454,6 +2454,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
    if (core_info->firmware_count > 0)
    {
+      char tmp_path[PATH_MAX_LENGTH];
       core_info_ctx_firmware_t firmware_info;
       bool update_missing_firmware    = false;
       bool set_missing_firmware       = false;
@@ -2461,7 +2462,6 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       uint8_t flags                   = content_get_flags();
       bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
       bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
-      char tmp_path[PATH_MAX_LENGTH];
 
       firmware_info.path             = core_info->path;
 
@@ -2469,8 +2469,9 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
        * adjust the path to check for firmware files */
       if (systemfiles_in_content_dir && content_is_inited)
       {
-         strlcpy(tmp_path, path_get(RARCH_PATH_CONTENT), sizeof(tmp_path));
-         path_basedir(tmp_path);
+         fill_pathname_basedir(tmp_path,
+               path_get(RARCH_PATH_CONTENT),
+               sizeof(tmp_path));
 
          /* If content path is empty, fall back to global system dir path */
          if (string_is_empty(tmp_path))

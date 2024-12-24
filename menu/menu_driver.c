@@ -3040,16 +3040,12 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    const char *preset_dirs[3]  = {0};
    settings_t *settings        = config_get_ptr();
 
-
-   if (!path_is_empty(RARCH_PATH_CONFIG))
-   {
-      strlcpy(config_directory,
+   if (path_is_empty(RARCH_PATH_CONFIG))
+      config_directory[0]      = '\0';
+   else
+      fill_pathname_basedir(config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
-      path_basedir(config_directory);
-   }
-   else
-      config_directory[0]      = '\0';
 
    preset_dirs[0] = dir_video_shader;
    preset_dirs[1] = dir_menu_config;
@@ -3098,15 +3094,13 @@ static bool menu_shader_manager_operate_auto_preset(
        ||  (type == SHADER_PRESET_PARENT)))
       return false;
 
-   if (!path_is_empty(RARCH_PATH_CONFIG))
-   {
-      strlcpy(config_directory,
+   if (path_is_empty(RARCH_PATH_CONFIG))
+      config_directory[0]      = '\0';
+   else
+      fill_pathname_basedir(
+            config_directory,
             path_get(RARCH_PATH_CONFIG),
             sizeof(config_directory));
-      path_basedir(config_directory);
-   }
-   else
-      config_directory[0]      = '\0';
 
    /* We are only including this directory for compatibility purposes with
     * versions 1.8.7 and older. */
@@ -4615,7 +4609,11 @@ void menu_entries_get_core_title(char *s, size_t len)
    _len += strlcpy(s + _len, " - ",     len - _len);
    _len += strlcpy(s + _len, core_name, len - _len);
    if (!string_is_empty(core_version))
-      snprintf(s + _len, len - _len, " (%s)", core_version);
+   {
+      _len += strlcpy(s + _len, " (", len - _len);
+      _len += strlcpy(s + _len, core_version, len - _len);
+      strlcpy(s + _len, ")", len - _len);
+   }
 }
 
 static bool menu_driver_init_internal(

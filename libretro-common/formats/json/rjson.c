@@ -107,9 +107,12 @@ static enum rjson_type _rjson_error_char(rjson_t *json,
    char buf[16];
    if (json->stack_top->type == RJSON_ERROR)
       return RJSON_ERROR;
-   snprintf(buf, sizeof(buf),
-         (chr == _rJSON_EOF ? "end of stream" :
-         (chr >= ' ' && chr <= '~' ? "'%c'" : "byte 0x%02X")), chr);
+   if (chr == _rJSON_EOF)
+      strlcpy(buf, "end of stream", sizeof(buf));
+   else if (chr >= ' ' && chr <= '~')
+      snprintf(buf, sizeof(buf), "'%c'", chr);
+   else
+      snprintf(buf, sizeof(buf), "byte 0x%02X", chr);
    return _rjson_error(json, fmt, buf);
 }
 
@@ -455,7 +458,7 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
                case 'n':
                   esc = '\n';
                   goto escape_pushchar;
-               case 'r': 
+               case 'r':
                   if (!(json->option_flags & RJSON_OPTION_IGNORE_STRING_CARRIAGE_RETURN))
                   {
                      esc = '\r';
@@ -573,7 +576,7 @@ static enum rjson_type _rjson_read_number(rjson_t *json)
          goto invalid_number;
       if (*p < '0' || *p > '9')
          goto invalid_number;
-      do 
+      do
       {
          if (++p == end)
             return RJSON_NUMBER;
@@ -988,7 +991,7 @@ void rjson_set_max_depth(rjson_t *json, unsigned int max_depth)
 
 const char *rjson_get_string(rjson_t *json, size_t *length)
 {
-   char* str             = (json->string_pass_through 
+   char* str             = (json->string_pass_through
          ? json->string_pass_through : json->string);
    if (length)
       *length            = json->string_len;

@@ -235,15 +235,13 @@ bool disk_index_file_init(
    }
 
    /* > Create directory, if required */
-   if (!path_is_directory(disk_index_file_dir))
+   if (     !path_is_directory(disk_index_file_dir)
+         && !path_mkdir(disk_index_file_dir))
    {
-      if (!path_mkdir(disk_index_file_dir))
-      {
-         RARCH_ERR(
-               "[disk index file] failed to create directory for disk index file: %s\n",
-               disk_index_file_dir);
-         goto error;
-      }
+      RARCH_ERR(
+            "[disk index file] failed to create directory for disk index file: %s\n",
+            disk_index_file_dir);
+      goto error;
    }
 
    /* > Generate final path */

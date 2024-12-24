@@ -718,7 +718,7 @@ bool video_driver_translate_coord_viewport(
     * This should make it possible to hit the edges on all *
     * screen resolutions, even when pointer cannot be      *
     * moved offscreen. */
-    
+
    if (mouse_x > 0 && mouse_x < norm_full_vp_width)
       scaled_screen_x = ((mouse_x * 0xffff)
             / (norm_full_vp_width - 1)) - 0x8000;
@@ -3245,10 +3245,10 @@ float video_driver_get_refresh_rate(void)
    return 0.0f;
 }
 
-void video_driver_set_gpu_api_version_string(const char *str)
+size_t video_driver_set_gpu_api_version_string(const char *str)
 {
    video_driver_state_t *video_st           = &video_driver_st;
-   strlcpy(video_st->gpu_api_version_string, str,
+   return strlcpy(video_st->gpu_api_version_string, str,
          sizeof(video_st->gpu_api_version_string));
 }
 
@@ -3857,7 +3857,10 @@ void video_driver_frame(const void *data, unsigned width,
          status_text[++buf_pos]    = ' ';
          status_text[++buf_pos]    = '\0';
          buf_pos                  += snprintf(
-               status_text + buf_pos, sizeof(status_text) - buf_pos, "%.2f/%.2f", last_used_memory / (1024.0f * 1024.0f),
+               status_text + buf_pos,
+               sizeof(status_text) - buf_pos,
+               "%.2f/%.2f",
+               last_used_memory  / (1024.0f * 1024.0f),
                last_total_memory / (1024.0f * 1024.0f));
          status_text[buf_pos  ]   = 'M';
          status_text[++buf_pos]   = 'B';
@@ -3964,7 +3967,8 @@ void video_driver_frame(const void *data, unsigned width,
    if (
          (
 #ifdef HAVE_VIDEO_FILTER
-             !video_st->state_filter ||
+             !video_st->state_filter
+          ||
 #endif
              !video_info.post_filter_record
           || !data
@@ -4125,7 +4129,7 @@ void video_driver_frame(const void *data, unsigned width,
                " - Reserve:   %5.2f ms\n"
                " Frame Delay: %2u.00 ms\n"
                " - Target:    %2u.00 ms\n",
-               runloop_st->core_run_time / 1000.0f,
+               runloop_st->core_run_time    / 1000.0f,
                (1000.0f / video_info.refresh_rate) - video_st->frame_delay_effective - (runloop_st->core_run_time / 1000.0f),
                video_st->frame_time_reserve / 1000.0f,
                video_st->frame_delay_effective,
@@ -4224,10 +4228,12 @@ void video_driver_frame(const void *data, unsigned width,
                video_st->frame_count, (unsigned)pitch,
 #if HAVE_MENU
                   ((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) > 0)
-               || video_info.notifications_hidden ? "" : video_driver_msg,
+               || video_info.notifications_hidden
 #else
-               video_info.notifications_hidden ? "" : video_driver_msg,
+               video_info.notifications_hidden
 #endif
+               ? ""
+               : video_driver_msg,
                &video_info))
          video_st->flags |=  VIDEO_FLAG_ACTIVE;
       else
