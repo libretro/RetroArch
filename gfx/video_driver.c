@@ -1926,27 +1926,22 @@ void video_driver_unset_stub_frame(void)
    video_st->frame_bak               = NULL;
 }
 
-
-
-/* Get time diff between frames in usec*/
+/* Get time diff between frames in usec (microseconds) */
 uint32_t video_driver_get_frame_time_delta_usec(void)
 {
    static retro_time_t last_time;
-   retro_time_t now_time;
-   retro_time_t delta_time;
-   now_time = cpu_features_get_time_usec();
-   delta_time = now_time - last_time;
-   last_time = now_time;
+   retro_time_t now_time   = cpu_features_get_time_usec();
+   retro_time_t delta_time = now_time - last_time;
+   last_time               = now_time;
    return delta_time;
 }
 
-/* Get Original fps (core fps) */
+/* Get original FPS (core FPS) */
 float video_driver_get_original_fps(void)
 {
-   video_driver_state_t *video_st   = &video_driver_st;
-   struct retro_system_av_info *av_info   = &video_st->av_info;
-   float original_fps = (float)video_st->av_info.timing.fps;
-   return original_fps;
+   video_driver_state_t *video_st       = &video_driver_st;
+   struct retro_system_av_info *av_info = &video_st->av_info;
+   return (float)video_st->av_info.timing.fps;
 }
 
 /* Get aspect ratio (DAR) requested by the core */
@@ -2105,53 +2100,58 @@ void video_driver_set_aspect_ratio(void)
       video_st->poke->set_aspect_ratio(video_st->data, aspect_ratio_idx);
 }
 
-void video_viewport_get_scaled_aspect(struct video_viewport *vp, unsigned viewport_width, unsigned viewport_height, bool ydown)
+void video_viewport_get_scaled_aspect(struct video_viewport *vp,
+      unsigned vp_width, unsigned vp_height, bool y_down)
 {
-   float device_aspect      = (float)viewport_width / viewport_height;
+   float device_aspect      = (float)vp_width / vp_height;
    float desired_aspect     = video_driver_get_aspect_ratio();
-   video_viewport_get_scaled_aspect2(vp, viewport_width, viewport_height, ydown, device_aspect, desired_aspect);
+   video_viewport_get_scaled_aspect2(vp, vp_width, vp_height,
+         y_down, device_aspect, desired_aspect);
 }
 
-void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewport_width, unsigned viewport_height, bool ydown, float device_aspect, float desired_aspect)
+void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
+      unsigned vp_width, unsigned vp_height, bool y_down,
+      float device_aspect, float desired_aspect)
 {
-   settings_t *settings           = config_get_ptr();
-   video_driver_state_t *video_st = &video_driver_st;
-   int x                          = 0;
-   int y                          = 0;
-
-   float viewport_bias_x    = settings->floats.video_viewport_bias_x;
-   float viewport_bias_y    = settings->floats.video_viewport_bias_y;
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t
+      *video_st         = &video_driver_st;
+   int x                = 0;
+   int y                = 0;
+   float vp_bias_x      = settings->floats.video_vp_bias_x;
+   float vp_bias_y      = settings->floats.video_vp_bias_y;
 #if defined(RARCH_MOBILE)
-   if (viewport_width < viewport_height)
+   if (vp_width < vp_height)
    {
-      viewport_bias_x = settings->floats.video_viewport_bias_portrait_x;
-      viewport_bias_y = settings->floats.video_viewport_bias_portrait_y;
+      vp_bias_x         = settings->floats.video_vp_bias_portrait_x;
+      vp_bias_y         = settings->floats.video_vp_bias_portrait_y;
    }
 #endif
-   if (!ydown)
-      viewport_bias_y = 1.0 - viewport_bias_y;
+   if (!y_down)
+      vp_bias_y         = 1.0 - vp_bias_y;
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      video_viewport_t *custom_vp = &settings->video_viewport_custom;
-      int padding_x               = 0;
-      int padding_y               = 0;
+      video_viewport_t
+         *custom_vp     = &settings->video_vp_custom;
+      int padding_x     = 0;
+      int padding_y     = 0;
 
-      x                           = custom_vp->x;
-      y                           = custom_vp->y;
+      x                 = custom_vp->x;
+      y                 = custom_vp->y;
 
-      if (!ydown)
-         y       = vp->full_height - (y + custom_vp->height);
-      padding_x += (viewport_width - custom_vp->width);
+      if (!y_down)
+         y              = vp->full_height - (y + custom_vp->height);
+      padding_x        += (vp_width - custom_vp->width);
       if (padding_x < 0)
-         padding_x *= 2;
-      padding_y = viewport_height - custom_vp->height;
+         padding_x     *= 2;
+      padding_y         = vp_height - custom_vp->height;
       if (padding_y < 0)
-         padding_y *= 2;
-      viewport_width = custom_vp->width;
-      viewport_height = custom_vp->height;
-      x += padding_x * viewport_bias_x;
-      y += padding_y * viewport_bias_y;
+         padding_y     *= 2;
+      vp_width          = custom_vp->width;
+      vp_height         = custom_vp->height;
+      x                += padding_x * vp_bias_x;
+      y                += padding_y * vp_bias_y;
    }
    else
    {
@@ -2166,22 +2166,22 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp, unsigned viewp
       }
       else if (device_aspect > desired_aspect)
       {
-         delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-         x    += (int)roundf(viewport_width * ((0.5f - delta) * (viewport_bias_x * 2.0f)));
-         viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
+         delta      = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
+         x         += (int)roundf(vp_width * ((0.5f - delta) * (vp_bias_x * 2.0f)));
+         vp_width   = (unsigned)roundf(2.0f * vp_width * delta);
       }
       else
       {
-         delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-         y     += (int)roundf(viewport_height * ((0.5f - delta) * (viewport_bias_y * 2.0f)));
-         viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
+         delta      = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
+         y         += (int)roundf(vp_height * ((0.5f - delta) * (vp_bias_y * 2.0f)));
+         vp_height  = (unsigned)roundf(2.0f * vp_height * delta);
       }
    }
 
    vp->x      = x;
    vp->y      = y;
-   vp->width  = viewport_width;
-   vp->height = viewport_height;
+   vp->width  = vp_width;
+   vp->height = vp_height;
 
    /* Statistics */
    video_st->scale_width  = vp->width;
@@ -2397,7 +2397,7 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport)
  * @height        : Height.
  * @aspect_ratio  : Aspect ratio (in float).
  * @keep_aspect   : Preserve aspect ratio?
- * @ydown         : Positive y points down?
+ * @y_down        : Positive y points down?
  *
  * Gets viewport scaling dimensions based on
  * scaled integer aspect ratio.
@@ -2405,7 +2405,7 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport)
 void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect,
-      bool ydown)
+      bool y_down)
 {
    int x                           = 0;
    int y                           = 0;
@@ -2416,24 +2416,24 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    unsigned axis                   = settings->uints.video_scale_integer_axis;
    int padding_x                   = 0;
    int padding_y                   = 0;
-   float viewport_bias_x           = settings->floats.video_viewport_bias_x;
-   float viewport_bias_y           = settings->floats.video_viewport_bias_y;
+   float vp_bias_x                 = settings->floats.video_vp_bias_x;
+   float vp_bias_y                 = settings->floats.video_vp_bias_y;
    unsigned content_width          = video_st->frame_cache_width;
    unsigned content_height         = video_st->frame_cache_height;
    unsigned int rotation           = retroarch_get_rotation();
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
-      viewport_bias_x              = settings->floats.video_viewport_bias_portrait_x;
-      viewport_bias_y              = settings->floats.video_viewport_bias_portrait_y;
+      vp_bias_x                    = settings->floats.video_vp_bias_portrait_x;
+      vp_bias_y                    = settings->floats.video_vp_bias_portrait_y;
    }
 #endif
 
    content_width  = (content_width  <= 4) ? video_st->av_info.geometry.base_width  : content_width;
    content_height = (content_height <= 4) ? video_st->av_info.geometry.base_height : content_height;
 
-   if (!ydown)
-      viewport_bias_y = 1.0 - viewport_bias_y;
+   if (!y_down)
+      vp_bias_y = 1.0 - vp_bias_y;
 
    if (rotation % 2)
       content_height  = content_width;
@@ -2452,7 +2452,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
    /* Use regular scaling if there is no room for 1x */
    if (content_width > width || content_height > height)
    {
-      video_viewport_get_scaled_aspect(vp, width, height, ydown);
+      video_viewport_get_scaled_aspect(vp, width, height, y_down);
       return;
    }
 
@@ -2461,13 +2461,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
 
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      struct video_viewport *custom_vp = &settings->video_viewport_custom;
+      struct video_viewport *custom_vp = &settings->video_vp_custom;
       if (custom_vp)
       {
          x         = custom_vp->x;
          y         = custom_vp->y;
 
-         if (!ydown)
+         if (!y_down)
             y      = vp->height - (y + custom_vp->height);
          padding_x = width - custom_vp->width;
          if (padding_x < 0)
@@ -2565,12 +2565,14 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                /* Use regular scaling if there is no room for 1x */
                if (content_width > width || content_height > height)
                {
-                  video_viewport_get_scaled_aspect(vp, width, height, ydown);
+                  video_viewport_get_scaled_aspect(vp, width, height, y_down);
                   return;
                }
 
                if (scaling == VIDEO_SCALE_INTEGER_SCALING_SMART)
-                  max_scale_h = ((int)(height - content_height * overscale_h) < -(int)(height * 0.20f)) ? overscale_h - 1 : overscale_h;
+                  max_scale_h = ((int)(height - content_height * overscale_h) < -(int)(height * 0.20f))
+                     ? overscale_h - 1
+                     : overscale_h;
                else if (scaling == VIDEO_SCALE_INTEGER_SCALING_OVERSCALE)
                   max_scale_h = overscale_h;
                else
@@ -2648,13 +2650,13 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       height -= padding_y;
    }
 
-   x += padding_x * viewport_bias_x;
-   y += padding_y * viewport_bias_y;
+   x          += padding_x * vp_bias_x;
+   y          += padding_y * vp_bias_y;
 
-   vp->width  = width;
-   vp->height = height;
-   vp->x      = x;
-   vp->y      = y;
+   vp->width   = width;
+   vp->height  = height;
+   vp->x       = x;
+   vp->y       = y;
 
    /* Statistics */
    video_st->scale_width  = vp->width;
@@ -2822,7 +2824,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    VIDEO_DRIVER_THREADED_LOCK(video_st, is_threaded);
 #endif
-   custom_vp                               = &settings->video_viewport_custom;
+   custom_vp                               = &settings->video_vp_custom;
 #ifdef HAVE_GFX_WIDGETS
    video_info->widgets_active              = p_dispwidget->active;
 #else
@@ -3311,7 +3313,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          settings->bools.video_aspect_ratio_auto);
 
    /* Update CUSTOM viewport. */
-   custom_vp = &settings->video_viewport_custom;
+   custom_vp = &settings->video_vp_custom;
 
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
@@ -3640,7 +3642,6 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   static uint64_t last_used_memory, last_total_memory;
    static uint16_t frame_time_accumulator;
    /* Mark the start of nonblock state for
     * ignoring initial previous frame time */
@@ -3836,6 +3837,8 @@ void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.memory_show)
       {
+         static uint64_t last_used_memory, last_total_memory;
+
          if ((video_st->frame_count % memory_update_interval) == 0)
          {
             last_total_memory = frontend_driver_get_total_memory();

@@ -526,12 +526,12 @@ static bool take_screenshot_choice(
       bool has_valid_framebuffer,
       bool fullpath,
       bool use_thread,
-      bool supports_viewport_read,
+      bool supports_vp_read,
       bool supports_read_frame_raw,
       unsigned pixel_format_type
       )
 {
-   if (supports_viewport_read)
+   if (supports_vp_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
       if (video_st->poke && video_st->poke->set_texture_enable)
@@ -586,19 +586,19 @@ bool take_screenshot(
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
-   bool supports_viewport_read    = video_st->current_video->read_viewport
+   bool supports_vp_read          = video_st->current_video->read_viewport
          && (video_st->current_video->viewport_info);
-   bool prefer_viewport_read      = false;
-   if (supports_viewport_read)
+   bool prefer_vp_read            = false;
+   if (supports_vp_read)
    {
       /* Use VP read screenshots if it's a HW context core
        * and read_frame_raw is not implemented */
       if (      video_driver_is_hw_context()
             && !video_st->current_video->read_frame_raw)
-         prefer_viewport_read     = true;
+         prefer_vp_read           = true;
       /* Avoid GPU screenshots with savestates */
       if (video_gpu_screenshot && !savestate)
-         prefer_viewport_read     = true;
+         prefer_vp_read           = true;
    }
 
    /* No way to infer screenshot directory. */
@@ -615,7 +615,7 @@ bool take_screenshot(
          has_valid_framebuffer,
          fullpath,
          use_thread,
-         prefer_viewport_read,
+         prefer_vp_read,
          (video_st->current_video->read_frame_raw != NULL),
          video_st->pix_fmt
          );

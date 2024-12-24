@@ -320,8 +320,7 @@ static const GLfloat white_color[16] = {
  * FORWARD DECLARATIONS
  */
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate);
 
 #ifdef IOS
@@ -1268,39 +1267,40 @@ static void gl2_set_projection(gl2_t *gl,
 }
 
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width,
+      unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings     = config_get_ptr();
-   float device_aspect = (float) viewport_width / (float)viewport_height;
+   float device_aspect      = (float)vp_width / (float)vp_height;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
-            gl->ctx_data, viewport_width, viewport_height);
+            gl->ctx_data, vp_width, vp_height);
 
    if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(),
             (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false,
             false);
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      vp_width     = gl->vp.width;
+      vp_height    = gl->vp.height;
    }
    else if ((gl->flags & GL2_FLAG_KEEP_ASPECT) && !force_full)
    {
       gl->vp.full_height = gl->video_height;
-      video_viewport_get_scaled_aspect2(&gl->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      video_viewport_get_scaled_aspect2(&gl->vp, vp_width, vp_height,
+            false, device_aspect, video_driver_get_aspect_ratio());
+      vp_width      = gl->vp.width;
+      vp_height     = gl->vp.height;
    }
    else
    {
       gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.width  = vp_width;
+      gl->vp.height = vp_height;
    }
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
@@ -1309,12 +1309,12 @@ static void gl2_set_viewport(gl2_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->vp_out_width  = viewport_width;
-      gl->vp_out_height = viewport_height;
+      gl->out_vp_width  = vp_width;
+      gl->out_vp_height = vp_height;
    }
 
 #if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+   RARCH_LOG("Setting viewport @ %ux%u\n", vp_width, vp_height);
 #endif
 }
 
@@ -2765,12 +2765,11 @@ static void gl2_render_overlay(gl2_t *gl)
 }
 #endif
 
-static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+static void gl2_set_viewport_wrapper(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate)
 {
    gl2_t              *gl = (gl2_t*)data;
-   gl2_set_viewport(gl,
-         viewport_width, viewport_height, force_full, allow_rotate);
+   gl2_set_viewport(gl, vp_width, vp_height, force_full, allow_rotate);
 }
 
 /* Shaders */
@@ -3420,7 +3419,7 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_renderchain_recompute_pass_sizes(
             gl, chain,
             frame_width, frame_height,
-            gl->vp_out_width, gl->vp_out_height);
+            gl->out_vp_width, gl->out_vp_height);
 
       gl2_renderchain_start_render(gl, chain);
    }

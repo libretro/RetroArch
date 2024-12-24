@@ -66,7 +66,7 @@ struct vulkan_filter_chain_pass_info
 
 struct vulkan_filter_chain_swapchain_info
 {
-   VkViewport viewport;
+   VkViewport vp;
    VkFormat format;
    VkRenderPass render_pass;
    unsigned num_indices;

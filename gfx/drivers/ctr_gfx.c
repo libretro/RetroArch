@@ -768,9 +768,7 @@ static void ctr_update_viewport(
           true);
    }
    else if (ctr->keep_aspect)
-   {
       video_viewport_get_scaled_aspect(&ctr->vp, width, height, true);
-   }
    else
    {
       ctr->vp.x      = 0;

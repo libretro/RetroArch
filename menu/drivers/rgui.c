@@ -208,7 +208,7 @@ typedef struct
 
 typedef struct
 {
-   video_viewport_t viewport; /* int alignment */
+   video_viewport_t vp; /* int alignment */
    unsigned aspect_ratio_idx;
 } rgui_video_settings_t;
 
@@ -5857,10 +5857,10 @@ bool rgui_is_video_config_equal(
       rgui_video_settings_t *config_b)
 {
    return    (config_a->aspect_ratio_idx == config_b->aspect_ratio_idx)
-          && (config_a->viewport.width   == config_b->viewport.width)
-          && (config_a->viewport.height  == config_b->viewport.height)
-          && (config_a->viewport.x       == config_b->viewport.x)
-          && (config_a->viewport.y       == config_b->viewport.y);
+          && (config_a->vp.width   == config_b->vp.width)
+          && (config_a->vp.height  == config_b->vp.height)
+          && (config_a->vp.x       == config_b->vp.x)
+          && (config_a->vp.y       == config_b->vp.y);
 }
 
 static void rgui_get_video_config(
@@ -5868,14 +5868,14 @@ static void rgui_get_video_config(
       settings_t *settings,
       unsigned video_aspect_ratio_idx)
 {
-   /* Could use settings->video_viewport_custom directly,
+   /* Could use settings->video_vp_custom directly,
     * but this seems to be the standard way of doing it... */
-   video_viewport_t *custom_vp      = &settings->video_viewport_custom;
+   video_viewport_t *custom_vp      = &settings->video_vp_custom;
    video_settings->aspect_ratio_idx = video_aspect_ratio_idx;
-   video_settings->viewport.width   = custom_vp->width;
-   video_settings->viewport.height  = custom_vp->height;
-   video_settings->viewport.x       = custom_vp->x;
-   video_settings->viewport.y       = custom_vp->y;
+   video_settings->vp.width         = custom_vp->width;
+   video_settings->vp.height        = custom_vp->height;
+   video_settings->vp.x             = custom_vp->x;
+   video_settings->vp.y             = custom_vp->y;
 }
 
 static void rgui_set_video_config(
@@ -5884,14 +5884,14 @@ static void rgui_set_video_config(
       rgui_video_settings_t *video_settings,
       bool delay_update)
 {
-   /* Could use settings->video_viewport_custom directly,
+   /* Could use settings->video_vp_custom directly,
     * but this seems to be the standard way of doing it... */
-   video_viewport_t *custom_vp            = &settings->video_viewport_custom;
+   video_viewport_t *custom_vp            = &settings->video_vp_custom;
    settings->uints.video_aspect_ratio_idx = video_settings->aspect_ratio_idx;
-   custom_vp->width                       = video_settings->viewport.width;
-   custom_vp->height                      = video_settings->viewport.height;
-   custom_vp->x                           = video_settings->viewport.x;
-   custom_vp->y                           = video_settings->viewport.y;
+   custom_vp->width                       = video_settings->vp.width;
+   custom_vp->height                      = video_settings->vp.height;
+   custom_vp->x                           = video_settings->vp.x;
+   custom_vp->y                           = video_settings->vp.y;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
          (float)custom_vp->width / custom_vp->height;
@@ -5948,14 +5948,14 @@ static void rgui_update_menu_viewport(
       if (device_aspect > desired_aspect)
       {
          delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-         rgui->menu_video_settings.viewport.width  = (unsigned)(2.0f * (float)vp.full_width * delta);
-         rgui->menu_video_settings.viewport.height = vp.full_height;
+         rgui->menu_video_settings.vp.width  = (unsigned)(2.0f * (float)vp.full_width * delta);
+         rgui->menu_video_settings.vp.height = vp.full_height;
       }
       else
       {
          delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-         rgui->menu_video_settings.viewport.height = (unsigned)(2.0f * (float)vp.full_height * delta);
-         rgui->menu_video_settings.viewport.width  = vp.full_width;
+         rgui->menu_video_settings.vp.height = (unsigned)(2.0f * (float)vp.full_height * delta);
+         rgui->menu_video_settings.vp.width  = vp.full_width;
       }
 #else
       /* Check whether we need to perform integer scaling */
@@ -5971,8 +5971,8 @@ static void rgui_update_menu_viewport(
 
          if (scale > 0)
          {
-            rgui->menu_video_settings.viewport.width  = scale * fb_width;
-            rgui->menu_video_settings.viewport.height = scale * fb_height;
+            rgui->menu_video_settings.vp.width  = scale * fb_width;
+            rgui->menu_video_settings.vp.height = scale * fb_height;
          }
          else
             do_integer_scaling = false;
@@ -5983,8 +5983,8 @@ static void rgui_update_menu_viewport(
        * aspect ratio */
       if (menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN)
       {
-         rgui->menu_video_settings.viewport.width  = vp.full_width;
-         rgui->menu_video_settings.viewport.height = vp.full_height;
+         rgui->menu_video_settings.vp.width  = vp.full_width;
+         rgui->menu_video_settings.vp.height = vp.full_height;
       }
       /* Normal non-integer aspect-ratio-correct scaling */
       else if (!do_integer_scaling)
@@ -5994,31 +5994,31 @@ static void rgui_update_menu_viewport(
 
          if (aspect_ratio > display_aspect_ratio)
          {
-            rgui->menu_video_settings.viewport.width  = vp.full_width;
-            rgui->menu_video_settings.viewport.height = fb_height * vp.full_width / fb_width;
+            rgui->menu_video_settings.vp.width  = vp.full_width;
+            rgui->menu_video_settings.vp.height = fb_height * vp.full_width / fb_width;
          }
          else
          {
-            rgui->menu_video_settings.viewport.height = vp.full_height;
-            rgui->menu_video_settings.viewport.width  = fb_width * vp.full_height / fb_height;
+            rgui->menu_video_settings.vp.height = vp.full_height;
+            rgui->menu_video_settings.vp.width  = fb_width * vp.full_height / fb_height;
          }
       }
 #endif
 
       /* Sanity check */
-      if (rgui->menu_video_settings.viewport.width < 1)
-         rgui->menu_video_settings.viewport.width = 1;
-      if (rgui->menu_video_settings.viewport.height < 1)
-         rgui->menu_video_settings.viewport.height = 1;
+      if (rgui->menu_video_settings.vp.width < 1)
+         rgui->menu_video_settings.vp.width = 1;
+      if (rgui->menu_video_settings.vp.height < 1)
+         rgui->menu_video_settings.vp.height = 1;
    }
    else
    {
-      rgui->menu_video_settings.viewport.width  = 1;
-      rgui->menu_video_settings.viewport.height = 1;
+      rgui->menu_video_settings.vp.width  = 1;
+      rgui->menu_video_settings.vp.height = 1;
    }
 
-   rgui->menu_video_settings.viewport.x = (vp.full_width - rgui->menu_video_settings.viewport.width) / 2;
-   rgui->menu_video_settings.viewport.y = (vp.full_height - rgui->menu_video_settings.viewport.height) / 2;
+   rgui->menu_video_settings.vp.x = (vp.full_width - rgui->menu_video_settings.vp.width) / 2;
+   rgui->menu_video_settings.vp.y = (vp.full_height - rgui->menu_video_settings.vp.height) / 2;
 }
 
 static bool rgui_set_aspect_ratio(

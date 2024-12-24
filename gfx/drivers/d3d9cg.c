@@ -528,12 +528,9 @@ static void d3d9_cg_renderchain_set_shader_params(
       d3d9_renderchain_t *chain,
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
-      unsigned video_w,
-      unsigned video_h,
-      unsigned tex_w,
-      unsigned tex_h,
-      unsigned viewport_w,
-      unsigned viewport_h)
+      unsigned video_w,  unsigned video_h,
+      unsigned tex_w,    unsigned tex_h,
+      unsigned vp_width, unsigned vp_height)
 {
    CGparameter param;
    float frame_cnt;
@@ -547,8 +544,8 @@ static void d3d9_cg_renderchain_set_shader_params(
    video_size[1]        = video_h;
    texture_size[0]      = tex_w;
    texture_size[1]      = tex_h;
-   output_size[0]       = viewport_w;
-   output_size[1]       = viewport_h;
+   output_size[0]       = vp_width;
+   output_size[1]       = vp_height;
 
    frame_cnt            = chain->frame_count;
 
@@ -1127,7 +1124,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
 static bool d3d9_cg_renderchain_init(
       d3d9_video_t *d3d,
       LPDIRECT3DDEVICE9 dev,
-      const D3DVIEWPORT9 *final_viewport,
+      const D3DVIEWPORT9 *out_vp,
       const struct LinkInfo *info,
       bool rgb32)
 {
@@ -1143,7 +1140,7 @@ static bool d3d9_cg_renderchain_init(
    }
 
    chain->chain.dev            = dev;
-   chain->chain.final_viewport = (D3DVIEWPORT9*)final_viewport;
+   chain->chain.out_vp         = (D3DVIEWPORT9*)out_vp;
    chain->chain.frame_count    = 0;
    chain->chain.pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
 
@@ -1399,7 +1396,7 @@ static void d3d9_cg_renderchain_render(
    d3d9_convert_geometry(
          &first_pass->info,
          &out_width, &out_height,
-         current_width, current_height, chain->final_viewport);
+         current_width, current_height, chain->out_vp);
 
    d3d9_blit_to_texture(first_pass->tex,
          frame_data,
@@ -1427,7 +1424,7 @@ static void d3d9_cg_renderchain_render(
 
       d3d9_convert_geometry(&from_pass->info,
             &out_width, &out_height,
-            current_width, current_height, chain->final_viewport);
+            current_width, current_height, chain->out_vp);
 
       /* Clear out whole FBO. */
       viewport.Width  = to_pass->info.tex_w;
@@ -1467,16 +1464,16 @@ static void d3d9_cg_renderchain_render(
 
    d3d9_convert_geometry(&last_pass->info,
          &out_width, &out_height,
-         current_width, current_height, chain->final_viewport);
+         current_width, current_height, chain->out_vp);
 
-   IDirect3DDevice9_SetViewport(chain->dev, (D3DVIEWPORT9*)chain->final_viewport);
+   IDirect3DDevice9_SetViewport(chain->dev, (D3DVIEWPORT9*)chain->out_vp);
 
    d3d9_cg_renderchain_set_vertices(
          chain, last_pass,
          current_width, current_height,
          out_width, out_height,
-         chain->final_viewport->Width,
-         chain->final_viewport->Height,
+         chain->out_vp->Width,
+         chain->out_vp->Height,
          rotation);
 
    d3d9_cg_renderchain_render_pass(chain,
@@ -1493,8 +1490,8 @@ static void d3d9_cg_renderchain_render(
    cgD3D9BindProgram((CGprogram)&_chain->stock_shader.vprg);
    d3d9_cg_renderchain_calc_and_set_shader_mvp(
          (CGprogram)_chain->stock_shader.vprg,
-         chain->final_viewport->Width,
-         chain->final_viewport->Height, 0);
+         chain->out_vp->Width,
+         chain->out_vp->Height, 0);
 }
 
 static uint32_t d3d9_cg_get_flags(void *data)
@@ -1609,7 +1606,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
    if (
          !d3d9_cg_renderchain_init(
             d3d,
-            d3d->dev, &d3d->final_viewport, &link_info,
+            d3d->dev, &d3d->out_vp, &link_info,
             rgb32)
       )
    {
@@ -1629,7 +1626,7 @@ static bool d3d9_cg_init_chain(d3d9_video_t *d3d,
       d3d9_convert_geometry(
             &link_info,
             &out_width, &out_height,
-            current_width, current_height, &d3d->final_viewport);
+            current_width, current_height, &d3d->out_vp);
 
       link_info.pass  = &d3d->shader.pass[i];
       link_info.tex_w = next_pow2(out_width);
@@ -1760,14 +1757,14 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    if (d3d->translate_x)
    {
       struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
-      float vp_x = -(d3d->translate_x/(float)d3d->final_viewport.Width);
+      float vp_x = -(d3d->translate_x/(float)d3d->out_vp.Width);
       pout->m[3][0] = -1.0f + vp_x - 2.0f * 1 / (0 - 1);
    }
 
    if (d3d->translate_y)
    {
       struct d3d_matrix *pout = (struct d3d_matrix*)&d3d->mvp;
-      float vp_y = -(d3d->translate_y/(float)d3d->final_viewport.Height);
+      float vp_y = -(d3d->translate_y/(float)d3d->out_vp.Height);
       pout->m[3][1] = 1.0f + vp_y + 2.0f * 1 / (0 - 1);
    }
 
@@ -2078,7 +2075,7 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       d3d9_set_viewport(d3d, width, height, false, true);
 
       if (chain)
-         chain->final_viewport = (D3DVIEWPORT9*)&d3d->final_viewport;
+         chain->out_vp = (D3DVIEWPORT9*)&d3d->out_vp;
 
       d3d9_recompute_pass_sizes(chain->dev, chain, d3d);
 

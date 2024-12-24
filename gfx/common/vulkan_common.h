@@ -565,7 +565,8 @@ typedef struct vk
    unsigned video_height;
 
    unsigned tex_w, tex_h;
-   unsigned vp_out_width, vp_out_height;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
    unsigned rotation;
    unsigned num_swapchain_images;
    unsigned last_valid_index;
