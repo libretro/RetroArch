@@ -5148,7 +5148,6 @@ static unsigned menu_displaylist_parse_content_information(
          && !string_is_empty(db_name))
    {
       char db_path[PATH_MAX_LENGTH];
-
       fill_pathname_join_special(db_path,
             settings->paths.path_content_database,
             db_name,
@@ -6688,7 +6687,7 @@ static unsigned menu_displaylist_populate_subsystem(
                   {
                      _len2    += strlcpy(rom_buff + _len2,
                            path_basename(content_get_subsystem_rom(j)),
-                           sizeof(rom_buff)   - _len2);
+                                 sizeof(rom_buff) - _len2);
                      if (j != content_get_subsystem_rom_id() - 1)
                         _len2 += strlcpy(rom_buff + _len2, "|", sizeof(rom_buff) - _len2);
                   }
@@ -12835,7 +12834,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                size_t _len;
                unsigned i;
-               char text[PATH_MAX_LENGTH];
+               char text[128];
                const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
                /* TODO/FIXME - localize */
                runloop_msg_queue_push("Warning : extended overclocking can damage the Switch",
@@ -15188,7 +15187,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             {
-               char new_exts[PATH_MAX_LENGTH];
+               char new_exts[128];
                gfx_ctx_flags_t flags;
                size_t _len     = 0;
                new_exts[0]     = '\0';
@@ -15251,7 +15250,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             {
                gfx_ctx_flags_t flags;
-               char new_exts[PATH_MAX_LENGTH];
+               char new_exts[128];
                size_t _len     = 0;
 
                flags.flags     = 0;
@@ -15291,7 +15290,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->type_default = FILE_TYPE_IMAGE;
             {
                size_t _len = 0;
-               char new_exts[PATH_MAX_LENGTH];
+               char new_exts[128];
                new_exts[0] = '\0';
 #ifdef HAVE_RBMP
                _len    += strlcpy(new_exts + _len, "bmp", sizeof(new_exts) - _len);
