@@ -3431,16 +3431,13 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf && has_application_data)
    {
-      bool dir_created = false;
       char basedir[DIR_MAX_LENGTH];
       /* Try to create a new config file. */
       fill_pathname_basedir(basedir, application_data, sizeof(basedir));
       fill_pathname_join_special(conf_path, application_data,
             FILE_PATH_MAIN_CONFIG, sizeof(conf_path));
 
-      dir_created = path_mkdir(basedir);
-
-      if (dir_created)
+      if ((path_mkdir(basedir)))
       {
          char skeleton_conf[PATH_MAX_LENGTH];
          bool saved          = false;
@@ -3780,28 +3777,25 @@ static bool config_load_file(global_t *global,
    }
 
    {
-      char prefix[24];
-      size_t _len = strlcpy(prefix, "input_player", sizeof(prefix));
+      char prefix[64];
+      size_t _len    = strlcpy(prefix, "input_player", sizeof(prefix));
+      size_t old_len = _len;
       for (i = 0; i < MAX_USERS; i++)
       {
-         size_t _len2;
-         char buf[64];
-         snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
+         _len  = old_len;
+         _len += snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
-         _len2     = strlcpy(buf, prefix, sizeof(buf));
+         strlcpy(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], prefix);
 
-         strlcpy(buf + _len2, "_mouse_index", sizeof(buf) - _len2);
-         CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], buf);
+         strlcpy(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
 
-         strlcpy(buf + _len2, "_joypad_index", sizeof(buf) - _len2);
-         CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], buf);
+         strlcpy(prefix + _len, "_analog_dpad_mode", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], prefix);
 
-         strlcpy(buf + _len2, "_analog_dpad_mode", sizeof(buf) - _len2);
-         CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], buf);
-
-         strlcpy(buf + _len2, "_device_reservation_type", sizeof(buf) - _len2);
-         CONFIG_GET_INT_BASE(conf, settings, uints.input_device_reservation_type[i], buf);
-
+         strlcpy(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_device_reservation_type[i], prefix);
       }
    }
 
@@ -3899,7 +3893,6 @@ static bool config_load_file(global_t *global,
    {
       /* Migrate from old deprecated negative value */
       int wasapi_sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
-
       if (wasapi_sh_buffer_length < 0)
          settings->uints.audio_wasapi_sh_buffer_length = 0;
    }
@@ -4380,25 +4373,24 @@ bool config_load_override(void *data)
    /* Create a new config file from core_path */
    if (path_is_valid(core_path))
    {
-      char tmp_path[PATH_MAX_LENGTH];
 
       RARCH_LOG("[Overrides]: Core-specific overrides found at \"%s\".\n",
             core_path);
 
       if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
       {
+         char tmp_path[PATH_MAX_LENGTH];
          size_t _len      = strlcpy(tmp_path,
                path_get(RARCH_PATH_CONFIG_OVERRIDE),
                sizeof(tmp_path));
          tmp_path[  _len] = '|';
          tmp_path[++_len] = '\0';
          strlcpy(tmp_path + _len, core_path, sizeof(tmp_path) - _len);
+         path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
          RARCH_LOG("[Overrides]: Core-specific overrides stacking on top of previous overrides.\n");
       }
       else
-         strlcpy(tmp_path, core_path, sizeof(tmp_path));
-
-      path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
+         path_set(RARCH_PATH_CONFIG_OVERRIDE, core_path);
 
       should_append     = true;
       show_notification = true;
@@ -4410,25 +4402,23 @@ bool config_load_override(void *data)
       /* Create a new config file from content_path */
       if (path_is_valid(content_path))
       {
-         char tmp_path[PATH_MAX_LENGTH];
-
          RARCH_LOG("[Overrides]: Content dir-specific overrides found at \"%s\".\n",
                content_path);
 
          if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
          {
+            char tmp_path[PATH_MAX_LENGTH];
             size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_OVERRIDE),
                   sizeof(tmp_path));
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, content_path, sizeof(tmp_path) - _len);
+            path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
             RARCH_LOG("[Overrides]: Content dir-specific overrides stacking on top of previous overrides.\n");
          }
          else
-            strlcpy(tmp_path, content_path, sizeof(tmp_path));
-
-         path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
+            path_set(RARCH_PATH_CONFIG_OVERRIDE, content_path);
 
          should_append     = true;
          show_notification = true;
@@ -4438,25 +4428,23 @@ bool config_load_override(void *data)
       /* Create a new config file from game_path */
       if (path_is_valid(game_path))
       {
-         char tmp_path[PATH_MAX_LENGTH];
-
          RARCH_LOG("[Overrides]: Game-specific overrides found at \"%s\".\n",
                game_path);
 
          if (should_append && !string_is_empty(path_get(RARCH_PATH_CONFIG_OVERRIDE)))
          {
+            char tmp_path[PATH_MAX_LENGTH];
             size_t _len      = strlcpy(tmp_path,
                   path_get(RARCH_PATH_CONFIG_OVERRIDE),
                   sizeof(tmp_path));
             tmp_path[  _len] = '|';
             tmp_path[++_len] = '\0';
             strlcpy(tmp_path + _len, game_path, sizeof(tmp_path) - _len);
+            path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
             RARCH_LOG("[Overrides]: Game-specific overrides stacking on top of previous overrides.\n");
          }
          else
-            strlcpy(tmp_path, game_path, sizeof(tmp_path));
-
-         path_set(RARCH_PATH_CONFIG_OVERRIDE, tmp_path);
+            path_set(RARCH_PATH_CONFIG_OVERRIDE, game_path);
 
          should_append     = true;
          show_notification = true;
@@ -5036,14 +5024,14 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
 
 void config_get_autoconf_profile_filename(
       const char *device_name, unsigned user,
-      char *buf, size_t len_buf)
+      char *s, size_t len)
 {
    static const char* invalid_filename_chars[] = {
       /* https://support.microsoft.com/en-us/help/905231/information-about-the-characters-that-you-cannot-use-in-site-names--fo */
       "~", "#", "%", "&", "*", "{", "}", "\\", ":", "[", "]", "?", "/", "|", "\'", "\"",
       NULL
    };
-   size_t len;
+   size_t _len;
    unsigned i;
 
    settings_t *settings                 = config_st;
@@ -5088,28 +5076,27 @@ void config_get_autoconf_profile_filename(
    }
 
    /* Generate autoconfig file path */
-   fill_pathname_join_special(buf, autoconf_dir, joypad_driver, len_buf);
+   fill_pathname_join_special(s, autoconf_dir, joypad_driver, len);
 
    /* Driver specific autoconf dir may not exist, if autoconfs are not downloaded. */
-   if (!path_is_directory(buf))
-      len = strlcpy(buf, sanitised_name, len_buf);
+   if (!path_is_directory(s))
+      _len = strlcpy(s, sanitised_name, len);
    else
-      len = fill_pathname_join_special(buf, joypad_driver, sanitised_name, len_buf);
-   strlcpy(buf + len, ".cfg", len_buf - len);
+      _len = fill_pathname_join_special(s, joypad_driver, sanitised_name, len);
+   strlcpy(s + _len, ".cfg", len - _len);
 
 end:
    if (sanitised_name)
       free(sanitised_name);
-
 }
+
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
  * @user              : Controller number to save
  * Writes a controller autoconf file to disk.
  **/
-bool config_save_autoconf_profile(const
-      char *device_name, unsigned user)
+bool config_save_autoconf_profile(const char *device_name, unsigned user)
 {
    unsigned i;
    char buf[PATH_MAX_LENGTH];
@@ -5922,58 +5909,59 @@ bool input_remapping_load_file(void *data, const char *path)
 
          if (j < RARCH_FIRST_CUSTOM_BIND)
          {
-            int btn_remap = -1;
-            int key_remap = -1;
-            char btn_ident[128];
-            char key_ident[128];
+            char ident[128];
+            int _remap = -1;
 
-            fill_pathname_join_delim(btn_ident, s1,
-                  key_string, '_', sizeof(btn_ident));
-            fill_pathname_join_delim(key_ident, s2,
-                  key_string, '_', sizeof(key_ident));
+            fill_pathname_join_delim(ident, s1,
+                  key_string, '_', sizeof(ident));
 
-            if (config_get_int(conf, btn_ident, &btn_remap))
+            if (config_get_int(conf, ident, &_remap))
             {
-               if (btn_remap == -1)
-                  btn_remap = RARCH_UNMAPPED;
+               if (_remap == -1)
+                  _remap = RARCH_UNMAPPED;
 
                configuration_set_uint(settings,
-                     settings->uints.input_remap_ids[i][j], btn_remap);
+                     settings->uints.input_remap_ids[i][j], _remap);
             }
 
-            if (!config_get_int(conf, key_ident, &key_remap))
-               key_remap = RETROK_UNKNOWN;
+            fill_pathname_join_delim(ident, s2,
+                  key_string, '_', sizeof(ident));
+
+            _remap = -1;
+
+            if (!config_get_int(conf, ident, &_remap))
+               _remap = RETROK_UNKNOWN;
 
             configuration_set_uint(settings,
-                  settings->uints.input_keymapper_ids[i][j], key_remap);
+                  settings->uints.input_keymapper_ids[i][j], _remap);
          }
          else
          {
-            char stk_ident[256];
-            char key_ident[128];
-            int stk_remap = -1;
-            int key_remap = -1;
+            char ident[256];
+            int _remap = -1;
 
-            fill_pathname_join_delim(stk_ident, s3,
-                  key_string, '_', sizeof(stk_ident));
+            fill_pathname_join_delim(ident, s3,
+                  key_string, '_', sizeof(ident));
 
-            if (config_get_int(conf, stk_ident, &stk_remap))
+            if (config_get_int(conf, ident, &_remap))
             {
-               if (stk_remap == -1)
-                  stk_remap = RARCH_UNMAPPED;
+               if (_remap == -1)
+                  _remap = RARCH_UNMAPPED;
 
                configuration_set_uint(settings,
-                     settings->uints.input_remap_ids[i][j], stk_remap);
+                     settings->uints.input_remap_ids[i][j], _remap);
             }
 
-            fill_pathname_join_delim(key_ident, s2,
-                  key_string, '_', sizeof(key_ident));
+            fill_pathname_join_delim(ident, s2,
+                  key_string, '_', sizeof(ident));
 
-            if (!config_get_int(conf, key_ident, &key_remap))
-               key_remap = RETROK_UNKNOWN;
+            _remap = -1;
+
+            if (!config_get_int(conf, ident, &_remap))
+               _remap = RETROK_UNKNOWN;
 
             configuration_set_uint(settings,
-                  settings->uints.input_keymapper_ids[i][j], key_remap);
+                  settings->uints.input_keymapper_ids[i][j], _remap);
          }
       }
 
@@ -6089,67 +6077,67 @@ bool input_remapping_save_file(const char *path)
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
-         char btn_ident[128];
-         char key_ident[128];
+         char _ident[128];
          const char *key_string = key_strings[j];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
 
-         fill_pathname_join_delim(btn_ident, s1,
-               key_string, '_', sizeof(btn_ident));
-         fill_pathname_join_delim(key_ident, s2,
-               key_string, '_', sizeof(key_ident));
+         fill_pathname_join_delim(_ident, s1,
+               key_string, '_', sizeof(_ident));
 
          /* Only save modified button values */
          if (remap_id == j)
-            config_unset(conf, btn_ident);
+            config_unset(conf, _ident);
          else
          {
             if (remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, btn_ident, -1);
+               config_set_int(conf, _ident, -1);
             else
-               config_set_int(conf, btn_ident,
+               config_set_int(conf, _ident,
                      settings->uints.input_remap_ids[i][j]);
          }
 
+         fill_pathname_join_delim(_ident, s2,
+               key_string, '_', sizeof(_ident));
+
          /* Only save non-empty keymapper values */
          if (keymap_id == RETROK_UNKNOWN)
-            config_unset(conf, key_ident);
+            config_unset(conf, _ident);
          else
-            config_set_int(conf, key_ident,
+            config_set_int(conf, _ident,
                   settings->uints.input_keymapper_ids[i][j]);
       }
 
       for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
       {
-         char stk_ident[128];
-         char key_ident[128];
+         char _ident[128];
          const char *key_string = key_strings[j];
          unsigned remap_id      = settings->uints.input_remap_ids[i][j];
          unsigned keymap_id     = settings->uints.input_keymapper_ids[i][j];
 
-         fill_pathname_join_delim(stk_ident, s3,
-               key_string, '_', sizeof(stk_ident));
-         fill_pathname_join_delim(key_ident, s2,
-               key_string, '_', sizeof(key_ident));
+         fill_pathname_join_delim(_ident, s3,
+               key_string, '_', sizeof(_ident));
 
          /* Only save modified button values */
          if (remap_id == j)
-            config_unset(conf, stk_ident);
+            config_unset(conf, _ident);
          else
          {
             if (remap_id == RARCH_UNMAPPED)
-               config_set_int(conf, stk_ident, -1);
+               config_set_int(conf, _ident, -1);
             else
-               config_set_int(conf, stk_ident,
+               config_set_int(conf, _ident,
                      settings->uints.input_remap_ids[i][j]);
          }
 
+         fill_pathname_join_delim(_ident, s2,
+               key_string, '_', sizeof(_ident));
+
          /* Only save non-empty keymapper values */
          if (keymap_id == RETROK_UNKNOWN)
-            config_unset(conf, key_ident);
+            config_unset(conf, _ident);
          else
-            config_set_int(conf, key_ident,
+            config_set_int(conf, _ident,
                   settings->uints.input_keymapper_ids[i][j]);
       }
 
@@ -6230,9 +6218,9 @@ void config_load_file_salamander(void)
          config_path);
 
    if (config_get_path(config, "libretro_path",
-         libretro_path, sizeof(libretro_path)) &&
-       !string_is_empty(libretro_path) &&
-       !string_is_equal(libretro_path, "builtin"))
+         libretro_path, sizeof(libretro_path))
+       && !string_is_empty(libretro_path)
+       && !string_is_equal(libretro_path, "builtin"))
       path_set(RARCH_PATH_CORE, libretro_path);
 
    config_file_free(config);
