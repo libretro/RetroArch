@@ -1252,7 +1252,7 @@ static size_t frontend_unix_get_os(char *s,
    char *ptr;
    struct utsname buffer;
    if (uname(&buffer) != 0)
-      return;
+      return _len;
    *major = (int)strtol(buffer.release, &ptr, 10);
    *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
