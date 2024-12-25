@@ -99,7 +99,7 @@ struct gfx_widget_load_content_animation_state
    char content_name[512];
    char system_name[512];
    char icon_directory[DIR_MAX_LENGTH];
-   char icon_file[PATH_MAX_LENGTH];
+   char icon_file[NAME_MAX_LENGTH];
 
    bool has_icon;
 };
