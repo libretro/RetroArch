@@ -1702,7 +1702,7 @@ void video_driver_set_viewport_config(
 
 void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
 {
-   unsigned len, i, aspect_x, aspect_y;
+   unsigned _len, i, aspect_x, aspect_y;
    unsigned int rotation             = 0;
    unsigned highest                  = 1;
    unsigned width                    = geom->base_width;
@@ -1712,9 +1712,9 @@ void video_driver_set_viewport_square_pixel(struct retro_game_geometry *geom)
       return;
 
    rotation                          = retroarch_get_rotation();
-   len                               = MIN(width, height);
+   _len                              = MIN(width, height);
 
-   for (i = 1; i < len; i++)
+   for (i = 1; i < _len; i++)
    {
       if ((width % i) == 0 && (height % i) == 0)
          highest = i;
@@ -1762,13 +1762,13 @@ bool video_driver_set_video_mode(unsigned width,
    return false;
 }
 
-bool video_driver_get_video_output_size(unsigned *width, unsigned *height, char *desc, size_t desc_len)
+bool video_driver_get_video_output_size(unsigned *width, unsigned *height, char *s, size_t len)
 {
    video_driver_state_t *video_st         = &video_driver_st;
    if (!video_st->poke || !video_st->poke->get_video_output_size)
       return false;
    video_st->poke->get_video_output_size(video_st->data,
-         width, height, desc, desc_len);
+         width, height, s, len);
    return true;
 }
 
@@ -2775,12 +2775,12 @@ bool video_driver_has_focus(void)
    return VIDEO_HAS_FOCUS(video_st);
 }
 
-size_t video_driver_get_window_title(char *buf, unsigned len)
+size_t video_driver_get_window_title(char *s, size_t len)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   if (buf && (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE))
+   if (s && (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE))
    {
-      strlcpy(buf, video_st->window_title, len);
+      strlcpy(s, video_st->window_title, len);
       video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
    }
    return video_st->window_title_len;
@@ -3652,7 +3652,7 @@ void video_driver_frame(const void *data, unsigned width,
    bool render_frame              = true;
    retro_time_t new_time;
    video_frame_info_t video_info;
-   size_t buf_pos                 = 0;
+   size_t _len                    = 0;
    video_driver_state_t *video_st = &video_driver_st;
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    const enum retro_pixel_format
@@ -3666,7 +3666,6 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
    recording_state_t *recording_st= recording_state_get_ptr();
 
-   status_text[0]                 = '\0';
    video_driver_msg[0]            = '\0';
 
    if (!video_driver_active)
@@ -3802,36 +3801,36 @@ void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.fps_show)
       {
-         status_text[  buf_pos] = 'F';
-         status_text[++buf_pos] = 'P';
-         status_text[++buf_pos] = 'S';
-         status_text[++buf_pos] = ':';
-         status_text[++buf_pos] = ' ';
-         status_text[++buf_pos] = '\0';
-         buf_pos               += snprintf(
-               status_text         + buf_pos,
-               sizeof(status_text) - buf_pos,
+         status_text[  _len] = 'F';
+         status_text[++_len] = 'P';
+         status_text[++_len] = 'S';
+         status_text[++_len] = ':';
+         status_text[++_len] = ' ';
+         status_text[++_len] = '\0';
+         _len                  += snprintf(
+               status_text         + _len,
+               sizeof(status_text) - _len,
                "%6.2f", last_fps);
       }
 
       if (video_info.framecount_show)
       {
-         if (status_text[buf_pos-1] != '\0')
+         if (_len > 0)
          {
-            status_text[  buf_pos] = ' ';
-            status_text[++buf_pos] = '|';
-            status_text[++buf_pos] = '|';
-            status_text[++buf_pos] = ' ';
-            status_text[++buf_pos] = '\0';
+            status_text[  _len] = ' ';
+            status_text[++_len] = '|';
+            status_text[++_len] = '|';
+            status_text[++_len] = ' ';
+            status_text[++_len] = '\0';
          }
-         buf_pos += strlcpy(status_text + buf_pos,
+         _len += strlcpy(status_text + _len,
                msg_hash_to_str(MSG_FRAMES),
-               sizeof(status_text)      - buf_pos);
-         status_text[buf_pos  ]    = ':';
-         status_text[++buf_pos]    = ' ';
-         status_text[++buf_pos]    = '\0';
-         buf_pos                  += snprintf(status_text + buf_pos,
-               sizeof(status_text) - buf_pos,
+                 sizeof(status_text) - _len);
+         status_text[  _len]    = ':';
+         status_text[++_len]    = ' ';
+         status_text[++_len]    = '\0';
+         _len += snprintf(status_text + _len,
+                  sizeof(status_text) - _len,
                "%" PRIu64, (uint64_t)video_st->frame_count);
       }
 
@@ -3845,55 +3844,55 @@ void video_driver_frame(const void *data, unsigned width,
             last_used_memory  = last_total_memory - frontend_driver_get_free_memory();
          }
 
-         if (status_text[buf_pos-1] != '\0')
+         if (_len > 0)
          {
-            status_text[buf_pos]   = ' ';
-            status_text[++buf_pos] = '|';
-            status_text[++buf_pos] = '|';
-            status_text[++buf_pos] = ' ';
-            status_text[++buf_pos] = '\0';
+            status_text[_len]   = ' ';
+            status_text[++_len] = '|';
+            status_text[++_len] = '|';
+            status_text[++_len] = ' ';
+            status_text[++_len] = '\0';
          }
-         status_text[buf_pos  ]    = 'M';
-         status_text[++buf_pos]    = 'E';
-         status_text[++buf_pos]    = 'M';
-         status_text[++buf_pos]    = ':';
-         status_text[++buf_pos]    = ' ';
-         status_text[++buf_pos]    = '\0';
-         buf_pos                  += snprintf(
-               status_text + buf_pos,
-               sizeof(status_text) - buf_pos,
+         status_text[_len  ]    = 'M';
+         status_text[++_len]    = 'E';
+         status_text[++_len]    = 'M';
+         status_text[++_len]    = ':';
+         status_text[++_len]    = ' ';
+         status_text[++_len]    = '\0';
+         _len                  += snprintf(
+                       status_text + _len,
+               sizeof(status_text) - _len,
                "%.2f/%.2f",
                last_used_memory  / (1024.0f * 1024.0f),
                last_total_memory / (1024.0f * 1024.0f));
-         status_text[buf_pos  ]   = 'M';
-         status_text[++buf_pos]   = 'B';
-         status_text[++buf_pos]   = '\0';
+         status_text[_len  ]    = 'M';
+         status_text[++_len]    = 'B';
+         status_text[++_len]    = '\0';
       }
 
       if ((video_st->frame_count % fps_update_interval) == 0)
       {
-         size_t new_len;
+         size_t __len;
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
 
-         new_len = strlcpy(video_st->window_title, video_st->title_buf,
+         __len = strlcpy(video_st->window_title, video_st->title_buf,
                sizeof(video_st->window_title));
 
          if (!string_is_empty(status_text))
          {
-            video_st->window_title[  new_len  ] = ' ';
-            video_st->window_title[++new_len  ] = '|';
-            video_st->window_title[++new_len  ] = '|';
-            video_st->window_title[++new_len  ] = ' ';
-            video_st->window_title[++new_len  ] = '\0';
-            new_len += strlcpy(
-                  video_st->window_title         + new_len,
+            video_st->window_title[  __len  ] = ' ';
+            video_st->window_title[++__len  ] = '|';
+            video_st->window_title[++__len  ] = '|';
+            video_st->window_title[++__len  ] = ' ';
+            video_st->window_title[++__len  ] = '\0';
+            __len += strlcpy(
+                  video_st->window_title         + __len,
                   status_text,
-                  sizeof(video_st->window_title) - new_len);
+                  sizeof(video_st->window_title) - __len);
          }
 
          curr_time                  = new_time;
-         video_st->window_title_len = new_len;
+         video_st->window_title_len = __len;
          video_st->flags           |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
       }
    }
@@ -3907,7 +3906,7 @@ void video_driver_frame(const void *data, unsigned width,
             sizeof(video_st->window_title));
 
       if (video_info.fps_show)
-         buf_pos = strlcpy(status_text,
+         _len = strlcpy(status_text,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                sizeof(status_text));
 
@@ -3944,15 +3943,15 @@ void video_driver_frame(const void *data, unsigned width,
           * message at the end */
          if (!string_is_empty(status_text))
          {
-            status_text[buf_pos    ] = ' ';
-            status_text[++buf_pos  ] = '|';
-            status_text[++buf_pos  ] = '|';
-            status_text[++buf_pos  ] = ' ';
-            status_text[++buf_pos  ] = '\0';
+            status_text[  _len] = ' ';
+            status_text[++_len] = '|';
+            status_text[++_len] = '|';
+            status_text[++_len] = ' ';
+            status_text[++_len] = '\0';
             strlcpy(
-                  status_text         + buf_pos,
+                  status_text         + _len,
                   runloop_st->core_status_msg.str,
-                  sizeof(status_text) - buf_pos);
+                  sizeof(status_text) - _len);
          }
          else
             strlcpy(status_text,
@@ -4072,9 +4071,6 @@ void video_driver_frame(const void *data, unsigned width,
    if (render_frame && video_info.statistics_show)
    {
       audio_statistics_t audio_stats;
-      char tmp[256];
-      char latency_stats[256];
-      size_t len;
       double stddev                          = 0.0;
       float font_size_scale                  = (float)video_info.font_size / 100;
       float scale                            = ((float)video_info.height / 480)
@@ -4120,74 +4116,35 @@ void video_driver_frame(const void *data, unsigned width,
 
       audio_compute_buffer_statistics(&audio_stats);
 
-      latency_stats[0]  = '\0';
-      tmp[0]            = '\0';
-      len               = 0;
-
-      /* TODO/FIXME - localize */
-      if (video_st->frame_delay_target > 0)
-         len = snprintf(tmp, sizeof(latency_stats),
-               " Core Time:   %5.2f ms\n"
-               " Leftover:    %5.2f ms\n"
-               " - Reserve:   %5.2f ms\n"
-               " Frame Delay: %2u.00 ms\n"
-               " - Target:    %2u.00 ms\n",
-               runloop_st->core_run_time    / 1000.0f,
-               (1000.0f / video_info.refresh_rate) - video_st->frame_delay_effective - (runloop_st->core_run_time / 1000.0f),
-               video_st->frame_time_reserve / 1000.0f,
-               video_st->frame_delay_effective,
-               video_st->frame_delay_target);
-
-      if (video_info.runahead && !video_info.runahead_second_instance)
-         len = snprintf(tmp + len, sizeof(latency_stats),
-               " Run-Ahead:   %2u frames\n"
-               " - Single Instance\n",
-               video_info.runahead_frames);
-      else if (video_info.runahead && video_info.runahead_second_instance)
-         len = snprintf(tmp + len, sizeof(latency_stats),
-               " Run-Ahead:   %2u frames\n"
-               " - Second Instance\n",
-               video_info.runahead_frames);
-      else if (video_info.preemptive_frames)
-         len = snprintf(tmp + len, sizeof(latency_stats),
-               " Run-Ahead:   %2u frames\n"
-               " - Preemptive Frames\n",
-               video_info.runahead_frames);
-
-      if (len)
       {
          /* TODO/FIXME - localize */
-         size_t _len = strlcpy(latency_stats, "LATENCY\n", sizeof(latency_stats));
-         strlcpy(latency_stats + _len, tmp, sizeof(latency_stats) - _len);
-      }
-
-      /* TODO/FIXME - localize */
-      snprintf(video_info.stat_text,
-            sizeof(video_info.stat_text),
-            "CORE AV_INFO\n"
-            " Size:        %u x %u\n"
-            " - Base:      %u x %u\n"
-            " - Max:       %u x %u\n"
-            " Aspect:      %3.3f\n"
-            " FPS:         %3.2f\n"
-            " Sample Rate: %6.2f\n"
-            "VIDEO: %s\n"
-            " Viewport:    %u x %u\n"
-            " - Scale:     %u x %u\n"
-            " - Scale X/Y: %2.2f / %2.2f\n"
-            " Refresh:     %5.2f hz\n"
-            " Frame Rate:  %5.2f fps\n"
-            " Frame Time:  %5.2f ms\n"
-            " - Deviation: %5.2f %%\n"
-            " Frames:   %8" PRIu64"\n"
-            " - Dropped:   %5u\n"
-            "AUDIO: %s\n"
-            " Saturation:  %5.2f %%\n"
-            " Deviation:   %5.2f %%\n"
-            " Underrun:    %5.2f %%\n"
-            " Blocking:    %5.2f %%\n"
-            " Samples:  %8d\n"
-            "%s",
+         size_t __len = strlcpy(video_info.stat_text, "LATENCY\n", sizeof(video_info.stat_text));
+         __len += snprintf(video_info.stat_text      + __len,
+                        sizeof(video_info.stat_text) - __len,
+               "CORE AV_INFO\n"
+               " Size:        %u x %u\n"
+               " - Base:      %u x %u\n"
+               " - Max:       %u x %u\n"
+               " Aspect:      %3.3f\n"
+               " FPS:         %3.2f\n"
+               " Sample Rate: %6.2f\n"
+               "VIDEO: %s\n"
+               " Viewport:    %u x %u\n"
+               " - Scale:     %u x %u\n"
+               " - Scale X/Y: %2.2f / %2.2f\n"
+               " Refresh:     %5.2f hz\n"
+               " Frame Rate:  %5.2f fps\n"
+               " Frame Time:  %5.2f ms\n"
+               " - Deviation: %5.2f %%\n"
+               " Frames:   %8" PRIu64"\n"
+               " - Dropped:   %5u\n"
+               "AUDIO: %s\n"
+               " Saturation:  %5.2f %%\n"
+               " Deviation:   %5.2f %%\n"
+               " Underrun:    %5.2f %%\n"
+               " Blocking:    %5.2f %%\n"
+               " Samples:  %8d\n"
+               ,
             video_st->frame_cache_width,
             video_st->frame_cache_height,
             av_info->geometry.base_width,
@@ -4202,7 +4159,7 @@ void video_driver_frame(const void *data, unsigned width,
             video_info.height,
             video_info.scale_width,
             video_info.scale_height,
-            (float)video_info.scale_width / ((rotation % 2) ? (float)video_st->frame_cache_height : (float)video_st->frame_cache_width),
+            (float)video_info.scale_width  / ((rotation % 2) ? (float)video_st->frame_cache_height : (float)video_st->frame_cache_width),
             (float)video_info.scale_height / ((rotation % 2) ? (float)video_st->frame_cache_width : (float)video_st->frame_cache_height),
             video_info.refresh_rate,
             last_fps,
@@ -4215,10 +4172,39 @@ void video_driver_frame(const void *data, unsigned width,
             audio_stats.std_deviation_percentage,
             audio_stats.close_to_underrun,
             audio_stats.close_to_blocking,
-            audio_stats.samples,
-            latency_stats);
+            audio_stats.samples
+               );
 
-      /* TODO/FIXME - add OSD chat text here */
+         /* TODO/FIXME - localize */
+         if (video_st->frame_delay_target > 0)
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  " Core Time:   %5.2f ms\n"
+                  " Leftover:    %5.2f ms\n"
+                  " - Reserve:   %5.2f ms\n"
+                  " Frame Delay: %2u.00 ms\n"
+                  " - Target:    %2u.00 ms\n",
+                  runloop_st->core_run_time    / 1000.0f,
+                  (1000.0f / video_info.refresh_rate) - video_st->frame_delay_effective - (runloop_st->core_run_time / 1000.0f),
+                  video_st->frame_time_reserve / 1000.0f,
+                  video_st->frame_delay_effective,
+                  video_st->frame_delay_target);
+
+         if (video_info.runahead && !video_info.runahead_second_instance)
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  " Run-Ahead:   %2u frames\n"
+                  " - Single Instance\n",
+                  video_info.runahead_frames);
+         else if (video_info.runahead && video_info.runahead_second_instance)
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  " Run-Ahead:   %2u frames\n"
+                  " - Second Instance\n",
+                  video_info.runahead_frames);
+         else if (video_info.preemptive_frames)
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  " Run-Ahead:   %2u frames\n"
+                  " - Preemptive Frames\n",
+                  video_info.runahead_frames);
+      }
    }
 
    if (render_frame
