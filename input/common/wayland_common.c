@@ -163,16 +163,21 @@ void gfx_ctx_wl_show_mouse(void *data, bool state)
       return;
 
    if (state)
-   {
-      struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
-      wl_pointer_set_cursor(wl->wl_pointer,
-            wl->cursor.serial, wl->cursor.surface,
-            image->hotspot_x, image->hotspot_y);
-      wl_surface_attach(wl->cursor.surface,
-            wl_cursor_image_get_buffer(image), 0, 0);
-      wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
-      wl_surface_commit(wl->cursor.surface);
-   }
+      if (wl->cursor_shape_device)
+         wp_cursor_shape_device_v1_set_shape(
+            wl->cursor_shape_device, wl->cursor.serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+      else
+      {
+         struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
+         wl_pointer_set_cursor(wl->wl_pointer,
+               wl->cursor.serial, wl->cursor.surface,
+               image->hotspot_x, image->hotspot_y);
+         wl_surface_attach(wl->cursor.surface,
+               wl_cursor_image_get_buffer(image), 0, 0);
+         wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
+         wl_surface_commit(wl->cursor.surface);
+
+      }
    else
       wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, NULL, 0, 0);
 
@@ -516,6 +521,12 @@ static void wl_seat_handle_capabilities(void *data,
          zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
             &relative_pointer_listener, wl);
       }
+      if (!wl->cursor_shape_device && wl->cursor_shape_manager)
+      {
+         wl->cursor_shape_device =
+            wp_cursor_shape_manager_v1_get_pointer(
+               wl->cursor_shape_manager, wl->wl_pointer);
+      }
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {
@@ -782,6 +793,10 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->relative_pointer_manager = (struct zwp_relative_pointer_manager_v1*)
          wl_registry_bind(
             reg, id, &zwp_relative_pointer_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_cursor_shape_manager_v1_interface.name))
+      wl->cursor_shape_manager = (struct wp_cursor_shape_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_cursor_shape_manager_v1_interface, MIN(version, 1));
 }
 
 static void wl_registry_handle_global_remove(void *data,

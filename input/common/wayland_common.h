@@ -34,6 +34,7 @@
 #endif
 
 /* Generated from wayland protocol files by generate_wayland_protos.sh */
+#include "../../gfx/common/wayland/cursor-shape-v1.h"
 #include "../../gfx/common/wayland/fractional-scale-v1.h"
 #include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
@@ -181,6 +182,8 @@ typedef struct gfx_ctx_wayland_data
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
    struct zwp_pointer_constraints_v1 *pointer_constraints;
    struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
+   struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
+   struct wp_cursor_shape_device_v1 *cursor_shape_device;
    output_info_t *current_output;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;

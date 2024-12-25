@@ -315,6 +315,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       zwp_pointer_constraints_v1_destroy(wl->pointer_constraints);
    if (wl->relative_pointer_manager)
       zwp_relative_pointer_manager_v1_destroy (wl->relative_pointer_manager);
+   if (wl->cursor_shape_manager)
+      wp_cursor_shape_manager_v1_destroy (wl->cursor_shape_manager);
+   if (wl->cursor_shape_device)
+      wp_cursor_shape_device_v1_destroy (wl->cursor_shape_device);
    if (wl->seat)
       wl_seat_destroy(wl->seat);
    if (wl->xdg_shell)
@@ -362,6 +366,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->seat                     = NULL;
    wl->relative_pointer_manager = NULL;
    wl->pointer_constraints      = NULL;
+   wl->cursor_shape_manager     = NULL;
+   wl->cursor_shape_device      = NULL;
    wl->idle_inhibit_manager     = NULL;
    wl->deco_manager             = NULL;
    wl->surface                  = NULL;
