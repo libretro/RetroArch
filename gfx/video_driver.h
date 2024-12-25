@@ -645,7 +645,7 @@ typedef struct video_poke_interface
    float (*get_refresh_rate)(void *data);
    void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
-         unsigned *width, unsigned *height, char *desc, size_t desc_len);
+         unsigned *width, unsigned *height, char *s, size_t len);
 
    /* Move index to previous resolution */
    void (*get_video_output_prev)(void *data);
@@ -980,7 +980,7 @@ bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen);
 
 bool video_driver_get_video_output_size(
-      unsigned *width, unsigned *height, char *desc, size_t desc_len);
+      unsigned *width, unsigned *height, char *s, size_t len);
 
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
@@ -1126,7 +1126,7 @@ void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(int flags);
 
-size_t video_driver_get_window_title(char *buf, unsigned len);
+size_t video_driver_get_window_title(char *s, size_t len);
 
 bool *video_driver_get_threaded(void);
 
