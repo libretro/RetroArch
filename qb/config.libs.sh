@@ -561,7 +561,6 @@ check_pkgconf WAYLAND_PROTOS wayland-protocols 1.32
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
-   [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
    [ "$HAVE_WAYLAND" = yes ]; then
       ./gfx/common/wayland/generate_wayland_protos.sh \
          -c "$WAYLAND_SCANNER_VERSION" \
