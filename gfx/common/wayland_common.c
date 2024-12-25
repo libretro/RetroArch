@@ -808,8 +808,10 @@ bool gfx_ctx_wl_init_common(
    wl->input.keyboard_focus  = true;
    wl->input.mouse.focus     = true;
 
+   wl->cursor.theme_name = NULL;
+   wl->cursor.size = 24;
    wl->cursor.surface        = wl_compositor_create_surface(wl->compositor);
-   wl->cursor.theme          = wl_cursor_theme_load(NULL, 16, wl->shm);
+   wl->cursor.theme          = wl_cursor_theme_load(wl->cursor.theme_name, wl->cursor.size, wl->shm);
    wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
 
    wl->num_active_touches    = 0;

@@ -28,4 +28,6 @@ void dbus_screensaver_uninhibit(void);
 
 bool dbus_suspend_screensaver(bool enable);
 
+bool dbus_get_cursor_settings(char **theme, int *size);
+
 #endif

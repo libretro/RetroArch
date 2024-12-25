@@ -38,6 +38,7 @@
 #include "../input_keymaps.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
+#include "../../gfx/common/dbus_common.h"
 
 #define DND_ACTION WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE
 #define FILE_MIME "text/uri-list"
@@ -164,12 +165,33 @@ void gfx_ctx_wl_show_mouse(void *data, bool state)
 
    if (state)
    {
+      if (!dbus_get_cursor_settings(&wl->cursor.theme_name, &wl->cursor.size)) {
+         wl->cursor.theme_name = NULL;
+         wl->cursor.size = 24;
+      }
+      int scale = ceil(FRACTIONAL_SCALE_MULT_DOUBLE(1.0, wl->fractional_scale_num));
+      struct wl_cursor_theme *theme = wl_cursor_theme_load(
+         wl->cursor.theme_name,
+         wl->cursor.size * scale,
+         wl->shm);
+      if (theme) {
+         wl_cursor_theme_destroy(wl->cursor.theme);
+         wl->cursor.theme = theme;
+      }
+
+      wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
       struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
       wl_pointer_set_cursor(wl->wl_pointer,
             wl->cursor.serial, wl->cursor.surface,
-            image->hotspot_x, image->hotspot_y);
+            image->hotspot_x / scale, image->hotspot_y / scale);
       wl_surface_attach(wl->cursor.surface,
             wl_cursor_image_get_buffer(image), 0, 0);
+
+      if (wl_surface_get_version (wl->cursor.surface)
+            >= WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+      {
+         wl_surface_set_buffer_scale (wl->cursor.surface, scale);
+      }
       wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
       wl_surface_commit(wl->cursor.surface);
    }
