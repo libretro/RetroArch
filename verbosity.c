@@ -460,7 +460,6 @@ void rarch_log_file_init(
    static char timestamped_log_file_name[64] = {0};
    bool logging_to_file                      = g_verbosity->initialized;
 
-
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
     * log files, since user may decide to switch at any moment...) */
@@ -538,18 +537,14 @@ void rarch_log_file_init(
    if (!string_is_empty(log_file_path))
    {
       /* Create log directory, if required */
-      if (!string_is_empty(log_directory))
+      if (     !string_is_empty(log_directory)
+            && !path_is_directory(log_directory)
+            && !path_mkdir(log_directory))
       {
-         if (!path_is_directory(log_directory))
-         {
-            if (!path_mkdir(log_directory))
-            {
-               /* Re-enable console logging and output error message */
-               retro_main_log_file_init(NULL, false);
-               RARCH_ERR("Failed to create system event log directory: %s\n", log_directory);
-               return;
-            }
-         }
+         /* Re-enable console logging and output error message */
+         retro_main_log_file_init(NULL, false);
+         RARCH_ERR("Failed to create system event log directory: %s\n", log_directory);
+         return;
       }
 
       /* When RetroArch is launched, log file is overwritten.
