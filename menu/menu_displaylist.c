@@ -8384,10 +8384,11 @@ unsigned menu_displaylist_build_list(
 
             for (i = 0; i < num_cheats; i++)
             {
+               size_t new_len = _len;
                const char *cheat_description = cheat_manager_get_desc(i);
-               snprintf(cheat_label + _len, sizeof(cheat_label) - _len, " #%u: ", i);
+               new_len += snprintf(cheat_label + _len, sizeof(cheat_label) - _len, " #%u: ", i);
                if (!string_is_empty(cheat_description))
-                  strlcat(cheat_label, cheat_description, sizeof(cheat_label));
+                  strlcpy(cheat_label + new_len, cheat_description, sizeof(cheat_label) - new_len);
 
                /* If a search is active, skip non-matching
                 * entries */

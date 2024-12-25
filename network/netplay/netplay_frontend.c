@@ -8330,10 +8330,12 @@ static void netplay_announce(netplay_t *netplay)
       buf[0]     = '\0';
       for (;;)
       {
+         /* TODO/FIXME - is last param OK here */
          strlcat(buf, path_basename(subsystem->elems[i].data),
             sizeof(host_room->gamename));
          if (++i >= subsystem->size)
             break;
+         /* TODO/FIXME - is last param OK here */
          strlcat(buf, "|", sizeof(host_room->gamename));
       }
 
