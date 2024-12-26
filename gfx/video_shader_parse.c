@@ -2890,19 +2890,13 @@ static bool video_shader_load_shader_preset_internal(
        * only important for video drivers with multiple shader backends */
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG, RARCH_SHADER_HLSL
    };
-   static enum display_flags types_flags[] =
-   {
-      /* Shader preset priority, highest to lowest
-       * only important for video drivers with multiple shader backends */
-      GFX_CTX_FLAGS_SHADERS_GLSL, GFX_CTX_FLAGS_SHADERS_SLANG, GFX_CTX_FLAGS_SHADERS_CG, GFX_CTX_FLAGS_SHADERS_HLSL
-   };
 
    flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
    for (i = 0; i < (int)ARRAY_SIZE(types); i++)
    {
-      if (!BIT32_GET(flags.flags, types_flags[i]))
+      if (!BIT32_GET(flags.flags, video_shader_type_to_flag(types[i])))
          continue;
 
       /* Concatenate strings into full paths */
@@ -3226,7 +3220,7 @@ const char *video_shader_get_current_shader_preset(void)
       video_st->flags &= ~VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
 
       if (BIT32_GET(flags.flags,
-               video_shader_parse_type(video_st->cli_shader_path)))
+               video_shader_type_to_flag(video_shader_parse_type(video_st->cli_shader_path))))
          strlcpy(runloop_st->runtime_shader_preset_path,
                video_st->cli_shader_path,
                sizeof(runloop_st->runtime_shader_preset_path));
