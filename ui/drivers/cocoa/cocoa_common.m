@@ -1059,8 +1059,8 @@ static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gf
    }];
    if (!string_is_empty(path_data->content_db_name))
    {
-      const char *img_name = NULL;
-      if (gfx_thumbnail_get_img_name(path_data, &img_name, PLAYLIST_THUMBNAIL_FLAG_STD_NAME))
+      const char *img_name = path_data->content_img;
+      if (!string_is_empty(img_name))
          dict[@"img"] = [NSString stringWithFormat:@"https://thumbnails.libretro.com/%s/Named_Boxarts/%s",
                          path_data->content_db_name, img_name];
    }

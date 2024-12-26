@@ -781,14 +781,13 @@ static int menu_displaylist_parse_core_info(
             firmware_info.directory.system = settings->paths.directory_system;
          else
          {
-            size_t len       = strlen(tmp_path);
-
+            size_t __len = strlen(tmp_path);
             /* Removes trailing slash (unless root dir), doesn't really matter
              * but it's more consistent with how the path is stored and
              * displayed without 'System Files are in Content Directory' */
             if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
-                  && tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
-               tmp_path[len - 1] = '\0';
+                  && tmp_path[__len - 1] == PATH_DEFAULT_SLASH_C())
+                     tmp_path[__len - 1] = '\0';
 
             firmware_info.directory.system = tmp_path;
          }
@@ -811,12 +810,12 @@ static int menu_displaylist_parse_core_info(
          const char *present_required = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
          const char *rdb_entry_name   =
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
-         size_t len = strlcpy(tmp,
+         size_t __len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
                sizeof(tmp));
-         tmp[  len] = ':';
-         tmp[++len] = ' ';
-         tmp[++len] = '\0';
+         tmp[  __len] = ':';
+         tmp[++__len] = ' ';
+         tmp[++__len] = '\0';
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
             count++;
@@ -885,8 +884,8 @@ static int menu_displaylist_parse_core_info(
                   pos = string_find_index_substring_string(core_info->note_list->elems[j].data, "(md5)");
 
                   core_info_list_hide[j] = true;
-                  len = strlcpy(tmp, "- ", sizeof(tmp));
-                  strlcpy(tmp + len, core_info->note_list->elems[j].data + pos, sizeof(tmp) - len);
+                  __len = strlcpy(tmp, "- ", sizeof(tmp));
+                  strlcpy(tmp + __len, core_info->note_list->elems[j].data + pos, sizeof(tmp) - __len);
 
                   if (menu_entries_append(list, tmp, "",
                         MENU_ENUM_LABEL_CORE_INFO_ENTRY,
@@ -2667,8 +2666,8 @@ static int create_string_list_rdb_entry_string(
 static int create_string_list_rdb_entry_int(
       enum msg_hash_enums enum_idx,
       const char *desc, const char *label,
-      int actual_int, const char *path,
-      size_t path_len,
+      int actual_int,
+      const char *path, size_t path_len,
       file_list_t *list)
 {
    size_t _len;
@@ -4101,19 +4100,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
                break;
             case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
                {
-                  const char *tmp;
-                  char sys_thumb[64];
-                  size_t __len    = 0;
-
-                  if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-                     __len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
-
-                  if (!string_is_empty(sys_thumb))
+                  if (!string_is_empty(menu_st->thumbnail_path_data->system))
                      remove_entry_enabled =
-                           string_is_equal(sys_thumb, "history")
-                        || string_is_equal(sys_thumb, "favorites")
-                        || string_ends_with_size(sys_thumb, "_history",
-                              __len, STRLEN_CONST("_history"));
+                           string_is_equal(menu_st->thumbnail_path_data->system, "history")
+                        || string_is_equal(menu_st->thumbnail_path_data->system, "favorites")
+                        || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
+                              menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
                   /* An annoyance: if the user navigates to the information menu,
                    * then to the database entry, the thumbnail system will be changed.
@@ -4200,16 +4192,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
             if (download_enabled)
             {
                /* Only show 'Download Thumbnails' on supported playlists */
-               char sys_thumb[64];
-               const char *tmp  = NULL;
-               size_t __len     = 0;
-
-               if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-                  __len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
-
-               if (!string_is_empty(sys_thumb))
+               if (!string_is_empty(menu_st->thumbnail_path_data->system))
                   download_enabled = !string_ends_with_size(
-                        sys_thumb, "_history", __len, STRLEN_CONST("_history"));
+                        menu_st->thumbnail_path_data->system,
+                        "_history",
+                        menu_st->thumbnail_path_data->system_len,
+                        STRLEN_CONST("_history"));
                else
                   download_enabled = false;
             }

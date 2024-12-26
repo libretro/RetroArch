@@ -1304,7 +1304,6 @@ static void xmb_update_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)data;
    struct menu_state *menu_st = menu_state_get_ptr();
-   const char *core_name      = NULL;
 
    if (!xmb)
       return;
@@ -1319,9 +1318,10 @@ static void xmb_update_thumbnail_image(void *data)
    }
 
    /* imageviewer content requires special treatment... */
-   gfx_thumbnail_get_core_name(menu_st->thumbnail_path_data, &core_name);
-
-   if (string_is_equal(core_name, "imageviewer"))
+   if (
+            !string_is_empty(menu_st->thumbnail_path_data->content_core_name)
+         &&  string_is_equal(menu_st->thumbnail_path_data->content_core_name,
+            "imageviewer"))
    {
       /* Right thumbnail */
       if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
@@ -1525,6 +1525,148 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
    }
 }
 
+static bool gfx_thumbnail_set_icon_playlist(
+      gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx)
+{
+   const char *content_path           = NULL;
+   const char *content_label          = NULL;
+   const char *core_name              = NULL;
+   const char *db_name                = NULL;
+   const struct playlist_entry *entry = NULL;
+
+   if (!path_data)
+      return false;
+
+   /* When content is updated, must regenerate icon
+    * thumbnail paths */
+   path_data->icon_path[0]           = '\0';
+
+   /* 'Reset' path_data content strings */
+   path_data->content_path[0]         = '\0';
+   path_data->content_label_len       = 0;
+   path_data->content_label[0]        = '\0';
+   path_data->content_core_name[0]    = '\0';
+   path_data->content_db_name[0]      = '\0';
+   path_data->content_img[0]          = '\0';
+   path_data->content_img_full[0]     = '\0';
+   path_data->content_img_short[0]    = '\0';
+
+   /* Must also reset playlist thumbnail display modes */
+   path_data->playlist_icon_mode     = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_index          = 0;
+
+   if (!playlist)
+      return false;
+
+   if (idx >= playlist_get_size(playlist))
+      return false;
+
+   /* Read playlist values */
+   playlist_get_index(playlist, idx, &entry);
+
+   if (!entry)
+      return false;
+
+   content_path  = entry->path;
+   content_label = entry->label;
+   core_name     = entry->core_name;
+   db_name       = entry->db_name;
+
+   /* Content without a path is invalid by definition */
+   if (string_is_empty(content_path))
+      return false;
+
+   /* Cache content path
+    * (This is required for imageviewer, history and favourites content) */
+   strlcpy(path_data->content_path,
+            content_path, sizeof(path_data->content_path));
+
+   /* Cache core name
+    * (This is required for imageviewer content) */
+   if (!string_is_empty(core_name))
+      strlcpy(path_data->content_core_name,
+            core_name, sizeof(path_data->content_core_name));
+
+   /* Get content label */
+   if (!string_is_empty(content_label))
+      path_data->content_label_len = strlcpy(path_data->content_label,
+            content_label, sizeof(path_data->content_label));
+   else
+      path_data->content_label_len = fill_pathname(
+            path_data->content_label,
+            path_basename(content_path),
+            "", sizeof(path_data->content_label));
+
+   /* Determine content image name */
+   {
+      char tmp_buf[NAME_MAX_LENGTH];
+      fill_pathname(tmp_buf, path_basename(path_data->content_path), "",
+            sizeof(tmp_buf));
+
+      gfx_thumbnail_fill_content_img(path_data->content_img_full,
+         sizeof(path_data->content_img_full), tmp_buf, false);
+      gfx_thumbnail_fill_content_img(path_data->content_img,
+         sizeof(path_data->content_img), path_data->content_label, false);
+
+      /* Explicit zero if full name is same as standard name - saves some queries later. */
+      if(string_is_equal(path_data->content_img, path_data->content_img_full))
+         path_data->content_img_full[0] = '\0';
+
+      gfx_thumbnail_fill_content_img(path_data->content_img_short,
+         sizeof(path_data->content_img_short), path_data->content_label, true);
+   }
+
+   /* Store playlist index */
+   path_data->playlist_index = idx;
+
+   /* Redundant error check... */
+   if (string_is_empty(path_data->content_img))
+      return false;
+
+   /* Thumbnail image name is done -> now check if
+    * per-content database name is defined */
+   if (string_is_empty(db_name))
+      playlist_get_db_name(playlist, idx, &db_name);
+   if (!string_is_empty(db_name))
+   {
+      /* Hack: There is only one MAME thumbnail repo,
+       * so filter any input starting with 'MAME...' */
+      if (strncmp(db_name, "MAME", 4) == 0)
+      {
+         path_data->content_db_name[0] = path_data->content_db_name[2] = 'M';
+         path_data->content_db_name[1] = 'A';
+         path_data->content_db_name[3] = 'E';
+         path_data->content_db_name[4] = '\0';
+      }
+      else
+      {
+         char tmp_buf[NAME_MAX_LENGTH];
+         const char* pos      = strchr(db_name, '|');
+
+         /* If db_name comes from core info, and there are multiple
+          * databases mentioned separated by |, use only first one */
+         if (pos && (size_t) (pos - db_name)+1 < sizeof(tmp_buf))
+            strlcpy(tmp_buf, db_name, (size_t) (pos - db_name)+1);
+         else
+            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
+
+         fill_pathname(path_data->content_db_name,
+               tmp_buf, "",
+               sizeof(path_data->content_db_name));
+      }
+   }
+
+   gfx_thumbnail_update_path(path_data, GFX_THUMBNAIL_ICON);
+
+   /* Playlist entry is valid -> it is now 'safe' to
+    * extract any remaining playlist metadata
+    * (i.e. thumbnail display modes) */
+   path_data->playlist_icon_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+
+   return true;
+}
+
+
 static void xmb_set_dynamic_icon_content(
    void *xmb_handle_ptr,
    const char *s,
@@ -1552,14 +1694,14 @@ static void xmb_set_dynamic_icon_content(
          /* Get playlist index corresponding
           * to the selected entry */
          if (    list
-             && (selection < list_size)
-             && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
+               && (selection < list_size)
+               && (list->list[selection].type == FILE_TYPE_RPL_ENTRY))
          {
             playlist_valid = true;
             playlist_index = list->list[selection].entry_idx;
          }
-        gfx_thumbnail_set_icon_playlist(thumbnail_path_data,
-            playlist_valid ? playlist_get_cached() : NULL, playlist_index);
+         gfx_thumbnail_set_icon_playlist(thumbnail_path_data,
+               playlist_valid ? playlist_get_cached() : NULL, playlist_index);
       }
    }
 }
@@ -2599,41 +2741,27 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len, syslen;
+         size_t __len, syslen;
          struct texture_image ti;
          char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
-         char content_texturepath[PATH_MAX_LENGTH];
          const char *console_name = NULL;
 
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(xmb->playlist_db_node_map, path, node);
 
-         syslen = fill_pathname_base(sysname, path, sizeof(sysname));
-         /* Manually strip the extension (and dot) from sysname */
-         sysname[syslen-4]     =
-         sysname[syslen-3]     =
-         sysname[syslen-2]     =
-         sysname[syslen-1]     = '\0';
-         syslen -= 4;
-         len = fill_pathname_join_special(texturepath, iconpath, sysname,
+         syslen  = fill_pathname(sysname, path_basename(path), "",
+               sizeof(sysname));
+         __len   = fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
-         texturepath[  len] = '.';
-         texturepath[++len] = 'p';
-         texturepath[++len] = 'n';
-         texturepath[++len] = 'g';
-         texturepath[++len] = '\0';
+         __len  += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist return default */
          if (!path_is_valid(texturepath))
          {
-            len = fill_pathname_join_special(texturepath, iconpath, "default",
+            __len  = fill_pathname_join_special(texturepath, iconpath, "default",
                   sizeof(texturepath));
-            texturepath[  len] = '.';
-            texturepath[++len] = 'p';
-            texturepath[++len] = 'n';
-            texturepath[++len] = 'g';
-            texturepath[++len] = '\0';
+            __len += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
          ti.width         = 0;
@@ -2654,15 +2782,15 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
 
          strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          /* Assemble new icon path */
-         fill_pathname_join_special(content_texturepath, iconpath, sysname,
-               sizeof(content_texturepath));
+         fill_pathname_join_special(texturepath, iconpath, sysname,
+               sizeof(texturepath));
 
          /* If the content icon doesn't exist, return default-content */
-         if (!path_is_valid(content_texturepath))
-            fill_pathname_join_delim(content_texturepath, icons_path_default,
-                  FILE_PATH_CONTENT_BASENAME, '-', sizeof(content_texturepath));
+         if (!path_is_valid(texturepath))
+            fill_pathname_join_delim(texturepath, icons_path_default,
+                  FILE_PATH_CONTENT_BASENAME, '-', sizeof(texturepath));
 
-         if (image_texture_load(&ti, content_texturepath))
+         if (image_texture_load(&ti, texturepath))
          {
             if (ti.pixels)
             {
@@ -2675,7 +2803,8 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
 
          /* Console name */
          console_name = xmb->horizontal_list.list[i].alt
-               ? xmb->horizontal_list.list[i].alt : xmb->horizontal_list.list[i].path;
+                      ? xmb->horizontal_list.list[i].alt
+                      : xmb->horizontal_list.list[i].path;
 
          if (node->console_name)
             free(node->console_name);
@@ -2692,7 +2821,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
             strlen(xmb->horizontal_list.list[i].label), STRLEN_CONST(".lvw")))
       {
          node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
-         node->icon = xmb->textures.list[XMB_TEXTURE_CURSOR];
+         node->icon         = xmb->textures.list[XMB_TEXTURE_CURSOR];
       }
    }
 
@@ -2718,7 +2847,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
 static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
-   xmb_handle_t *xmb        = (xmb_handle_t*)userdata;
+   xmb_handle_t *xmb     = (xmb_handle_t*)userdata;
 
    if (!xmb)
       return -1;
@@ -2846,7 +2975,7 @@ static void xmb_populate_entries(void *data,
       xmb->skip_thumbnail_reset       = true;
 
    xmb_system_tab      = xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr);
-   xmb_horizontal_type = (xmb_system_tab == UINT_MAX ? xmb_get_horizontal_selection_type(xmb) : 0);
+   xmb_horizontal_type = ((xmb_system_tab == UINT_MAX) ? xmb_get_horizontal_selection_type(xmb) : 0);
 
    /* Determine whether this is a playlist */
    xmb->is_playlist =
@@ -2893,7 +3022,7 @@ static void xmb_populate_entries(void *data,
    }
 
    /* Determine whether this is the contentless cores menu */
-   xmb->is_contentless_cores =
+   xmb->is_contentless_cores    =
             string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST));
 
@@ -2928,7 +3057,7 @@ static void xmb_populate_entries(void *data,
 
       MENU_ENTRY_INITIALIZE(entry);
       entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
-         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
+                   | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
       menu_entry_get(&entry, 0, 0, NULL, true);
 
       /* Quick Menu under Explore list must also be Quick Menu */
@@ -5199,7 +5328,6 @@ static void xmb_show_fullscreen_thumbnails(
       size_t selection)
 {
    gfx_animation_ctx_entry_t animation_entry;
-   const char *core_name              = NULL;
    bool animate                       = !xmb->want_fullscreen_thumbnails;
    uintptr_t alpha_tag                = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
 
@@ -5207,8 +5335,9 @@ static void xmb_show_fullscreen_thumbnails(
     * current selection has at least one valid thumbnail
     * and all thumbnails for current selection are already
     * loaded/available */
-   gfx_thumbnail_get_core_name(menu_st->thumbnail_path_data, &core_name);
-   if (      string_is_equal(core_name, "imageviewer")
+   if (    (!string_is_empty(menu_st->thumbnail_path_data->content_core_name)
+         &&  string_is_equal(menu_st->thumbnail_path_data->content_core_name,
+            "imageviewer"))
          || !string_is_empty(xmb->savestate_thumbnail_file_path))
    {
       /* imageviewer content requires special treatment,

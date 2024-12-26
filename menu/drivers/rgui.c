@@ -4946,6 +4946,21 @@ static bool rgui_set_aspect_ratio(
       bool delay_update);
 #endif
 
+/* Fetches current thumbnail label.
+ * Returns true if label is valid. */
+static bool gfx_thumbnail_get_label(
+      gfx_thumbnail_path_data_t *path_data, const char **label)
+{
+   if (!path_data || !label)
+      return false;
+   if (string_is_empty(path_data->content_label))
+      return false;
+
+   *label = path_data->content_label;
+
+   return true;
+}
+
 static void rgui_render(
       void *data,
       unsigned width,
@@ -6760,8 +6775,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
    bool thumbnails_missing         = false;
 
    /* Right (or fullscreen) thumbnail */
-   if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
-         GFX_THUMBNAIL_RIGHT, &thumbnail_path))
+   if (!string_is_empty(menu_st->thumbnail_path_data->right_path))
    {
       if (rgui_request_thumbnail(
             (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
@@ -6769,7 +6783,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
                   : &rgui->mini_thumbnail,
             GFX_THUMBNAIL_RIGHT,
             &rgui->thumbnail_queue_size,
-            thumbnail_path,
+            menu_st->thumbnail_path_data->right_path,
             &thumbnails_missing))
          rgui->flags |=  RGUI_FLAG_ENTRY_HAS_THUMBNAIL;
       else
@@ -6782,14 +6796,13 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
    if (     !(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          && string_is_empty(rgui->savestate_thumbnail_file_path))
    {
-      if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
-            GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
+      if (!string_is_empty(menu_st->thumbnail_path_data->left_path))
       {
          if (rgui_request_thumbnail(
                &rgui->mini_left_thumbnail,
                GFX_THUMBNAIL_LEFT,
                &rgui->left_thumbnail_queue_size,
-               left_thumbnail_path,
+               menu_st->thumbnail_path_data->left_path,
                &thumbnails_missing))
             rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
          else
@@ -6798,8 +6811,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
    }
    else if (!string_is_empty(rgui->savestate_thumbnail_file_path))
    {
-      if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
-            GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
+      if (!string_is_empty(menu_st->thumbnail_path_data->left_path))
       {
          if (rgui_request_thumbnail(
                   &rgui->mini_left_thumbnail,
@@ -6823,7 +6835,6 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
    /* On demand thumbnail downloads */
    if (thumbnails_missing && download_missing)
    {
-      const char *system         = NULL;
       playlist_t *playlist       = playlist_get_cached();
       struct menu_state *menu_st = menu_state_get_ptr();
       size_t selection           = menu_st->selection_ptr;
@@ -6834,8 +6845,9 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
             ? menu_st->thumbnail_path_data->playlist_index
             : 0;
 
-      if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &system))
-         task_push_pl_entry_thumbnail_download(system,
+      if (!string_is_empty(menu_st->thumbnail_path_data->system))
+         task_push_pl_entry_thumbnail_download(
+               menu_st->thumbnail_path_data->system,
                playlist, (unsigned)selection,
                false, true);
    }
