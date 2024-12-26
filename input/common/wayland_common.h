@@ -186,7 +186,7 @@ typedef struct gfx_ctx_wayland_data
    struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
    struct wp_cursor_shape_device_v1 *cursor_shape_device;
    struct wp_content_type_manager_v1 *content_type_manager;
-   struct wp_content_type_v1 *content_type_v1;
+   struct wp_content_type_v1 *content_type;
    output_info_t *current_output;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;

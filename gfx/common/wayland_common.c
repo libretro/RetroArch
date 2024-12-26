@@ -313,8 +313,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       zwp_relative_pointer_manager_v1_destroy (wl->relative_pointer_manager);
    if (wl->content_type_manager)
       wp_content_type_manager_v1_destroy (wl->content_type_manager);
-   if (wl->content_type_v1)
-      wp_content_type_v1_destroy (wl->content_type_v1);
+   if (wl->content_type)
+      wp_content_type_v1_destroy (wl->content_type);
    if (wl->cursor_shape_manager)
       wp_cursor_shape_manager_v1_destroy (wl->cursor_shape_manager);
    if (wl->cursor_shape_device)
@@ -366,7 +366,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->seat                     = NULL;
    wl->relative_pointer_manager = NULL;
    wl->pointer_constraints      = NULL;
-   wl->content_type_v1          = NULL;
+   wl->content_type             = NULL;
    wl->content_type_manager     = NULL;
    wl->cursor_shape_manager     = NULL;
    wl->cursor_shape_device      = NULL;
@@ -729,8 +729,8 @@ bool gfx_ctx_wl_init_common(
 
    if (wl->content_type_manager)
    {
-      wl->content_type_v1 = wp_content_type_manager_v1_get_surface_content_type(wl->content_type_manager, wl->surface);
-      wp_content_type_v1_set_content_type(wl->content_type_v1, WP_CONTENT_TYPE_V1_TYPE_GAME);
+      wl->content_type = wp_content_type_manager_v1_get_surface_content_type(wl->content_type_manager, wl->surface);
+      wp_content_type_v1_set_content_type(wl->content_type, WP_CONTENT_TYPE_V1_TYPE_GAME);
    }
 
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
