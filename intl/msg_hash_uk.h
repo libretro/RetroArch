@@ -73,7 +73,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Знайдіть реалізацію ядра libretro. Звідки запускається браузер, залежить від шляху до основного каталогу. Якщо порожньо, то він почнеться з кореня.\nЯкщо основним каталогом є каталог, меню використовуватиме його як верхню теку. Якщо основний каталог є повним шляхом, він почнет[...]"
+   "Знайдіть основну реалізацію libretro. Де браузер запускається в залежності від вашого базового шляху каталогу. Якщо цього немає, то він запуститься в root.\nЯкщо Core Directory це каталог, меню буде використовувати це як верхню теку. Якщо Core Directory є повним шляхом, то він почнеться в папці[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
@@ -745,6 +745,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
    "Підтримка Direct3D 12"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "Підтримка GDI"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
@@ -12186,6 +12190,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    "Титуальний екран"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "Логотип"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,

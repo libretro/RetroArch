@@ -12124,6 +12124,10 @@ MSG_HASH(
    "Титульный экран"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "Логотип"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    "Все плейлисты"
    )
