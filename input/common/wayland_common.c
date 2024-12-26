@@ -797,6 +797,10 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->cursor_shape_manager = (struct wp_cursor_shape_manager_v1*)
          wl_registry_bind(
             reg, id, &wp_cursor_shape_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_content_type_manager_v1_interface.name))
+      wl->content_type_manager = (struct wp_content_type_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_content_type_manager_v1_interface, MIN(version, 1));
 }
 
 static void wl_registry_handle_global_remove(void *data,
