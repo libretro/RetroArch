@@ -34,6 +34,7 @@
 #endif
 
 /* Generated from wayland protocol files by generate_wayland_protos.sh */
+#include "../../gfx/common/wayland/content-type-v1.h"
 #include "../../gfx/common/wayland/cursor-shape-v1.h"
 #include "../../gfx/common/wayland/fractional-scale-v1.h"
 #include "../../gfx/common/wayland/viewporter.h"
@@ -184,6 +185,8 @@ typedef struct gfx_ctx_wayland_data
    struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
    struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
    struct wp_cursor_shape_device_v1 *cursor_shape_device;
+   struct wp_content_type_manager_v1 *content_type_manager;
+   struct wp_content_type_v1 *content_type;
    output_info_t *current_output;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;

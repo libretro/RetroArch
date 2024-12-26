@@ -71,3 +71,4 @@ generate_source 'staging/fractional-scale' 'fractional-scale-v1'
 generate_source 'staging/cursor-shape' 'cursor-shape-v1'
 # Required by cursor-shape-v1
 generate_source 'unstable/tablet' 'tablet-unstable-v2'
+generate_source 'staging/content-type' 'content-type-v1'
