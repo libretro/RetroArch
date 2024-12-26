@@ -30,6 +30,7 @@
 #include <dynamic/dylib.h>
 #endif
 #include <string/stdstring.h>
+#include <formats/image.h>
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -190,10 +191,10 @@ bool d3d9_initialize_symbols(enum gfx_ctx_api api)
       return false;
 #endif
 #if defined(DEBUG) || defined(_DEBUG)
-   if (!(g_d3d9_dll     = dylib_load("d3d9d.dll")))
+   if (!(g_d3d9_dll  = dylib_load("d3d9d.dll")))
 #endif
-      if (!(g_d3d9_dll  = dylib_load("d3d9.dll")))
-	      return false;
+   if (!(g_d3d9_dll  = dylib_load("d3d9.dll")))
+      return false;
    D3D9Create                 = (D3D9Create_t)dylib_proc(g_d3d9_dll, "Direct3DCreate9");
 #ifdef HAVE_D3DX
    D3D9CompileShaderFromFile  = (D3D9CompileShaderFromFile_t)dylib_proc(g_d3d9x_dll, "D3DXCompileShaderFromFile");
@@ -828,10 +829,10 @@ void d3d9_viewport_info(void *data, struct video_viewport *vp)
 
    video_driver_get_size(&width, &height);
 
-   vp->x               = d3d->final_viewport.X;
-   vp->y               = d3d->final_viewport.Y;
-   vp->width           = d3d->final_viewport.Width;
-   vp->height          = d3d->final_viewport.Height;
+   vp->x               = d3d->out_vp.X;
+   vp->y               = d3d->out_vp.Y;
+   vp->width           = d3d->out_vp.Width;
+   vp->height          = d3d->out_vp.Height;
 
    vp->full_width      = width;
    vp->full_height     = height;
@@ -871,25 +872,46 @@ void d3d9_set_viewport(void *data,
       bool force_full,
       bool allow_rotate)
 {
+   d3d9_video_t *d3d   = (d3d9_video_t*)data;
+   float translate_x   = d3d->translate_x;
+   float translate_y   = d3d->translate_y;
    int x               = 0;
    int y               = 0;
-   d3d9_video_t *d3d   = (d3d9_video_t*)data;
 
    d3d9_calculate_rect(d3d, &width, &height, &x, &y,
          force_full, allow_rotate);
 
    /* D3D doesn't support negative X/Y viewports ... */
    if (x < 0)
+   {
+      if (!force_full)
+         d3d->translate_x = x * 2;
       x = 0;
-   if (y < 0)
-      y = 0;
+   }
+   else if (!force_full)
+      d3d->translate_x = 0;
 
-   d3d->final_viewport.X      = x;
-   d3d->final_viewport.Y      = y;
-   d3d->final_viewport.Width  = width;
-   d3d->final_viewport.Height = height;
-   d3d->final_viewport.MinZ   = 0.0f;
-   d3d->final_viewport.MaxZ   = 1.0f;
+   if (y < 0)
+   {
+      if (!force_full)
+         d3d->translate_y = y * 2;
+      y = 0;
+   }
+   else if (!force_full)
+      d3d->translate_y = 0;
+
+   if (!force_full)
+   {
+      if (translate_x != d3d->translate_x || translate_y != d3d->translate_y)
+         d3d->needs_restore = true;
+   }
+
+   d3d->out_vp.X      = x;
+   d3d->out_vp.Y      = y;
+   d3d->out_vp.Width  = width;
+   d3d->out_vp.Height = height;
+   d3d->out_vp.MinZ   = 0.0f;
+   d3d->out_vp.MaxZ   = 1.0f;
 
    d3d9_set_font_rect(d3d, NULL);
 }
@@ -1016,7 +1038,7 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
 
    /* Restore previous state. */
    IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, false);
-   IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&d3d->final_viewport);
+   IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&d3d->out_vp);
 }
 
 void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
@@ -1072,7 +1094,8 @@ void d3d9_set_menu_texture_frame(void *data,
             || (d3d->menu->tex_w != width)
             || (d3d->menu->tex_h != height))
    {
-      IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
+      if (d3d->menu->tex)
+         IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->menu->tex);
 
       d3d->menu->tex = d3d9_texture_new(d3d->dev,
             width, height, 1,
@@ -1095,6 +1118,7 @@ void d3d9_set_menu_texture_frame(void *data,
          0, &d3dlr, NULL, D3DLOCK_NOSYSLOCK);
    {
       unsigned h, w;
+
       if (rgb32)
       {
          uint8_t        *dst = (uint8_t*)d3dlr.pBits;
@@ -1112,7 +1136,7 @@ void d3d9_set_menu_texture_frame(void *data,
          uint32_t       *dst = (uint32_t*)d3dlr.pBits;
          const uint16_t *src = (const uint16_t*)frame;
 
-         for (h = 0; h < height; h++, 
+         for (h = 0; h < height; h++,
                dst += d3dlr.Pitch >> 2,
                src += width)
          {
@@ -1162,7 +1186,7 @@ static void d3d9_video_texture_load_d3d(
    if (!ti)
       return;
 
-   if (  (info->type == TEXTURE_FILTER_MIPMAP_LINEAR) 
+   if (  (info->type == TEXTURE_FILTER_MIPMAP_LINEAR)
       || (info->type == TEXTURE_FILTER_MIPMAP_NEAREST))
       want_mipmap        = true;
 
@@ -1219,7 +1243,7 @@ uintptr_t d3d9_load_texture(void *video_data, void *data,
    return id;
 }
 
-void d3d9_unload_texture(void *data, 
+void d3d9_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
    LPDIRECT3DTEXTURE9 texid;
@@ -1280,16 +1304,18 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    {
       unsigned x, y;
+      unsigned vp_width       = (d3d->out_vp.Width  > width)  ? width  : d3d->out_vp.Width;
+      unsigned vp_height      = (d3d->out_vp.Height > height) ? height : d3d->out_vp.Height;
       unsigned pitchpix       = rect.Pitch / 4;
       const uint32_t *pixels  = (const uint32_t*)rect.pBits;
 
-      pixels                 += d3d->final_viewport.X;
-      pixels                 += (d3d->final_viewport.Height - 1) * pitchpix;
-      pixels                 -= d3d->final_viewport.Y * pitchpix;
+      pixels                 += d3d->out_vp.X;
+      pixels                 += (vp_height - 1) * pitchpix;
+      pixels                 -= d3d->out_vp.Y * pitchpix;
 
-      for (y = 0; y < d3d->final_viewport.Height; y++, pixels -= pitchpix)
+      for (y = 0; y < vp_height; y++, pixels -= pitchpix)
       {
-         for (x = 0; x < d3d->final_viewport.Width; x++)
+         for (x = 0; x < vp_width; x++)
          {
             *buffer++ = (pixels[x] >>  0) & 0xff;
             *buffer++ = (pixels[x] >>  8) & 0xff;

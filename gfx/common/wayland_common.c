@@ -135,7 +135,6 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
          /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
          wl_surface_commit(wl->surface);
-         wl_display_roundtrip(wl->input.dpy);
       }
    }
 
@@ -208,7 +207,6 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
          /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
          wl_surface_commit(wl->surface);
-         wl_display_roundtrip(wl->input.dpy);
       }
    }
 
@@ -313,6 +311,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       zwp_pointer_constraints_v1_destroy(wl->pointer_constraints);
    if (wl->relative_pointer_manager)
       zwp_relative_pointer_manager_v1_destroy (wl->relative_pointer_manager);
+   if (wl->cursor_shape_manager)
+      wp_cursor_shape_manager_v1_destroy (wl->cursor_shape_manager);
+   if (wl->cursor_shape_device)
+      wp_cursor_shape_device_v1_destroy (wl->cursor_shape_device);
    if (wl->seat)
       wl_seat_destroy(wl->seat);
    if (wl->xdg_shell)
@@ -360,6 +362,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->seat                     = NULL;
    wl->relative_pointer_manager = NULL;
    wl->pointer_constraints      = NULL;
+   wl->cursor_shape_manager     = NULL;
+   wl->cursor_shape_device      = NULL;
    wl->idle_inhibit_manager     = NULL;
    wl->deco_manager             = NULL;
    wl->surface                  = NULL;
@@ -448,8 +452,13 @@ bool gfx_ctx_wl_get_metrics_common(void *data,
 static int create_shm_file(off_t size)
 {
    int fd, ret;
+#ifndef __FreeBSD__
    if ((fd = syscall(SYS_memfd_create, SPLASH_SHM_NAME,
                MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
+#else
+   if ((fd = memfd_create(SPLASH_SHM_NAME,
+               MFD_CLOEXEC | MFD_ALLOW_SEALING)) >= 0)
+#endif
    {
       fcntl(fd, F_ADD_SEALS, F_SEAL_SHRINK);
 
@@ -772,7 +781,7 @@ bool gfx_ctx_wl_init_common(
 
    /* Bind SHM based wl_buffer to wl_surface until the vulkan surface is ready.
     * This shows the window which assigns us a display (wl_output)
-    *  which is usefull for HiDPI and auto selecting a display for fullscreen. */
+    * which is useful for HiDPI and auto selecting a display for fullscreen. */
    if (video_monitor_index == 0 && wl_list_length (&wl->all_outputs) > 1)
    {
       if (!wl_draw_splash_screen(wl))
@@ -852,7 +861,6 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
       /* Stretch old buffer to fill new size, commit/roundtrip to apply */
       wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
       wl_surface_commit(wl->surface);
-      wl_display_roundtrip(wl->input.dpy);
    }
 
 #ifdef HAVE_LIBDECOR_H

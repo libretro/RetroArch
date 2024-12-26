@@ -143,6 +143,14 @@ static int rc_parse_operator(const char** memaddr) {
       ++(*memaddr);
       return RC_OPERATOR_MOD;
 
+    case '+':
+      ++(*memaddr);
+      return RC_OPERATOR_ADD;
+
+    case '-':
+      ++(*memaddr);
+      return RC_OPERATOR_SUB;
+
     case '\0':/* end of string */
     case '_': /* next condition */
     case 'S': /* next condset */
@@ -180,12 +188,13 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
       case 'q': case 'Q': self->type = RC_CONDITION_MEASURED_IF; break;
       case 'i': case 'I': self->type = RC_CONDITION_ADD_ADDRESS; can_modify = 1; break;
       case 't': case 'T': self->type = RC_CONDITION_TRIGGER; break;
+      case 'k': case 'K': self->type = RC_CONDITION_REMEMBER; can_modify = 1; break;
       case 'z': case 'Z': self->type = RC_CONDITION_RESET_NEXT_IF; break;
       case 'g': case 'G':
           parse->measured_as_percent = 1;
           self->type = RC_CONDITION_MEASURED;
           break;
-      /* e f h j k l s u v w x y */
+      /* e f h j l s u v w x y */
       default: parse->offset = RC_INVALID_CONDITION_TYPE; return 0;
     }
 
@@ -231,6 +240,8 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
     case RC_OPERATOR_AND:
     case RC_OPERATOR_XOR:
     case RC_OPERATOR_MOD:
+    case RC_OPERATOR_ADD:
+    case RC_OPERATOR_SUB:
       /* modifying operators are only valid on modifying statements */
       if (can_modify)
         break;
@@ -243,6 +254,7 @@ rc_condition_t* rc_parse_condition(const char** memaddr, rc_parse_state_t* parse
           case RC_CONDITION_ADD_SOURCE:
           case RC_CONDITION_SUB_SOURCE:
           case RC_CONDITION_ADD_ADDRESS:
+          case RC_CONDITION_REMEMBER:
             /* prevent parse errors on legacy achievements where a condition was present before changing the type */
             self->oper = RC_OPERATOR_NONE;
             break;
@@ -559,6 +571,15 @@ void rc_evaluate_condition_value(rc_typed_value_t* value, rc_condition_t* self, 
 
     case RC_OPERATOR_MOD:
       rc_typed_value_modulus(value, &amount);
+      break;
+
+    case RC_OPERATOR_ADD:
+      rc_typed_value_add(value, &amount);
+      break;
+
+    case RC_OPERATOR_SUB:
+      rc_typed_value_negate(&amount);
+      rc_typed_value_add(value, &amount);
       break;
   }
 }

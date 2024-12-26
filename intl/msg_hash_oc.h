@@ -205,14 +205,6 @@ MSG_HASH(
    "Vidèo"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
-   "When disabled, files are moved to a backup folder before being overwritten or deleted."
-   )      
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
    "Listas de lectura"
    )
@@ -334,6 +326,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
@@ -457,7 +451,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
    "Istoric"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

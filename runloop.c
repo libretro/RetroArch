@@ -395,6 +395,9 @@ void runloop_log_counters(
 
 static void runloop_perf_log(void)
 {
+   if (!runloop_state.perfcnt_enable)
+      return;
+
    RARCH_LOG("[PERF]: Performance counters (libretro):\n");
    runloop_log_counters(runloop_state.perf_counters_libretro,
          runloop_state.perf_ptr_libretro);
@@ -460,9 +463,9 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
                 * the pointers are const char *
                 * (if we don't free them, we get a memory leak) */
                if (!string_is_empty(subsys_info->desc))
-                  free((char *)subsys_info->desc);
+                  free((char*)subsys_info->desc);
                if (!string_is_empty(subsys_info->ident))
-                  free((char *)subsys_info->ident);
+                  free((char*)subsys_info->ident);
                subsys_info->desc     = strdup(info[i].desc);
                subsys_info->ident    = strdup(info[i].ident);
                subsys_info->id       = info[i].id;
@@ -478,11 +481,11 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
                    * the pointers are const char *
                    * (if we don't free them, we get a memory leak) */
                   if (!string_is_empty(subsys_rom_info[j].desc))
-                     free((char *)
+                     free((char*)
                            subsys_rom_info[j].desc);
                   if (!string_is_empty(
                            subsys_rom_info[j].valid_extensions))
-                     free((char *)
+                     free((char*)
                            subsys_rom_info[j].valid_extensions);
                   subsys_rom_info[j].desc             =
                      strdup(info[i].roms[j].desc);
@@ -1080,7 +1083,7 @@ static bool validate_per_core_options(char *s,
       size_t len, bool mkdir,
       const char *core_name, const char *game_name)
 {
-   char config_directory[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
    config_directory[0] = '\0';
 
    if (   (!s)
@@ -1124,44 +1127,36 @@ static bool validate_game_options(
  * @return true if a game specific core
  * options path has been found, otherwise false.
  **/
-static bool validate_game_specific_options(char **output)
+static bool validate_game_specific_options(char *s, size_t len)
 {
-   char game_options_path[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st = &runloop_state;
-   game_options_path[0]        = '\0';
-
    if (!validate_game_options(
             runloop_st->system.info.library_name,
-            game_options_path,
-            sizeof(game_options_path), false)
-       || !path_is_valid(game_options_path))
+            s, len, false)
+       || !path_is_valid(s))
       return false;
-
    RARCH_LOG("[Core]: %s \"%s\".\n",
          msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         game_options_path);
-   *output = strdup(game_options_path);
+         s);
    return true;
 }
 
 static bool validate_folder_options(
       char *s, size_t len, bool mkdir)
 {
-   char folder_name[PATH_MAX_LENGTH];
-   runloop_state_t *runloop_st = &runloop_state;
-   const char *core_name       = runloop_st->system.info.library_name;
    const char *game_path       = path_get(RARCH_PATH_BASENAME);
 
-   folder_name[0] = '\0';
-
-   if (string_is_empty(game_path))
-      return false;
-
-   fill_pathname_parent_dir_name(folder_name,
-         game_path, sizeof(folder_name));
-
-   return validate_per_core_options(s, len, mkdir,
-         core_name, folder_name);
+   if (!string_is_empty(game_path))
+   {
+      char folder_name[DIR_MAX_LENGTH];
+      runloop_state_t *runloop_st = &runloop_state;
+      const char *core_name       = runloop_st->system.info.library_name;
+      fill_pathname_parent_dir_name(folder_name,
+            game_path, sizeof(folder_name));
+      return validate_per_core_options(s, len, mkdir,
+            core_name, folder_name);
+   }
+   return false;
 }
 
 
@@ -1171,22 +1166,14 @@ static bool validate_folder_options(
  * @return true if a folder specific core
  * options path has been found, otherwise false.
  **/
-static bool validate_folder_specific_options(
-      char **output)
+static bool validate_folder_specific_options(char *s, size_t len)
 {
-   char folder_options_path[PATH_MAX_LENGTH];
-   folder_options_path[0] ='\0';
-
-   if (!validate_folder_options(
-            folder_options_path,
-            sizeof(folder_options_path), false)
-       || !path_is_valid(folder_options_path))
+   if (!validate_folder_options(s, len, false)
+       || !path_is_valid(s))
       return false;
-
    RARCH_LOG("[Core]: %s \"%s\".\n",
          msg_hash_to_str(MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         folder_options_path);
-   *output = strdup(folder_options_path);
+         s);
    return true;
 }
 
@@ -1206,39 +1193,31 @@ static bool validate_folder_specific_options(
  **/
 static void runloop_init_core_options_path(
       settings_t *settings,
-      char *path, size_t len,
+      char *s, size_t len,
       char *src_path, size_t src_len)
 {
-   char *options_path             = NULL;
    runloop_state_t *runloop_st    = &runloop_state;
    bool game_specific_options     = settings->bools.game_specific_options;
 
    /* Check whether game-specific options exist */
    if (   game_specific_options
-       && validate_game_specific_options(&options_path))
+       && validate_game_specific_options(s, len))
    {
       /* Notify system that we have a valid core options
        * override */
-      path_set(RARCH_PATH_CORE_OPTIONS, options_path);
+      path_set(RARCH_PATH_CORE_OPTIONS, s);
       runloop_st->flags &= ~RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
       runloop_st->flags |=  RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
-
-      strlcpy(path, options_path, len);
-      free(options_path);
    }
    /* Check whether folder-specific options exist */
    else if (   game_specific_options
-            && validate_folder_specific_options(
-               &options_path))
+            && validate_folder_specific_options(s, len))
    {
       /* Notify system that we have a valid core options
        * override */
-      path_set(RARCH_PATH_CORE_OPTIONS, options_path);
+      path_set(RARCH_PATH_CORE_OPTIONS, s);
       runloop_st->flags &= ~RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE;
       runloop_st->flags |=  RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE;
-
-      strlcpy(path, options_path, len);
-      free(options_path);
    }
    else
    {
@@ -1286,13 +1265,12 @@ static void runloop_init_core_options_path(
       /* Allocate correct path/src_path strings */
       if (per_core_options)
       {
-         strlcpy(path, per_core_options_path, len);
-
+         strlcpy(s, per_core_options_path, len);
          if (!per_core_options_exist)
             strlcpy(src_path, global_options_path, src_len);
       }
       else
-         strlcpy(path, global_options_path, len);
+         strlcpy(s, global_options_path, len);
 
       /* Notify system that we *do not* have a valid core options
        * options override */
@@ -1978,8 +1956,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                                 fullpath);
 
-                  strlcpy(tmp_path, fullpath, sizeof(tmp_path));
-                  path_basedir(tmp_path);
+                  fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
 
                   /* Removes trailing slash (unless root dir) */
                   len = strlen(tmp_path);
@@ -2639,6 +2616,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY:
+      {
+         const char **dir            = (const char**)data;
+         const char *dir_content     = settings->paths.directory_menu_content;
+
+         *dir = *dir_content ? dir_content : NULL;
+         RARCH_LOG("[Environ]: FILE_BROWSER_START_DIRECTORY: \"%s\".\n",
+               dir_content);
+         break;
+      }
+
       case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
       /**
        * Update the system Audio/Video information.
@@ -2663,6 +2651,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* Refresh rate switch for regular displays */
             if (video_display_server_has_resolution_list())
                video_switch_refresh_rate_maybe(&refresh_rate, &video_switch_refresh_rate);
+
+            /* Recalibrate frame delay target when video reinits
+             * and pause frame delay when video does not reinit */
+            if (settings->bools.video_frame_delay_auto)
+            {
+               if (no_video_reinit && !video_switch_refresh_rate)
+                  video_st->frame_delay_pause  = true;
+               else
+                  video_st->frame_delay_target = 0;
+            }
 
             no_video_reinit                       = (
                      (crt_switch_resolution     == 0)
@@ -2730,16 +2728,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                if (     video_st->poke
                      && video_st->poke->show_mouse)
                   video_st->poke->show_mouse(video_st->data, false);
-            }
-
-            /* Recalibrate frame delay target when video reinits
-             * and pause frame delay when video does not reinit */
-            if (settings->bools.video_frame_delay_auto)
-            {
-               if (no_video_reinit)
-                  video_st->frame_delay_pause  = true;
-               else
-                  video_st->frame_delay_target = 0;
             }
 
             return true;
@@ -3110,7 +3098,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE:
       {
-         enum retro_av_enable_flags result = 0;
+         enum retro_av_enable_flags result = (enum retro_av_enable_flags)0;
          video_driver_state_t *video_st    = video_state_get_ptr();
          audio_driver_state_t *audio_st    = audio_state_get_ptr();
 
@@ -4048,7 +4036,6 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
             fastforward_ratio_current);
 }
 
-
 void runloop_event_deinit_core(void)
 {
    video_driver_state_t
@@ -4103,10 +4090,6 @@ void runloop_event_deinit_core(void)
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   /* Reset frame rest counter */
-   if (settings->bools.video_frame_rest)
-      video_st->frame_rest_time_count = video_st->frame_rest = 0;
-
    driver_uninit(DRIVERS_CMD_ALL, 0);
 
 #ifdef HAVE_CONFIGFILE
@@ -4153,7 +4136,7 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
          {
             char ext[32];
             union string_list_elem_attr attr;
-            char savename[PATH_MAX_LENGTH];
+            char savename[NAME_MAX_LENGTH];
             char path[PATH_MAX_LENGTH];
             size_t _len = 0;
             const struct retro_subsystem_memory_info *mem =
@@ -4162,10 +4145,9 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
             ext[  _len]  = '.';
             ext[++_len]  = '\0';
             strlcpy(ext + _len, mem->extension, sizeof(ext) - _len);
-            strlcpy(savename,
-                  runloop_st->subsystem_fullpaths->elems[i].data,
+            fill_pathname(savename,
+                  runloop_st->subsystem_fullpaths->elems[i].data, "",
                   sizeof(savename));
-            path_remove_extension(savename);
 
             if (path_is_directory(savefile_dir))
             {
@@ -4192,14 +4174,10 @@ static bool runloop_path_init_subsystem(runloop_state_t *runloop_st)
       from the main SRAM location. */
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-   {
-      size_t len = strlcpy(runloop_st->name.savefile,
+      fill_pathname(runloop_st->name.savefile,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.savefile));
-      strlcpy(runloop_st->name.savefile       + len,
             ".srm",
-            sizeof(runloop_st->name.savefile) - len);
-   }
+            sizeof(runloop_st->name.savefile));
 
    if (path_is_directory(runloop_st->name.savefile))
    {
@@ -4219,7 +4197,6 @@ static void runloop_path_init_savefile_internal(runloop_state_t *runloop_st)
 {
    path_deinit_savefile();
    path_init_savefile_new();
-
    if (!runloop_path_init_subsystem(runloop_st))
       path_init_savefile_rtc(runloop_st->name.savefile);
 }
@@ -4877,44 +4854,28 @@ void runloop_path_fill_names(void)
       return;
 
    if (string_is_empty(runloop_st->name.ups))
-   {
-      size_t len = strlcpy(runloop_st->name.ups,
+      fill_pathname(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.ups));
-      strlcpy(runloop_st->name.ups       + len,
             ".ups",
-            sizeof(runloop_st->name.ups) - len);
-   }
+            sizeof(runloop_st->name.ups));
 
    if (string_is_empty(runloop_st->name.bps))
-   {
-      size_t len = strlcpy(runloop_st->name.bps,
+      fill_pathname(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.bps));
-      strlcpy(runloop_st->name.bps       + len,
             ".bps",
-            sizeof(runloop_st->name.bps) - len);
-   }
+            sizeof(runloop_st->name.bps));
 
    if (string_is_empty(runloop_st->name.ips))
-   {
-      size_t len = strlcpy(runloop_st->name.ips,
+      fill_pathname(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.ips));
-      strlcpy(runloop_st->name.ips       + len,
             ".ips",
-            sizeof(runloop_st->name.ips) - len);
-   }
+            sizeof(runloop_st->name.ips));
 
    if (string_is_empty(runloop_st->name.xdelta))
-   {
-      size_t len = strlcpy(runloop_st->name.xdelta,
+      fill_pathname(runloop_st->name.xdelta,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.xdelta));
-      strlcpy(runloop_st->name.xdelta       + len,
             ".xdelta",
-            sizeof(runloop_st->name.xdelta) - len);
-   }
+            sizeof(runloop_st->name.xdelta));
 }
 
 
@@ -5189,12 +5150,12 @@ void core_options_reset(void)
 void core_options_flush(void)
 {
    size_t _len;
+   char msg[128];
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
    const char *core_options_file   = NULL;
    bool success                    = false;
-   char msg[256];
 
    msg[0] = '\0';
 
@@ -5244,7 +5205,7 @@ void core_options_flush(void)
           * exist (e.g. if it gets deleted manually while
           * a core is running) */
          if (!path_is_valid(path_core_options))
-            runloop_st->core_options->conf->modified = true;
+            runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
 
          success = config_file_write(runloop_st->core_options->conf,
                path_core_options, true);
@@ -6420,16 +6381,14 @@ static enum runloop_state_enum runloop_check_state(
             current_bits, RARCH_FAST_FORWARD_KEY);
       bool new_hold_button_state              = BIT256_GET(
             current_bits, RARCH_FAST_FORWARD_HOLD_KEY);
-      bool check2                             = new_button_state
-         && !old_button_state;
+      bool check2                             = new_button_state && !old_button_state;
 
       if (!check2)
          check2 = old_hold_button_state != new_hold_button_state;
 
       /* Don't allow fastmotion while paused */
-      if (runloop_paused)
+      if (check2 && runloop_paused)
       {
-         check2                = true;
          new_button_state      = false;
          new_hold_button_state = false;
          input_st->flags      |= INP_FLAG_NONBLOCKING;
@@ -6814,10 +6773,10 @@ static enum runloop_state_enum runloop_check_state(
       cbs->poll_cb();
       return RUNLOOP_STATE_PAUSE;
    }
-
+#if HAVE_MENU
    if (menu_was_alive)
       return RUNLOOP_STATE_MENU;
-
+#endif
    return RUNLOOP_STATE_ITERATE;
 }
 
@@ -6948,7 +6907,7 @@ int runloop_iterate(void)
    }
 
    switch ((enum runloop_state_enum)runloop_check_state(
-            global_get_ptr()->error_on_init,
+            ((global_get_ptr()->flags & GLOB_FLG_ERR_ON_INIT) > 0),
             settings, current_time))
    {
       case RUNLOOP_STATE_QUIT:
@@ -7096,6 +7055,9 @@ int runloop_iterate(void)
       }
    }
 
+   /* Measure the time between core_run() and video_driver_frame() */
+   runloop_st->core_run_time = cpu_features_get_time_usec();
+
    {
 #ifdef HAVE_RUNAHEAD
       bool run_ahead_enabled            = settings->bools.run_ahead_enabled;
@@ -7179,11 +7141,6 @@ int runloop_iterate(void)
       autosave_unlock();
 #endif
 
-   /* Frame delay */
-   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
-         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-      video_frame_delay(video_st, settings, core_paused);
-
 end:
    if (vrr_runloop_enable)
    {
@@ -7262,10 +7219,10 @@ end:
       runloop_st->frame_limit_last_time = end_frame_time;
    }
 
-   /* Post-frame power saving sleep resting */
-   if (      settings->bools.video_frame_rest
-         && !(input_st->flags & INP_FLAG_NONBLOCKING))
-      video_frame_rest(video_st, settings, current_time);
+   /* Frame delay */
+   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
+         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+      video_frame_delay(video_st, settings);
 
    /* Set paused state after x frames */
    if (runloop_st->run_frames_and_pause > 0)
@@ -7325,7 +7282,7 @@ void runloop_task_msg_queue_push(
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
 
-   if (widgets_active && task->title && !task->mute)
+   if (widgets_active && task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
    {
       RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
       ui_companion_driver_msg_queue_push(msg,
@@ -7839,7 +7796,8 @@ void runloop_path_set_basename(const char *path)
    char *dst                   = NULL;
 
    path_set(RARCH_PATH_CONTENT,  path);
-   path_set(RARCH_PATH_BASENAME, path);
+   strlcpy(runloop_st->runtime_content_path_basename, path,
+         sizeof(runloop_st->runtime_content_path_basename));
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
@@ -7875,52 +7833,35 @@ void runloop_path_set_names(void)
    runloop_state_t *runloop_st = &runloop_state;
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL))
-   {
-      size_t len = strlcpy(runloop_st->name.savefile,
-            runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.savefile));
-      strlcpy(runloop_st->name.savefile       + len,
-            ".srm",
-            sizeof(runloop_st->name.savefile) - len);
-   }
+      fill_pathname(runloop_st->name.savefile,
+             runloop_st->runtime_content_path_basename,
+             ".srm",
+             sizeof(runloop_st->name.savefile));
 
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-   {
-      size_t len                        = strlcpy(
-            runloop_st->name.savestate,
+      fill_pathname(runloop_st->name.savestate,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.savestate));
-      strlcpy(runloop_st->name.savestate       + len,
             ".state",
-            sizeof(runloop_st->name.savestate) - len);
-   }
+            sizeof(runloop_st->name.savestate));
 
 #ifdef HAVE_BSV_MOVIE
    if (!retroarch_override_setting_is_set(
             RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
-   {
-      size_t len                        = strlcpy(
+      fill_pathname(
             runloop_st->name.replay,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.replay));
-      strlcpy(runloop_st->name.replay          + len,
             ".replay",
-            sizeof(runloop_st->name.replay)    - len);
-   }
+            sizeof(runloop_st->name.replay));
 #endif
 
 #ifdef HAVE_CHEATS
    if (!string_is_empty(runloop_st->runtime_content_path_basename))
-   {
-      size_t len                        = strlcpy(
+      fill_pathname(
             runloop_st->name.cheatfile,
             runloop_st->runtime_content_path_basename,
-            sizeof(runloop_st->name.cheatfile));
-      strlcpy(runloop_st->name.cheatfile       + len,
             ".cht",
-            sizeof(runloop_st->name.cheatfile) - len);
-   }
+            sizeof(runloop_st->name.cheatfile));
 #endif
 }
 
@@ -7928,11 +7869,11 @@ void runloop_path_set_redirect(settings_t *settings,
                                const char *old_savefile_dir,
                                const char *old_savestate_dir)
 {
-   char content_dir_name[PATH_MAX_LENGTH];
-   char new_savefile_dir[PATH_MAX_LENGTH];
-   char new_savestate_dir[PATH_MAX_LENGTH];
-   char intermediate_savefile_dir[PATH_MAX_LENGTH];
-   char intermediate_savestate_dir[PATH_MAX_LENGTH];
+   char content_dir_name[DIR_MAX_LENGTH];
+   char new_savefile_dir[DIR_MAX_LENGTH];
+   char new_savestate_dir[DIR_MAX_LENGTH];
+   char intermediate_savefile_dir[DIR_MAX_LENGTH];
+   char intermediate_savestate_dir[DIR_MAX_LENGTH];
    runloop_state_t *runloop_st            = &runloop_state;
    struct retro_system_info *sysinfo      = &runloop_st->system.info;
    bool sort_savefiles_enable             = settings->bools.sort_savefiles_enable;
@@ -7951,7 +7892,7 @@ void runloop_path_set_redirect(settings_t *settings,
 
    /* Get content directory name, if per-content-directory
     * saves/states are enabled */
-   if ((sort_savefiles_by_content_enable
+   if ((   sort_savefiles_by_content_enable
         || sort_savestates_by_content_enable)
        && !string_is_empty(runloop_st->runtime_content_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
@@ -7959,7 +7900,8 @@ void runloop_path_set_redirect(settings_t *settings,
                                     sizeof(content_dir_name));
 
    /* Set savefile directory if empty to content directory */
-   if (string_is_empty(intermediate_savefile_dir) || savefiles_in_content_dir)
+   if (     string_is_empty(intermediate_savefile_dir)
+         || savefiles_in_content_dir)
    {
       strlcpy(intermediate_savefile_dir,
               runloop_st->runtime_content_path_basename,
@@ -7971,7 +7913,7 @@ void runloop_path_set_redirect(settings_t *settings,
    }
 
    /* Set savestate directory if empty based on content directory */
-   if (string_is_empty(intermediate_savestate_dir)
+   if (   string_is_empty(intermediate_savestate_dir)
        || savestates_in_content_dir)
    {
       strlcpy(intermediate_savestate_dir,
@@ -8022,7 +7964,6 @@ void runloop_path_set_redirect(settings_t *settings,
                   RARCH_LOG("%s %s\n",
                             msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
                             intermediate_savefile_dir);
-
                   strlcpy(new_savefile_dir, intermediate_savefile_dir, sizeof(new_savefile_dir));
                }
          }
@@ -8070,11 +8011,12 @@ void runloop_path_set_redirect(settings_t *settings,
          && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)
          && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
    {
-      fill_pathname_join(new_savefile_dir, new_savefile_dir, ".netplay",
-         sizeof(new_savefile_dir));
+      fill_pathname_join(new_savefile_dir,
+            new_savefile_dir, ".netplay",
+            sizeof(new_savefile_dir));
 
-      if (!path_is_directory(new_savefile_dir) &&
-            !path_mkdir(new_savefile_dir))
+      if (     !path_is_directory(new_savefile_dir)
+            && !path_mkdir(new_savefile_dir))
          path_basedir(new_savefile_dir);
    }
 #endif
@@ -8095,7 +8037,8 @@ void runloop_path_set_redirect(settings_t *settings,
                  sizeof(runloop_st->name.savestate));
          strlcpy(runloop_st->name.replay, new_savestate_dir,
                  sizeof(runloop_st->name.replay));
-      } else
+      }
+      else
          savestate_is_dir = path_is_directory(runloop_st->name.savestate);
 
       if (savefile_is_dir)
@@ -8180,8 +8123,7 @@ void runloop_path_set_special(char **argv, unsigned num_content)
    for (i = 0; i < num_content; i++)
    {
       string_list_append(runloop_st->subsystem_fullpaths, argv[i], attr);
-      strlcpy(str, argv[i], sizeof(str));
-      path_remove_extension(str);
+      fill_pathname(str, argv[i], "", sizeof(str));
       string_list_append(&subsystem_paths, path_basename(str), attr);
    }
 
@@ -8196,9 +8138,9 @@ void runloop_path_set_special(char **argv, unsigned num_content)
    if (is_dir)
    {
       strlcpy(runloop_st->name.savestate, savestate_dir,
-              sizeof(runloop_st->name.savestate)); /* TODO/FIXME - why are we setting this string here but then later overwriting it later with fill_pathname_dir? */
+              sizeof(runloop_st->name.savestate));
       strlcpy(runloop_st->name.replay, savestate_dir,
-              sizeof(runloop_st->name.replay)); /* TODO/FIXME - as above */
+              sizeof(runloop_st->name.replay));
    }
    else
       is_dir   = path_is_directory(runloop_st->name.savestate);

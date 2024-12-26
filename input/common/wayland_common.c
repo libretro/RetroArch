@@ -163,16 +163,21 @@ void gfx_ctx_wl_show_mouse(void *data, bool state)
       return;
 
    if (state)
-   {
-      struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
-      wl_pointer_set_cursor(wl->wl_pointer,
-            wl->cursor.serial, wl->cursor.surface,
-            image->hotspot_x, image->hotspot_y);
-      wl_surface_attach(wl->cursor.surface,
-            wl_cursor_image_get_buffer(image), 0, 0);
-      wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
-      wl_surface_commit(wl->cursor.surface);
-   }
+      if (wl->cursor_shape_device)
+         wp_cursor_shape_device_v1_set_shape(
+            wl->cursor_shape_device, wl->cursor.serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+      else
+      {
+         struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
+         wl_pointer_set_cursor(wl->wl_pointer,
+               wl->cursor.serial, wl->cursor.surface,
+               image->hotspot_x, image->hotspot_y);
+         wl_surface_attach(wl->cursor.surface,
+               wl_cursor_image_get_buffer(image), 0, 0);
+         wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
+         wl_surface_commit(wl->cursor.surface);
+
+      }
    else
       wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, NULL, 0, 0);
 
@@ -464,21 +469,17 @@ static void handle_relative_motion(void *data,
 }
 
 static void
-locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
-{
-}
+locked_pointer_locked(void *data, struct zwp_locked_pointer_v1 *lockptr) { }
 
 static void
-locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *locked_pointer)
-{
-}
+locked_pointer_unlocked(void *data, struct zwp_locked_pointer_v1 *lockptr) { }
 
 static void wl_touch_handle_frame(void *data, struct wl_touch *wl_touch) { }
 
 static void wl_touch_handle_cancel(void *data, struct wl_touch *wl_touch)
 {
    /* If i understand the spec correctly we have to reset all touches here
-    * since they were not ment for us anyway */
+    * since they were not meant for us anyway */
    int i;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
@@ -512,11 +513,20 @@ static void wl_seat_handle_capabilities(void *data,
    {
       wl->wl_pointer = wl_seat_get_pointer(seat);
       wl_pointer_add_listener(wl->wl_pointer, &pointer_listener, wl);
-      wl->wl_relative_pointer =
-         zwp_relative_pointer_manager_v1_get_relative_pointer(
-            wl->relative_pointer_manager, wl->wl_pointer);
-      zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
-         &relative_pointer_listener, wl);
+      if (wl->relative_pointer_manager)
+      {
+         wl->wl_relative_pointer =
+            zwp_relative_pointer_manager_v1_get_relative_pointer(
+               wl->relative_pointer_manager, wl->wl_pointer);
+         zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
+            &relative_pointer_listener, wl);
+      }
+      if (!wl->cursor_shape_device && wl->cursor_shape_manager)
+      {
+         wl->cursor_shape_device =
+            wp_cursor_shape_manager_v1_get_pointer(
+               wl->cursor_shape_manager, wl->wl_pointer);
+      }
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {
@@ -548,13 +558,15 @@ static bool wl_update_scale(gfx_ctx_wayland_data_t *wl)
 
    wl_list_for_each(os, &wl->current_outputs, link)
    {
-      if (os->output->scale > largest_scale) {
+      if (os->output->scale > largest_scale)
+      {
          largest_scale = os->output->scale;
          new_output    = os->output;
       }
    };
 
-   if (new_output && wl->current_output != new_output) {
+   if (new_output && wl->current_output != new_output)
+   {
       wl->current_output       = new_output;
       wl->pending_buffer_scale = new_output->scale;
       return true;
@@ -781,6 +793,10 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->relative_pointer_manager = (struct zwp_relative_pointer_manager_v1*)
          wl_registry_bind(
             reg, id, &zwp_relative_pointer_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_cursor_shape_manager_v1_interface.name))
+      wl->cursor_shape_manager = (struct wp_cursor_shape_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_cursor_shape_manager_v1_interface, MIN(version, 1));
 }
 
 static void wl_registry_handle_global_remove(void *data,
@@ -921,7 +937,7 @@ static void wl_data_device_handle_enter(void *data,
 {
    data_offer_ctx *offer_data;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   enum wl_data_device_manager_dnd_action dnd_action = 
+   enum wl_data_device_manager_dnd_action dnd_action =
       WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
 
    if (!offer)
@@ -933,11 +949,11 @@ static void wl_data_device_handle_enter(void *data,
    wl_data_offer_accept(offer, serial,
       offer_data->is_file_mime_type ? FILE_MIME : NULL);
 
-   if (     offer_data->is_file_mime_type 
+   if (     offer_data->is_file_mime_type
          && offer_data->supported_actions & DND_ACTION)
       dnd_action = DND_ACTION;
 
-   if (     wl_data_offer_get_version(offer) 
+   if (     wl_data_offer_get_version(offer)
          >= WL_DATA_OFFER_SET_ACTIONS_SINCE_VERSION)
      wl_data_offer_set_actions(offer, dnd_action, dnd_action);
 }
@@ -1122,7 +1138,7 @@ const struct zwp_relative_pointer_v1_listener relative_pointer_listener = {
 };
 
 const struct zwp_locked_pointer_v1_listener locked_pointer_listener = {
-   .locked = locked_pointer_locked,
+   .locked   = locked_pointer_locked,
    .unlocked = locked_pointer_unlocked,
 };
 

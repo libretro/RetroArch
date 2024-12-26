@@ -92,21 +92,22 @@ static void context_state_cb(pa_context *c, void *data)
    }
 }
 
-static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *data) 
+static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *data)
 {
    union string_list_elem_attr attr;
    attr.i = 0;
    pa_t *pa = (pa_t*)data;
 
    if (!pa->devicelist)
-     pa->devicelist = string_list_new();
+      pa->devicelist = string_list_new();
    if (!pa->devicelist)
       return;
 
-   // If eol is set to a positive number, you're at the end of the list
-   if (eol > 0) {
+   /* If EOL is set to a positive number,
+    * you're at the end of the list */
+   if (eol > 0)
       return;
-   }
+
    RARCH_DBG("[PulseAudio]: Sink detected: %s\n",l->name);
    string_list_append(pa->devicelist, l->name, attr);
 }
@@ -213,7 +214,7 @@ static void *pulse_init(const char *device, unsigned rate,
    /* Checking device against sink list would be tricky due to callback, so it is just set. */
    if (device)
      pa_context_set_default_sink(pa->context, device, NULL, NULL);
-         
+
    spec.format   = is_little_endian() ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_FLOAT32BE;
    spec.channels = 2;
    spec.rate     = rate;

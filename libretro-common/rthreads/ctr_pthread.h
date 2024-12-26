@@ -26,6 +26,8 @@
 #include <3ds/thread.h>
 #include <3ds/synchronization.h>
 #include <3ds/svc.h>
+#include <3ds/services/apt.h>
+#include <sys/time.h>
 #include <time.h>
 #include <errno.h>
 #include <retro_inline.h>
@@ -162,7 +164,7 @@ static INLINE int pthread_create(pthread_t *thread,
 {
    s32 prio = 0;
    Thread new_ctr_thread;
-   int procnum = -2; // use default cpu
+   int procnum = -2; /* use default cpu */
    bool isNew3DS;
 
    APT_CheckNew3DS(&isNew3DS);
@@ -176,7 +178,7 @@ static INLINE int pthread_create(pthread_t *thread,
       mutex_inited = true;
    }
 
-   /*Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
+   /* Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
    while (LightLock_TryLock(&safe_double_thread_launch) != 0);
 
    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);

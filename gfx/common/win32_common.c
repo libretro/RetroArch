@@ -670,7 +670,7 @@ static bool win32_browser(
        * FIXME: We should really handle the
        * error case when this isn't big enough. */
       char new_title[PATH_MAX];
-      char new_file[32768];
+      char new_file[32768]; /* TODO/FIXME - is this not way too big? */
 
       new_title[0] = '\0';
       new_file[0]  = '\0';
@@ -877,12 +877,12 @@ static void win32_save_position(void)
    placement.rcNormalPosition.right  = 0;
    placement.rcNormalPosition.bottom = 0;
 
-   /* If 'skip_window_positions' is true it means we've
+   /* If SETTINGS_FLG_SKIP_WINDOW_POSITIONS is set, it means we've
     * just unloaded an override that had fullscreen mode
     * enabled while we have windowed mode set globally,
     * in this case we skip the following blocks to not
     * end up with fullscreen size and position. */
-   if (!settings->skip_window_positions)
+   if (!(settings->flags & SETTINGS_FLG_SKIP_WINDOW_POSITIONS))
    {
       if (GetWindowPlacement(main_window.hwnd, &placement))
       {
@@ -897,7 +897,7 @@ static void win32_save_position(void)
       }
    }
    else
-      settings->skip_window_positions = false;
+      settings->flags &= ~SETTINGS_FLG_SKIP_WINDOW_POSITIONS;
 
    if (window_save_positions)
    {
@@ -1354,14 +1354,17 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (extended)
                keysym |= 0x80;
 
-            keycode = input_keymaps_translate_keysym_to_rk(keysym);
-            switch (keycode)
+            /* tell the driver about shift and alt key events */
+            if (keysym == 0x2A/*DIK_LSHIFT*/ || keysym == 0x36/*DIK_RSHIFT*/
+                     || keysym == 0x38/*DIK_LMENU*/ || keysym == 0xB8/*DIK_RMENU*/)
             {
-               /* L+R Shift handling done in dinput_poll */
-               case RETROK_LSHIFT:
-               case RETROK_RSHIFT:
-                  return 0;
+               void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+               if (input_data && dinput_handle_message(input_data,
+                        message, wparam, lparam))
+                  return 0; /* key up already handled by the driver */
             }
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;

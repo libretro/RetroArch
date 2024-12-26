@@ -130,20 +130,20 @@ static bool zlib_stream_decompress_data_to_file_init(
    offsetEL = read_le(local_header + 2, 2); /* extra field length */
    offsetData = (int64_t)(size_t)cdata + 26 + 4 + offsetNL + offsetEL;
 
-   zip_context->fdoffset = offsetData;
-   zip_context->usize = size;
-   zip_context->csize = csize;
-   zip_context->boffset = 0;
-   zip_context->cmode = cmode;
-   zip_context->decompressed_data = (uint8_t*)malloc(size);
-   zip_context->zstream = NULL;
-   zip_context->tmpbuf = NULL;
+   zip_context->fdoffset              = offsetData;
+   zip_context->usize                 = size;
+   zip_context->csize                 = csize;
+   zip_context->boffset               = 0;
+   zip_context->cmode                 = cmode;
+   zip_context->decompressed_data     = (uint8_t*)malloc(size);
+   zip_context->zstream               = NULL;
+   zip_context->tmpbuf                = NULL;
 
    if (cmode == ZIP_MODE_DEFLATED)
    {
       /* Initialize the zlib inflate machinery */
-      zip_context->zstream = (z_stream*)malloc(sizeof(z_stream));
-      zip_context->tmpbuf = malloc(_READ_CHUNK_SIZE);
+      zip_context->zstream            = (z_stream*)malloc(sizeof(z_stream));
+      zip_context->tmpbuf             = (uint8_t*)malloc(_READ_CHUNK_SIZE);
 
       zip_context->zstream->next_in   = NULL;
       zip_context->zstream->avail_in  = 0;
@@ -156,7 +156,8 @@ static bool zlib_stream_decompress_data_to_file_init(
       zip_context->zstream->zfree     = NULL;
       zip_context->zstream->opaque    = NULL;
 
-      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK) {
+      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK)
+      {
          free(zip_context->zstream);
          zip_context->zstream = NULL;
          goto error;

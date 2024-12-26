@@ -167,7 +167,6 @@ char *path_remove_extension(char *path);
  *
  * Hidden non-leaf function cost:
  * - Calls path_get_archive_delim()
- *   - can call find_last_slash() once if it returns NULL
  *
  * @return basename from path.
  **/
@@ -179,9 +178,6 @@ const char *path_basename(const char *path);
  *
  * Specialized version of path_basename().
  * Get basename from @path.
- *
- * Hidden non-leaf function cost:
- * - Calls find_last_slash()
  *
  * @return basename from path.
  **/
@@ -222,7 +218,7 @@ void path_parent_dir(char *path, size_t len);
  * Note: Symlinks are only resolved on Unix-likes
  * Note: The current working dir might not be what you expect,
  *       e.g. on Android it is "/"
- *       Use of fill_pathname_resolve_relative() should be prefered
+ *       Use of fill_pathname_resolve_relative() should be preferred
  **/
 char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks);
 
@@ -408,22 +404,21 @@ void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
 
 /**
  * fill_pathname_parent_dir_name:
- * @out_dir            : output directory
+ * @s                  : output string
  * @in_dir             : input directory
- * @size               : size of output directory
+ * @len                : size of @s
  *
  * Copies only the parent directory name of @in_dir into @out_dir.
  * The two buffers must not overlap. Removes trailing '/'.
  *
  * Hidden non-leaf function cost:
  * - Calls strdup
- * - Calls find_last_slash() x times
  * - Can call strlcpy
  *
- * @return true on success, false if a slash was not found in the path.
+ * @return Length of the string copied into @s
  **/
-bool fill_pathname_parent_dir_name(char *out_dir,
-      const char *in_dir, size_t size);
+size_t fill_pathname_parent_dir_name(char *s,
+      const char *in_dir, size_t len);
 
 /**
  * fill_pathname_parent_dir:
@@ -499,7 +494,6 @@ size_t fill_pathname_join(char *out_path, const char *dir,
  *
  * Hidden non-leaf function cost:
  * - calls strlcpy 2x
- * - calls find_last_slash()
  *
  * @return Length of the string copied into @out_path
  **/
@@ -550,6 +544,20 @@ size_t fill_pathname_abbreviate_special(char *out_path,
  **/
 size_t fill_pathname_abbreviated_or_relative(char *out_path,
 		const char *in_refpath, const char *in_path, size_t size);
+
+/**
+ * sanitize_path_part:
+ *
+ * @path_part          : directory or filename
+ * @size               : length of path_part
+ *
+ * Takes single part of a path eg. single filename
+ * or directory, and removes any special chars that are
+ * unavailable.
+ *
+ * @returns new string that has been sanitized
+ **/
+const char *sanitize_path_part(const char *path_part, size_t size);
 
 /**
  * pathname_conform_slashes_to_os:
@@ -621,14 +629,13 @@ void path_basedir_wrapper(char *path);
  * if not already there.
 
  * Hidden non-leaf function cost:
- * - calls find_last_slash()
- *   - can call strlcat once if it returns false
+ * - can call strlcat once if it returns false
  * - calls strlen
  **/
 size_t fill_pathname_slash(char *path, size_t size);
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-void fill_pathname_application_path(char *buf, size_t size);
+size_t fill_pathname_application_path(char *buf, size_t size);
 void fill_pathname_application_dir(char *buf, size_t size);
 size_t fill_pathname_home_dir(char *buf, size_t size);
 #endif

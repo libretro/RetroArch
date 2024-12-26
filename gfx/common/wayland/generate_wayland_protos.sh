@@ -68,3 +68,6 @@ generate_source 'unstable/idle-inhibit' 'idle-inhibit-unstable-v1'
 generate_source 'unstable/pointer-constraints' 'pointer-constraints-unstable-v1'
 generate_source 'unstable/relative-pointer' 'relative-pointer-unstable-v1'
 generate_source 'staging/fractional-scale' 'fractional-scale-v1'
+generate_source 'staging/cursor-shape' 'cursor-shape-v1'
+# Required by cursor-shape-v1
+generate_source 'unstable/tablet' 'tablet-unstable-v2'

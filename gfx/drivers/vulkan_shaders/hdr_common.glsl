@@ -122,7 +122,7 @@ const mat3 k2020toExpanded709 = mat3 (
  * by normalizing the values using the defined nits for paper white. According to SDR specs, paper white
  * is 80 nits, but that is paper white in a cinema with a dark environment, and is perceived as grey on
  * a display in office and living room environments. This value should be tuned according to the nits
- * that the consumer perceives as white in his living room, e.g. 200 nits. As refernce, PC monitors is
+ * that the consumer perceives as white in his living room, e.g. 200 nits. As reference, PC monitors is
  * normally in the range 200-300 nits, SDR TVs 150-250 nits.
  */
 vec3 NormalizeHDRSceneValue(vec3 hdrSceneValue)

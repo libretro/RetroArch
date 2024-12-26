@@ -410,7 +410,7 @@ if __name__ == '__main__':
                         print('Your file looks like it already is v2? (' + file + ')')
                         continue
                     if 0 > test:
-                        print('An error occured! Please make sure to use the complete v1 struct! (' + file + ')')
+                        print('An error occurred! Please make sure to use the complete v1 struct! (' + file + ')')
                         continue
             else:
                 print(file + ' not found.')

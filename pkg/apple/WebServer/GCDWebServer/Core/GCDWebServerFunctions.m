@@ -31,7 +31,7 @@
 
 #import <TargetConditionals.h>
 #if TARGET_OS_IPHONE
-#import <MobileCoreServices/MobileCoreServices.h>
+#import <CoreServices/CoreServices.h>
 #else
 #import <SystemConfiguration/SystemConfiguration.h>
 #endif
@@ -48,7 +48,7 @@ static NSDateFormatter* _dateFormatterISO8601 = nil;
 static dispatch_queue_t _dateFormatterQueue = NULL;
 
 // TODO: Handle RFC 850 and ANSI C's asctime() format
-void GCDWebServerInitializeFunctions() {
+void GCDWebServerInitializeFunctions(void) {
   GWS_DCHECK([NSThread isMainThread]);  // NSDateFormatter should be initialized on main thread
   if (_dateFormatterRFC822 == nil) {
     _dateFormatterRFC822 = [[NSDateFormatter alloc] init];
@@ -302,7 +302,10 @@ NSString* GCDWebServerComputeMD5Digest(NSString* format, ...) {
   const char* string = [[[NSString alloc] initWithFormat:format arguments:arguments] UTF8String];
   va_end(arguments);
   unsigned char md5[CC_MD5_DIGEST_LENGTH];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   CC_MD5(string, (CC_LONG)strlen(string), md5);
+#pragma clang diagnostic pop
   char buffer[2 * CC_MD5_DIGEST_LENGTH + 1];
   for (int i = 0; i < CC_MD5_DIGEST_LENGTH; ++i) {
     unsigned char byte = md5[i];

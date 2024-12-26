@@ -98,8 +98,8 @@ struct gfx_widget_load_content_animation_state
 
    char content_name[512];
    char system_name[512];
-   char icon_directory[PATH_MAX_LENGTH];
-   char icon_file[PATH_MAX_LENGTH];
+   char icon_directory[DIR_MAX_LENGTH];
+   char icon_file[NAME_MAX_LENGTH];
 
    bool has_icon;
 };
@@ -354,8 +354,8 @@ bool gfx_widget_start_load_content_animation(void)
                   entry->core_path);
 
             /* Check whether core matches... */
-            if (string_is_empty(entry_core_file) ||
-                !string_starts_with(entry_core_file,
+            if (    string_is_empty(entry_core_file)
+                || !string_starts_with(entry_core_file,
                      core_info->core_file_id.str))
                entry = NULL;
          }
@@ -378,9 +378,8 @@ bool gfx_widget_start_load_content_animation(void)
          /* Get entry db_name, */
          if (!string_is_empty(entry->db_name))
          {
-            strlcpy(state->system_name, entry->db_name,
+            fill_pathname(state->system_name, entry->db_name, "",
                   sizeof(state->system_name));
-            path_remove_extension(state->system_name);
 
             has_system  = true;
             has_db_name = true;
@@ -390,7 +389,7 @@ bool gfx_widget_start_load_content_animation(void)
       /* If content was found in playlist but the entry
        * did not have a db_name, use playlist name itself
        * as the system name */
-      if (      playlist_entry_found 
+      if (      playlist_entry_found
             && !has_system)
       {
          const char *playlist_path = playlist_get_conf_path(playlist);
@@ -398,15 +397,14 @@ bool gfx_widget_start_load_content_animation(void)
          if (!string_is_empty(playlist_path))
          {
             char new_system_name[512];
-            strlcpy(new_system_name, playlist_path, sizeof(new_system_name));
-            path_remove_extension(new_system_name);
+            fill_pathname(new_system_name, playlist_path, "", sizeof(new_system_name));
             state->system_name_len = fill_pathname_base(
                   state->system_name, new_system_name,
                   sizeof(state->system_name));
             /* Exclude history and favourites playlists */
-            if (string_ends_with_size(state->system_name, "_history",
-                     state->system_name_len, STRLEN_CONST("_history")) ||
-                string_ends_with_size(state->system_name, "_favorites",
+            if (   string_ends_with_size(state->system_name, "_history",
+                     state->system_name_len, STRLEN_CONST("_history"))
+                || string_ends_with_size(state->system_name, "_favorites",
                      state->system_name_len, STRLEN_CONST("_favorites")))
                state->system_name[0] = '\0';
 
@@ -423,11 +421,8 @@ bool gfx_widget_start_load_content_animation(void)
    /* If we haven't yet set the content name,
     * use content file name as a fallback */
    if (!has_content)
-   {
-      fill_pathname_base(state->content_name, content_path,
-            sizeof(state->content_name));
-      path_remove_extension(state->content_name);
-   }
+      fill_pathname(state->content_name, path_basename(content_path),
+            "", sizeof(state->content_name));
 
    /* Check whether system name has been set */
    if (!has_system)
@@ -450,11 +445,10 @@ bool gfx_widget_start_load_content_animation(void)
     * > Use db_name, if available */
    if (has_db_name)
    {
-      size_t len = strlcpy(state->icon_file, state->system_name,
-            sizeof(state->icon_file));
-      strlcpy(state->icon_file       + len,
+      size_t len = fill_pathname(state->icon_file,
+            state->system_name,
             ".png",
-            sizeof(state->icon_file) - len);
+            sizeof(state->icon_file));
 
       fill_pathname_join_special(icon_path,
             state->icon_directory, state->icon_file,
@@ -475,18 +469,17 @@ bool gfx_widget_start_load_content_animation(void)
 
       /* We can only use the core db_name if the
        * core is associated with exactly one database */
-      if (databases_list &&
-          (databases_list->size == 1))
+      if (    databases_list
+          && (databases_list->size == 1))
          core_db_name = databases_list->elems[0].data;
 
       if (   !string_is_empty(core_db_name)
           && !string_is_equal(core_db_name, state->system_name))
       {
-         size_t len = strlcpy(state->icon_file, core_db_name,
-               sizeof(state->icon_file));
-         strlcpy(state->icon_file       + len,
+         size_t len = fill_pathname(state->icon_file,
+               core_db_name,
                ".png",
-               sizeof(state->icon_file) - len);
+               sizeof(state->icon_file));
 
          fill_pathname_join_special(icon_path,
                state->icon_directory, state->icon_file,
@@ -539,7 +532,7 @@ static void gfx_widget_load_content_animation_layout(
    /* > Note: cannot determine state->icon_x_end
     *   until text strings are set */
 
-   /* Background layout */ 
+   /* Background layout */
    state->bg_width  = last_video_width;
    state->bg_height = state->icon_size + (widget_padding * 2);
    state->bg_x      = 0.0f;
@@ -587,8 +580,9 @@ static void gfx_widget_load_content_animation_layout(
       state->system_name_width  = (system_name_width > 0) ?
             (unsigned)system_name_width : 0;
 
-      text_width = (state->content_name_width > state->system_name_width) ?
-            (int)state->content_name_width : (int)state->system_name_width;
+      text_width = (state->content_name_width > state->system_name_width)
+            ? (int)state->content_name_width
+            : (int)state->system_name_width;
 
       /* Now we have the text width, can determine
        * final icon/text x draw positions */
@@ -644,8 +638,9 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       state->system_name_width  = (system_name_width > 0) ?
             (unsigned)system_name_width : 0;
 
-      text_width = (state->content_name_width > state->system_name_width) ?
-            (int)state->content_name_width : (int)state->system_name_width;
+      text_width = (state->content_name_width > state->system_name_width)
+         ? (int)state->content_name_width
+         : (int)state->system_name_width;
 
       /* Now we have the text width, can determine
        * final icon/text x draw positions */
@@ -1021,7 +1016,7 @@ static bool gfx_widget_load_content_animation_init(
       gfx_animation_t *p_anim,
       bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_load_content_animation_state_t *state = 
+   gfx_widget_load_content_animation_state_t *state =
       &p_w_load_content_animation_st;
 
    state->p_disp = p_disp;

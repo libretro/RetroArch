@@ -8,6 +8,7 @@
 
 import Foundation
 
+@available(iOS 13, *)
 extension CocoaView {
    var leftKeyboardModel: EmulatorKeyboardViewModel {
       return EmulatorKeyboardViewModel(keys: [
@@ -173,6 +174,7 @@ extension CocoaView {
    }   
 }
 
+@available(iOS 13, *)
 extension CocoaView: EmulatorKeyboardKeyPressedDelegate {
    func keyUp(_ key: KeyCoded) {
       print("keyUp: code=\(key.keyCode) keyboardModifierState = \(keyboardModifierState)")
@@ -185,6 +187,7 @@ extension CocoaView: EmulatorKeyboardKeyPressedDelegate {
    }
 }
 
+@available(iOS 13, *)
 extension CocoaView: EmulatorKeyboardModifierPressedDelegate {
    func modifierPressedWithKey(_ key: KeyCoded, enable: Bool) {
       switch UInt32(key.keyCode) {

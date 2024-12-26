@@ -493,7 +493,7 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    /** convert raw gamecube serial to redump serial.
    not enough is known about the disc data to properly
    convert every raw serial to redump serial.  it will
-   only fail with the following excpetions: the
+   only fail with the following exceptions: the
    subregions of europe P-UKV, P-AUS, X-UKV, X-EUU
    will not match redump.**/
 
@@ -697,7 +697,8 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    }
    else
    {
-      string_trim_whitespace(raw_game_id);
+      string_trim_whitespace_right(raw_game_id);
+      string_trim_whitespace_left(raw_game_id);
       strlcpy(s, raw_game_id, len);
       return true;
    }
@@ -742,7 +743,8 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       return false;
    }
 
-   string_trim_whitespace(raw_game_id);
+   string_trim_whitespace_right(raw_game_id);
+   string_trim_whitespace_left(raw_game_id);
 
    /** Dissect this raw serial into parts **/
    length             = strlen(raw_game_id);
@@ -832,7 +834,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       return false;
    }
 
-   string_trim_whitespace(raw_game_id);
+   string_trim_whitespace_right(raw_game_id);
+   string_trim_whitespace_left(raw_game_id);
    string_replace_multi_space_with_single_space(raw_game_id);
    string_replace_whitespace_with_single_character(raw_game_id, '-');
    length        = strlen(raw_game_id);
@@ -1157,7 +1160,7 @@ int cue_find_track(const char *cue_path, bool first,
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
    char last_file[PATH_MAX_LENGTH];
-   char cue_dir[PATH_MAX_LENGTH];
+   char cue_dir[DIR_MAX_LENGTH];
    intfstream_t *fd           = NULL;
    int64_t last_index         = -1;
    int64_t cand_index         = -1;
@@ -1291,7 +1294,7 @@ bool cue_next_file(intfstream_t *fd,
       const char *cue_path, char *s, uint64_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
-   char cue_dir[PATH_MAX_LENGTH];
+   char cue_dir[DIR_MAX_LENGTH];
    cue_dir[0]                 = '\0';
 
    fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
@@ -1373,7 +1376,7 @@ int gdi_find_track(const char *gdi_path, bool first,
       if (!(mode == 0 && size == 2352))
       {
          char last_file[PATH_MAX_LENGTH];
-         char gdi_dir[PATH_MAX_LENGTH];
+         char gdi_dir[DIR_MAX_LENGTH];
 
          fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
          fill_pathname_join_special(last_file,
@@ -1432,7 +1435,7 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
    /* File name */
    if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
-      char gdi_dir[PATH_MAX_LENGTH];
+      char gdi_dir[DIR_MAX_LENGTH];
 
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
       fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);

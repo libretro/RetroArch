@@ -114,7 +114,7 @@ enum platform_android_flags
 };
 
 static pthread_key_t thread_key;
-static char app_dir[PATH_MAX_LENGTH];
+static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
@@ -136,7 +136,7 @@ static char unix_cpu_model_name[64]      = {0};
 #define PROC_MEMINFO_CACHED_TAG          "Cached:"
 #define PROC_MEMINFO_SHMEM_TAG           "Shmem:"
 
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static int speak_pid                     = 0;
 #endif
 
@@ -1240,39 +1240,38 @@ static enum frontend_architecture frontend_unix_get_arch(void)
    return FRONTEND_ARCH_NONE;
 }
 
-static void frontend_unix_get_os(char *s,
+static size_t frontend_unix_get_os(char *s,
       size_t len, int *major, int *minor)
 {
+   size_t _len = 0;
 #ifdef ANDROID
    int rel;
    frontend_android_get_version(major, minor, &rel);
-
-   strlcpy(s, "Android", len);
+   _len = strlcpy(s, "Android", len);
 #else
    char *ptr;
    struct utsname buffer;
-
    if (uname(&buffer) != 0)
-      return;
-
+      return _len;
    *major = (int)strtol(buffer.release, &ptr, 10);
    *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
-   strlcpy(s, "FreeBSD", len);
+   _len = strlcpy(s, "FreeBSD", len);
 #elif defined(__NetBSD__)
-   strlcpy(s, "NetBSD", len);
+   _len = strlcpy(s, "NetBSD", len);
 #elif defined(__OpenBSD__)
-   strlcpy(s, "OpenBSD", len);
+   _len = strlcpy(s, "OpenBSD", len);
 #elif defined(__DragonFly__)
-   strlcpy(s, "DragonFly BSD", len);
+   _len = strlcpy(s, "DragonFly BSD", len);
 #elif defined(BSD)
-   strlcpy(s, "BSD", len);
+   _len = strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
-   strlcpy(s, "Haiku", len);
+   _len = strlcpy(s, "Haiku", len);
 #else
-   strlcpy(s, "Linux", len);
+   _len = strlcpy(s, "Linux", len);
 #endif
 #endif
+   return _len;
 }
 
 #ifdef HAVE_LAKKA
@@ -1482,7 +1481,7 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char apk_dir[PATH_MAX_LENGTH];
+      static char apk_dir[DIR_MAX_LENGTH];
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *apk_dir = '\0';
@@ -1599,7 +1598,7 @@ static void frontend_unix_get_env(int *argc,
                   sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
 
             /* This switch tries to handle the different locations for devices with
-               weird write permissions. Should be largelly unnecesary nowadays. Most
+               weird write permissions. Should be largelly unnecessary nowadays. Most
                devices I have tested are INTERNAL_STORAGE_WRITABLE but better safe than sorry */
 
             switch (storage_permissions)
@@ -2507,11 +2506,16 @@ static uint64_t frontend_unix_get_free_mem(void)
 static void frontend_unix_sighandler(int sig)
 {
 #ifdef VALGRIND_PRINTF_BACKTRACE
-VALGRIND_PRINTF_BACKTRACE("SIGINT");
+   VALGRIND_PRINTF_BACKTRACE("SIGINT");
 #endif
    (void)sig;
    unix_sighandler_quit++;
-   if (unix_sighandler_quit == 1) {}
+   if (unix_sighandler_quit == 1)
+   {
+#if defined(HAVE_SDL_DINGUX)
+      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+#endif
+   }
    if (unix_sighandler_quit == 2) exit(1);
    /* in case there's a second deadlock in a C++ destructor or something */
    if (unix_sighandler_quit >= 3) abort();
@@ -2788,7 +2792,7 @@ enum retro_language frontend_unix_get_user_language(void)
    return lang;
 }
 
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static bool is_narrator_running_unix(void)
 {
    return (kill(speak_pid, 0) == 0);
@@ -3052,7 +3056,7 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_set_sustained_performance_mode,
    frontend_unix_get_cpu_model_name,
    frontend_unix_get_user_language,
-#if (defined(__linux__) || defined(__unix__)) && !defined(ANDROID)
+#if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
    is_narrator_running_unix,     /* is_narrator_running */
    accessibility_speak_unix,     /* accessibility_speak */
 #else

@@ -27,6 +27,8 @@
 #define HAVE_COMPRESSION 1
 #endif
 
+#include "../gfx/display_servers/dispserv_apple.m"
+
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
@@ -70,4 +72,8 @@
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) && defined(HAVE_NETPLAYDISCOVERY_NSNET)
 #import "../network/netplay/netplay_nsnetservice.m"
+#endif
+
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD)
+#include "../network/cloud_sync/icloud.m"
 #endif

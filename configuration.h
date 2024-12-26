@@ -40,31 +40,31 @@
 
 #define configuration_set_float(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_bool(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_uint(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_int(settings, var, newvar) \
 { \
-   settings->modified = true; \
-   var = newvar; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
+   var              = newvar; \
 }
 
 #define configuration_set_string(settings, var, newvar) \
 { \
-   settings->modified = true; \
+   settings->flags |= SETTINGS_FLG_MODIFIED; \
    strlcpy(var, newvar, sizeof(var)); \
 }
 
@@ -88,6 +88,12 @@ enum override_type
    OVERRIDE_GAME
 };
 
+enum settings_glob_flags
+{
+   SETTINGS_FLG_MODIFIED              = (1 << 0),
+   SETTINGS_FLG_SKIP_WINDOW_POSITIONS = (1 << 1)
+};
+
 typedef struct settings
 {
    struct
@@ -96,7 +102,7 @@ typedef struct settings
       size_t rewind_buffer_size;
    } sizes;
 
-   video_viewport_t video_viewport_custom; /* int alignment */
+   video_viewport_t video_vp_custom; /* int alignment */
 
    struct
    {
@@ -236,6 +242,8 @@ typedef struct settings
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
       unsigned video_scale;
+      unsigned video_scale_integer_axis;
+      unsigned video_scale_integer_scaling;
       unsigned video_max_swapchain_images;
       unsigned video_max_frame_latency;
       unsigned video_swap_interval;
@@ -274,6 +282,7 @@ typedef struct settings
       unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
+      unsigned menu_icon_thumbnails;
       unsigned gfx_thumbnail_upscale_threshold;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
@@ -375,11 +384,11 @@ typedef struct settings
    {
       float placeholder;
       float video_aspect_ratio;
-      float video_viewport_bias_x;
-      float video_viewport_bias_y;
+      float video_vp_bias_x;
+      float video_vp_bias_y;
 #if defined(RARCH_MOBILE)
-      float video_viewport_bias_portrait_x;
-      float video_viewport_bias_portrait_y;
+      float video_vp_bias_portrait_x;
+      float video_vp_bias_portrait_y;
 #endif
       float video_refresh_rate;
       float video_autoswitch_pal_threshold;
@@ -458,10 +467,8 @@ typedef struct settings
       char cloud_sync_driver[32];
       char menu_driver[32];
       char cheevos_username[32];
-      char cheevos_password[256];
       char cheevos_token[32];
       char cheevos_leaderboards_enable[32];
-      char cheevos_custom_host[64];
       char video_context_driver[32];
       char audio_driver[32];
       char audio_resampler[32];
@@ -470,30 +477,37 @@ typedef struct settings
       char midi_driver[32];
       char midi_input[32];
       char midi_output[32];
-
-      char input_keyboard_layout[64];
-
+#ifdef HAVE_LAKKA
+      char cpu_main_gov[32];
+      char cpu_menu_gov[32];
+#endif
 #ifdef HAVE_MICROPHONE
       char microphone_driver[32];
       char microphone_resampler[32];
-      char microphone_device[255];
+#endif
+      char input_keyboard_layout[64];
+      char cheevos_custom_host[64];
+
+#ifdef HAVE_LAKKA
+      char timezone[TIMEZONE_LENGTH];
 #endif
 
+      char cheevos_password[NAME_MAX_LENGTH];
+#ifdef HAVE_MICROPHONE
+      char microphone_device[NAME_MAX_LENGTH];
+#endif
 #ifdef ANDROID
-      char input_android_physical_keyboard[255];
+      char input_android_physical_keyboard[NAME_MAX_LENGTH];
 #endif
+      char audio_device[NAME_MAX_LENGTH];
+      char camera_device[NAME_MAX_LENGTH];
+      char netplay_mitm_server[NAME_MAX_LENGTH];
+      char webdav_url[NAME_MAX_LENGTH];
+      char webdav_username[NAME_MAX_LENGTH];
+      char webdav_password[NAME_MAX_LENGTH];
 
-      char input_reserved_devices[MAX_USERS][255];
-
-      char audio_device[255];
-      char camera_device[255];
-      char netplay_mitm_server[255];
-
-      char translation_service_url[2048];
-
-      char webdav_url[255];
-      char webdav_username[255];
-      char webdav_password[255];
+      char crt_switch_timings[NAME_MAX_LENGTH];
+      char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
@@ -501,12 +515,7 @@ typedef struct settings
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
 
-      char crt_switch_timings[255];
-#ifdef HAVE_LAKKA
-      char timezone[TIMEZONE_LENGTH];
-      char cpu_main_gov[32];
-      char cpu_menu_gov[32];
-#endif
+      char translation_service_url[2048]; /* TODO/FIXME - check size */
    } arrays;
 
    struct
@@ -518,21 +527,52 @@ typedef struct settings
       char netplay_password[128];
       char netplay_spectate_password[128];
 
-      char netplay_server[255];
-      char netplay_custom_mitm_server[255];
-      char network_buildbot_url[255];
-      char network_buildbot_assets_url[255];
+      char streaming_title[512]; /* TODO/FIXME - check size */
 
-      char browse_url[4096];
+      char netplay_server[NAME_MAX_LENGTH];
+      char netplay_custom_mitm_server[NAME_MAX_LENGTH];
+      char network_buildbot_url[NAME_MAX_LENGTH];
+      char network_buildbot_assets_url[NAME_MAX_LENGTH];
+      char menu_content_show_settings_password[NAME_MAX_LENGTH];
+      char kiosk_mode_password[NAME_MAX_LENGTH];
 
-      char path_stream_url[8192];
+      char bundle_assets_dst_subdir[DIR_MAX_LENGTH];
+      char directory_audio_filter[DIR_MAX_LENGTH];
+      char directory_autoconfig[DIR_MAX_LENGTH];
+      char directory_video_filter[DIR_MAX_LENGTH];
+      char directory_video_shader[DIR_MAX_LENGTH];
+      char directory_libretro[DIR_MAX_LENGTH];
+      char directory_input_remapping[DIR_MAX_LENGTH];
+      char directory_overlay[DIR_MAX_LENGTH];
+      char directory_osk_overlay[DIR_MAX_LENGTH];
+      char directory_screenshot[DIR_MAX_LENGTH];
+      char directory_system[DIR_MAX_LENGTH];
+      char directory_cache[DIR_MAX_LENGTH];
+      char directory_playlist[DIR_MAX_LENGTH];
+      char directory_content_favorites[DIR_MAX_LENGTH];
+      char directory_content_history[DIR_MAX_LENGTH];
+      char directory_content_image_history[DIR_MAX_LENGTH];
+      char directory_content_music_history[DIR_MAX_LENGTH];
+      char directory_content_video_history[DIR_MAX_LENGTH];
+      char directory_runtime_log[DIR_MAX_LENGTH];
+      char directory_core_assets[DIR_MAX_LENGTH];
+      char directory_assets[DIR_MAX_LENGTH];
+      char directory_dynamic_wallpapers[DIR_MAX_LENGTH];
+      char directory_thumbnails[DIR_MAX_LENGTH];
+      char directory_menu_config[DIR_MAX_LENGTH];
+      char directory_menu_content[DIR_MAX_LENGTH];
+#ifdef _3DS
+      char directory_bottom_assets[DIR_MAX_LENGTH];
+#endif
+      char log_dir[DIR_MAX_LENGTH];
 
+#ifdef HAVE_TEST_DRIVERS
+      char test_input_file_joypad[PATH_MAX_LENGTH];
+      char test_input_file_general[PATH_MAX_LENGTH];
+#endif
       char bundle_assets_src[PATH_MAX_LENGTH];
       char bundle_assets_dst[PATH_MAX_LENGTH];
-      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
       char path_menu_xmb_font[PATH_MAX_LENGTH];
-      char menu_content_show_settings_password[PATH_MAX_LENGTH];
-      char kiosk_mode_password[PATH_MAX_LENGTH];
       char path_cheat_database[PATH_MAX_LENGTH];
       char path_content_database[PATH_MAX_LENGTH];
       char path_overlay[PATH_MAX_LENGTH];
@@ -552,45 +592,12 @@ typedef struct settings
       char path_cheat_settings[PATH_MAX_LENGTH];
       char path_font[PATH_MAX_LENGTH];
       char path_rgui_theme_preset[PATH_MAX_LENGTH];
-
-      char directory_audio_filter[PATH_MAX_LENGTH];
-      char directory_autoconfig[PATH_MAX_LENGTH];
-      char directory_video_filter[PATH_MAX_LENGTH];
-      char directory_video_shader[PATH_MAX_LENGTH];
-      char directory_libretro[PATH_MAX_LENGTH];
-      char directory_input_remapping[PATH_MAX_LENGTH];
-      char directory_overlay[PATH_MAX_LENGTH];
-      char directory_osk_overlay[PATH_MAX_LENGTH];
-      char directory_screenshot[PATH_MAX_LENGTH];
-      char directory_system[PATH_MAX_LENGTH];
-      char directory_cache[PATH_MAX_LENGTH];
-      char directory_playlist[PATH_MAX_LENGTH];
-      char directory_content_favorites[PATH_MAX_LENGTH];
-      char directory_content_history[PATH_MAX_LENGTH];
-      char directory_content_image_history[PATH_MAX_LENGTH];
-      char directory_content_music_history[PATH_MAX_LENGTH];
-      char directory_content_video_history[PATH_MAX_LENGTH];
-      char directory_runtime_log[PATH_MAX_LENGTH];
-      char directory_core_assets[PATH_MAX_LENGTH];
-      char directory_assets[PATH_MAX_LENGTH];
-      char directory_dynamic_wallpapers[PATH_MAX_LENGTH];
-      char directory_thumbnails[PATH_MAX_LENGTH];
-      char directory_menu_config[PATH_MAX_LENGTH];
-      char directory_menu_content[PATH_MAX_LENGTH];
-      char streaming_title[PATH_MAX_LENGTH];
-#ifdef _3DS
-      char directory_bottom_assets[PATH_MAX_LENGTH];
-#endif
-#ifdef HAVE_TEST_DRIVERS
-      char test_input_file_joypad[PATH_MAX_LENGTH];
-      char test_input_file_general[PATH_MAX_LENGTH];
-#endif
-      char log_dir[PATH_MAX_LENGTH];
       char app_icon[PATH_MAX_LENGTH];
+
+      char browse_url[4096];      /* TODO/FIXME - check size */
+      char path_stream_url[8192]; /* TODO/FIXME - check size */
    } paths;
 
-   bool modified;
-   bool skip_window_positions;
 
    struct
    {
@@ -608,12 +615,10 @@ typedef struct settings
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;
-      bool video_frame_rest;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
-      bool video_scale_integer_overscale;
       bool video_shader_enable;
       bool video_shader_watch_files;
       bool video_shader_remember_last_dir;
@@ -676,6 +681,7 @@ typedef struct settings
 
       /* Input */
       bool input_remap_binds_enable;
+      bool input_remap_sort_by_controller_enable;
       bool input_autodetect_enable;
       bool input_sensors_enable;
       bool input_overlay_enable;
@@ -822,6 +828,8 @@ typedef struct settings
       bool menu_unified_controls;
       bool menu_disable_info_button;
       bool menu_disable_search_button;
+      bool menu_disable_left_analog;
+      bool menu_disable_right_analog;
       bool menu_ticker_smooth;
       bool settings_show_drivers;
       bool settings_show_video;
@@ -963,6 +971,8 @@ typedef struct settings
       bool cloud_sync_destructive;
       bool cloud_sync_sync_saves;
       bool cloud_sync_sync_configs;
+      bool cloud_sync_sync_thumbs;
+      bool cloud_sync_sync_system;
 
       /* Misc. */
       bool discord_enable;
@@ -981,7 +991,6 @@ typedef struct settings
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
       bool preemptive_frames_enable;
-      bool preemptive_frames_hide_warnings;
       bool pause_nonactive;
       bool pause_on_disconnect;
       bool block_sram_overwrite;
@@ -1053,6 +1062,7 @@ typedef struct settings
       bool playlist_fuzzy_archive_match;
       bool playlist_portable_paths;
       bool playlist_use_filename;
+      bool playlist_allow_non_png;
 
       bool quit_press_twice;
       bool vibrate_on_keypress;
@@ -1085,6 +1095,8 @@ typedef struct settings
       bool gcdwebserver_alert;
 #endif
    } bools;
+
+   uint8_t flags;
 
 } settings_t;
 

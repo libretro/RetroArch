@@ -257,9 +257,9 @@ int rsd_set_param (rsound_t *rd, enum rsd_settings option, void* param);
 
 void rsd_set_callback (rsound_t *rd, rsd_audio_callback_t callback, rsd_error_callback_t err_callback, size_t max_size, void *userdata);
 
-/* Lock and unlock the callback. When the callback lock is aquired, the callback is guaranteed to not be executing.
+/* Lock and unlock the callback. When the callback lock is acquired, the callback is guaranteed to not be executing.
    The lock has to be unlocked afterwards.
-   Attemping to call several rsd_callback_lock() in succession might cause a deadlock.
+   Attempting to call several rsd_callback_lock() in succession might cause a deadlock.
    The lock should be held for as short period as possible.
    Try to avoid calling code that may block when holding the lock. */
 void rsd_callback_lock (rsound_t *rd);
@@ -294,10 +294,10 @@ size_t rsd_write (rsound_t *rd, const void* buf, size_t size);
  *NOTE* This function is deprecated, it should not be used in new applications. */
 size_t rsd_pointer (rsound_t *rd);
 
-/* Aquires how much data can be written to the buffer without blocking */
+/* Acquires how much data can be written to the buffer without blocking */
 size_t rsd_get_avail (rsound_t *rd);
 
-/* Aquires the latency at the moment for the audio stream. It is measured in bytes. Useful for syncing video and audio. */
+/* Acquires the latency at the moment for the audio stream. It is measured in bytes. Useful for syncing video and audio. */
 size_t rsd_delay (rsound_t *rd);
 
 /* Utility for returning latency in milliseconds. */

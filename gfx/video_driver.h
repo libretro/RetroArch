@@ -405,6 +405,8 @@ typedef struct video_frame_info
    unsigned crt_switch_resolution_super;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
    unsigned xmb_theme;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
@@ -456,6 +458,8 @@ typedef struct video_frame_info
    uint32_t video_st_flags;
    uint16_t menu_st_flags;
 
+   uint16_t frame_time_target;
+
    char stat_text[1024];
 
    bool widgets_active;
@@ -485,7 +489,6 @@ typedef struct video_frame_info
    bool runloop_is_slowmotion;
    bool runloop_is_paused;
    bool fastforward_frameskip;
-   bool frame_rest;
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    bool hdr_enable;
@@ -575,7 +578,7 @@ typedef struct gfx_ctx_driver
    gfx_ctx_proc_t (*get_proc_address)(const char*);
 
    /* Returns true if this context supports EGLImage buffers for
-    * screen drawing and was initalized correctly. */
+    * screen drawing and was initialized correctly. */
    bool (*image_buffer_init)(void*, const video_info_t*);
 
    /* Writes the frame to the EGLImage and sets image_handle to it.
@@ -642,7 +645,7 @@ typedef struct video_poke_interface
    float (*get_refresh_rate)(void *data);
    void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
-         unsigned *width, unsigned *height, char *desc, size_t desc_len);
+         unsigned *width, unsigned *height, char *s, size_t len);
 
    /* Move index to previous resolution */
    void (*get_video_output_prev)(void *data);
@@ -779,7 +782,6 @@ typedef struct
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
    uint64_t frame_time_count;
    uint64_t frame_count;
-   uint64_t frame_rest_time_count;
    uint8_t *record_gpu_buffer;
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *state_filter;
@@ -837,6 +839,8 @@ typedef struct
    unsigned frame_cache_height;
    unsigned width;
    unsigned height;
+   unsigned scale_width;
+   unsigned scale_height;
 
    float core_hz;
    float aspect_ratio;
@@ -865,7 +869,8 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
-   uint8_t frame_rest;
+   uint16_t frame_drop_count;
+   uint16_t frame_time_reserve;
    uint8_t frame_delay_target;
    uint8_t frame_delay_effective;
    bool frame_delay_pause;
@@ -909,6 +914,10 @@ void video_driver_set_stub_frame(void);
 void video_driver_unset_stub_frame(void);
 
 float video_driver_get_core_aspect(void);
+
+uint32_t video_driver_get_frame_time_delta_usec(void);
+
+float video_driver_get_original_fps(void);
 
 void video_driver_set_viewport_core(void);
 
@@ -971,7 +980,7 @@ bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen);
 
 bool video_driver_get_video_output_size(
-      unsigned *width, unsigned *height, char *desc, size_t desc_len);
+      unsigned *width, unsigned *height, char *s, size_t len);
 
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
@@ -1044,14 +1053,6 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 void video_monitor_set_refresh_rate(float hz);
 
 /**
- * video_monitor_compute_fps_statistics:
- *
- * Computes monitor FPS statistics.
- **/
-void video_monitor_compute_fps_statistics(uint64_t
-      frame_time_count);
-
-/**
  * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
  * @deviation          : Deviation from measured refresh rate.
@@ -1070,7 +1071,10 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
-   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
+   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y, true) : false)
+
+#define video_driver_translate_coord_viewport_confined_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
+   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y, false) : false)
 
 /**
  * video_driver_translate_coord_viewport:
@@ -1080,9 +1084,12 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  * @res_y                          : Scaled  Y coordinate.
  * @res_screen_x                   : Scaled screen X coordinate.
  * @res_screen_y                   : Scaled screen Y coordinate.
+ * @report_oob                     : Out-of-bounds report mode
  *
  * Translates pointer [X,Y] coordinates into scaled screen
- * coordinates based on viewport info.
+ * coordinates based on viewport info. If report_oob is true,
+ * -0x8000 will be returned for the coordinate which is offscreen,
+ * otherwise offscreen coordinate is clamped to 0x7fff / -0x7fff.
  *
  * Returns: true (1) if successful, false if video driver doesn't support
  * viewport info.
@@ -1091,7 +1098,7 @@ bool video_driver_translate_coord_viewport(
       struct video_viewport *vp,
       int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
-      int16_t *res_screen_y);
+      int16_t *res_screen_y, bool report_oob);
 
 uintptr_t video_driver_display_userdata_get(void);
 
@@ -1119,22 +1126,17 @@ void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(int flags);
 
-size_t video_driver_get_window_title(char *buf, unsigned len);
+size_t video_driver_get_window_title(char *s, size_t len);
 
 bool *video_driver_get_threaded(void);
 
 void video_driver_set_threaded(bool val);
 
 void video_frame_delay(video_driver_state_t *video_st,
-      settings_t *settings,
-      bool core_paused);
+      settings_t *settings);
 
 void video_frame_delay_auto(video_driver_state_t *video_st,
       video_frame_delay_auto_t *vfda);
-
-void video_frame_rest(video_driver_state_t *video_st,
-      settings_t *settings,
-      retro_time_t current_time);
 
 /**
  * video_context_driver_init:
@@ -1209,7 +1211,7 @@ bool video_driver_test_all_flags(enum display_flags testflag);
 
 gfx_ctx_flags_t video_driver_get_flags_wrapper(void);
 
-void video_driver_set_gpu_api_version_string(const char *str);
+size_t video_driver_set_gpu_api_version_string(const char *str);
 
 const char* video_driver_get_gpu_api_version_string(void);
 

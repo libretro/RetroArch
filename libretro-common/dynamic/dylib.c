@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <dynamic/dylib.h>
 #include <encodings/utf.h>
+#include <string/stdstring.h>
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
 
 #if defined(ORBIS)
 #include <orbis/libkernel.h>
@@ -55,14 +58,12 @@ static char last_dyn_error[512];
 static void set_dl_error(void)
 {
    DWORD err = GetLastError();
-
-   if (FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
-            FORMAT_MESSAGE_FROM_SYSTEM,
-            NULL,
-            err,
+   if (FormatMessage(
+              FORMAT_MESSAGE_IGNORE_INSERTS
+            | FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL, err,
             MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            last_dyn_error,
-            sizeof(last_dyn_error) - 1,
+            last_dyn_error, sizeof(last_dyn_error) - 1,
             NULL) == 0)
       snprintf(last_dyn_error, sizeof(last_dyn_error) - 1,
             "unknown error %lu", err);
@@ -127,7 +128,7 @@ dylib_t dylib_load(const char *path)
 #elif defined(ORBIS)
    int res;
    dylib_t lib = (dylib_t)sceKernelLoadStartModule(path, 0, NULL, 0, NULL, &res);
-#elif IOS
+#elif defined(IOS) || defined(OSX)
     dylib_t lib;
     static const char fw_suffix[] = ".framework";
     if (string_ends_with(path, fw_suffix))

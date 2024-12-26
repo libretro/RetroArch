@@ -68,20 +68,19 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
 /* Return port used */
-static int configureAudio(unsigned rate) {
-   int port;
+static int configureAudio(unsigned rate)
+{
 #if defined(VITA)
-   port         = sceAudioOutOpenPort(
+   return sceAudioOutOpenPort(
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
          rate, SCE_AUDIO_OUT_MODE_STEREO);
 #elif defined(ORBIS)
-   port         = sceAudioOutOpen(0xff,
+   return sceAudioOutOpen(0xff,
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
          rate, SCE_AUDIO_OUT_MODE_STEREO);
 #else
-   port = sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   return sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
 #endif
-   return port;
 }
 
 static void audioMainLoop(void *data)

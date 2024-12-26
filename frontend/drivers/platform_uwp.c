@@ -47,7 +47,7 @@
 
 #include "../../uwp/uwp_func.h"
 
-static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
+static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len;
    char build_str[11]     = {0};
@@ -134,6 +134,7 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       _len += strlcpy(s + _len, " ", len - _len);
       strlcpy(s + _len, uwp_device_family, len - _len);
    }
+   return _len;
 }
 
 static void frontend_uwp_init(void *data) { }
@@ -142,7 +143,7 @@ enum frontend_powerstate frontend_uwp_get_powerstate(
       int *seconds, int *percent)
 {
    SYSTEM_POWER_STATUS status;
-   enum frontend_powerstate 
+   enum frontend_powerstate
       ret         = FRONTEND_POWERSTATE_NONE;
 
    if (GetSystemPowerStatus(&status))
@@ -197,7 +198,7 @@ static int frontend_uwp_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
    int i;
-   char home_dir[PATH_MAX_LENGTH];
+   char home_dir[DIR_MAX_LENGTH];
    file_list_t            *list = (file_list_t*)data;
    enum msg_hash_enums enum_idx = load_content ?
          MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :

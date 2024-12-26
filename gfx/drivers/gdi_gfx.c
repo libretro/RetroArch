@@ -999,8 +999,8 @@ static const video_poke_interface_t gdi_poke_interface = {
 
 static void gdi_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &gdi_poke_interface; }
-static void gdi_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate) { }
+static void gdi_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate) { }
 
 video_driver_t video_gdi = {
    gdi_init,

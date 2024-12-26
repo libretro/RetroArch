@@ -102,8 +102,8 @@ typedef struct gl1
    unsigned menu_pitch;
    unsigned video_bits;
    unsigned menu_bits;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    unsigned rotation;

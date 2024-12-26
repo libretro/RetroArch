@@ -222,7 +222,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
       time_filter[i] = tmp;
    }
 
-   /* Apply a window to smooth out the frequency repsonse. */
+   /* Apply a window to smooth out the frequency response. */
    for (i = 0; i < (int)eq->block_size; i++)
    {
       /* Kaiser window. */

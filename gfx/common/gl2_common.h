@@ -228,8 +228,8 @@ struct gl2
    unsigned textures;
    unsigned fbo_feedback_pass;
    unsigned rotation;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
    unsigned tex_w;
    unsigned tex_h;
    unsigned base_size; /* 2 or 4 */

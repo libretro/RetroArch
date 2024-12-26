@@ -27,6 +27,7 @@
 #include <libretro.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include "../playlist.h"
 
@@ -34,7 +35,7 @@ RETRO_BEGIN_DECLS
 
 /* Note: This implementation reflects the current
  * setup of:
- * - menu_driver_set_thumbnail_system()
+ * - gfx_thumbnail_set_system()
  * - menu_driver_set_thumbnail_content()
  * - menu_driver_update_thumbnail_path()
  * This is absolutely not the best way to handle things,
@@ -44,7 +45,8 @@ RETRO_BEGIN_DECLS
 enum gfx_thumbnail_id
 {
    GFX_THUMBNAIL_RIGHT = 0,
-   GFX_THUMBNAIL_LEFT
+   GFX_THUMBNAIL_LEFT,
+   GFX_THUMBNAIL_ICON
 };
 
 /* Prevent direct access to gfx_thumbnail_path_data_t members */
@@ -57,17 +59,19 @@ struct gfx_thumbnail_path_data
 {
    enum playlist_thumbnail_mode playlist_right_mode;
    enum playlist_thumbnail_mode playlist_left_mode;
+   enum playlist_thumbnail_mode playlist_icon_mode;
    size_t playlist_index;
+   char content_label[NAME_MAX_LENGTH];
+   char content_core_name[NAME_MAX_LENGTH];
+   char system[NAME_MAX_LENGTH];
+   char content_db_name[NAME_MAX_LENGTH];
    char content_path[PATH_MAX_LENGTH];
    char content_img[PATH_MAX_LENGTH];
    char content_img_short[PATH_MAX_LENGTH];
    char content_img_full[PATH_MAX_LENGTH];
    char right_path[PATH_MAX_LENGTH];
    char left_path[PATH_MAX_LENGTH];
-   char content_label[256];
-   char content_core_name[256];
-   char system[256];
-   char content_db_name[256];
+   char icon_path[PATH_MAX_LENGTH];
 };
 
 /* Initialisation */
@@ -116,6 +120,8 @@ bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *path_data, const
  *   core name). 'Real' labels should be extracted from source */
 bool gfx_thumbnail_set_content_playlist(gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 
+bool gfx_thumbnail_set_icon_playlist(
+      gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 /* Updaters */
 
 /* Updates path for specified thumbnail identifier (right, left).

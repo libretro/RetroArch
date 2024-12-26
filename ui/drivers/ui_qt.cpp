@@ -20,7 +20,6 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QString>
-#include <QDesktopWidget>
 #include <QtGlobal>
 #include <QCloseEvent>
 #include <QResizeEvent>
@@ -1160,6 +1159,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailPixmap(NULL)
    ,m_thumbnailPixmap2(NULL)
    ,m_thumbnailPixmap3(NULL)
+   ,m_thumbnailPixmap4(NULL)
    ,m_settings(NULL)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
@@ -1217,7 +1217,11 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailTimer(new QTimer(this))
    ,m_gridItem(this)
    ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   ,m_searchRegularExpression()
+#else
    ,m_searchRegExp()
+#endif
    ,m_zoomWidget(new QWidget(this))
    ,m_itemsCountLiteral(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT))
    ,m_itemsCountLabel(new QLabel(this))
@@ -1236,6 +1240,7 @@ MainWindow::MainWindow(QWidget *parent) :
    QAction     *thumbnailTypeBoxartAction = NULL;
    QAction *thumbnailTypeScreenshotAction = NULL;
    QAction *thumbnailTypeTitleAction      = NULL;
+   QAction *thumbnailTypeLogoAction       = NULL;
    QPushButton *viewTypePushButton        = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), m_zoomWidget);
    QMenu                    *viewTypeMenu = new QMenu(viewTypePushButton);
    QAction           *viewTypeIconsAction = NULL;
@@ -1268,6 +1273,8 @@ MainWindow::MainWindow(QWidget *parent) :
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
    thumbnailTypeTitleAction               = thumbnailTypeMenu->addAction(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
+   thumbnailTypeLogoAction               = thumbnailTypeMenu->addAction(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO));
 
    thumbnailTypePushButton->setMenu(thumbnailTypeMenu);
 
@@ -1506,6 +1513,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(thumbnailTypeBoxartAction, SIGNAL(triggered()), this, SLOT(onBoxartThumbnailClicked()));
    connect(thumbnailTypeScreenshotAction, SIGNAL(triggered()), this, SLOT(onScreenshotThumbnailClicked()));
    connect(thumbnailTypeTitleAction, SIGNAL(triggered()), this, SLOT(onTitleThumbnailClicked()));
+   connect(thumbnailTypeLogoAction, SIGNAL(triggered()), this, SLOT(onLogoThumbnailClicked()));
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
@@ -1592,6 +1600,8 @@ MainWindow::~MainWindow()
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+   if (m_thumbnailPixmap4)
+      delete m_thumbnailPixmap4;
    if (m_proxyFileModel)
       delete m_proxyFileModel;
 }
@@ -1713,6 +1723,11 @@ void MainWindow::onScreenshotThumbnailClicked()
 void MainWindow::onTitleThumbnailClicked()
 {
    setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
+}
+
+void MainWindow::onLogoThumbnailClicked()
+{
+   setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
 }
 
 void MainWindow::setIconViewZoom(int zoom_val)
@@ -1905,7 +1920,11 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    if (currentDirString.isEmpty())
       return;
 
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+   dir.setPath(currentDirString);
+#else
    dir                           = currentDirString;
+#endif
 
    if (!dir.exists())
       return;
@@ -2244,6 +2263,22 @@ void MainWindow::onThumbnailDropped(const QImage &image,
          onResizeThumbnailThree(*m_thumbnailPixmap3, true);
          break;
       }
+
+      case THUMBNAIL_TYPE_LOGO:
+      {
+         QString path = changeThumbnail(image, THUMBNAIL_LOGO);
+
+         if (path.isNull())
+            return;
+
+         if (m_thumbnailPixmap4)
+            delete m_thumbnailPixmap4;
+
+         m_thumbnailPixmap4 = new QPixmap(path);
+
+         onResizeThumbnailFour(*m_thumbnailPixmap4, true);
+         break;
+      }
    }
 }
 
@@ -2419,14 +2454,14 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
    if (core_info->firmware_count > 0)
    {
+      char tmp_path[PATH_MAX_LENGTH];
       core_info_ctx_firmware_t firmware_info;
       bool update_missing_firmware    = false;
       bool set_missing_firmware       = false;
-      settings_t *settings            = config_get_ptr(); 
+      settings_t *settings            = config_get_ptr();
       uint8_t flags                   = content_get_flags();
       bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
       bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
-      char tmp_path[PATH_MAX_LENGTH];
 
       firmware_info.path             = core_info->path;
 
@@ -2434,8 +2469,9 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
        * adjust the path to check for firmware files */
       if (systemfiles_in_content_dir && content_is_inited)
       {
-         strlcpy(tmp_path, path_get(RARCH_PATH_CONTENT), sizeof(tmp_path));
-         path_basedir(tmp_path);
+         fill_pathname_basedir(tmp_path,
+               path_get(RARCH_PATH_CONTENT),
+               sizeof(tmp_path));
 
          /* If content path is empty, fall back to global system dir path */
          if (string_is_empty(tmp_path))
@@ -2485,7 +2521,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
          /* Show the path that was checked */
          snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH), 
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
                firmware_info.directory.system);
 
          hash["key"]   = QString(tmp);
@@ -2619,9 +2655,17 @@ void MainWindow::selectBrowserDir(QString path)
          /* the directory is filtered out. Remove the filter for a moment.
           * FIXME: Find a way to not have to do this
           * (not filtering dirs is one). */
-         m_proxyFileModel->setFilterRegExp(QRegExp());
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         m_proxyFileModel->setFilterRegularExpression(QRegularExpression());
+#else
+	 m_proxyFileModel->setFilterRegExp(QRegExp());
+#endif
          m_fileTableView->setRootIndex(m_proxyFileModel->mapFromSource(sourceIndex));
-         m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
+#else
+	 m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
       }
    }
    setCoreActions();
@@ -3108,8 +3152,8 @@ void MainWindow::setCoreActions()
                   if (!found_existing)
                   {
                      QVariantMap comboBoxMap;
-                     comboBoxMap["core_name"] = coreInfo->core_name;
-                     comboBoxMap["core_path"] = coreInfo->path;
+                     comboBoxMap["core_name"] = QVariant::fromValue(QString(coreInfo->core_name));
+                     comboBoxMap["core_path"] = QVariant::fromValue(QString(coreInfo->path));
                      comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
                      m_launchWithComboBox->addItem(coreInfo->core_name, QVariant::fromValue(comboBoxMap));
                   }
@@ -3179,8 +3223,8 @@ QComboBox* MainWindow::launchWithComboBox()
 void MainWindow::onSearchLineEditEdited(const QString &text)
 {
    int i;
-   QVector<unsigned> textHiraToKata;
-   QVector<unsigned> textKataToHira;
+   QVector<char32_t> textHiraToKata;
+   QVector<char32_t> textKataToHira;
    QVector<unsigned> textUnicode = text.toUcs4();
    bool found_hiragana = false;
    bool found_katakana = false;
@@ -3206,6 +3250,24 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
       }
    }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   if (!found_hiragana && !found_katakana)
+      m_searchRegularExpression = QRegularExpression(text, QRegularExpression::CaseInsensitiveOption);
+   else if (found_hiragana && !found_katakana)
+      m_searchRegularExpression = QRegularExpression(text + "|"
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size()), QRegularExpression::CaseInsensitiveOption);
+   else if (!found_hiragana && found_katakana)
+      m_searchRegularExpression = QRegularExpression(text + "|"
+            + QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()), QRegularExpression::CaseInsensitiveOption);
+   else
+      m_searchRegularExpression = QRegularExpression(text + "|"
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size()) + "|" +
+            QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()), QRegularExpression::CaseInsensitiveOption);
+#else
    if (!found_hiragana && !found_katakana)
       m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
    else if (found_hiragana && !found_katakana)
@@ -3222,6 +3284,7 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
                textHiraToKata.size()) + "|" +
             QString::fromUcs4(textKataToHira.constData(),
                textKataToHira.size()), Qt::CaseInsensitive);
+#endif
 
    applySearch();
 }
@@ -3231,15 +3294,28 @@ void MainWindow::applySearch()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
-         if (m_proxyModel->filterRegExp() != m_searchRegExp)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         if (m_proxyModel->filterRegularExpression() != m_searchRegularExpression)
+         {
+            m_proxyModel->setFilterRegularExpression(m_searchRegularExpression);
+            updateItemsCount();
+         }
+#else
+	 if (m_proxyModel->filterRegExp() != m_searchRegExp)
          {
             m_proxyModel->setFilterRegExp(m_searchRegExp);
             updateItemsCount();
          }
+#endif
          break;
       case BROWSER_TYPE_FILES:
-         if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         if (m_proxyFileModel->filterRegularExpression() != m_searchRegularExpression)
+            m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
+#else
+	 if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
             m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
          break;
    }
 }
@@ -3357,7 +3433,7 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
       return;
 
    playlistPath                  = item->data(Qt::UserRole).toString();
-   playlistInfo                  = playlistPath;
+   playlistInfo                  = QFileInfo(playlistPath);
    oldName                       = playlistInfo.completeBaseName();
 
    /* Don't just compare strings in case there are
@@ -3379,7 +3455,7 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    oldPath   = item->data(Qt::UserRole).toString();
 
    file.setFileName(oldPath);
-   info      = file;
+   info      = QFileInfo(file);
 
    extension = info.suffix();
 
@@ -3424,6 +3500,8 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       delete m_thumbnailPixmap2;
    if (m_thumbnailPixmap3)
       delete m_thumbnailPixmap3;
+   if (m_thumbnailPixmap4)
+      delete m_thumbnailPixmap4;
 
    if (m_playlistModel->isSupportedImage(path))
    {
@@ -3431,6 +3509,7 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       m_thumbnailPixmap = new QPixmap(path);
       m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
       m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
+      m_thumbnailPixmap4 = new QPixmap(*m_thumbnailPixmap);
    }
    else
    {
@@ -3440,6 +3519,7 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
       m_thumbnailPixmap     = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_BOXART + "/" + thumbnailName);
       m_thumbnailPixmap2    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_TITLE + "/" + thumbnailName);
       m_thumbnailPixmap3    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_SCREENSHOT + "/" + thumbnailName);
+      m_thumbnailPixmap4    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_LOGO + "/" + thumbnailName);
 
       if (      m_currentBrowser == BROWSER_TYPE_PLAYLISTS
             && !currentPlaylistIsSpecial())
@@ -3449,6 +3529,7 @@ void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
    onResizeThumbnailOne(*m_thumbnailPixmap, acceptDrop);
    onResizeThumbnailTwo(*m_thumbnailPixmap2, acceptDrop);
    onResizeThumbnailThree(*m_thumbnailPixmap3, acceptDrop);
+   onResizeThumbnailFour(*m_thumbnailPixmap4, acceptDrop);
 
    setCoreActions();
 }
@@ -3475,6 +3556,11 @@ void MainWindow::onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop)
 void MainWindow::onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop)
 {
    setThumbnail("thumbnail3", pixmap, acceptDrop);
+}
+
+void MainWindow::onResizeThumbnailFour(QPixmap &pixmap, bool acceptDrop)
+{
+   setThumbnail("thumbnail4", pixmap, acceptDrop);
 }
 
 void MainWindow::setCurrentViewType(ViewType viewType)
@@ -3850,6 +3936,8 @@ QString MainWindow::getCurrentThumbnailTypeString()
          return QStringLiteral("screenshot");
       case THUMBNAIL_TYPE_TITLE_SCREEN:
          return QStringLiteral("title");
+      case THUMBNAIL_TYPE_LOGO:
+         return QStringLiteral("logo");
       case THUMBNAIL_TYPE_BOXART:
       default:
          return QStringLiteral("boxart");
@@ -3866,6 +3954,8 @@ ThumbnailType MainWindow::getThumbnailTypeFromString(QString thumbnailType)
       return THUMBNAIL_TYPE_SCREENSHOT;
    else if (thumbnailType == "title")
       return THUMBNAIL_TYPE_TITLE_SCREEN;
+   else if (thumbnailType == "logo")
+      return THUMBNAIL_TYPE_LOGO;
 
    return THUMBNAIL_TYPE_BOXART;
 }
@@ -4217,7 +4307,7 @@ static void* ui_application_qt_initialize(void)
 
    app_handler             = new AppHandler();
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
    /* HiDpi supported since Qt 5.6 */
    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
@@ -4236,13 +4326,15 @@ static void* ui_application_qt_initialize(void)
    setlocale(LC_NUMERIC, "C");
 #ifdef HAVE_WAYLAND
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
-   // This needs to match the name of the .desktop file in order for windows to be correctly associated on Wayland
+   /* This needs to match the name of the .desktop file in order for
+    * Windows to be correctly associated on Wayland */
    ui_application.app->setDesktopFileName(WAYLAND_APP_ID);
 #endif
 #endif
 #endif
    {
-      /* Can't declare the pixmap at the top, because: "QPixmap: Must construct a QGuiApplication before a QPixmap" */
+      /* Can't declare the pixmap at the top, because:
+       * "QPixmap: Must construct a QGuiApplication before a QPixmap" */
       QImage iconImage(16, 16, QImage::Format_ARGB32);
       QPixmap iconPixmap;
       unsigned char *bits = iconImage.bits();
@@ -4259,9 +4351,11 @@ static void* ui_application_qt_initialize(void)
 
 static void ui_application_qt_process_events(void)
 {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
    QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
    if (dispatcher && dispatcher->hasPendingEvents())
-      QApplication::processEvents();
+#endif
+   QApplication::processEvents();
 }
 
 static void ui_application_qt_quit(void)
@@ -4313,6 +4407,8 @@ typedef struct ui_companion_qt
    ui_application_qt_t *app;
    ui_window_qt_t *window;
 } ui_companion_qt_t;
+
+ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }
 
 ThumbnailWidget::ThumbnailWidget(ThumbnailType type, QWidget *parent) :
    QStackedWidget(parent)
@@ -4497,7 +4593,7 @@ static void* ui_companion_qt_init(void)
    QVBoxLayout     *launchWithWidgetLayout = NULL;
    QHBoxLayout         *coreComboBoxLayout = NULL;
    QMenuBar                          *menu = NULL;
-   QDesktopWidget                 *desktop = NULL;
+   QScreen                         *screen = NULL;
    QMenu                         *fileMenu = NULL;
    QMenu                         *editMenu = NULL;
    QMenu                         *viewMenu = NULL;
@@ -4506,6 +4602,7 @@ static void* ui_companion_qt_init(void)
    QDockWidget              *thumbnailDock = NULL;
    QDockWidget             *thumbnail2Dock = NULL;
    QDockWidget             *thumbnail3Dock = NULL;
+   QDockWidget             *thumbnail4Dock = NULL;
    QDockWidget  *browserAndPlaylistTabDock = NULL;
    QDockWidget          *coreSelectionDock = NULL;
    QTabWidget *browserAndPlaylistTabWidget = NULL;
@@ -4518,12 +4615,14 @@ static void* ui_companion_qt_init(void)
    ThumbnailWidget        *thumbnailWidget = NULL;
    ThumbnailWidget       *thumbnail2Widget = NULL;
    ThumbnailWidget       *thumbnail3Widget = NULL;
+   ThumbnailWidget       *thumbnail4Widget = NULL;
    QPushButton     *browserDownloadsButton = NULL;
    QPushButton            *browserUpButton = NULL;
    QPushButton         *browserStartButton = NULL;
    ThumbnailLabel               *thumbnail = NULL;
    ThumbnailLabel              *thumbnail2 = NULL;
    ThumbnailLabel              *thumbnail3 = NULL;
+   ThumbnailLabel              *thumbnail4 = NULL;
    QAction               *editSearchAction = NULL;
    QAction                 *loadCoreAction = NULL;
    QAction               *unloadCoreAction = NULL;
@@ -4540,8 +4639,8 @@ static void* ui_companion_qt_init(void)
       (ui_application_qt.initialize());
    handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
 
-   desktop         = qApp->desktop();
-   desktopRect     = desktop->availableGeometry();
+   screen          = qApp->primaryScreen();
+   desktopRect     = screen->availableGeometry();
 
    mainwindow      = handle->window->qtWindow;
 
@@ -4673,9 +4772,13 @@ static void* ui_companion_qt_init(void)
    thumbnail3Widget = new ThumbnailWidget(THUMBNAIL_TYPE_SCREENSHOT);
    thumbnail3Widget->setObjectName("thumbnail3");
 
+   thumbnail4Widget = new ThumbnailWidget(THUMBNAIL_TYPE_LOGO);
+   thumbnail4Widget->setObjectName("thumbnail4");
+
    QObject::connect(thumbnailWidget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
    QObject::connect(thumbnail2Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
    QObject::connect(thumbnail3Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
+   QObject::connect(thumbnail4Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
 
    thumbnailDock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART), mainwindow);
    thumbnailDock->setObjectName("thumbnailDock");
@@ -4701,8 +4804,17 @@ static void* ui_companion_qt_init(void)
 
    mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(thumbnail3Dock->property("default_area").toInt()), thumbnail3Dock);
 
+   thumbnail4Dock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO), mainwindow);
+   thumbnail4Dock->setObjectName("thumbnail4Dock");
+   thumbnail4Dock->setProperty("default_area", Qt::RightDockWidgetArea);
+   thumbnail4Dock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO));
+   thumbnail4Dock->setWidget(thumbnail4Widget);
+
+   mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(thumbnail4Dock->property("default_area").toInt()), thumbnail4Dock);
+
    mainwindow->tabifyDockWidget(thumbnailDock, thumbnail2Dock);
    mainwindow->tabifyDockWidget(thumbnailDock, thumbnail3Dock);
+   mainwindow->tabifyDockWidget(thumbnailDock, thumbnail4Dock);
 
    /* when tabifying the dock widgets, the last tab added is selected by default, so we need to re-select the first tab */
    thumbnailDock->raise();
@@ -4825,6 +4937,8 @@ static void* ui_companion_qt_init(void)
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);
       else if (thumbnailType == "title")
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
+      else if (thumbnailType == "logo")
+         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
       else
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
    }
@@ -5151,7 +5265,11 @@ void LoadCoreWindow::onCoreEnterPressed()
          Qt::UserRole).toHash();
    QString                       path = hash["path"].toString();
 
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+   pathArray.append(path.toStdString());
+#else
    pathArray.append(path);
+#endif
    pathData                           = pathArray.constData();
 
    loadCore(pathData);
@@ -5181,7 +5299,7 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    if (path.isEmpty())
       return;
 
-   pathArray.append(path);
+   pathArray.append(path.toUtf8());
    pathData                      = pathArray.constData();
 
    loadCore(pathData);
@@ -5193,7 +5311,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
    unsigned i;
    QStringList horizontal_header_labels;
    core_info_list_t *cores = NULL;
-   QDesktopWidget *desktop = qApp->desktop();
+   QScreen *desktop = qApp->primaryScreen();
    QRect desktopRect       = desktop->availableGeometry();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
@@ -5227,7 +5345,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
 
          name_item                      = new QTableWidgetItem(name);
 
-         hash["path"]                   = core->path;
+         hash["path"]                   = QByteArray(core->path);
          hash["extensions"]             = string_split_to_qt(QString(core->supported_extensions), '|');
 
          name_item->setData(Qt::UserRole, hash);

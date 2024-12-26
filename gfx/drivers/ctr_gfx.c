@@ -768,9 +768,7 @@ static void ctr_update_viewport(
           true);
    }
    else if (ctr->keep_aspect)
-   {
       video_viewport_get_scaled_aspect(&ctr->vp, width, height, true);
-   }
    else
    {
       ctr->vp.x      = 0;
@@ -1411,8 +1409,9 @@ static void ctr_render_bottom_screen(void *data)
    }
 }
 
-// graphic function originates from here:
-// https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
+/* graphic function originates from here:
+ * https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
+ */
 void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
 {
 #ifndef CONSOLE_LOG

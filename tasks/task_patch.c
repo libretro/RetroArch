@@ -698,7 +698,7 @@ static enum patch_error xdelta_apply_patch(
       }
    } while (stream.avail_in);
 
-   *targetdata = malloc(*targetlength);
+   *targetdata = (uint8_t*)malloc(*targetlength);
    switch (ret = xd3_decode_memory(
            patchdata, patchlen,
            sourcedata, sourcelength,
@@ -749,11 +749,8 @@ static bool apply_patch_content(uint8_t **buf,
       /* Show an OSD message */
       if (show_notification)
       {
+         char msg[128];
          const char *patch_filename = path_basename_nocompression(patch_path);
-         char msg[256];
-
-         msg[0] = '\0';
-
          snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
                patch_filename ? patch_filename :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN));

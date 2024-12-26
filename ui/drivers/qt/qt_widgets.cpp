@@ -32,6 +32,7 @@ extern "C" {
 #include "../../../config.h"
 #endif
 
+#include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
 #include "../../../configuration.h"
@@ -503,7 +504,7 @@ void UIntComboBox::populate(double min, double max)
    {
       for (i = min; i <= max; i += step)
       {
-         char val_s[256];
+         char val_s[NAME_MAX_LENGTH];
          unsigned val = (unsigned)i;
 
          *m_setting->value.target.unsigned_integer = val;
@@ -640,7 +641,7 @@ UIntRadioButton::UIntRadioButton(msg_hash_enums enum_idx, unsigned value, QWidge
    ,m_target(m_setting->value.target.unsigned_integer)
    ,m_value(value)
 {
-   char val_s[256];
+   char val_s[NAME_MAX_LENGTH];
    unsigned orig_value = *m_setting->value.target.unsigned_integer;
 
    *m_setting->value.target.unsigned_integer = value;
@@ -701,7 +702,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    {
       for (i = min; i <= max; i += step)
       {
-         char val_s[256];
+         char val_s[NAME_MAX_LENGTH];
 
          *setting->value.target.unsigned_integer = i;
 
@@ -723,7 +724,11 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
       *setting->value.target.unsigned_integer = orig_value;
    }
    add_sublabel_and_whats_this(this, m_setting);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   connect(m_buttonGroup, &QButtonGroup::idClicked, this, &UIntRadioButtons::onButtonClicked);
+#else
    connect(m_buttonGroup, SIGNAL(buttonClicked(int)), this, SLOT(onButtonClicked(int)));
+#endif
 }
 
 UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
@@ -983,7 +988,7 @@ BindButton::BindButton(rarch_setting_t *setting, QWidget *parent) :
    QPushButton(parent)
    ,m_setting(setting)
 {
-   char val_s[256];
+   char val_s[NAME_MAX_LENGTH];
 
    setting->get_string_representation(setting, val_s, sizeof(val_s));
 
@@ -1239,6 +1244,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
+               m_pendingThumbnailDownloadTypes.append(THUMBNAIL_LOGO);
                downloadThumbnail(system, title);
             }
             else

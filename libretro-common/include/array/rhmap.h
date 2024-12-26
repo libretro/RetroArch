@@ -131,7 +131,7 @@
 
 #if defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable:4505) //unreferenced local function has been removed
+#pragma warning(disable:4505) /* Unreferenced local function has been removed */
 #endif
 
 #define RHMAP_SET_FULL(b, key, str, val) (RHMAP__FIT1(b), b[rhmap__idx(RHMAP__HDR(b), (key), (str), 1, 0)] = (val))
@@ -238,7 +238,7 @@ static char *rhmap_strdup(const char *s)
     while (s[count])
         ++count;
     ++count;
-    out = malloc(sizeof(char) * count);
+    out = (char*)malloc(sizeof(char) * count);
     out[--count] = 0;
     while (--count >= 0)
         out[count] = s[count];

@@ -229,9 +229,9 @@ runtime_log_t *runtime_log_init(
       const char *dir_playlist,
       bool log_per_core)
 {
-   char content_name[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
-   char log_file_dir[PATH_MAX_LENGTH];
+   char log_file_dir[DIR_MAX_LENGTH];
+   char content_name[NAME_MAX_LENGTH];
+   char core_name[NAME_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
    bool supports_no_game      = false;
@@ -326,38 +326,25 @@ runtime_log_t *runtime_log_init(
     * content has the same name... */
    else if (string_is_equal(core_name, "TyrQuake"))
    {
-      const char *last_slash = find_last_slash(content_path);
+      const char *slash      = strrchr(content_path, '/');
+      const char *backslash  = strrchr(content_path, '\\');
+      const char *last_slash = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
       if (last_slash)
       {
          size_t path_length = last_slash + 1 - content_path;
          if (path_length < PATH_MAX_LENGTH)
          {
-            size_t _len;
             memset(tmp_buf, 0, sizeof(tmp_buf));
             strlcpy(tmp_buf,
                   content_path, path_length * sizeof(char));
-            _len = strlcpy(content_name,
-                  path_basename(tmp_buf), sizeof(content_name));
-            strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
+            fill_pathname(content_name,
+                  path_basename(tmp_buf), ".lrtl", sizeof(content_name));
          }
       }
    }
    else
-   {
-      size_t _len;
-      /* path_remove_extension() requires a char * (not const)
-       * so have to use a temporary buffer... */
-      char *tmp_buf_no_ext = NULL;
-      tmp_buf[0]           = '\0';
-      strlcpy(tmp_buf, path_basename(content_path), sizeof(tmp_buf));
-      tmp_buf_no_ext       = path_remove_extension(tmp_buf);
-
-      if (string_is_empty(tmp_buf_no_ext))
-         return NULL;
-
-      _len = strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
-      strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
-   }
+      fill_pathname(content_name, path_basename(content_path), ".lrtl",
+            sizeof(content_name));
 
    if (string_is_empty(content_name))
       return NULL;
@@ -510,11 +497,9 @@ void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
          len);
    s[_len  ]   = ' ';
    if (runtime_log)
-   {
       snprintf(s + _len + 1, len - _len - 1, "%02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
-   }
    else
    {
       s[_len+1]   = '0';
@@ -1020,7 +1005,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_AGO:
             str[  _len] = ' ';
-            str[++_len] = '\0';               
+            str[++_len] = '\0';
             if (!(runtime_last_played_human(runtime_log, str + _len, len - _len - 2)))
                strlcat(str + _len,
                      msg_hash_to_str(
@@ -1118,7 +1103,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
          LOG_FILE_RUNTIME_FORMAT_STR,
          runtime_log->runtime.hours, runtime_log->runtime.minutes,
          runtime_log->runtime.seconds);
-    
+
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "runtime");
    rjsonwriter_raw(writer, ":", 1);

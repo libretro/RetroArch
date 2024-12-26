@@ -197,7 +197,6 @@ ACHIEVEMENTS
 #define RC_CLIENT_SUPPORTS_HASH 1
 
 #include "../libretro-common/formats/cdfs/cdfs.c"
-#include "../network/net_http_special.c"
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"
@@ -269,7 +268,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/w_vk_ctx.c"
 #endif
 
-#if !defined(__WINRT__) 
+#if !defined(__WINRT__)
 #include "../gfx/display_servers/dispserv_win32.c"
 #endif
 
@@ -882,6 +881,9 @@ AUDIO
 
 #if defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
+#include "../input/drivers/sdl_input.c"
+#include "../input/drivers_joypad/sdl_joypad.c"
+#include "../gfx/drivers_context/sdl_gl_ctx.c"
 #ifdef HAVE_MICROPHONE
 #include "../audio/drivers_microphone/sdl_microphone.c"
 #endif
@@ -902,6 +904,15 @@ AUDIO
 
 #ifdef HAVE_SL
 #include "../audio/drivers/opensl.c"
+#endif
+
+#ifdef HAVE_PIPEWIRE
+#include "../audio/drivers/pipewire.c"
+#include "../audio/common/pipewire.c"
+
+#ifdef HAVE_MICROPHONE
+#include "../audio/drivers_microphone/pipewire.c"
+#endif
 #endif
 
 #ifdef HAVE_ALSA
@@ -996,6 +1007,7 @@ FILTERS
 #include "../gfx/video_filters/dot_matrix_3x.c"
 #include "../gfx/video_filters/dot_matrix_4x.c"
 #include "../gfx/video_filters/upscale_1_5x.c"
+#include "../gfx/video_filters/upscale_1_66x_fast.c"
 #include "../gfx/video_filters/upscale_256x_320x240.c"
 #include "../gfx/video_filters/picoscale_256x_320x240.c"
 #include "../gfx/video_filters/upscale_240x160_320x240.c"
@@ -1003,13 +1015,16 @@ FILTERS
 #endif
 
 #ifdef HAVE_DSP_FILTER
+#include "../libretro-common/audio/dsp_filters/chorus.c"
+#include "../libretro-common/audio/dsp_filters/crystalizer.c"
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
-#include "../libretro-common/audio/dsp_filters/chorus.c"
 #include "../libretro-common/audio/dsp_filters/iir.c"
 #include "../libretro-common/audio/dsp_filters/panning.c"
 #include "../libretro-common/audio/dsp_filters/phaser.c"
 #include "../libretro-common/audio/dsp_filters/reverb.c"
+#include "../libretro-common/audio/dsp_filters/tremolo.c"
+#include "../libretro-common/audio/dsp_filters/vibrato.c"
 #include "../libretro-common/audio/dsp_filters/wahwah.c"
 #endif
 #endif
@@ -1214,6 +1229,7 @@ WIFI
 RECORDING
 ============================================================ */
 #include "../record/record_driver.c"
+#include "../record/drivers/record_wav.c"
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
 #endif
@@ -1634,6 +1650,16 @@ ANDROID PLAY FEATURE DELIVERY
 ============================================================ */
 #if defined(ANDROID)
 #include "../play_feature_delivery/play_feature_delivery.c"
+#endif
+
+
+/*============================================================
+FFMPEG
+============================================================ */
+#ifdef HAVE_FFMPEG
+#include "../cores/libretro-ffmpeg/packet_buffer.c"
+#include "../cores/libretro-ffmpeg/video_buffer.c"
+#include "../libretro-common/rthreads/tpool.c"
 #endif
 
 /*============================================================

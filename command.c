@@ -408,12 +408,16 @@ bool command_get_config_param(command_t *cmd, const char* arg)
       input_driver_state_t *input_st = input_state_get_ptr();
       value            = value_dynamic;
       value_dynamic[0] = '\0';
-      if(input_st->bsv_movie_state_handle)
-         snprintf(value_dynamic, sizeof(value_dynamic), "%lld %u",
-               (long long)(input_st->bsv_movie_state_handle->identifier),
-               input_st->bsv_movie_state.flags);
+      if (input_st->bsv_movie_state_handle)
+      {
+         bsv_movie_t *movie = input_st->bsv_movie_state_handle;
+         snprintf(value_dynamic, sizeof(value_dynamic), "%lld %u %lld",
+               (long long)(movie->identifier),
+                  input_st->bsv_movie_state.flags,
+                  (long long)(movie->frame_counter));
+      }
       else
-         strlcpy(value_dynamic, "0 0", sizeof(value_dynamic));
+         strlcpy(value_dynamic, "0 0 0", sizeof(value_dynamic));
    }
    #endif
    /* TODO: query any string */
@@ -738,7 +742,7 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
       {
          input_driver_state_t *input_st = input_state_get_ptr();
          task_queue_wait(NULL,NULL);
-         if(input_st->bsv_movie_state_next_handle)
+         if (input_st->bsv_movie_state_next_handle)
             snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_next_handle->identifier));
          else
             snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT 0");
@@ -824,7 +828,6 @@ bool command_version(command_t *cmd, const char* arg)
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    cmd->replier(cmd, reply, _len);
-
    return true;
 }
 
@@ -880,24 +883,21 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
 
 static uint8_t *command_memory_get_pointer(
       const rarch_system_info_t* sys_info,
-      unsigned address,
-      unsigned int* max_bytes,
-      int for_write,
-      char *reply_at,
-      size_t len)
+      unsigned address, unsigned int* max_bytes,
+      int for_write, char *s, size_t len)
 {
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
-      strlcpy(reply_at, " -1 no memory map defined\n", len);
+      strlcpy(s, " -1 no memory map defined\n", len);
    else
    {
       size_t offset;
       const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&sys_info->mmaps, address, &offset);
       if (!desc)
-         strlcpy(reply_at, " -1 no descriptor for address\n", len);
+         strlcpy(s, " -1 no descriptor for address\n", len);
       else if (!desc->core.ptr)
-         strlcpy(reply_at, " -1 no data for descriptor\n", len);
+         strlcpy(s, " -1 no data for descriptor\n", len);
       else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
-         strlcpy(reply_at, " -1 descriptor data is readonly\n", len);
+         strlcpy(s, " -1 descriptor data is readonly\n", len);
       else
       {
          *max_bytes = (unsigned int)(desc->core.len - offset);
@@ -918,30 +918,28 @@ bool command_get_status(command_t *cmd, const char* arg)
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
       /* add some content info */
-      runloop_state_t *runloop_st = runloop_state_get_ptr();
-      const char *content_name    = path_basename(path_get(RARCH_PATH_BASENAME));  /* filename only without ext */
-      int content_crc32           = content_get_crc();
-      const char* system_id       = NULL;
       core_info_t *core_info      = NULL;
-
-      reply[0]                    = '\0';
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
 
       core_info_get_current_core(&core_info);
 
-      if (core_info)
-         system_id                = core_info->system_id;
-      if (!system_id)
-         system_id                = runloop_st->system.info.library_name;
-      _len  = strlcpy(reply, "GET_STATUS ",       sizeof(reply));
+      _len     = strlcpy(reply, "GET_STATUS ", sizeof(reply));
       if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-         _len += strlcpy(reply + _len, "PAUSED",  sizeof(reply) - _len);
+         _len += strlcpy(reply + _len, "PAUSED", sizeof(reply) - _len);
       else
          _len += strlcpy(reply + _len, "PLAYING", sizeof(reply) - _len);
-      _len += strlcpy(reply + _len, " ",          sizeof(reply) - _len);
-      _len += strlcpy(reply + _len, system_id,    sizeof(reply) - _len);
-      _len += strlcpy(reply + _len, ",",          sizeof(reply) - _len);
-      _len += strlcpy(reply + _len, content_name, sizeof(reply) - _len);
-      _len += snprintf(reply + _len, sizeof(reply) - _len, ",crc32=%x\n", content_crc32);
+      _len    += strlcpy(reply + _len, " ", sizeof(reply) - _len);
+      if (core_info)
+         _len += strlcpy(reply + _len, core_info->system_id,
+               sizeof(reply) - _len);
+      else
+         _len += strlcpy(reply + _len, runloop_st->system.info.library_name,
+               sizeof(reply) - _len);
+      _len    += strlcpy(reply + _len, ",", sizeof(reply) - _len);
+      _len    += strlcpy(reply + _len,
+            path_basename(path_get(RARCH_PATH_BASENAME)), sizeof(reply) - _len);
+      _len    += snprintf(reply + _len, sizeof(reply) - _len,
+            ",crc32=%x\n", content_get_crc());
    }
    else
        _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
@@ -1164,8 +1162,7 @@ void command_event_init_controllers(rarch_system_info_t *sys_info,
 
 #ifdef HAVE_CONFIGFILE
 bool command_event_save_config(
-      const char *config_path,
-      char *s, size_t len)
+      const char *config_path, char *s, size_t len)
 {
    bool path_exists = !string_is_empty(config_path);
    const char *str  = path_exists ? config_path :
@@ -1286,8 +1283,7 @@ bool command_event_save_auto_state(void)
    _len = strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
          sizeof(savestate_name_auto));
-   strlcpy(savestate_name_auto + _len,
-         ".auto",
+   strlcpy(savestate_name_auto + _len, ".auto",
          sizeof(savestate_name_auto) - _len);
 
    if (content_auto_save_state((const char*)savestate_name_auto))
@@ -1398,8 +1394,7 @@ void command_event_load_auto_state(void)
    _len = strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
          sizeof(savestate_name_auto));
-   strlcpy(savestate_name_auto + _len,
-         ".auto",
+   strlcpy(savestate_name_auto + _len, ".auto",
          sizeof(savestate_name_auto) - _len);
 
    if (!path_is_valid(savestate_name_auto))
@@ -1419,92 +1414,47 @@ void command_event_load_auto_state(void)
             savestate_name_auto, "failed");
 }
 
-void command_event_set_savestate_auto_index(settings_t *settings)
+/**
+ * Scans existing states to determine which one should be loaded
+ * and which one can be deleted, using savestate wraparound if
+ * enabled.
+ *
+ * @param settings The usual RetroArch settings ptr.
+ * @param last_index Return value for load slot.
+ * @param @s Return value for file name that should be removed.
+ */
+static void scan_states(settings_t *settings,
+      unsigned *last_index, char *s)
 {
-   size_t i;
+   /* Base name of 128 may be too short for some (<<1%) of the
+      tosec-based file names, but in practice truncating will not
+      lead to mismatch */
    char state_base[128];
-   char state_dir[PATH_MAX_LENGTH];
+   char state_dir[DIR_MAX_LENGTH];
+   runloop_state_t *runloop_st        = runloop_state_get_ptr();
+   bool show_hidden_files             = settings->bools.show_hidden_files;
+   unsigned savestate_max_keep        = settings->uints.savestate_max_keep;
+   int curr_state_slot                = settings->ints.state_slot;
 
-   struct string_list *dir_list      = NULL;
-   unsigned max_idx                  = 0;
-   runloop_state_t *runloop_st       = runloop_state_get_ptr();
-   bool savestate_auto_index         = settings->bools.savestate_auto_index;
-   bool show_hidden_files            = settings->bools.show_hidden_files;
+   unsigned max_idx                   = 0;
+   unsigned loa_idx                   = 0;
+   unsigned gap_idx                   = UINT_MAX;
+   unsigned del_idx                   = UINT_MAX;
+   retro_bits_512_t slot_mapping_low  = {0};
+   retro_bits_512_t slot_mapping_high = {0};
 
-   if (!savestate_auto_index)
-      return;
+   struct string_list *dir_list       = NULL;
+   const char *savefile_root          = NULL;
+   size_t savefile_root_length        = 0;
 
-   /* Find the file in the same directory as runloop_st->savestate_name
-    * with the largest numeral suffix.
-    *
-    * E.g. /foo/path/content.state, will try to find
-    * /foo/path/content.state%d, where %d is the largest number available.
-    */
+   size_t i, cnt                      = 0;
+   size_t cnt_in_range                = 0;
+
    fill_pathname_basedir(state_dir, runloop_st->name.savestate,
          sizeof(state_dir));
 
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
-         show_hidden_files);
-
-   if (!dir_list)
-      return;
-
-   fill_pathname_base(state_base, runloop_st->name.savestate,
-         sizeof(state_base));
-
-   for (i = 0; i < dir_list->size; i++)
-   {
-      unsigned idx;
-      char elem_base[128]             = {0};
-      const char *end                 = NULL;
-      const char *dir_elem            = dir_list->elems[i].data;
-
-      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
-
-      if (strstr(elem_base, state_base) != elem_base)
-         continue;
-
-      end = dir_elem + strlen(dir_elem);
-      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
-         end--;
-
-      idx = (unsigned)strtoul(end, NULL, 0);
-      if (idx > max_idx)
-         max_idx = idx;
-   }
-
-   dir_list_free(dir_list);
-
-   configuration_set_int(settings, settings->ints.state_slot, max_idx);
-
-   RARCH_LOG("[State]: %s: #%d\n",
-         msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
-         max_idx);
-}
-
-void command_event_set_savestate_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      )
-{
-   size_t i, cnt = 0;
-   char state_dir[PATH_MAX_LENGTH];
-   char state_base[128];
-   runloop_state_t *runloop_st       = runloop_state_get_ptr();
-
-   struct string_list *dir_list      = NULL;
-   unsigned min_idx                  = UINT_MAX;
-   const char *oldest_save           = NULL;
-
-   /* Similar to command_event_set_savestate_auto_index(),
-    * this will find the lowest numbered save-state */
-   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
-         sizeof(state_dir));
-
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
-         show_hidden_files);
-
-   if (!dir_list)
+   if (!(dir_list = dir_list_new_special(state_dir,
+               DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
    fill_pathname_base(state_base, runloop_st->name.savestate,
@@ -1514,9 +1464,9 @@ void command_event_set_savestate_garbage_collect(
    {
       unsigned idx;
       char elem_base[128];
-      const char *ext                 = NULL;
-      const char *end                 = NULL;
-      const char *dir_elem            = dir_list->elems[i].data;
+      const char *ext      = NULL;
+      const char *end      = NULL;
+      const char *dir_elem = dir_list->elems[i].data;
 
       if (string_is_empty(dir_elem))
          continue;
@@ -1526,8 +1476,8 @@ void command_event_set_savestate_garbage_collect(
       /* Only consider files with a '.state' extension
        * > i.e. Ignore '.state.auto', '.state.bak', etc. */
       ext = path_get_extension(elem_base);
-      if (string_is_empty(ext) ||
-          !string_starts_with_size(ext, "state", STRLEN_CONST("state")))
+      if (    string_is_empty(ext)
+          || !string_starts_with_size(ext, "state", STRLEN_CONST("state")))
          continue;
 
       /* Check whether this file is associated with
@@ -1535,39 +1485,204 @@ void command_event_set_savestate_garbage_collect(
       if (!string_starts_with(elem_base, state_base))
          continue;
 
-      /* This looks like a valid save */
-      cnt++;
+      /* This looks like a valid savestate */
+      /* Save filename root and length (once) */
+      if (savefile_root_length == 0)
+      {
+         savefile_root        = dir_elem;
+         savefile_root_length = strlen(dir_elem);
+      }
 
-      /* > Get index */
+      /* Decode the savestate index */
       end = dir_elem + strlen(dir_elem);
       while ((end > dir_elem) && ISDIGIT((int)end[-1]))
+      {
          end--;
-
+         if (savefile_root == dir_elem)
+            savefile_root_length--;
+      }
       idx = string_to_unsigned(end);
 
-      /* > Check if this is the lowest index so far */
-      if (idx < min_idx)
+      /* Simple administration: max, total. */
+      if (idx > max_idx)
+         max_idx = idx;
+      cnt++;
+      if (idx <= savestate_max_keep)
+         cnt_in_range++;
+
+      /* Maintain a 2x512 bit map of occupied save states */
+      if (idx < 512)
+         BIT512_SET(slot_mapping_low,idx);
+      else if (idx < 1024)
+         BIT512_SET(slot_mapping_high,idx-512);
+   }
+
+   /* Next loop on the bitmap, since the file system may have presented the files in any order above */
+   for (i = 0; i <= savestate_max_keep; i++)
+   {
+      /* Unoccupied save slots */
+      if (   (i < 512 && !BIT512_GET(slot_mapping_low,  i))
+          || (i > 511 && !BIT512_GET(slot_mapping_high, i-512)))
       {
-         min_idx     = idx;
-         oldest_save = dir_elem;
+         /* Gap index: lowest free slot in the wraparound range */
+         if (gap_idx == UINT_MAX)
+            gap_idx = (unsigned)i;
+      }
+      else /* Occupied save slots */
+      {
+         /* Del index: first occupied slot in the wraparound range,
+            after gap index */
+         if (    gap_idx < UINT_MAX && del_idx == UINT_MAX)
+            del_idx = (unsigned)i;
       }
    }
 
+   /* Special cases of wraparound */
+
+   /* No previous savestate - set to end, so that first save
+      goes to 0 */
+   if (cnt_in_range == 0)
+   {
+      if (cnt == 0)
+         loa_idx = savestate_max_keep;
+      /* Transient: nothing in current range, but something is present
+       * higher up -> load that */
+      else
+         loa_idx = max_idx;
+      gap_idx    = savestate_max_keep;
+      del_idx    = savestate_max_keep;
+   }
+   /* No gap was found - deduct from current index or default
+      and set (missing) gap index to be deleted */
+   else if (gap_idx == UINT_MAX)
+   {
+      /* Transient: no gap, and max is higher than currently
+       * allowed -> load that, but wrap around so that next
+       * time gap will be present */
+      if (max_idx > savestate_max_keep)
+      {
+         loa_idx = max_idx;
+         gap_idx = 1;
+      }
+      /* Current index is in range, so let's assume it is correct */
+      else if ( (unsigned)curr_state_slot < savestate_max_keep)
+      {
+         loa_idx = curr_state_slot;
+         gap_idx = curr_state_slot + 1;
+      }
+      else
+      {
+         loa_idx = savestate_max_keep;
+         gap_idx = 0;
+      }
+      del_idx    = gap_idx;
+   }
+   /* Gap was found */
+   else
+   {
+      /* No candidate to delete */
+      /* Either gap is at the end of the range: wraparound.
+         or there is no better idea than the lowest index  */
+      if (del_idx == UINT_MAX)
+         del_idx = 0;
+      /* Adjust load index */
+      if (gap_idx == 0)
+         loa_idx = savestate_max_keep;
+      else
+         loa_idx = gap_idx - 1;
+   }
+
+   RARCH_DBG("[State]: savestate scanning finished, used slots (in range): "
+             "%d (%d), max:%d, load index %d, gap index %d, delete index %d\n",
+             cnt, cnt_in_range, max_idx, loa_idx, gap_idx, del_idx);
+
+   if (last_index)
+         *last_index = loa_idx;
+
+   if (     s
+         && cnt_in_range >= savestate_max_keep)
+   {
+      strlcpy(s, savefile_root, savefile_root_length + 1);
+      /* ".state0" is just ".state" instead, so don't print that. */
+      if (del_idx > 0)
+         snprintf(s + savefile_root_length, 5, "%d", del_idx);
+   }
+
+   dir_list_free(dir_list);
+}
+
+/**
+ * Determines next savestate slot in case of auto-increment,
+ * i.e. save state scanning was done already earlier.
+ * Logic moved here so that all save state wraparound code is
+ * in this file.
+ *
+ * @param settings The usual RetroArch settings ptr.
+ * @return \c The next savestate slot.
+ */
+int command_event_get_next_savestate_auto_index(settings_t *settings)
+{
+   unsigned savestate_max_keep = settings->uints.savestate_max_keep;
+   int new_state_slot          = settings->ints.state_slot + 1;
+   /* If previous save was above the wraparound range, or it overflows,
+      return to the start of the range. */
+   if (     (savestate_max_keep > 0)
+         && (unsigned)new_state_slot > savestate_max_keep)
+      return 0;
+   return new_state_slot;
+}
+
+/**
+ * Determines most recent savestate slot in case of content load.
+ *
+ * @param settings The usual RetroArch settings ptr.
+ * @return \c The most recent savestate slot.
+ */
+void command_event_set_savestate_auto_index(settings_t *settings)
+{
+   unsigned max_idx          = 0;
+   bool savestate_auto_index = settings->bools.savestate_auto_index;
+   if (!savestate_auto_index)
+      return;
+   scan_states(settings, &max_idx, NULL);
+   configuration_set_int(settings, settings->ints.state_slot, max_idx);
+   RARCH_LOG("[State]: %s: #%d\n",
+         msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
+         max_idx);
+}
+
+/**
+ * Deletes the oldest save state and its thumbnail, if needed.
+ *
+ * @param settings The usual RetroArch settings ptr.
+ */
+static void command_event_set_savestate_garbage_collect(settings_t *settings)
+{
+   size_t i;
+   char state_to_delete[PATH_MAX_LENGTH] = {0};
+   scan_states(settings, NULL, state_to_delete);
    /* Only delete one save state per save action
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
     *   in case of accident */
-   if (!string_is_empty(oldest_save) && (cnt > max_to_keep))
-      filestream_delete(oldest_save);
-
-   dir_list_free(dir_list);
+   if (!string_is_empty(state_to_delete))
+   {
+      filestream_delete(state_to_delete);
+      RARCH_DBG("[State]: garbage collect, deleting \"%s\" \n",state_to_delete);
+      /* Construct the save state thumbnail name
+       * and delete that one as well. */
+      i = strlen(state_to_delete);
+      strlcpy(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
+      filestream_delete(state_to_delete);
+      RARCH_DBG("[State]: garbage collect, deleting \"%s\" \n",state_to_delete);
+   }
 }
 
 void command_event_set_replay_auto_index(settings_t *settings)
 {
    size_t i;
    char state_base[128];
-   char state_dir[PATH_MAX_LENGTH];
+   char state_dir[DIR_MAX_LENGTH];
 
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
@@ -1586,10 +1701,8 @@ void command_event_set_replay_auto_index(settings_t *settings)
    fill_pathname_basedir(state_dir, runloop_st->name.replay,
          sizeof(state_dir));
 
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
-         show_hidden_files);
-
-   if (!dir_list)
+   if (!(dir_list = dir_list_new_special(state_dir,
+               DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
    fill_pathname_base(state_base, runloop_st->name.replay,
@@ -1634,8 +1747,8 @@ void command_event_set_replay_garbage_collect(
 {
   /* TODO: debugme */
    size_t i, cnt = 0;
-   char state_dir[PATH_MAX_LENGTH];
    char state_base[128];
+   char state_dir[DIR_MAX_LENGTH];
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
 
    struct string_list *dir_list      = NULL;
@@ -1647,10 +1760,8 @@ void command_event_set_replay_garbage_collect(
    fill_pathname_basedir(state_dir, runloop_st->name.replay,
          sizeof(state_dir));
 
-   dir_list = dir_list_new_special(state_dir, DIR_LIST_PLAIN, NULL,
-         show_hidden_files);
-
-   if (!dir_list)
+   if (!(dir_list = dir_list_new_special(state_dir,
+               DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
    fill_pathname_base(state_base, runloop_st->name.replay,
@@ -1672,8 +1783,8 @@ void command_event_set_replay_garbage_collect(
       /* Only consider files with a '.replayXX' extension
        * > i.e. Ignore '.replay.auto', '.replay.bak', etc. */
       ext = path_get_extension(elem_base);
-      if (string_is_empty(ext) ||
-          !string_starts_with_size(ext, "replay", STRLEN_CONST("REPLAY")))
+      if (    string_is_empty(ext)
+          || !string_starts_with_size(ext, "replay", STRLEN_CONST("REPLAY")))
          continue;
 
       /* Check whether this file is associated with
@@ -1718,7 +1829,11 @@ bool command_set_shader(command_t *cmd, const char *arg)
 
    if (!string_is_empty(arg))
    {
-      if (!video_shader_is_supported(type))
+      gfx_ctx_flags_t flags;
+      flags.flags     = 0;
+      video_context_driver_get_flags(&flags);
+
+      if (!BIT32_GET(flags.flags, video_shader_type_to_flag(type)))
          return false;
 
       /* rebase on shader directory */
@@ -1741,9 +1856,9 @@ bool command_event_save_core_config(
       const char *rarch_path_config)
 {
    char msg[128];
-   char config_name[255];
+   char config_dir[DIR_MAX_LENGTH];
    char config_path[PATH_MAX_LENGTH];
-   char config_dir[PATH_MAX_LENGTH];
+   char config_name[NAME_MAX_LENGTH];
    bool new_path_available         = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
@@ -1773,8 +1888,8 @@ bool command_event_save_core_config(
       char tmp[PATH_MAX_LENGTH + 8];
       RARCH_LOG("[Config]: %s\n", msg_hash_to_str(MSG_USING_CORE_NAME_FOR_NEW_CONFIG));
 
-      fill_pathname_base(config_name, core_path, sizeof(config_name));
-      path_remove_extension(config_name);
+      fill_pathname(config_name, path_basename(core_path), "",
+            sizeof(config_name));
       fill_pathname_join_special(config_path, config_dir, config_name,
             sizeof(config_path));
 
@@ -1864,10 +1979,8 @@ void command_event_save_current_config(enum override_type type)
       case OVERRIDE_CORE:
       case OVERRIDE_CONTENT_DIR:
          {
-            int8_t ret = config_save_overrides(type, &runloop_st->system, false, NULL);
             char msg[256];
-
-            msg[0] = '\0';
+            int8_t ret = config_save_overrides(type, &runloop_st->system, false, NULL);
 
             switch (ret)
             {
@@ -1915,17 +2028,14 @@ void command_event_remove_current_config(enum override_type type)
       case OVERRIDE_CONTENT_DIR:
          {
             char msg[256];
-
-            msg[0] = '\0';
-
             if (config_save_overrides(type, &runloop_st->system, true, NULL))
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
             else
                strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
 
             RARCH_LOG("[Overrides]: %s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
+            runloop_msg_queue_push(msg, 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_MENU
             {
                struct menu_state *menu_st      = menu_state_get_ptr();
@@ -1991,10 +2101,7 @@ bool command_event_main_state(unsigned cmd)
 
                /* Clean up excess savestates if necessary */
                if (savestate_auto_index && (savestate_max_keep > 0))
-                  command_event_set_savestate_garbage_collect(
-                        settings->uints.savestate_max_keep,
-                        settings->bools.show_hidden_files
-                        );
+                  command_event_set_savestate_garbage_collect(settings);
 
                if (frame_time_counter_reset_after_save_state)
                   video_st->frame_time_count = 0;

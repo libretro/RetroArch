@@ -185,7 +185,7 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
    s[2] = 'l';
    s[3] = '\0';
    return 3;
-#elif defined(IOS)
+#elif defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
    s[0] = 'f';
    s[1] = 'r';
    s[2] = 'a';

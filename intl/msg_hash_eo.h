@@ -265,14 +265,6 @@ MSG_HASH(
    "Change settings for the saving."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Sync: Configuration Files"
-   )      
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
-   "When disabled, files are moved to a backup folder before being overwritten or deleted."
-   )      
-MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    "Change settings for the logging."
    )
@@ -590,6 +582,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
@@ -821,7 +815,7 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
    "Enable or disable recent playlist for games, images, music, and videos."
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 MSG_HASH(

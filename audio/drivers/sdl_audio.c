@@ -93,7 +93,7 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
    memset(stream + write_size, 0, len - write_size);
 }
 
-static INLINE int find_num_frames(int rate, int latency)
+static INLINE int sdl_audio_find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
 
@@ -137,7 +137,7 @@ static void *sdl_audio_init(const char *device,
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
-   frames        = find_num_frames(rate, latency / 4);
+   frames        = sdl_audio_find_num_frames(rate, latency / 4);
 
    /* First, let's initialize the output device. */
    spec.freq     = rate;

@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
        string_is_empty(out_file_path))
    {
       const char *in_file_name = path_basename(in_file_path);
-      char in_file_dir[PATH_MAX_LENGTH];
+      char in_file_dir[DIR_MAX_LENGTH];
 
       in_file_dir[0] = '\0';
 

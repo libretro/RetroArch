@@ -28,23 +28,17 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
-static void get_include_file(
-      const char *line, char *include_file, size_t len)
+static void get_include_file(const char *line, char *s, size_t len)
 {
    char *end   = NULL;
    char *start = (char*)strchr(line, '\"');
-
    if (!start)
       return;
-
    start++;
-   end = (char*)strchr(start, '\"');
-
-   if (!end)
+   if (!(end = (char*)strchr(start, '\"')))
       return;
-
    *end = '\0';
-   strlcpy(include_file, start, len);
+   strlcpy(s, start, len);
 }
 
 bool slang_texture_semantic_is_array(enum slang_texture_semantic sem)
@@ -98,7 +92,7 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 }
 
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file)
+      struct string_list *output, bool root_file, bool is_optional)
 {
    size_t i;
    char tmp[PATH_MAX_LENGTH];
@@ -116,7 +110,7 @@ bool glslang_read_shader_file(const char *path,
    if (string_is_empty(path) || !output)
       return false;
 
-   basename      = path_basename_nocompression(path);
+   basename = path_basename_nocompression(path);
 
    if (string_is_empty(basename))
       return false;
@@ -124,7 +118,8 @@ bool glslang_read_shader_file(const char *path,
    /* Read file contents */
    if (!filestream_read_file(path, (void**)&buf, &buf_len))
    {
-      RARCH_ERR("[slang]: Failed to open shader file: \"%s\".\n", path);
+      if (!is_optional)
+         RARCH_ERR("[slang]: Failed to open shader file: \"%s\".\n", path);
       return false;
    }
 
@@ -150,9 +145,9 @@ bool glslang_read_shader_file(const char *path,
    if (lines.size < 1)
       goto error;
 
-   /* If this is the 'parent' shader file, ensure that first
-    * line is a 'VERSION' string */
-   if (root_file)
+    /* If this is the 'parent' shader file and a slang file,
+    * ensure that first line is a 'VERSION' string */
+   if (root_file && string_is_equal(path_get_extension(path), "slang"))
    {
       const char *line = lines.elems[0].data;
 
@@ -166,15 +161,22 @@ bool glslang_read_shader_file(const char *path,
       if (!string_list_append(output, line, attr))
          goto error;
 
-      /* Allows us to use #line to make dealing with shader 
+      /* Allows us to use #line to make dealing with shader
        * errors easier.
-       * This is supported by glslang, but since we always 
+       * This is supported by glslang, but since we always
        * use glslang statically, this is fine. */
       if (!string_list_append(output,
                "#extension GL_GOOGLE_cpp_style_line_directive : require",
                attr))
          goto error;
    }
+
+   /* Add defines about supported retroarch features */
+   if (!string_list_append(output, "#define _HAS_ORIGINALASPECT_UNIFORMS", attr))
+      goto error;
+
+   if (!string_list_append(output, "#define _HAS_FRAMETIME_UNIFORMS", attr))
+      goto error;
 
    /* At least VIM treats the first line as line #1,
     * so offset everything by one. */
@@ -188,8 +190,10 @@ bool glslang_read_shader_file(const char *path,
       const char *line   = lines.elems[i].data;
 
       /* Check for 'include' statements */
-      if (!strncmp("#include ", line, STRLEN_CONST("#include ")))
+      bool include_optional = !strncmp("#pragma include_optional ", line, STRLEN_CONST("#pragma include_optional "));
+      if ( !strncmp("#include ", line, STRLEN_CONST("#include ")) || include_optional )
       {
+
          char include_file[PATH_MAX_LENGTH];
          char include_path[PATH_MAX_LENGTH];
 
@@ -209,8 +213,13 @@ bool glslang_read_shader_file(const char *path,
                include_path, path, include_file, sizeof(include_path));
 
          /* Parse include file */
-         if (!glslang_read_shader_file(include_path, output, false))
-            goto error;
+         if (!glslang_read_shader_file(include_path, output, false, include_optional))
+         {
+            if (include_optional)
+               RARCH_LOG("[slang]: Optional include not found \"%s\".\n", include_path);
+            else
+               goto error;
+         }
 
          /* After including a file, use line directive
           * to pull it back to current file. */
@@ -219,8 +228,8 @@ bool glslang_read_shader_file(const char *path,
          if (!string_list_append(output, tmp, attr))
             goto error;
       }
-      else if (!strncmp("#endif", line, STRLEN_CONST("#endif")) ||
-               !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
+      else if (   !strncmp("#endif",  line, STRLEN_CONST("#endif"))
+               || !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
       {
          /* #line seems to be ignored if preprocessor tests fail,
           * so we should reapply #line after each #endif.

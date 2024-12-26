@@ -104,6 +104,7 @@ extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_x11;
 extern const video_display_server_t dispserv_kms;
 extern const video_display_server_t dispserv_android;
+extern const video_display_server_t dispserv_apple;
 
 RETRO_END_DECLS
 
