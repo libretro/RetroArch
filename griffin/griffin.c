@@ -811,6 +811,9 @@ CAMERA
 #ifdef HAVE_V4L2
 #include "../camera/drivers/video4linux2.c"
 #endif
+#ifdef HAVE_PIPEWIRE
+#include "../camera/drivers/pipewire.c"
+#endif
 
 #ifdef HAVE_VIDEOPROCESSOR
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
