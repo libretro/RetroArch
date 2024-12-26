@@ -8474,24 +8474,15 @@ static int action_ok_pl_content_thumbnails(const char *path,
 static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char system[PATH_MAX_LENGTH];
-   const char *tmp             = NULL;
    struct menu_state *menu_st  = menu_state_get_ptr();
    playlist_t *playlist        = playlist_get_cached();
    menu_handle_t *menu         = menu_st->driver_data;
-
    if (!playlist || !menu)
       return -1;
-
-   system[0] = '\0';
-
-   if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-      strlcpy(system, tmp, sizeof(system));
-
-   task_push_pl_entry_thumbnail_download(system,
+   task_push_pl_entry_thumbnail_download(
+         menu_st->thumbnail_path_data->system,
          playlist, menu->rpl_entry_selection_ptr,
          true, false);
-
    return 0;
 }
 #endif
