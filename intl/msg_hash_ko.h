@@ -14932,10 +14932,6 @@ MSG_HASH(
    "하드코어 일시정지됨. 수동 프레임 지연 설정은 허용되지 않습니다."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "하드코어 일시정지됨. 서브프레임 셰이더는 허용되지 않습니다."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "하드코어 일시정지됨. 1보다 높은 수직 동기화 스왑 간격은 허용되지 않습니다."
    )

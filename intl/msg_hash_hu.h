@@ -14544,10 +14544,6 @@ MSG_HASH(
    "Hardcore szüneteltetve. A kézi képvárakoztatás beállítása nem engedélyezett."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Hardcore szüneteltetve. A shader alképkockák nem engedélyezettek."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Hardcore szüneteltetve. Az 1-nél nagyobb VSync váltóperiódus nem engedélyezett."
    )

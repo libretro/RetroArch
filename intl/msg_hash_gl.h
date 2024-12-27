@@ -14680,10 +14680,6 @@ MSG_HASH(
    "Modo hardcore en pausa. A configuración manual do retraso de fotograma de vídeo non está permitida."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Modo hardcore en pausa. Os subfotogramas de sombreadores non están permitidos."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Modo hardcore en pausa. O intervalo de intercambio de vsync por riba de 1 non está permitido."
    )

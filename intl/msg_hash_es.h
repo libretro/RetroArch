@@ -14824,10 +14824,6 @@ MSG_HASH(
    "Modo «hardcore» pausado. No se permite ajustar manualmente el retraso en los fotogramas de vídeo."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Modo «hardcore» pausado. No se permiten los subfotogramas en shaders."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Modo «hardcore» pausado. No se permite un valor de intercambio de sincronía vertical superior a 1."
    )

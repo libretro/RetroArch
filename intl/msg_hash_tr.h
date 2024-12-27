@@ -14916,10 +14916,6 @@ MSG_HASH(
    "Zorlu kip durakladı. El ile video karesi gecikme ayarına izin verilmiyor."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Zorlu kip durakladı. Gölgelendirici alt çerçevelerine izin verilmiyor."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Zorlu kip durakladı. 1 üzerindeki vsync takas aralığına izin verilmiyor."
    )
