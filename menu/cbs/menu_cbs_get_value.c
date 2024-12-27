@@ -404,6 +404,7 @@ static void menu_action_setting_disp_set_label_menu_file_core(
    const char *alt = list->list[i].alt
       ? list->list[i].alt
       : list->list[i].path;
+   *w = 0;
    if (alt)
       strlcpy(s2, alt, len2);
 }
