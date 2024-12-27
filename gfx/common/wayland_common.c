@@ -705,7 +705,7 @@ bool gfx_ctx_wl_init_common(
 
    if (!wl->idle_inhibit_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support zwp_idle_inhibit_manager_v1 protocol\n");
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zwp_idle_inhibit_manager_v1_interface.name);
 #ifdef HAVE_DBUS
       dbus_ensure_connection();
 #endif
@@ -713,18 +713,48 @@ bool gfx_ctx_wl_init_common(
 
    if (!wl->deco_manager)
    {
-      RARCH_LOG("[Wayland]: Compositor doesn't support zxdg_decoration_manager_v1 protocol\n");
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zxdg_decoration_manager_v1_interface.name);
+   }
+
+   if (!wl->viewporter)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_viewporter_interface.name);
+   }
+
+   if (!wl->fractional_scale_manager)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_fractional_scale_manager_v1_interface.name);
+   }
+
+   if (!wl->cursor_shape_manager)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_cursor_shape_manager_v1_interface.name);
+   }
+
+   if (!wl->content_type_manager)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_content_type_manager_v1_interface.name);
+   }
+
+   if (!wl->pointer_constraints)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zwp_pointer_constraints_v1_interface.name);
+   }
+
+   if (!wl->relative_pointer_manager)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zwp_relative_pointer_manager_v1_interface.name);
    }
 
    wl->surface = wl_compositor_create_surface(wl->compositor);
    if (wl->viewporter)
       wl->viewport = wp_viewporter_get_viewport(wl->viewporter, wl->surface);
+
    if (wl->fractional_scale_manager)
    {
       wl->fractional_scale = wp_fractional_scale_manager_v1_get_fractional_scale(
            wl->fractional_scale_manager, wl->surface);
       wp_fractional_scale_v1_add_listener(wl->fractional_scale, &wp_fractional_scale_v1_listener, wl);
-      RARCH_LOG("[Wayland]: fractional_scale_v1 enabled\n");
    }
 
    if (wl->content_type_manager)
