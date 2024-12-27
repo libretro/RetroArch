@@ -5,7 +5,7 @@
 - AUDIO/PIPEWIRE: Add PipeWire microphone driver
 - APPLE: Hide threaded video setting
 - APPLE: Use mfi joypad driver by default
-- APPLE: Include holani, noods, mrboom, yabause core in App Store builds
+- APPLE: Include holani, noods, mrboom, yabause, bsnes-jg core in App Store builds
 - CHEEVOS: Add rarity and points to achievement unlock widget
 - CHEEVOS: Add rank to leaderboard submission notification
 - CHEEVOS: Update to rcheevos 11.5
@@ -35,6 +35,8 @@
 - INPUT: Enable Caps, Num, Scroll Lock modifiers on multiple platforms
 - INPUT: Autoconfig extension with alternative name/vid/pid
 - INPUT: Fix autoconfig profile saving when device is not in the default port
+- INPUT: Change classic turbo mode to work independently of which key was pressed first
+- INPUT: Pointer and lightgun handling sanitization on Windows and Linux desktop platforms. These input drivers will now report edge and offscreen positions in a harmonized way, and will not return 0 instead.
 - INPUT/DINPUT: Fix detection of quick shift key presses
 - INPUT/HID: Fix crash on macOS when disconnecting the controller a second time
 - INPUT/LINUX: Add illuminance sensor support to the linuxraw, sdl2, udev, and x11 input drivers
@@ -42,6 +44,7 @@
 - INPUT/UDEV: Enable mouse buttons 4 and 5
 - INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
 - INPUT/WAYLAND: Simulate lightgun input for cores
+- INPUT/WAYLAND: Support for cursor-shape-v1 and content-type-v1 protocol
 - INPUT/X11: Enable mouse buttons 4 and 5
 - iOS: Enable vibration by default
 - iOS: Better handling of physical mice/magic keyboard trackpad
@@ -49,6 +52,7 @@
 - iOS: Fix mouse cursor movement when button is held down
 - iOS: Fix microphone support request and entitlement
 - iOS: Enable compilation back to iOS 12
+- iOS: Fix OpenGL ES context usage on iOS 9
 - iOS/TVOS: Add Opera to App Store build
 - iOS/TVOS: Bring NEON defines in line with ARM64
 - iOS/TVOS: Flush save files on backgrounding
@@ -70,6 +74,7 @@
 - MENU: Add icons for present / missing firmware on core info page
 - MENU: Ignore other hotkeys when menu toggle is pressed
 - MENU: Fix menu jumping when using L3+R3 combo
+- MENU: System Information now only shows features relevant for the platform
 - MENU/GLUI: Make Show Sublabels options effective
 - MENU/GLUI: Icon fixes
 - MENU/XMB: Allow playlist icons to be individually customized, by looking for images in Named_Logos
@@ -107,6 +112,7 @@
 - VIDEO/VULKAN: Fix Vulkan window freezes when swapchain becomes suboptimal
 - VIDEO/VULKAN: Prefer IMMEDIATE mode without vsync
 - VIDEO/X11: Support inhibit of Xss screensaver
+- VITA: Enable analog L2/R2 triggers when a DS3 controller is used with PS Vita
 - WAYLAND: Fix segfault when relative pointer is not supported
 - WAYLAND: Use reverse DNS name for desktop file and icon
 - WAYLAND: Commit viewport resizes for more responsive display when resizing window
