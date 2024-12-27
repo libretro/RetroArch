@@ -91,14 +91,11 @@ void logger_send(const char *__format,...)
 void logger_send_v(const char *__format, va_list args)
 {
    static char sendbuf[4096];
-   int len;
-
-   vsnprintf(sendbuf,4000,__format, args);
-   len = strlen(sendbuf);
+   int _len = vsnprintf(sendbuf,4000,__format, args);
 
    sendto(g_sid,
          sendbuf,
-         len,
+         _len,
          MSG_DONTWAIT,
          (struct sockaddr*)&target,
          sizeof(target));

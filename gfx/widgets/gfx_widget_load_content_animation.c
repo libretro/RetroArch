@@ -445,7 +445,7 @@ bool gfx_widget_start_load_content_animation(void)
     * > Use db_name, if available */
    if (has_db_name)
    {
-      size_t len = fill_pathname(state->icon_file,
+      fill_pathname(state->icon_file,
             state->system_name,
             ".png",
             sizeof(state->icon_file));
@@ -476,7 +476,7 @@ bool gfx_widget_start_load_content_animation(void)
       if (   !string_is_empty(core_db_name)
           && !string_is_equal(core_db_name, state->system_name))
       {
-         size_t len = fill_pathname(state->icon_file,
+         fill_pathname(state->icon_file,
                core_db_name,
                ".png",
                sizeof(state->icon_file));

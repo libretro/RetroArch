@@ -555,13 +555,13 @@ static bool content_file_list_set_info(
       if ((archive_delim = path_get_archive_delim(path)))
       {
          char archive_path[PATH_MAX_LENGTH];
-         size_t len      = 0;
+         size_t _len      = 0;
          /* Extract path of parent archive */
-         if ((len = (size_t)(1 + archive_delim - path))
+         if ((_len = (size_t)(1 + archive_delim - path))
                  >= PATH_MAX_LENGTH)
-            len = PATH_MAX_LENGTH;
+            _len = PATH_MAX_LENGTH;
 
-         strlcpy(archive_path, path, len * sizeof(char));
+         strlcpy(archive_path, path, _len * sizeof(char));
          if (!string_is_empty(archive_path))
             file_info->archive_path = strdup(archive_path);
 
@@ -2867,7 +2867,7 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
    return false;
 }
 
-void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len)
+void content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len)
 {
    unsigned i                                   = 0;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
@@ -2883,12 +2883,10 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
       {
-         strlcpy(subsystem_friendly_name, subsystem->desc, len);
+         strlcpy(s, subsystem->desc, len);
          break;
       }
    }
-
-   return;
 }
 
 /* Add a rom to the subsystem ROM buffer */

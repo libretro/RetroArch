@@ -450,17 +450,17 @@ static bool content_write_serialized_state(void* buffer,
 bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
 {
    rastate_size_info_t size;
-   size_t len = content_get_rastate_size(&size, true);
-   if (len == 0)
+   size_t _len = content_get_rastate_size(&size, true);
+   if (_len == 0)
       return false;
-   if (len > buffer_size)
+   if (_len > buffer_size)
    {
 #ifdef DEBUG
       static size_t last_reported_len = 0;
-      if (len != last_reported_len)
+      if (_len != last_reported_len)
       {
-         last_reported_len = len;
-         RARCH_WARN("Rewind state size exceeds frame size (%zu > %zu).\n", len, buffer_size);
+         last_reported_len = _len;
+         RARCH_WARN("Rewind state size exceeds frame size (%zu > %zu).\n", _len, buffer_size);
       }
 #endif
       return false;
@@ -468,12 +468,12 @@ bool content_serialize_state_rewind(void* buffer, size_t buffer_size)
    return content_write_serialized_state(buffer, &size, true);
 }
 
-static void *content_get_serialized_data(size_t* serial_size)
+static void *content_get_serialized_data(size_t *serial_size)
 {
-   size_t len;
+   size_t _len;
    void* data;
    rastate_size_info_t size;
-   if ((len = content_get_rastate_size(&size, false)) == 0)
+   if ((_len = content_get_rastate_size(&size, false)) == 0)
       return NULL;
 
    /* Ensure buffer is initialised to zero
@@ -481,7 +481,7 @@ static void *content_get_serialized_data(size_t* serial_size)
     *   sizes when core requests a larger buffer
     *   than it needs (and leaves the excess
     *   as uninitialised garbage) */
-   if (!(data = calloc(len, 1)))
+   if (!(data = calloc(_len, 1)))
       return NULL;
 
    if (!content_write_serialized_state(data, &size, false))

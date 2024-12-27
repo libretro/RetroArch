@@ -82,9 +82,9 @@ static void connmanctl_refresh_services(connman_t *connman)
       size_t ssid_len;
       wifi_network_info_t entry;
       struct string_list* list = NULL;
-      size_t len               = strlen(line);
-      if (len > 0 && line[len-1] == '\n')
-         line[--len] = '\0';
+      size_t _len              = strlen(line);
+      if (_len > 0 && line[_len-1] == '\n')
+                      line[--_len] = '\0';
 
       /* Parse lines directly and store net info directly */
       memset(&entry, 0, sizeof(entry));

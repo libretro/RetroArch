@@ -2478,14 +2478,14 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
             firmware_info.directory.system = settings->paths.directory_system;
          else
          {
-            size_t len = strlen(tmp_path);
+            size_t _len = strlen(tmp_path);
 
             /* Removes trailing slash (unless root dir), doesn't really matter
              * but it's more consistent with how the path is stored and
              * displayed without 'System Files are in Content Directory' */
             if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
-                  && tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
-               tmp_path[len - 1] = '\0';
+                  && tmp_path[_len - 1] == PATH_DEFAULT_SLASH_C())
+                     tmp_path[_len - 1] = '\0';
 
             firmware_info.directory.system = tmp_path;
          }
