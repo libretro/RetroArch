@@ -135,7 +135,7 @@ static void *sdl_microphone_open_mic(void *driver_context,
 #if __APPLE__
    if (!string_is_equal(audio_driver_get_ident(), "sdl2"))
    {
-      const char *msg = msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO),msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO);
+      const char *msg = msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO);
       runloop_msg_queue_push(msg, strlen(msg),
             1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
