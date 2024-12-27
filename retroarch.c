@@ -4303,34 +4303,38 @@ bool command_event(enum event_command cmd, void *data)
          break;
 #endif
       case CMD_EVENT_SHUTDOWN:
+         {
 #if defined(__linux__) && !defined(ANDROID)
-         const char *_msg = msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN);
-         if (settings->bools.config_save_on_exit)
-            command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            const char *_msg = msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN);
+            if (settings->bools.config_save_on_exit)
+               command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
-         system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
+            system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
 #else
-         command_event(CMD_EVENT_QUIT, NULL);
-         system("shutdown -P now");
+            command_event(CMD_EVENT_QUIT, NULL);
+            system("shutdown -P now");
 #endif /* HAVE_LAKKA */
 #endif
+         }
          break;
       case CMD_EVENT_REBOOT:
+         {
 #if defined(__linux__) && !defined(ANDROID)
-         const char *_msg = msg_hash_to_str(MSG_VALUE_REBOOTING);
-         if (settings->bools.config_save_on_exit)
-            command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            const char *_msg = msg_hash_to_str(MSG_VALUE_REBOOTING);
+            if (settings->bools.config_save_on_exit)
+               command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
-         system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
+            system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
 #else
-         command_event(CMD_EVENT_QUIT, NULL);
-         system("shutdown -r now");
+            command_event(CMD_EVENT_QUIT, NULL);
+            system("shutdown -r now");
 #endif /* HAVE_LAKKA */
 #endif
+         }
          break;
       case CMD_EVENT_RESUME:
 #ifdef HAVE_MENU
