@@ -923,20 +923,6 @@ void rcheevos_validate_config_settings(void)
       return;
    }
 
-   /* this causes N dupe frames to be rendered between real frames, for
-      the purposes of shaders that update faster than content. Thus
-    * can slow down the actual number of rendered frames per second. */
-   if (settings->uints.video_shader_subframes > 1)
-   {
-      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES));
-      rcheevos_pause_hardcore();
-
-      runloop_msg_queue_push(error, strlen(error), 0, 4 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-      return;
-   }
-
    if (!sysinfo->library_name)
       return;
 
