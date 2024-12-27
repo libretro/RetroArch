@@ -9300,7 +9300,11 @@ static void runahead_change_handler(rarch_setting_t *setting)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    preempt_t *preempt          = runloop_st->preempt_data;
    unsigned run_ahead_frames   = settings->uints.run_ahead_frames;
-   bool preempt_enable, run_ahead_enabled, secondary_instance;
+   bool preempt_enable;
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   bool secondary_instance;
+   bool run_ahead_enabled;
+#endif
 
    if (!setting)
       return;
@@ -9335,8 +9339,10 @@ static void runahead_change_handler(rarch_setting_t *setting)
    }
 
    preempt_enable     = settings->bools.preemptive_frames_enable;
-   run_ahead_enabled  = settings->bools.run_ahead_enabled;
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
    secondary_instance = settings->bools.run_ahead_secondary_instance;
+   run_ahead_enabled  = settings->bools.run_ahead_enabled;
+#endif
 
    /* Toggle or update preemptive frames if needed */
    if (     preempt_enable != !!preempt

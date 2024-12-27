@@ -331,7 +331,6 @@ void gfx_thumbnail_request(
             else if (network_on_demand_thumbnails)
             {
                enum playlist_thumbnail_name_flags curr_flag;
-               const char *system                         = NULL;
                static char last_img_name[PATH_MAX_LENGTH] = {0};
                settings_t *settings                       = config_get_ptr();
                if (!playlist)

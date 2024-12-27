@@ -6771,8 +6771,6 @@ static void rgui_navigation_clear(void *data, bool pending_push)
 
 static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_st, bool download_missing)
 {
-   const char *thumbnail_path      = NULL;
-   const char *left_thumbnail_path = NULL;
    bool thumbnails_missing         = false;
 
    /* Right (or fullscreen) thumbnail */

@@ -1940,7 +1940,6 @@ uint32_t video_driver_get_frame_time_delta_usec(void)
 float video_driver_get_original_fps(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
-   struct retro_system_av_info *av_info = &video_st->av_info;
    return (float)video_st->av_info.timing.fps;
 }
 

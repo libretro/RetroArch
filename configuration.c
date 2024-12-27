@@ -6004,7 +6004,6 @@ bool input_remapping_load_file(void *data, const char *path)
  **/
 bool input_remapping_save_file(const char *path)
 {
-   size_t _len;
    bool ret;
    unsigned i, j;
    char remap_file_dir[DIR_MAX_LENGTH];
