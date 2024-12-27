@@ -14784,10 +14784,6 @@ MSG_HASH(
    "Hardcore mis en pause. Réglage manuel du retard d'images non autorisé."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Hardcore mis en pause. Sous-trames du Shader non autorisées."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Hardcore mis en pause. Intervalle d'échange V-Sync supérieur à 1 non autorisé."
    )

@@ -14492,10 +14492,6 @@ MSG_HASH(
    "Hardcore pausiert. Manuelle Einstellung der Videobildverzögerung nicht gestattet."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Hardcore pausiert. Shader-Subframes nicht gestattet."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Hardcore pausiert. Vsync-Swap-Intervall über 1 nicht gestattet."
    )

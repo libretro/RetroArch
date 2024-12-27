@@ -14636,10 +14636,6 @@ MSG_HASH(
    "Hardcore in pausa. Impostazione manuale di ritardo frame video non consentita."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Hardcore in pausa. I sottoframe Shader non sono consentiti."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Hardcore in pausa. intervallo di swap vsync superiore a 1 non consentito."
    )

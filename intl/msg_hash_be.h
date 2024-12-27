@@ -14916,10 +14916,6 @@ MSG_HASH(
    "Хардкод прыпынены. Налада ручной затрымкі кадраў не дазваляецца."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Хардкор прыпынены. Падкадры шэйдара не дазваляюцца."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Хардкор прыпынены. Інтэрвал абмену vsync вышэйшы за 1 не дазваляецца."
    )

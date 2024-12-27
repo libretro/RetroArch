@@ -15612,10 +15612,6 @@ MSG_HASH(
    "Hardcore paused. Manual video frame delay setting not allowed."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Hardcore paused. Shader subframes not allowed."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Hardcore paused. vsync swap interval above 1 not allowed."
    )

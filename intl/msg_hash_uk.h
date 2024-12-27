@@ -14924,10 +14924,6 @@ MSG_HASH(
    "Хардкорно призупинено. Ручне затримка відеокадрів не допускається."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Хардкорний призупинений. Підсистеми Шейдера заборонені."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Хардкорн призупинено. Інтервал зміни vsync вище 1 не допускається."
    )

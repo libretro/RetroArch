@@ -14868,10 +14868,6 @@ MSG_HASH(
    "Режим хардкора приостановлен. Ручная установка задержки кадра запрещена."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Режим хардкора приостановлен. Подкадры шейдера запрещены."
-   )
-MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
    "Режим хардкора приостановлен. Интервал подкачки VSync больше 1 запрещён."
    )
