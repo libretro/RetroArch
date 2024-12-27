@@ -112,7 +112,7 @@ static bool create_filter_graph(retro_dsp_filter_t *dsp, float sample_rate)
 
       snprintf(key, sizeof(key), "filter%u", i);
 
-      if (!config_get_array(dsp->conf, key, name, sizeof(name)))
+      if (config_get_array(dsp->conf, key, name, sizeof(name)) == 0)
          return false;
 
       dsp->instances[i].impl = find_implementation(dsp, name);

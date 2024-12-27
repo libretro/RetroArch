@@ -947,20 +947,20 @@ bool netplay_handshake_init(netplay_t *netplay,
    uint32_t header[6];
    uint32_t netplay_magic = 0;
    int32_t  ping          = 0;
-   const char *dmsg       = NULL;
+   const char *_msg       = NULL;
 
    RECV(header, sizeof(header[0]))
    {
       if (netplay->is_server)
       {
-         dmsg = msg_hash_to_str(MSG_FAILED_TO_CONNECT_TO_CLIENT);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_FAILED_TO_CONNECT_TO_CLIENT);
+         RARCH_ERR("[Netplay] %s\n", _msg);
          return false;
       }
       else
       {
-         dmsg = msg_hash_to_str(MSG_FAILED_TO_CONNECT_TO_HOST);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_FAILED_TO_CONNECT_TO_HOST);
+         RARCH_ERR("[Netplay] %s\n", _msg);
          goto error;
       }
    }
@@ -991,16 +991,16 @@ bool netplay_handshake_init(netplay_t *netplay,
          case NETPLAY_MAGIC:
             break;
          case FULL_MAGIC:
-            dmsg = msg_hash_to_str(MSG_NETPLAY_HOST_FULL);
-            RARCH_ERR("[Netplay] %s\n", dmsg);
+            _msg = msg_hash_to_str(MSG_NETPLAY_HOST_FULL);
+            RARCH_ERR("[Netplay] %s\n", _msg);
             goto error;
          case BANNED_MAGIC:
-            dmsg = msg_hash_to_str(MSG_NETPLAY_BANNED);
-            RARCH_ERR("[Netplay] %s\n", dmsg);
+            _msg = msg_hash_to_str(MSG_NETPLAY_BANNED);
+            RARCH_ERR("[Netplay] %s\n", _msg);
             goto error;
          default:
-            dmsg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
-            RARCH_ERR("[Netplay] %s\n", dmsg);
+            _msg = msg_hash_to_str(MSG_NETPLAY_NOT_RETROARCH);
+            RARCH_ERR("[Netplay] %s\n", _msg);
             goto error;
       }
    }
@@ -1009,14 +1009,14 @@ bool netplay_handshake_init(netplay_t *netplay,
    {
       if (netplay->is_server)
       {
-         dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT);
+         RARCH_ERR("[Netplay] %s\n", _msg);
          return false;
       }
       else
       {
-         dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST);
+         RARCH_ERR("[Netplay] %s\n", _msg);
          goto error;
       }
    }
@@ -1037,8 +1037,8 @@ bool netplay_handshake_init(netplay_t *netplay,
          /* Send it so that a proper notification can be shown there. */
          netplay_handshake_init_send(netplay, connection, 0);
 
-         dmsg = msg_hash_to_str(MSG_NETPLAY_OUT_OF_DATE);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_NETPLAY_OUT_OF_DATE);
+         RARCH_ERR("[Netplay] %s\n", _msg);
          return false;
       }
 
@@ -1057,8 +1057,8 @@ bool netplay_handshake_init(netplay_t *netplay,
       if (connection->netplay_protocol < LOW_NETPLAY_PROTOCOL_VERSION ||
             connection->netplay_protocol > HIGH_NETPLAY_PROTOCOL_VERSION)
       {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_OUT_OF_DATE);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_NETPLAY_OUT_OF_DATE);
+         RARCH_ERR("[Netplay] %s\n", _msg);
          goto error;
       }
    }
@@ -1068,8 +1068,8 @@ bool netplay_handshake_init(netplay_t *netplay,
    {
       if (ntohl(header[1]) != netplay_platform_magic())
       {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_PLATFORM_DEPENDENT);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_NETPLAY_PLATFORM_DEPENDENT);
+         RARCH_ERR("[Netplay] %s\n", _msg);
 
          if (netplay->is_server)
             return false;
@@ -1080,8 +1080,8 @@ bool netplay_handshake_init(netplay_t *netplay,
    {
       if (netplay_endian_mismatch(netplay_platform_magic(), ntohl(header[1])))
       {
-         dmsg = msg_hash_to_str(MSG_NETPLAY_ENDIAN_DEPENDENT);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         _msg = msg_hash_to_str(MSG_NETPLAY_ENDIAN_DEPENDENT);
+         RARCH_ERR("[Netplay] %s\n", _msg);
 
          if (netplay->is_server)
             return false;
@@ -1094,10 +1094,10 @@ bool netplay_handshake_init(netplay_t *netplay,
       settings_t *settings = config_get_ptr();
 
       /* We allow the connection but warn that this could cause issues. */
-      dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_VERSIONS);
-      RARCH_WARN("[Netplay] %s\n", dmsg);
+      _msg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_VERSIONS);
+      RARCH_WARN("[Netplay] %s\n", _msg);
       if (!netplay->is_server && settings->bools.notification_show_netplay_extra)
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -1135,7 +1135,7 @@ bool netplay_handshake_init(netplay_t *netplay,
    return true;
 
 error:
-   runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return false;
@@ -1144,6 +1144,7 @@ error:
 static void netplay_handshake_ready(netplay_t *netplay,
       struct netplay_connection *connection)
 {
+   size_t _len;
    char msg[512];
    settings_t *settings = config_get_ptr();
 
@@ -1151,7 +1152,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
    {
       unsigned slot = (unsigned)(connection - netplay->connections);
 
-      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
+      _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_GOT_CONNECTION_FROM),
          connection->nick);
 
       RARCH_LOG("[Netplay] %s %u\n", msg_hash_to_str(MSG_CONNECTION_SLOT),
@@ -1162,9 +1163,9 @@ static void netplay_handshake_ready(netplay_t *netplay,
    }
    else
    {
-      size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONNECTED_TO),
+      _len  = strlcpy(msg, msg_hash_to_str(MSG_CONNECTED_TO),
             sizeof(msg));
-      snprintf(msg + _len, sizeof(msg) - _len, ": \"%s\"",
+      _len += snprintf(msg + _len, sizeof(msg) - _len, ": \"%s\"",
             connection->nick);
    }
 
@@ -1174,7 +1175,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
       but not as useful to the server.
       Let it be optional if server. */
    if (!netplay->is_server || settings->bools.notification_show_netplay_extra)
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
+      runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
@@ -1436,18 +1437,18 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
          ntohl(nick_buf.cmd[0]) != NETPLAY_CMD_NICK ||
          ntohl(nick_buf.cmd[1]) != sizeof(nick_buf.nick))
    {
-      const char *dmsg = NULL;
+      const char *_msg = NULL;
 
       if (netplay->is_server)
-         dmsg = msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT);
+         _msg = msg_hash_to_str(MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT);
       else
       {
-         dmsg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST);
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+         _msg = msg_hash_to_str(MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
-      RARCH_ERR("[Netplay] %s\n", dmsg);
+      RARCH_ERR("[Netplay] %s\n", _msg);
       return false;
    }
 
@@ -1577,10 +1578,10 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    {
       if (!netplay->is_server)
       {
-         const char *dmsg =
+         const char *_msg =
             msg_hash_to_str(MSG_NETPLAY_INCORRECT_PASSWORD);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+         RARCH_ERR("[Netplay] %s\n", _msg);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return false;
       }
@@ -1631,10 +1632,10 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
             info_buf.core_name, system->library_name))
       {
          /* Wrong core! */
-         const char *dmsg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
-         RARCH_ERR("[Netplay] %s\n", dmsg);
+         const char *_msg = msg_hash_to_str(MSG_NETPLAY_DIFFERENT_CORES);
+         RARCH_ERR("[Netplay] %s\n", _msg);
          if (!netplay->is_server)
-            runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
          return false;
       }
@@ -1652,11 +1653,11 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
       if (!string_is_equal_case_insensitive(
             info_buf.core_version, my_core_version))
       {
-         const char *dmsg = msg_hash_to_str(
+         const char *_msg = msg_hash_to_str(
                MSG_NETPLAY_DIFFERENT_CORE_VERSIONS);
-         RARCH_WARN("[Netplay] %s\n", dmsg);
+         RARCH_WARN("[Netplay] %s\n", _msg);
          if (!netplay->is_server && extra_notifications)
-            runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       }
    }
@@ -1667,12 +1668,12 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    if (content_crc && ntohl(info_buf.content_crc) != content_crc)
    {
       /* Warning of a different severety when using netpacket interface */
-      const char *dmsg = msg_hash_to_str(
+      const char *_msg = msg_hash_to_str(
             netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE ?
             MSG_CONTENT_NETPACKET_CRC32S_DIFFER : MSG_CONTENT_CRC32S_DIFFER);
-      RARCH_WARN("[Netplay] %s\n", dmsg);
+      RARCH_WARN("[Netplay] %s\n", _msg);
       if (!netplay->is_server && extra_notifications)
-         runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
    }
 
@@ -1754,9 +1755,9 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
 
    RECV(cmd, sizeof(cmd))
    {
-      const char *dmsg = msg_hash_to_str(MSG_PING_TOO_HIGH);
-      RARCH_ERR("[Netplay] %s\n", dmsg);
-      runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+      const char *_msg = msg_hash_to_str(MSG_PING_TOO_HIGH);
+      RARCH_ERR("[Netplay] %s\n", _msg);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return false;
    }
@@ -1859,14 +1860,15 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    STRING_SAFE(new_nick, sizeof(new_nick));
    if (!string_is_equal(new_nick, netplay->nick))
    {
+      size_t _len;
       char msg[512];
 
       memcpy(netplay->nick, new_nick, sizeof(netplay->nick));
 
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_CHANGED_NICK), new_nick);
       RARCH_LOG("[Netplay] %s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
+      runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -4141,7 +4143,7 @@ static void netplay_hangup(netplay_t *netplay,
 {
    size_t i;
    char msg[512];
-   const char *dmsg;
+   const char *_msg;
    bool was_playing     = false;
    settings_t *settings = config_get_ptr();
 
@@ -4159,14 +4161,14 @@ static void netplay_hangup(netplay_t *netplay,
          snprintf(msg, sizeof(msg),
             msg_hash_to_str(MSG_NETPLAY_SERVER_NAMED_HANGUP),
             connection->nick);
-         dmsg = msg;
+         _msg = msg;
       }
       else
-         dmsg = msg_hash_to_str(MSG_NETPLAY_SERVER_HANGUP);
+         _msg = msg_hash_to_str(MSG_NETPLAY_SERVER_HANGUP);
    }
    else
    {
-      dmsg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
+      _msg = msg_hash_to_str(MSG_NETPLAY_CLIENT_HANGUP);
 #ifdef HAVE_PRESENCE
       {
          presence_userdata_t userdata;
@@ -4182,12 +4184,12 @@ static void netplay_hangup(netplay_t *netplay,
       networking_driver_st.core_netpacket_interface->disconnected
             ((uint16_t)(connection - netplay->connections + 1));
 
-   RARCH_LOG("[Netplay] %s\n", dmsg);
+   RARCH_LOG("[Netplay] %s\n", _msg);
    /* This notification is really only important to the server if the client was playing.
     * Let it be optional if server and the client wasn't playing. */
    if (!netplay->is_server || was_playing ||
          settings->bools.notification_show_netplay_extra)
-      runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    socket_close(connection->fd);
@@ -4571,7 +4573,7 @@ static void netplay_announce_play_spectate(netplay_t *netplay,
 {
    size_t _len;
    char msg[512];
-   const char *dmsg = NULL;
+   const char *_msg = NULL;
 
    switch (mode)
    {
@@ -4581,10 +4583,10 @@ static void netplay_announce_play_spectate(netplay_t *netplay,
             snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_NETPLAY_PLAYER_S_LEFT),
                NETPLAY_NICK_LEN, nick);
-            dmsg = msg;
+            _msg = msg;
          }
          else
-            dmsg = msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME);
+            _msg = msg_hash_to_str(MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME);
          break;
       case NETPLAY_CONNECTION_PLAYING:
       case NETPLAY_CONNECTION_SLAVE:
@@ -4659,7 +4661,7 @@ static void netplay_announce_play_spectate(netplay_t *netplay,
             strlcpy(msg + _len, ping_str, sizeof(msg) - _len);
          }
 
-         dmsg = msg;
+         _msg = msg;
          break;
       }
       default: /* wrong usage */
@@ -4670,8 +4672,8 @@ static void netplay_announce_play_spectate(netplay_t *netplay,
    rcheevos_spectating_changed();
 #endif
 
-   RARCH_LOG("[Netplay] %s\n", dmsg);
-   runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+   RARCH_LOG("[Netplay] %s\n", _msg);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
@@ -4795,12 +4797,11 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
                      }
                      else
                      {
-                        const char *dmsg = msg_hash_to_str(
+                        const char *_msg = msg_hash_to_str(
                            MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE);
-                        RARCH_LOG("[Netplay] %s\n", dmsg);
-                        runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-                           MESSAGE_QUEUE_ICON_DEFAULT,
-                           MESSAGE_QUEUE_CATEGORY_INFO);
+                        RARCH_LOG("[Netplay] %s\n", _msg);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      }
                      return;
                   }
@@ -4860,12 +4861,11 @@ static void netplay_handle_play_spectate(netplay_t *netplay,
                      }
                      else
                      {
-                        const char *dmsg = msg_hash_to_str(
+                        const char *_msg = msg_hash_to_str(
                            MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS);
-                        RARCH_LOG("[Netplay] %s\n", dmsg);
-                        runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
-                           MESSAGE_QUEUE_ICON_DEFAULT,
-                           MESSAGE_QUEUE_CATEGORY_INFO);
+                        RARCH_LOG("[Netplay] %s\n", _msg);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
+                           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                      }
                      return;
                   }
@@ -5085,7 +5085,7 @@ static void netplay_show_chat(netplay_t *netplay, const char *nick, const char *
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
 #endif
-   snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
+   size_t _len = snprintf(formatted_chat, sizeof(formatted_chat), "%s: %s", nick, msg);
 #ifdef GEKKO
 #pragma GCC diagnostic pop
 #endif
@@ -5109,7 +5109,7 @@ static void netplay_show_chat(netplay_t *netplay, const char *nick, const char *
    }
    else
 #endif
-      runloop_msg_queue_push(formatted_chat, 1, NETPLAY_CHAT_FRAME_TIME, false,
+      runloop_msg_queue_push(formatted_chat, _len, 1, NETPLAY_CHAT_FRAME_TIME, false,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
@@ -5849,7 +5849,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
       case NETPLAY_CMD_MODE_REFUSED:
          {
             uint32_t reason;
-            const char *dmsg = NULL;
+            const char *_msg = NULL;
 
             if (netplay->is_server)
             {
@@ -5870,20 +5870,20 @@ static bool netplay_get_cmd(netplay_t *netplay,
             switch (reason)
             {
                case NETPLAY_CMD_MODE_REFUSED_REASON_UNPRIVILEGED:
-                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED);
+                  _msg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED);
                   break;
                case NETPLAY_CMD_MODE_REFUSED_REASON_NO_SLOTS:
-                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS);
+                  _msg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS);
                   break;
                case NETPLAY_CMD_MODE_REFUSED_REASON_NOT_AVAILABLE:
-                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE);
+                  _msg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE);
                   break;
                default:
-                  dmsg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY);
+                  _msg = msg_hash_to_str(MSG_NETPLAY_CANNOT_PLAY);
             }
 
-            RARCH_LOG("[Netplay] %s\n", dmsg);
-            runloop_msg_queue_push(dmsg, 1, 180, false, NULL,
+            RARCH_LOG("[Netplay] %s\n", _msg);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 #ifdef HAVE_CHEEVOS
@@ -6216,6 +6216,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
       case NETPLAY_CMD_PAUSE:
          {
+            size_t _len;
             char msg[512], nick[NETPLAY_NICK_LEN];
             NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
@@ -6244,7 +6245,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
 
                /* Inform peers */
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), connection->nick);
                netplay_send_raw_cmd_all(netplay, connection, NETPLAY_CMD_PAUSE,
                   connection->nick, sizeof(connection->nick));
@@ -6256,7 +6257,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             else
             {
                STRING_SAFE(nick, sizeof(nick));
-               snprintf(msg, sizeof(msg),
+               _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_NETPLAY_PEER_PAUSED), nick);
             }
 
@@ -6264,7 +6265,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             netplay->remote_paused = true;
 
             RARCH_LOG("[Netplay] %s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, false, NULL,
+            runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
          }
@@ -6650,17 +6651,17 @@ static void netplay_announce_nat_traversal(netplay_t *netplay,
          if (!getnameinfo_retro((struct sockaddr*)addr, sizeof(*addr),
                host, sizeof(host), port, sizeof(port),
                NI_NUMERICHOST | NI_NUMERICSERV))
-            snprintf(msg + _len, sizeof(msg) - _len, ": %s:%s", host, port);
+            _len += snprintf(msg + _len, sizeof(msg) - _len, ": %s:%s", host, port);
 
          RARCH_LOG("[Netplay] %s\n", msg);
-         runloop_msg_queue_push(msg, 1, 180, false, NULL,
+         runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
       {
          const char *msg = msg_hash_to_str(MSG_PRIVATE_OR_SHARED_ADDRESS);
          RARCH_WARN("[Netplay] %s\n", msg);
-         runloop_msg_queue_push(msg, 1, 600, false, NULL,
+         runloop_msg_queue_push(msg, strlen(msg), 1, 600, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
@@ -6668,7 +6669,7 @@ static void netplay_announce_nat_traversal(netplay_t *netplay,
    {
       const char *msg = msg_hash_to_str(MSG_UPNP_FAILED);
       RARCH_ERR("[Netplay] %s\n", msg);
-      runloop_msg_queue_push(msg, 1, 180, false, NULL,
+      runloop_msg_queue_push(msg, strlen(msg), 1, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
@@ -6697,7 +6698,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
 {
    char msg[512];
    char host[256], port[6];
-   const char *dmsg = NULL;
+   const char *_msg = NULL;
    int fd           = socket(addr->ai_family, addr->ai_socktype,
       addr->ai_protocol);
 
@@ -6727,10 +6728,10 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
          snprintf(msg, sizeof(msg),
             "Failed to connect to host %s on port %s.",
             host, port);
-         dmsg = msg;
+         _msg = msg;
       }
       else
-         dmsg = "Failed to connect to host.";
+         _msg = "Failed to connect to host.";
    }
    else if (is_mitm)
    {
@@ -6770,7 +6771,7 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
             }
          }
 
-         dmsg = "Failed to create a tunnel session.";
+         _msg = "Failed to create a tunnel session.";
       }
       else
       {
@@ -6781,10 +6782,10 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
             snprintf(msg, sizeof(msg),
                "Failed to connect to relay server %s on port %s.",
                host, port);
-            dmsg = msg;
+            _msg = msg;
          }
          else
-            dmsg = "Failed to connect to relay server.";
+            _msg = "Failed to connect to relay server.";
       }
    }
    else
@@ -6814,17 +6815,17 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
             snprintf(msg, sizeof(msg),
                "Failed to bind port %s.",
                port);
-            dmsg = msg;
+            _msg = msg;
          }
          else
-            dmsg = "Failed to bind port.";
+            _msg = "Failed to bind port.";
       }
    }
 
    socket_close(fd);
 
-   if (dmsg)
-      RARCH_ERR("[Netplay] %s\n", dmsg);
+   if (_msg)
+      RARCH_ERR("[Netplay] %s\n", _msg);
 
    return -1;
 }
@@ -8280,9 +8281,10 @@ static void netplay_announce_cb(retro_task_t *task, void *task_data,
    /* Warn only on the first announce. */
    if (!host_room->connectable && first)
    {
+      const char *_msg = msg_hash_to_str(MSG_ROOM_NOT_CONNECTABLE);
       RARCH_WARN("[Netplay] %s\n", msg_hash_to_str(MSG_ROOM_NOT_CONNECTABLE));
-      runloop_msg_queue_push(msg_hash_to_str(MSG_ROOM_NOT_CONNECTABLE), 1, 180,
-         false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
 #ifdef HAVE_PRESENCE
@@ -8765,14 +8767,14 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
    if (net_st->core_netpacket_interface)
       modus = NETPLAY_MODUS_CORE_PACKET_INTERFACE;
 
-   if ((!core_info_current_supports_netplay() ||
-         serialization_quirks & (RETRO_SERIALIZATION_QUIRK_INCOMPLETE |
-            RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION))
+   if ((!core_info_current_supports_netplay()
+         || serialization_quirks & (RETRO_SERIALIZATION_QUIRK_INCOMPLETE
+                                 | RETRO_SERIALIZATION_QUIRK_SINGLE_SESSION))
          && modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
    {
+      const char *_msg = msg_hash_to_str(MSG_NETPLAY_UNSUPPORTED);
       RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_UNSUPPORTED));
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_NETPLAY_UNSUPPORTED), 0, 180, false, NULL,
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto failure;
    }
@@ -8847,6 +8849,7 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    if (netplay->is_server)
    {
+      const char *_msg;
       if (mitm)
       {
          int  flen = 0;
@@ -8869,8 +8872,8 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
          netplay->next_announce =
             cpu_features_get_time_usec() + NETPLAY_ANNOUNCE_AFTER;
 
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_WAITING_FOR_CLIENT), 0, 180, false, NULL,
+      _msg = msg_hash_to_str(MSG_WAITING_FOR_CLIENT);
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       netplay->self_mode = NETPLAY_CONNECTION_SPECTATING;
@@ -8902,10 +8905,12 @@ failure:
                     | NET_DRIVER_ST_FLAG_NETPLAY_CLIENT_DEFERRED);
    deinit_netplay();
 
-   RARCH_ERR("[Netplay] %s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
-   runloop_msg_queue_push(
-      msg_hash_to_str(MSG_NETPLAY_FAILED), 0, 180, false, NULL,
-      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_NETPLAY_FAILED);
+      RARCH_ERR("[Netplay] %s\n", _msg);
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    return false;
 }

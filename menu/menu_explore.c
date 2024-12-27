@@ -1022,13 +1022,12 @@ static const char* explore_get_view_path(struct menu_state *menu_st, menu_list_t
 
 static void explore_on_edit_views(enum msg_hash_enums msg)
 {
+   const char           *_msg = msg_hash_to_str(msg);
    struct menu_state *menu_st = menu_state_get_ptr();
    if (menu_st->driver_ctx->environ_cb)
       menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
                NULL, menu_st->userdata);
-
-   runloop_msg_queue_push(msg_hash_to_str(msg),
-         1, 180, true, NULL,
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
@@ -1070,15 +1069,14 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
 
    if (filestream_exists(lvwpath))
    {
-      runloop_msg_queue_push(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS),
-            1, 360, true, NULL,
+      const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 360, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       return;
    }
 
-   file = intfstream_open_file(lvwpath,
-         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
+   if (!(file = intfstream_open_file(lvwpath,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
       RARCH_ERR("[explore view] Failed to write json file %s.\n", lvwpath);
       return;

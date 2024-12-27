@@ -1904,12 +1904,10 @@ static bool firmware_update_status(
             (content_ctx->flags & CONTENT_INFO_FLAG_BIOS_IS_MISSING)
          && (content_ctx->flags & CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING))
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FIRMWARE),
-            100, 500, true, NULL,
+      const char *_msg = msg_hash_to_str(MSG_FIRMWARE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 100, 500, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("[Content]: Load content blocked. Reason: %s\n",
-            msg_hash_to_str(MSG_FIRMWARE));
+      RARCH_LOG("[Content]: Load content blocked. Reason: %s\n", _msg);
 
       return true;
    }
@@ -3149,8 +3147,12 @@ bool content_init(void)
          case MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS:
          case MSG_FAILED_TO_LOAD_CONTENT:
          case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
-            RARCH_ERR("[Content]: %s\n", msg_hash_to_str(error_enum));
-            runloop_msg_queue_push(msg_hash_to_str(error_enum), 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(error_enum);
+               RARCH_ERR("[Content]: %s\n", _msg);
+               runloop_msg_queue_push(_msg, strlen(_msg), 2, ret ? 1 : 180, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
             break;
          case MSG_UNKNOWN:
          default:
@@ -3168,7 +3170,8 @@ bool content_init(void)
       /* Do not flush the message queue here
        * > This allows any core-generated error messages
        *   to propagate through to the frontend */
-      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(error_string, strlen(error_string), 2, ret ? 1 : 180, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(error_string);
    }
 

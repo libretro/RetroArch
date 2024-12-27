@@ -135,8 +135,9 @@ static void *sdl_microphone_open_mic(void *driver_context,
 #if __APPLE__
    if (!string_is_equal(audio_driver_get_ident(), "sdl2"))
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO), 1, 100, true, NULL,
+      const char *msg = msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO),msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO);
+      runloop_msg_queue_push(msg, strlen(msg),
+            1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       return NULL;
    }
@@ -155,7 +156,7 @@ static void *sdl_microphone_open_mic(void *driver_context,
 
    /* Only print SDL audio devices if verbose logging is enabled */
    if (verbosity_is_enabled())
-   { 
+   {
       int i;
       int num_available_microphones = SDL_GetNumAudioDevices(true);
       RARCH_DBG("[SDL mic]: %d audio capture devices found:\n", num_available_microphones);

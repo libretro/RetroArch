@@ -4467,9 +4467,11 @@ bool config_load_override(void *data)
 
    if (settings->bools.notification_show_config_override_load
          && show_notification)
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
-            1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -4521,9 +4523,11 @@ bool config_load_override_file(const char *config_path)
 
    if (settings->bools.notification_show_config_override_load
          && show_notification)
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
-            1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -4729,9 +4733,11 @@ bool config_load_remap(const char *directory_input_remapping,
 
 success:
    if (notification_show_remap_load)
-      runloop_msg_queue_push(
-            msg_hash_to_str(msg_remap_loaded), 1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(msg_remap_loaded);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
    return true;
 }
 
@@ -6384,7 +6390,7 @@ void input_config_parse_mouse_button(
 
    fill_pathname_join_delim(key, s, "mbtn", '_', sizeof(key));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   if (config_get_array(conf, key, tmp, sizeof(tmp)) > 0)
    {
       bind->mbutton = NO_BTN;
 
@@ -6455,7 +6461,7 @@ void input_config_parse_joy_axis(
    fill_pathname_join_delim(key_label, s,
          "axis_label", '_', sizeof(key_label));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   if (config_get_array(conf, key, tmp, sizeof(tmp)) > 0)
    {
       if (     tmp[0] == 'n'
             && tmp[1] == 'u'
@@ -6546,7 +6552,7 @@ void input_config_parse_joy_button(
    fill_pathname_join_delim(key_label, s,
          "btn_label", '_', sizeof(key_label));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)))
+   if (config_get_array(conf, key, tmp, sizeof(tmp)) > 0)
    {
       btn = tmp;
       if (     btn[0] == 'n'

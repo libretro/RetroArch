@@ -190,9 +190,10 @@ static void task_screenshot_handler(retro_task_t *task)
    /* Report any errors */
    if (!ret)
    {
-      char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      free(msg);
+      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1,
+            (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    if (task->title)

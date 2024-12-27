@@ -355,12 +355,7 @@ static void config_file_add_child_list(config_file_t *parent,
 static void config_file_get_realpath(char *s, size_t len,
       char *path, const char *config_path)
 {
-#ifdef _WIN32
-   if (!string_is_empty(config_path))
-      fill_pathname_resolve_relative(s, config_path,
-            path, len);
-#else
-#if !defined(__PSL1GHT__) && !defined(__PS3__)
+#if !defined(_WIN32) && !defined(__PSL1GHT__) && !defined(__PS3__)
    if (*path == '~')
    {
       const char *home = getenv("HOME");
@@ -374,9 +369,11 @@ static void config_file_get_realpath(char *s, size_t len,
    }
    else
 #endif
+   {
       if (!string_is_empty(config_path))
-         fill_pathname_resolve_relative(s, config_path, path, len);
-#endif
+         fill_pathname_resolve_relative(s, config_path,
+            path, len);
+   }
 }
 
 static void config_file_add_sub_conf(config_file_t *conf, char *path,
@@ -1163,37 +1160,33 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
   * Extracts a string to a preallocated buffer.
   * Avoid memory allocation.
   **/
-bool config_get_config_path(config_file_t *conf, char *s, size_t len)
+size_t config_get_config_path(config_file_t *conf, char *s, size_t len)
 {
    if (conf)
       return strlcpy(s, conf->path, len);
-   return false;
+   return 0;
 }
 
-bool config_get_array(config_file_t *conf, const char *key,
+size_t config_get_array(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
       return strlcpy(buf, entry->value, size) < size;
-   return false;
+   return 0;
 }
 
-bool config_get_path(config_file_t *conf, const char *key,
+size_t config_get_path(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
 #if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
-   if (config_get_array(conf, key, buf, size))
-      return true;
+   return config_get_array(conf, key, buf, size);
 #else
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
-   {
-      fill_pathname_expand_special(buf, entry->value, size);
-      return true;
-   }
+      return fill_pathname_expand_special(buf, entry->value, size);
 #endif
-   return false;
+   return 0;
 }
 
 /**

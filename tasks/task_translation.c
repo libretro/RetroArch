@@ -320,6 +320,7 @@ static void handle_translation_cb(
             image_type = IMAGE_TYPE_PNG;
          else
          {
+            /* TODO/FIXME - localize */
             RARCH_LOG("Invalid image type returned from server.\n");
             goto finish;
          }
@@ -328,12 +329,11 @@ static void handle_translation_cb(
                raw_image_file_data, (unsigned)new_image_size,
                image_type))
          {
+            /* TODO/FIXME - localize */
+            const char *_msg = "Video driver not supported.";
             RARCH_LOG("Video driver not supported for AI Service.");
-            runloop_msg_queue_push(
-               /* msg_hash_to_str(MSG_VIDEO_DRIVER_NOT_SUPPORTED), */
-               "Video driver not supported.",
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          else if (gfx_widgets_paused)
          {

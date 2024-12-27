@@ -686,7 +686,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    _len  = strlcpy(shader_var, "shader", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
 
-   if (!config_get_path(conf, shader_var, tmp_path, sizeof(tmp_path)))
+   if (config_get_path(conf, shader_var, tmp_path, sizeof(tmp_path)) == 0)
    {
       RARCH_ERR("[Shaders]: Couldn't parse shader source \"%s\".\n", shader_var);
       return false;
@@ -758,23 +758,28 @@ static bool video_shader_parse_pass(config_file_t *conf,
    scale = &pass->fbo;
    _len  = strlcpy(shader_var, "scale_type", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
-   config_get_array(conf, shader_var, scale_type, sizeof(scale_type));
-
-   _len  = strlcpy(shader_var, "scale_type_x", sizeof(shader_var));
-   strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
-   config_get_array(conf, shader_var, scale_type_x, sizeof(scale_type_x));
-
-   _len  = strlcpy(shader_var, "scale_type_y", sizeof(shader_var));
-   strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
-   config_get_array(conf, shader_var, scale_type_y, sizeof(scale_type_y));
-
-   if (*scale_type)
+   if (config_get_array(conf, shader_var, scale_type, sizeof(scale_type)) > 0)
    {
       strlcpy(scale_type_x, scale_type, sizeof(scale_type_x));
       strlcpy(scale_type_y, scale_type, sizeof(scale_type_y));
    }
-   else if (!*scale_type_x && !*scale_type_y)
-      return true;
+   else
+   {
+      size_t __len_x, __len_y;
+      _len  = strlcpy(shader_var, "scale_type_x", sizeof(shader_var));
+      strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
+
+      __len_x = config_get_array(conf, shader_var, scale_type_x, sizeof(scale_type_x));
+
+      _len  = strlcpy(shader_var, "scale_type_y", sizeof(shader_var));
+      strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
+
+      __len_y = config_get_array(conf, shader_var, scale_type_y, sizeof(scale_type_y));
+
+      if (__len_x == 0 && __len_y == 0)
+         return true;
+   }
+
 
    scale->flags  |= FBO_SCALE_FLAG_VALID;
    scale->type_x  = RARCH_SCALE_INPUT;
@@ -923,13 +928,14 @@ static bool video_shader_parse_textures(config_file_t *conf,
             return false;
          }
 
-         config_get_path(conf, id, texture_path, sizeof(texture_path));
-
-         /* Get the absolute path and replace wildcards in the path */
-         fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path,
-               PATH_MAX_LENGTH, conf->path, texture_path);
-         video_shader_replace_wildcards(shader->lut[shader->luts].path,
-               PATH_MAX_LENGTH, conf->path);
+         if (config_get_path(conf, id, texture_path, sizeof(texture_path)) > 0)
+         {
+            /* Get the absolute path and replace wildcards in the path */
+            fill_pathname_expanded_and_absolute(shader->lut[shader->luts].path,
+                  PATH_MAX_LENGTH, conf->path, texture_path);
+            video_shader_replace_wildcards(shader->lut[shader->luts].path,
+                  PATH_MAX_LENGTH, conf->path);
+         }
 
          strlcpy(shader->lut[shader->luts].id, id,
                sizeof(shader->lut[shader->luts].id));
@@ -1328,16 +1334,18 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       /* Step through the textures in the shader */
       for (i = 0; i < shader->luts; i++)
       {
+         size_t _len;
+         char k[128];
          fill_pathname_abbreviated_or_relative(tmp_rel,
                tmp_base, shader->lut[i].path, PATH_MAX_LENGTH);
          pathname_make_slashes_portable(tmp_rel);
          config_set_string(conf, shader->lut[i].id, tmp_rel);
 
+         _len = strlcpy(k, shader->lut[i].id, sizeof(k));
+
          /* Linear filter ON or OFF */
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
-            char k[128];
-            size_t _len = strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcpy(k + _len, "_linear", sizeof(k) - _len);
             config_set_string(conf, k,
                   (shader->lut[i].filter == RARCH_FILTER_LINEAR)
@@ -1346,23 +1354,15 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          }
 
          /* Wrap Mode */
-         {
-            char k[128];
-            size_t _len = strlcpy(k, shader->lut[i].id, sizeof(k));
-            strlcpy(k + _len, "_wrap_mode", sizeof(k) - _len);
-            config_set_string(conf, k,
-                  video_shader_wrap_mode_to_str(shader->lut[i].wrap));
-         }
+         strlcpy(k + _len, "_wrap_mode", sizeof(k) - _len);
+         config_set_string(conf, k,
+               video_shader_wrap_mode_to_str(shader->lut[i].wrap));
 
          /* Mipmap On or Off */
-         {
-            char k[128];
-            size_t _len = strlcpy(k, shader->lut[i].id, sizeof(k));
-            strlcpy(k + _len, "_mipmap", sizeof(k) - _len);
-            config_set_string(conf, k, shader->lut[i].mipmap
-                  ? "true"
-                  : "false");
-         }
+         strlcpy(k + _len, "_mipmap", sizeof(k) - _len);
+         config_set_string(conf, k, shader->lut[i].mipmap
+               ? "true"
+               : "false");
       }
    }
 
@@ -2172,13 +2172,16 @@ static bool video_shader_override_values(config_file_t *override_conf,
             char *tex_path = (char*)malloc(PATH_MAX_LENGTH);
 
             /* Texture path from the config */
-            config_get_path(override_conf, shader->lut[i].id, tex_path, PATH_MAX_LENGTH);
+            if (config_get_path(override_conf, shader->lut[i].id, tex_path, PATH_MAX_LENGTH) > 0)
+            {
+               /* Get the absolute path and replace wildcards in the path */
+               fill_pathname_expanded_and_absolute(override_tex_path, PATH_MAX_LENGTH,
+                     override_conf->path, tex_path);
+               video_shader_replace_wildcards(override_tex_path, PATH_MAX_LENGTH,
+                     override_conf->path);
+            }
 
-            /* Get the absolute path and replace wildcards in the path */
-            fill_pathname_expanded_and_absolute(override_tex_path, PATH_MAX_LENGTH,
-                  override_conf->path, tex_path);
-            video_shader_replace_wildcards(override_tex_path, PATH_MAX_LENGTH,
-                  override_conf->path);
+            free(tex_path);
 
             strlcpy(shader->lut[i].path, override_tex_path, sizeof(shader->lut[i].path));
 
@@ -2188,7 +2191,6 @@ static bool video_shader_override_values(config_file_t *override_conf,
                         shader->lut[i].path);
 #endif
 
-            free(tex_path);
             return_val = true;
          }
       }
@@ -2894,31 +2896,35 @@ static bool video_shader_load_shader_preset_internal(
    flags.flags     = 0;
    video_context_driver_get_flags(&flags);
 
-   for (i = 0; i < (int)ARRAY_SIZE(types); i++)
+   if (!string_is_empty(core_name))
    {
-      if (!BIT32_GET(flags.flags, video_shader_type_to_flag(types[i])))
-         continue;
-
-      /* Concatenate strings into full paths */
-      if (!string_is_empty(core_name))
+      for (i = 0; i < (int)ARRAY_SIZE(types); i++)
+      {
+         if (!BIT32_GET(flags.flags, video_shader_type_to_flag(types[i])))
+            continue;
          fill_pathname_join_special_ext(s,
                shader_directory, core_name,
                special_name,
                video_shader_get_preset_extension(types[i]),
                len);
-      else
-      {
-         size_t _len;
-         if (string_is_empty(special_name))
-            break;
-
-         _len = fill_pathname_join(s, shader_directory, special_name, len);
-         strlcpy(s + _len, video_shader_get_preset_extension(types[i]), len - _len);
+         if (path_is_valid(s))
+            return true;
       }
-
-      if (path_is_valid(s))
-         return true;
    }
+   else if (!string_is_empty(special_name))
+   {
+      for (i = 0; i < (int)ARRAY_SIZE(types); i++)
+      {
+         if (BIT32_GET(flags.flags, video_shader_type_to_flag(types[i])))
+         {
+            size_t _len = fill_pathname_join(s, shader_directory, special_name, len);
+            strlcpy(s + _len, video_shader_get_preset_extension(types[i]), len - _len);
+            if (path_is_valid(s))
+               return true;
+         }
+      }
+   }
+
 
    return false;
 }
@@ -3084,6 +3090,7 @@ bool video_shader_apply_shader(
       const char *preset_path,
       bool message)
 {
+   size_t _len;
    char msg[NAME_MAX_LENGTH];
    video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
@@ -3128,7 +3135,7 @@ bool video_shader_apply_shader(
          {
             /* Display message */
             const char *msg_shader = msg_hash_to_str(MSG_SHADER);
-            size_t _len            = strlcpy(msg, msg_shader, sizeof(msg));
+            _len                   = strlcpy(msg, msg_shader, sizeof(msg));
             msg[  _len]            = ':';
             msg[++_len]            = ' ';
             if (preset_file)
@@ -3143,7 +3150,7 @@ bool video_shader_apply_shader(
             else
             {
                msg[++_len]         = '\0';
-               strlcpy(msg       + _len,
+               _len += strlcpy(msg       + _len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE),
                      sizeof(msg) - _len);
             }
@@ -3153,7 +3160,7 @@ bool video_shader_apply_shader(
                gfx_widget_set_generic_message(msg, 2000);
             else
 #endif
-               runloop_msg_queue_push(msg, 1, 120, true, NULL,
+               runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 
@@ -3171,14 +3178,13 @@ bool video_shader_apply_shader(
 #endif
 
    /* Display error message */
-   fill_pathname_join_delim(msg,
+   _len = fill_pathname_join_delim(msg,
          msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
          preset_file ? preset_file : "null",
          ' ',
          sizeof(msg));
 
-   runloop_msg_queue_push(
-         msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    return false;
 }

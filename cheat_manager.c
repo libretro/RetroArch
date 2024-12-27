@@ -68,10 +68,12 @@ unsigned cheat_manager_get_size(void)
 #ifdef HAVE_CHEEVOS
 static void cheat_manager_pause_cheevos(void)
 {
+   const char *msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT);
    rcheevos_pause_hardcore();
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT));
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s\n", msg);
 }
 #endif
 
@@ -104,8 +106,10 @@ void cheat_manager_apply_cheats(void)
 
    if (cheat_st->size > 0 && settings->bools.notification_show_cheats_applied)
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_APPLYING_CHEAT), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s\n", msg_hash_to_str(MSG_APPLYING_CHEAT));
+      const char *_msg = msg_hash_to_str(MSG_APPLYING_CHEAT);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_LOG("%s\n", _msg);
    }
 
 #ifdef HAVE_CHEEVOS
@@ -604,13 +608,14 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 {
+   size_t _len;
    char msg[256];
 
    if (!handle || !handle->cheats || handle->size == 0)
       return;
 
    /* TODO/FIXME - localize */
-   snprintf(msg, sizeof(msg),
+   _len = snprintf(msg, sizeof(msg),
          "Cheat: #%u [%s]: %s",
          handle_idx,
          handle->cheats[handle_idx].state
@@ -620,7 +625,8 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
          ? (handle->cheats[handle_idx].desc)
          : (handle->cheats[handle_idx].code)
          );
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", msg);
 }
 
@@ -848,7 +854,9 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
       meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
       if (!core_get_memory(&meminfo))
       {
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         const char *_msg = msg_hash_to_str(MSG_CHEAT_INIT_FAIL);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
 
@@ -877,6 +885,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
    if (is_search_initialization)
    {
+      const char *msg = NULL;
       if (cheat_st->prev_memory_buf)
       {
          free(cheat_st->prev_memory_buf);
@@ -888,7 +897,9 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
       if (!cheat_st->prev_memory_buf)
       {
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         const char *_msg = msg_hash_to_str(MSG_CHEAT_INIT_FAIL);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
 
@@ -903,9 +914,11 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
       if (!cheat_st->matches)
       {
+         const char *_msg = msg_hash_to_str(MSG_CHEAT_INIT_FAIL);
          free(cheat_st->prev_memory_buf);
          cheat_st->prev_memory_buf = NULL;
-         runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
 
@@ -921,7 +934,9 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
          offset += cheat_st->memory_size_list[i];
       }
 
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      msg = msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       cheat_st->memory_search_initialized = true;
    }
@@ -1000,6 +1015,7 @@ static void cheat_manager_setup_search_meta(
 
 static int cheat_manager_search(enum cheat_search_type search_type)
 {
+   size_t _len;
    char msg[100];
    cheat_manager_t   *cheat_st = &cheat_manager_state;
    unsigned char *curr         = cheat_st->curr_memory_buf;
@@ -1018,8 +1034,8 @@ static int cheat_manager_search(enum cheat_search_type search_type)
 
    if (cheat_st->num_memory_buffers == 0 || !prev || !cheat_st->matches)
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED),
-            1, 180, true, NULL,
+      const char *msg = msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
@@ -1125,10 +1141,9 @@ static int cheat_manager_search(enum cheat_search_type search_type)
       offset += cheat_st->memory_size_list[i];
    }
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_FOUND_MATCHES), cheat_st->num_matches);
-   msg[sizeof(msg) - 1] = 0;
-
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_FOUND_MATCHES), cheat_st->num_matches);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -1209,6 +1224,7 @@ bool cheat_manager_add_new_code(unsigned int memory_search_size, unsigned int ad
 int cheat_manager_add_matches(const char *path,
       const char *label, unsigned type, size_t menuidx, size_t entry_idx)
 {
+   size_t _len;
    char msg[100];
    unsigned          byte_part = 0;
    unsigned            int idx = 0;
@@ -1225,7 +1241,9 @@ int cheat_manager_add_matches(const char *path,
 
    if (cheat_st->num_matches + cheat_st->size > 100)
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
    cheat_manager_setup_search_meta(cheat_st->search_bit_size, &bytes_per_item, &mask, &bits);
@@ -1263,7 +1281,9 @@ int cheat_manager_add_matches(const char *path,
                if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, (mask << (byte_part * bits)),
                         cheat_st->big_endian, curr_val))
                {
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return 0;
                }
             }
@@ -1276,7 +1296,9 @@ int cheat_manager_add_matches(const char *path,
                if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, 0xFF,
                         cheat_st->big_endian, curr_val))
                {
-                  runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return 0;
                }
             }
@@ -1285,10 +1307,9 @@ int cheat_manager_add_matches(const char *path,
       }
    }
 
-   snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS), cheat_st->num_matches);
-   msg[sizeof(msg) - 1] = 0;
+   _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS), cheat_st->num_matches);
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -1677,19 +1698,32 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                   case CHEAT_MATCH_ACTION_TYPE_COPY:
                      if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, (mask << (byte_part * bits)),
                            cheat_st->big_endian, curr_val))
-                        runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     {
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                              MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     }
                      else
-                        runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     {
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                              MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     }
                      return;
                   case CHEAT_MATCH_ACTION_TYPE_DELETE:
-                     if (bits < 8)
-                        *(cheat_st->matches + idx) = *(cheat_st->matches + idx) &
+                     {
+                        const char *_msg;
+                        if (bits < 8)
+                           *(cheat_st->matches + idx) = *(cheat_st->matches + idx) &
                               ((~(mask << (byte_part * bits))) & 0xFF);
-                     else
-                        memset(cheat_st->matches + idx, 0, bytes_per_item);
-                     if (cheat_st->num_matches > 0)
-                        cheat_st->num_matches--;
-                     runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                        else
+                           memset(cheat_st->matches + idx, 0, bytes_per_item);
+                        if (cheat_st->num_matches > 0)
+                           cheat_st->num_matches--;
+                        _msg = msg_hash_to_str(MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                              MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     }
                      return;
                   }
                   return;
@@ -1717,20 +1751,33 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
                   case CHEAT_MATCH_ACTION_TYPE_COPY:
                      if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, 0xFF,
                            cheat_st->big_endian, curr_val))
-                        runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     {
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_FAIL);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                              MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     }
                      else
-                        runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     {
+                        const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                              MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     }
                      return;
                   case CHEAT_MATCH_ACTION_TYPE_DELETE:
-                     if (bits < 8)
-                        *(cheat_st->matches + idx) = *(cheat_st->matches + idx) &
+                     {
+                        const char *_msg;
+                        if (bits < 8)
+                           *(cheat_st->matches + idx) = *(cheat_st->matches + idx) &
                               ((~(mask << (byte_part * bits))) & 0xFF);
-                     else
-                        memset(cheat_st->matches + idx, 0, bytes_per_item);
-                     if (cheat_st->num_matches > 0)
-                        cheat_st->num_matches--;
-                     runloop_msg_queue_push(msg_hash_to_str(MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-                     return;
+                        else
+                           memset(cheat_st->matches + idx, 0, bytes_per_item);
+                        if (cheat_st->num_matches > 0)
+                           cheat_st->num_matches--;
+                        _msg = msg_hash_to_str(MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS);
+                        runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                              MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                        return;
+                     }
                   }
                }
 

@@ -1499,15 +1499,15 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->fonts.jpn_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_JAPANESE);
          rgui->fonts.kor_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_KOREAN);
 
-         if (!rgui->fonts.eng_10x10 ||
-             !rgui->fonts.chn_10x10 ||
-             !rgui->fonts.jpn_10x10 ||
-             !rgui->fonts.kor_10x10)
+         if (   !rgui->fonts.eng_10x10
+             || !rgui->fonts.chn_10x10
+             || !rgui->fonts.jpn_10x10
+             || !rgui->fonts.kor_10x10)
          {
+            const char *_msg = msg_hash_to_str(MSG_RGUI_MISSING_FONTS);
             rgui_fonts_free(rgui);
             *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             goto english;
          }
@@ -1526,13 +1526,13 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->fonts.eng_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.rus_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_RUSSIAN);
 
-         if (!rgui->fonts.eng_10x10 ||
-             !rgui->fonts.rus_10x10)
+         if (   !rgui->fonts.eng_10x10
+             || !rgui->fonts.rus_10x10)
          {
+            const char *_msg = msg_hash_to_str(MSG_RGUI_MISSING_FONTS);
             rgui_fonts_free(rgui);
             *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             goto english;
          }
@@ -1565,13 +1565,13 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->fonts.eng_6x10 = bitmapfont_6x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.lse_6x10 = bitmapfont_6x10_load(language);
 
-         if (!rgui->fonts.eng_6x10 ||
-             !rgui->fonts.lse_6x10)
+         if (   !rgui->fonts.eng_6x10
+             || !rgui->fonts.lse_6x10)
          {
+            const char *_msg = msg_hash_to_str(MSG_RGUI_MISSING_FONTS);
             rgui_fonts_free(rgui);
             *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             goto english;
          }
@@ -1589,13 +1589,15 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_PERSIAN:
       case RETRO_LANGUAGE_HEBREW:
       default:
+      {
+         const char *_msg = msg_hash_to_str(MSG_RGUI_INVALID_LANGUAGE);
          /* We do not have fonts for these
           * languages - fallback to English */
          *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_RGUI_INVALID_LANGUAGE), 1, 256, false, NULL,
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto english;
+      }
    }
 
    return true;
@@ -3147,9 +3149,6 @@ static void rgui_load_custom_theme(
       particle_color = (normal_color & 0x00FFFFFF) |
                        (bg_light_color & 0xFF000000);
 
-   config_get_array(conf, wallpaper_key,
-         wallpaper_file, sizeof(wallpaper_file));
-
    success = true;
 
 end:
@@ -3166,8 +3165,10 @@ end:
       theme_colors->shadow_color       = (uint32_t)shadow_color;
       theme_colors->particle_color     = (uint32_t)particle_color;
 
+
       /* Load wallpaper, if required */
-      if (!string_is_empty(wallpaper_file))
+      if (config_get_array(conf, wallpaper_key,
+            wallpaper_file, sizeof(wallpaper_file)) > 0)
       {
          char wallpaper_path[PATH_MAX_LENGTH];
          wallpaper_path[0] = '\0';

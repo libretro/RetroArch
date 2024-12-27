@@ -1174,11 +1174,12 @@ void runahead_run(void *data,
 
       if (!runahead_create(runloop_st))
       {
-         const char *runahead_failed_str =
+         const char *_msg =
             msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES);
          if (!runahead_hide_warnings)
-            runloop_msg_queue_push(runahead_failed_str, 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", _msg);
          goto force_input_dirty;
       }
    }
@@ -1226,10 +1227,11 @@ void runahead_run(void *data,
          {
             if (!runahead_save_state(runloop_st))
             {
-               const char *runahead_failed_str =
+               const char *_msg =
                   msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", _msg);
                return;
             }
          }
@@ -1238,10 +1240,10 @@ void runahead_run(void *data,
          {
             if (!runahead_load_state(runloop_st))
             {
-               const char *runahead_failed_str =
-                  msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", _msg);
                return;
             }
          }
@@ -1252,12 +1254,13 @@ void runahead_run(void *data,
 #if HAVE_DYNAMIC
       if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
       {
-         const char *runahead_failed_str =
+         const char *_msg =
             msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
          runahead_secondary_core_destroy(runloop_st);
          runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-         runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+         runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", _msg);
          goto force_input_dirty;
       }
 
@@ -1276,19 +1279,19 @@ void runahead_run(void *data,
 
          if (!runahead_save_state(runloop_st))
          {
-            const char *runahead_failed_str =
-               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", _msg);
             return;
          }
 
          if (!runahead_load_state_secondary(runloop_st, settings))
          {
-            const char *runahead_failed_str =
-               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", _msg);
             return;
          }
 
@@ -1434,7 +1437,7 @@ bool preempt_init(void *data)
 {
    runloop_state_t *runloop_st = (runloop_state_t*)data;
    settings_t *settings        = config_get_ptr();
-   const char *failed_str      = NULL;
+   const char *_msg            = NULL;
 
    if (     runloop_st->preempt_data
          || !settings->bools.preemptive_frames_enable
@@ -1445,7 +1448,7 @@ bool preempt_init(void *data)
    /* Check if supported - same requirements as runahead */
    if (!core_info_current_supports_runahead())
    {
-      failed_str = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
+      _msg = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
       goto error;
    }
 
@@ -1459,7 +1462,7 @@ bool preempt_init(void *data)
       runloop_st->current_core.retro_run();
 
    /* Allocate - same 'frames' setting as runahead */
-   if ((failed_str = preempt_allocate(runloop_st,
+   if ((_msg = preempt_allocate(runloop_st,
                settings->uints.run_ahead_frames)))
       goto error;
 
@@ -1474,10 +1477,9 @@ error:
    preempt_deinit(runloop_st);
 
    if (!settings->bools.run_ahead_hide_warnings)
-      runloop_msg_queue_push(
-            failed_str, 0, 2 * 60, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_WARN("[Preemptive Frames]: %s\n", failed_str);
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_WARN("[Preemptive Frames]: %s\n", _msg);
 
    return false;
 }
@@ -1616,7 +1618,7 @@ void preempt_run(preempt_t *preempt, void *data)
 {
    runloop_state_t     *runloop_st   = (runloop_state_t*)data;
    struct retro_core_t *current_core = &runloop_st->current_core;
-   const char *failed_str            = NULL;
+   const char *_msg                  = NULL;
    settings_t *settings              = config_get_ptr();
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
@@ -1636,7 +1638,7 @@ void preempt_run(preempt_t *preempt, void *data)
       if (!current_core->retro_unserialize(
             preempt->buffer[preempt->start_ptr], preempt->state_size))
       {
-         failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
+         _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
          goto error;
       }
 
@@ -1648,7 +1650,7 @@ void preempt_run(preempt_t *preempt, void *data)
          if (!current_core->retro_serialize(
                preempt->buffer[preempt->replay_ptr], preempt->state_size))
          {
-            failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+            _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
             goto error;
          }
 
@@ -1664,7 +1666,7 @@ void preempt_run(preempt_t *preempt, void *data)
    if (!current_core->retro_serialize(
          preempt->buffer[preempt->start_ptr], preempt->state_size))
    {
-      failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+      _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
       goto error;
    }
    preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
@@ -1684,10 +1686,9 @@ error:
    preempt_deinit(runloop_st);
 
    if (!settings->bools.run_ahead_hide_warnings)
-      runloop_msg_queue_push(
-            failed_str, 0, 2 * 60, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_ERR("[Preemptive Frames]: %s\n", failed_str);
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_ERR("[Preemptive Frames]: %s\n", _msg);
 }
 
 void runahead_clear_variables(void *data)

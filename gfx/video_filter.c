@@ -142,7 +142,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    name[0] = '\0';
    strlcpy(key, "filter", sizeof(key));
 
-   if (!config_get_array(filt->conf, key, name, sizeof(name)))
+   if (config_get_array(filt->conf, key, name, sizeof(name)) == 0)
    {
       RARCH_ERR("Could not find 'filter' array in config.\n");
       return false;

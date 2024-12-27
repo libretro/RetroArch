@@ -941,10 +941,9 @@ bool task_push_pl_entry_thumbnail_download(
    }
    if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
    {
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
 
    }

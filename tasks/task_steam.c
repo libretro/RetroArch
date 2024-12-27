@@ -81,11 +81,11 @@ task_finished:
       char msg[128];
       size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_INSTALLED),
             sizeof(msg));
-      strlcpy(msg       + _len,
+      _len += strlcpy(msg       + _len,
             state->name,
             sizeof(msg) - _len);
 
-      runloop_msg_queue_push(msg, 1, 180, true, NULL,
+      runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
    }
 

@@ -271,7 +271,7 @@ static bool task_overlay_load_desc(
       goto end;
    }
 
-   if (!config_get_array(conf, overlay_desc_key, overlay, sizeof(overlay)))
+   if (config_get_array(conf, overlay_desc_key, overlay, sizeof(overlay)) == 0)
    {
       RARCH_ERR("[Overlay]: Didn't find key: %s.\n", overlay_desc_key);
       ret = false;
@@ -836,7 +836,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
       overlay->w = overlay->h = 1.0f;
 
       if (config_get_array(conf, overlay->config.rect.key,
-               overlay->config.rect.array, sizeof(overlay->config.rect.array)))
+               overlay->config.rect.array, sizeof(overlay->config.rect.array)) > 0)
       {
          char *tok, *save;
          char *elem0              = NULL;

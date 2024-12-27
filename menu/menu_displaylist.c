@@ -12674,13 +12674,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
                else
                {
+                  const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
                   /* TODO/FIXME - localize */
                   RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
-
-                  runloop_msg_queue_push(
-                        msg_hash_to_str(MSG_NO_DISC_INSERTED),
-                        1, 100, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
 
                if (count == 0)
@@ -12825,7 +12823,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char text[128];
                const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
                /* TODO/FIXME - localize */
-               runloop_msg_queue_push("Warning : extended overclocking can damage the Switch",
+               runloop_msg_queue_push(
+                     "Warning : extended overclocking can damage the Switch",
+                     STRLEN_CONST("Warning : extended overclocking can damage the Switch"),
                      1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                menu_entries_clear(info->list);
                {

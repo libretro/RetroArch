@@ -74,8 +74,10 @@ static void command_post_state_loaded(void)
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
    {
+      const char *_msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED);
       rcheevos_pause_hardcore();
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 #endif
 #ifdef HAVE_NETWORKING
@@ -683,7 +685,7 @@ bool command_network_send(const char *cmd_)
 
 bool command_show_osd_msg(command_t *cmd, const char* arg)
 {
-    runloop_msg_queue_push(arg, 1, 180, false, NULL,
+    runloop_msg_queue_push(arg, strlen(arg), 1, 180, false, NULL,
           MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
     return true;
 }
@@ -1060,7 +1062,7 @@ void command_event_set_volume(
             audio_driver_mute_enable);
    else
 #endif
-      runloop_msg_queue_push(msg, 1, 180, true, NULL,
+      runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    RARCH_LOG("[Audio]: %s\n", msg);
@@ -1096,7 +1098,8 @@ void command_event_set_mixer_volume(
    msg[++_len]      = 'd';
    msg[++_len]      = 'B';
    msg[++_len]      = '\0';
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    RARCH_LOG("[Audio]: %s\n", msg);
 
@@ -1855,6 +1858,7 @@ bool command_event_save_core_config(
       const char *dir_menu_config,
       const char *rarch_path_config)
 {
+   size_t _len;
    char msg[128];
    char config_dir[DIR_MAX_LENGTH];
    char config_path[PATH_MAX_LENGTH];
@@ -1874,8 +1878,10 @@ bool command_event_save_core_config(
 
    if (string_is_empty(config_dir))
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("[Config]: %s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
+      const char *_msg = msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_ERR("[Config]: %s\n", _msg);
       return false;
    }
 
@@ -1932,10 +1938,11 @@ bool command_event_save_core_config(
 
 #ifdef HAVE_CONFIGFILE
    command_event_save_config(config_path, msg, sizeof(msg));
+   _len = strlen(msg);
 #endif
 
-   if (!string_is_empty(msg))
-      runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   if (_len > 0)
+      runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    if (overrides_active)
@@ -1955,23 +1962,31 @@ void command_event_save_current_config(enum override_type type)
       default:
       case OVERRIDE_NONE:
          {
+            size_t _len;
             char msg[256];
 
             msg[0] = '\0';
 
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
-               strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
-               runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               _len = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
+               runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
             else
             {
                if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
+               {
+                  _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
+                  runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
                else
+               {
                   command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
-
-               runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
             }
          }
          break;
@@ -1979,28 +1994,31 @@ void command_event_save_current_config(enum override_type type)
       case OVERRIDE_CORE:
       case OVERRIDE_CONTENT_DIR:
          {
+            size_t _len;
             char msg[256];
             int8_t ret = config_save_overrides(type, &runloop_st->system, false, NULL);
 
             switch (ret)
             {
                case 1:
-                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
+                  _len = strlcpy(msg,
+                        msg_hash_to_str(MSG_OVERRIDES_SAVED_SUCCESSFULLY), sizeof(msg));
                   /* set overrides to active so the original config can be
                      restored after closing content */
                   runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
                   break;
                case -1:
-                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED), sizeof(msg));
+                  _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED), sizeof(msg));
                   break;
                default:
                case 0:
-                  strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
+                  _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_SAVING), sizeof(msg));
                   break;
             }
 
             RARCH_LOG("[Overrides]: %s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
             {
@@ -2027,14 +2045,15 @@ void command_event_remove_current_config(enum override_type type)
       case OVERRIDE_CORE:
       case OVERRIDE_CONTENT_DIR:
          {
+            size_t _len;
             char msg[256];
             if (config_save_overrides(type, &runloop_st->system, true, NULL))
-               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
+               _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_REMOVED_SUCCESSFULLY), sizeof(msg));
             else
-               strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
+               _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ERROR_REMOVING), sizeof(msg));
 
             RARCH_LOG("[Overrides]: %s\n", msg);
-            runloop_msg_queue_push(msg, 1, 180, true, NULL,
+            runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_MENU
             {
@@ -2053,10 +2072,10 @@ bool command_event_main_state(unsigned cmd)
 {
    char msg[128];
    char state_path[16384];
+   size_t _len                 = 0;
    settings_t *settings        = config_get_ptr();
    bool savestates_enabled     = core_info_current_supports_savestate();
    bool ret                    = false;
-   bool push_msg               = true;
 
    state_path[0] = msg[0]      = '\0';
 
@@ -2107,7 +2126,6 @@ bool command_event_main_state(unsigned cmd)
                   video_st->frame_time_count = 0;
 
                ret      = true;
-               push_msg = false;
             }
             break;
          case CMD_EVENT_LOAD_STATE:
@@ -2125,7 +2143,6 @@ bool command_event_main_state(unsigned cmd)
                   ret = true;
                }
             }
-            push_msg = false;
             break;
         case CMD_EVENT_UNDO_LOAD_STATE:
            {
@@ -2144,25 +2161,27 @@ bool command_event_main_state(unsigned cmd)
               }
 #endif
               command_event_undo_load_state(msg, sizeof(msg));
+              _len = strlen(msg);
               ret = true;
               break;
             }
          case CMD_EVENT_UNDO_SAVE_STATE:
             command_event_undo_save_state(msg, sizeof(msg));
+            _len = strlen(msg);
             ret = true;
             break;
       }
    }
    else
-      strlcpy(msg, msg_hash_to_str(
+      _len = strlcpy(msg, msg_hash_to_str(
                MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
-   if (push_msg)
-      runloop_msg_queue_push(msg, 2, 180, true, NULL,
+   if (_len > 0)
+   {
+      runloop_msg_queue_push(msg, _len, 2, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
-   if (!string_is_empty(msg))
       RARCH_LOG("[State]: %s\n", msg);
+   }
 
    return ret;
 }

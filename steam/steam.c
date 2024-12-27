@@ -267,6 +267,7 @@ steam_core_dlc_t* steam_get_core_dlc_by_name(
 
 void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 {
+   size_t _len;
    char msg[128] = { 0 };
    bool downloading          = false;
    bool installed            = false;
@@ -284,7 +285,8 @@ void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 
    if (downloading || installed)
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_STEAM_CURRENTLY_DOWNLOADING), 1, 180, true, NULL,
+      const char *_msg = msg_hash_to_str(MSG_CORE_STEAM_CURRENTLY_DOWNLOADING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       return;
    }
@@ -297,11 +299,11 @@ void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 
    return;
 error:
-   snprintf(msg, sizeof(msg), "%s: (%d-%d)",
+   _len = snprintf(msg, sizeof(msg), "%s: (%d-%d)",
          msg_hash_to_str(MSG_ERROR),
          MIST_UNPACK_RESULT(result));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
    RARCH_ERR("[Steam]: Error installing DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
@@ -309,23 +311,25 @@ error:
 
 void steam_uninstall_core_dlc(steam_core_dlc_t *core_dlc)
 {
-   char msg[128] = { 0 };
-
+   size_t _len;
+   const char *_msg  = NULL;
+   char msg[128]     = { 0 };
    MistResult result = mist_steam_apps_uninstall_dlc(core_dlc->app_id);
 
    if (MIST_IS_ERROR(result))
       goto error;
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_STEAM_UNINSTALLED), 1, 180, true, NULL,
+   _msg = msg_hash_to_str(MSG_CORE_STEAM_UNINSTALLED);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    return;
 
 error:
-   snprintf(msg, sizeof(msg), "%s: (%d-%d)",
+   _len = snprintf(msg, sizeof(msg), "%s: (%d-%d)",
          msg_hash_to_str(MSG_ERROR),
          MIST_UNPACK_RESULT(result));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
    RARCH_ERR("[Steam]: Error uninstalling DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));

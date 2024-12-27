@@ -338,15 +338,14 @@ bool disk_control_set_eject_state(
 {
    bool error = false;
    char msg[128];
-
-   msg[0] = '\0';
+   size_t _len;
 
    if (!disk_control || !disk_control->cb.set_eject_state)
       return false;
 
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
-      strlcpy(
+      _len  = strlcpy(
             msg,
             eject
             ? msg_hash_to_str(MSG_DISK_EJECTED)
@@ -355,7 +354,7 @@ bool disk_control_set_eject_state(
    else
    {
       error = true;
-      strlcpy(
+      _len  = strlcpy(
             msg,
             eject
             ? msg_hash_to_str(MSG_VIRTUAL_DISK_TRAY_EJECT)
@@ -363,7 +362,7 @@ bool disk_control_set_eject_state(
               sizeof(msg));
    }
 
-   if (!string_is_empty(msg))
+   if (_len > 0)
    {
       if (error)
          RARCH_ERR("[Disc]: %s\n", msg);
@@ -373,8 +372,7 @@ bool disk_control_set_eject_state(
       /* Errors should always be displayed */
       if (verbosity || error)
          runloop_msg_queue_push(
-               msg, 1, error ? 180 : 60,
-               true, NULL,
+               msg, _len, 1, error ? 180 : 60, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -446,11 +444,8 @@ bool disk_control_set_index(
 
       /* Errors should always be displayed */
       if (verbosity || error)
-         runloop_msg_queue_push(
-               msg, 1, msg_duration,
-               true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg, strlen(msg), 1, msg_duration, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    /* If operation was successful, update disk
@@ -634,13 +629,13 @@ bool disk_control_append_image(
    msg[  _len] = ':';
    msg[++_len] = ' ';
    msg[++_len] = '\0';
-   strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
+   _len += strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    RARCH_LOG("[Disc]: %s\n", msg);
    /* This message should always be displayed, since
     * the menu itself does not provide sufficient
     * visual feedback */
-   runloop_msg_queue_push(msg, 0, 120, true, NULL,
+   runloop_msg_queue_push(msg, _len, 0, 120, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return true;
@@ -664,11 +659,9 @@ error:
    msg[  _len] = ':';
    msg[++_len] = ' ';
    msg[++_len] = '\0';
-   strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
+   _len += strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
-   runloop_msg_queue_push(
-         msg, 0, 180,
-         true, NULL,
+   runloop_msg_queue_push(msg, _len, 0, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return false;
@@ -806,6 +799,7 @@ bool disk_control_verify_initial_index(
    /* If current disk is incorrect, notify user */
    if (!success && enabled)
    {
+      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_SET_INITIAL_DISK);
       RARCH_ERR(
                "[Disc]: Failed to set initial disc index:\n> Expected"
                " [%u] %s\n> Detected [%u] %s\n",
@@ -816,10 +810,7 @@ bool disk_control_verify_initial_index(
 
       /* Ignore 'verbosity' setting - errors should
        * always be displayed */
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FAILED_TO_SET_INITIAL_DISK),
-            0, 60,
-            true, NULL,
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       /* Since a failure here typically means that the
@@ -861,9 +852,7 @@ bool disk_control_verify_initial_index(
        * we do not want to 'overwrite' them */
       if (verbosity)
          runloop_msg_queue_push(
-               msg,
-               0, msg_duration,
-               false, NULL,
+               msg, strlen(msg), 0, msg_duration, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_CHEEVOS
