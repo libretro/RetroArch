@@ -4118,9 +4118,8 @@ void video_driver_frame(const void *data, unsigned width,
 
       {
          /* TODO/FIXME - localize */
-         size_t __len = strlcpy(video_info.stat_text, "LATENCY\n", sizeof(video_info.stat_text));
-         __len += snprintf(video_info.stat_text      + __len,
-                        sizeof(video_info.stat_text) - __len,
+         size_t __len = snprintf(video_info.stat_text,
+                        sizeof(video_info.stat_text),
                "CORE AV_INFO\n"
                " Size:        %u x %u\n"
                " - Base:      %u x %u\n"
@@ -4174,6 +4173,13 @@ void video_driver_frame(const void *data, unsigned width,
             audio_stats.close_to_blocking,
             audio_stats.samples
                );
+
+
+         /* TODO/FIXME - localize */
+         if (  (video_st->frame_delay_target > 0)
+            || (video_info.runahead && !video_info.runahead_second_instance))
+         __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
+                   sizeof(video_info.stat_text - __len));
 
          /* TODO/FIXME - localize */
          if (video_st->frame_delay_target > 0)
