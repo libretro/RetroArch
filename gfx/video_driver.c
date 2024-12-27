@@ -4179,7 +4179,7 @@ void video_driver_frame(const void *data, unsigned width,
          if (  (video_st->frame_delay_target > 0)
             || (video_info.runahead && !video_info.runahead_second_instance))
          __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
-                   sizeof(video_info.stat_text - __len));
+                   sizeof(video_info.stat_text) - __len);
 
          /* TODO/FIXME - localize */
          if (video_st->frame_delay_target > 0)
