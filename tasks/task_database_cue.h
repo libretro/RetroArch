@@ -32,7 +32,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_psp_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
-int detect_gc_game(intfstream_t *fd, char *s, size_t len,
+size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_scd_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
@@ -40,7 +40,7 @@ int detect_sat_game(intfstream_t *fd,
       char *s, size_t len, const char *filename);
 int detect_dc_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
-int detect_wii_game(intfstream_t *fd, char *s, size_t len,
+size_t detect_wii_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_system(intfstream_t *fd, const char **system_name,
       const char * filename);
