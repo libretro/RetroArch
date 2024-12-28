@@ -612,11 +612,11 @@ static void menu_driver_set_last_start_content(struct menu_state *menu_st, const
        * archive, must extract the string segment
        * before the archive delimiter (i.e. path of
        * 'parent' archive file) */
-      size_t len      = (size_t)(1 + archive_delim - start_content_path);
-      if (len >= PATH_MAX_LENGTH)
-         len          = PATH_MAX_LENGTH;
+      size_t _len     = (size_t)(1 + archive_delim - start_content_path);
+      if (_len >= PATH_MAX_LENGTH)
+         _len         = PATH_MAX_LENGTH;
 
-      strlcpy(archive_path, start_content_path, len * sizeof(char));
+      strlcpy(archive_path, start_content_path, _len * sizeof(char));
 
       file_name       = path_basename(archive_path);
    }

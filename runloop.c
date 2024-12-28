@@ -1949,7 +1949,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                if (!string_is_empty(fullpath))
                {
-                  size_t len;
+                  size_t _len;
                   char tmp_path[PATH_MAX_LENGTH];
 
                   if (string_is_empty(dir_system))
@@ -1959,10 +1959,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
 
                   /* Removes trailing slash (unless root dir) */
-                  len = strlen(tmp_path);
+                  _len = strlen(tmp_path);
                   if (string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
-                        && tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
-                     tmp_path[len - 1] = '\0';
+                        && tmp_path[_len - 1] == PATH_DEFAULT_SLASH_C())
+                           tmp_path[_len - 1] = '\0';
 
                   dir_set(RARCH_DIR_SYSTEM, tmp_path);
                   *(const char**)data = dir_get_ptr(RARCH_DIR_SYSTEM);
@@ -4595,7 +4595,7 @@ bool runloop_event_init_core(
       const char *old_savefile_dir,
       const char *old_savestate_dir)
 {
-   size_t len;
+   size_t _len;
    runloop_state_t *runloop_st     = &runloop_state;
    input_driver_state_t *input_st  = (input_driver_state_t*)input_data;
    video_driver_state_t *video_st  = video_state_get_ptr();
@@ -4640,32 +4640,31 @@ bool runloop_event_init_core(
    if (!sys_info->info.library_version)
       sys_info->info.library_version = "v0";
 
-   len = strlcpy(
+   _len = strlcpy(
          video_st->title_buf,
          msg_hash_to_str(MSG_PROGRAM),
          sizeof(video_st->title_buf));
 
    if (!string_is_empty(sys_info->info.library_name))
    {
-      video_st->title_buf[  len] = ' ';
-      video_st->title_buf[++len] = '\0';
-      len += strlcpy(video_st->title_buf + len,
+      video_st->title_buf[  _len] = ' ';
+      video_st->title_buf[++_len] = '\0';
+      _len += strlcpy(video_st->title_buf + _len,
             sys_info->info.library_name,
-            sizeof(video_st->title_buf)  - len);
+            sizeof(video_st->title_buf)   - _len);
    }
 
    if (!string_is_empty(sys_info->info.library_version))
    {
-      video_st->title_buf[  len] = ' ';
-      video_st->title_buf[++len] = '\0';
-      strlcpy(video_st->title_buf        + len,
+      video_st->title_buf[  _len] = ' ';
+      video_st->title_buf[++_len] = '\0';
+      strlcpy(video_st->title_buf        + _len,
             sys_info->info.library_version,
-            sizeof(video_st->title_buf)  - len);
+            sizeof(video_st->title_buf)  - _len);
    }
 
-   strlcpy(sys_info->valid_extensions,
-         sys_info->info.valid_extensions ?
-         sys_info->info.valid_extensions : DEFAULT_EXT,
+   if (!sys_info->info.valid_extensions)
+   strlcpy(sys_info->valid_extensions, DEFAULT_EXT,
          sizeof(sys_info->valid_extensions));
 
 #ifdef HAVE_CONFIGFILE
@@ -7975,7 +7974,9 @@ void runloop_path_set_redirect(settings_t *settings,
                   RARCH_LOG("%s %s\n",
                             msg_hash_to_str(MSG_REVERTING_SAVEFILE_DIRECTORY_TO),
                             intermediate_savefile_dir);
-                  strlcpy(new_savefile_dir, intermediate_savefile_dir, sizeof(new_savefile_dir));
+                  strlcpy(new_savefile_dir,
+                        intermediate_savefile_dir,
+                        sizeof(new_savefile_dir));
                }
          }
 
