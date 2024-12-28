@@ -317,10 +317,8 @@ runtime_log_t *runtime_log_init(
        * no content is provided, 'content' is simply
        * the name of the core itself */
       if (supports_no_game)
-      {
-         size_t _len = strlcpy(content_name, core_name, sizeof(content_name));
-         strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
-      }
+         fill_pathname(content_name, core_name,
+               ".lrtl", sizeof(content_name));
    }
    /* NOTE: TyrQuake requires a specific hack, since all
     * content has the same name... */
@@ -1244,8 +1242,8 @@ void runtime_update_playlist(
     * to be populated even when no runtime is recorded */
    if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
    {
-      if (string_is_equal(menu_ident, "ozone") ||
-          string_is_equal(menu_ident, "glui"))
+      if (   string_is_equal(menu_ident, "ozone")
+          || string_is_equal(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));
