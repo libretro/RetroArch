@@ -1164,9 +1164,10 @@ void command_event_init_controllers(rarch_system_info_t *sys_info,
 }
 
 #ifdef HAVE_CONFIGFILE
-bool command_event_save_config(
+static size_t command_event_save_config(
       const char *config_path, char *s, size_t len)
 {
+   size_t _len      = 0;
    bool path_exists = !string_is_empty(config_path);
    const char *str  = path_exists ? config_path :
       path_get(RARCH_PATH_CONFIG);
@@ -1180,74 +1181,56 @@ bool command_event_save_config(
 #if IOS
       char tmp[PATH_MAX_LENGTH] = {0};
       fill_pathname_abbreviate_special(tmp, config_path, sizeof(tmp));
-      snprintf(s, len, "%s \"%s\".",
+      _len = snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             tmp);
 #else
-      snprintf(s, len, "%s \"%s\".",
+      _len = snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_SAVED_NEW_CONFIG_TO),
             config_path);
 #endif
       RARCH_LOG("[Config]: %s\n", s);
-      return true;
+      return _len;
    }
 
    if (!string_is_empty(str))
    {
-      snprintf(s, len, "%s \"%s\".",
+      _len = snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_SAVING_CONFIG_TO),
             str);
       RARCH_ERR("[Config]: %s\n", s);
    }
 
-   return false;
+   return _len;
 }
 #endif
 
-void command_event_undo_save_state(char *s, size_t len)
+static size_t command_event_undo_save_state(char *s, size_t len)
 {
    if (content_undo_save_buf_is_empty())
-   {
-      strlcpy(s,
+      return strlcpy(s,
          msg_hash_to_str(MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET), len);
-      return;
-   }
-
    if (!content_undo_save_state())
-   {
-      strlcpy(s,
+      return strlcpy(s,
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE), len);
-      return;
-   }
-
-   strlcpy(s,
+   return strlcpy(s,
          msg_hash_to_str(MSG_UNDOING_SAVE_STATE), len);
 }
 
-void command_event_undo_load_state(char *s, size_t len)
+static size_t command_event_undo_load_state(char *s, size_t len)
 {
-
    if (content_undo_load_buf_is_empty())
-   {
-      strlcpy(s,
+      return strlcpy(s,
          msg_hash_to_str(MSG_NO_STATE_HAS_BEEN_LOADED_YET),
          len);
-      return;
-   }
-
    if (!content_undo_load_state())
-   {
-      snprintf(s, len, "%s \"%s\".",
+      return snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
             "RAM");
-      return;
-   }
-
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
-
-   strlcpy(s,
+   return strlcpy(s,
          msg_hash_to_str(MSG_UNDID_LOAD_STATE), len);
 }
 
@@ -1902,11 +1885,11 @@ bool command_event_save_core_config(
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         size_t _len = strlcpy(tmp, config_path, sizeof(tmp));
+         size_t __len = strlcpy(tmp, config_path, sizeof(tmp));
 
          if (i)
-            _len += snprintf(tmp + _len, sizeof(tmp) - _len, "-%u", i);
-         strlcpy(tmp + _len, ".cfg", sizeof(tmp) - _len);
+            __len += snprintf(tmp + __len, sizeof(tmp) - __len, "-%u", i);
+         strlcpy(tmp + __len, ".cfg", sizeof(tmp) - __len);
 
          if (!path_is_valid(tmp))
          {
@@ -1937,8 +1920,7 @@ bool command_event_save_core_config(
    }
 
 #ifdef HAVE_CONFIGFILE
-   command_event_save_config(config_path, msg, sizeof(msg));
-   _len = strlen(msg);
+   _len = command_event_save_config(config_path, msg, sizeof(msg));
 #endif
 
    if (_len > 0)
@@ -1983,8 +1965,8 @@ void command_event_save_current_config(enum override_type type)
                }
                else
                {
-                  command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
-                  runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+                  _len = command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
+                  runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
             }
@@ -2160,15 +2142,13 @@ bool command_event_main_state(unsigned cmd)
                  movie_stop(input_st);
               }
 #endif
-              command_event_undo_load_state(msg, sizeof(msg));
-              _len = strlen(msg);
+              _len = command_event_undo_load_state(msg, sizeof(msg));
               ret = true;
               break;
             }
          case CMD_EVENT_UNDO_SAVE_STATE:
-            command_event_undo_save_state(msg, sizeof(msg));
-            _len = strlen(msg);
-            ret = true;
+            _len = command_event_undo_save_state(msg, sizeof(msg));
+            ret  = true;
             break;
       }
    }

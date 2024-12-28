@@ -1267,19 +1267,16 @@ static void driver_find_last(const char *label, char *s, size_t len)
  *
  * Find previous driver in driver array.
  **/
-static bool driver_find_prev(const char *label, char *s, size_t len)
+static size_t driver_find_prev(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
 
    if (i > 0)
-   {
-      find_driver_nonempty(label, i - 1, s, len);
-      return true;
-   }
+      return find_driver_nonempty(label, i - 1, s, len);
 
    RARCH_WARN(
          "Couldn't find any previous driver (current one: \"%s\").\n", s);
-   return false;
+   return 0;
 }
 
 /**
@@ -1290,20 +1287,15 @@ static bool driver_find_prev(const char *label, char *s, size_t len)
  *
  * Find next driver in driver array.
  **/
-static bool driver_find_next(const char *label, char *s, size_t len)
+static size_t driver_find_next(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
-
    if (i >= 0 && string_is_not_equal(s, "null"))
-   {
-      find_driver_nonempty(label, i + 1, s, len);
-      return true;
-   }
-
+      return find_driver_nonempty(label, i + 1, s, len);
    RARCH_WARN("%s (current one: \"%s\").\n",
          msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
          s);
-   return false;
+   return 0;
 }
 
 static float audio_driver_monitor_adjust_system_rates(
@@ -2005,11 +1997,11 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_FIND_PREV:
          if (!drv)
             return false;
-         return driver_find_prev(drv->label, drv->s, drv->len);
+         return (bool)driver_find_prev(drv->label, drv->s, drv->len);
       case RARCH_DRIVER_CTL_FIND_NEXT:
          if (!drv)
             return false;
-         return driver_find_next(drv->label, drv->s, drv->len);
+         return (bool)driver_find_next(drv->label, drv->s, drv->len);
       case RARCH_DRIVER_CTL_NONE:
       default:
          break;
@@ -8383,8 +8375,8 @@ bool retroarch_main_quit(void)
 
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
-      if (settings->bools.savestate_auto_save &&
-          runloop_st->current_core_type != CORE_TYPE_DUMMY)
+      if (   settings->bools.savestate_auto_save
+          && runloop_st->current_core_type != CORE_TYPE_DUMMY)
          command_event_save_auto_state();
 
       /* If any save states are in progress, wait
