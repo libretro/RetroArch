@@ -1956,10 +1956,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                      RARCH_WARN("[Environ]: SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                                 fullpath);
 
-                  fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
-
+                  _len = fill_pathname_basedir(tmp_path, fullpath, sizeof(tmp_path));
                   /* Removes trailing slash (unless root dir) */
-                  _len = strlen(tmp_path);
                   if (string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
                         && tmp_path[_len - 1] == PATH_DEFAULT_SLASH_C())
                            tmp_path[_len - 1] = '\0';

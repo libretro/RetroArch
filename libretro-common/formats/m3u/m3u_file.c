@@ -260,8 +260,6 @@ m3u_file_t *m3u_file_init(const char *path)
    m3u_file_t *m3u_file = NULL;
    char m3u_path[PATH_MAX_LENGTH];
 
-   m3u_path[0] = '\0';
-
    /* Sanity check */
    if (string_is_empty(path))
       return NULL;
@@ -274,9 +272,7 @@ m3u_file_t *m3u_file_init(const char *path)
       return NULL;
 
    /* Create m3u_file_t object */
-   m3u_file = (m3u_file_t*)malloc(sizeof(*m3u_file));
-
-   if (!m3u_file)
+   if (!(m3u_file = (m3u_file_t*)malloc(sizeof(*m3u_file))))
       return NULL;
 
    /* Initialise members */

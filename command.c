@@ -1841,11 +1841,11 @@ bool command_event_save_core_config(
       const char *dir_menu_config,
       const char *rarch_path_config)
 {
-   size_t _len;
    char msg[128];
    char config_dir[DIR_MAX_LENGTH];
    char config_path[PATH_MAX_LENGTH];
    char config_name[NAME_MAX_LENGTH];
+   size_t _len                     = 0;
    bool new_path_available         = false;
    bool overrides_active           = false;
    const char *core_path           = NULL;
@@ -1854,12 +1854,12 @@ bool command_event_save_core_config(
    msg[0]                          = '\0';
 
    if (!string_is_empty(dir_menu_config))
-      strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
+      _len = strlcpy(config_dir, dir_menu_config, sizeof(config_dir));
    else if (!string_is_empty(rarch_path_config)) /* Fallback */
-      fill_pathname_basedir(config_dir, rarch_path_config,
+      _len = fill_pathname_basedir(config_dir, rarch_path_config,
             sizeof(config_dir));
 
-   if (string_is_empty(config_dir))
+   if (_len == 0)
    {
       const char *_msg = msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET);
       runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
