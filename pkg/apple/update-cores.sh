@@ -159,6 +159,7 @@ else
                 dirksimple
                 dosbox_pure
                 DoubleCherryGB
+                doukutsu_rs
                 easyrpg
                 ep128emu_core
                 fbneo
