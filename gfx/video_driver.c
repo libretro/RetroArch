@@ -3665,6 +3665,7 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
    recording_state_t *recording_st= recording_state_get_ptr();
 
+   status_text[0]                 = '\0';
    video_driver_msg[0]            = '\0';
 
    if (!video_driver_active)
