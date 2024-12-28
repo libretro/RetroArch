@@ -319,6 +319,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wp_cursor_shape_manager_v1_destroy (wl->cursor_shape_manager);
    if (wl->cursor_shape_device)
       wp_cursor_shape_device_v1_destroy (wl->cursor_shape_device);
+   if (wl->single_pixel_manager)
+      wp_single_pixel_buffer_manager_v1_destroy (wl->single_pixel_manager);
    if (wl->seat)
       wl_seat_destroy(wl->seat);
    if (wl->xdg_shell)
@@ -372,6 +374,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->cursor_shape_device      = NULL;
    wl->idle_inhibit_manager     = NULL;
    wl->deco_manager             = NULL;
+   wl->single_pixel_manager     = NULL;
    wl->surface                  = NULL;
    wl->xdg_surface              = NULL;
    wl->xdg_toplevel             = NULL;
@@ -505,46 +508,58 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    int height,
    uint32_t format)
 {
-   int fd, ofd;
-   struct wl_shm_pool *pool = NULL;
-   void *data               = NULL;
-   shm_buffer_t *buffer     = NULL;
-   int stride               = width  * 4;
-   int size                 = stride * height;
+   shm_buffer_t *buffer = NULL;
 
-   if (size <= 0)
-      return NULL;
-
-   if ((fd = create_shm_file(size)) < 0)
+   if (wl->single_pixel_manager)
    {
-      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed\n",
-         size);
-      return NULL;
+      buffer = calloc(1, sizeof(*buffer));
+      buffer->wl_buffer = wp_single_pixel_buffer_manager_v1_create_u32_rgba_buffer(
+            wl->single_pixel_manager, 0, 0, 0, UINT32_MAX); /* R, G, B, A */
+      return buffer;
    }
-
-   data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-   if (data == MAP_FAILED)
+   else
    {
-      RARCH_ERR("[Wayland] [SHM]: mmap failed\n");
+      int fd, ofd;
+      struct wl_shm_pool *pool = NULL;
+      void *data               = NULL;
+      shm_buffer_t *buffer     = NULL;
+      int stride               = width  * 4;
+      int size                 = stride * height;
+
+      if (size <= 0)
+         return NULL;
+
+      if ((fd = create_shm_file(size)) < 0)
+      {
+         RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed\n",
+            size);
+         return NULL;
+      }
+
+      data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+      if (data == MAP_FAILED)
+      {
+         RARCH_ERR("[Wayland] [SHM]: mmap failed\n");
+         close(fd);
+         return NULL;
+      }
+
+      buffer            = calloc(1, sizeof *buffer);
+
+      pool              = wl_shm_create_pool(wl->shm, fd, size);
+      buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
+         width, height,
+         stride, format);
+      wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
+      wl_shm_pool_destroy(pool);
+
       close(fd);
-      return NULL;
+
+      buffer->data      = data;
+      buffer->data_size = size;
+
+      return buffer;
    }
-
-   buffer            = calloc(1, sizeof *buffer);
-
-   pool              = wl_shm_create_pool(wl->shm, fd, size);
-   buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
-      width, height,
-      stride, format);
-   wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
-   wl_shm_pool_destroy(pool);
-
-   close(fd);
-
-   buffer->data      = data;
-   buffer->data_size = size;
-
-   return buffer;
 }
 
 static void shm_buffer_paint_icon(
@@ -744,6 +759,11 @@ bool gfx_ctx_wl_init_common(
    if (!wl->relative_pointer_manager)
    {
       RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", zwp_relative_pointer_manager_v1_interface.name);
+   }
+
+   if (!wl->single_pixel_manager)
+   {
+      RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol!\n", wp_single_pixel_buffer_manager_v1_interface.name);
    }
 
    wl->surface = wl_compositor_create_surface(wl->compositor);

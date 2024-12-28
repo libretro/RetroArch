@@ -802,6 +802,10 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->content_type_manager = (struct wp_content_type_manager_v1*)
          wl_registry_bind(
             reg, id, &wp_content_type_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_single_pixel_buffer_manager_v1_interface.name) && found++)
+      wl->single_pixel_manager = (struct wp_single_pixel_buffer_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_single_pixel_buffer_manager_v1_interface, MIN(version, 1));
 
    if (found > 1)
    RARCH_LOG("[Wayland]: Registered interface %s at version %u\n",
