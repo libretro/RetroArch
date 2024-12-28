@@ -3685,7 +3685,7 @@ static bool udev_mouse_button_pressed(
 }
 
 static int16_t udev_pointer_state(udev_input_t *udev,
-      unsigned port, unsigned id, bool screen)
+      unsigned port, unsigned idx, unsigned id, bool screen)
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
    int16_t res_x;
@@ -3701,8 +3701,19 @@ static int16_t udev_pointer_state(udev_input_t *udev,
             return res_y;
          case RETRO_DEVICE_ID_POINTER_PRESSED:
             if (mouse->abs == 1)
-               return mouse->pp;
-            return mouse->l;
+            {
+               if (idx == 0)
+                  return mouse->pp;
+               else
+                  return 0;
+            }
+            /* Simulate max. 3 touches with mouse buttons*/
+            else if (idx == 0)
+               return (mouse->l | mouse->r | mouse->m);
+            else if (idx == 1)
+               return (mouse->r | mouse->m);
+            else if (idx == 2)
+               return mouse->m;
          case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
             return input_driver_pointer_is_offscreen(res_x, res_y);
       }
@@ -3828,8 +3839,8 @@ static int16_t udev_input_state(
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
-         if (idx == 0) /* multi-touch unsupported (for now) */
-            return udev_pointer_state(udev, port, id,
+         if (idx < 3)
+            return udev_pointer_state(udev, port, idx, id,
                   device == RARCH_DEVICE_POINTER_SCREEN);
          break;
 

@@ -241,7 +241,8 @@ static int16_t x_input_state(
             break;
          case RETRO_DEVICE_POINTER:
          case RARCH_DEVICE_POINTER_SCREEN:
-            if (idx == 0)
+            /* Map up to 3 touches to mouse buttons. */
+            if (idx < 3)
             {
                struct video_viewport vp    = {0};
                bool screen                 =
@@ -268,7 +269,12 @@ static int16_t x_input_state(
                      case RETRO_DEVICE_ID_POINTER_Y:
                         return res_y;
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
-                        return x11->mouse_l;
+                        if (idx == 0)
+                           return (x11->mouse_l | x11->mouse_r | x11->mouse_m);
+                        else if (idx == 1)
+                           return (x11->mouse_r | x11->mouse_m);
+                        else if (idx == 2)
+                           return x11->mouse_m;
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
                         return input_driver_pointer_is_offscreen(res_x, res_y);
                   }
