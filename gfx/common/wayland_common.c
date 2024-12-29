@@ -508,58 +508,46 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
    int height,
    uint32_t format)
 {
-   shm_buffer_t *buffer = NULL;
+   int fd, ofd;
+   struct wl_shm_pool *pool = NULL;
+   void *data               = NULL;
+   shm_buffer_t *buffer     = NULL;
+   int stride               = width  * 4;
+   int size                 = stride * height;
 
-   if (wl->single_pixel_manager)
+   if (size <= 0)
+      return NULL;
+
+   if ((fd = create_shm_file(size)) < 0)
    {
-      buffer = calloc(1, sizeof(*buffer));
-      buffer->wl_buffer = wp_single_pixel_buffer_manager_v1_create_u32_rgba_buffer(
-            wl->single_pixel_manager, 0, 0, 0, UINT32_MAX); /* R, G, B, A */
-      return buffer;
+      RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed\n",
+         size);
+      return NULL;
    }
-   else
+
+   data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+   if (data == MAP_FAILED)
    {
-      int fd, ofd;
-      struct wl_shm_pool *pool = NULL;
-      void *data               = NULL;
-      shm_buffer_t *buffer     = NULL;
-      int stride               = width  * 4;
-      int size                 = stride * height;
-
-      if (size <= 0)
-         return NULL;
-
-      if ((fd = create_shm_file(size)) < 0)
-      {
-         RARCH_ERR("[Wayland] [SHM]: Creating a buffer file for %d B failed\n",
-            size);
-         return NULL;
-      }
-
-      data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-      if (data == MAP_FAILED)
-      {
-         RARCH_ERR("[Wayland] [SHM]: mmap failed\n");
-         close(fd);
-         return NULL;
-      }
-
-      buffer            = calloc(1, sizeof *buffer);
-
-      pool              = wl_shm_create_pool(wl->shm, fd, size);
-      buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
-         width, height,
-         stride, format);
-      wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
-      wl_shm_pool_destroy(pool);
-
+      RARCH_ERR("[Wayland] [SHM]: mmap failed\n");
       close(fd);
+      return NULL;
+   }
 
-      buffer->data      = data;
-      buffer->data_size = size;
+   buffer            = calloc(1, sizeof *buffer);
+
+   pool              = wl_shm_create_pool(wl->shm, fd, size);
+   buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
+      width, height,
+      stride, format);
+   wl_buffer_add_listener(buffer->wl_buffer, &shm_buffer_listener, buffer);
+   wl_shm_pool_destroy(pool);
+
+   close(fd);
+
+   buffer->data      = data;
+   buffer->data_size = size;
 
       return buffer;
-   }
 }
 
 static void shm_buffer_paint_icon(
@@ -625,22 +613,37 @@ static void shm_buffer_paint_checkerboard(
 
 static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 {
-   shm_buffer_t *buffer = create_shm_buffer(wl,
+   if (wl->single_pixel_manager)
+   {
+      struct wl_buffer *buffer = NULL;
+      buffer = wp_single_pixel_buffer_manager_v1_create_u32_rgba_buffer(
+         wl->single_pixel_manager, 0, 0, 0, UINT32_MAX);
+
+      if (!buffer)
+         return false;
+
+      wl_surface_attach(wl->surface, buffer, 0, 0);
+   }
+   else
+   {
+      shm_buffer_t *buffer = create_shm_buffer(wl,
       wl->buffer_width,
       wl->buffer_height,
       WL_SHM_FORMAT_XRGB8888);
 
-   if (!buffer)
-     return false;
+      if (!buffer)
+         return false;
 
-   shm_buffer_paint_checkerboard(buffer, wl->buffer_width,
-      wl->buffer_height, 1,
-      8, 0xffbcbcbc, 0xff8e8e8e);
-   shm_buffer_paint_icon(buffer, wl->buffer_width,
-      wl->buffer_height, 1,
-      16);
+      shm_buffer_paint_checkerboard(buffer, wl->buffer_width,
+         wl->buffer_height, 1,
+         8, 0xffbcbcbc, 0xff8e8e8e);
+      shm_buffer_paint_icon(buffer, wl->buffer_width,
+         wl->buffer_height, 1,
+         16);
 
-   wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
+      wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
+   }
+
    if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
       wl_surface_damage_buffer(wl->surface, 0, 0,
          wl->buffer_width,
