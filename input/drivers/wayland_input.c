@@ -109,18 +109,16 @@ static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
 {
    if (idx <= MAX_TOUCHES)
    {
-      struct video_viewport vp;
+      struct video_viewport vp    = {0};
       int16_t res_x               = 0;
       int16_t res_y               = 0;
       int16_t res_screen_x        = 0;
       int16_t res_screen_y        = 0;
 
-      vp.x                        = 0;
-      vp.y                        = 0;
-      vp.width                    = 0;
-      vp.height                   = 0;
-      vp.full_width               = 0;
-      vp.full_height              = 0;
+      /* Shortcut: mouse button events will be reported on desktop with 0/0 coordinates. *
+       * Skip these, mouse handling will catch it elsewhere.                             */
+      if (wl->touches[idx].x == 0 && wl->touches[idx].y == 0)
+         return 0;
 
       if (video_driver_translate_coord_viewport_confined_wrap(&vp,
                   wl->touches[idx].x, wl->touches[idx].y,
@@ -132,17 +130,14 @@ static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
             res_y = res_screen_y;
          }
 
-         if ((res_x >= -0x7fff) && (res_y >= -0x7fff)) /* Inside? */
+         switch (id)
          {
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_POINTER_X:
-                  return res_x;
-               case RETRO_DEVICE_ID_POINTER_Y:
-                  return res_y;
-               case RETRO_DEVICE_ID_POINTER_PRESSED:
-                  return wl->touches[idx].active;
-            }
+            case RETRO_DEVICE_ID_POINTER_X:
+               return res_x;
+            case RETRO_DEVICE_ID_POINTER_Y:
+               return res_y;
+            case RETRO_DEVICE_ID_POINTER_PRESSED:
+               return wl->touches[idx].active;
          }
       }
    }
@@ -301,8 +296,18 @@ static int16_t input_wl_state(
          }
          break;
       case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
          /* All ports report the same pointer state. See notes at mouse case. */
-         if (idx == 0)
+         if (idx < MAX_TOUCHES)
+         {
+            int16_t touch_state = input_wl_touch_state(wl, idx, id,
+                  device == RARCH_DEVICE_POINTER_SCREEN);
+            /* Touch state is only reported if it is meaningful. */
+            if (touch_state)
+               return touch_state;
+         }
+         /* Fall through to system pointer emulating max. 3 touches. */
+         if (idx < 3)
          {
             struct video_viewport vp    = {0};
             bool screen                 =
@@ -329,21 +334,18 @@ static int16_t input_wl_state(
                   case RETRO_DEVICE_ID_POINTER_Y:
                      return res_y;
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return wl->mouse.left;
+                     if (idx == 0)
+                        return (wl->mouse.left | wl->mouse.right | wl->mouse.middle);
+                     else if (idx == 1)
+                        return (wl->mouse.right | wl->mouse.middle);
+                     else if (idx == 2)
+                        return wl->mouse.middle;
                   case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
                      return input_driver_pointer_is_offscreen(res_x, res_y);
                   default:
                      break;
                }
             }
-         }
-         break;
-      case RARCH_DEVICE_POINTER_SCREEN:
-         if (port == 0) /* TODO/FIXME: support pointers on additional ports */
-         {
-            if (idx < MAX_TOUCHES)
-               return input_wl_touch_state(wl, idx, id,
-                     device == RARCH_DEVICE_POINTER_SCREEN);
          }
          break;
       case RETRO_DEVICE_LIGHTGUN:

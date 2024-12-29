@@ -1207,64 +1207,36 @@ static int16_t input_overlay_lightgun_state(settings_t *settings,
 
    switch(id)
    {
+      /* Pointer positions have been clamped earlier in input drivers,   *
+       * so if we want to pass true offscreen value, it must be detected */
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
          ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
-
-         if (     ptr_st->ptr[0].x != -0x8000
-               || settings->bools.input_overlay_lightgun_allow_offscreen)
+         if (   ( ptr_st->ptr[0].x > -0x7fff && ptr_st->ptr[0].x != 0x7fff)
+               || !settings->bools.input_overlay_lightgun_allow_offscreen)
             return ptr_st->ptr[0].x;
-         else if (video_driver_get_viewport_info(&vp))
-         {
-            edge = ((2 * vp.x * 0x7fff) / (int)vp.full_width) - 0x7fff;
-            return ((ptr_st->screen_x > edge) ? 0x7fff : -0x7fff);
-         }
-         return -0x8000;
+         else
+            return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         if (     ptr_st->ptr[0].y != -0x8000
-               || settings->bools.input_overlay_lightgun_allow_offscreen)
+         if (   ( ptr_st->ptr[0].y > -0x7fff && ptr_st->ptr[0].y != 0x7fff)
+               || !settings->bools.input_overlay_lightgun_allow_offscreen)
             return ptr_st->ptr[0].y;
-         else if (video_driver_get_viewport_info(&vp))
-         {
-            edge = ((2 * vp.y * 0x7fff) / (int)vp.full_height) - 0x7fff;
-            return ((ptr_st->screen_y > edge) ? 0x7fff : -0x7fff);
-         }
-         return -0x8000;
+         else
+            return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return ( settings->bools.input_overlay_lightgun_allow_offscreen
-               && (ptr_st->ptr[0].x == -0x8000 || ptr_st->ptr[0].y == -0x8000));
+         return input_driver_pointer_is_offscreen(ptr_st->ptr[0].x, ptr_st->ptr[0].y);
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         rarch_id = RARCH_LIGHTGUN_AUX_A;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         rarch_id = RARCH_LIGHTGUN_AUX_B;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         rarch_id = RARCH_LIGHTGUN_AUX_C;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         rarch_id = RARCH_LIGHTGUN_TRIGGER;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         rarch_id = RARCH_LIGHTGUN_START;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         rarch_id = RARCH_LIGHTGUN_SELECT;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-         rarch_id = RARCH_LIGHTGUN_RELOAD;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-         rarch_id = RARCH_LIGHTGUN_DPAD_UP;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-         rarch_id = RARCH_LIGHTGUN_DPAD_DOWN;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-         rarch_id = RARCH_LIGHTGUN_DPAD_LEFT;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-         rarch_id = RARCH_LIGHTGUN_DPAD_RIGHT;
+         rarch_id = input_driver_lightgun_id_convert(id);
          break;
       default:
          rarch_id = RARCH_BIND_LIST_END;
@@ -1294,6 +1266,8 @@ static int16_t input_overlay_pointer_state(input_overlay_t *ol,
                && ptr_st->ptr[idx].y != -0x8000;
       case RETRO_DEVICE_ID_POINTER_COUNT:
          return ptr_st->count;
+      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+         return input_driver_pointer_is_offscreen(ptr_st->ptr[idx].x, ptr_st->ptr[idx].y);
    }
 
    return 0;
