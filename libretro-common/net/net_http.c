@@ -878,10 +878,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
       if ((state->data = (char*)malloc(state->buflen)))
       {
-         if ((state->headers = string_list_new()) &&
-             string_list_initialize(state->headers))
+         if ((state->headers = string_list_new()) != NULL)
             return state;
-         string_list_free(state->headers);
       }
       free(state);
    }
