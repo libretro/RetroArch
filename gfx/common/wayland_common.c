@@ -627,9 +627,9 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
    else
    {
       shm_buffer_t *buffer = create_shm_buffer(wl,
-      wl->buffer_width,
-      wl->buffer_height,
-      WL_SHM_FORMAT_XRGB8888);
+         wl->buffer_width,
+         wl->buffer_height,
+         WL_SHM_FORMAT_XRGB8888);
 
       if (!buffer)
          return false;
