@@ -22,17 +22,25 @@
 #include <spa/param/audio/format-utils.h>
 #include <spa/utils/ringbuffer.h>
 
+#include <pipewire/pipewire.h>
 
-#define RINGBUFFER_SIZE (1u << 22)
-#define RINGBUFFER_MASK (RINGBUFFER_SIZE - 1)
+#define PW_RARCH_APPNAME                   "RetroArch"
 
-typedef struct pipewire
+/* String literals are part of the PipeWire specification */
+#define PW_RARCH_MEDIA_TYPE_AUDIO          "Audio"
+#define PW_RARCH_MEDIA_TYPE_VIDEO          "Video"
+#define PW_RARCH_MEDIA_TYPE_MIDI           "Midi"
+#define PW_RARCH_MEDIA_CATEGORY_PLAYBACK   "Playback"
+#define PW_RARCH_MEDIA_CATEGORY_RECORD	    "Capture"
+#define PW_RARCH_MEDIA_ROLE                "Game"
+
+typedef struct pipewire_core
 {
    struct pw_thread_loop *thread_loop;
-   struct pw_context *context;
+   struct pw_context *ctx;
    struct pw_core *core;
    struct spa_hook core_listener;
-   int last_seq, pending_seq, error;
+   int last_seq, pending_seq;
 
    struct pw_registry *registry;
    struct spa_hook registry_listener;
@@ -43,28 +51,14 @@ typedef struct pipewire
    struct string_list *devicelist;
 } pipewire_core_t;
 
-typedef struct pipewire_device_handle
-{
-   pipewire_core_t *pw;
-
-   struct pw_stream *stream;
-   struct spa_hook stream_listener;
-   struct spa_audio_info_raw info;
-   uint32_t highwater_mark;
-   uint32_t frame_size;
-   uint32_t req;
-   struct spa_ringbuffer ring;
-   uint8_t buffer[RINGBUFFER_SIZE];
-
-   bool is_paused;
-} pipewire_device_handle_t;
-
 size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels);
 
 void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS]);
 
-int pipewire_wait_resync(pipewire_core_t *pipewire);
+void pipewire_wait_resync(pipewire_core_t *pipewire);
 
-bool pipewire_set_active(pipewire_core_t *pipewire, pipewire_device_handle_t *device, bool active);
+bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active);
+
+bool pipewire_core_init(pipewire_core_t *pipewire, const char *loop_name);
 
 #endif  /* _RETROARCH_PIPEWIRE */
