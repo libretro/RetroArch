@@ -634,7 +634,12 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
       wl_surface_damage_buffer(wl->surface, 0, 0,
          wl->buffer_width,
          wl->buffer_height);
+
+   if (wl->viewport)
+      wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+
    wl_surface_commit(wl->surface);
+
    return true;
 }
 
@@ -906,12 +911,12 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
    {
       /* Stretch old buffer to fill new size, commit/roundtrip to apply */
       wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
-      wl_surface_commit(wl->surface);
    }
 
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)
    {
+     wl->libdecor_frame_set_visibility(wl->libdecor_frame, !fullscreen);
      struct libdecor_state *state = wl->libdecor_state_new(wl->width, wl->height);
      wl->libdecor_frame_commit(wl->libdecor_frame, state, NULL);
      wl->libdecor_state_free(state);
