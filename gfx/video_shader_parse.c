@@ -243,7 +243,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
          {
             case RARCH_WC_CONTENT_DIR:
                {
-                  char content_dir_name[DIR_MAX_LENGTH] = "";
+                  char content_dir_name[PATH_MAX_LENGTH] = "";
                   const char *rarch_path_basename = path_get(RARCH_PATH_BASENAME);
                   if (rarch_path_basename)
                      fill_pathname_parent_dir_name(content_dir_name,
@@ -266,7 +266,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                break;
             case RARCH_WC_CORE:
                {
-                  char t[NAME_MAX_LENGTH];
+                  char t[PATH_MAX_LENGTH];
                   size_t __len = strlcpy(t,
                         runloop_state_get_ptr()->system.info.library_name,
                         sizeof(t));
@@ -283,7 +283,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                   const char *rarch_path_basename = path_get(RARCH_PATH_BASENAME);
                   if (rarch_path_basename)
                   {
-                     char t[NAME_MAX_LENGTH];
+                     char t[PATH_MAX_LENGTH];
                      size_t __len   = strlcpy(t,
                            path_basename_nocompression(rarch_path_basename),
                            sizeof(t));
@@ -445,7 +445,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                break;
             case RARCH_WC_PRESET_DIR:
                {
-                  char preset_dir_name[DIR_MAX_LENGTH];
+                  char preset_dir_name[PATH_MAX_LENGTH];
                   fill_pathname_parent_dir_name(preset_dir_name, in_preset_path, sizeof(preset_dir_name));
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
                   {
@@ -464,7 +464,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                break;
             case RARCH_WC_PRESET:
                {
-                  char t[NAME_MAX_LENGTH];
+                  char t[PATH_MAX_LENGTH];
                   size_t __len = fill_pathname(t,
                         path_basename_nocompression(in_preset_path), "",
                         sizeof(t));
