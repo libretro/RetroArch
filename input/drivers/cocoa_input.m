@@ -402,6 +402,15 @@ static void cocoa_input_poll(void *data)
 
       memset(&vp, 0, sizeof(vp));
 
+      video_driver_translate_coord_viewport_confined_wrap(
+            &vp,
+            apple->touches[i].screen_x * backing_scale_factor,
+            apple->touches[i].screen_y * backing_scale_factor,
+            &apple->touches[i].confined_x,
+            &apple->touches[i].confined_y,
+            &apple->touches[i].full_x,
+            &apple->touches[i].full_y);
+
       video_driver_translate_coord_viewport_wrap(
             &vp,
             apple->touches[i].screen_x * backing_scale_factor,
@@ -588,11 +597,13 @@ static int16_t cocoa_input_state(
                            return (touch->full_x  != -0x8000) && (touch->full_y  != -0x8000); /* Inside? */
                         return    (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_x : touch->fixed_x;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_x : touch->confined_x;
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_y : touch->fixed_y;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_y : touch->confined_y;
                      case RETRO_DEVICE_ID_POINTER_COUNT:
                         return apple->touch_count;
+                     case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                        return input_driver_pointer_is_offscreen(touch->fixed_x, touch->fixed_y);
                   }
                }
             }
