@@ -4814,9 +4814,9 @@ static void save_keybind_joykey(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   size_t len = fill_pathname_join_delim(key, prefix,
+   size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   strlcpy(key + len, "_btn", sizeof(key) - len);
+   strlcpy(key + _len, "_btn", sizeof(key) - _len);
 
    if (bind->joykey == NO_BTN)
    {
@@ -4835,8 +4835,8 @@ static void save_keybind_axis(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   size_t len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcpy(key + len, "_axis", sizeof(key) - len);
+   size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+   strlcpy(key + _len, "_axis", sizeof(key) - _len);
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -4869,9 +4869,9 @@ static void save_keybind_mbutton(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   size_t len = fill_pathname_join_delim(key, prefix,
+   size_t _len = fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
-   strlcpy(key + len, "_mbtn", sizeof(key) - len);
+   strlcpy(key + _len, "_mbtn", sizeof(key) - _len);
 
    switch (bind->mbutton)
    {

@@ -205,7 +205,7 @@ static int64_t sevenzip_file_read(
 
       for (i = 0; i < db.NumFiles; i++)
       {
-         size_t len;
+         size_t _len;
          char infile[PATH_MAX_LENGTH];
          size_t offset                = 0;
          size_t outSizeProcessed      = 0;
@@ -215,14 +215,14 @@ static int64_t sevenzip_file_read(
          if (SzArEx_IsDir(&db, i))
             continue;
 
-         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+         _len = SzArEx_GetFileNameUtf16(&db, i, NULL);
 
-         if (len > temp_size)
+         if (_len > temp_size)
          {
             if (temp)
                free(temp);
-            temp_size = len;
-            temp = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
+            temp_size = _len;
+            temp      = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
 
             if (temp == 0)
             {

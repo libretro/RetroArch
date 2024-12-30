@@ -3036,13 +3036,13 @@ static void rgui_update_dynamic_theme_path(
    if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
          && (!string_is_empty(rgui->menu_title)))
    {
-      size_t len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
+      size_t _len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
             rgui->menu_title, sizeof(rgui->theme_dynamic_path));
-      rgui->theme_dynamic_path[  len] = '.';
-      rgui->theme_dynamic_path[++len] = 'c';
-      rgui->theme_dynamic_path[++len] = 'f';
-      rgui->theme_dynamic_path[++len] = 'g';
-      rgui->theme_dynamic_path[++len] = '\0';
+      rgui->theme_dynamic_path[  _len] = '.';
+      rgui->theme_dynamic_path[++_len] = 'c';
+      rgui->theme_dynamic_path[++_len] = 'f';
+      rgui->theme_dynamic_path[++_len] = 'g';
+      rgui->theme_dynamic_path[++_len] = '\0';
       use_playlist_theme              = path_is_valid(rgui->theme_dynamic_path);
    }
 

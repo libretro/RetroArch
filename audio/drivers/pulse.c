@@ -131,19 +131,12 @@ static void stream_state_cb(pa_stream *s, void *data)
 static void stream_request_cb(pa_stream *s, size_t length, void *data)
 {
    pa_t *pa = (pa_t*)data;
-
-   (void)length;
-   (void)s;
-
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void stream_latency_update_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
-
-   (void)s;
-
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
@@ -364,15 +357,15 @@ static bool pulse_use_float(void *data)
 
 static size_t pulse_write_avail(void *data)
 {
-   size_t length;
+   size_t _len;
    pa_t *pa = (pa_t*)data;
 
    pa_threaded_mainloop_lock(pa->mainloop);
-   length = pa_stream_writable_size(pa->stream);
+   _len = pa_stream_writable_size(pa->stream);
 
    audio_driver_set_buffer_size(pa->buffer_size); /* Can change spuriously. */
    pa_threaded_mainloop_unlock(pa->mainloop);
-   return length;
+   return _len;
 }
 
 static size_t pulse_buffer_size(void *data)

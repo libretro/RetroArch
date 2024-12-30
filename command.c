@@ -774,7 +774,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
    unsigned int nbytes          = 0;
    unsigned int alloc_size      = 0;
    unsigned int addr            = -1;
-   size_t len                   = 0;
+   size_t _len                  = 0;
 
    if (sscanf(arg, "%x %u", &addr, &nbytes) != 2)
       return true;
@@ -790,14 +790,14 @@ bool command_read_ram(command_t *cmd, const char *arg)
       for (i = 0; i < nbytes; i++)
          snprintf(reply_at + 3 * i, 4, " %.2X", data[i]);
       reply_at[3 * nbytes] = '\n';
-      len                  = reply_at + 3 * nbytes + 1 - reply;
+      _len                 = reply_at + 3 * nbytes + 1 - reply;
    }
    else
    {
       strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
-      len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
+      _len                  = reply_at + STRLEN_CONST(" -1\n") - reply;
    }
-   cmd->replier(cmd, reply, len);
+   cmd->replier(cmd, reply, _len);
    free(reply);
    return true;
 }

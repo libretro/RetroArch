@@ -658,9 +658,9 @@ static uint32_t netplay_impl_magic(void)
    size_t i;
    uint32_t res                        = 0;
    const char *ver                     = PACKAGE_VERSION;
-   size_t len                          = strlen(ver);
+   size_t _len                         = strlen(ver);
 
-   for (i = 0; i < len; i++)
+   for (i = 0; i < _len; i++)
       res ^= ver[i] << (i & 0xf);
 
    res ^= NETPLAY_PROTOCOL_VERSION << (i & 0xf);
@@ -3549,13 +3549,13 @@ static int handle_mitm_connection(netplay_t *netplay, netplay_address_t *addr,
          case MITM_PING_MAGIC:
          {
             /* Tunnel server requested for us to reply to a ping request. */
-            void *ping = &netplay->mitm_handler->id_buf.magic;
-            size_t len = sizeof(netplay->mitm_handler->id_buf.magic);
+            void *ping  = &netplay->mitm_handler->id_buf.magic;
+            size_t _len = sizeof(netplay->mitm_handler->id_buf.magic);
 
             netplay->mitm_handler->id_recvd = 0;
 
             if (socket_send_all_nonblocking(netplay->listen_fd,
-                  ping, len, true) != (ssize_t)len)
+                  ping, _len, true) != (ssize_t)_len)
             {
                /* We couldn't send our ping reply in one call. Assume error. */
                RARCH_ERR("[Netplay] Tunnel ping reply failed.\n");

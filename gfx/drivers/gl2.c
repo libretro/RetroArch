@@ -4322,17 +4322,17 @@ static void *gl2_init(const video_info_t *video,
    }
 
    {
-      size_t len    = 0;
+      size_t _len = 0;
 
       if (!string_is_empty(vendor))
       {
-        len                    = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
-        gl->device_str[  len]  = ' ';
-        gl->device_str[++len]  = '\0';
+        _len                   = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
+        gl->device_str[  _len]  = ' ';
+        gl->device_str[++_len]  = '\0';
       }
 
       if (!string_is_empty(renderer))
-        strlcpy(gl->device_str + len, renderer, sizeof(gl->device_str) - len);
+        strlcpy(gl->device_str + _len, renderer, sizeof(gl->device_str) - _len);
 
       if (!string_is_empty(version))
         video_driver_set_gpu_api_version_string(version);
@@ -5070,13 +5070,12 @@ static void gl2_apply_state_changes(void *data)
 }
 
 static void gl2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *width, unsigned *height, char *s, size_t len)
 {
    gl2_t *gl         = (gl2_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_size)
       gl->ctx_driver->get_video_output_size(
-            gl->ctx_data,
-            width, height, desc, desc_len);
+            gl->ctx_data, width, height, s, len);
 }
 
 static void gl2_get_video_output_prev(void *data)

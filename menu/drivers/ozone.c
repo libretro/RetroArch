@@ -9090,15 +9090,15 @@ static void ozone_cache_footer_label(
 {
    const char *str = msg_hash_to_str(enum_idx);
    /* Determine pixel width */
-   size_t length   = strlen(str);
+   size_t _len     = strlen(str);
 
    /* Assign string */
    label->str      = str;
-   label->width    = font_driver_get_message_width(ozone->fonts.footer.font, label->str, length, 1.0f);
+   label->width    = font_driver_get_message_width(ozone->fonts.footer.font, label->str, _len, 1.0f);
    /* If font_driver_get_message_width() fails,
     * use predetermined glyph_width as a fallback */
    if (label->width < 0)
-      label->width = length * ozone->fonts.footer.glyph_width;
+      label->width = _len * ozone->fonts.footer.glyph_width;
 }
 
 /* Assigns footer label strings (based on current

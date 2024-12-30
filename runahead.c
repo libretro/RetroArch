@@ -141,17 +141,17 @@ void runahead_set_load_content_info(void *data,
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void strcat_alloc(char **dst, const char *s)
 {
-   size_t len1;
+   size_t _len;
    char *src          = *dst;
 
    if (!src)
    {
       if (s)
       {
-         size_t   len = strlen(s);
-         if (len != 0)
+         size_t __len = strlen(s);
+         if (__len != 0)
          {
-            char *_dst= (char*)malloc(len + 1);
+            char *_dst= (char*)malloc(__len + 1);
             strcpy_literal(_dst, s);
             src       = _dst;
          }
@@ -168,13 +168,13 @@ static void strcat_alloc(char **dst, const char *s)
    if (!s)
       return;
 
-   len1               = strlen(src);
+   _len               = strlen(src);
 
-   if (!(src = (char*)realloc(src, len1 + strlen(s) + 1)))
+   if (!(src = (char*)realloc(src, _len + strlen(s) + 1)))
       return;
 
    *dst               = src;
-   strcpy_literal(src + len1, s);
+   strcpy_literal(src + _len, s);
 }
 
 void runahead_secondary_core_destroy(void *data)
@@ -241,10 +241,10 @@ static char *get_tmpdir_alloc(const char *override_dir)
 #endif
    if (src)
    {
-      size_t   len    = strlen(src);
-      if (len != 0)
+      size_t _len     = strlen(src);
+      if (_len != 0)
       {
-         char *dst    = (char*)malloc(len + 1);
+         char *dst    = (char*)malloc(_len + 1);
          strcpy_literal(dst, src);
          path         = dst;
       }
@@ -270,10 +270,10 @@ static bool write_file_with_random_name(char **temp_dll_path,
 
    if (src)
    {
-      size_t   len          = strlen(src);
-      if (len != 0)
+      size_t _len           = strlen(src);
+      if (_len != 0)
       {
-         char *dst          = (char*)malloc(len + 1);
+         char *dst          = (char*)malloc(_len + 1);
          strcpy_literal(dst, src);
          ext                = dst;
       }
@@ -1400,10 +1400,10 @@ static const char* preempt_allocate(runloop_state_t *runloop_st,
  **/
 void preempt_deinit(void *data)
 {
+   size_t i;
    runloop_state_t *runloop_st       = (runloop_state_t*)data;
    preempt_t *preempt                = runloop_st->preempt_data;
    struct retro_core_t *current_core = &runloop_st->current_core;
-   size_t i;
 
    if (!preempt)
       return;
