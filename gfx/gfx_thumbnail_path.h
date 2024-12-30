@@ -141,7 +141,7 @@ bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *path_data, enum gfx_th
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
-bool gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
+size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *s, size_t len);
 
 RETRO_END_DECLS
 

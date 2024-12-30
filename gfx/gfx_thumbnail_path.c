@@ -617,8 +617,8 @@ bool gfx_thumbnail_update_path(
       if (   string_is_equal(path_data->system, "history")
           || string_is_equal(path_data->system, "favorites"))
       {
-         if (!gfx_thumbnail_get_content_dir(
-                  path_data, content_dir, sizeof(content_dir)))
+         if (gfx_thumbnail_get_content_dir(
+                  path_data, content_dir, sizeof(content_dir)) == 0)
             return false;
 
          system_name = content_dir;
@@ -720,26 +720,19 @@ bool gfx_thumbnail_update_path(
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
-bool gfx_thumbnail_get_content_dir(
-      gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len)
+size_t gfx_thumbnail_get_content_dir(
+      gfx_thumbnail_path_data_t *path_data, char *s, size_t len)
 {
    char *last_slash;
-   size_t path_length;
+   size_t _len;
    char tmp_buf[NAME_MAX_LENGTH];
-
    if (!path_data || string_is_empty(path_data->content_path))
-      return false;
-
+      return 0;
    if (!(last_slash = find_last_slash(path_data->content_path)))
-      return false;
-
-   path_length = last_slash + 1 - path_data->content_path;
-
-   if (!((path_length > 1) && (path_length < PATH_MAX_LENGTH)))
-      return false;
-
-   strlcpy(tmp_buf, path_data->content_path, path_length * sizeof(char));
-   strlcpy(content_dir, path_basename_nocompression(tmp_buf), len);
-
-   return !string_is_empty(content_dir);
+      return 0;
+   _len = last_slash + 1 - path_data->content_path;
+   if (!((_len > 1) && (_len < PATH_MAX_LENGTH)))
+      return 0;
+   strlcpy(tmp_buf, path_data->content_path, _len * sizeof(char));
+   return strlcpy(s, path_basename_nocompression(tmp_buf), len);
 }

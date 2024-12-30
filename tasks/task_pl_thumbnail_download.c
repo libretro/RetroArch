@@ -218,8 +218,8 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
       if (   string_is_equal(system, "history")
           || string_is_equal(system, "favorites"))
       {
-         if (!gfx_thumbnail_get_content_dir(
-               pl_thumb->thumbnail_path_data, content_dir, sizeof(content_dir)))
+         if (gfx_thumbnail_get_content_dir(
+               pl_thumb->thumbnail_path_data, content_dir, sizeof(content_dir)) == 0)
             return false;
 
          system_name = content_dir;

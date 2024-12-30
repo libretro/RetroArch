@@ -193,15 +193,15 @@ static enum patch_error bps_apply_patch(
 
    while (bps.modify_offset < bps.modify_length - 12)
    {
-      size_t length = bps_decode(&bps);
-      unsigned mode = length & 3;
+      size_t _len   = bps_decode(&bps);
+      unsigned mode = _len & 3;
 
-      length = (length >> 2) + 1;
+      _len          = (_len >> 2) + 1;
 
       switch (mode)
       {
          case SOURCE_READ:
-            while (length--)
+            while (_len--)
             {
                uint8_t data = bps.source_data[bps.output_offset];
                bps.target_data[bps.output_offset++] = data;
@@ -210,7 +210,7 @@ static enum patch_error bps_apply_patch(
             break;
 
          case TARGET_READ:
-            while (length--)
+            while (_len--)
             {
                uint8_t data = bps_read(&bps);
                bps.target_data[bps.output_offset++] = data;
@@ -232,7 +232,7 @@ static enum patch_error bps_apply_patch(
             if (mode == SOURCE_COPY)
             {
                bps.source_offset += offset;
-               while (length--)
+               while (_len--)
                {
                   uint8_t data = bps.source_data[bps.source_offset++];
                   bps.target_data[bps.output_offset++] = data;
@@ -242,7 +242,7 @@ static enum patch_error bps_apply_patch(
             else
             {
                bps.target_offset += offset;
-               while (length--)
+               while (_len--)
                {
                   uint8_t data = bps.target_data[bps.target_offset++];
                   bps.target_data[bps.output_offset++] = data;
