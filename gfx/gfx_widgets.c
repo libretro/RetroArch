@@ -870,14 +870,8 @@ static void gfx_widgets_layout(
 
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
    {
-#if 0
-      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height
-         * 1.2347826087f; /* original image is 280x284 */
-      p_dispwidget->msg_queue_icon_size_x         = 0.98591549295f * p_dispwidget->msg_queue_icon_size_y;
-#else
       p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height;
       p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_icon_size_y;
-#endif
    }
    else
    {
@@ -1960,38 +1954,6 @@ static void gfx_widgets_context_reset(
    else
       p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
 
-#if 0
-   /* Message queue */
-   gfx_display_reset_textures_list(
-         "msg_queue_icon.png",
-         p_dispwidget->gfx_widgets_path,
-         &p_dispwidget->msg_queue_icon,
-         TEXTURE_FILTER_LINEAR,
-         NULL,
-         NULL);
-   gfx_display_reset_textures_list(
-         "msg_queue_icon_outline.png",
-         p_dispwidget->gfx_widgets_path,
-         &p_dispwidget->msg_queue_icon_outline,
-         TEXTURE_FILTER_LINEAR,
-         NULL,
-         NULL);
-   gfx_display_reset_textures_list(
-         "msg_queue_icon_rect.png",
-         p_dispwidget->gfx_widgets_path,
-         &p_dispwidget->msg_queue_icon_rect,
-         TEXTURE_FILTER_NEAREST,
-         NULL,
-         NULL);
-
-   if (  p_dispwidget->msg_queue_icon
-      && p_dispwidget->msg_queue_icon_outline
-      && p_dispwidget->msg_queue_icon_rect)
-      p_dispwidget->flags |=  DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
-   else
-      p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
-#endif
-
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
@@ -2164,16 +2126,6 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
    /* Textures */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
       video_driver_texture_unload(&p_dispwidget->gfx_widgets_icons_textures[i]);
-
-#if 0
-   video_driver_texture_unload(&p_dispwidget->msg_queue_icon);
-   video_driver_texture_unload(&p_dispwidget->msg_queue_icon_outline);
-   video_driver_texture_unload(&p_dispwidget->msg_queue_icon_rect);
-
-   p_dispwidget->msg_queue_icon         = 0;
-   p_dispwidget->msg_queue_icon_outline = 0;
-   p_dispwidget->msg_queue_icon_rect    = 0;
-#endif
 
    /* Fonts */
    gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.regular);
