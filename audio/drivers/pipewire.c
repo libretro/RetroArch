@@ -132,11 +132,15 @@ static void stream_state_changed_cb(void *data,
 
    switch(state)
    {
+      case PW_STREAM_STATE_ERROR:
+         RARCH_ERR("[PipeWire]: Stream error\n");
+         pw_thread_loop_signal(audio->pw->thread_loop, false);
+         break;
       case PW_STREAM_STATE_UNCONNECTED:
+         RARCH_WARN("[PipeWire]: Stream unconnected\n");
          pw_thread_loop_stop(audio->pw->thread_loop);
          break;
       case PW_STREAM_STATE_STREAMING:
-      case PW_STREAM_STATE_ERROR:
       case PW_STREAM_STATE_PAUSED:
          pw_thread_loop_signal(audio->pw->thread_loop, false);
          break;
@@ -192,7 +196,8 @@ static void registry_event_global(void *data, uint32_t id,
       media = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
       if (media && strcmp(media, "Audio/Sink") == 0)
       {
-         if ((sink = spa_dict_lookup(props, PW_KEY_NODE_NAME)) != NULL)
+         sink = spa_dict_lookup(props, PW_KEY_NODE_NAME);
+         if (sink && pw->devicelist)
          {
             attr.i = id;
             string_list_append(pw->devicelist, sink, attr);
@@ -231,11 +236,9 @@ static void *pipewire_init(const char *device, unsigned rate,
 
    if (!audio)
       goto error;
-   pw = audio->pw = (pipewire_core_t*)calloc(1, sizeof(*audio->pw));
 
+   pw = audio->pw = (pipewire_core_t*)calloc(1, sizeof(*audio->pw));
    pw->devicelist = string_list_new();
-   if (!pw->devicelist)
-      goto error;
 
    if (!pipewire_core_init(pw, "audio_driver"))
       goto error;
@@ -445,7 +448,7 @@ static void *pipewire_device_list_new(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
-   if (audio && audio->pw->devicelist)
+   if (audio && audio->pw && audio->pw->devicelist)
       return string_list_clone(audio->pw->devicelist);
 
    return NULL;
