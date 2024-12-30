@@ -1110,7 +1110,7 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
 }
 
 int cue_find_track(const char *cue_path, bool first,
-      uint64_t *offset, size_t *size, char *track_path, uint64_t max_len)
+      uint64_t *offset, size_t *size, char *s, size_t len)
 {
    int rv;
    intfstream_info_t info;
@@ -1162,7 +1162,7 @@ int cue_find_track(const char *cue_path, bool first,
          /* We're changing files since the candidate, update it */
          if (update_cand(&cand_index, &last_index,
                   &largest, last_file, offset,
-                  size, track_path, (size_t)max_len))
+                  size, s, len))
          {
             rv = 0;
             if (first)
@@ -1187,11 +1187,11 @@ int cue_find_track(const char *cue_path, bool first,
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
-         int m, s, f;
+         int _m, _s, _f;
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
-         if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
+         if (sscanf(tmp_token, "%02d:%02d:%02d", &_m, &_s, &_f) < 3)
          {
 #ifdef DEBUG
             RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
@@ -1199,14 +1199,14 @@ int cue_find_track(const char *cue_path, bool first,
             goto error;
          }
 
-         last_index = (size_t) (((m * 60 + s) * 75) + f) * 2352;
+         last_index = (size_t)(((_m * 60 + _s) * 75) + _f) * 2352;
 
          /* If we've changed tracks since the candidate, update it */
          if (     (cand_track != -1)
                && (track != cand_track)
                && update_cand(&cand_index, &last_index, &largest,
                 last_file, offset,
-                size, track_path, (size_t)max_len))
+                size, s, len))
          {
             rv = 0;
             if (first)
@@ -1229,7 +1229,7 @@ int cue_find_track(const char *cue_path, bool first,
 
    if (update_cand(&cand_index, &last_index,
             &largest, last_file, offset,
-            size, track_path, (size_t)max_len))
+            size, s, len))
       rv = 0;
 
 clean:
@@ -1268,8 +1268,7 @@ bool cue_next_file(intfstream_t *fd,
    return false;
 }
 
-int gdi_find_track(const char *gdi_path, bool first,
-      char *track_path, uint64_t max_len)
+int gdi_find_track(const char *gdi_path, bool first, char *s, uint64_t len)
 {
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
@@ -1341,7 +1340,7 @@ int gdi_find_track(const char *gdi_path, bool first,
 
          if ((uint64_t)file_size > largest)
          {
-            strlcpy(track_path, last_file, (size_t)max_len);
+            strlcpy(s, last_file, len);
 
             rv      = 0;
             largest = file_size;
@@ -1370,8 +1369,8 @@ error:
    return -1;
 }
 
-bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
-      char *path, uint64_t max_len)
+size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
+      char *s, size_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
 
@@ -1389,15 +1388,15 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
    /* File name */
    if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
+      size_t _len;
       char gdi_dir[DIR_MAX_LENGTH];
-
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
-      fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);
+      _len = fill_pathname_join_special(s, gdi_dir, tmp_token, len);
 
       /* Disc offset */
       task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-      return true;
+      return _len;
    }
 
-   return false;
+   return 0;
 }

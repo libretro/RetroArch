@@ -694,12 +694,14 @@ bool command_show_osd_msg(command_t *cmd, const char* arg)
 bool command_load_state_slot(command_t *cmd, const char *arg)
 {
    char state_path[16384];
+   size_t _len                  = 0;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
    state_path[0]                = '\0';
-   snprintf(reply, sizeof(reply) - 1, "LOAD_STATE_SLOT %d", slot);
+   _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
+   _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
    {
       size_t info_size;
@@ -716,7 +718,7 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    else
       ret = false;
 
-   cmd->replier(cmd, reply, strlen(reply));
+   cmd->replier(cmd, reply, _len);
    return ret;
 }
 
@@ -743,7 +745,7 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
       if (ret)
       {
          input_driver_state_t *input_st = input_state_get_ptr();
-         task_queue_wait(NULL,NULL);
+         task_queue_wait(NULL, NULL);
          if (input_st->bsv_movie_state_next_handle)
             snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_next_handle->identifier));
          else
@@ -1449,6 +1451,7 @@ static void scan_states(settings_t *settings,
    for (i = 0; i < dir_list->size; i++)
    {
       unsigned idx;
+      size_t _len;
       char elem_base[128];
       const char *ext      = NULL;
       const char *end      = NULL;
@@ -1457,7 +1460,7 @@ static void scan_states(settings_t *settings,
       if (string_is_empty(dir_elem))
          continue;
 
-      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+      _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
       /* Only consider files with a '.state' extension
        * > i.e. Ignore '.state.auto', '.state.bak', etc. */
@@ -1476,11 +1479,11 @@ static void scan_states(settings_t *settings,
       if (savefile_root_length == 0)
       {
          savefile_root        = dir_elem;
-         savefile_root_length = strlen(dir_elem);
+         savefile_root_length = _len;
       }
 
       /* Decode the savestate index */
-      end = dir_elem + strlen(dir_elem);
+      end = dir_elem + _len;
       while ((end > dir_elem) && ISDIGIT((int)end[-1]))
       {
          end--;
@@ -1500,7 +1503,7 @@ static void scan_states(settings_t *settings,
       if (idx < 512)
          BIT512_SET(slot_mapping_low,idx);
       else if (idx < 1024)
-         BIT512_SET(slot_mapping_high,idx-512);
+         BIT512_SET(slot_mapping_high, idx - 512);
    }
 
    /* Next loop on the bitmap, since the file system may have presented the files in any order above */
@@ -1700,13 +1703,12 @@ void command_event_set_replay_auto_index(settings_t *settings)
       char elem_base[128]             = {0};
       const char *end                 = NULL;
       const char *dir_elem            = dir_list->elems[i].data;
-
-      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+      size_t _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
       if (strstr(elem_base, state_base) != elem_base)
          continue;
 
-      end = dir_elem + strlen(dir_elem);
+      end = dir_elem + _len;
 
       while ((end > dir_elem) && ISDIGIT((int)end[-1]))
          end--;
@@ -1756,6 +1758,7 @@ void command_event_set_replay_garbage_collect(
    for (i = 0; i < dir_list->size; i++)
    {
       unsigned idx;
+      size_t _len;
       char elem_base[128];
       const char *ext                 = NULL;
       const char *end                 = NULL;
@@ -1764,7 +1767,7 @@ void command_event_set_replay_garbage_collect(
       if (string_is_empty(dir_elem))
          continue;
 
-      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+      _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
       /* Only consider files with a '.replayXX' extension
        * > i.e. Ignore '.replay.auto', '.replay.bak', etc. */
@@ -1782,7 +1785,7 @@ void command_event_set_replay_garbage_collect(
       cnt++;
 
       /* > Get index */
-      end = dir_elem + strlen(dir_elem);
+      end = dir_elem + _len;
 
       while ((end > dir_elem) && ISDIGIT((int)end[-1]))
          end--;
