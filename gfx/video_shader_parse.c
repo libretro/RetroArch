@@ -1579,7 +1579,7 @@ static bool video_shader_write_referenced_preset(
     * loaded presets are located
     * and where Save Game Preset, Save Core Preset,
     * Save Global Preset save to */
-   fill_pathname_application_special(config_dir, DIR_MAX_LENGTH,
+   fill_pathname_application_special(config_dir, sizeof(config_dir),
          APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* If there is no initial preset path loaded */

@@ -1139,7 +1139,7 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
-static char* xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
+static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 {
    char path[PATH_MAX_LENGTH];
    settings_t *settings               = config_get_ptr();

@@ -426,10 +426,10 @@ static void explore_load_icons(explore_state_t *state)
    {
       struct texture_image ti;
       size_t __len = _len;
-      __len       += strlcpy(path + _len,
+      __len       += fill_pathname(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
+                 ".png",
                  sizeof(path)     - _len);
-      strlcpy(path + __len, ".png", sizeof(path) - __len);
       if (!path_is_valid(path))
          continue;
 
@@ -1680,8 +1680,7 @@ SKIP_ENTRY:;
       const struct playlist_entry *pl_entry =
          state->entries[current_type - EXPLORE_TYPE_FIRSTITEM].playlist_entry;
 
-      strlcpy(state->title,
-            pl_entry->label, sizeof(state->title));
+      strlcpy(state->title, pl_entry->label, sizeof(state->title));
 
       for (pl_idx = 0; pl_idx != (int)RBUF_LEN(state->playlists); pl_idx++)
       {
