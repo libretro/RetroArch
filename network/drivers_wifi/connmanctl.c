@@ -724,11 +724,11 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
             RARCH_LOG("[CONNMANCTL] Tether start stop: connected to SSID \"%s\", service \"%s\"\n",
                   ssid, service);
 
-            snprintf(ln, sizeof(ln),
+            _len = snprintf(ln, sizeof(ln),
                   msg_hash_to_str(MSG_WIFI_DISCONNECT_FROM),
                   ssid);
 
-            runloop_msg_queue_push(ln, 1, 180, true,
+            runloop_msg_queue_push(ln, _len, 1, 180, true,
                   NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                   MESSAGE_QUEUE_CATEGORY_INFO);
 
