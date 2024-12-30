@@ -772,7 +772,7 @@ static int menu_displaylist_parse_core_info(
        * adjust the path to check for firmware files */
       if (systemfiles_in_content_dir && content_is_inited)
       {
-         fill_pathname_basedir(tmp_path,
+         size_t __len = fill_pathname_basedir(tmp_path,
                path_get(RARCH_PATH_CONTENT),
                sizeof(tmp_path));
 
@@ -781,7 +781,6 @@ static int menu_displaylist_parse_core_info(
             firmware_info.directory.system = settings->paths.directory_system;
          else
          {
-            size_t __len = strlen(tmp_path);
             /* Removes trailing slash (unless root dir), doesn't really matter
              * but it's more consistent with how the path is stored and
              * displayed without 'System Files are in Content Directory' */
