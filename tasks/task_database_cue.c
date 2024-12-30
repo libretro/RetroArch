@@ -1268,7 +1268,7 @@ bool cue_next_file(intfstream_t *fd,
    return false;
 }
 
-int gdi_find_track(const char *gdi_path, bool first, char *s, uint64_t len)
+int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
 {
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
