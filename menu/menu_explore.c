@@ -844,7 +844,7 @@ static void explore_append_title(char *s, size_t len,
    va_list ap;
    size_t _len = strlen(s);
    va_start(ap, fmt);
-   vsnprintf(s + len, len - _len, fmt, ap);
+   vsnprintf(s + _len, len - _len, fmt, ap);
    va_end(ap);
 }
 
