@@ -1,4 +1,6 @@
 # Future
+
+# 1.20.0
 - AUDIO: Fix audio handling in case of RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE
 - AUDIO: Include missing audio filters on some platforms
 - AUDIO/PIPEWIRE: Add PipeWire audio driver
