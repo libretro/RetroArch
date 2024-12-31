@@ -49,14 +49,8 @@
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
 /* Shell surface callbacks. */
-static void xdg_toplevel_handle_configure(void *data,
-      struct xdg_toplevel *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
+static void xdg_surface_handle_configure(gfx_ctx_wayland_data_t *wl)
 {
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
    if (wl->win)
       wl_egl_window_resize(wl->win,
@@ -68,8 +62,6 @@ static void xdg_toplevel_handle_configure(void *data,
             wl->buffer_width,
             wl->buffer_height);
 #endif
-
-   wl->configured = false;
 }
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
@@ -106,57 +98,12 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    if (!wl->fractional_scale)
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
-   wl->ignore_configuration = false;
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, width, height, 0, 0);
 #endif
 
    return true;
 }
-
-#ifdef HAVE_LIBDECOR_H
-static void
-libdecor_frame_handle_configure(struct libdecor_frame *frame,
-      struct libdecor_configuration *configuration, void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   libdecor_frame_handle_configure_common(frame, configuration, wl);
-
-#ifdef HAVE_EGL
-   if (wl->win)
-      wl_egl_window_resize(wl->win,
-            wl->buffer_width,
-            wl->buffer_height,
-            0, 0);
-   else
-      wl->win     = wl_egl_window_create(
-            wl->surface,
-            wl->buffer_width,
-            wl->buffer_height);
-#endif
-
-   wl->configured = false;
-}
-#endif
-
-static const toplevel_listener_t toplevel_listener = {
-#ifdef HAVE_LIBDECOR_H
-   .libdecor_frame_interface = {
-     libdecor_frame_handle_configure,
-     libdecor_frame_handle_close,
-     libdecor_frame_handle_commit,
-   },
-#endif
-   .xdg_toplevel_listener = {
-      xdg_toplevel_handle_configure,
-      xdg_toplevel_handle_close,
-   },
-};
-
-static const toplevel_listener_t xdg_toplevel_listener = {
-};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \
@@ -256,7 +203,7 @@ static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
-   if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
+   if (!gfx_ctx_wl_init_common(&xdg_surface_handle_configure, &wl))
       goto error;
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))
@@ -496,14 +443,14 @@ static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t t
    wl_callback_destroy(cb);
 }
 
-static const struct wl_callback_listener wl_surface_frame_listener = { 
+static const struct wl_callback_listener wl_surface_frame_listener = {
    .done = wl_surface_frame_done,
 };
 
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   struct wl_callback *cb; 
+   struct wl_callback *cb;
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
