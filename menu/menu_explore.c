@@ -426,10 +426,10 @@ static void explore_load_icons(explore_state_t *state)
    {
       struct texture_image ti;
       size_t __len = _len;
-      __len       += fill_pathname(path + _len,
+      __len       += strlcpy(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
-                 ".png",
                  sizeof(path)     - _len);
+      strlcpy(path + __len, ".png", sizeof(path) - __len);
       if (!path_is_valid(path))
          continue;
 
