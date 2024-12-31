@@ -315,6 +315,7 @@ struct rarch_state
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
+   char path_next_content[PATH_MAX_LENGTH];
    char path_libretro[PATH_MAX_LENGTH];
    char path_config_file[PATH_MAX_LENGTH];
    char path_config_append_file[PATH_MAX_LENGTH];
@@ -2400,6 +2401,8 @@ char *path_get_ptr(enum rarch_path_type type)
    {
       case RARCH_PATH_CONTENT:
          return p_rarch->path_content;
+      case RARCH_PATH_NEXT_CONTENT:
+         return p_rarch->path_next_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
       case RARCH_PATH_BASENAME:
@@ -2440,6 +2443,8 @@ const char *path_get(enum rarch_path_type type)
    {
       case RARCH_PATH_CONTENT:
          return p_rarch->path_content;
+      case RARCH_PATH_NEXT_CONTENT:
+         return p_rarch->path_next_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
       case RARCH_PATH_CORE_OPTIONS:
@@ -2480,6 +2485,8 @@ size_t path_get_realsize(enum rarch_path_type type)
    {
       case RARCH_PATH_CONTENT:
          return sizeof(p_rarch->path_content);
+      case RARCH_PATH_NEXT_CONTENT:
+         return sizeof(p_rarch->path_next_content);
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return sizeof(p_rarch->path_default_shader_preset);
       case RARCH_PATH_CORE_OPTIONS:
@@ -2548,6 +2555,10 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_content, path,
                sizeof(p_rarch->path_content));
          break;
+      case RARCH_PATH_NEXT_CONTENT:
+         strlcpy(p_rarch->path_next_content, path,
+               sizeof(p_rarch->path_next_content));
+         break;
       case RARCH_PATH_NONE:
          break;
       case RARCH_PATH_BASENAME:
@@ -2595,6 +2606,10 @@ bool path_is_empty(enum rarch_path_type type)
          if (string_is_empty(p_rarch->path_content))
             return true;
          break;
+      case RARCH_PATH_NEXT_CONTENT:
+         if (string_is_empty(p_rarch->path_next_content))
+            return true;
+         break;
       case RARCH_PATH_CORE:
          if (string_is_empty(p_rarch->path_libretro))
             return true;
@@ -2631,6 +2646,9 @@ void path_clear(enum rarch_path_type type)
       case RARCH_PATH_CONTENT:
          *p_rarch->path_content = '\0';
          break;
+      case RARCH_PATH_NEXT_CONTENT:
+         *p_rarch->path_next_content = '\0';
+         break;
       case RARCH_PATH_CORE_OPTIONS:
          *p_rarch->path_core_options_file = '\0';
          break;
@@ -2660,6 +2678,7 @@ void path_clear(enum rarch_path_type type)
 static void path_clear_all(void)
 {
    path_clear(RARCH_PATH_CONTENT);
+   path_clear(RARCH_PATH_NEXT_CONTENT);
    path_clear(RARCH_PATH_CONFIG);
    path_clear(RARCH_PATH_CONFIG_APPEND);
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
@@ -5785,6 +5804,68 @@ void main_exit(void *args)
 #endif
 }
 
+
+static bool load_next_content(const char* path)
+{
+   core_info_list_t *core_info_list = NULL;
+   core_info_get_list(&core_info_list);
+   if (core_info_list)
+   {
+      size_t list_size;
+      content_ctx_info_t content_info  = { 0 };
+      const core_info_t *core_info     = NULL;
+      core_info_list_get_supported_cores(core_info_list,
+            (const char*)path, &core_info, &list_size);
+      if (list_size)
+      {
+         path_set(RARCH_PATH_CONTENT, path);
+
+         if (!path_is_empty(RARCH_PATH_CONTENT))
+         {
+            unsigned i;
+            core_info_t *current_core = NULL;
+            core_info_get_current_core(&current_core);
+
+            /*we already have path for libretro core */
+            for (i = 0; i < list_size; i++)
+            {
+               const core_info_t *info = (const core_info_t*)&core_info[i];
+
+               if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+               {
+                  /* Our previous core supports the current rom */
+                  task_push_load_content_with_current_core_from_companion_ui(
+                        NULL,
+                        &content_info,
+                        CORE_TYPE_PLAIN,
+                        NULL, NULL);
+                  return true;
+               }
+            }
+         }
+      }
+
+      if (list_size >= 1)
+      {
+         /*pick core that only exists and is bound to work. Ish. */
+         const core_info_t *info = (const core_info_t*)&core_info[0];
+
+         if (info)
+         {
+            task_push_load_content_with_new_core_from_companion_ui(
+                  info->path, NULL, NULL, NULL, NULL, &content_info, NULL, NULL);
+            return true;
+         }
+      }
+      else
+      {
+         RARCH_WARN("There are no core to open %s\n", path);
+      }
+   }
+
+   return false;
+}
+
 /**
  * main_entry:
  *
@@ -5888,6 +5969,11 @@ int rarch_main(int argc, char *argv[], void *data)
    {
       int ret;
       bool app_exit     = false;
+
+      if (!path_is_empty(RARCH_PATH_NEXT_CONTENT) && !string_is_equal(path_get(RARCH_PATH_CONTENT), path_get(RARCH_PATH_NEXT_CONTENT))) {
+         load_next_content(path_get(RARCH_PATH_NEXT_CONTENT));
+      }
+
 #ifdef HAVE_QT
       ui_companion_qt.application->process_events();
 #endif
