@@ -817,15 +817,12 @@ static int action_get_title_generic(char *s, size_t len,
 
       if ((tok = strtok_r(path_cpy, "|", &save)))
       {
-         size_t _len;
-         char elem0_path[NAME_MAX_LENGTH];
-         fill_pathname(elem0_path, path_basename(tok), "",
-               sizeof(elem0_path));
-         _len      = strlcpy(s, text, len);
-         s[  _len] = ':';
-         s[++_len] = ' ';
-         s[++_len] = '\0';
-         strlcpy(s + _len, elem0_path, len - _len);
+         size_t _len = strlcpy(s, text, len);
+         s[  _len]   = ':';
+         s[++_len]   = ' ';
+         s[++_len]   = '\0';
+         fill_pathname(s + _len, path_basename(tok), "",
+               len - _len);
          free(path_cpy);
          return 0;
       }
