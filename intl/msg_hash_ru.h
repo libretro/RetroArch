@@ -3277,23 +3277,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Статус : Н/Д"
+   "Статус: Н/Д"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Статус : остановлено"
+   "Статус: остановлено"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Статус : воспроизведение"
+   "Статус: воспроизведение"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Статус : воспроизведение (зациклено)"
+   "Статус: воспроизведение (зациклено)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Статус : воспроизведение (по порядку)"
+   "Статус: воспроизведение (по порядку)"
    )
 
 /* Settings > Audio > Menu Sounds */

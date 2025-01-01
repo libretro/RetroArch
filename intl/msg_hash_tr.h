@@ -3257,23 +3257,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Durum : N/A"
+   "Durum: N/A"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Durum : Durduruldu"
+   "Durum: Durduruldu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Durum : Oynanıyor"
+   "Durum: Oynanıyor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Durum : Oynanıyor (Döngü)"
+   "Durum: Oynanıyor (Döngü)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Durum : Oynanıyor (Ardışık)"
+   "Durum: Oynanıyor (Ardışık)"
    )
 
 /* Settings > Audio > Menu Sounds */

@@ -3277,7 +3277,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Стан : Н/В"
+   "Стан: Н/В"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
@@ -3289,11 +3289,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Стан : Гра (циклічно)"
+   "Стан: Гра (циклічно)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Стан : Гра (послідовно)"
+   "Стан: Гра (послідовно)"
    )
 
 /* Settings > Audio > Menu Sounds */

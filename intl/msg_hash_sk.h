@@ -2269,15 +2269,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Stav : N/A"
+   "Stav: N/A"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Stav : Zastavené"
+   "Stav: Zastavené"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Stav : Hrá sa"
+   "Stav: Hrá sa"
    )
 
 /* Settings > Audio > Menu Sounds */

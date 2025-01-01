@@ -1049,7 +1049,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Stanje : N/A"
+   "Stanje: N/A"
    )
 
 /* Settings > Audio > Menu Sounds */

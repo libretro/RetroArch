@@ -3189,23 +3189,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "状態 : 該当なし"
+   "状態: 該当なし"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "状態 : 停止"
+   "状態: 停止"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "状態 : 再生中"
+   "状態: 再生中"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "状態 : 再生中 (ループ)"
+   "状態: 再生中 (ループ)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "状態 : 再生中 (順番に)"
+   "状態: 再生中 (順番に)"
    )
 
 /* Settings > Audio > Menu Sounds */

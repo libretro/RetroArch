@@ -3289,23 +3289,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "상태 : 사용불가"
+   "상태: 사용불가"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "상태 : 정지됨"
+   "상태: 정지됨"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "상태 : 재생 중"
+   "상태: 재생 중"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "상태 : 재생 중 (반복)"
+   "상태: 재생 중 (반복)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "상태 : 재생 중 (순차)"
+   "상태: 재생 중 (순차)"
    )
 
 /* Settings > Audio > Menu Sounds */

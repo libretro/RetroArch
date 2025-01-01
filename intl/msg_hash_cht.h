@@ -3205,23 +3205,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "狀態 : 未使用"
+   "狀態: 未使用"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "狀態 : 已停止"
+   "狀態: 已停止"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "狀態 : 播放中"
+   "狀態: 播放中"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "狀態 : 播放中 (循環播放)"
+   "狀態: 播放中 (循環播放)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "狀態 : 播放中 (順序播放)"
+   "狀態: 播放中 (順序播放)"
    )
 
 /* Settings > Audio > Menu Sounds */

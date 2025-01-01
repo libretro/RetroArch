@@ -3217,23 +3217,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "État : Non disponible"
+   "État: Non disponible"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Etat : Arrêté"
+   "Etat: Arrêté"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "État : Lecture"
+   "État: Lecture"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "État : Lecture (en boucle)"
+   "État: Lecture (en boucle)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "État : Lecture (séquentielle)"
+   "État: Lecture (séquentielle)"
    )
 
 /* Settings > Audio > Menu Sounds */
