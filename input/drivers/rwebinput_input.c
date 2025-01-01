@@ -507,26 +507,17 @@ static int16_t rwebinput_input_state(
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
          {
-            struct video_viewport vp;
+            struct video_viewport vp    = {0};
             rwebinput_mouse_state_t
                *mouse                   = &rwebinput->mouse;
-            const int edge_detect       = 32700;
             bool screen                 = device ==
                RARCH_DEVICE_POINTER_SCREEN;
-            bool inside                 = false;
             int16_t res_x               = 0;
             int16_t res_y               = 0;
             int16_t res_screen_x        = 0;
             int16_t res_screen_y        = 0;
 
-            vp.x                        = 0;
-            vp.y                        = 0;
-            vp.width                    = 0;
-            vp.height                   = 0;
-            vp.full_width               = 0;
-            vp.full_height              = 0;
-
-            if (!(video_driver_translate_coord_viewport_wrap(
+            if (!(video_driver_translate_coord_viewport_confined_wrap(
                         &vp, mouse->x, mouse->y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y)))
                return 0;
@@ -537,25 +528,16 @@ static int16_t rwebinput_input_state(
                res_y = res_screen_y;
             }
 
-            inside =    (res_x >= -edge_detect)
-               && (res_y >= -edge_detect)
-               && (res_x <= edge_detect)
-               && (res_y <= edge_detect);
-
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_X:
-                  if (inside)
-                     return res_x;
-                  break;
+                  return res_x;
                case RETRO_DEVICE_ID_POINTER_Y:
-                  if (inside)
-                     return res_y;
-                  break;
+                  return res_y;
                case RETRO_DEVICE_ID_POINTER_PRESSED:
                   return !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
-               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                  return !inside;
+               case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                  return input_driver_pointer_is_offscreen(res_x, res_y);
                default:
                   break;
             }
