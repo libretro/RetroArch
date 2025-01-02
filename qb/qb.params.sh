@@ -50,6 +50,10 @@ EOF
 	print_help_option "--host=HOST"              "Cross-compile with HOST-gcc instead of gcc"
 	print_help_option "--help"                   "Show this help"
 
+	printf %s\\n '' 'Default for custom toggle options can be yes, no, or auto.'
+	print_help_option 'Disable option is shown:' 'Default is yes'
+	print_help_option 'Enable option is shown:'  'Default is no'
+	print_help_option 'Both options are shown:'  'Default is auto (included if the necessary library is present)'
 	printf %s\\n '' 'Custom options:'
 
 	while read -r VAR _ COMMENT; do
