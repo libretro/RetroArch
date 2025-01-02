@@ -5280,6 +5280,9 @@ static const char *input_overlay_path(bool want_osk)
    /* if there's an override, use it */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL))
        return settings->paths.path_overlay;
+   /* if there's no core, just return the default */
+   if (string_is_empty(path_get(RARCH_PATH_CORE)))
+      return settings->paths.path_overlay;
 
    /* let's go hunting */
    fill_pathname_expand_special(overlay_directory,
