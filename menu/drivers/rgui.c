@@ -3168,7 +3168,7 @@ end:
 
       /* Load wallpaper, if required */
       if (config_get_array(conf, wallpaper_key,
-            wallpaper_file, sizeof(wallpaper_file)) > 0)
+            wallpaper_file, sizeof(wallpaper_file)))
       {
          char wallpaper_path[PATH_MAX_LENGTH];
          wallpaper_path[0] = '\0';
