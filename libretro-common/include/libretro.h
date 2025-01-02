@@ -2584,7 +2584,7 @@ enum retro_mod
  *
  * @see RETRO_ENVIRONMENT_GET_CORE_DATA
  */
-#define RETRO_ENVIRONMENT_SET_CORE_DATA 81
+#define RETRO_ENVIRONMENT_SET_CORE_DATA (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
  * Gets a pointer to arbitrary data for the actively running core.
@@ -2597,7 +2597,7 @@ enum retro_mod
  *
  * @see RETRO_ENVIRONMENT_SET_CORE_DATA
  */
-#define RETRO_ENVIRONMENT_GET_CORE_DATA 82
+#define RETRO_ENVIRONMENT_GET_CORE_DATA (82 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**@}*/
 
