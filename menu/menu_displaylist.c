@@ -866,12 +866,15 @@ static int menu_displaylist_parse_core_info(
             /* Show relevant note row and skip showing it later */
             if (core_info->notes)
             {
+               int spc;
                unsigned j;
                char firmware_basename[64];
                fill_pathname_base(firmware_basename,
                      core_info->firmware[i].desc, sizeof(firmware_basename));
 
-               firmware_basename[string_find_index_substring_string(firmware_basename, " ")] = '\0';
+               spc = string_find_index_substring_string(firmware_basename, " ");
+               if (spc >= 0)
+                  firmware_basename[spc] = '\0';
 
                for (j = 0; j < core_info->note_list->size; j++)
                {
