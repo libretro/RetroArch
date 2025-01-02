@@ -1167,16 +1167,16 @@ size_t config_get_config_path(config_file_t *conf, char *s, size_t len)
    return 0;
 }
 
-size_t config_get_array(config_file_t *conf, const char *key,
+bool config_get_array(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
       return strlcpy(buf, entry->value, size) < size;
-   return 0;
+   return false;
 }
 
-size_t config_get_path(config_file_t *conf, const char *key,
+bool config_get_path(config_file_t *conf, const char *key,
       char *buf, size_t size)
 {
 #if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
@@ -1184,9 +1184,12 @@ size_t config_get_path(config_file_t *conf, const char *key,
 #else
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
-      return fill_pathname_expand_special(buf, entry->value, size);
+   {
+      fill_pathname_expand_special(buf, entry->value, size);
+      return true;
+   }
+   return false;
 #endif
-   return 0;
 }
 
 /**

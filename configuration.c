@@ -6389,7 +6389,7 @@ void input_config_parse_mouse_button(
 
    fill_pathname_join_delim(key, s, "mbtn", '_', sizeof(key));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)) > 0)
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       bind->mbutton = NO_BTN;
 
@@ -6460,7 +6460,7 @@ void input_config_parse_joy_axis(
    fill_pathname_join_delim(key_label, s,
          "axis_label", '_', sizeof(key_label));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)) > 0)
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       if (     tmp[0] == 'n'
             && tmp[1] == 'u'
@@ -6551,7 +6551,7 @@ void input_config_parse_joy_button(
    fill_pathname_join_delim(key_label, s,
          "btn_label", '_', sizeof(key_label));
 
-   if (config_get_array(conf, key, tmp, sizeof(tmp)) > 0)
+   if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       btn = tmp;
       if (     btn[0] == 'n'
