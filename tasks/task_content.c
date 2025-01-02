@@ -555,13 +555,13 @@ static bool content_file_list_set_info(
       if ((archive_delim = path_get_archive_delim(path)))
       {
          char archive_path[PATH_MAX_LENGTH];
-         size_t len      = 0;
+         size_t _len      = 0;
          /* Extract path of parent archive */
-         if ((len = (size_t)(1 + archive_delim - path))
+         if ((_len = (size_t)(1 + archive_delim - path))
                  >= PATH_MAX_LENGTH)
-            len = PATH_MAX_LENGTH;
+            _len = PATH_MAX_LENGTH;
 
-         strlcpy(archive_path, path, len * sizeof(char));
+         strlcpy(archive_path, path, _len * sizeof(char));
          if (!string_is_empty(archive_path))
             file_info->archive_path = strdup(archive_path);
 
@@ -581,8 +581,8 @@ static bool content_file_list_set_info(
           * searching related content. For archived content,
           * this is the basename of the archive file without
           * extension */
-         fill_pathname_base(name, archive_path, sizeof(name));
-         path_remove_extension(name);
+         fill_pathname(name, path_basename(archive_path), "",
+               sizeof(name));
 
          file_info->file_in_archive = true;
       }
@@ -595,8 +595,8 @@ static bool content_file_list_set_info(
          /* For uncompressed content, 'canonical' name/id
           * is the basename of the content file, without
           * extension */
-         fill_pathname_base(name, path, sizeof(name));
-         path_remove_extension(name);
+         fill_pathname(name, path_basename(path), "",
+               sizeof(name));
       }
 
       if (!string_is_empty(dir))
@@ -1904,12 +1904,10 @@ static bool firmware_update_status(
             (content_ctx->flags & CONTENT_INFO_FLAG_BIOS_IS_MISSING)
          && (content_ctx->flags & CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING))
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FIRMWARE),
-            100, 500, true, NULL,
+      const char *_msg = msg_hash_to_str(MSG_FIRMWARE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 100, 500, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("[Content]: Load content blocked. Reason: %s\n",
-            msg_hash_to_str(MSG_FIRMWARE));
+      RARCH_LOG("[Content]: Load content blocked. Reason: %s\n", _msg);
 
       return true;
    }
@@ -2867,7 +2865,7 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
    return false;
 }
 
-void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len)
+void content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len)
 {
    unsigned i                                   = 0;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
@@ -2883,12 +2881,10 @@ void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsy
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
       {
-         strlcpy(subsystem_friendly_name, subsystem->desc, len);
+         strlcpy(s, subsystem->desc, len);
          break;
       }
    }
-
-   return;
 }
 
 /* Add a rom to the subsystem ROM buffer */
@@ -3151,8 +3147,12 @@ bool content_init(void)
          case MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS:
          case MSG_FAILED_TO_LOAD_CONTENT:
          case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
-            RARCH_ERR("[Content]: %s\n", msg_hash_to_str(error_enum));
-            runloop_msg_queue_push(msg_hash_to_str(error_enum), 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(error_enum);
+               RARCH_ERR("[Content]: %s\n", _msg);
+               runloop_msg_queue_push(_msg, strlen(_msg), 2, ret ? 1 : 180, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
             break;
          case MSG_UNKNOWN:
          default:
@@ -3170,7 +3170,8 @@ bool content_init(void)
       /* Do not flush the message queue here
        * > This allows any core-generated error messages
        *   to propagate through to the frontend */
-      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(error_string, strlen(error_string), 2, ret ? 1 : 180, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(error_string);
    }
 

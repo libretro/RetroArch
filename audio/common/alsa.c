@@ -460,7 +460,7 @@ struct string_list *alsa_device_list_type_new(const char* type)
       char *io   = snd_device_name_get_hint(*n, "IOID");
       char *desc = snd_device_name_get_hint(*n, "DESC");
 
-      /* description of device IOID - input / output identifcation
+      /* description of device IOID - input / output identification
        * ("Input" or "Output"), NULL means both) */
 
       if (!io || (string_is_equal(io, type)))

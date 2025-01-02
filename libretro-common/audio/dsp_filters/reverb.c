@@ -225,17 +225,19 @@ struct reverb_data
 
 static void reverb_free(void *data)
 {
-   struct reverb_data *rev = (struct reverb_data*)data;
    unsigned i;
+   struct reverb_data *rev = (struct reverb_data*)data;
 
-   for (i = 0; i < numcombs; i++) {
-   free(rev->left.bufcomb[i]);
-   free(rev->right.bufcomb[i]);
+   for (i = 0; i < numcombs; i++)
+   {
+      free(rev->left.bufcomb[i]);
+      free(rev->right.bufcomb[i]);
    }
 
-   for (i = 0; i < numallpasses; i++) {
-   free(rev->left.bufallpass[i]);
-   free(rev->right.bufallpass[i]);
+   for (i = 0; i < numallpasses; i++)
+   {
+      free(rev->left.bufallpass[i]);
+      free(rev->right.bufallpass[i]);
    }
    free(data);
 }

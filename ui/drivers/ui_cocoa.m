@@ -428,6 +428,9 @@ static ui_application_t ui_application_cocoa = {
 
             apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   keycode, character, mod, RETRO_DEVICE_KEYBOARD);
+            if ((mod & RETROKMOD_META) && (event_type == NSEventTypeKeyDown))
+               apple_input_keyboard_event(false,
+                     keycode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -455,7 +458,7 @@ static ui_application_t ui_application_cocoa = {
             CGFloat delta_x             = event.deltaX;
             CGFloat delta_y             = event.deltaY;
             NSPoint pos                 = CONVERT_POINT();
-            cocoa_input_data_t 
+            cocoa_input_data_t
                *apple                   = (cocoa_input_data_t*)
                input_state_get_ptr()->current_data;
             if (!apple)
@@ -468,10 +471,13 @@ static ui_application_t ui_application_cocoa = {
             apple->touches[0].screen_x  = (int16_t)pos.x;
             apple->touches[0].screen_y  = (int16_t)pos.y;
 
-            if (apple->mouse_grabbed) {
+            if (apple->mouse_grabbed)
+            {
                apple->window_pos_x      += (int16_t)delta_x;
                apple->window_pos_y      += (int16_t)delta_y;
-            } else {
+            }
+            else
+            {
                apple->window_pos_x       = (int16_t)pos.x;
                apple->window_pos_y       = (int16_t)pos.y;
             }
@@ -490,7 +496,7 @@ static ui_application_t ui_application_cocoa = {
        {
            NSInteger number      = event.buttonNumber;
            NSPoint pos           = CONVERT_POINT();
-           cocoa_input_data_t 
+           cocoa_input_data_t
               *apple             = (cocoa_input_data_t*)
               input_state_get_ptr()->current_data;
            if (!apple || pos.y < 0)
@@ -505,7 +511,7 @@ static ui_application_t ui_application_cocoa = {
          {
             NSInteger number      = event.buttonNumber;
             NSPoint pos           = CONVERT_POINT();
-            cocoa_input_data_t 
+            cocoa_input_data_t
               *apple              = (cocoa_input_data_t*)
               input_state_get_ptr()->current_data;
             if (!apple || pos.y < 0)
@@ -706,7 +712,7 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode
 {
-   BOOL is_fullscreen = (self.window.styleMask 
+   BOOL is_fullscreen = (self.window.styleMask
          & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
    if (mode.fullscreen)
    {
@@ -803,7 +809,7 @@ static ui_application_t ui_application_cocoa = {
        steam_poll();
 #endif
 
-       while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) 
+       while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE)
              == kCFRunLoopRunHandledSource);
        if (ret == -1)
        {
@@ -857,7 +863,7 @@ static ui_application_t ui_application_cocoa = {
    }
    else
    {
-      const ui_msg_window_t *msg_window = 
+      const ui_msg_window_t *msg_window =
          ui_companion_driver_get_msg_window_ptr();
       if (msg_window)
       {
@@ -877,7 +883,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
    rarch_system_info_t *sys_info    = &runloop_state_get_ptr()->system;
    settings_t           *settings   = config_get_ptr();
-   bool set_supports_no_game_enable = 
+   bool set_supports_no_game_enable =
       settings->bools.set_supports_no_game_enable;
    if (!state || string_is_empty(state->result))
       return;
@@ -927,7 +933,7 @@ static void open_document_handler(
 
 - (IBAction)openCore:(id)sender
 {
-   const ui_browser_window_t *browser = 
+   const ui_browser_window_t *browser =
       ui_companion_driver_get_browser_window_ptr();
 
    if (browser)
@@ -954,7 +960,7 @@ static void open_document_handler(
 
 - (void)openDocument:(id)sender
 {
-   const ui_browser_window_t *browser = 
+   const ui_browser_window_t *browser =
       ui_companion_driver_get_browser_window_ptr();
 
    if (browser)

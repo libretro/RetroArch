@@ -523,9 +523,9 @@ bool task_push_audio_mixer_load_and_play(
       t->callback     = task_audio_mixer_handle_upload_flac_and_play;
    }
    else if (
-         string_is_equal(ext_lower, "mod") ||
-         string_is_equal(ext_lower, "s3m") ||
-         string_is_equal(ext_lower, "xm"))
+            string_is_equal(ext_lower, "mod")
+         || string_is_equal(ext_lower, "s3m")
+         || string_is_equal(ext_lower, "xm"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_MOD;
       nbio->type      = NBIO_TYPE_MOD;

@@ -253,7 +253,11 @@ class Pass
       void set_simulate_scanline(bool simulate) { simulate_scanline = simulate; }
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t dir) { frame_direction = dir; }
+      void set_frame_time_delta(uint32_t time_delta) { frame_time_delta = time_delta; }
+      void set_original_fps(float fps) { original_fps = fps; }
       void set_rotation(uint32_t rot) { rotation = rot; }
+      void set_core_aspect(float coreaspect) { core_aspect = coreaspect; }
+      void set_core_aspect_rot(float coreaspectrot) { core_aspect_rot = coreaspectrot; }
       void set_name(const char *name) { pass_name = name; }
       const std::string &get_name() const { return pass_name; }
       glslang_filter_chain_filter get_source_filter() const {
@@ -301,7 +305,7 @@ class Pass
       CommonResources *common = nullptr;
 
       Size2D current_framebuffer_size;
-      VkViewport current_viewport;
+      VkViewport curr_vp;
       vulkan_filter_chain_pass_info pass_info;
 
       std::vector<uint32_t> vertex_shader;
@@ -328,6 +332,7 @@ class Pass
             unsigned width, unsigned height);
       void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
       void build_semantic_int(uint8_t *data, slang_semantic semantic, int32_t value);
+      void build_semantic_float(uint8_t *data,slang_semantic semantic, float value);
       void build_semantic_parameter(uint8_t *data, unsigned index, float value);
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
@@ -342,7 +347,11 @@ class Pass
 
       uint64_t frame_count        = 0;
       int32_t frame_direction     = 1;
+      uint32_t frame_time_delta   = 0;
+      float original_fps          = 0;
       uint32_t rotation           = 0;
+      float core_aspect           = 0;
+      float core_aspect_rot       = 0;
       unsigned frame_count_period = 0;
       unsigned pass_number        = 0;
       uint32_t total_subframes    = 1;
@@ -410,7 +419,11 @@ struct vulkan_filter_chain
       void set_simulate_scanline(bool simulate_scanline);
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
       void set_frame_direction(int32_t direction);
+      void set_frame_time_delta(uint32_t time_delta);
+      void set_original_fps(float fps);
       void set_rotation(uint32_t rot);
+      void set_core_aspect(float coreaspect);
+      void set_core_aspect_rot(float coreaspect);
       void set_pass_name(unsigned pass, const char *name);
 
       void add_static_texture(std::unique_ptr<StaticTexture> texture);
@@ -1434,11 +1447,40 @@ void vulkan_filter_chain::set_frame_direction(int32_t direction)
       passes[i]->set_frame_direction(direction);
 }
 
+void vulkan_filter_chain::set_frame_time_delta(uint32_t time_delta)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_time_delta(time_delta);
+}
+
+void vulkan_filter_chain::set_original_fps(float fps)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_original_fps(fps);
+}
+
 void vulkan_filter_chain::set_rotation(uint32_t rot)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_rotation(rot);
+}
+
+
+void vulkan_filter_chain::set_core_aspect(float coreaspect)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect(coreaspect);
+}
+
+void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect_rot(coreaspectrot);
 }
 
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
@@ -1596,7 +1638,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? current_viewport.height : current_viewport.width) * pass_info.scale_x;
+         width = (retroarch_get_rotation() % 2 ? curr_vp.height : curr_vp.width) * pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1618,7 +1660,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? current_viewport.width : current_viewport.height) * pass_info.scale_y;
+         height = (retroarch_get_rotation() % 2 ? curr_vp.width : curr_vp.height) * pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1640,7 +1682,7 @@ Size2D Pass::set_pass_info(
 {
    clear_vk();
 
-   current_viewport         = swapchain.viewport;
+   curr_vp                  = swapchain.vp;
    pass_info                = info;
 
    num_sync_indices         = swapchain.num_indices;
@@ -1796,7 +1838,7 @@ bool Pass::init_pipeline()
    VkShaderModuleCreateInfo module_info;
    VkPipelineMultisampleStateCreateInfo multisample;
    VkVertexInputAttributeDescription attributes[2];
-   VkPipelineViewportStateCreateInfo viewport;
+   VkPipelineViewportStateCreateInfo vp;
    VkPipelineColorBlendAttachmentState blend_attachment  = {0};
    VkPipelineColorBlendStateCreateInfo blend             = {
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
@@ -1863,13 +1905,13 @@ bool Pass::init_pipeline()
    blend.pAttachments                           = &blend_attachment;
 
    /* Viewport state */
-   viewport.sType                               = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-   viewport.pNext                               = NULL;
-   viewport.flags                               = 0;
-   viewport.viewportCount                       = 1;
-   viewport.pViewports                          = NULL;
-   viewport.scissorCount                        = 1;
-   viewport.pScissors                           = NULL;
+   vp.sType                                     = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+   vp.pNext                                     = NULL;
+   vp.flags                                     = 0;
+   vp.viewportCount                             = 1;
+   vp.pViewports                                = NULL;
+   vp.scissorCount                              = 1;
+   vp.pScissors                                 = NULL;
 
    /* Depth-stencil state */
    depth_stencil.depthTestEnable                = VK_FALSE;
@@ -1922,7 +1964,7 @@ bool Pass::init_pipeline()
    pipe.pVertexInputState    = &vertex_input;
    pipe.pInputAssemblyState  = &input_assembly;
    pipe.pTessellationState   = NULL;
-   pipe.pViewportState       = &viewport;
+   pipe.pViewportState       = &vp;
    pipe.pRasterizationState  = &raster;
    pipe.pMultisampleState    = &multisample;
    pipe.pDepthStencilState   = &depth_stencil;
@@ -2279,6 +2321,19 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
       *reinterpret_cast<int32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
 }
 
+void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
+                              float value)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+      *reinterpret_cast<float*>(data + reflection.semantics[semantic].ubo_offset) = value;
+
+   if (refl.push_constant)
+      *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+}
+
+
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -2324,8 +2379,8 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
                        current_framebuffer_size.width,
                        current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(current_viewport.width),
-                       unsigned(current_viewport.height));
+                       unsigned(curr_vp.width),
+                       unsigned(curr_vp.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
                        frame_count_period
@@ -2341,8 +2396,20 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
                       current_subframe);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
+                      frame_time_delta);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
+                      original_fps);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
+                      core_aspect);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      core_aspect_rot);
 
    /* Standard inputs */
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -2394,7 +2461,7 @@ void Pass::build_commands(
 {
    uint8_t *u       = nullptr;
 
-   current_viewport = vp;
+   curr_vp          = vp;
    Size2D size      = get_output_size(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
@@ -2478,20 +2545,20 @@ void Pass::build_commands(
 
    if (final_pass)
    {
-      vkCmdSetViewport(cmd, 0, 1, &current_viewport);
+      vkCmdSetViewport(cmd, 0, 1, &curr_vp);
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
       if (simulate_scanline)
       {
          const VkRect2D sci = {
             {
-               int32_t(current_viewport.x),
-               int32_t((current_viewport.height / float(total_subframes))
+               int32_t(curr_vp.x),
+               int32_t((curr_vp.height / float(total_subframes))
                         * float(current_subframe - 1))
             },
             {
-               uint32_t(current_viewport.width),
-               uint32_t(current_viewport.height / float(total_subframes))
+               uint32_t(curr_vp.width),
+               uint32_t(curr_vp.height / float(total_subframes))
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -2501,12 +2568,12 @@ void Pass::build_commands(
       {
          const VkRect2D sci = {
             {
-               int32_t(current_viewport.x),
-               int32_t(current_viewport.y)
+               int32_t(curr_vp.x),
+               int32_t(curr_vp.y)
             },
             {
-               uint32_t(current_viewport.width),
-               uint32_t(current_viewport.height)
+               uint32_t(curr_vp.width),
+               uint32_t(curr_vp.height)
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -3181,11 +3248,39 @@ void vulkan_filter_chain_set_frame_direction(
    chain->set_frame_direction(direction);
 }
 
+void vulkan_filter_chain_set_frame_time_delta(
+      vulkan_filter_chain_t *chain,
+      uint32_t time_delta)
+{
+   chain->set_frame_time_delta(time_delta);
+}
+
+void vulkan_filter_chain_set_original_fps(
+      vulkan_filter_chain_t *chain,
+      float fps)
+{
+   chain->set_original_fps(fps);
+}
+
 void vulkan_filter_chain_set_rotation(
       vulkan_filter_chain_t *chain,
       uint32_t rot)
 {
    chain->set_rotation(rot);
+}
+
+void vulkan_filter_chain_set_core_aspect(
+      vulkan_filter_chain_t *chain,
+      float coreaspect)
+{
+   chain->set_core_aspect(coreaspect);
+}
+
+void vulkan_filter_chain_set_core_aspect_rot(
+      vulkan_filter_chain_t *chain,
+      float coreaspectrot)
+{
+   chain->set_core_aspect_rot(coreaspectrot);
 }
 
 void vulkan_filter_chain_set_pass_name(

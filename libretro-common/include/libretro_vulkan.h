@@ -172,8 +172,8 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * of the frontend is destroyed if create_device was called successfully so that the core has a chance of
     * tearing down its own device resources.
     *
-    * Only auxillary resources should be freed here, i.e. resources which are not part of retro_vulkan_context.
-    * v2: Auxillary instance resources created during create_instance can also be freed here.
+    * Only auxiliary resources should be freed here, i.e. resources which are not part of retro_vulkan_context.
+    * v2: Auxiliary instance resources created during create_instance can also be freed here.
     */
    retro_vulkan_destroy_device_t destroy_device;
 
@@ -373,7 +373,7 @@ struct retro_hw_render_interface_vulkan
     * The frontend will always release ownership back to src_queue_family.
     * Waiting for frontend to complete with wait_sync_index() ensures that
     * the frontend has released ownership back to the application.
-    * Note that in Vulkan, transfering ownership is a two-part process.
+    * Note that in Vulkan, transferring ownership is a two-part process.
     *
     * Example frame:
     *  - core releases ownership from src_queue_index to queue_index with VkImageMemoryBarrier.
@@ -431,7 +431,7 @@ struct retro_hw_render_interface_vulkan
     *
     * While this value will typically remain constant throughout the
     * applications lifecycle, it may for example change if the frontend
-    * suddently changes fullscreen state and/or latency.
+    * suddenly changes fullscreen state and/or latency.
     *
     * If this value ever changes, it is safe to assume that the device
     * is completely idle and all synchronization objects can be deleted

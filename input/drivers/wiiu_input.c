@@ -111,9 +111,9 @@ static int16_t wiiu_input_state(
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         /* TODO: Emulate a relative mouse. 
-          * This is suprisingly hard to get working nicely.
-            */
+         /* TODO: Emulate a relative mouse.
+          * This is surprisingly hard to get working nicely.
+          */
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_PRESSED:

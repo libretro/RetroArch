@@ -4,12 +4,12 @@
  * @file libretro.h
  * @version 1
  * @author libretro
- * @copyright Copyright (C) 2010-2023 The RetroArch team
+ * @copyright Copyright (C) 2010-2024 The RetroArch team
  *
  * @paragraph LICENSE
  * The following license statement only applies to this libretro API header (libretro.h).
  *
- * Copyright (C) 2010-2023 The RetroArch team
+ * Copyright (C) 2010-2024 The RetroArch team
  *
  * Permission is hereby granted, free of charge,
  * to any person obtaining a copy of this software and associated documentation files (the "Software"),
@@ -219,7 +219,7 @@ extern "C" {
 #define RETRO_DEVICE_KEYBOARD     3
 
 /**
- * An abstraction around a light gun, simular to the PlayStation's Guncon.
+ * An abstraction around a light gun, similar to the PlayStation's Guncon.
  *
  * When provided as the \c device argument to \c retro_input_state_t,
  * the \c id argument denotes one of several possible inputs.
@@ -272,7 +272,10 @@ extern "C" {
  * [-0x7fff, 0x7fff]: -0x7fff corresponds to the far left/top of the screen,
  * and 0x7fff corresponds to the far right/bottom of the screen.
  * The "screen" is here defined as area that is passed to the frontend and
- * later displayed on the monitor.
+ * later displayed on the monitor. If the pointer is outside this screen,
+ * such as in the black surrounding areas when actual display is larger,
+ * edge position is reported. An explicit edge detection is also provided,
+ * that will return 1 if the pointer is near the screen edge or actually outside it.
  *
  * The frontend is free to scale/resize this screen as it sees fit, however,
  * (X, Y) = (-0x7fff, -0x7fff) will correspond to the top-left pixel of the
@@ -406,7 +409,8 @@ extern "C" {
 
 /* Id values for LIGHTGUN. */
 #define RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X        13 /*Absolute Position*/
-#define RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y        14 /*Absolute*/
+#define RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y        14 /*Absolute Position*/
+/** Indicates if lightgun points off the screen or near the edge */
 #define RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN    15 /*Status Check*/
 #define RETRO_DEVICE_ID_LIGHTGUN_TRIGGER          2
 #define RETRO_DEVICE_ID_LIGHTGUN_RELOAD          16 /*Forced off-screen shot*/
@@ -421,17 +425,18 @@ extern "C" {
 #define RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT      12
 /* deprecated */
 #define RETRO_DEVICE_ID_LIGHTGUN_X                0 /*Relative Position*/
-#define RETRO_DEVICE_ID_LIGHTGUN_Y                1 /*Relative*/
-#define RETRO_DEVICE_ID_LIGHTGUN_CURSOR           3 /*Use Aux:A*/
-#define RETRO_DEVICE_ID_LIGHTGUN_TURBO            4 /*Use Aux:B*/
-#define RETRO_DEVICE_ID_LIGHTGUN_PAUSE            5 /*Use Start*/
+#define RETRO_DEVICE_ID_LIGHTGUN_Y                1 /*Relative Position*/
+#define RETRO_DEVICE_ID_LIGHTGUN_CURSOR           3 /*Use Aux:A instead*/
+#define RETRO_DEVICE_ID_LIGHTGUN_TURBO            4 /*Use Aux:B instead*/
+#define RETRO_DEVICE_ID_LIGHTGUN_PAUSE            5 /*Use Start instead*/
 
 /* Id values for POINTER. */
-#define RETRO_DEVICE_ID_POINTER_X         0
-#define RETRO_DEVICE_ID_POINTER_Y         1
-#define RETRO_DEVICE_ID_POINTER_PRESSED   2
-#define RETRO_DEVICE_ID_POINTER_COUNT     3
-
+#define RETRO_DEVICE_ID_POINTER_X             0
+#define RETRO_DEVICE_ID_POINTER_Y             1
+#define RETRO_DEVICE_ID_POINTER_PRESSED       2
+#define RETRO_DEVICE_ID_POINTER_COUNT         3
+/** Indicates if pointer is off the screen or near the edge */
+#define RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN 15
 /** @} */
 
 /* Returned from retro_get_region(). */
@@ -1094,7 +1099,7 @@ enum retro_mod
  * to write audio. The audio callbacks must be called from within the
  * notification callback.
  * The amount of audio data to write is up to the core.
- * Generally, the audio callback will be called continously in a loop.
+ * Generally, the audio callback will be called continuously in a loop.
  *
  * A frontend may disable this callback in certain situations.
  * The core must be able to render audio with the "normal" interface.
@@ -1332,7 +1337,7 @@ enum retro_mod
  * <li>Changing the emulated system's internal resolution,
  * within the limits defined by the existing values of \c max_width and \c max_height.
  * Use \c RETRO_ENVIRONMENT_SET_GEOMETRY instead,
- * and adjust \c retro_get_system_av_info to account fo
+ * and adjust \c retro_get_system_av_info to account for
  * supported scale factors and screen layouts
  * when computing \c max_width and \c max_height.
  * Only use this environment call if \c max_width or \c max_height needs to increase.
@@ -5199,14 +5204,14 @@ struct retro_hw_render_callback
  * character is the text character of the pressed key. (UTF-32).
  * key_modifiers is a set of RETROKMOD values or'ed together.
  *
- * The pressed/keycode state can be indepedent of the character.
+ * The pressed/keycode state can be independent of the character.
  * It is also possible that multiple characters are generated from a
  * single keypress.
  * Keycode events should be treated separately from character events.
  * However, when possible, the frontend should try to synchronize these.
  * If only a character is posted, keycode should be RETROK_UNKNOWN.
  *
- * Similarily if only a keycode event is generated with no corresponding
+ * Similarly if only a keycode event is generated with no corresponding
  * character, character should be 0.
  */
 typedef void (RETRO_CALLCONV *retro_keyboard_event_t)(bool down, unsigned keycode,
@@ -5757,7 +5762,7 @@ struct retro_message
 enum retro_message_target
 {
    /**
-    * Indicates that the frontent should display the given message
+    * Indicates that the frontend should display the given message
     * using all other targets defined by \c retro_message_target at once.
     */
    RETRO_MESSAGE_TARGET_ALL = 0,
@@ -5948,7 +5953,7 @@ struct retro_message_ext
    /**
     * The progress of an asynchronous task.
     *
-    * A value betwen 0 and 100 (inclusive) indicates the task's percentage,
+    * A value between 0 and 100 (inclusive) indicates the task's percentage,
     * and a value of -1 indicates a task of unknown completion.
     *
     * @note Since message type is a hint, a frontend may ignore progress values.

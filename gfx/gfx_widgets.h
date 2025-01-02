@@ -351,6 +351,7 @@ void gfx_widgets_deinit(bool widgets_persisting);
 
 void gfx_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
+      size_t len,
       unsigned duration,
       char *title,
       enum message_queue_icon icon,

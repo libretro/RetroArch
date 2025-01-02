@@ -42,6 +42,7 @@
 #include "../../../content.h"
 #include "../../../core_info.h"
 #include "../../../defaults.h"
+#include "../../../frontend/frontend.h"
 #include "../../../file_path_special.h"
 #include "../../../menu/menu_cbs.h"
 #include "../../../paths.h"
@@ -107,6 +108,25 @@ void cocoa_file_load_with_detect_core(const char *filename);
 #if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 -(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
 {
+#if defined(IOS)
+   if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive)
+      return;
+
+   int ret = runloop_iterate();
+
+   task_queue_check();
+
+   if (ret == -1)
+   {
+      main_exit(NULL);
+      exit(0);
+      return;
+   }
+
+   uint32_t runloop_flags = runloop_get_flags();
+   if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+#endif
 }
 #endif
 
@@ -121,7 +141,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
       if (@available(iOS 15.0, tvOS 15.0, *))
-         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeMake(60, 120, 120)];
+         [view.displayLink setPreferredFrameRateRange:CAFrameRateRangeDefault];
 #endif
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
 #elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
@@ -165,7 +185,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
     */
    self.controllerUserInteractionEnabled = YES;
 #endif
-  
+
 #if TARGET_OS_IOS
   self.shouldLockCurrentInterfaceOrientation = NO;
 #endif
@@ -207,51 +227,52 @@ void cocoa_file_load_with_detect_core(const char *filename);
 
     bool foundSiri = false;
     bool nonSiriPress = false;
-    for (GCController *controller in controllers) {
-        if ([self isSiri:controller])
-        {
-            foundSiri = true;
-            if (type == UIPressTypeSelect)
-                return controller.microGamepad.buttonA.pressed;
-            else if (type == UIPressTypePlayPause)
-               return controller.microGamepad.buttonX.pressed;
-        }
-        else if (controller.extendedGamepad)
-        {
-            if (type == UIPressTypeUpArrow)
-                nonSiriPress |= controller.extendedGamepad.dpad.up.pressed
-                             || controller.extendedGamepad.leftThumbstick.up.pressed
-                             || controller.extendedGamepad.rightThumbstick.up.pressed;
-            else if (type == UIPressTypeDownArrow)
-                nonSiriPress |= controller.extendedGamepad.dpad.down.pressed
-                             || controller.extendedGamepad.leftThumbstick.down.pressed
-                             || controller.extendedGamepad.rightThumbstick.down.pressed;
-            else if (type == UIPressTypeLeftArrow)
-                nonSiriPress |= controller.extendedGamepad.dpad.left.pressed
-                             || controller.extendedGamepad.leftShoulder.pressed
-                             || controller.extendedGamepad.leftTrigger.pressed
-                             || controller.extendedGamepad.leftThumbstick.left.pressed
-                             || controller.extendedGamepad.rightThumbstick.left.pressed;
-            else if (type == UIPressTypeRightArrow)
-                nonSiriPress |= controller.extendedGamepad.dpad.right.pressed
-                             || controller.extendedGamepad.rightShoulder.pressed
-                             || controller.extendedGamepad.rightTrigger.pressed
-                             || controller.extendedGamepad.leftThumbstick.right.pressed
-                            || controller.extendedGamepad.rightThumbstick.right.pressed;
-            else if (type == UIPressTypeSelect)
-                nonSiriPress |= controller.extendedGamepad.buttonA.pressed;
-            else if (type == UIPressTypeMenu)
-                nonSiriPress |= controller.extendedGamepad.buttonB.pressed;
-            else if (type == UIPressTypePlayPause)
-                nonSiriPress |= controller.extendedGamepad.buttonX.pressed;
-        }
-        else
-        {
-            /* we have a remote that is not extended. some of these remotes send
-             * spurious presses. the only way to get them to work properly is to
-             * make the siri remote work improperly. */
-            nonSiriPress = true;
-        }
+    for (GCController *controller in controllers)
+    {
+       if ([self isSiri:controller])
+       {
+          foundSiri = true;
+          if (type == UIPressTypeSelect)
+             return controller.microGamepad.buttonA.pressed;
+          else if (type == UIPressTypePlayPause)
+             return controller.microGamepad.buttonX.pressed;
+       }
+       else if (controller.extendedGamepad)
+       {
+          if (type == UIPressTypeUpArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.up.pressed
+                || controller.extendedGamepad.leftThumbstick.up.pressed
+                || controller.extendedGamepad.rightThumbstick.up.pressed;
+          else if (type == UIPressTypeDownArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.down.pressed
+                || controller.extendedGamepad.leftThumbstick.down.pressed
+                || controller.extendedGamepad.rightThumbstick.down.pressed;
+          else if (type == UIPressTypeLeftArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.left.pressed
+                || controller.extendedGamepad.leftShoulder.pressed
+                || controller.extendedGamepad.leftTrigger.pressed
+                || controller.extendedGamepad.leftThumbstick.left.pressed
+                || controller.extendedGamepad.rightThumbstick.left.pressed;
+          else if (type == UIPressTypeRightArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.right.pressed
+                || controller.extendedGamepad.rightShoulder.pressed
+                || controller.extendedGamepad.rightTrigger.pressed
+                || controller.extendedGamepad.leftThumbstick.right.pressed
+                || controller.extendedGamepad.rightThumbstick.right.pressed;
+          else if (type == UIPressTypeSelect)
+             nonSiriPress |= controller.extendedGamepad.buttonA.pressed;
+          else if (type == UIPressTypeMenu)
+             nonSiriPress |= controller.extendedGamepad.buttonB.pressed;
+          else if (type == UIPressTypePlayPause)
+             nonSiriPress |= controller.extendedGamepad.buttonX.pressed;
+       }
+       else
+       {
+          /* we have a remote that is not extended. some of these remotes send
+           * spurious presses. the only way to get them to work properly is to
+           * make the siri remote work improperly. */
+          nonSiriPress = true;
+       }
     }
 
     if (!foundSiri || [controllers count] == 1)
@@ -312,13 +333,14 @@ void cocoa_file_load_with_detect_core(const char *filename);
 
 -(void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
-    for (UIPress *press in presses) {
-        if (press.type == UIPressTypeSelect || press.type == UIPressTypePlayPause)
-            [self sendKeyForPress:press.type down:false];
-        else
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+    for (UIPress *press in presses)
+    {
+       if (press.type == UIPressTypeSelect || press.type == UIPressTypePlayPause)
+          [self sendKeyForPress:press.type down:false];
+       else
+          dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
                 [[CocoaView get] sendKeyForPress:press.type down:false];
-            });
+                });
     }
 }
 
@@ -558,22 +580,20 @@ void cocoa_file_load_with_detect_core(const char *filename);
 /* NOTE: This version runs on iOS6+. */
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
-  if (@available(iOS 16, *)) {
-    if (self.shouldLockCurrentInterfaceOrientation) {
+  if (@available(iOS 16, *))
+  {
+    if (self.shouldLockCurrentInterfaceOrientation)
       return 1 << self.lockInterfaceOrientation;
-    } else {
-      return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
-    }
-  } else {
     return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
   }
+  return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
 }
 
 /* NOTE: This does not run on iOS 16+ */
--(BOOL)shouldAutorotate {
-  if (self.shouldLockCurrentInterfaceOrientation) {
+-(BOOL)shouldAutorotate
+{
+  if (self.shouldLockCurrentInterfaceOrientation)
     return NO;
-  }
   return YES;
 }
 
@@ -692,10 +712,8 @@ void cocoa_file_load_with_detect_core(const char *filename);
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-#if TARGET_OS_TV
-    [[WebServer sharedInstance] startUploader];
+    [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
-#endif
 }
 
 #if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
@@ -763,7 +781,7 @@ void cocoa_file_load_with_detect_core(const char *filename);
 #elif TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
-            [[WebServer sharedInstance] stopUploader];
+            [[WebServer sharedInstance] stopServers];
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{
@@ -1041,8 +1059,8 @@ static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gf
    }];
    if (!string_is_empty(path_data->content_db_name))
    {
-      const char *img_name = NULL;
-      if (gfx_thumbnail_get_img_name(path_data, &img_name, PLAYLIST_THUMBNAIL_FLAG_STD_NAME))
+      const char *img_name = path_data->content_img;
+      if (!string_is_empty(img_name))
          dict[@"img"] = [NSString stringWithFormat:@"https://thumbnails.libretro.com/%s/Named_Boxarts/%s",
                          path_data->content_db_name, img_name];
    }

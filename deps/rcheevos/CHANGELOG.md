@@ -1,3 +1,14 @@
+# v11.6.0
+* backdate retried unlocks in rc_client
+* add memory map and hash method for RC_CONSOLE_ZX_SPECTRUM
+* add RC_CONSOLE_GAMECUBE to supported consoles for iso file extension
+* add DTCM to RC_CONSOLE_NINTENDO_DS and RC_CONSOLE_NINTENDO_DSI memory maps
+* don't report conflict if last conditions of OrNext chain conflict
+* don't report conflict if last conditions of AddSource chain conflict
+* fix hits not being reset on leaderboard value when start and submit are both true in a single frame
+* fix crash when multiple items in a CSV lookup overlap
+* fix crash if game is unloaded while activating achievements
+
 # v11.5.0
 * add total_entries to rc_api_fetch_leaderboard_info_response_t
 * add RC_CLIENT_RAINTEGRATION_EVENT_MENU_CHANGED event

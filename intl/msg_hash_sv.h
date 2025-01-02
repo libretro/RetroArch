@@ -186,8 +186,24 @@ MSG_HASH(
    "Starta om"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Starta om RetroArch-programmet."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Avsluta"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är inaktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   "Avsluta RetroArch. Döda programmet på ett hårt sätt (SIGKILL, etc.) kommer att terminera RetroArch utan att spara konfigurationen i något fall. På Unix-liknande system tillåter SIGINT/SIGTERM en ren deinitiering som inkluderar att konfigurationen sparas om aktiverad."
    )
 
 /* Main Menu > Load Core */
@@ -476,6 +492,10 @@ MSG_HASH(
    "Kräver grafik-API"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Fullständig sökväg"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "Spara status-stöd"
    )
@@ -494,6 +514,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
    "Deterministisk (Spara/Ladda, Spola tillbaka, Run-Ahead, Netplay)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   "- Observera: 'Systemfiler är i Innehållskatalog' är för närvarande aktiverat."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   "- Letar i: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -593,6 +621,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_CORES,
    "CPU-kärnor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   "JIT tillgänglig"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
@@ -1145,6 +1177,38 @@ MSG_HASH(
    "Destruktiv molnsynkning"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   "Synk: Sparningar/Tillstånd"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   "Synk: Konfigurationsfiler"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   "Synk: Miniatyrbilder"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   "Synk: Systemfiler"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   "När aktiverad kommer sparningar/tillstånd att synkas till molnet."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   "När aktiverad kommer konfigurationsfiler synkas till molnet."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   "När aktiverad kommer miniatyrbilder att synkas till molnet. Rekommenderas inte alltid förutom för stora samlingar av anpassade miniatyrbilder, annars är miniatyrbildshämtaren ett bättre val."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   "När aktiverad kommer systemfiler att synkas till molnet. Detta kan kraftigt öka tiden det tar att synka. Använd med försiktighet."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    "Inaktiverat flyttas filer till en säkerhetskopia innan de skrivs över eller raderas."
    )
@@ -1191,6 +1255,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    "Filhanterare"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   "Ändra inställningar för filutforskare."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
@@ -1425,6 +1493,10 @@ MSG_HASH(
    "Spelkontroll"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   "Drivrutin för handkontroller att använda. (kräver omstart)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
    "DirectInput spelkontrolldrivrutin."
    )
@@ -1435,6 +1507,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
    "Raw Linux-drivrutin, använder äldre joystick API. Använd udev i stället om det är möjligt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   "Linux-drivrutiner för handkontroller anslutna till parallellport via specialadaptrar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
@@ -1670,6 +1746,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    "Meny"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Drivrutin för meny att använda. (kräver omstart)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1934,6 +2014,10 @@ MSG_HASH(
    )
 #if defined (WIIU)
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+   "Optimera för Wii U GamePad (omstart krävs)"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
    "Använd en exakt 2x skala av GamePad som visningsport. Inaktivera för att visa med den ursprungliga TV-upplösningen."
    )
@@ -2186,16 +2270,12 @@ MSG_HASH(
    "Heltalsskala"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Skala video endast i heltalssteg. Basstorleken beror på systemrapporterad geometri och bildformat. Om 'Tvinga Bildformat' inte är inställt, kommer X/Y att heltalsskalas oberoende av varandra."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Underskala"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Heltalsöverskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Tvinga heltalsskalning att avrunda uppåt till nästa större heltal istället för att avrunda nedåt."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Överskala"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2559,10 +2639,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Ljudfördröjning (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Önskad ljudfördröjning i millisekunder. Kanske inte är hedrad om ljuddrivrutinen inte kan tillhandahålla given latens."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -2753,23 +2829,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Status : N/A"
+   "Status: N/A"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Status : Stoppat"
+   "Status: Stoppat"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Status : Spelar"
+   "Status: Spelar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Status : Spelar (Loopad)"
+   "Status: Spelar (Loopad)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Status : Spelar (Sekventiell)"
+   "Status: Spelar (Sekventiell)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -2817,14 +2893,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Åsidosätt nuvarande med de ommappade bindningarna för den nuvarande kärnan."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sort Remaps By Gamepad"
-   )   
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Remaps will only apply to the active gamepad in which they were saved."
-   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Autokonfig"
@@ -2960,6 +3028,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    "Klassisk"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   "Klassisk (växla)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
@@ -3242,7 +3314,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Ladda status"
+   "Läs in tillstånd"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
@@ -3504,10 +3576,6 @@ MSG_HASH(
    "Skickar ett chattmeddelande till den aktuella Netplay sessionen."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Netplay Tona chatt (På/Av)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Växlar mellan tonande eller statiska Netplay chattmeddelanden."
    )
@@ -3714,6 +3782,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Antal bildrutor att köra före"
    )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Dölj Run-Ahead Varningar"
@@ -3875,6 +3945,22 @@ MSG_HASH(
    "Ladda Ommappningsfiler automatiskt"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+   "Läs in anpassade kontroller vid uppstart."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   "Läs in filer för initiala skivindex automatiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   "Byt till senaste använda skivan vid start av flerskivsinnehåll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   "Läs in shaderförval automatiskt"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
    "Använd global kärnalternativsfil"
    )
@@ -3886,6 +3972,14 @@ MSG_HASH(
 /* Settings > Saving */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   "Sortera sparningar i mappar efter kärnnamn"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+   "Sortera sparade filer i mappar med namn efter använd kärna."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
    "Sortera sparad status i mappar efter kärnnamn"
    )
@@ -3894,12 +3988,36 @@ MSG_HASH(
    "Sortera sparad status i mappar med namn efter den använda kärnan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Sortera sparningar i mappar efter innehållskatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   "Sortera sparade filer i mappar med namn efter katalogen som innehållet finns i."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Sortera sparad status i mappar efter innehållskatalog"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "Sortera sparad status i mappar med namn efter den katalog där innehållet finns."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   "Skriv inte över SaveRAM vid inläsning av sparat tillstånd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+   "Blockera SaveRAM från att skrivas över när sparade tillstånd läses in. Kan potentiellt innebära buggiga spel."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   "Intervall för autosparande av SaveRAM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+   "Spara automatiskt icke-flyktigt SaveRAM vid fasta intervaller (i sekunder)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
@@ -3938,6 +4056,10 @@ MSG_HASH(
    "Visa miniatyrer av sparstatusar i menyn."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   "Kompression för SaveRAM"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
    "Komprimera din sparstatus"
    )
@@ -3946,12 +4068,60 @@ MSG_HASH(
    "Lagrar dina sparade statusfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och laddningstider."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Sortera skärmbilder i mappar efter innehållskatalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   "Sortera skärmbilder i mappar med namn efter katalogen som innehållet finns i."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Skriv sparningar till innehållskatalogen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   "Använd innehållskatalog som katalog för sparade filer."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    "Skriv sparade statusar till Innehålls-katalog"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   "Använd innehållskatalog som katalog för sparade tillstånd."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Systemfiler finns i innehållskatalogen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   "Använd innehållskatalog som katalog för system/BIOS."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Skriv skärmbilder till innehållskatalogen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   "Använd innehållskatalog som katalog för skärmbilder."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   "Spara körtidslogg (per kärna)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   "Spara körtidslogg (aggregerat)"
    )
 
 /* Settings > Logging */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+   "Verbositet för loggning"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
    "Logga händelser till en terminal eller fil."
@@ -4016,8 +4186,16 @@ MSG_HASH(
    "Visa dolda filer och mappar"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+   "Visa dolda filer och kataloger i filbläddraren."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    "Filtrera okända filformat"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   "Filtrera filer som visas i filbläddraren till filändelser som stöds."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
@@ -4026,6 +4204,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Filtrera efter Kärna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+   "Kom ihåg senaste använda startkatalog"
    )
 
 /* Settings > Frame Throttle */
@@ -4280,6 +4462,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
    "Välj och justera ett tangentbordsöverlager."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   "Överlägg ljuspistol"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   "Överlägg mus"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
 
@@ -4298,6 +4488,10 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Port för ljuspistol"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
@@ -4739,6 +4933,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
    "Scrollfördröjning i meny"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   "Skrivbordsmeny (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -5328,6 +5526,14 @@ MSG_HASH(
    "Visa 'Användare'"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Spellistikoner"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Typ av miniatyrbild för spellistikonen att visa."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Visa inställningar för 'Användare'."
    )
@@ -5382,6 +5588,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    "Ändra förinställda menybakgrundens opacitet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   "Använd föredraget färgtema för systemet"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   "Använd operativsystemets färgtema (om något). Åsidosätter temainställningar."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAILS,
@@ -5491,8 +5705,44 @@ MSG_HASH(
    "Hardcore läge"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   "Topplistor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+   "Prestationsemblem"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+   "Visa emblem i prestationslistan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   "Testa inofficiella prestationer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   "Använd inofficiella prestationer och/eller betafunktioner för teständamål."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Lås upp ljud"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   "Spela upp ett ljud när en prestation låses upp."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
    "Automatisk skärmdump"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+   "Ta automatiskt en skärmbild när en prestation tjänas."
+   )
+MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   "Encore-läge"
    )
 
 /* Settings > Achievements > Appearance */
@@ -5545,6 +5795,14 @@ MSG_HASH(
    "Ändra vilka meddelanden och element på skärmen som visas. Inaktiverar inte funktionalitet."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   "Alla identifierade spel"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   "Spel med prestationer"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
    "Upplåst Notiser"
    )
@@ -5559,6 +5817,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
    "Visar en notis när alla prestationer för ett spel är upplåsta."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   "Indikatorer för aktiva utmatningar"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
@@ -5580,12 +5842,36 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
    "Visar meddelanden kopplade till RetroAchievements kontoinloggning."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+   "Utförliga meddelanden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   "Visar ytterligare diagnostik och felmeddelanden."
+   )
 
 /* Settings > Network */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   "Nordamerika (östkusten, USA)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
    "Västeuropa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   "Sydamerika (sydöstra, Brazilien)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   "Sydostasien"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "Östra Asien (Chuncheon, Sydkorea)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -5596,8 +5882,16 @@ MSG_HASH(
    "Serveradress"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+   "Adressen för värden att ansluta till."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    "Netplay TCP-port"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+   "Porten för värdens IP-adress. Kan vara antingen en TCP eller UDP-port."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
@@ -5612,8 +5906,20 @@ MSG_HASH(
    "Serverlösenord"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+   "Lösenordet som används av klienter för att ansluta till värden."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+   "Lösenordet som används av klienter för att ansluta till värden som en åskådare."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    "Netplay Åskådarläge"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
+   "Starta netplay i åskådarläge."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -5638,6 +5944,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
    "Tillåt spelare att pausa under Netplay."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+   "Begär enhet %u"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -5696,6 +6006,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
    "Favoriters storlek"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   "Sortera spellistor alfabetiskt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+   "Spara spellistor med gamla formatet"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   "Komprimera spellistor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
@@ -5790,6 +6112,14 @@ MSG_HASH(
    "Hantera Spellistor"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   "Portabla spellistor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   "Tillåt alla bildtyper som stöds för miniatyrbilder"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGE,
    "Hantera"
    )
@@ -5817,8 +6147,16 @@ MSG_HASH(
    "Rensa Spellista"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   "Uppdatera spellista"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    "Radera Spellista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   "Ta bort spellistan från filsystem."
    )
 
 /* Settings > User */
@@ -5915,6 +6253,10 @@ MSG_HASH(
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Filhanterare"
+   )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Konfigurationsfiler"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
@@ -6056,10 +6398,22 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_DIR,
    "System händelselogg"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LOG_DIR,
+   "Loggar för systemhändelser lagras i denna katalog."
+   )
 
 #ifdef HAVE_MIST
 /* Settings > Steam */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+   "Aktivera Rich Presence"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
+   "Dela din aktuella status i RetroArch på Steam."
+   )
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
@@ -6128,6 +6482,10 @@ MSG_HASH(
    "Koppla från en aktiv Netplay anslutning."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   "Filter för lobbyn"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
    "Endast anslutningsbara rum"
    )
@@ -6139,20 +6497,60 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
    "Lösenordade rum"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   "Uppdatera Netplay-värdlistan"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   "Leta efter netplay-värdar."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   "Uppdatera Netplay-listan för LAN"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   "Leta efter netplay-värdar på LAN."
+   )
 
 /* Netplay > Host */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+   "Starta Netplay-värd"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+   "Starta netplay i värdläge (server)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+   "Stoppa Netplay-värd"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
    "Sparka ut klient"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   "Sparka ut en klient från ditt aktuella värdrum."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
    "Bannlys klient"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   "Bannlys en klient från ditt aktuella värdrum."
    )
 
 /* Import Content */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
+   "Sök igenom katalog"
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
    "Skannar i en katalog efter innehåll som matchar databasen."
@@ -6221,7 +6619,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "Standard Kärna"
+   "Standardkärna"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -6236,6 +6634,10 @@ MSG_HASH(
    "Lista över filtyper som ska inkluderas i sökningen, separerade med mellanslag. Om tom, innehåller alla filtyper, eller om en kärna anges, alla filer som stöds av kärnan."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   "Sök igenom rekursivt"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
    "Skanna inuti Arkiv"
    )
@@ -6248,11 +6650,31 @@ MSG_HASH(
    "Arkad DAT-filter"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+   "Skriv över befintlig spellista"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
    "Starta skanning"
    )
 
 /* Explore tab */
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   "Initierar lista..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   "Utgivet år"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   "Spelarantal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   "Tagg"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
    "Sök namn ..."
@@ -6262,8 +6684,16 @@ MSG_HASH(
    "Visa Alla"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   "Ytterligare filter"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    "Alla"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   "Lägg till ytterligare filter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
@@ -6366,6 +6796,10 @@ MSG_HASH(
    "Radera vy"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   "Ange namn för ny vy"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
    "Vy sparad"
    )
@@ -6401,8 +6835,28 @@ MSG_HASH(
    "Lägg till Innehållet i 'Favoriter'."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   "Lägg till i spellista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
+   "Lägg till innehållet till en spellista."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   "Skapa ny spellista"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
+   "Skapa en ny spellista och lägg till aktuellt objekt till den."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
    "Ställ in kärnassociation"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   "Ställ in kärna associerad med detta innehåll."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
@@ -6429,6 +6883,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
    "Filsökväg"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   "Objekt: %lu/%lu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
@@ -6550,8 +7008,16 @@ MSG_HASH(
    "Starta Inspelning"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+   "Starta videoinspelning."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
    "Stoppa inspelning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+   "Stoppa videoinspelning."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
@@ -6584,6 +7050,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    "Skivavbildshantering."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
+   "Åsidosätter"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
@@ -6643,6 +7113,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
    "Spara spelommappningsfil"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   "Nollställ inmatningsmappning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
+   "Ställ in alla inmatningsalternativ till standardvärden."
+   )
 
 /* Quick Menu > Controls > Manage Remap Files > Load Remap File */
 
@@ -6650,12 +7128,64 @@ MSG_HASH(
 /* Quick Menu > Cheats */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+   "Starta eller fortsätt fusksökning"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_CHEAT_START_OR_CONT,
+   "Sök i minnet för att skapa nya fusk."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+   "Läs in fuskfil (ersätt)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+   "Läs in en fuskfil och ersätt befintliga fusk."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+   "Spara fuskfil som"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+   "Spara aktuella fusk som en fuskfil."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+   "Lägg till nytt fusk överst"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+   "Lägg till nytt fusk nederst"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
    "Radera alla fusk"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+   "Tillämpa fusk automatiskt under spelinläsning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+   "Tillämpa fusk automatiskt när spelet läses in."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+   "Verkställ efter växling"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+   "Tillämpa fusk direkt efter växling."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    "Tillämpa ändringar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   "Fuskändringar kommer aktiveras direkt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -6664,6 +7194,14 @@ MSG_HASH(
 
 /* Quick Menu > Cheats > Start or Continue Cheat Search */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   "Starta eller starta om fusksökning"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   "Tryck Vänster eller Höger för att ändra bitstorlek."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
    "Sök i minnet efter värden"
@@ -6748,18 +7286,46 @@ MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
    "Lika med innan -%u (%X)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_MATCHES,
+   "Lägg till %u matchningar till din lista"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+   "Ta bort matchning #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+   "Skapa kodmatchning #"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+   "Matchadress: %08X Mask: %02X"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Replace) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
+   "Fuskfil (ersätt)"
+   )
 
 /* Quick Menu > Cheats > Load Cheat File (Append) */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+   "Fuskfil (lägg till)"
+   )
 
 /* Quick Menu > Cheats > Cheat Details */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
    "Fuskdetaljer"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CHEAT_IDX,
+   "Fuskposition i listan."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
@@ -6778,8 +7344,40 @@ MSG_HASH(
    "Värde"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+   "Minnesadress"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+   "Bläddra adress: %08X"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+   "Mask för minnesadress"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+   "Antal iterationer"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    "Kod"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   "Lägg till nytt fusk efter denna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+   "Lägg till nytt fusk före denna"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
+   "Kopiera detta fusk efter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
+   "Kopiera detta fusk före"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
@@ -6868,6 +7466,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    "Spara förinställd Shader som"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   "Spara globalt förval"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   "Spara kärnförval"
+   )
 
 /* Quick Menu > Shaders > Remove */
 
@@ -6877,9 +7483,49 @@ MSG_HASH(
 
 /* Quick Menu > Overrides */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   "Aktiv åsidosättningsfil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   "Den aktuella åsidosättningsfilen som används."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   "Läs in åsidosättningsfil"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   "Läs in och ersätt aktuell konfiguration."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   "Spara åsidosättningar som"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   "Spara aktuell konfiguration som en ny åsidosättningsfil."
+   )
 
 /* Quick Menu > Achievements */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   "Inga prestationer att visa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   "Identifierar spelet"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   "Hämtar speldata"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   "Startar session"
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
    "Inte inloggad"
@@ -6891,6 +7537,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
    "Okänt spel"
+)
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   "Prestationer kan inte aktiveras med denna kärna"
 )
 
 /* Quick Menu > Information */
@@ -6941,6 +7591,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
    "Ingen information tillgänglig"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
+   "Inga poster i spellistan finns tillgängliga"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
@@ -7473,6 +8127,10 @@ MSG_HASH(
    "Färgtema"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   "Anpassat temaförval"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "Genomskinlighet"
    )
@@ -7499,6 +8157,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    "Nedre miniatyrbild"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+   "Växla miniatyrbilder"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
@@ -7746,6 +8408,18 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
    "Miniatyrskalfaktor"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+   "Titelmarginal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "Aktivera inställningsflik (omstart krävs)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   "Visa inställningsfliken som innehåller programinställningar."
+   )
 
 /* XMB: Settings Options */
 
@@ -7867,6 +8541,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
    "Har alltid det vänstra sidofältet hopfällt."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   "Korta ner namn för spellistor (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
@@ -8182,12 +8860,24 @@ MSG_HASH(
    "Vis&a"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
+   "Stängda dockor"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
    "Shader parametrar"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
    "&Inställningar..."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
+   "Kom ihåg dockpositioner:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   "Kom ihåg fönstergeometri:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
@@ -8222,6 +8912,10 @@ MSG_HASH(
    "Dokumentation"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+   "Läs in anpassad kärna..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    "Ladda Kärna"
    )
@@ -8250,6 +8944,10 @@ MSG_HASH(
    "Upp"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+   "Innehållsbläddrare"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    "Omslagskonst"
    )
@@ -8272,6 +8970,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
    "Kärninformation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
+   "<fråga mig>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_WARNING,
@@ -8458,6 +9160,10 @@ MSG_HASH(
    "Är du säker på att du vill radera objektet \"%1\"?"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
+   "Välj en spellista först."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DELETE,
    "Radera"
    )
@@ -8482,12 +9188,24 @@ MSG_HASH(
    "Välj mapp"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+   "Fyll i alla nödvändiga fält."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+   "Uppdatera RetroArch (nightly)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    "Uppdateringen misslyckades."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    "Bidragsgivare"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
+   "Aktuell shader"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
@@ -8516,6 +9234,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
    "Återställ parameter"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+   "Hämta miniatyrbild"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+   "En hämtning pågår redan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
+   "Miniatyrbild"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+   "Hämta alla miniatyrbilder"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
@@ -8573,6 +9307,10 @@ MSG_HASH(
    "Inga Netplay värdar hittades."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   "Inga netplay-klienter hittades."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
    "Inga spellistor."
    )
@@ -8587,6 +9325,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Fuskinställningar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+   "Starta eller fortsätt fusksökning"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
@@ -8621,6 +9363,10 @@ MSG_HASH(
    "Tgb"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "Använd inbyggd bildvisare"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
    "Hårdsynkronisera CPU och GPU. Minskar latens på bekostnad av prestanda."
    )
@@ -8649,8 +9395,16 @@ MSG_HASH(
    "Nicknamn: %s"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   "Letar efter kompatibelt innehåll..."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
    "Ingen kärna hittades"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   "Inga spellistor hittades"
    )
 
 /* Unused (Only Exist in Translation Files) */
@@ -8662,6 +9416,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
    "Nicknamn (LAN): %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CUSTOM_RATIO,
+   "Anpassad frekvens"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_ENABLE,
@@ -8724,6 +9482,10 @@ MSG_HASH(
    "Laddar innehåll"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_HELP_SCANNING_CONTENT,
+   "Letar efter innehåll"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_WHAT_IS_A_CORE,
    "Vad är en kärna?"
    )
@@ -8738,6 +9500,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANAGEMENT,
    "Databasinställningar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_LAN_SCAN_SETTINGS,
+   "Sök på lokalt nätverk"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_LAN_SCAN_SETTINGS,
+   "Sök efter och anslut till netplay-värdar på det lokala nätverket."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MODE,
@@ -8760,8 +9530,16 @@ MSG_HASH(
    "Fortsätt söka efter nytt fusk."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST_HARDCORE,
+   "Prestationer (Hardcore)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_DETAILS,
    "Fuskdetaljer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_SEARCH,
+   "Starta eller fortsätt fusksökning"
    )
 
 /* Unused (Needs Confirmation) */
@@ -8783,6 +9561,10 @@ MSG_HASH(
    "Höger analog Y"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS,
+   "Starta eller fortsätt fusksökning"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_DATABASE_INFO,
    "Databasinformation"
    )
@@ -8793,6 +9575,10 @@ MSG_HASH(
 MSG_HASH( /* FIXME Seems related to MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY, possible duplicate */
    MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIR,
    "Nedladdningar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SETTINGS,
+   "Inställningar för Netplay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SLANG_SUPPORT,
@@ -8811,6 +9597,10 @@ MSG_HASH(
    "Fråga"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS,
+   "Grundläggannde menykontroller"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_CONFIRM,
    "Bekräfta/OK"
    )
@@ -8821,6 +9611,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_SCROLL_UP,
    "Scrolla upp"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_START,
+   "Standardvärden"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_KEYBOARD,
@@ -8857,6 +9651,14 @@ MSG_HASH(
 /* Notifications */
 
 MSG_HASH( /* FIXME Should be MSG_ */
+   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   "Netplay kommer starta när innehållet har lästs in."
+   )
+MSG_HASH(
+   MSG_NETPLAY_NEED_CONTENT_LOADED,
+   "Innehållet måste läsas in innan netplay kan startas."
+   )
+MSG_HASH( /* FIXME Should be MSG_ */
    MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    "Kärninstallation lyckad"
    )
@@ -8889,8 +9691,24 @@ MSG_HASH(
    "Global ljudmixervolym"
    )
 MSG_HASH(
+   MSG_NATIVE,
+   "Inbyggd"
+   )
+MSG_HASH(
+   MSG_GOT_CONNECTION_FROM,
+   "Fick anslutning från: \"%s\""
+   )
+MSG_HASH(
+   MSG_GOT_CONNECTION_FROM_NAME,
+   "Fick anslutning från: \"%s (%s)\""
+   )
+MSG_HASH(
    MSG_WAITING_FOR_CLIENT,
    "Väntar på klient..."
+   )
+MSG_HASH(
+   MSG_ROOM_NOT_CONNECTABLE,
+   "Ditt rum är inte möjligt att ansluta till från internet."
    )
 MSG_HASH(
    MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
@@ -8937,6 +9755,26 @@ MSG_HASH(
    "\"%s\" har kopplat från"
    )
 MSG_HASH(
+   MSG_NETPLAY_SERVER_HANGUP,
+   "En netplay-klient har kopplat från"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CLIENT_HANGUP,
+   "Netplay frånkopplad"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+   "Du har inte behörighet att spela"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+   "Detfinns inga lediga spelarplatser"
+   )
+MSG_HASH(
+   MSG_NETPLAY_CANNOT_PLAY,
+   "Kan inte växla till spelläget"
+   )
+MSG_HASH(
    MSG_NETPLAY_CHANGED_NICK,
    "Ditt nicknamn ändrades till \"%s\""
    )
@@ -8968,6 +9806,10 @@ MSG_HASH(
    MSG_NETPLAY_CLIENT_DEVICES,
    "Enheter"
    )
+MSG_HASH(
+   MSG_NETPLAY_CHAT_SUPPORTED,
+   "Chatt stöds"
+   )
 
 MSG_HASH(
    MSG_AUDIO_VOLUME,
@@ -8980,6 +9822,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FROM,
    "Auto ladda sparad status från"
+   )
+MSG_HASH(
+   MSG_CAPABILITIES,
+   "Förmågor"
    )
 MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
@@ -9000,6 +9846,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_LIST_FAILED,
    "Hämta kärnlista misslyckad!"
+   )
+MSG_HASH(
+   MSG_LATEST_CORE_INSTALLED,
+   "Senaste version redan installerad: "
    )
 MSG_HASH(
    MSG_UPDATING_CORE,
@@ -9070,16 +9920,52 @@ MSG_HASH(
    "Misslyckades med att lägga till favorit: spellistan full"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Lades till i spellistan"
+   )
+MSG_HASH(
    MSG_FAILED_TO_APPEND_DISK,
    "Misslyckades med att lägga till skivan"
+   )
+MSG_HASH(
+   MSG_APPLICATION_DIR,
+   "Programkatalog"
+   )
+MSG_HASH(
+   MSG_APPLYING_PATCH,
+   "Tillämpar patch: %s"
+   )
+MSG_HASH(
+   MSG_APPLYING_SHADER,
+   "Tillämpar shader"
+   )
+MSG_HASH(
+   MSG_AUDIO_MUTED,
+   "Ljudet tystat."
+   )
+MSG_HASH(
+   MSG_AUDIO_UNMUTED,
+   "Ljudet aktiverat."
+   )
+MSG_HASH(
+   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   "Fel vid sparande av handkontrollerprofil."
    )
 MSG_HASH(
    MSG_AUTO_SAVE_STATE_TO,
    "Spara status automatiskt till"
    )
 MSG_HASH(
+   MSG_COMPILED_AGAINST_API,
+   "Kompilerad mot API"
+   )
+MSG_HASH(
    MSG_CONNECTED_TO,
    "Ansluten till"
+   )
+MSG_HASH(
+   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   "Värden kör ett annat spel."
    )
 MSG_HASH(
    MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
@@ -9088,6 +9974,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_OPTIONS_FLUSH_FAILED,
    "Misslyckades med att spara kärnalternativen till:"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   "Kunde inte hitta ett kompatibelt system."
+   )
+MSG_HASH(
+   MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+   "Kunde inte hitta ett giltigt dataspår"
+   )
+MSG_HASH(
+   MSG_COULD_NOT_OPEN_DATA_TRACK,
+   "Kunde inte öppna dataspåret"
    )
 MSG_HASH(
    MSG_DECOMPRESSION_FAILED,
@@ -9104,6 +10002,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ERROR,
    "Fel"
+   )
+MSG_HASH(
+   MSG_ERROR_PARSING_ARGUMENTS,
+   "Fel vid tolkning av argument."
    )
 MSG_HASH(
    MSG_EXTRACTING,
@@ -9150,6 +10052,34 @@ MSG_HASH(
    "Misslyckades att ladda Innehåll"
    )
 MSG_HASH(
+   MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   "Misslyckades med att läsa filmfilen"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_LOAD_STATE,
+   "Misslyckades med att läsa in tillstånd från"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+   "Misslyckades med att öppna libretro-kärna"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_PATCH,
+   "Misslyckades med att patcha"
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME,
+   "Misslyckades med att ta emot smeknamn."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+   "Misslyckades med att ta emot smeknamn från värd."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+   "Misslyckades med att ta bort temporärfilen"
+   )
+MSG_HASH(
    MSG_FAILED_TO_SAVE_SRAM,
    "Det gick inte att spara SRAM"
    )
@@ -9170,8 +10100,40 @@ MSG_HASH(
    "Misslyckades att skicka nicknamnsstorlek."
    )
 MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+   "Misslyckades med att skicka smeknamn till klient."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
+   "Misslyckades med att skicka smeknamn till värd."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+   "Misslyckades med att skicka SRAM-data till klient."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_AUDIO_DRIVER,
+   "Misslyckades med att starta ljuddrivrutin. Fortsätter utan ljud."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_MOVIE_RECORD,
+   "Misslyckades med att starta filminspelning."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_START_RECORDING,
+   "Misslyckades med att starta inspelning."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_TAKE_SCREENSHOT,
+   "Misslyckades med att ta skärmbild."
+   )
+MSG_HASH(
    MSG_FAILED_TO_UNDO_SAVE_STATE,
    "Misslyckades att få sparad status ogjord."
+   )
+MSG_HASH(
+   MSG_FATAL_ERROR_RECEIVED_IN,
+   "Ödesdigert fel påträffades i"
    )
 MSG_HASH(
    MSG_FILE_NOT_FOUND,
@@ -9182,12 +10144,28 @@ MSG_HASH(
    "Hittade automatiskt sparad status i"
    )
 MSG_HASH(
+   MSG_FOUND_DISK_LABEL,
+   "Hittade skivetikett"
+   )
+MSG_HASH(
+   MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
+   "Hittade första dataspåret på fil"
+   )
+MSG_HASH(
+   MSG_FRAMES,
+   "Bildrutor"
+   )
+MSG_HASH(
    MSG_GAME_FOCUS_ON,
    "Game Focus aktiv"
    )
 MSG_HASH(
    MSG_GAME_FOCUS_OFF,
    "Game Focus inaktiv"
+   )
+MSG_HASH(
+   MSG_INPUT_CHEAT,
+   "Mata in fusk"
    )
 MSG_HASH(
    MSG_INPUT_RENAME_ENTRY,
@@ -9202,16 +10180,40 @@ MSG_HASH(
    "Intern lagring"
    )
 MSG_HASH(
+   MSG_REMOVABLE_STORAGE,
+   "Flyttbar lagring"
+   )
+MSG_HASH(
    MSG_INVALID_NICKNAME_SIZE,
    "Ogiltig nicknamnsstorlek."
+   )
+MSG_HASH(
+   MSG_IN_BYTES,
+   "i bytes"
+   )
+MSG_HASH(
+   MSG_IN_MEGABYTES,
+   "i megabytes"
    )
 MSG_HASH(
    MSG_IN_GIGABYTES,
    "i gigabyte"
    )
 MSG_HASH(
+   MSG_LIBRETRO_ABI_BREAK,
+   "är kompilerad mot en annan version av libretro än denna libretro-implementation."
+   )
+MSG_HASH(
+   MSG_LIBRETRO_FRONTEND,
+   "Frontend för libretro"
+   )
+MSG_HASH(
    MSG_LOADING,
    "Laddar"
+   )
+MSG_HASH(
+   MSG_FIRMWARE,
+   "En eller flera firmwarefiler saknas"
    )
 MSG_HASH(
    MSG_LOADING_CONTENT_FILE,
@@ -9226,16 +10228,52 @@ MSG_HASH(
    "Laddar favoriterfil"
    )
 MSG_HASH(
+   MSG_LOADING_STATE,
+   "Läser in tillstånd"
+   )
+MSG_HASH(
    MSG_MEMORY,
    "Minne"
+   )
+MSG_HASH(
+   MSG_MOVIE_RECORD_STOPPED,
+   "Stoppar filminspelning."
+   )
+MSG_HASH(
+   MSG_NETPLAY_FAILED,
+   "Misslyckades med att initiera netplay."
+   )
+MSG_HASH(
+   MSG_NETPLAY_UNSUPPORTED,
+   "Kärnan har inte stöd för netplay."
+   )
+MSG_HASH(
+   MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+   "Inget innehåll, startar dummykärna."
    )
 MSG_HASH(
    MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
    "Ingen sparad status har ännu blivit överskriven."
    )
 MSG_HASH(
+   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   "Inget tillstånd har lästs in än."
+   )
+MSG_HASH(
    MSG_PAUSED,
    "Pausad."
+   )
+MSG_HASH(
+   MSG_READING_FIRST_DATA_TRACK,
+   "Läser första dataspåret..."
+   )
+MSG_HASH(
+   MSG_RECORDING_TO,
+   "Spelar in till"
+   )
+MSG_HASH(
+   MSG_REDIRECTING_CHEATFILE_TO,
+   "Dirigerar om fuskfil till"
    )
 MSG_HASH(
    MSG_REDIRECTING_SAVESTATE_TO,
@@ -9252,6 +10290,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
    "Återställer katalogen för sparad status-filer till"
+   )
+MSG_HASH(
+   MSG_REWINDING,
+   "Spolar tillbaka."
    )
 MSG_HASH(
    MSG_SAVED_NEW_CONFIG_TO,
@@ -9278,6 +10320,18 @@ MSG_HASH(
    "Skickar kommando"
    )
 MSG_HASH(
+   MSG_FAST_FORWARD,
+   "Snabbspolning."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_PLAYBACK,
+   "Startar uppspelning av film."
+   )
+MSG_HASH(
+   MSG_STARTING_MOVIE_RECORD_TO,
+   "Startar filminspelning till"
+   )
+MSG_HASH(
    MSG_TAKING_SCREENSHOT,
    "Tar skärmdump."
    )
@@ -9290,12 +10344,28 @@ MSG_HASH(
    "Prestation upplåst"
    )
 MSG_HASH(
+   MSG_LEADERBOARD_SUBMISSION,
+   "Skickade in %s för %s" /* Submitted [value] for [leaderboard name] */
+   )
+MSG_HASH(
+   MSG_LEADERBOARD_BEST,
+   "Bästa: %s" /* Best: [value] */
+   )
+MSG_HASH(
+   MSG_CHANGE_THUMBNAIL_TYPE,
+   "Ändra miniatyrbildstyp"
+   )
+MSG_HASH(
    MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
    "Helskärmsminiatyrer"
    )
 MSG_HASH(
    MSG_TOGGLE_CONTENT_METADATA,
    "Växla metadata"
+   )
+MSG_HASH(
+   MSG_NO_THUMBNAIL_AVAILABLE,
+   "Ingen miniatyrbild tillgänglig"
    )
 MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
@@ -9326,12 +10396,40 @@ MSG_HASH(
    "Startar om..."
    )
 MSG_HASH(
+   MSG_VALUE_SHUTTING_DOWN,
+   "Stänger ner..."
+   )
+MSG_HASH(
+   MSG_VERSION_OF_LIBRETRO_API,
+   "Version av libretro API"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "Misslyckades med att automatiskt ladda in sparad status från \"%s\"."
    )
 MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT,
+   "konfigurerad i port"
+   )
+MSG_HASH(
+   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   "%s konfigurerad i port %u"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT,
+   "kopplades från port"
+   )
+MSG_HASH(
+   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   "%s kopplades från port %u"
+   )
+MSG_HASH(
    MSG_DEVICE_NOT_CONFIGURED,
    "inte konfigurerad"
+   )
+MSG_HASH(
+   MSG_DEVICE_NOT_CONFIGURED_NR,
+   "%s (%u/%u) är inte konfigurerad"
    )
 MSG_HASH(
    MSG_BLUETOOTH_SCAN_COMPLETE,
@@ -9366,6 +10464,14 @@ MSG_HASH(
    "Kopplar från Wi-Fi..."
    )
 MSG_HASH(
+   MSG_NETPLAY_LAN_SCANNING,
+   "Letar efter netplay-värdar..."
+   )
+MSG_HASH(
+   MSG_PREPARING_FOR_CONTENT_SCAN,
+   "Förbereder för innehållssökning..."
+   )
+MSG_HASH(
    MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    "Ange lösenord"
    )
@@ -9394,12 +10500,68 @@ MSG_HASH(
    "Run-Ahead har inaktiverats för att denna Kärna saknar stöd för Spara Statusar."
    )
 MSG_HASH(
+   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   "Lade till %u matchningar."
+   )
+MSG_HASH(
    MSG_CHEAT_DELETE_ALL_SUCCESS,
    "Alla fusk borttagna."
    )
 MSG_HASH(
    MSG_CHEAT_DELETE_SUCCESS,
    "Fusk raderat."
+   )
+MSG_HASH(
+   MSG_FAILED_TO_CONNECT_TO_HOST,
+   "Misslyckades med att ansluta till värd."
+   )
+MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Netplay-värden är full."
+   )
+MSG_HASH(
+   MSG_NETPLAY_BANNED,
+   "Du är bannlyst från denna värd."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Inloggad som \"%s\"."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_MASTERED_GAME,
+   "Bemästrat: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_COMPLETED_GAME,
+   "Klarade av %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Detta spel har inga prestationer."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Alla %d prestationer har aktiverats för denna session"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Aktiverade %d inofficiella prestationer"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Du har låst upp %d av %d prestationer"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d stöds inte"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Åskådarläge för %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroAchievements: Spelet kunde inte identifieras."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -9416,6 +10578,34 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
    "Högsta"
+   )
+MSG_HASH(
+   MSG_RGUI_INVALID_LANGUAGE,
+   "Varning: Språket stöds inte - använder engelska."
+   )
+MSG_HASH(
+   MSG_DUMPING_DISC,
+   "Dumpar skiva..."
+   )
+MSG_HASH(
+   MSG_DRIVE_NUMBER,
+   "Enhet %d"
+   )
+MSG_HASH(
+   MSG_LOAD_CORE_FIRST,
+   "Läs in en kärna först."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+   "Misslyckades med att läsa från enhet. Dumpning avbröts."
+   )
+MSG_HASH(
+   MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   "Misslyckades med att skriva till disk. Dumpning avbröts."
+   )
+MSG_HASH(
+   MSG_NO_DISC_INSERTED,
+   "Ingen skiva har matats in i enheten."
    )
 MSG_HASH(
    MSG_MANUAL_CONTENT_SCAN_START,
@@ -9480,6 +10670,10 @@ MSG_HASH(
    "Skärmupplösning"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_DEFAULT,
+   "Skärmupplösning: Standard"
+   )
+MSG_HASH(
    MSG_SCREEN_RESOLUTION_NO_DESC,
    "Skärmupplösning: %dx%d"
    )
@@ -9488,12 +10682,44 @@ MSG_HASH(
    "Skärmupplösning: %dx%d - %s"
    )
 MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   "Verkställer: Standard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   "Verkställer: %dx%d\nSTART för att starta om"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   "Verkställer: %dx%d - %s\nSTART för att starta om"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   "Återställer till: Standard"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   "Återställer till: %dx%d"
+   )
+MSG_HASH(
+   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   "Återställer till: %dx%d - %s"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
    "Ange upplösningen för skärm (omstart krävs)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SHUTDOWN,
    "Stäng av"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Aktivera extern filåtkomst"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   "Öppna Windows-inställningar för filåtkomstbehörighet"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
@@ -9524,6 +10750,10 @@ MSG_HASH(
    "Koppla från"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   "CPU-prestanda och ström"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
    "Manuell"
    )
@@ -9532,8 +10762,32 @@ MSG_HASH(
    "Maximal prestanda"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   "Balanserad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   "Minimal frekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   "Maximal frekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   "Minimum kärnfrekvens"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   "Maximal kärnfrekvens"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
    "Spelläge"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+   "Använd PAL60-läget"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
@@ -9560,12 +10814,36 @@ MSG_HASH(
    "Visa alternativet 'Stäng av'."
    )
 MSG_HASH(
+   MSG_ROOM_PASSWORDED,
+   "Lösenordsskyddat"
+   )
+MSG_HASH(
+   MSG_INTERNET_RELAY,
+   "Internet (relä)"
+   )
+MSG_HASH(
+   MSG_INTERNET_NOT_CONNECTABLE,
+   "Internet (inte anslutningsbart)"
+   )
+MSG_HASH(
    MSG_LOCAL,
    "Lokal"
    )
 MSG_HASH(
+   MSG_READ_WRITE,
+   "Status för intern lagring: Läs/skriv"
+   )
+MSG_HASH(
+   MSG_READ_ONLY,
+   "Status för intern lagring: Skrivskyddad"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    "Skärmens ljusstyrka"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   "Öka eller minska skärmens ljusstyrka."
    )
 #ifdef HAVE_LIBNX
 MSG_HASH(
@@ -9581,6 +10859,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
    "Tjänster"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SSH_ENABLE,
+   "Använd SSH för att komma åt kommandoraden utifrån."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
@@ -9604,6 +10886,14 @@ MSG_HASH(
    )
 #ifdef HAVE_LAKKA_SWITCH
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+   "Alternativ för Nintendo Switch"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+   "Hantera specifika alternativ för Nintendo Switch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
    "Överklocka CPU"
    )
@@ -9617,13 +10907,49 @@ MSG_HASH(
    )
 #endif
 MSG_HASH(
+   MSG_LOCALAP_SWITCHING_OFF,
+   "Stänger av Wi-Fi-åtkomstpunkt."
+   )
+MSG_HASH(
+   MSG_WIFI_DISCONNECT_FROM,
+   "Kopplar från Wi-Fi '%s'"
+   )
+MSG_HASH(
+   MSG_WIFI_CONNECTING_TO,
+   "Ansluter till Wi-Fi '%s'"
+   )
+MSG_HASH(
    MSG_WIFI_EMPTY_SSID,
    "[Inget SSID]"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ALREADY_RUNNING,
+   "Wi-Fi-åtkomstpunkt är redan startad"
+   )
+MSG_HASH(
+   MSG_LOCALAP_NOT_RUNNING,
+   "Wi-Fi-åtkomstpunkt är inte igång"
+   )
+MSG_HASH(
+   MSG_LOCALAP_STARTING,
+   "Startar Wi-Fi-åtkomstpunkt med SSID=%s och lösennyckel=%s"
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   "Kunde inte skapa konfigurationsfil för Wi-Fi-åtkomstpunkt."
+   )
+MSG_HASH(
+   MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   "Felaktig konfigurationsfil - kunde inte hitta APNAME eller PASSWORD i %s"
    )
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 #endif
 #ifdef GEKKO
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+   "Musskala"
+   )
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
 #endif
@@ -9678,3 +11004,7 @@ MSG_HASH(
 #endif
 #ifdef HAVE_QT
 #endif
+MSG_HASH(
+   MSG_AI_SERVICE_STOPPED,
+   "stoppad."
+   )

@@ -143,7 +143,7 @@ enum application_special_type
 
 bool fill_pathname_application_data(char *s, size_t len);
 
-void fill_pathname_application_special(char *s, size_t len, enum application_special_type type);
+size_t fill_pathname_application_special(char *s, size_t len, enum application_special_type type);
 
 RETRO_END_DECLS
 

@@ -244,9 +244,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
             win_w, win_h, video_driver_get_aspect_ratio(),
             vid->video.force_aspect, true);
    else if (vid->video.force_aspect)
-   {
       video_viewport_get_scaled_aspect(&vid->vp, win_w, win_h, true);
-   }
 
    vid->flags &= ~SDL2_FLAG_SHOULD_RESIZE;
 

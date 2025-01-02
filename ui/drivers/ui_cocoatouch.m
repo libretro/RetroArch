@@ -154,8 +154,6 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    uint32_t runloop_flags;
    int          ret   = runloop_iterate();
 
-   task_queue_check();
-
    if (ret == -1)
    {
       ui_companion_cocoatouch_event_command(
@@ -164,6 +162,8 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       exit(0);
       return;
    }
+
+   task_queue_check();
 
    runloop_flags = runloop_get_flags();
    if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
@@ -462,10 +462,11 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-    if (@available(iOS 13.4, tvOS 13.4, *)) {
-        if (event.type == UIEventTypeHover)
-            return;
-    }
+   if (@available(iOS 13.4, tvOS 13.4, *))
+   {
+      if (event.type == UIEventTypeHover)
+         return;
+   }
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
@@ -479,16 +480,16 @@ enum
          /* Keyboard event hack for iOS versions prior to iOS 7.
           *
           * Derived from:
-	  * http://nacho4d-nacho4d.blogspot.com/2012/01/
-	  * catching-keyboard-events-in-ios.html
-	  */
+                  * http://nacho4d-nacho4d.blogspot.com/2012/01/
+                  * catching-keyboard-events-in-ios.html
+                  */
          const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
          int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
          switch (eventType)
          {
             case GSEVENT_TYPE_KEYDOWN:
-            case GSEVENT_TYPE_KEYUP:
+              case GSEVENT_TYPE_KEYUP:
                apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
                      *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
                break;
@@ -509,17 +510,15 @@ enum
 
 - (instancetype)init {
     self = [super init];
-    if (self) {
+    if (self)
         [self setupMetalLayer];
-    }
     return self;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
-    if (self) {
+    if (self)
         [self setupMetalLayer];
-    }
     return self;
 }
 
@@ -529,7 +528,7 @@ enum
 
 - (void)setupMetalLayer {
     self.metalLayer.device = MTLCreateSystemDefaultDevice();
-    self.metalLayer.contentsScale = [UIScreen mainScreen].scale;
+    self.metalLayer.contentsScale = [UIScreen mainScreen].nativeScale;
     self.metalLayer.opaque = YES;
 }
 
@@ -567,6 +566,9 @@ enum
 #ifdef HAVE_COCOA_METAL
        case APPLE_VIEW_TYPE_VULKAN:
          _renderView = [MetalLayerView new];
+#if TARGET_OS_IOS
+         _renderView.multipleTouchEnabled = YES;
+#endif
          break;
        case APPLE_VIEW_TYPE_METAL:
          {
@@ -671,6 +673,38 @@ enum
    int argc           = 1;
    apple_platform     = self;
 
+   if ([NSUserDefaults.standardUserDefaults boolForKey:@"restore_default_config"])
+   {
+      [NSUserDefaults.standardUserDefaults setBool:NO forKey:@"restore_default_config"];
+      [NSUserDefaults.standardUserDefaults setObject:@"" forKey:@FILE_PATH_MAIN_CONFIG];
+
+      // Get the Caches directory path
+      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+      NSString *cachesDirectory = [paths firstObject];
+
+      // Define the original and new file paths
+      NSString *originalPath = [cachesDirectory stringByAppendingPathComponent:@"RetroArch/config/retroarch.cfg"];
+      NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+      [dateFormatter setDateFormat:@"HHmm-yyMMdd"];
+      NSString *timestamp = [dateFormatter stringFromDate:[NSDate date]];
+      NSString *newPath = [cachesDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"RetroArch/config/RetroArch-%@.cfg", timestamp]];
+
+      // File manager instance
+      NSFileManager *fileManager = [NSFileManager defaultManager];
+
+      // Check if the file exists and rename it
+      if ([fileManager fileExistsAtPath:originalPath])
+      {
+          NSError *error = nil;
+          if ([fileManager moveItemAtPath:originalPath toPath:newPath error:&error])
+              NSLog(@"File renamed to %@", newPath);
+          else
+              NSLog(@"Error renaming file: %@", error.localizedDescription);
+      }
+      else
+          NSLog(@"File does not exist at path %@", originalPath);
+   }
+
    [self setDelegate:self];
 
    /* Setup window */
@@ -681,8 +715,6 @@ enum
 
    [self refreshSystemConfig];
    [self showGameView];
-
-   jb_start_altkit();
 
    rarch_main(argc, argv, NULL);
 
@@ -696,7 +728,7 @@ enum
 		   && icons->size > 1)
    {
       int i;
-      size_t len    = 0;
+      size_t _len    = 0;
       char *options = NULL;
       const char *icon_name;
 
@@ -704,12 +736,12 @@ enum
       icon_name = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; /* need to ask uico_st for this */
       for (i = 0; i < (int)icons->size; i++)
       {
-         len += strlen(icons->elems[i].data) + 1;
+         _len += strlen(icons->elems[i].data) + 1;
          if (string_is_equal(icon_name, icons->elems[i].data))
             appicon_setting->value.target.string = icons->elems[i].data;
       }
-      options = (char*)calloc(len, sizeof(char));
-      string_list_join_concat(options, len, icons, "|");
+      options = (char*)calloc(_len, sizeof(char));
+      string_list_join_concat(options, _len, icons, "|");
       if (appicon_setting->values)
          free((void*)appicon_setting->values);
       appicon_setting->values = options;
@@ -841,7 +873,8 @@ enum
    NSString  *destination = [NSString stringWithUTF8String:fullpath];
    /* Copy file to documents directory if it's not already
     * inside Documents directory */
-   if ([url startAccessingSecurityScopedResource]) {
+   if ([url startAccessingSecurityScopedResource])
+   {
       if (![[url path] containsString: self.documentsDirectory])
          if (![manager fileExistsAtPath:destination])
             [manager copyItemAtPath:[url path] toPath:destination error:&error];
