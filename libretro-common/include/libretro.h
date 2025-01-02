@@ -2577,7 +2577,8 @@ enum retro_mod
 /**
  * Sets a pointer to arbitrary data for the actively running core.
  *
- * This is can be set in either \c retro_init() or \c retro_load_game().
+ * Intended for use as a substitute for global state, which is a common
+ * source of bugs. Can be set in either \c retro_init() or \c retro_load_game().
  *
  * @param[in] data <tt>void *</tt>. Pointer to the data to set.
  * @return \c true if the environment call is available.
