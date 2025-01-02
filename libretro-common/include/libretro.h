@@ -2965,7 +2965,7 @@ struct retro_memory_status
  *
  * @see RETRO_ENVIRONMENT_GET_CORE_DATA
  */
-#define RETRO_ENVIRONMENT_SET_CORE_DATA 95
+#define RETRO_ENVIRONMENT_SET_CORE_DATA (95 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
  * Gets a pointer to arbitrary data for the actively running core.
@@ -2978,7 +2978,7 @@ struct retro_memory_status
  *
  * @see RETRO_ENVIRONMENT_SET_CORE_DATA
  */
-#define RETRO_ENVIRONMENT_GET_CORE_DATA 96
+#define RETRO_ENVIRONMENT_GET_CORE_DATA (96 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**@}*/
 
