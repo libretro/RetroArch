@@ -992,6 +992,7 @@
 
 /* Screenshots post-shaded GPU output if available. */
 #define DEFAULT_GPU_SCREENSHOT true
+#define DEFAULT_GPU_SCREENSHOT_INCLUDE_SHADERS true
 
 /* Watch shader files for changes and auto-apply as necessary. */
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false

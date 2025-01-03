@@ -2127,6 +2127,14 @@ MSG_HASH(
    "GPU Screenshot"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT_INCLUDE_SHADERS,
+   "GPU Screenshot Shaders"
+   )
+   MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_SHADERS,
+   "Include shaders when capturing GPU screenshots"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Rolling scanline simulation"
    )
@@ -2140,7 +2148,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Screenshots capture GPU shaded material if available."
+   "Screenshots capture GPU material if available."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,

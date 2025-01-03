@@ -473,23 +473,26 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   /*Disable Shaders. TODO: Add an option*/
-   if (video_st->menu_driver_shader->passes)
-   {
-      video_st->current_video->set_shader(video_st->data, RARCH_SHADER_NONE, NULL);
-      video_driver_cached_frame();
-   }
+   if(!settings->bools.video_gpu_screenshot_include_shaders)
+      /*Disable shaders*/
+      if (settings->bools.video_shader_enable && video_st->menu_driver_shader->passes)
+      {
+         video_st->current_video->set_shader(video_st->data, RARCH_SHADER_NONE, NULL);
+         video_driver_cached_frame();
+      }
    if (!(   video_st->current_video->read_viewport
          && video_st->current_video->read_viewport(
             video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
       goto error;
-   if (video_st->menu_driver_shader->passes)
-   {
-      menu_shader_manager_apply_changes(menu_shader_get(),
-         settings->paths.directory_video_shader,
-         settings->paths.directory_menu_config
-      );
-   }
+   if (!settings->bools.video_gpu_screenshot_include_shaders)
+      /*Re-enable shaders*/
+      if (settings->bools.video_shader_enable && video_st->menu_driver_shader->passes)
+      {
+         menu_shader_manager_apply_changes(menu_shader_get(),
+            settings->paths.directory_video_shader,
+            settings->paths.directory_menu_config
+         );
+      }
 
    
 
