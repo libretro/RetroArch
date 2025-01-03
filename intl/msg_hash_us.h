@@ -5451,6 +5451,14 @@ MSG_HASH(
    "Adjust the size of overlap zones in the face button diamond. Set to 100% for 8-way symmetry."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analog Recentering Zone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analog stick input will be relative to first touch if pressed within this zone."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Overlay"
    )
