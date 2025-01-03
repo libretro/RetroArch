@@ -3169,7 +3169,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Status: K.A."
+   "Status: k. A."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
@@ -3185,7 +3185,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Status: Wiedergabe (Sequenziell)"
+   "Status: Wiedergabe (in Folge)"
    )
 
 /* Settings > Audio > Menu Sounds */

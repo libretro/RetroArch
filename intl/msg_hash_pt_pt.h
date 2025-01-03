@@ -2203,10 +2203,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    "Remover"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Estado: Não disponível"
-   )
 
 /* Settings > Audio > Menu Sounds */
 

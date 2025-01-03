@@ -1956,7 +1956,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   "Insertar fotogramas negros"
+   "Insertar fotogramas negros (BFI)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
@@ -1964,7 +1964,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Introduce uno o varios fotogramas negros entre fotogramas para mejorar la claridad de los elementos en movimiento. Utiliza únicamente la opción designada para la frecuencia de actualización actual de tu monitor. No se debe utilizar con frecuencias de actualización que no sean múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. No combinar con un intervalo de intercambio de VSync superior a 1, con subfotogramas, con el retraso de fotogramas o con Sincronizar FPS al contenido. No pasa nada por d[...]"
+   "Introduce uno o varios fotogramas negros para mejorar la claridad de los elementos en movimiento. Utiliza únicamente la opción designada para la frecuencia de actualización actual de tu monitor. No se debe utilizar con frecuencias que no sean múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. No combinar con un intervalo de intercambio de VSync superior a 1, con subfotogramas, con el retraso de fotogramas o con Sincronizar FPS al contenido. No pasa nada por dejar activada la frecuencia de actu[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION_VALUE_120,
@@ -2028,7 +2028,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
-   "Insertar fotogramas negros - Fotogramas oscuros"
+   "Insertar fotogramas negros (BFI): fotogramas oscuros"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
@@ -2036,7 +2036,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   "Ajusta el número de fotogramas completamente negros que se mostrarán en la secuencia de fotogramas (BFI). Una mayor cantidad de fotogramas negros aumentará la claridad de los elementos en movimiento, pero reducirá el brillo. No sirve a 120 Hz, ya que solo hay un fotograma adicional a 60 Hz, así que debe ser un fotograma negro o BFI no estaría activo."
+   "Ajusta el número de fotogramas completamente negros que se mostrarán en la secuencia de fotogramas. Cuanto más fotogramas negros haya, más aumentará la claridad de los elementos en movimiento, pero se reducirá el brillo. No sirve a 120 Hz, ya que ahí solo se añadirá un fotograma adicional a los 60 Hz originales, así que debe ser un fotograma negro o la introducción de fotogramas negros no estaría activa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
@@ -2044,11 +2044,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "Introduce uno o varios fotogramas adicionales del Shader entre fotogramas. Permite que los shaders reproduzcan efectos a mayor fps que el contenido actual. Debe ser el mismo valor (Hz) que la configuración global de la pantalla. No combinar con un intervalo de intercambio de VSync superior a 1, con subfotogramas, con el retraso de fotogramas o con Sincronizar FPS al contenido."
+   "Introduce uno o varios fotogramas adicionales del shader entre fotogramas. Permite que los shaders reproduzcan efectos a una velocidad de fotogramas superior a la del contenido. Debería ser el mismo valor que la frecuencia de hercios actual de la pantalla. No combinar con un intervalo de intercambio de VSync superior a 1, con inserción de fotogramas negros, con el retraso de fotogramas o con Sincronizar FPS al contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   "Introduce uno o varios fotogramas adicionales entre fotogramas para shaders diseñados para ejecutarse a una velocidad de actualización superior a la del contenido. Utiliza únicamente la opción designada para tu fps actual. No se debe utilizar con frecuencias de actualización que no sean múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. No combinar con un intervalo de intercambio de VSync superior a 1, con subfotogramas, con el retraso de fotogramas o con Sincronizar FPS al contenido. No pas[...]"
+   "Introduce uno o varios fotogramas adicionales para cualquier efecto de shaders pensado para una velocidad de actualización superior a la del contenido. Utiliza únicamente la opción designada para la frecuencia de actualización actual de tu monitor. No se debe utilizar con frecuencias que no sean múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. No combinar con un intervalo de intercambio de VSync superior a 1, con inserción de fotogramas negros, con el retraso de fotogramas o con Sincroniza[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
@@ -2645,11 +2645,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Compensación personalizada usada para desplazar horizontalmente el área de visualización (si es más ancha que la altura del contenido). 0,0 significa llevar al extremo izquierdo y 1,0 significa llevar al extremo derecho."
+   "Compensación personalizada usada para desplazar horizontalmente el área de visualización (si es más ancha que la altura del contenido). 0,0 para extremo izquierdo y 1,0 para extremo derecho."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "Compensación personalizada usada para desplazar verticalmente el área de visualización (si es más alta que la altura del contenido). 0,0 significa llevar al extremo superior y 1,0 significa llevar al extremo inferior."
+   "Compensación personalizada usada para desplazar verticalmente el área de visualización (si es más alta que la altura del contenido). 0,0 para extremo superior y 1,0 para extremo inferior."
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
@@ -2670,11 +2670,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Compensación personalizada usada para desplazar horizontalmente el área de visualización (si es más ancha que la altura del contenido) en una orientación vertical. 0,0 significa llevar al extremo izquierdo y 1,0 significa llevar al extremo derecho."
+   "Compensación personalizada usada para desplazar horizontalmente el área de visualización (si es más ancha que la altura del contenido) en una orientación vertical. 0,0 para extremo izquierdo y 1,0 para extremo derecho."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Compensación personalizada usada para desplazar verticalmente el área de visualización (si es más alta que la altura del contenido) en una orientación vertical. 0,0 para extremo superior y 1,0 para extremo inferior"
+   "Compensación personalizada usada para desplazar verticalmente el área de visualización (si es más alta que la altura del contenido) en una orientación vertical. 0,0 para extremo superior y 1,0 para extremo inferior."
    )
 #endif
 MSG_HASH(
@@ -2777,7 +2777,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Retraso de Fotograma"
+   "Retraso de fotogramas"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
