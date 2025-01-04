@@ -631,6 +631,7 @@ typedef struct settings
       bool video_gpu_record;
       bool video_gpu_screenshot;
       bool video_gpu_screenshot_include_shaders;
+      bool video_gpu_screenshot_include_overlay;
       bool video_allow_rotate;
       bool video_shared_context;
       bool video_force_srgb_disable;

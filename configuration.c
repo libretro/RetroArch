@@ -1887,6 +1887,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_disable_composition",     &settings->bools.video_disable_composition, true, DEFAULT_DISABLE_COMPOSITION, false);
    SETTING_BOOL("video_gpu_screenshot",          &settings->bools.video_gpu_screenshot, true, DEFAULT_GPU_SCREENSHOT, false);
    SETTING_BOOL("video_gpu_screenshot_include_shaders", &settings->bools.video_gpu_screenshot_include_shaders, true, DEFAULT_GPU_SCREENSHOT_INCLUDE_SHADERS, false);
+   SETTING_BOOL("video_gpu_screenshot_include_overlay", &settings->bools.video_gpu_screenshot_include_overlay, true, DEFAULT_GPU_SCREENSHOT_INCLUDE_OVERLAY, false);
    SETTING_BOOL("video_post_filter_record",      &settings->bools.video_post_filter_record, true, DEFAULT_POST_FILTER_RECORD, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
    SETTING_BOOL("video_msg_bgcolor_enable",      &settings->bools.video_msg_bgcolor_enable, true, DEFAULT_MESSAGE_BGCOLOR_ENABLE, false);

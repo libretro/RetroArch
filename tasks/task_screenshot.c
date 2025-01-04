@@ -454,6 +454,8 @@ static bool take_screenshot_viewport(
       unsigned pixel_format_type)
 {
    struct video_viewport vp;
+   bool success;
+   bool shaders_used;
    video_driver_state_t *video_st        = video_state_get_ptr();
    uint8_t *buffer                       = NULL;
 
@@ -473,27 +475,33 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if(!settings->bools.video_gpu_screenshot_include_shaders)
-      /*Disable shaders*/
-      if (settings->bools.video_shader_enable && video_st->menu_driver_shader->passes)
-      {
-         video_st->current_video->set_shader(video_st->data, RARCH_SHADER_NONE, NULL);
-         video_driver_cached_frame();
-      }
-   if (!(   video_st->current_video->read_viewport
-         && video_st->current_video->read_viewport(
-            video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
-      goto error;
-   if (!settings->bools.video_gpu_screenshot_include_shaders)
-      /*Re-enable shaders*/
-      if (settings->bools.video_shader_enable && video_st->menu_driver_shader->passes)
-      {
-         menu_shader_manager_apply_changes(menu_shader_get(),
-            settings->paths.directory_video_shader,
-            settings->paths.directory_menu_config
-         );
-      }
+   shaders_used = settings->bools.video_shader_enable;
+   if (!settings->bools.video_gpu_screenshot_include_shaders &&
+      shaders_used)
+   {
+      command_event(CMD_EVENT_SHADER_TOGGLE, NULL);
+      video_driver_cached_frame();
+   }
+   if (!settings->bools.video_gpu_screenshot_include_overlay &&
+      settings->bools.input_overlay_enable)
+   {
+      command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
+      video_driver_cached_frame();
+   }
 
+   success = (video_st->current_video->read_viewport
+      && video_st->current_video->read_viewport(
+         video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE));
+
+   if (!settings->bools.video_gpu_screenshot_include_shaders &&
+      shaders_used)
+      command_event(CMD_EVENT_SHADER_TOGGLE, NULL);
+   if (!settings->bools.video_gpu_screenshot_include_overlay &&
+      settings->bools.input_overlay_enable)
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+
+   if (!success)
+      goto error;
    
 
    /* Limit image to screen size */

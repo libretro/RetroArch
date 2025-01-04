@@ -724,6 +724,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer_axis,      MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer_scaling,   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_screenshot,          MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_screenshot_include_shaders, MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_SHADERS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_screenshot_include_overlay, MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_OVERLAY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_rotation,                MENU_ENUM_SUBLABEL_VIDEO_ROTATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_screen_orientation,            MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_force_srgb_enable,       MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE)
@@ -4244,6 +4245,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_SHADERS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_screenshot_include_shaders);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_OVERLAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_screenshot_include_overlay);
             break;
          case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_scale_integer);

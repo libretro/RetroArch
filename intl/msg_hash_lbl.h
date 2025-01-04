@@ -4423,6 +4423,10 @@ MSG_HASH(
    "video_gpu_screenshot_include_shaders"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT_INCLUDE_OVERLAY,
+   "video_gpu_screenshot_include_overlay"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_HARD_SYNC,
    "video_hard_sync"
    )
