@@ -10183,6 +10183,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,   PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,   PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,        PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,                  PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,                   PARSE_ONLY_FLOAT, false },
@@ -10249,6 +10250,12 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY:
                      if (input_overlay_enable &&
                          BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA))
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE:
+                     if (input_overlay_enable &&
+                         (BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_LEFT)
+                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_RIGHT)))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS:

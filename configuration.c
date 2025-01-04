@@ -2514,6 +2514,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_overlay_show_inputs_port",          &settings->uints.input_overlay_show_inputs_port, true, DEFAULT_OVERLAY_SHOW_INPUTS_PORT, false);
    SETTING_UINT("input_overlay_dpad_diagonal_sensitivity", &settings->uints.input_overlay_dpad_diagonal_sensitivity, true, DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY, false);
    SETTING_UINT("input_overlay_abxy_diagonal_sensitivity", &settings->uints.input_overlay_abxy_diagonal_sensitivity, true, DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY, false);
+   SETTING_UINT("input_overlay_analog_recenter_zone",      &settings->uints.input_overlay_analog_recenter_zone, true, DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE, false);
 #endif
 
 #ifdef HAVE_LIBNX

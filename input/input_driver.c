@@ -2251,6 +2251,68 @@ static INLINE void input_overlay_get_eightway_state(
 }
 
 /**
+ * input_overlay_get_analog_state:
+ * @out : Overlay input state to be modified
+ * @desc : Overlay descriptor handle
+ * @base : 0 or 2 for analog_left or analog_right
+ * @x : X coordinate
+ * @y : Y coordinate
+ * @x_dist : X offset from analog center
+ * @y_dist : Y offset from analog center
+ * @first_touch : Set true if analog was not controlled in previous poll
+ *
+ * Gets the analog input state based on @x and @y, and applies to @out.
+ */
+static void input_overlay_get_analog_state(
+      input_overlay_state_t *out, struct overlay_desc *desc,
+      unsigned base, float x, float y, float *x_dist, float *y_dist,
+      bool first_touch)
+{
+   float x_val, y_val;
+   float x_val_sat, y_val_sat;
+   const int b = base / 2;
+
+   static float x_center[2];
+   static float y_center[2];
+
+   if (first_touch)
+   {
+      unsigned recenter_zone =
+            config_get_ptr()->uints.input_overlay_analog_recenter_zone;
+
+      /* Reset analog center */
+      x_center[b] = desc->x_shift;
+      y_center[b] = desc->y_shift;
+
+      if (recenter_zone != 0)
+      {
+         /* Get analog state without adjusting center or saturation */
+         x_val = (x - desc->x_shift) / desc->range_x;
+         y_val = (y - desc->y_shift) / desc->range_y;
+
+         /* Recenter if within zone */
+         if (  (x_val * x_val + y_val * y_val) * 1e4
+                  < (recenter_zone * recenter_zone)
+               || recenter_zone >= 100)
+         {
+            x_center[b] = x;
+            y_center[b] = y;
+         }
+      }
+   }
+
+   *x_dist   = x - x_center[b];
+   *y_dist   = y - y_center[b];
+   x_val     = *x_dist / desc->range_x;
+   y_val     = *y_dist / desc->range_y;
+   x_val_sat = x_val   / desc->analog_saturate_pct;
+   y_val_sat = y_val   / desc->analog_saturate_pct;
+
+   out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+   out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+}
+
+/**
  * input_overlay_coords_inside_hitbox:
  * @desc                  : Overlay descriptor handle.
  * @x                     : X coordinate value.
@@ -2400,16 +2462,9 @@ static bool input_overlay_poll(
             base = 2;
             /* fall-through */
          default:
-            {
-               float x_val           = x_dist / desc->range_x;
-               float y_val           = y_dist / desc->range_y;
-               float x_val_sat       = x_val / desc->analog_saturate_pct;
-               float y_val_sat       = y_val / desc->analog_saturate_pct;
-               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-            }
+            input_overlay_get_analog_state(
+                  out, desc, base, x, y,
+                  &x_dist, &y_dist, !use_range_mod);
             break;
       }
 
