@@ -274,7 +274,7 @@ bool config_get_array(config_file_t *conf, const char *entry, char *s, size_t le
   * Hidden non-leaf function cost:
   * - Calls strlcpy
   **/
-bool config_get_config_path(config_file_t *conf, char *s, size_t len);
+size_t config_get_config_path(config_file_t *conf, char *s, size_t len);
 
 /* Extracts a string to a preallocated buffer. Avoid memory allocation.
  * Recognized magic like ~/. Similar to config_get_array() otherwise. */

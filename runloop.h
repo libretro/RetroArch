@@ -321,7 +321,7 @@ void runloop_path_fill_names(void);
  **/
 bool runloop_environment_cb(unsigned cmd, void *data);
 
-void runloop_msg_queue_push(const char *msg,
+void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration,
       bool flush,
       char *title,

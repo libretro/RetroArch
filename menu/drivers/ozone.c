@@ -4101,7 +4101,6 @@ static void linebreak_after_colon(char (*str)[NAME_MAX_LENGTH])
 
 static void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
-   const char *core_name             = NULL;
    struct menu_state *menu_st        = menu_state_get_ptr();
    menu_list_t *menu_list            = menu_st->entries.list;
    size_t selection                  = menu_st->selection_ptr;
@@ -4124,11 +4123,18 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
    /* Must check whether core corresponds to 'viewer'
     * content even when not using a playlist, otherwise
     * file browser image updates are mishandled */
-   if (gfx_thumbnail_get_core_name(menu_st->thumbnail_path_data, &core_name))
+
+   if (!string_is_empty(menu_st->thumbnail_path_data->content_core_name))
    {
-      if (     string_is_equal(core_name, "imageviewer")
-            || string_is_equal(core_name, "musicplayer")
-            || string_is_equal(core_name, "movieplayer"))
+      if (     string_is_equal(
+               menu_st->thumbnail_path_data->content_core_name,
+               "imageviewer")
+            || string_is_equal(
+               menu_st->thumbnail_path_data->content_core_name,
+               "musicplayer")
+            || string_is_equal(
+               menu_st->thumbnail_path_data->content_core_name,
+               "movieplayer"))
          ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
       else
          ozone->flags2 &= ~OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -4144,7 +4150,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
    if ( (playlist
          && (   (ozone->flags   & OZONE_FLAG_IS_PLAYLIST)
             ||  (ozone->flags   & OZONE_FLAG_IS_EXPLORE_LIST)
-            ||  ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && !menu_is_running_quick_menu())))
+            || ((ozone->flags2  & OZONE_FLAG2_IS_QUICK_MENU) && !menu_is_running_quick_menu())))
          || (   (ozone->flags   & OZONE_FLAG_IS_DB_MANAGER_LIST) && ozone->depth == 4))
    {
       size_t _len;
@@ -4229,10 +4235,11 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       }
       else
       {
-         if (!core_name || string_is_equal(core_name, "DETECT"))
+         if (     string_is_empty(menu_st->thumbnail_path_data->content_core_name)
+               || string_is_equal(menu_st->thumbnail_path_data->content_core_name, "DETECT"))
             core_label = msg_hash_to_str(MSG_AUTODETECT);
          else
-            core_label = core_name;
+            core_label = menu_st->thumbnail_path_data->content_core_name;
       }
 
       _len                               = strlcpy(ozone->selection_core_name,
@@ -4872,10 +4879,9 @@ static void ozone_init_horizontal_list(
          continue;
       }
 
-      /* Remove extension */
-      fill_pathname_base(playlist_file_noext,
-            playlist_file, sizeof(playlist_file_noext));
-      path_remove_extension(playlist_file_noext);
+      fill_pathname(playlist_file_noext,
+            path_basename(playlist_file), "",
+            sizeof(playlist_file_noext));
 
       console_name = playlist_file_noext;
 
@@ -4981,43 +4987,25 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len, syslen;
+         size_t __len, syslen;
          struct texture_image ti;
          char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
-         char content_texturepath[PATH_MAX_LENGTH];
 
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(ozone->playlist_db_node_map, path, node);
 
-         syslen = fill_pathname_base(sysname, path, sizeof(sysname));
-         /* Manually strip the extension (and dot) from sysname */
-            sysname[syslen-4]  =
-            sysname[syslen-3]  =
-            sysname[syslen-2]  =
-            sysname[syslen-1]  = '\0';
-         syslen -= 4;
-         len = fill_pathname_join_special(texturepath,
+         syslen   = fill_pathname(sysname, path_basename(path), "", sizeof(sysname));
+         __len    = fill_pathname_join_special(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
-         texturepath[  len] = '.';
-         texturepath[++len] = 'p';
-         texturepath[++len] = 'n';
-         texturepath[++len] = 'g';
-         texturepath[++len] = '\0';
+         __len   += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
-         {
-            len                = fill_pathname_join_special(
-                  texturepath, ozone->icons_path, "default",
+            __len = fill_pathname_join_special(
+                  texturepath, ozone->icons_path, "default.png",
                   sizeof(texturepath));
-            texturepath[  len] = '.';
-            texturepath[++len] = 'p';
-            texturepath[++len] = 'n';
-            texturepath[++len] = 'g';
-            texturepath[++len] = '\0';
-         }
 
          ti.width         = 0;
          ti.height        = 0;
@@ -5039,15 +5027,15 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          /* Assemble new icon path */
          fill_pathname_join_special(
-               content_texturepath, ozone->icons_path, sysname,
-               sizeof(content_texturepath));
+               texturepath, ozone->icons_path, sysname,
+               sizeof(texturepath));
 
          /* If the content icon doesn't exist, return default-content */
-         if (!path_is_valid(content_texturepath))
-            fill_pathname_join_delim(content_texturepath, ozone->icons_path_default,
-                  "content.png", '-', sizeof(content_texturepath));
+         if (!path_is_valid(texturepath))
+            fill_pathname_join_delim(texturepath, ozone->icons_path_default,
+                  "content.png", '-', sizeof(texturepath));
 
-         if (image_texture_load(&ti, content_texturepath))
+         if (image_texture_load(&ti, texturepath))
          {
             if (ti.pixels)
             {
@@ -5911,8 +5899,7 @@ border_iterate:
                for (offset = 0; offset < ozone->horizontal_list.size; offset++)
                {
                   char playlist_file_noext[NAME_MAX_LENGTH];
-                  strlcpy(playlist_file_noext, ozone->horizontal_list.list[offset].path, sizeof(playlist_file_noext));
-                  path_remove_extension(playlist_file_noext);
+                  fill_pathname(playlist_file_noext, ozone->horizontal_list.list[offset].path, "", sizeof(playlist_file_noext));
                   if (string_is_equal(playlist_file_noext, entry.rich_label))
                      break;
                }
@@ -8069,7 +8056,7 @@ static enum menu_action ozone_parse_menu_entry_action(
    {
       case MENU_ACTION_START:
          ozone->flags &= ~OZONE_FLAG_CURSOR_MODE;
-         if (     (ozone->flags & OZONE_FLAG_IS_STATE_SLOT)
+         if (      (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT)
                || ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && menu_is_running_quick_menu()))
             break;
 
@@ -8157,9 +8144,9 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone->flags2 |= OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
             new_action     = MENU_ACTION_NOOP;
          }
-         else if (  (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
-               && ( (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT) ||
-                    ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && menu_is_running_quick_menu())))
+         else if (   (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+               && (  (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT)
+               ||   ((ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU) && menu_is_running_quick_menu())))
          {
             ozone_hide_fullscreen_thumbnails(ozone, true);
             ozone->flags2 &= ~OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS;
@@ -9103,15 +9090,15 @@ static void ozone_cache_footer_label(
 {
    const char *str = msg_hash_to_str(enum_idx);
    /* Determine pixel width */
-   size_t length   = strlen(str);
+   size_t _len     = strlen(str);
 
    /* Assign string */
    label->str      = str;
-   label->width    = font_driver_get_message_width(ozone->fonts.footer.font, label->str, length, 1.0f);
+   label->width    = font_driver_get_message_width(ozone->fonts.footer.font, label->str, _len, 1.0f);
    /* If font_driver_get_message_width() fails,
     * use predetermined glyph_width as a fallback */
    if (label->width < 0)
-      label->width = length * ozone->fonts.footer.glyph_width;
+      label->width = _len * ozone->fonts.footer.glyph_width;
 }
 
 /* Assigns footer label strings (based on current
@@ -9364,10 +9351,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          char filename[64];
 #ifdef HAVE_DISCORD_OWN_AVATAR
          if (i == OZONE_TEXTURE_DISCORD_OWN_AVATAR && discord_avatar_is_ready())
-         {
-            size_t _len = strlcpy(filename, discord_get_own_avatar(), sizeof(filename));
-            strlcpy(filename + _len, FILE_PATH_PNG_EXTENSION, sizeof(filename) - _len);
-         }
+            fill_pathname(filename, discord_get_own_avatar(),
+                  ".png", sizeof(filename));
          else
 #endif
          {
@@ -10516,11 +10501,7 @@ static void ozone_draw_header(
       char msg[12];
 
       msg[0] = '\0';
-
-      powerstate.s   = msg;
-      powerstate.len = sizeof(msg);
-
-      menu_display_powerstate(&powerstate);
+      menu_display_powerstate(&powerstate, msg, sizeof(msg));
 
       if (powerstate.battery_enabled)
       {
@@ -10580,12 +10561,10 @@ static void ozone_draw_header(
       gfx_display_ctx_datetime_t datetime;
       char timedate[256];
 
-      datetime.s              = timedate;
       datetime.time_mode      = settings->uints.menu_timedate_style;
       datetime.date_separator = settings->uints.menu_timedate_date_separator;
-      datetime.len            = sizeof(timedate);
 
-      menu_display_timedate(&datetime);
+      menu_display_timedate(&datetime, timedate, sizeof(timedate));
 
       gfx_display_draw_text(
             ozone->fonts.time.font,
@@ -11146,19 +11125,19 @@ static void ozone_draw_footer(
             false);
 
    /* > Resume */
-      gfx_display_draw_text(
-            ozone->fonts.footer.font,
-            ozone->footer_labels.resume.str,
-            resume_x + icon_size + icon_padding_small,
-            footer_text_y,
-            video_width,
-            video_height,
-            ozone->theme->text_rgba,
-            TEXT_ALIGN_LEFT,
-            1.0f,
-            false,
-            1.0f,
-            false);
+   gfx_display_draw_text(
+         ozone->fonts.footer.font,
+         ozone->footer_labels.resume.str,
+         resume_x + icon_size + icon_padding_small,
+         footer_text_y,
+         video_width,
+         video_height,
+         ozone->theme->text_rgba,
+         TEXT_ALIGN_LEFT,
+         1.0f,
+         false,
+         1.0f,
+         false);
 
    /* > Reset to default */
    if (reset_to_default_available)
@@ -12153,8 +12132,18 @@ static void ozone_populate_entries(
 #if defined(HAVE_LIBRETRODB)
    if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
    {
+      menu_entry_t entry;
+
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
+         | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
+      menu_entry_get(&entry, 0, 0, NULL, true);
+
       /* Quick Menu under Explore list must also be Quick Menu */
-      if (menu_is_nonrunning_quick_menu() || menu_is_running_quick_menu())
+      if (      string_is_equal(entry.label, "collection")
+            || (string_is_equal(entry.label, "resume_content")
+            ||  string_is_equal(entry.label, "state_slot"))
+         )
          ozone->flags2 |= OZONE_FLAG2_IS_QUICK_MENU;
       if (!menu_explore_is_content_list() || (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU))
          ozone->flags &= ~OZONE_FLAG_IS_EXPLORE_LIST;

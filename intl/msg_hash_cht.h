@@ -2592,11 +2592,11 @@ MSG_HASH(
    "影像垂直位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "設定影像水平位置(如果影像寬於螢幕), 設定<0.0>表示最左邊<1.0>表示最右邊。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "設定影像垂直位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
    )
 #if defined(RARCH_MOBILE)
@@ -2617,11 +2617,11 @@ MSG_HASH(
    "影像垂直位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "設定影像水平位置(如果影像寬於螢幕), 設定<0.0>表示最左邊<1.0>表示最右邊。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "設定影像垂直位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
    )
 #endif
@@ -2987,10 +2987,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "音訊延遲 (毫秒)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "設定音訊訊號延遲(毫秒), 音效驅動程式不支援時設定無效。"
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -3207,26 +3203,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "調整音訊串流的音量。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "狀態 : 未使用"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "狀態 : 已停止"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "狀態 : 播放中"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "狀態 : 播放中 (循環播放)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "狀態 : 播放中 (順序播放)"
-   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -3292,11 +3268,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "依裝置建立預設控制器"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "開啟時在快捷選單「控制器 (核心預設)」選項中, 儲存為預設控制器時, 依裝置名稱建立資料夾儲存和載入。"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "控制器隨插即用"

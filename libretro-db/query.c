@@ -211,10 +211,10 @@ static struct rmsgpack_dom_value query_func_between(
 
    if (argc != 2)
       return res;
-   if (     argv[0].type != AT_VALUE 
+   if (     argv[0].type != AT_VALUE
          || argv[1].type != AT_VALUE)
       return res;
-   if (     argv[0].a.value.type != RDT_INT 
+   if (     argv[0].a.value.type != RDT_INT
          || argv[1].a.value.type != RDT_INT)
       return res;
 
@@ -301,7 +301,7 @@ static void query_argument_free(struct argument *arg)
 }
 
 static struct buffer query_parse_integer(
-      char *s, size_t len, 
+      char *s, size_t len,
       struct buffer buff,
       struct rmsgpack_dom_value *value,
       const char **error)
@@ -495,7 +495,7 @@ static struct buffer query_parse_value(
    }
    else if (
             query_peek(buff, "b",  STRLEN_CONST("b"))
-         || query_peek(buff, "\"", STRLEN_CONST("\"")) 
+         || query_peek(buff, "\"", STRLEN_CONST("\""))
          || query_peek(buff, "'",  STRLEN_CONST("'")))
       buff = query_parse_string(s, len,
              buff, value, error);

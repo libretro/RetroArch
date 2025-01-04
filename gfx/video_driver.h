@@ -645,7 +645,7 @@ typedef struct video_poke_interface
    float (*get_refresh_rate)(void *data);
    void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
-         unsigned *width, unsigned *height, char *desc, size_t desc_len);
+         unsigned *width, unsigned *height, char *s, size_t len);
 
    /* Move index to previous resolution */
    void (*get_video_output_prev)(void *data);
@@ -980,7 +980,7 @@ bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen);
 
 bool video_driver_get_video_output_size(
-      unsigned *width, unsigned *height, char *desc, size_t desc_len);
+      unsigned *width, unsigned *height, char *s, size_t len);
 
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);
@@ -1071,7 +1071,10 @@ bool video_monitor_fps_statistics(double *refresh_rate,
       double *deviation, unsigned *sample_points);
 
 #define video_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
-   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) : false)
+   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y, true) : false)
+
+#define video_driver_translate_coord_viewport_confined_wrap(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y) \
+   (video_driver_get_viewport_info(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_x, res_y, res_screen_x, res_screen_y, false) : false)
 
 /**
  * video_driver_translate_coord_viewport:
@@ -1081,9 +1084,12 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  * @res_y                          : Scaled  Y coordinate.
  * @res_screen_x                   : Scaled screen X coordinate.
  * @res_screen_y                   : Scaled screen Y coordinate.
+ * @report_oob                     : Out-of-bounds report mode
  *
  * Translates pointer [X,Y] coordinates into scaled screen
- * coordinates based on viewport info.
+ * coordinates based on viewport info. If report_oob is true,
+ * -0x8000 will be returned for the coordinate which is offscreen,
+ * otherwise offscreen coordinate is clamped to 0x7fff / -0x7fff.
  *
  * Returns: true (1) if successful, false if video driver doesn't support
  * viewport info.
@@ -1092,7 +1098,7 @@ bool video_driver_translate_coord_viewport(
       struct video_viewport *vp,
       int mouse_x, int mouse_y,
       int16_t *res_x, int16_t *res_y, int16_t *res_screen_x,
-      int16_t *res_screen_y);
+      int16_t *res_screen_y, bool report_oob);
 
 uintptr_t video_driver_display_userdata_get(void);
 
@@ -1120,7 +1126,7 @@ void video_driver_build_info(video_frame_info_t *video_info);
 
 void video_driver_reinit(int flags);
 
-size_t video_driver_get_window_title(char *buf, unsigned len);
+size_t video_driver_get_window_title(char *s, size_t len);
 
 bool *video_driver_get_threaded(void);
 
@@ -1205,7 +1211,7 @@ bool video_driver_test_all_flags(enum display_flags testflag);
 
 gfx_ctx_flags_t video_driver_get_flags_wrapper(void);
 
-void video_driver_set_gpu_api_version_string(const char *str);
+size_t video_driver_set_gpu_api_version_string(const char *str);
 
 const char* video_driver_get_gpu_api_version_string(void);
 

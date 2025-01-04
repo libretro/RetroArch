@@ -236,6 +236,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
    if (!string_is_empty(track_path))
    {
+      size_t _len;
       if (strstr(track_path, "/") || strstr(track_path, "\\"))
       {
 #ifdef MEDIA_CUE_PARSE_DEBUG
@@ -245,8 +246,8 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          return media_detect_cd_info(track_path, data_track_pregap_bytes, info);
       }
 
-      fill_pathname_basedir(track_abs_path, path, sizeof(track_abs_path));
-      strlcat(track_abs_path, track_path, sizeof(track_abs_path));
+      _len = fill_pathname_basedir(track_abs_path, path, sizeof(track_abs_path));
+      strlcpy(track_abs_path + _len, track_path, sizeof(track_abs_path) - _len);
 #ifdef MEDIA_CUE_PARSE_DEBUG
       printf("using abs path %s\n", track_abs_path);
       fflush(stdout);

@@ -34,6 +34,7 @@ typedef struct
    int16_t screen_x, screen_y;
    int16_t fixed_x, fixed_y;
    int16_t full_x, full_y;
+   int16_t confined_x, confined_y;
 } cocoa_touch_data_t;
 
 typedef struct

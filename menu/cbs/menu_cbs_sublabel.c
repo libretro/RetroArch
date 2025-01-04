@@ -718,6 +718,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_auto_scale,      MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_osk_overlay_auto_scale,  MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_dpad_diag_sens,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_abxy_diag_sens,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_analog_recenter_zone,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_collection_list,       MENU_ENUM_SUBLABEL_PLAYLISTS_TAB)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer_axis,      MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS)
@@ -884,6 +885,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_separation_portrait,   MEN
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_x_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_y_offset_portrait,       MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_enable,                  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_autoload_preferred,      MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_overlay_preset,                  MENU_ENUM_SUBLABEL_OVERLAY_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_osk_overlay_preset,              MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_pointer_enable,    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE)
@@ -1257,17 +1259,17 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_refresh_rate,          
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_rs90_softfilter_type,     MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE)
 #endif
 #endif
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_screen_resolution,                     MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_index,                       MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_height,          MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_x,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_custom_y,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_x,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_y,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_screen_resolution,               MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_gpu_index,                 MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_custom_height,          MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_custom_width,           MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_custom_x,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_custom_y,               MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_x,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_y,                 MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y)
 #if defined(RARCH_MOBILE)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_portrait_x,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_viewport_bias_portrait_y,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_x,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_y,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_use_mitm_server,               MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_mitm_server,                   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER)
@@ -1424,7 +1426,7 @@ static int action_bind_sublabel_systeminfo_controller_entry(
       }
    }
 
-   snprintf(tmp, sizeof(tmp),
+   snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
            input_config_get_device_display_name(controller)
          ? input_config_get_device_display_name(controller)
@@ -1434,7 +1436,6 @@ static int action_bind_sublabel_systeminfo_controller_entry(
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
            input_config_get_device_vid(controller),
            input_config_get_device_pid(controller));
-   strlcpy(s, tmp, len);
 
    return 0;
 }
@@ -1736,17 +1737,13 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
       char *s, size_t len)
 {
    size_t _len;
-   char buf[NAME_MAX_LENGTH];
    struct netplay_room *room;
    net_driver_state_t *net_st = networking_state_get_ptr();
    unsigned room_index        = type - MENU_SETTINGS_NETPLAY_ROOMS_START;
-
    if (room_index >= (unsigned)net_st->room_count)
       return -1;
-
    room  = &net_st->room_list[room_index];
    _len  = strlcpy(s, msg_hash_to_str(MSG_PROGRAM), len);
-
    _len += snprintf(s + _len, len - _len,
       ": %s (%s)\n"
       "%s: %s (%s)\n"
@@ -1768,20 +1765,14 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
 
    if (     string_is_empty(room->subsystem_name)
          || string_is_equal_case_insensitive(room->subsystem_name, "N/A"))
-      snprintf(buf, sizeof(buf), "(%08lX)",
+      snprintf(s + _len, len - _len, "(%08lX)",
             (unsigned long)(unsigned)room->gamecrc);
    else
    {
-      size_t _len2  = 0;
-      buf[  _len2]  = '(';
-      buf[++_len2]  = '\0';
-      _len2        += strlcpy(buf + _len2, room->subsystem_name, sizeof(buf) - _len2);
-      buf[  _len2]  = ')';
-      buf[++_len2]  = '\0';
+      _len += strlcpy(s + _len, "(", len - _len);
+      _len += strlcpy(s + _len, room->subsystem_name, len - _len);
+      _len += strlcpy(s + _len, ")", len - _len);
    }
-
-   strlcpy(s + _len, buf, len - _len);
-
    return 0;
 }
 
@@ -2574,32 +2565,32 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_gpu_index);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_height);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_custom_height);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_width);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_custom_width);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_x);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_custom_x);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_custom_y);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_custom_y);
             break;
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_aspect_ratio);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_x);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_bias_x);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_y);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_bias_y);
             break;
 #if defined(RARCH_MOBILE)
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_portrait_x);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_bias_portrait_x);
             break;
          case MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_viewport_bias_portrait_y);
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_vp_bias_portrait_y);
             break;
 #endif
          case MENU_ENUM_LABEL_VIDEO_ASPECT_RATIO_INDEX:
@@ -3745,6 +3736,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_ip_address);
             break;
+         case MENU_ENUM_LABEL_OVERLAY_AUTOLOAD_PREFERRED:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_autoload_preferred);
+            break;
          case MENU_ENUM_LABEL_OVERLAY_PRESET:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_overlay_preset);
             break;
@@ -4293,6 +4287,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_abxy_diag_sens);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_analog_recenter_zone);
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_size);
@@ -5744,14 +5741,16 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char* idx_placeholder = "%u";
       for (i = 0; i < ARRAY_SIZE(info_list); i++)
       {
-         int idxpos = string_find_index_substring_string(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idx_placeholder);
+         int idxpos      = string_find_index_substring_string(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idx_placeholder);
+         size_t _lbl_len = strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx));
          if (   (idxpos > 0)
               && string_starts_with_size(label, msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx), idxpos)
-              && (((size_t)idxpos == strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2)
-              || ((size_t)idxpos   <  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx)) - 2          && string_ends_with_size(label,
+              && (((size_t)idxpos == _lbl_len - 2)
+              || ((size_t)idxpos  <  _lbl_len - 2
+              && string_ends_with_size(label,
                   msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx) + idxpos + 2,
                   lbl_len,
-                  strlen(msg_hash_to_str((enum msg_hash_enums)info_list[i].label_idx))-idxpos-2))))
+                  _lbl_len - idxpos - 2))))
          {
             BIND_ACTION_SUBLABEL(cbs, info_list[i].cb);
             return 0;

@@ -216,10 +216,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      = manual_content_scan_get_content_list(
                         manual_scan->task_config)))
             {
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT),
-                     1, 100, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,\
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                goto task_finished;
             }
 
@@ -232,10 +231,9 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      logiqx_dat_init(
                         manual_scan->task_config->dat_file_path)))
                {
-                  runloop_msg_queue_push(
-                        msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR),
-                        1, 100, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   goto task_finished;
                }
             }
@@ -570,13 +568,12 @@ bool task_push_manual_content_scan(
          calloc(1, sizeof(manual_content_scan_task_config_t))))
       goto error;
 
-   if ( !manual_content_scan_get_task_config(
+   if (!manual_content_scan_get_task_config(
          manual_scan->task_config, playlist_directory))
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
    }
 

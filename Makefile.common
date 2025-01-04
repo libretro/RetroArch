@@ -921,6 +921,18 @@ ifeq ($(HAVE_PULSE), 1)
    DEF_FLAGS += $(PULSE_CFLAGS)
 endif
 
+ifeq ($(HAVE_PIPEWIRE), 1)
+   OBJ += audio/drivers/pipewire.o \
+          audio/common/pipewire.o
+
+   ifeq ($(HAVE_MICROPHONE), 1)
+      OBJ += audio/drivers_microphone/pipewire.o
+   endif
+
+   LIBS += $(PIPEWIRE_LIBS)
+   DEF_FLAGS += $(PIPEWIRE_CFLAGS)
+endif
+
 ifeq ($(HAVE_OSS_LIB), 1)
    LIBS += -lossaudio
 endif
@@ -1263,7 +1275,11 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \
         gfx/common/wayland/pointer-constraints-unstable-v1.o \
-        gfx/common/wayland/relative-pointer-unstable-v1.o
+        gfx/common/wayland/relative-pointer-unstable-v1.o \
+        gfx/common/wayland/cursor-shape-v1.o \
+        gfx/common/wayland/tablet-unstable-v2.o \
+        gfx/common/wayland/content-type-v1.o \
+        gfx/common/wayland/single-pixel-buffer-v1.o
 
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o
@@ -2176,7 +2192,6 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           core_updater_list.o \
           network/natt.o \
-          network/net_http_special.o \
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
@@ -2193,7 +2208,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifneq ($(findstring Linux,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
-   
+
    ifneq ($(findstring Win,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
@@ -2485,6 +2500,7 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_3x.o \
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
+          gfx/video_filters/upscale_1_66x_fast.o \
           gfx/video_filters/upscale_256x_320x240.o \
           gfx/video_filters/picoscale_256x_320x240.o \
           gfx/video_filters/upscale_240x160_320x240.o \

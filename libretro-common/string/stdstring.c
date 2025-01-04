@@ -77,8 +77,9 @@ char *string_ucwords(char *s)
    return s;
 }
 
-char *string_replace_substring(const char *in,
-      const char *pattern, size_t pattern_len,
+char *string_replace_substring(
+      const char *in,          size_t in_len,
+      const char *pattern,     size_t pattern_len,
       const char *replacement, size_t replacement_len)
 {
    size_t outlen;
@@ -101,7 +102,7 @@ char *string_replace_substring(const char *in,
       numhits++;
    }
 
-   outlen          = strlen(in) - pattern_len*numhits + replacement_len*numhits;
+   outlen = in_len - pattern_len * numhits + replacement_len*numhits;
 
    if (!(out = (char *)malloc(outlen+1)))
       return NULL;
@@ -133,17 +134,17 @@ char *string_trim_whitespace_left(char *const s)
 {
    if (s && *s)
    {
-      size_t len     = strlen(s);
+      size_t _len    = strlen(s);
       char *current  = s;
 
       while (*current && ISSPACE((unsigned char)*current))
       {
          ++current;
-         --len;
+         --_len;
       }
 
       if (s != current)
-         memmove(s, current, len + 1);
+         memmove(s, current, _len + 1);
    }
 
    return s;
@@ -158,13 +159,13 @@ char *string_trim_whitespace_right(char *const s)
 {
    if (s && *s)
    {
-      size_t len     = strlen(s);
-      char  *current = s + len - 1;
+      size_t _len    = strlen(s);
+      char  *current = s + _len - 1;
 
       while (current != s && ISSPACE((unsigned char)*current))
       {
          --current;
-         --len;
+         --_len;
       }
 
       current[ISSPACE((unsigned char)*current) ? 0 : 1] = '\0';

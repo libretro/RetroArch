@@ -139,7 +139,6 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          }
       case DUMP_STATE_WRITE_CUE:
          {
-            size_t _len;
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
             settings_t              *settings = config_get_ptr();
@@ -159,11 +158,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
             filestream_close(state->file);
 
-            _len = strlcpy(cue_filename,
-                  state->title, sizeof(cue_filename));
-            strlcpy(cue_filename       + _len,
-                  ".cue",
-                  sizeof(cue_filename) - _len);
+            fill_pathname(cue_filename, state->title,
+                  ".cue", sizeof(cue_filename));
 
             fill_pathname_join_special(output_file,
                   directory_core_assets, cue_filename, sizeof(output_file));

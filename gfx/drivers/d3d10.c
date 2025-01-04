@@ -257,7 +257,7 @@ static bool d3d10_init_shader(
    D3DBlob ps_code = NULL;
    D3DBlob gs_code = NULL;
 
-   bool success = true;
+   bool success    = true;
 
    if (!src) /* LPCWSTR filename */
    {
@@ -1366,17 +1366,16 @@ static bool d3d10_gfx_set_shader(void* data,
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
          strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
-         if (!d3d10_init_shader(
-                  d3d10->device, vs_src, 0, _path, "main",
-                  NULL, NULL, desc, countof(desc),
-                  &d3d10->pass[i].shader)) { }
+         d3d10_init_shader(d3d10->device, vs_src, 0,
+               _path, "main", NULL, NULL, desc,
+               countof(desc), &d3d10->pass[i].shader);
 
          strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
-         if (!d3d10_init_shader(
-                  d3d10->device, ps_src, 0, _path, NULL, "main",
-                  NULL, NULL, 0,
-                  &d3d10->pass[i].shader)) { }
+         d3d10_init_shader(d3d10->device, ps_src,
+               0, _path, NULL, "main",
+               NULL, NULL, 0,
+               &d3d10->pass[i].shader);
 
          free(d3d10->shader_preset->pass[i].source.string.vertex);
          free(d3d10->shader_preset->pass[i].source.string.fragment);

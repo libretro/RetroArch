@@ -655,7 +655,7 @@ void state_manager_event_deinit(
    if (!rewind_st)
       return;
 
-   restore_callbacks = 
+   restore_callbacks =
             (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)
          && (rewind_st->state)
          && (current_core);
@@ -717,13 +717,15 @@ bool state_manager_check_rewind(
 
    if (!rewind_st->state)
    {
-      if ((pressed 
-          && (!(rewind_st->flags 
+      if ((pressed
+          && (!(rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED)))
           && !core_info_current_supports_rewind())
-         runloop_msg_queue_push(msg_hash_to_str(MSG_REWIND_UNSUPPORTED),
-               1, 100, false, NULL,
+      {
+         const char *_msg = msg_hash_to_str(MSG_REWIND_UNSUPPORTED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
 
       if (pressed)
          rewind_st->flags |=  STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED;
@@ -817,16 +819,16 @@ bool state_manager_check_rewind(
    {
       if (current_core->retro_set_audio_sample)
          current_core->retro_set_audio_sample(
-               (rewind_st->flags 
+               (rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
-               ? audio_driver_sample_rewind 
+               ? audio_driver_sample_rewind
                : audio_driver_sample);
 
       if (current_core->retro_set_audio_sample_batch)
          current_core->retro_set_audio_sample_batch(
-               (  rewind_st->flags 
+               (  rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
-               ? audio_driver_sample_batch_rewind 
+               ? audio_driver_sample_batch_rewind
                : audio_driver_sample_batch);
    }
 

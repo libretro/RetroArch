@@ -745,8 +745,11 @@ void App::OnPackageInstalling(PackageCatalog^ sender,
    if (args->IsComplete)
    {
       char msg[512];
-      snprintf(msg, sizeof(msg), "Package \"%ls\" installed, a restart may be necessary", args->Package->DisplayName->Data());
-      runloop_msg_queue_push(msg, 1, 5 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      size_t _len = snprintf(msg, sizeof(msg),
+            "Package \"%ls\" installed, a restart may be necessary",
+            args->Package->DisplayName->Data());
+      runloop_msg_queue_push(msg, _len, 1, 5 * 60, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
 

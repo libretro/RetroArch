@@ -29,7 +29,6 @@
 #include <string/stdstring.h>
 
 #include "../frontend/frontend_driver.h"
-#include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_PRESENCE
@@ -156,7 +155,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
    else
       ++start;
 
-   do
+   for (;;)
    {
       next = strchr(start, '&');
 
@@ -176,7 +175,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
          return;
 
       start = next + 1;
-   } while (1);
+   }
 }
 #endif
 #endif

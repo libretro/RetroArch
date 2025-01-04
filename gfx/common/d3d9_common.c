@@ -829,10 +829,10 @@ void d3d9_viewport_info(void *data, struct video_viewport *vp)
 
    video_driver_get_size(&width, &height);
 
-   vp->x               = d3d->final_viewport.X;
-   vp->y               = d3d->final_viewport.Y;
-   vp->width           = d3d->final_viewport.Width;
-   vp->height          = d3d->final_viewport.Height;
+   vp->x               = d3d->out_vp.X;
+   vp->y               = d3d->out_vp.Y;
+   vp->width           = d3d->out_vp.Width;
+   vp->height          = d3d->out_vp.Height;
 
    vp->full_width      = width;
    vp->full_height     = height;
@@ -906,12 +906,12 @@ void d3d9_set_viewport(void *data,
          d3d->needs_restore = true;
    }
 
-   d3d->final_viewport.X      = x;
-   d3d->final_viewport.Y      = y;
-   d3d->final_viewport.Width  = width;
-   d3d->final_viewport.Height = height;
-   d3d->final_viewport.MinZ   = 0.0f;
-   d3d->final_viewport.MaxZ   = 1.0f;
+   d3d->out_vp.X      = x;
+   d3d->out_vp.Y      = y;
+   d3d->out_vp.Width  = width;
+   d3d->out_vp.Height = height;
+   d3d->out_vp.MinZ   = 0.0f;
+   d3d->out_vp.MaxZ   = 1.0f;
 
    d3d9_set_font_rect(d3d, NULL);
 }
@@ -1038,7 +1038,7 @@ void d3d9_overlay_render(d3d9_video_t *d3d,
 
    /* Restore previous state. */
    IDirect3DDevice9_SetRenderState(dev, D3DRS_ALPHABLENDENABLE, false);
-   IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&d3d->final_viewport);
+   IDirect3DDevice9_SetViewport(dev, (D3DVIEWPORT9*)&d3d->out_vp);
 }
 
 void d3d9_free_overlay(d3d9_video_t *d3d, overlay_t *overlay)
@@ -1304,14 +1304,14 @@ bool d3d9_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    {
       unsigned x, y;
-      unsigned vp_width       = (d3d->final_viewport.Width  > width)  ? width  : d3d->final_viewport.Width;
-      unsigned vp_height      = (d3d->final_viewport.Height > height) ? height : d3d->final_viewport.Height;
+      unsigned vp_width       = (d3d->out_vp.Width  > width)  ? width  : d3d->out_vp.Width;
+      unsigned vp_height      = (d3d->out_vp.Height > height) ? height : d3d->out_vp.Height;
       unsigned pitchpix       = rect.Pitch / 4;
       const uint32_t *pixels  = (const uint32_t*)rect.pBits;
 
-      pixels                 += d3d->final_viewport.X;
+      pixels                 += d3d->out_vp.X;
       pixels                 += (vp_height - 1) * pitchpix;
-      pixels                 -= d3d->final_viewport.Y * pitchpix;
+      pixels                 -= d3d->out_vp.Y * pitchpix;
 
       for (y = 0; y < vp_height; y++, pixels -= pitchpix)
       {

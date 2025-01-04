@@ -849,7 +849,7 @@ private:
    CommonResources *common         = nullptr;
 
    Size2D current_framebuffer_size = {};
-   gl3_viewport current_viewport;
+   gl3_viewport curr_vp;
    gl3_filter_chain_pass_info pass_info;
 
    std::vector<uint32_t> vertex_shader;
@@ -1063,7 +1063,7 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
          frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
-            m->location.push_vertex = vert;
+            m->location.push_vertex   = vert;
          if (frag >= 0)
             m->location.push_fragment = frag;
       }
@@ -1154,7 +1154,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? current_viewport.height : current_viewport.width) * pass_info.scale_x;
+         width = (retroarch_get_rotation() % 2 ? curr_vp.height : curr_vp.width) * pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1176,7 +1176,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? current_viewport.width : current_viewport.height) * pass_info.scale_y;
+         height = (retroarch_get_rotation() % 2 ? curr_vp.width : curr_vp.height) * pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1563,8 +1563,8 @@ void Pass::build_semantics(uint8_t *buffer,
                        current_framebuffer_size.width,
                        current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(current_viewport.width),
-                       unsigned(current_viewport.height));
+                       unsigned(curr_vp.width),
+                       unsigned(curr_vp.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
                        frame_count_period
@@ -1640,7 +1640,7 @@ void Pass::build_commands(
       const gl3_viewport &vp,
       const float *mvp)
 {
-   current_viewport = vp;
+   curr_vp          = vp;
    Size2D size      = get_output_size(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
@@ -1720,22 +1720,22 @@ void Pass::build_commands(
 
    if (final_pass)
    {
-      glViewport(current_viewport.x, current_viewport.y,
-                 current_viewport.width, current_viewport.height);
+      glViewport(curr_vp.x, curr_vp.y,
+                 curr_vp.width, curr_vp.height);
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
       if (simulate_scanline)
       {
-         glScissor(  current_viewport.x,
-                     int32_t((float(current_viewport.height) / float(total_subframes))
+         glScissor(  curr_vp.x,
+                     int32_t((float(curr_vp.height) / float(total_subframes))
                               * float(current_subframe - 1)),
-                     current_viewport.width,
-                     uint32_t(float(current_viewport.height) / float(total_subframes))
+                     curr_vp.width,
+                     uint32_t(float(curr_vp.height) / float(total_subframes))
          );
       }
       else
       {
-         glScissor(  current_viewport.x, current_viewport.y,
-                     current_viewport.width, current_viewport.height);
+         glScissor(  curr_vp.x,     curr_vp.y,
+                     curr_vp.width, curr_vp.height);
       }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
    }

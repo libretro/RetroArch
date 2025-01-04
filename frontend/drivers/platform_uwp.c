@@ -47,7 +47,7 @@
 
 #include "../../uwp/uwp_func.h"
 
-static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
+static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len;
    char build_str[11]     = {0};
@@ -134,6 +134,7 @@ static void frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       _len += strlcpy(s + _len, " ", len - _len);
       strlcpy(s + _len, uwp_device_family, len - _len);
    }
+   return _len;
 }
 
 static void frontend_uwp_init(void *data) { }

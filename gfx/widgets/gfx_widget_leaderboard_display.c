@@ -170,7 +170,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                - p_dispwidget->gfx_widget_fonts.regular.line_descender);
 
          ptr = state->tracker_info[i].display;
-         while (*ptr) {
+         while (*ptr)
+         {
             float next_char_x = char_x + state->fixed_char_width;
             const char c = *ptr++;
             if (c >= CHEEVO_LBOARD_FIRST_FIXED_CHAR && c <= CHEEVO_LBOARD_LAST_FIXED_CHAR)
@@ -182,9 +183,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                   char_x += padding;
                }
                else
-               {
                   next_char_x = char_x + char_width;
-               }
             }
 
             buffer[0] = c;
@@ -348,16 +347,17 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       if (state->disconnected || state->loading)
       {
          char loading_buffer[8] = "RA ...";
-         const char* disconnected_text = state->disconnected ? "! RA !" : loading_buffer;
+         const char *disconnected_text = state->disconnected ? "! RA !" : loading_buffer;
          const unsigned disconnect_widget_width = font_driver_get_message_width(
             state->dispwidget_ptr->gfx_widget_fonts.msg_queue.font,
             disconnected_text, 0, 1) + CHEEVO_LBOARD_DISPLAY_PADDING * 2;
          const unsigned disconnect_widget_height =
             p_dispwidget->gfx_widget_fonts.msg_queue.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
-         x = video_width - disconnect_widget_width - spacing;
+         x  = video_width - disconnect_widget_width - spacing;
          y -= disconnect_widget_height + spacing;
 
-         if (state->loading) {
+         if (state->loading)
+         {
             const uint16_t loading_shift = 5;
             loading_buffer[((state->loading - 1) >> loading_shift) + 3] = '\0';
             state->loading &= (1 << (loading_shift + 2)) - 1;

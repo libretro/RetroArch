@@ -193,15 +193,15 @@ static enum patch_error bps_apply_patch(
 
    while (bps.modify_offset < bps.modify_length - 12)
    {
-      size_t length = bps_decode(&bps);
-      unsigned mode = length & 3;
+      size_t _len   = bps_decode(&bps);
+      unsigned mode = _len & 3;
 
-      length = (length >> 2) + 1;
+      _len          = (_len >> 2) + 1;
 
       switch (mode)
       {
          case SOURCE_READ:
-            while (length--)
+            while (_len--)
             {
                uint8_t data = bps.source_data[bps.output_offset];
                bps.target_data[bps.output_offset++] = data;
@@ -210,7 +210,7 @@ static enum patch_error bps_apply_patch(
             break;
 
          case TARGET_READ:
-            while (length--)
+            while (_len--)
             {
                uint8_t data = bps_read(&bps);
                bps.target_data[bps.output_offset++] = data;
@@ -232,7 +232,7 @@ static enum patch_error bps_apply_patch(
             if (mode == SOURCE_COPY)
             {
                bps.source_offset += offset;
-               while (length--)
+               while (_len--)
                {
                   uint8_t data = bps.source_data[bps.source_offset++];
                   bps.target_data[bps.output_offset++] = data;
@@ -242,7 +242,7 @@ static enum patch_error bps_apply_patch(
             else
             {
                bps.target_offset += offset;
-               while (length--)
+               while (_len--)
                {
                   uint8_t data = bps.target_data[bps.target_offset++];
                   bps.target_data[bps.output_offset++] = data;
@@ -751,10 +751,10 @@ static bool apply_patch_content(uint8_t **buf,
       {
          char msg[128];
          const char *patch_filename = path_basename_nocompression(patch_path);
-         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
+         size_t _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
                patch_filename ? patch_filename :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN));
-         runloop_msg_queue_push(msg, 1, 180, false, NULL,
+         runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }

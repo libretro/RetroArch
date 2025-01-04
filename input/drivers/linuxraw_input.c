@@ -35,6 +35,7 @@
 typedef struct linuxraw_input
 {
    bool state[0x80];
+   linux_illuminance_sensor_t *illuminance_sensor;
 } linuxraw_input_t;
 
 static void *linuxraw_input_init(const char *joypad_driver)
@@ -165,7 +166,60 @@ static void linuxraw_input_free(void *data)
       return;
 
    linux_terminal_restore_input();
+   linux_close_illuminance_sensor(linuxraw->illuminance_sensor);
    free(data);
+}
+
+static bool linuxraw_input_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
+{
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
+
+   if (!linuxraw)
+      return false;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         /* If already disabled, then do nothing */
+         linux_close_illuminance_sensor(linuxraw->illuminance_sensor); /* noop if NULL */
+         linuxraw->illuminance_sensor = NULL;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         /** Unimplemented sensor actions that probably shouldn't fail */
+         return true;
+
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         if (linuxraw->illuminance_sensor)
+            /* If the light sensor is already open, just set the rate */
+            linux_set_illuminance_sensor_rate(linuxraw->illuminance_sensor, rate);
+         else
+            linuxraw->illuminance_sensor = linux_open_illuminance_sensor(rate);
+
+         return linuxraw->illuminance_sensor != NULL;
+      default:
+         break;
+   }
+
+   return false;
+}
+
+static float linuxraw_input_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   linuxraw_input_t *linuxraw = (linuxraw_input_t*)data;
+
+   if (!linuxraw)
+      return 0.0f;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ILLUMINANCE:
+         if (linuxraw->illuminance_sensor)
+            return linux_get_illuminance_reading(linuxraw->illuminance_sensor);
+      default:
+         break;
+   }
+
+   return 0.0f;
 }
 
 static void linuxraw_input_poll(void *data)
@@ -194,7 +248,7 @@ static void linuxraw_input_poll(void *data)
 
 static uint64_t linuxraw_get_capabilities(void *data)
 {
-   return (1 << RETRO_DEVICE_JOYPAD) 
+   return (1 << RETRO_DEVICE_JOYPAD)
         | (1 << RETRO_DEVICE_ANALOG);
 }
 
@@ -203,8 +257,8 @@ input_driver_t input_linuxraw = {
    linuxraw_input_poll,
    linuxraw_input_state,
    linuxraw_input_free,
-   NULL,
-   NULL,
+   linuxraw_input_set_sensor_state,
+   linuxraw_input_get_sensor_input,
    linuxraw_get_capabilities,
    "linuxraw",
    NULL,                         /* grab_mouse */

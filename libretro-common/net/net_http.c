@@ -99,7 +99,7 @@ struct http_connection_t
  **/
 void net_http_urlencode(char **dest, const char *source)
 {
-   static const char urlencode_lut[256] = 
+   static const char urlencode_lut[256] =
    {
       0,       /* 0   */
       0,       /* 1   */
@@ -360,9 +360,9 @@ void net_http_urlencode(char **dest, const char *source)
    };
 
    /* Assume every character will be encoded, so we need 3 times the space. */
-   size_t len                       = strlen(source) * 3 + 1;
-   size_t count                     = len;
-   char *enc                        = (char*)calloc(1, len);
+   size_t _len                      = strlen(source) * 3 + 1;
+   size_t count                     = _len;
+   char *enc                        = (char*)calloc(1, _len);
    *dest                            = enc;
 
    for (; *source; source++)
@@ -381,7 +381,7 @@ void net_http_urlencode(char **dest, const char *source)
       while (*++enc);
    }
 
-   (*dest)[len - 1] = '\0';
+   (*dest)[_len - 1] = '\0';
 }
 
 /**
@@ -389,8 +389,7 @@ void net_http_urlencode(char **dest, const char *source)
  *
  * Re-encode a full URL
  **/
-void net_http_urlencode_full(char *dest,
-      const char *source, size_t size)
+void net_http_urlencode_full(char *s, const char *source, size_t len)
 {
    size_t buf_pos;
    size_t tmp_len;
@@ -418,10 +417,10 @@ void net_http_urlencode_full(char *dest,
 
    tmp             = NULL;
    net_http_urlencode(&tmp, url_path);
-   buf_pos         = strlcpy(dest, url_domain, size);
-   dest[  buf_pos] = '/';
-   dest[++buf_pos] = '\0';
-   strlcpy(dest + buf_pos, tmp, size - buf_pos);
+   buf_pos         = strlcpy(s, url_domain, len);
+   s[  buf_pos] = '/';
+   s[++buf_pos] = '\0';
+   strlcpy(s + buf_pos, tmp, len - buf_pos);
    free(tmp);
 }
 
@@ -443,7 +442,7 @@ static int net_http_new_socket(struct http_connection_t *conn)
          goto done;
       }
 
-      /* TODO: Properly figure out what's going wrong when the newer 
+      /* TODO: Properly figure out what's going wrong when the newer
          timeout/poll code interacts with mbed and winsock
          https://github.com/libretro/RetroArch/issues/14742 */
 
@@ -879,10 +878,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
       if ((state->data = (char*)malloc(state->buflen)))
       {
-         if ((state->headers = string_list_new()) &&
-             string_list_initialize(state->headers))
+         if ((state->headers = string_list_new()) != NULL)
             return state;
-         string_list_free(state->headers);
       }
       free(state);
    }
@@ -994,7 +991,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
                   state->error  = true;
                   goto error;
                }
-               state->status    = (int)strtoul(state->data 
+               state->status    = (int)strtoul(state->data
                      + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
                state->part      = P_HEADER;
             }
@@ -1191,7 +1188,7 @@ error:
  * Report HTTP status. 200, 404, or whatever.
  *
  * Leaf function.
- * 
+ *
  * @return HTTP status code.
  **/
 int net_http_status(struct http_t *state)

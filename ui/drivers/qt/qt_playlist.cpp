@@ -193,6 +193,8 @@ QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) con
          return getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
       case THUMBNAIL_TYPE_TITLE_SCREEN:
          return getThumbnailPath(index, THUMBNAIL_TITLE);
+      case THUMBNAIL_TYPE_LOGO:
+         return getThumbnailPath(index, THUMBNAIL_LOGO);
       default:
          break;
    }
@@ -1411,7 +1413,7 @@ void MainWindow::deleteCurrentPlaylistItem()
 
 QString MainWindow::getPlaylistDefaultCore(QString plName)
 {
-   size_t len;
+   size_t _len;
    playlist_config_t playlist_config;
    char playlist_path[PATH_MAX_LENGTH];
    QByteArray plNameByteArray          = plName.toUtf8();
@@ -1432,12 +1434,12 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
       return corePath;
 
    /* Get playlist path */
-   len = fill_pathname_join_special(
+   _len = fill_pathname_join_special(
          playlist_path,  settings->paths.directory_playlist,
          plNameCString, sizeof(playlist_path));
-   strlcpy(playlist_path       + len,
+   strlcpy(playlist_path       + _len,
          ".lpl",
-         sizeof(playlist_path) - len);
+         sizeof(playlist_path) - _len);
 
    /* Load playlist, if required */
    if (cachedPlaylist)

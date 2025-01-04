@@ -1568,19 +1568,15 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
          strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
-         if (!d3d11_init_shader(
-                  d3d11->device, vs_src, 0, _path, "main", NULL, NULL, desc, countof(desc),
-                  &d3d11->pass[i].shader,
-                  feat_level_hint
-                  )) { }
+         d3d11_init_shader(d3d11->device, vs_src, 0,
+               _path, "main", NULL, NULL, desc, countof(desc),
+               &d3d11->pass[i].shader, feat_level_hint);
 
          strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
-         if (!d3d11_init_shader(
-                  d3d11->device, ps_src, 0, _path, NULL, "main", NULL, NULL, 0,
-                  &d3d11->pass[i].shader,
-                  feat_level_hint
-                  )) { }
+         d3d11_init_shader(d3d11->device, ps_src, 0, _path,
+               NULL, "main", NULL, NULL, 0,
+               &d3d11->pass[i].shader, feat_level_hint);
 
          free(d3d11->shader_preset->pass[i].source.string.vertex);
          free(d3d11->shader_preset->pass[i].source.string.fragment);
