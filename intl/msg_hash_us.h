@@ -2599,7 +2599,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Scale only height, or both height and width. Half steps apply to high resolution sources."
+   "Scale either height or width, or both height and width. Half steps apply only to high resolution sources."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
