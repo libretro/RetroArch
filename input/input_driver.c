@@ -1221,7 +1221,9 @@ static int16_t input_overlay_lightgun_state(settings_t *settings,
          else
             return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-         return input_driver_pointer_is_offscreen(ptr_st->ptr[0].x, ptr_st->ptr[0].y);
+         ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
+         return ( settings->bools.input_overlay_lightgun_allow_offscreen
+               && input_driver_pointer_is_offscreen(ptr_st->ptr[0].x, ptr_st->ptr[0].y));
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
@@ -3307,10 +3309,9 @@ static void input_overlay_update_pointer_coords(
             RETRO_DEVICE_ID_POINTER_Y);
    }
 
-   /* Need fullscreen pointer for mouse and lightgun */
+   /* Need fullscreen pointer for mouse only */
    if (     !ptr_st->count
-         && (ptr_st->device_mask &
-             ((1 << RETRO_DEVICE_MOUSE) | (1 << RETRO_DEVICE_LIGHTGUN))))
+         && (ptr_st->device_mask & (1 << RETRO_DEVICE_MOUSE)))
    {
       ptr_st->screen_x = current_input->input_state(
             input_data, NULL, NULL, NULL, NULL, true, 0,
@@ -3477,14 +3478,11 @@ static void input_poll_overlay(
 
    if (ol_ptr_enable)
    {
-      input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
-      struct input_overlay_mouse_state *mouse_st = (struct input_overlay_mouse_state*)&ptr_st->mouse;
-
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
          input_overlay_poll_lightgun(settings, ol, old_ptr_count);
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
-         input_overlay_poll_mouse(settings, mouse_st, ol,
-               ptr_st->count, old_ptr_count);
+         input_overlay_poll_mouse(settings, &ptr_state->mouse, ol,
+               ptr_state->count, old_ptr_count);
 
       ptr_state->device_mask = 0;
    }
