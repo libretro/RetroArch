@@ -78,7 +78,7 @@ static void icloud_query_path(const char *path, void(^cb)(CKRecord * results, NS
          RARCH_DBG("[iCloud] could not find %s (%s)\n", path, error == nil ? "successfully" : "failure");
          if (error)
             RARCH_DBG("[iCloud] error: %s\n", [[error debugDescription] UTF8String]);
-         cb(nil, nil);
+         cb(nil, error);
       }
       else
       {
@@ -159,10 +159,10 @@ static bool icloud_update(const char *p, RFILE *rfile, cloud_sync_complete_handl
 
 static bool icloud_delete(const char *p, cloud_sync_complete_handler_t cb, void *user_data)
 {
-   char *path = strdup(p);
+   NSString *path = [NSString stringWithUTF8String:p];
    NSPredicate *pred = [NSComparisonPredicate
                         predicateWithLeftExpression:[NSExpression expressionForKeyPath:@"path"]
-                        rightExpression:[NSExpression expressionForConstantValue:[NSString stringWithUTF8String:path]]
+                        rightExpression:[NSExpression expressionForConstantValue:path]
                         modifier:NSDirectPredicateModifier
                         type:NSEqualToPredicateOperatorType
                         options:0];
@@ -170,18 +170,17 @@ static bool icloud_delete(const char *p, cloud_sync_complete_handler_t cb, void 
    [CKContainer.defaultContainer.privateCloudDatabase performQuery:query
                                                       inZoneWithID:nil
                                                  completionHandler:^(NSArray<CKRecord *> * _Nullable results, NSError * _Nullable error) {
-      RARCH_DBG("[iCloud] deleting %d records for %s\n", [results count], path);
+      RARCH_DBG("[iCloud] deleting %d records for %s\n", [results count], [path UTF8String]);
       for (CKRecord *record in results)
       {
          [CKContainer.defaultContainer.privateCloudDatabase deleteRecordWithID:record.recordID
                                                              completionHandler:^(CKRecordID * _Nullable recordID, NSError * _Nullable error) {
-            RARCH_DBG("[iCloud] delete callback for %s %s\n", path, error == nil ? "succeeded" : "failed");
+            RARCH_DBG("[iCloud] delete callback for %s %s\n", [path UTF8String], error == nil ? "succeeded" : "failed");
             if (error)
                RARCH_DBG("[iCloud] error: %s\n", [[error debugDescription] UTF8String]);
          }];
       }
-      cb(user_data, path, error == nil, NULL);
-      free(path);
+      cb(user_data, [path UTF8String], error == nil, NULL);
    }];
    return true;
 }

@@ -269,6 +269,7 @@ check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
+check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' false
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' false
 
@@ -556,7 +557,7 @@ check_header '' XSHM X11/Xlib.h X11/extensions/XShm.h
 check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
-check_pkgconf WAYLAND_PROTOS wayland-protocols 1.31
+check_pkgconf WAYLAND_PROTOS wayland-protocols 1.32
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&

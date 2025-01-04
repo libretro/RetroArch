@@ -922,6 +922,10 @@ char *input_config_get_device_name_ptr(unsigned port);
  */
 size_t input_config_get_device_name_size(unsigned port);
 
+unsigned input_driver_lightgun_id_convert(unsigned id);
+
+bool input_driver_pointer_is_offscreen(int16_t x, int16_t y);
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,

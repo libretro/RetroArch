@@ -42,7 +42,7 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    int ret = msg_hash_get_help_us_enum(msg, s, len);
    /* Replace line-breaks with "empty line-breaks" for readability */
-   const char *temp = string_replace_substring(s,
+   const char *temp = string_replace_substring(s, strlen(s),
          "\n",    STRLEN_CONST("\n"),
          "\n \n", STRLEN_CONST("\n \n"));
 
@@ -972,6 +972,6 @@ const char *msg_hash_get_wideglyph_str(void)
          break;
    }
 #endif
-   
+
    return NULL;
 }

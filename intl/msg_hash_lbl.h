@@ -178,6 +178,10 @@ MSG_HASH(
    "pulse"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PIPEWIRE,
+   "pipewire"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_EXT,
    "ext"
    )
@@ -2135,6 +2139,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "input_overlay_abxy_diagonal_sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "input_overlay_analog_recenter_zone"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,

@@ -1555,20 +1555,17 @@ static bool core_info_path_is_standalone_exempt(
    return false;
 }
 
-static bool core_info_get_file_id(const char *core_filename,
-      char *core_file_id, size_t len)
+static size_t core_info_get_file_id(const char *core_filename,
+      char *s, size_t len)
 {
+   size_t _len;
    char *last_underscore = NULL;
-
    if (string_is_empty(core_filename))
-      return false;
-
+      return 0;
    /* Core file 'id' is filename without extension
     * or platform-specific suffix */
-
    /* > Remove extension */
-   strlcpy(core_file_id, core_filename, len);
-   path_remove_extension(core_file_id);
+   _len = fill_pathname(s, core_filename, "", len);
 #if defined(IOS) || defined(OSX)
    /* iOS framework names, to quote Apple:
     * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
@@ -1576,42 +1573,39 @@ static bool core_info_get_file_id(const char *core_filename,
     * Since core names include underscore, which is not allowed, but not dot,
     * which is, we change underscore to dot. Here, we need to change it back.
     */
-   string_replace_all_chars(core_file_id, '.', '_');
+   string_replace_all_chars(s, '.', '_');
 #endif
-
    /* > Remove suffix */
-   last_underscore = (char*)strrchr(core_file_id, '_');
-
+   last_underscore = (char*)strrchr(s, '_');
    if (   !string_is_empty(last_underscore)
        && !string_is_equal(last_underscore, "_libretro"))
+   {
       *last_underscore = '\0';
-
-   return !string_is_empty(core_file_id);
+      _len = strlen(s); /* TODO/FIXME - make this unnecessary later on */
+   }
+   return _len;
 }
 
-static core_info_t *core_info_find_internal(
-      core_info_list_t *list,
+static core_info_t *core_info_find_internal(core_info_list_t *list,
       const char *core_path)
 {
-   size_t i;
-   uint32_t hash;
    char core_file_id[256];
 
-   if (   !list
-       || string_is_empty(core_path)
-       || !core_info_get_file_id(path_basename_nocompression(core_path),
-           core_file_id, sizeof(core_file_id)))
-      return NULL;
-
-   hash = core_info_hash_string(core_file_id);
-
-   for (i = 0; i < list->count; i++)
+   if (list && !string_is_empty(core_path))
    {
-      core_info_t *info = &list->list[i];
-
-      if (  (info->core_file_id.hash == hash)
-          && string_is_equal(info->core_file_id.str, core_file_id))
-         return info;
+      if ((core_info_get_file_id(path_basename_nocompression(core_path),
+                  core_file_id, sizeof(core_file_id))) > 0)
+      {
+         size_t i;
+         uint32_t hash = core_info_hash_string(core_file_id);
+         for (i = 0; i < list->count; i++)
+         {
+            core_info_t *info = &list->list[i];
+            if ((info->core_file_id.hash == hash)
+                  && string_is_equal(info->core_file_id.str, core_file_id))
+               return info;
+         }
+      }
    }
 
    return NULL;
@@ -2039,15 +2033,15 @@ static core_info_list_t *core_info_list_new(const char *path,
 
    for (i = 0; i < path_list->core_list->size; i++)
    {
+      char core_file_id[256];
+      config_file_t *conf         = NULL;
       core_info_t *info           = &core_info[i];
       core_file_path_t *core_file = &path_list->core_list->list[i];
       const char *base_path       = core_file->path;
       const char *core_filename   = core_file->filename;
-      config_file_t *conf         = NULL;
-      char core_file_id[256];
-
-      if (!core_info_get_file_id(core_filename, core_file_id,
-               sizeof(core_file_id)))
+      size_t _len = core_info_get_file_id(core_filename, core_file_id,
+               sizeof(core_file_id));
+      if (_len == 0)
          continue;
 
       /* If info cache is available, search for
@@ -2104,7 +2098,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       info->core_file_id.str  = strdup(core_file_id);
       info->core_file_id.hash = core_info_hash_string(core_file_id);
 
-      strlcat(core_file_id, ".info", sizeof(core_file_id));
+      strlcpy(core_file_id + _len, ".info", sizeof(core_file_id) - _len);
 
       /* Parse core info file */
       if ((conf = core_info_get_config_file(core_file_id, info_dir)))
@@ -2525,17 +2519,15 @@ bool core_info_core_file_id_is_equal(const char *core_path_a,
 {
    char core_file_id_a[256];
    char core_file_id_b[256];
-
    if (   string_is_empty(core_path_a)
        || string_is_empty(core_path_b)
-       || !core_info_get_file_id(
+       || (core_info_get_file_id(
           path_basename_nocompression(core_path_a),
-            core_file_id_a, sizeof(core_file_id_a))
-       || !core_info_get_file_id(
+            core_file_id_a, sizeof(core_file_id_a) == 0))
+       || (core_info_get_file_id(
           path_basename_nocompression(core_path_b),
-            core_file_id_b, sizeof(core_file_id_b)))
+            core_file_id_b, sizeof(core_file_id_b)) == 0))
       return false;
-
    return string_is_equal(core_file_id_a, core_file_id_b);
 }
 
@@ -2618,27 +2610,18 @@ bool core_info_database_supports_content_path(
    return false;
 }
 
-bool core_info_list_get_display_name(
+size_t core_info_list_get_display_name(
       core_info_list_t *core_info_list,
       const char *core_path, char *s, size_t len)
 {
-   core_info_t *info;
-
-   if (!core_info_list)
-     return false;
-
-   info = core_info_find_internal(
-         core_info_list, core_path);
-
-   if (   s
-       && info
-       && !string_is_empty(info->display_name))
+   if (core_info_list)
    {
-      strlcpy(s, info->display_name, len);
-      return true;
+      core_info_t *info = core_info_find_internal(
+            core_info_list, core_path);
+      if (s && info && !string_is_empty(info->display_name))
+         return strlcpy(s, info->display_name, len);
    }
-
-   return false;
+   return 0;
 }
 
 /* Returns core_info parameters required for

@@ -454,7 +454,7 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
 
 void StringComboBox::onCurrentTextChanged(const QString &text)
 {
-   strlcpy(m_value, text.toUtf8().data(), sizeof(m_value));
+   strlcpy(m_value, text.toUtf8().data(), m_setting->size);
 
    setting_generic_handle_change(m_setting);
 }
@@ -1244,6 +1244,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
+               m_pendingThumbnailDownloadTypes.append(THUMBNAIL_LOGO);
                downloadThumbnail(system, title);
             }
             else

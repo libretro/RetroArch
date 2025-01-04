@@ -26,6 +26,8 @@
 #include <3ds/thread.h>
 #include <3ds/synchronization.h>
 #include <3ds/svc.h>
+#include <3ds/services/apt.h>
+#include <sys/time.h>
 #include <time.h>
 #include <errno.h>
 #include <retro_inline.h>

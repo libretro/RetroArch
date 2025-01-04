@@ -110,15 +110,17 @@ static void nmcli_scan(void *data)
       wifi_network_info_t entry;
       memset(&entry, 0, sizeof(entry));
 
-      string_trim_whitespace(line);
+      string_trim_whitespace_right(line);
+      string_trim_whitespace_left(line);
       if (!line || line[0] == '\0')
          continue;
 
       if (line[0] == '*')
       {
          entry.connected = true;
-         line[0] = ' ';
-         string_trim_whitespace(line);
+         line[0]         = ' ';
+         string_trim_whitespace_right(line);
+         string_trim_whitespace_left(line);
       }
 
       strlcpy(entry.ssid, line, sizeof(entry.ssid));

@@ -611,9 +611,7 @@ static void xv_calc_out_rect(bool keep_aspect,
       vp->height = vp_height;
    }
    else
-   {
       video_viewport_get_scaled_aspect(vp, vp_width, vp_height, true);
-   }
 }
 
 static void *xv_init(const video_info_t *video,

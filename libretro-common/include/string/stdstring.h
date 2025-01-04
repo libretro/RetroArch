@@ -159,8 +159,9 @@ char *string_to_lower(char *s);
 
 char *string_ucwords(char *s);
 
-char *string_replace_substring(const char *in,
-      const char *pattern, size_t pattern_len,
+char *string_replace_substring(
+      const char *in,          size_t in_len,
+      const char *pattern,     size_t pattern_len,
       const char *replacement, size_t replacement_len);
 
 /**

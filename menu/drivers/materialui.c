@@ -2289,10 +2289,9 @@ static void materialui_refresh_playlist_icon_list(
 
    for (i = 0; i < file_list->size; i++)
    {
-      size_t _len;
       const char *path          = file_list->elems[i].data;
       const char *playlist_file = NULL;
-      char image_file[256];
+      char image_file[NAME_MAX_LENGTH];
 
       /* We used malloc() to create the icons
        * array - ensure struct members are
@@ -2322,12 +2321,8 @@ static void materialui_refresh_playlist_icon_list(
          continue;
 
       /* Playlist is valid - generate image file name */
-      _len                  = strlcpy(image_file,
-            playlist_file, sizeof(image_file));
-      /* Manually rename extension 'lpl' to 'png' in string */
-      image_file[_len-3]    = 'p';
-      image_file[_len-2]    = 'n';
-      image_file[_len-1]    = 'g';
+      fill_pathname(image_file, playlist_file,
+            ".png", sizeof(image_file));
 
       /* All good - cache paths */
       mui->textures.playlist.icons[i].playlist_file = strdup(playlist_file);
@@ -5768,13 +5763,8 @@ static void materialui_render_header(
    {
       gfx_display_ctx_powerstate_t powerstate;
       char percent_str[MUI_BATTERY_PERCENT_MAX_LENGTH];
-
       percent_str[0] = '\0';
-
-      powerstate.s   = percent_str;
-      powerstate.len = sizeof(percent_str);
-
-      menu_display_powerstate(&powerstate);
+      menu_display_powerstate(&powerstate, percent_str, sizeof(percent_str));
 
       if (powerstate.battery_enabled)
       {
@@ -5862,15 +5852,10 @@ static void materialui_render_header(
    {
       gfx_display_ctx_datetime_t datetime;
       char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
-
-      timedate_str[0]         = '\0';
-
-      datetime.s              = timedate_str;
-      datetime.len            = sizeof(timedate_str);
       datetime.time_mode      = menu_timedate_style;
       datetime.date_separator = menu_timedate_date_separator;
 
-      menu_display_timedate(&datetime);
+      menu_display_timedate(&datetime, timedate_str, sizeof(timedate_str));
 
       /* Need to determine pixel width of time string
        * > This is somewhat expensive, so utilise a cache
@@ -10393,6 +10378,9 @@ static void materialui_list_insert(
             node->icon_texture_index = MUI_TEXTURE_DISK;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
+         case FILE_TYPE_DOWNLOAD_CORE:
+         case FILE_TYPE_CORE:
+         case MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS:
          case MENU_SETTING_ACTION_CORE_LOCK:
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
          case MENU_CONTENTLESS_CORES_TAB:

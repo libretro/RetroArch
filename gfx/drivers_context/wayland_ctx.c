@@ -32,15 +32,6 @@
 #include "../../input/input_keymaps.h"
 #include "../../verbosity.h"
 
-/* Generated from idle-inhibit-unstable-v1.xml */
-#include "../common/wayland/idle-inhibit-unstable-v1.h"
-
-/* Generated from xdg-shell.xml */
-#include "../common/wayland/xdg-shell.h"
-
-/* Generated from xdg-decoration-unstable-v1.h */
-#include "../common/wayland/xdg-decoration-unstable-v1.h"
-
 #ifdef HAVE_EGL
 #include <wayland-egl.h>
 #include <poll.h>
@@ -63,9 +54,7 @@ static void xdg_toplevel_handle_configure(void *data,
       int32_t width, int32_t height, struct wl_array *states)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration &&
-       width == SPLASH_WINDOW_WIDTH &&
-       height == SPLASH_WINDOW_HEIGHT)
+   if (wl->ignore_configuration)
       return;
    xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
@@ -126,17 +115,12 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 }
 
 #ifdef HAVE_LIBDECOR_H
-#include <libdecor.h>
 static void
 libdecor_frame_handle_configure(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   int width, height;
-   if (wl->ignore_configuration &&
-       wl->libdecor_configuration_get_content_size(configuration, frame, &width, &height) &&
-       width == SPLASH_WINDOW_WIDTH &&
-       height == SPLASH_WINDOW_HEIGHT)
+   if (wl->ignore_configuration)
       return;
    libdecor_frame_handle_configure_common(frame, configuration, wl);
 

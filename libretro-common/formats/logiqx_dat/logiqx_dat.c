@@ -35,12 +35,12 @@ struct logiqx_dat
 
 /* List of HTML formatting codes that must
  * be replaced when parsing XML data */
-const char *logiqx_dat_html_code_list[][2] = { 
+const char *logiqx_dat_html_code_list[][2] = {
    {"&amp;",  "&"},
    {"&apos;", "'"},
-   {"&gt;",   ">"}, 
+   {"&gt;",   ">"},
    {"&lt;",   "<"},
-   {"&quot;", "\""} 
+   {"&quot;", "\""}
 };
 
 #define LOGIQX_DAT_HTML_CODE_LIST_SIZE 5
@@ -53,7 +53,7 @@ const char *logiqx_dat_html_code_list[][2] = {
  * Also provides access to file size (DAT files can
  * be very large, so it is useful to have this information
  * on hand - i.e. so we can check that the system has
- * enough free memory to load the file). */ 
+ * enough free memory to load the file). */
 bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size)
 {
    const char *file_ext = NULL;
@@ -229,7 +229,8 @@ static void logiqx_dat_sanitise_element_data(
 
    /* Element data includes leading/trailing
     * newline characters - trim them away */
-   string_trim_whitespace(sanitised_data);
+   string_trim_whitespace_right(sanitised_data);
+   string_trim_whitespace_left(sanitised_data);
 
    if (string_is_empty(sanitised_data))
       return;
@@ -254,7 +255,7 @@ static void logiqx_dat_sanitise_element_data(
       if (strstr(sanitised_data, find_string))
       {
          char *tmp = string_replace_substring(
-               sanitised_data,
+               sanitised_data, strlen(sanitised_data),
                find_string,    strlen(find_string),
                replace_string, strlen(replace_string));
 

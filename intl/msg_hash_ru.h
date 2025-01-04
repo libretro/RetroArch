@@ -85,7 +85,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "Выберите ядро и файл контента для запуска.\nДля установки начальной папки укажите путь к ней в качестве каталога 'Браузер файлов'. Если путь не задан, обзор начинается в корневом каталоге.\nБраузер будет использовать загруженное ядро для фильтрации файлов и запуска контент[...]"
+   "Выберите ядро и файл контента для запуска.\nДля установки начальной папки укажите путь к каталогу 'Браузер файлов'. Если он не задан, обзор будет начинаться в корневом каталоге.\nБраузер использует загруженное ядро для фильтрации файлов и запуска контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -727,6 +727,30 @@ MSG_HASH(
    "Поддержка SDL 2"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Поддержка Direct3D 8"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Поддержка Direct3D 9"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Поддержка Direct3D 10"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Поддержка Direct3D 11"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Поддержка Direct3D 12"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "Поддержка GDI"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Поддержка Vulkan"
    )
@@ -805,6 +829,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
    "Поддержка PulseAudio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "Поддержка PipeWire"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
@@ -1746,6 +1774,10 @@ MSG_HASH(
    "Драйвер PulseAudio. Если в системе используется PulseAudio, убедитесь, что выбран данный драйвер, а не, к примеру, ALSA."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "Драйвер PipeWire. Если система использует PipeWire, убедиться, что вместо PulseAudio используется соответствующий драйвер."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Драйвер Jack Audio Connection Kit."
    )
@@ -2324,11 +2356,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
-   "Точная частота обновления экрана (в Гц) для расчёта вход. частоты звука:\nчастота_звука = вход. частота игры * частота обновления экрана / частота обновления игры.\nЕсли ядро не сообщает никаких значений, то для совместимости исп. станд. значения NTSC.\nДанное значение должно ост[...]"
+   "Точная частота обнов. экрана (в Гц) для расчёта вх. частоты звука:\nчастота_звука = вх. частота игры * частота обнов. экрана / частота обнов. игры.\nЕсли ядро не сообщает значений, то для совместимости исп. станд. значения NTSC.\nДанное значение должно быть как можно ближе к 60 Гц, что[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Использовать частоту обновления экрана"
+   "Установить частоту обновления экрана"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -2628,11 +2660,11 @@ MSG_HASH(
    "Сдвиг области просмотра по Y"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "Установка смещения области просмотра по горизонтали (если ширина превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Установка смещения области просмотра по вертикали (если высота превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому."
    )
 #if defined(RARCH_MOBILE)
@@ -2653,11 +2685,11 @@ MSG_HASH(
    "Сдвиг области просмотра по Y (портретный режим)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "Установка смещения области просмотра по горизонтали (если ширина превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому. Для портретного режима."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Установка смещения области просмотра по вертикали (если высота превышает высоту контента). 0.0 соответствует левому краю, 1.0 - правому. Для портретного режима."
    )
 #endif
@@ -2683,7 +2715,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   "Срезает несколько пикселей по краю картинки, которые, как правило, не используется при разработке и могут вносить искажения."
+   "Срезает несколько пикселей по краю изображения, которые обычно не используется при разработке и могут содержать графический мусор."
    )
 
 /* Settings > Video > HDR */
@@ -3025,7 +3057,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Желаемая задержка звука в миллисекундах. Не учитывается, если драйвер не поддерживает заданное значение."
+   "Максимальная задержка звука в миллисекундах. Драйвер будет пытаться сохранять задержку на 50% от заданного значения. Может не учитываться, если значение не поддерживается аудиодрайвером."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -3139,7 +3171,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
-   "Максимальное отклонение тайминга звука.\nОпределяет предельное изменение вход. частоты. Повышение значения позволяет добиться знач. отклонений тайминга, напр. при запуске PAL-ядер на NTSC-дисплеях, но снижает точность высоты звука.\nВход. частота * (1.0 +/- (макс. отклонение таймин[...]"
+   "Макс. отклонение тайминга звука.\nОпределяет предельное изменение вход. частоты. Повышение значения позволяет добиться знач. отклонений тайминга, напр. при запуске PAL-ядер на NTSC-дисплеях, но снижает точность высоты звука.\nВход. частота * (1.0 +/- (макс. отклонение тайминга))"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -3151,7 +3183,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Значение 0 откл. управление частотой. Любые другие значения влияют на отклонение частоты звука.\nОпределяет границы изменения при динам. подстройке вход. частоты.\nФормула: вход. частота * (1.0 +/- (отклонение управления частотой))"
+   "Значение 0 откл. управление частотой. Любые другие значения влияют на отклонение частоты звука.\nОпределяет границы динамической подстройки вход. частоты.\nВход. частота * (1.0 +/- (дельта управления частотой))"
    )
 
 /* Settings > Audio > MIDI */
@@ -3245,23 +3277,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Статус : Н/Д"
+   "Статус: Н/Д"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Статус : остановлено"
+   "Статус: остановлено"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Статус : воспроизведение"
+   "Статус: воспроизведение"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Статус : воспроизведение (зациклено)"
+   "Статус: воспроизведение (по кругу)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Статус : воспроизведение (по порядку)"
+   "Статус: воспроизведение (по порядку)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -3315,7 +3347,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Влияет на опрос ввода в RetroArch. Ранний - опрос ввода происходит перед выводом кадра. Стандартный - при запросе на опрос ввода. Поздний - при первом запросе состояния ввода на каждом кадре. Значения 'Ранний' или 'Поздний' могут снизить задержку ввода. Игнорируется при игре по сет[...]"
+   "Влияет на опрос ввода в RetroArch. Ранний - опрос ввода произ. перед выводом кадра. Стандартный - при запросе на опрос ввода. Поздний - при первом запросе состояния ввода на каждом кадре. Значения 'Ранний' или 'Поздний' могут снизить задержку ввода. Игнорируется при сетевой игре."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -3328,11 +3360,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Сортировать привязки по геймпадам"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Привязки будут применяться только при подключении геймпада, для которого были сохранены."
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Автонастройка"
@@ -3579,7 +3611,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Для связи ядер и фронтенда Libretro исп. виртуальный геймпад 'RetroPad'. Меню позволяет привязать устройства ввода к RetroPad и назначить им вирт. порты.\nЕсли устройство корректно преднастроено, то это действие необязательно. Для привязок ввода отдел. ядер исп. пункт 'Управление' быстр[...]"
+   "Для связи ядер и фронтенда Libretro исп. вирт. абстракцию 'RetroPad'. Меню позволяет привязать устройства ввода к RetroPad и назначить им вирт. порты.\nПри корректной преднастройке устройства данное действие необязательно. Для привязок ввода отдел. ядер исп. пункт 'Управление' быстрого [...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
@@ -5361,6 +5393,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Автозагрузка оверлея"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Вместо установки стандартного оверлея предпочитать загрузку оверлея по названию текущей системы. Игнорируется, если пресет оверлея изменён переопределением."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -12088,6 +12124,10 @@ MSG_HASH(
    "Титульный экран"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "Логотип"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    "Все плейлисты"
    )
@@ -12668,7 +12708,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   "Макс. задержка кадра"
+   "Максимальная задержка кадра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
@@ -14493,7 +14533,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT_NR,
-   "%s подключен к порту %u"
+   "%s подключен в порт %u"
    )
 MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT,
@@ -14826,10 +14866,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Режим хардкора приостановлен. Ручная установка задержки кадра запрещена."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Режим хардкора приостановлен. Подкадры шейдера запрещены."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,

@@ -1138,12 +1138,12 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 
    if (!ticker->selected)
    {
-      size_t len = utf8cpy(ticker->s,
+      size_t _len = utf8cpy(ticker->s,
             PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      ticker->s[  len] = '.';
-      ticker->s[++len] = '.';
-      ticker->s[++len] = '.';
-      ticker->s[++len] = '\0';
+      ticker->s[  _len] = '.';
+      ticker->s[++_len] = '.';
+      ticker->s[++_len] = '.';
+      ticker->s[++_len] = '\0';
       return false;
    }
 

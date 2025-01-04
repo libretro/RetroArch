@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Check Out Repo
-        uses: actions/checkout@v3
+        uses: taiki-e/checkout-action@v1
 
       - name: Configure Build
         run: |
@@ -35,9 +35,3 @@ jobs:
       - name: Get short SHA
         id: slug
         run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: retroarch_linux_i686${{ steps.slug.outputs.sha8 }}
-          path: |
-            retroarch

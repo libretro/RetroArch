@@ -188,11 +188,12 @@ function zipfsInit() {
   let buffer = new ArrayBuffer(256*1024*1024);
   let bufferView = new Uint8Array(buffer);
   let idx = 0;
-  // bundle should be in four parts (this can be changed later)
+  // bundle should be in five parts (this can be changed later)
   Promise.all([fetch("assets/frontend/bundle.zip.aa"),
                fetch("assets/frontend/bundle.zip.ab"),
                fetch("assets/frontend/bundle.zip.ac"),
-               fetch("assets/frontend/bundle.zip.ad")
+               fetch("assets/frontend/bundle.zip.ad"),
+               fetch("assets/frontend/bundle.zip.ae")
               ]).then(function(resps) {
     Promise.all(resps.map((r) => r.arrayBuffer())).then(function(buffers) {
       for (let buf of buffers) {

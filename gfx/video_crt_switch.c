@@ -291,17 +291,17 @@ static void switch_res_crt(
       unsigned crt_mode, unsigned native_width,
       int monitor_index, int super_width)
 {
-   char current_core_name[NAME_MAX_LENGTH];
-   char current_content_dir[DIR_MAX_LENGTH];
-   int flags = 0,   ret;
-   const char *err_msg     = NULL;
    int w                   = native_width;
    int h                   = height;
-   double rr               = p_switch->ra_core_hz;
 
    /* Check if SR2 is loaded, if not, load it */
    if (crt_sr2_init(p_switch, monitor_index, crt_mode, super_width))
    {
+      int ret;
+      int flags = 0;
+      char current_core_name[NAME_MAX_LENGTH];
+      char current_content_dir[DIR_MAX_LENGTH];
+      double rr              = p_switch->ra_core_hz;
       const char *_core_name = (const char*)runloop_state_get_ptr()->system.info.library_name;
       /* Check for core and content changes in case we need
          to make any adjustments */
