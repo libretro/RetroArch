@@ -5319,6 +5319,14 @@ MSG_HASH(
    "Ajustez la taille des zones de chevauchement dans le losange des touches. Réglez sur 100 % pour la symétrie sur 8 voies."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Zone de recentrage analogique"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "L'entrée du stick analogique sera relative au premier toucher si appuyée dans cette zone."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Surimpression à l'écran"
    )

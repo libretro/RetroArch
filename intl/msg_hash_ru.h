@@ -5387,6 +5387,14 @@ MSG_HASH(
    "Настройка размера зон перекрытия для блока кнопок. Установите на 100% для симметрии по 8 направлениям."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Зона перецентровки аналог. оси"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "При нажатии внутри данной области ввод с аналогового стика отсчитывается от первого касания."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Оверлей"
    )
