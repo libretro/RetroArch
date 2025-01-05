@@ -457,6 +457,7 @@ static bool take_screenshot_viewport(
    struct video_viewport vp;
    bool success;
    bool shaders_used;
+   settings_t* settings;
    video_driver_state_t *video_st        = video_state_get_ptr();
    uint8_t *buffer                       = NULL;
 
@@ -467,7 +468,7 @@ static bool take_screenshot_viewport(
    vp.full_width                         = 0;
    vp.full_height                        = 0;
 
-   settings_t* settings = config_get_ptr();
+   settings = config_get_ptr();
 
    video_driver_get_viewport_info(&vp);
 
