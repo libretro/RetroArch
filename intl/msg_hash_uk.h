@@ -5375,6 +5375,14 @@ MSG_HASH(
    "Регулювання розміру зон перекриття у вигляді кнопки обличчя діамант. Встановіть на 100% для 8-сторонньої симетрії."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Аналоговий переробна зона"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Введення аналогової стрілки буде відноситись до першого дотику, якщо натиснуто в цій зоні."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Накладка"
    )
