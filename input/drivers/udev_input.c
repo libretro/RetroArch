@@ -800,8 +800,8 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
    {
       /* mouse coordinates are relative to the full screen; convert them
        * to be relative to the viewport */
-      scaled_x = mouse->x_abs - mouse->x_min;
-      scaled_y = mouse->y_abs - mouse->y_min;
+      scaled_x = vp.full_width  * (mouse->x_abs - mouse->x_min) / (mouse->x_max - mouse->x_min + 1);
+      scaled_y = vp.full_height * (mouse->y_abs - mouse->y_min) / (mouse->y_max - mouse->y_min + 1);
    }
    else /* mouse coords are viewport relative */
    {
