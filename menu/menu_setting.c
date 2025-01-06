@@ -8670,9 +8670,6 @@ static void general_write_handler(rarch_setting_t *setting)
             configuration_set_bool(settings,
                settings->bools.video_frame_delay_auto,
                0);
-            configuration_set_bool(settings,
-               settings->bools.vrr_runloop_enable,
-               0);
             configuration_set_uint(settings,
                settings->uints.video_black_frame_insertion,
                0);
