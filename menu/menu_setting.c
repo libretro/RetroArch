@@ -8695,9 +8695,6 @@ static void general_write_handler(rarch_setting_t *setting)
          configuration_set_bool(settings,
             settings->uints.video_black_frame_insertion,
             0);
-         configuration_set_uint(settings,
-            settings->uints.video_shader_subframes,
-            1);
 #ifdef HAVE_CHEEVOS
          rcheevos_validate_config_settings();
 #endif
