@@ -1460,7 +1460,8 @@ static void scan_states(settings_t *settings,
       if (string_is_empty(dir_elem))
          continue;
 
-      _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
+      _len = strlen(dir_elem);
+      fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
 
       /* Only consider files with a '.state' extension
        * > i.e. Ignore '.state.auto', '.state.bak', etc. */
