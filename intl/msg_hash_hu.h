@@ -2498,10 +2498,6 @@ MSG_HASH(
    "Egész-szorzós méretezés tengelye"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Méretezés csak a magasság, vagy a magasság és szélesség szerint. A fél lépések a nagyfelbontású forrásokra vonatkoznak."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "Egész-szorzós méretezés"
    )

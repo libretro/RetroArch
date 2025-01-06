@@ -2523,7 +2523,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Mettre à l'échelle la hauteur uniquement, ou la hauteur et la largeur. Les demi-étapes s'appliquent aux sources haute résolution."
+   "Mettre à l'échelle soit la hauteur ou la largeur, soit la hauteur et la largeur. Les demi-étapes s'appliquent uniquement aux sources haute résolution."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,

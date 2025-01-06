@@ -2563,7 +2563,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Змяняць маштаб толькі па вышыні або як па вышыні, так і па шырыні. Паўкрокі прымяняюцца да крыніц з высокай раздзяляльнасцю."
+   "Змяняць маштаб па вышыні ці па шырыні, або адразу па вышыні ды шырыні. Паўкрокі ўжываюцца толькі на крыніцах з высокай раздзяляльнасцю."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -5385,6 +5385,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "Настройка памеру зон перакрыцця для блока кнопак. Усталюйце на 100% для сіметрыі па 8 напрамках."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Зона перацэнтроўкі аналагавага ўвода"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Увод аналагавы стыку будзе адлічвацца адносна першага дотыку пры націсканні ў гэтай зоне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,

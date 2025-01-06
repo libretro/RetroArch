@@ -2470,10 +2470,6 @@ MSG_HASH(
    "Ganzzahlige Skalenachse"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Nur Höhe oder Höhe und Breite skalieren. Halbschritte beziehen sich auf die Auflösung der Quellen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "Ganzzahlige Skalierung"
    )

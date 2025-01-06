@@ -2482,10 +2482,6 @@ MSG_HASH(
    "Celočíselné škálování"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Měřítko pouze výška, nebo jak výška, tak šířka. Poloviční kroky platí pro zdroje vysokého rozlišení."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    "Chytrá"
    )

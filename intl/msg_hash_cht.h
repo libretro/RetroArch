@@ -2490,10 +2490,6 @@ MSG_HASH(
    "整數縮放方式"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "設定可以使用高度或同時使用高度和寬度, 高度加半高或寬度加半寬適用於高解析度。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "整數縮放模式"
    )

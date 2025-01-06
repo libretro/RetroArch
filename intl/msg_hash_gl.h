@@ -2526,10 +2526,6 @@ MSG_HASH(
    "Eixo de escala enteira"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Escalar só a altura, ou tanto a altura como o ancho. Os pasos medios aplícanse a fontes de alta resolución."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "Escalado de escala enteira"
    )

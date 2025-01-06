@@ -2539,7 +2539,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Yalnızca yüksekliği veya hem yüksekliği hem de genişliği ölçeklendirin. Yüksek çözünürlüklü kaynaklar için yarım adımlar geçerlidir."
+   "Yüksekliği veya genişliği ya da hem yüksekliği hem de genişliği ölçeklendirin. Yarım adımlar yalnızca yüksek çözünürlüklü kaynaklara uygulanır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -5361,6 +5361,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "Örtüşme hassasiyetini ayarlayın. 8 yönlü simetri için %100'e ayarlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analog Yeniden Yönlendirme Bölgesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analog çubuk girişi, bu bölgede basıldığında ilk dokunuşa göre olacaktır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,

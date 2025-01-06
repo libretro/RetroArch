@@ -2503,7 +2503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Scala solo altezza, o entrambi altezza e larghezza. Metà passi si applicano alle sorgenti ad alta risoluzione."
+   "Scala altezza o larghezza, o entrambe altezza e larghezza. Mezzi passaggi si applicano solo alle sorgenti ad alta risoluzione."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
