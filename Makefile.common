@@ -2436,6 +2436,10 @@ ifeq ($(HAVE_CRTSWITCHRES), 1)
          OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o
          DEFINES += -DSR_WITH_XRANDR
       endif
+      ifeq ($(HAVE_KMS)$(HAVE_DRM), 11)
+         OBJ += $(DEPS_DIR)/switchres/custom_video_drmkms.o
+         DEFINES += -DSR_WITH_KMSDRM
+      endif
    endif
    ifneq ($(findstring Win32,$(OS)),)
       DEFINES += -DSR_WIN32_STATIC
