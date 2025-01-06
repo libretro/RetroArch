@@ -108,6 +108,18 @@ struct http_connection_t
    bool ssl;
 };
 
+struct dns_cache_entry
+{
+   char *domain;
+   struct addrinfo *addr;
+   retro_time_t timestamp;
+   struct dns_cache_entry *next;
+};
+
+static struct dns_cache_entry *dns_cache = NULL;
+/* 5 min timeout, in usec */
+static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 60 /* s/min */ * 5 /* min */;
+
 /**
  * net_http_urlencode:
  *
@@ -650,11 +662,80 @@ const char* net_http_connection_method(struct http_connection_t* conn)
    return conn->method;
 }
 
+static void net_http_dns_cache_remove_expired(void)
+{
+   struct dns_cache_entry *entry = dns_cache;
+   struct dns_cache_entry *prev = NULL;
+   while (entry)
+   {
+      if (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec())
+      {
+         if (prev)
+            prev->next = entry->next;
+         else
+            dns_cache = entry->next;
+         freeaddrinfo_retro(entry->addr);
+         free(entry->domain);
+         free(entry);
+         entry = prev ? prev->next : dns_cache;
+      }
+      else
+      {
+         prev = entry;
+         entry = entry->next;
+      }
+   }
+}
+
+static struct dns_cache_entry *net_http_dns_cache_find(const char *domain)
+{
+   struct dns_cache_entry *entry;
+
+   net_http_dns_cache_remove_expired();
+
+   entry = dns_cache;
+   while (entry)
+   {
+      if (string_is_equal(entry->domain, domain))
+      {
+         entry->timestamp = cpu_features_get_time_usec();
+         return entry;
+      }
+      entry = entry->next;
+   }
+   return NULL;
+}
+
+static void net_http_dns_cache_add(const char *domain, struct addrinfo *addr)
+{
+   struct dns_cache_entry *entry = (struct dns_cache_entry*)calloc(1, sizeof(*entry));
+   if (!entry)
+      return;
+   entry->domain = strdup(domain);
+   entry->addr = addr;
+   entry->timestamp = cpu_features_get_time_usec();
+   entry->next = dns_cache;
+   dns_cache = entry;
+}
+
 static int net_http_new_socket(struct http_t *state)
 {
    struct addrinfo *addr = NULL, *next_addr = NULL;
-   int fd                = socket_init(
-         (void**)&addr, state->request.port, state->request.domain, SOCKET_TYPE_STREAM, 0);
+   struct dns_cache_entry *entry;
+   int fd;
+
+   entry = net_http_dns_cache_find(state->request.domain);
+   if (entry)
+   {
+      addr = entry->addr;
+      fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+   }
+   else
+   {
+      fd = socket_init((void**)&addr, state->request.port, state->request.domain, SOCKET_TYPE_STREAM, 0);
+      if (addr)
+         net_http_dns_cache_add(state->request.domain, addr);
+   }
 
 #ifdef HAVE_SSL
    if (state->sock_state.ssl)
@@ -700,9 +781,6 @@ static int net_http_new_socket(struct http_t *state)
 #ifdef HAVE_SSL
 done:
 #endif
-   if (addr)
-      freeaddrinfo_retro(addr);
-
    state->sock_state.fd = fd;
 
    return fd;
