@@ -768,7 +768,6 @@ void cocoa_file_load_with_detect_core(const char *filename);
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
-#if TARGET_OS_TV
         [alert addAction:[UIAlertAction actionWithTitle:@"OK"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 rarch_start_draw_observer();
@@ -778,10 +777,11 @@ void cocoa_file_load_with_detect_core(const char *filename);
                 rarch_start_draw_observer();
                 configuration_set_bool(settings, settings->bools.gcdwebserver_alert, false);
         }]];
-#elif TARGET_OS_IOS
+#if TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
             [[WebServer sharedInstance] stopServers];
+           rarch_start_draw_observer();
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{
