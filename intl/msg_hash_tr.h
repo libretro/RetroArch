@@ -2539,7 +2539,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Yalnızca yüksekliği veya hem yüksekliği hem de genişliği ölçeklendirin. Yüksek çözünürlüklü kaynaklar için yarım adımlar geçerlidir."
+   "Yüksekliği veya genişliği ya da hem yüksekliği hem de genişliği ölçeklendirin. Yarım adımlar yalnızca yüksek çözünürlüklü kaynaklara uygulanır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -3257,23 +3257,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Durum : N/A"
+   "Durum: N/A"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Durum : Durduruldu"
+   "Durum: Durduruldu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Durum : Oynanıyor"
+   "Durum: Oynanıyor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Durum : Oynanıyor (Döngü)"
+   "Durum: Oynanıyor (Döngü)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Durum : Oynanıyor (Ardışık)"
+   "Durum: Oynanıyor (Ardışık)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -5361,6 +5361,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "Örtüşme hassasiyetini ayarlayın. 8 yönlü simetri için %100'e ayarlayın."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analog Yeniden Yönlendirme Bölgesi"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analog çubuk girişi, bu bölgede basıldığında ilk dokunuşa göre olacaktır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
@@ -14914,10 +14922,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Zorlu kip durakladı. El ile video karesi gecikme ayarına izin verilmiyor."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Zorlu kip durakladı. Gölgelendirici alt çerçevelerine izin verilmiyor."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,

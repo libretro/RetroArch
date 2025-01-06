@@ -923,7 +923,7 @@ bool manual_content_scan_get_task_config(
       manual_content_scan_task_config_t *task_config,
       const char *path_dir_playlist)
 {
-   size_t len;
+   size_t _len;
    if (!task_config)
       return false;
 
@@ -983,13 +983,13 @@ bool manual_content_scan_get_task_config(
 
    /* Now we have a valid system name, can generate
     * a 'database' name... */
-   len = strlcpy(
+   _len = strlcpy(
          task_config->database_name,
          task_config->system_name,
          sizeof(task_config->database_name));
-   strlcpy(task_config->database_name       + len,
+   strlcpy(task_config->database_name       + _len,
          ".lpl",
-         sizeof(task_config->database_name) - len);
+         sizeof(task_config->database_name) - _len);
 
    /* ...which can in turn be used to generate the
     * playlist path */

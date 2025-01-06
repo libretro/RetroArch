@@ -201,7 +201,7 @@ static int task_database_iterate_start(retro_task_t *task,
    return 0;
 }
 
-static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_len, const char *filename)
+static int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    const char *system_name = NULL;
    if (detect_system(fd, &system_name, filename) >= 1)
@@ -212,19 +212,19 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
          if (STRLEN_CONST("Sony - PlayStation Portable") == system_len &&
              string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
          {
-            if (detect_psp_game(fd, serial, serial_len, filename) != 0)
+            if (detect_psp_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sony - PlayStation") == system_len &&
                   string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
          {
-            if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
+            if (detect_ps1_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sony - PlayStation 2") == system_len &&
                   string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
          {
-            if (detect_ps2_game(fd, serial, serial_len, filename) != 0)
+            if (detect_ps2_game(fd, s, len, filename) != 0)
                return 1;
          }
       }
@@ -233,13 +233,13 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
          if (STRLEN_CONST("Nintendo - GameCube") == system_len &&
              string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
          {
-            if (detect_gc_game(fd, serial, serial_len, filename) != 0)
+            if (detect_gc_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Nintendo - Wii") == system_len &&
                   string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
          {
-            if (detect_wii_game(fd, serial, serial_len, filename) != 0)
+            if (detect_wii_game(fd, s, len, filename) != 0)
                return 1;
          }
       }
@@ -248,19 +248,19 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
          if (STRLEN_CONST("Sega - Mega-CD - Sega CD") == system_len &&
              string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
          {
-            if (detect_scd_game(fd, serial, serial_len, filename) != 0)
+            if (detect_scd_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sega - Saturn") == system_len &&
                   string_is_equal_fast(system_name, "Sega - Saturn", system_len))
          {
-            if (detect_sat_game(fd, serial, serial_len, filename) != 0)
+            if (detect_sat_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sega - Dreamcast") == system_len &&
                   string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
          {
-            if (detect_dc_game(fd, serial, serial_len, filename) != 0)
+            if (detect_dc_game(fd, s, len, filename) != 0)
                return 1;
          }
       }
@@ -269,7 +269,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
 }
 
 static bool intfstream_file_get_serial(const char *name,
-      uint64_t offset, size_t size, char *serial, size_t serial_len)
+      uint64_t offset, size_t size, char *s, size_t len)
 {
    int rv;
    uint8_t *data     = NULL;
@@ -315,7 +315,7 @@ static bool intfstream_file_get_serial(const char *name,
       }
    }
 
-   rv = intfstream_get_serial(fd, serial, serial_len, name);
+   rv = intfstream_get_serial(fd, s, len, name);
    intfstream_close(fd);
    free(fd);
    free(data);
@@ -327,7 +327,7 @@ error:
    return 0;
 }
 
-static int task_database_cue_get_serial(const char *name, char* serial, size_t serial_len)
+static int task_database_cue_get_serial(const char *name, char *s, size_t len)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
@@ -335,8 +335,8 @@ static int task_database_cue_get_serial(const char *name, char* serial, size_t s
 
    track_path[0]    = '\0';
 
-   if (cue_find_track(name, true, &offset, &size, track_path,
-            sizeof(track_path)) < 0)
+   if (cue_find_track(name, true, &offset, &size,
+         track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s\n",
@@ -345,10 +345,10 @@ static int task_database_cue_get_serial(const char *name, char* serial, size_t s
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, offset, size, serial, serial_len);
+   return intfstream_file_get_serial(track_path, offset, size, s, len);
 }
 
-static int task_database_gdi_get_serial(const char *name, char* serial, size_t serial_len)
+static int task_database_gdi_get_serial(const char *name, char *s, size_t len)
 {
    char track_path[PATH_MAX_LENGTH];
 
@@ -364,10 +364,10 @@ static int task_database_gdi_get_serial(const char *name, char* serial, size_t s
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial, serial_len);
+   return intfstream_file_get_serial(track_path, 0, SIZE_MAX, s, len);
 }
 
-static int task_database_chd_get_serial(const char *name, char* serial, size_t serial_len)
+static int task_database_chd_get_serial(const char *name, char *serial, size_t len)
 {
    int result;
    intfstream_t *fd = intfstream_open_chd_track(
@@ -378,7 +378,7 @@ static int task_database_chd_get_serial(const char *name, char* serial, size_t s
    if (!fd)
       return 0;
 
-   result = intfstream_get_serial(fd, serial, serial_len, name);
+   result = intfstream_get_serial(fd, serial, len, name);
    intfstream_close(fd);
    free(fd);
    return result;

@@ -15,11 +15,45 @@
 
 #include "pipewire.h"
 
+#include <spa/utils/result.h>
+
 #include <pipewire/pipewire.h>
 
 #include <retro_assert.h>
 
 #include "verbosity.h"
+
+
+static void core_error_cb(void *data, uint32_t id, int seq, int res, const char *message)
+{
+   pipewire_core_t *pw = (pipewire_core_t*)data;
+
+   RARCH_ERR("[PipeWire]: error id:%u seq:%d res:%d (%s): %s\n",
+             id, seq, res, spa_strerror(res), message);
+
+   /* stop and exit the thread loop */
+   pw_thread_loop_stop(pw->thread_loop);
+}
+
+static void core_done_cb(void *data, uint32_t id, int seq)
+{
+   pipewire_core_t *pw = (pipewire_core_t*)data;
+
+   retro_assert(id == PW_ID_CORE);
+
+   pw->last_seq = seq;
+   if (pw->pending_seq == seq)
+   {
+      /* stop and exit the thread loop */
+      pw_thread_loop_signal(pw->thread_loop, false);
+   }
+}
+
+static const struct pw_core_events core_events = {
+      PW_VERSION_CORE_EVENTS,
+      .done = core_done_cb,
+      .error = core_error_cb,
+};
 
 size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
 {
@@ -80,37 +114,61 @@ void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
    }
 }
 
-int pipewire_wait_resync(pipewire_core_t *pipewire)
+void pipewire_wait_resync(pipewire_core_t *pw)
 {
-   int res;
-   retro_assert(pipewire != NULL);
-
-   pipewire->pending_seq = pw_core_sync(pipewire->core, PW_ID_CORE, pipewire->pending_seq);
+   retro_assert(pw);
+   pw->pending_seq = pw_core_sync(pw->core, PW_ID_CORE, pw->pending_seq);
 
    for (;;)
    {
-      pw_thread_loop_wait(pipewire->thread_loop);
-
-      res = pipewire->error;
-      if (res < 0)
-      {
-         pipewire->error = 0;
-         return res;
-      }
-      if (pipewire->pending_seq == pipewire->last_seq)
+      pw_thread_loop_wait(pw->thread_loop);
+      if (pw->pending_seq == pw->last_seq)
          break;
    }
-   return 0;
 }
 
-bool pipewire_set_active(pipewire_core_t *pipewire, pipewire_device_handle_t *device, bool active)
+bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
 {
-   RARCH_LOG("[PipeWire]: %s.\n", active? "Unpausing": "Pausing");
+   enum pw_stream_state st;
+   const char       *error;
 
-   pw_thread_loop_lock(pipewire->thread_loop);
-   pw_stream_set_active(device->stream, active);
-   pw_thread_loop_wait(pipewire->thread_loop);
-   pw_thread_loop_unlock(pipewire->thread_loop);
+   retro_assert(loop);
+   retro_assert(stream);
 
-   return device->is_paused != active;
+   pw_thread_loop_lock(loop);
+   pw_stream_set_active(stream, active);
+   pw_thread_loop_wait(loop);
+   pw_thread_loop_unlock(loop);
+
+   st = pw_stream_get_state(stream, &error);
+   return active ? st == PW_STREAM_STATE_STREAMING : st == PW_STREAM_STATE_PAUSED;
+}
+
+bool pipewire_core_init(pipewire_core_t *pw, const char *loop_name)
+{
+   retro_assert(pw);
+
+   pw->thread_loop = pw_thread_loop_new(loop_name, NULL);
+   if (!pw->thread_loop)
+      return false;
+
+   pw->ctx = pw_context_new(pw_thread_loop_get_loop(pw->thread_loop), NULL, 0);
+   if (!pw->ctx)
+      return false;
+
+   if (pw_thread_loop_start(pw->thread_loop) < 0)
+      return false;
+
+   pw_thread_loop_lock(pw->thread_loop);
+
+   pw->core = pw_context_connect(pw->ctx, NULL, 0);
+   if(!pw->core)
+      return false;
+
+   if (pw_core_add_listener(pw->core,
+                            &pw->core_listener,
+                            &core_events, pw) < 0)
+      return false;
+
+   return true;
 }

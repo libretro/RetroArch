@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include <libretro.h>
+#include <string/stdstring.h>
 
 #include "../configuration.h"
 #include "../driver.h"
@@ -93,7 +94,9 @@ bool driver_camera_start(void)
          return camera_st->driver->start(camera_st->data);
 
       runloop_msg_queue_push(
-            "Camera is explicitly disabled.\n", 1, 180, false,
+            "Camera is explicitly disabled.\n",
+            STRLEN_CONST("Camera is explicitly disabled.\n"),
+            1, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return true;
@@ -112,7 +115,7 @@ bool camera_driver_find_driver(const char *prefix,
       bool verbosity_enabled)
 {
    settings_t *settings         = config_get_ptr();
-   camera_driver_state_t 
+   camera_driver_state_t
       *camera_st                = &camera_driver_st;
    int i                        = (int)driver_find_index(
          "camera_driver",

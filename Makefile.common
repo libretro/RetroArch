@@ -1277,7 +1277,9 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/pointer-constraints-unstable-v1.o \
         gfx/common/wayland/relative-pointer-unstable-v1.o \
         gfx/common/wayland/cursor-shape-v1.o \
-        gfx/common/wayland/tablet-unstable-v2.o
+        gfx/common/wayland/tablet-unstable-v2.o \
+        gfx/common/wayland/content-type-v1.o \
+        gfx/common/wayland/single-pixel-buffer-v1.o
 
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o

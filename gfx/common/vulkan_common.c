@@ -729,13 +729,13 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    {
       char version_str[128];
-      size_t len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
-      version_str[  len]    = '.';
-      version_str[++len]    = '\0';
-      len                  += snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
-      version_str[  len]    = '.';
-      version_str[++len]    = '\0';
-      snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
+      size_t _len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
+      version_str[  _len]    = '.';
+      version_str[++_len]    = '\0';
+      _len                  += snprintf(version_str + _len, sizeof(version_str) - _len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
+      version_str[  _len]    = '.';
+      version_str[++_len]    = '\0';
+      snprintf(version_str + _len, sizeof(version_str) - _len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
       video_driver_set_gpu_api_version_string(version_str);
    }
 

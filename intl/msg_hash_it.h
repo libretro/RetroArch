@@ -2503,7 +2503,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Scala solo altezza, o entrambi altezza e larghezza. Metà passi si applicano alle sorgenti ad alta risoluzione."
+   "Scala altezza o larghezza, o entrambe altezza e larghezza. Mezzi passaggi si applicano solo alle sorgenti ad alta risoluzione."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -3197,23 +3197,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Stato : N/D"
+   "Stato: N/D"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Stato : Fermato"
+   "Stato: Fermato"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Stato : In Riproduzione"
+   "Stato: In Riproduzione"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Stato : In Riproduzione (In loop)"
+   "Stato: In Riproduzione (In loop)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Stato : In Riproduzione (Sequenziale)"
+   "Stato: In Riproduzione (Sequenziale)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -5281,6 +5281,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "Regola la dimensione delle zone di sovrapposizione nel diamante del pulsante facciale. Impostare al 100% per la simmetria a 8 vie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Zona Recentrante Analogica"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "L'ingresso analogico sarà relativo al primo tocco se premuto all'interno di questa zona."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
@@ -14634,10 +14642,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Hardcore in pausa. Impostazione manuale di ritardo frame video non consentita."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Hardcore in pausa. I sottoframe Shader non sono consentiti."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,

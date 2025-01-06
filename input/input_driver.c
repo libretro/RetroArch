@@ -1200,71 +1200,43 @@ static int16_t input_overlay_device_mouse_state(input_overlay_t *ol, unsigned id
 static int16_t input_overlay_lightgun_state(settings_t *settings,
       input_overlay_t *ol, unsigned id)
 {
-   int16_t edge;
    unsigned rarch_id;
-   struct video_viewport vp;
    input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
 
    switch(id)
    {
+      /* Pointer positions have been clamped earlier in input drivers,   *
+       * so if we want to pass true offscreen value, it must be detected */
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
          ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
-
-         if (     ptr_st->ptr[0].x != -0x8000
-               || settings->bools.input_overlay_lightgun_allow_offscreen)
+         if (   ( ptr_st->ptr[0].x > -0x7fff && ptr_st->ptr[0].x != 0x7fff)
+               || !settings->bools.input_overlay_lightgun_allow_offscreen)
             return ptr_st->ptr[0].x;
-         else if (video_driver_get_viewport_info(&vp))
-         {
-            edge = ((2 * vp.x * 0x7fff) / (int)vp.full_width) - 0x7fff;
-            return ((ptr_st->screen_x > edge) ? 0x7fff : -0x7fff);
-         }
-         return -0x8000;
+         else
+            return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         if (     ptr_st->ptr[0].y != -0x8000
-               || settings->bools.input_overlay_lightgun_allow_offscreen)
+         if (   ( ptr_st->ptr[0].y > -0x7fff && ptr_st->ptr[0].y != 0x7fff)
+               || !settings->bools.input_overlay_lightgun_allow_offscreen)
             return ptr_st->ptr[0].y;
-         else if (video_driver_get_viewport_info(&vp))
-         {
-            edge = ((2 * vp.y * 0x7fff) / (int)vp.full_height) - 0x7fff;
-            return ((ptr_st->screen_y > edge) ? 0x7fff : -0x7fff);
-         }
-         return -0x8000;
+         else
+            return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
          return ( settings->bools.input_overlay_lightgun_allow_offscreen
-               && (ptr_st->ptr[0].x == -0x8000 || ptr_st->ptr[0].y == -0x8000));
+               && input_driver_pointer_is_offscreen(ptr_st->ptr[0].x, ptr_st->ptr[0].y));
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         rarch_id = RARCH_LIGHTGUN_AUX_A;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         rarch_id = RARCH_LIGHTGUN_AUX_B;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         rarch_id = RARCH_LIGHTGUN_AUX_C;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         rarch_id = RARCH_LIGHTGUN_TRIGGER;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_START:
       case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         rarch_id = RARCH_LIGHTGUN_START;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         rarch_id = RARCH_LIGHTGUN_SELECT;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-         rarch_id = RARCH_LIGHTGUN_RELOAD;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-         rarch_id = RARCH_LIGHTGUN_DPAD_UP;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-         rarch_id = RARCH_LIGHTGUN_DPAD_DOWN;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-         rarch_id = RARCH_LIGHTGUN_DPAD_LEFT;
-         break;
       case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-         rarch_id = RARCH_LIGHTGUN_DPAD_RIGHT;
+         rarch_id = input_driver_lightgun_id_convert(id);
          break;
       default:
          rarch_id = RARCH_BIND_LIST_END;
@@ -1294,6 +1266,8 @@ static int16_t input_overlay_pointer_state(input_overlay_t *ol,
                && ptr_st->ptr[idx].y != -0x8000;
       case RETRO_DEVICE_ID_POINTER_COUNT:
          return ptr_st->count;
+      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+         return input_driver_pointer_is_offscreen(ptr_st->ptr[idx].x, ptr_st->ptr[idx].y);
    }
 
    return 0;
@@ -2277,6 +2251,68 @@ static INLINE void input_overlay_get_eightway_state(
 }
 
 /**
+ * input_overlay_get_analog_state:
+ * @out : Overlay input state to be modified
+ * @desc : Overlay descriptor handle
+ * @base : 0 or 2 for analog_left or analog_right
+ * @x : X coordinate
+ * @y : Y coordinate
+ * @x_dist : X offset from analog center
+ * @y_dist : Y offset from analog center
+ * @first_touch : Set true if analog was not controlled in previous poll
+ *
+ * Gets the analog input state based on @x and @y, and applies to @out.
+ */
+static void input_overlay_get_analog_state(
+      input_overlay_state_t *out, struct overlay_desc *desc,
+      unsigned base, float x, float y, float *x_dist, float *y_dist,
+      bool first_touch)
+{
+   float x_val, y_val;
+   float x_val_sat, y_val_sat;
+   const int b = base / 2;
+
+   static float x_center[2];
+   static float y_center[2];
+
+   if (first_touch)
+   {
+      unsigned recenter_zone =
+            config_get_ptr()->uints.input_overlay_analog_recenter_zone;
+
+      /* Reset analog center */
+      x_center[b] = desc->x_shift;
+      y_center[b] = desc->y_shift;
+
+      if (recenter_zone != 0)
+      {
+         /* Get analog state without adjusting center or saturation */
+         x_val = (x - desc->x_shift) / desc->range_x;
+         y_val = (y - desc->y_shift) / desc->range_y;
+
+         /* Recenter if within zone */
+         if (  (x_val * x_val + y_val * y_val) * 1e4
+                  < (recenter_zone * recenter_zone)
+               || recenter_zone >= 100)
+         {
+            x_center[b] = x;
+            y_center[b] = y;
+         }
+      }
+   }
+
+   *x_dist   = x - x_center[b];
+   *y_dist   = y - y_center[b];
+   x_val     = *x_dist / desc->range_x;
+   y_val     = *y_dist / desc->range_y;
+   x_val_sat = x_val   / desc->analog_saturate_pct;
+   y_val_sat = y_val   / desc->analog_saturate_pct;
+
+   out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+   out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+}
+
+/**
  * input_overlay_coords_inside_hitbox:
  * @desc                  : Overlay descriptor handle.
  * @x                     : X coordinate value.
@@ -2426,16 +2462,9 @@ static bool input_overlay_poll(
             base = 2;
             /* fall-through */
          default:
-            {
-               float x_val           = x_dist / desc->range_x;
-               float y_val           = y_dist / desc->range_y;
-               float x_val_sat       = x_val / desc->analog_saturate_pct;
-               float y_val_sat       = y_val / desc->analog_saturate_pct;
-               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-            }
+            input_overlay_get_analog_state(
+                  out, desc, base, x, y,
+                  &x_dist, &y_dist, !use_range_mod);
             break;
       }
 
@@ -3335,10 +3364,9 @@ static void input_overlay_update_pointer_coords(
             RETRO_DEVICE_ID_POINTER_Y);
    }
 
-   /* Need fullscreen pointer for mouse and lightgun */
+   /* Need fullscreen pointer for mouse only */
    if (     !ptr_st->count
-         && (ptr_st->device_mask &
-             ((1 << RETRO_DEVICE_MOUSE) | (1 << RETRO_DEVICE_LIGHTGUN))))
+         && (ptr_st->device_mask & (1 << RETRO_DEVICE_MOUSE)))
    {
       ptr_st->screen_x = current_input->input_state(
             input_data, NULL, NULL, NULL, NULL, true, 0,
@@ -3505,14 +3533,11 @@ static void input_poll_overlay(
 
    if (ol_ptr_enable)
    {
-      input_overlay_pointer_state_t *ptr_st      = &ol->pointer_state;
-      struct input_overlay_mouse_state *mouse_st = (struct input_overlay_mouse_state*)&ptr_st->mouse;
-
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
          input_overlay_poll_lightgun(settings, ol, old_ptr_count);
       if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
-         input_overlay_poll_mouse(settings, mouse_st, ol,
-               ptr_st->count, old_ptr_count);
+         input_overlay_poll_mouse(settings, &ptr_state->mouse, ol,
+               ptr_state->count, old_ptr_count);
 
       ptr_state->device_mask = 0;
    }
@@ -5308,6 +5333,9 @@ static const char *input_overlay_path(bool want_osk)
    /* if there's an override, use it */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL))
        return settings->paths.path_overlay;
+   /* if there's no core, just return the default */
+   if (string_is_empty(path_get(RARCH_PATH_CORE)))
+      return settings->paths.path_overlay;
 
    /* let's go hunting */
    fill_pathname_expand_special(overlay_directory,
@@ -6176,21 +6204,19 @@ bool replay_set_serialized_data(void* buf)
    {
       if (recording)
       {
-         const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
-         runloop_msg_queue_push(str,
-            1, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         RARCH_ERR("[Replay] %s.\n", str);
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         RARCH_ERR("[Replay] %s.\n", _msg);
          return false;
       }
 
       if (playback)
       {
-         const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
-         runloop_msg_queue_push(str,
-            1, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-         RARCH_WARN("[Replay] %s.\n", str);
+         const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
+         runloop_msg_queue_push(_msg, sizeof(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         RARCH_WARN("[Replay] %s.\n", _msg);
          movie_stop(input_st);
       }
    }
@@ -6236,21 +6262,19 @@ bool replay_set_serialized_data(void* buf)
          /* otherwise, if recording do not allow the load */
          if (recording)
          {
-            const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
-            runloop_msg_queue_push(str,
-                                   1, 180, true,
-                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-            RARCH_ERR("[Replay] %s.\n", str);
+            const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+            RARCH_ERR("[Replay] %s.\n", _msg);
             return false;
          }
          /* if in playback, halt playback and go to that state normally */
          if (playback)
          {
-            const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
-            runloop_msg_queue_push(str,
-                                   1, 180, true,
-                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-            RARCH_WARN("[Replay] %s.\n", str);
+            const char *_msg = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            RARCH_WARN("[Replay] %s.\n", _msg);
             movie_stop(input_st);
          }
       }

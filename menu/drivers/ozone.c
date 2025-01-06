@@ -4101,7 +4101,6 @@ static void linebreak_after_colon(char (*str)[NAME_MAX_LENGTH])
 
 static void ozone_update_content_metadata(ozone_handle_t *ozone)
 {
-   const char *core_name             = NULL;
    struct menu_state *menu_st        = menu_state_get_ptr();
    menu_list_t *menu_list            = menu_st->entries.list;
    size_t selection                  = menu_st->selection_ptr;
@@ -4124,11 +4123,18 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
    /* Must check whether core corresponds to 'viewer'
     * content even when not using a playlist, otherwise
     * file browser image updates are mishandled */
-   if (gfx_thumbnail_get_core_name(menu_st->thumbnail_path_data, &core_name))
+
+   if (!string_is_empty(menu_st->thumbnail_path_data->content_core_name))
    {
-      if (     string_is_equal(core_name, "imageviewer")
-            || string_is_equal(core_name, "musicplayer")
-            || string_is_equal(core_name, "movieplayer"))
+      if (     string_is_equal(
+               menu_st->thumbnail_path_data->content_core_name,
+               "imageviewer")
+            || string_is_equal(
+               menu_st->thumbnail_path_data->content_core_name,
+               "musicplayer")
+            || string_is_equal(
+               menu_st->thumbnail_path_data->content_core_name,
+               "movieplayer"))
          ozone->flags2 |=  OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
       else
          ozone->flags2 &= ~OZONE_FLAG2_SELECTION_CORE_IS_VIEWER;
@@ -4229,10 +4235,11 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       }
       else
       {
-         if (!core_name || string_is_equal(core_name, "DETECT"))
+         if (     string_is_empty(menu_st->thumbnail_path_data->content_core_name)
+               || string_is_equal(menu_st->thumbnail_path_data->content_core_name, "DETECT"))
             core_label = msg_hash_to_str(MSG_AUTODETECT);
          else
-            core_label = core_name;
+            core_label = menu_st->thumbnail_path_data->content_core_name;
       }
 
       _len                               = strlcpy(ozone->selection_core_name,
@@ -4980,43 +4987,25 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
-         size_t len, syslen;
+         size_t __len, syslen;
          struct texture_image ti;
          char sysname[NAME_MAX_LENGTH];
          char texturepath[PATH_MAX_LENGTH];
-         char content_texturepath[PATH_MAX_LENGTH];
 
          /* Add current node to playlist database name map */
          RHMAP_SET_STR(ozone->playlist_db_node_map, path, node);
 
-         syslen = fill_pathname_base(sysname, path, sizeof(sysname));
-         /* Manually strip the extension (and dot) from sysname */
-            sysname[syslen-4]  =
-            sysname[syslen-3]  =
-            sysname[syslen-2]  =
-            sysname[syslen-1]  = '\0';
-         syslen -= 4;
-         len = fill_pathname_join_special(texturepath,
+         syslen   = fill_pathname(sysname, path_basename(path), "", sizeof(sysname));
+         __len    = fill_pathname_join_special(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
-         texturepath[  len] = '.';
-         texturepath[++len] = 'p';
-         texturepath[++len] = 'n';
-         texturepath[++len] = 'g';
-         texturepath[++len] = '\0';
+         __len   += strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
-         {
-            len                = fill_pathname_join_special(
-                  texturepath, ozone->icons_path, "default",
+            __len = fill_pathname_join_special(
+                  texturepath, ozone->icons_path, "default.png",
                   sizeof(texturepath));
-            texturepath[  len] = '.';
-            texturepath[++len] = 'p';
-            texturepath[++len] = 'n';
-            texturepath[++len] = 'g';
-            texturepath[++len] = '\0';
-         }
 
          ti.width         = 0;
          ti.height        = 0;
@@ -5038,15 +5027,15 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          /* Assemble new icon path */
          fill_pathname_join_special(
-               content_texturepath, ozone->icons_path, sysname,
-               sizeof(content_texturepath));
+               texturepath, ozone->icons_path, sysname,
+               sizeof(texturepath));
 
          /* If the content icon doesn't exist, return default-content */
-         if (!path_is_valid(content_texturepath))
-            fill_pathname_join_delim(content_texturepath, ozone->icons_path_default,
-                  "content.png", '-', sizeof(content_texturepath));
+         if (!path_is_valid(texturepath))
+            fill_pathname_join_delim(texturepath, ozone->icons_path_default,
+                  "content.png", '-', sizeof(texturepath));
 
-         if (image_texture_load(&ti, content_texturepath))
+         if (image_texture_load(&ti, texturepath))
          {
             if (ti.pixels)
             {
@@ -9101,15 +9090,15 @@ static void ozone_cache_footer_label(
 {
    const char *str = msg_hash_to_str(enum_idx);
    /* Determine pixel width */
-   size_t length   = strlen(str);
+   size_t _len     = strlen(str);
 
    /* Assign string */
    label->str      = str;
-   label->width    = font_driver_get_message_width(ozone->fonts.footer.font, label->str, length, 1.0f);
+   label->width    = font_driver_get_message_width(ozone->fonts.footer.font, label->str, _len, 1.0f);
    /* If font_driver_get_message_width() fails,
     * use predetermined glyph_width as a fallback */
    if (label->width < 0)
-      label->width = length * ozone->fonts.footer.glyph_width;
+      label->width = _len * ozone->fonts.footer.glyph_width;
 }
 
 /* Assigns footer label strings (based on current

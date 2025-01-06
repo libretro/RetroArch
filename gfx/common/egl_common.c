@@ -406,10 +406,10 @@ static bool check_egl_client_extension(const char *name, size_t name_len)
          /* Use strspn and strcspn to find the start position and length of each
           * token in the extension string. Using strtok could also work, but
           * that would require allocating a copy of the string. */
-         size_t len = strcspn(str, " ");
-         if (len == name_len && strncmp(str, name, name_len) == 0)
+         size_t _len = strcspn(str, " ");
+         if (_len == name_len && strncmp(str, name, name_len) == 0)
             return true;
-         str       += len;
+         str       += _len;
          str       += strspn(str, " ");
       }
    }

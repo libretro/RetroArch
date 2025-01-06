@@ -218,14 +218,14 @@ static void ex_arena_free(ex_arena *arena)
 
 /* Hash function */
 static uint32_t ex_hash32_nocase_filtered(
-      const unsigned char* str, size_t len,
+      const unsigned char *s, size_t len,
       unsigned char f_first, unsigned char f_last)
 {
    const unsigned char *end = NULL;
    uint32_t hash            = (uint32_t)0x811c9dc5;
-   for (end = str + len; str != end;)
+   for (end = s + len; s != end;)
    {
-      unsigned char c = *(str++);
+      unsigned char c = *(s++);
       if (c >= f_first && c <= f_last)
          hash = ((hash * (uint32_t)0x01000193)
                ^ (uint32_t)((c >= 'A' && c <= 'Z')
@@ -316,7 +316,7 @@ static void explore_add_unique_string(
 
    for (p = str + 1;; p++)
    {
-      size_t len              = 0;
+      size_t _len              = 0;
       uint32_t hash           = 0;
       explore_string_t* entry = NULL;
 
@@ -346,18 +346,18 @@ static void explore_add_unique_string(
             p--;
       }
 
-      len                     = p - str;
+      _len                    = p - str;
       hash                    = ex_hash32_nocase_filtered(
-            (unsigned char*)str, len, '0', 255);
+            (unsigned char*)str, _len, '0', 255);
       entry                   = RHMAP_GET(maps[cat], hash);
 
       if (!entry)
       {
          entry                = (explore_string_t*)
             ex_arena_alloc(&state->arena,
-                  sizeof(explore_string_t) + len);
-         memcpy(entry->str, str, len);
-         entry->str[len]      = '\0';
+                  sizeof(explore_string_t) + _len);
+         memcpy(entry->str, str, _len);
+         entry->str[_len]      = '\0';
          RBUF_PUSH(state->by[cat], entry);
          RHMAP_SET(maps[cat], hash, entry);
       }
@@ -400,7 +400,7 @@ static void explore_unload_icons(explore_state_t *state)
 static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
-   size_t i, pathlen, system_count;
+   size_t i, _len, system_count;
    if (!state)
       return;
 
@@ -420,16 +420,16 @@ static void explore_load_icons(explore_state_t *state)
    if (string_is_empty(path))
       return;
 
-   pathlen = fill_pathname_slash(path, sizeof(path));
+   _len = fill_pathname_slash(path, sizeof(path));
 
    for (i = 0; i != system_count; i++)
    {
       struct texture_image ti;
-      size_t _len = pathlen;
-      _len       += strlcpy(path       + pathlen,
+      size_t __len = _len;
+      __len       += strlcpy(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
-                 sizeof(path) - pathlen);
-      strlcpy(path + _len, ".png", sizeof(path) - _len);
+                 sizeof(path)     - _len);
+      strlcpy(path + __len, ".png", sizeof(path) - __len);
       if (!path_is_valid(path))
          continue;
 
@@ -768,22 +768,22 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
 #ifdef EXPLORE_SHOW_ORIGINAL_TITLE
          if (original_title && *original_title)
          {
-            size_t len        = strlen(original_title) + 1;
+            size_t _len       = strlen(original_title) + 1;
             e->original_title = (char*)
-               ex_arena_alloc(&state->arena, len);
-            memcpy(e->original_title, original_title, len);
+               ex_arena_alloc(&state->arena, _len);
+            memcpy(e->original_title, original_title, _len);
          }
 #endif
 
          if (RBUF_LEN(split_buf))
          {
-            size_t len;
+            size_t _len;
 
             RBUF_PUSH(split_buf, NULL); /* terminator */
-            len        = RBUF_SIZEOF(split_buf);
+            _len       = RBUF_SIZEOF(split_buf);
             e->split   = (explore_string_t **)
-               ex_arena_alloc(&state->arena, len);
-            memcpy(e->split, split_buf, len);
+               ex_arena_alloc(&state->arena, _len);
+            memcpy(e->split, split_buf, _len);
             RBUF_CLEAR(split_buf);
          }
 
@@ -809,14 +809,14 @@ explore_state_t *menu_explore_build_list(const char *directory_playlist,
    for (i = 0; i != EXPLORE_CAT_COUNT; i++)
    {
       uint32_t idx;
-      size_t len = RBUF_LEN(state->by[i]);
+      size_t _len = RBUF_LEN(state->by[i]);
 
       if (state->by[i])
-         qsort(state->by[i], len, sizeof(*state->by[i]),
+         qsort(state->by[i], _len, sizeof(*state->by[i]),
                (explore_by_info[i].is_numeric ?
                   explore_qsort_func_nums : explore_qsort_func_strings));
 
-      for (idx = 0; idx != len; idx++)
+      for (idx = 0; idx != _len; idx++)
          state->by[i][idx]->idx = idx;
 
       RHMAP_FREE(cat_maps[i]);
@@ -838,14 +838,13 @@ static int explore_action_get_title(
    return 0;
 }
 
-static void explore_append_title(explore_state_t *state,
+static void explore_append_title(char *s, size_t len,
       const char* fmt, ...)
 {
    va_list ap;
-   size_t len = strlen(state->title);
+   size_t _len = strlen(s);
    va_start(ap, fmt);
-   vsnprintf(state->title + len,
-         sizeof(state->title) - len, fmt, ap);
+   vsnprintf(s + _len, len - _len, fmt, ap);
    va_end(ap);
 }
 
@@ -1023,13 +1022,12 @@ static const char* explore_get_view_path(struct menu_state *menu_st, menu_list_t
 
 static void explore_on_edit_views(enum msg_hash_enums msg)
 {
+   const char           *_msg = msg_hash_to_str(msg);
    struct menu_state *menu_st = menu_state_get_ptr();
    if (menu_st->driver_ctx->environ_cb)
       menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
                NULL, menu_st->userdata);
-
-   runloop_msg_queue_push(msg_hash_to_str(msg),
-         1, 180, true, NULL,
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
@@ -1071,15 +1069,14 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
 
    if (filestream_exists(lvwpath))
    {
-      runloop_msg_queue_push(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS),
-            1, 360, true, NULL,
+      const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 360, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       return;
    }
 
-   file = intfstream_open_file(lvwpath,
-         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
+   if (!(file = intfstream_open_file(lvwpath,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
    {
       RARCH_ERR("[explore view] Failed to write json file %s.\n", lvwpath);
       return;
@@ -1367,27 +1364,27 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       unsigned cat               = state->view_cats[i];
       explore_string_t **entries = state->by[cat];
       explore_string_t *match    = state->view_match[i];
-      explore_append_title(state, "%s%s: ", (i ? " / " : ""),
+      explore_append_title(state->title, sizeof(state->title), "%s%s: ", (i ? " / " : ""),
             msg_hash_to_str(explore_by_info[cat].name_enum));
       switch (state->view_op[i])
       {
          case EXPLORE_OP_EQUAL:
-            explore_append_title(state, "%s", (match
+            explore_append_title(state->title, sizeof(state->title), "%s", (match
                   ? match->str
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN)));
             break;
          case EXPLORE_OP_MIN:
-            explore_append_title(state, "%s - %s",
+            explore_append_title(state->title, sizeof(state->title), "%s - %s",
                   entries[state->view_idx_min[i]]->str,
                   entries[RBUF_LEN(entries)-1]->str);
             break;
          case EXPLORE_OP_MAX:
-            explore_append_title(state, "%s - %s",
+            explore_append_title(state->title, sizeof(state->title), "%s - %s",
                   entries[0]->str,
                   entries[state->view_idx_max[i]]->str);
             break;
          case EXPLORE_OP_RANGE:
-            explore_append_title(state, "%s - %s",
+            explore_append_title(state->title, sizeof(state->title), "%s - %s",
                   entries[state->view_idx_min[i]]->str,
                   entries[state->view_idx_max[i]]->str);
             break;
@@ -1396,7 +1393,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
 
    /* append string search to title */
    if (*state->view_search)
-      explore_append_title(state, "%s%s: '%s'",
+      explore_append_title(state->title, sizeof(state->title), "%s%s: '%s'",
             (state->view_levels ? " / " : ""),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
             state->view_search);
@@ -1418,7 +1415,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_TAB),
                sizeof(state->title));
       else
-         explore_append_title(state, " / %s",
+         explore_append_title(state->title, sizeof(state->title), " / %s",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER));
 
       if (!*state->view_search)
@@ -1515,7 +1512,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                EXPLORE_TYPE_FILTERNULL, explore_action_ok);
       }
 
-      explore_append_title(state, "%s",
+      explore_append_title(state->title, sizeof(state->title), "%s",
             msg_hash_to_str(explore_by_info[current_cat].by_enum));
    }
    else if (current_type < EXPLORE_TYPE_FIRSTITEM
@@ -1539,19 +1536,19 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
       bool filtered_category_have_unknown = false;
 
       if (is_show_all)
-         explore_append_title(state,
+         explore_append_title(state->title, sizeof(state->title),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_ALL));
 
       if (is_filtered_category)
       {
          /* List filtered items in a selected explore by category */
          if (!view_levels || view_cats[view_levels - 1] != current_cat)
-            explore_append_title(state, " / %s",
+            explore_append_title(state->title, sizeof(state->title), " / %s",
                   msg_hash_to_str(explore_by_info[current_cat].by_enum));
          else
          {
             /* List all items again when setting a range filter */
-            explore_append_title(state, " (%s)",
+            explore_append_title(state->title, sizeof(state->title), " (%s)",
                   msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER));
             view_levels--;
          }
@@ -1661,7 +1658,7 @@ SKIP_ENTRY:;
          qsort(list->list, list->size, sizeof(*list->list),
                explore_qsort_func_menulist);
 
-      explore_append_title(state,
+      explore_append_title(state->title, sizeof(state->title),
             " (%u)", (unsigned)(list->size - first_list_entry));
 
       if (is_filtered_category && filtered_category_have_unknown)
@@ -1683,8 +1680,7 @@ SKIP_ENTRY:;
       const struct playlist_entry *pl_entry =
          state->entries[current_type - EXPLORE_TYPE_FIRSTITEM].playlist_entry;
 
-      strlcpy(state->title,
-            pl_entry->label, sizeof(state->title));
+      strlcpy(state->title, pl_entry->label, sizeof(state->title));
 
       for (pl_idx = 0; pl_idx != (int)RBUF_LEN(state->playlists); pl_idx++)
       {

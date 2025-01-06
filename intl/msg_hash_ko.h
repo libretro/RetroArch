@@ -2566,10 +2566,6 @@ MSG_HASH(
    "정수 단위 조정 기준 축"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "화면 크기를 조정할 때 기준을 높이로 할지, 높이와 너비 모두로 할지 설정합니다. 고해상도 영상에는 절반 단위 조정도 적용됩니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "정수 단위 조정 방식"
    )
@@ -3289,23 +3285,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "상태 : 사용불가"
+   "상태: 사용 불가"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "상태 : 정지됨"
+   "상태: 정지됨"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "상태 : 재생 중"
+   "상태: 재생 중"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "상태 : 재생 중 (반복)"
+   "상태: 재생 중 (반복)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "상태 : 재생 중 (순차)"
+   "상태: 재생 중 (순차)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -14930,10 +14926,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "하드코어 일시정지됨. 수동 프레임 지연 설정은 허용되지 않습니다."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "하드코어 일시정지됨. 서브프레임 셰이더는 허용되지 않습니다."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,

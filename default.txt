@@ -1,3 +1,124 @@
+# 1.20.0
+- AUDIO: Fix audio handling in case of RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE
+- AUDIO: Include missing audio filters on some platforms
+- AUDIO/PIPEWIRE: Add PipeWire audio driver
+- AUDIO/PIPEWIRE: Add PipeWire microphone driver
+- APPLE: Hide threaded video setting
+- APPLE: Use mfi joypad driver by default
+- APPLE: Include holani, noods, mrboom, yabause, bsnes-jg core in App Store builds
+- CHEEVOS: Add rarity and points to achievement unlock widget
+- CHEEVOS: Add rank to leaderboard submission notification
+- CHEEVOS: Update to rcheevos 11.5
+- CHEEVOS: Update to rcheevos 11.6
+- CHEEVOS: Show rcheevos game image in Discord rich presence
+- CHEEVOS: Use translated strings for achievement messages
+- CLOUDSYNC: Allow saves and configs to be synced optionally
+- CLOUDSYNC: Add iCloud cloud sync driver
+- CLOUDSYNC: Speed up by upload/download in parallel
+- CLOUDSYNC: Allow thumbnails and system dir to be synced optionally
+- CLOUDSYNC: Enable CloudSync on Android (non-SSL)
+- CLOUDSYNC: Add more logs in failure situations
+- CLOUDSYNC: Fixes for reauthentication and parallel sync
+- CLOUDSYNC: Fixes for file resurrection
+- CLOUDSYNC: Enable CloudSync on Windows
+- CRT/SWITCHRES: Update switchres to 2.2.1
+- GENERAL: Support for mbedtls v3
+- GENERAL: Automatic Frame Delay refactor
+- GENERAL: Remove Frame Rest, obsoleted by Frame Delay refactor
+- GENERAL: Wrap around auto increment save state indexes when amount of states is limited
+- GENERAL: Enable CHD hashing for Switch and DOS
+- GENERAL: Enable auto save state when new content is loaded
+- GENERAL: Improve Preemptive Frames when pointing device is used
+- GENERAL: Fix building with menu disabled
+- HAIKU: Restore Haiku build
+- INPUT: Allow to select a preferred/reserved device for each player
+- INPUT: Enable Caps, Num, Scroll Lock modifiers on multiple platforms
+- INPUT: Autoconfig extension with alternative name/vid/pid
+- INPUT: Fix autoconfig profile saving when device is not in the default port
+- INPUT: Change classic turbo mode to work independently of which key was pressed first
+- INPUT: Pointer and lightgun handling sanitization on Windows and Linux desktop platforms. These input drivers will now report edge and offscreen positions in a harmonized way, and will not return 0 instead.
+- INPUT/DINPUT: Fix detection of quick shift key presses
+- INPUT/HID: Fix crash on macOS when disconnecting the controller a second time
+- INPUT/LINUX: Add illuminance sensor support to the linuxraw, sdl2, udev, and x11 input drivers
+- INPUT/Remaps: Sort and apply remaps based on the specific connected controller
+- INPUT/UDEV: Enable mouse buttons 4 and 5
+- INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
+- INPUT/WAYLAND: Simulate lightgun input for cores
+- INPUT/WAYLAND: Support for cursor-shape-v1 and content-type-v1 protocol
+- INPUT/X11: Enable mouse buttons 4 and 5
+- iOS: Enable vibration by default
+- iOS: Better handling of physical mice/magic keyboard trackpad
+- iOS: Mouse grab fixes
+- iOS: Fix mouse cursor movement when button is held down
+- iOS: Fix microphone support request and entitlement
+- iOS: Enable compilation back to iOS 12
+- iOS: Fix OpenGL ES context usage on iOS 9
+- iOS/TVOS: Add Opera to App Store build
+- iOS/TVOS: Bring NEON defines in line with ARM64
+- iOS/TVOS: Flush save files on backgrounding
+- LIBRETRO: Support RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY
+- LIBRETRO: Support "/" as a file extension for loading a directory as content
+- FFMPEG: Fix crash when playing back a file with 96 kHz audio
+- MACOS: New display server, including support for ProMotion 120Hz V-Sync
+- MACOS: Create App Store build
+- MACOS: Generate key up events for command keys
+- MIDI: Fix long messages (SysEx) in WinMM driver
+- MIDI: Fix lingering notes on close in Alsa driver
+- MENU: Support local thumbnails in other image formats than png (jpg/jpeg, bmp, tga)
+- MENU: Delete also savestate thumbnails when savestates are garbage collected
+- MENU: Option to disable analog stick menu navigation
+- MENU: Fix pause toggle to not clear fast forward state
+- MENU: Fix search playlist index in XMB/Ozone
+- MENU: Fix renamed entry display
+- MENU: Filter unknown extensions also inside zip files
+- MENU: Add icons for present / missing firmware on core info page
+- MENU: Ignore other hotkeys when menu toggle is pressed
+- MENU: Fix menu jumping when using L3+R3 combo
+- MENU: System Information now only shows features relevant for the platform
+- MENU/GLUI: Make Show Sublabels options effective
+- MENU/GLUI: Icon fixes
+- MENU/XMB: Allow playlist icons to be individually customized, by looking for images in Named_Logos
+- MENU/OZONE: Add Selenium theme for Ozone
+- MENU/OZONE: Touchscreen improvements
+- MENU/OZONE: Add a touch-sensitive Resume button in the lower right corner
+- NETPLAY: Add East Asian relay server
+- OVERLAY: Add option to load overlay based on system name
+- PS2: Fix several broken cores depending on pthread
+- QT: Enable building with Qt6
+- QT: Fix input panel
+- RECORDING: New WAV recording driver (audio only)
+- REMOTE RETROPAD: Add gyro/acceleration/light sensor test screen
+- REMOTE RETROPAD: Add pointer test screen
+- REPLAY: Replay format extended to support external tools
+- TVOS: Support bluetooth keyboards on tvOS
+- TVOS: Fixes to run correctly on TVOS13
+- TVOS: Better handling of Siri remote
+- TVOS: WebDAV server for adding files more easily
+- TVOS: Add Settings.app option to reset retroarch.cfg
+- TVOS: Bring minimum tvos version down to 13.0
+- VIDEO: Show and use exact refresh rate (3 decimals) and interlace/doublestrike where available
+- VIDEO: Allow setting viewport bias to offset viewport horizontally/vertically
+- VIDEO: Support viewport bias also with integer overscale and custom aspect ratios
+- VIDEO: Use shader path from CLI for shader cycling
+- VIDEO: Pixel perfect integer scaling improvements: axis options, smart mode
+- VIDEO: Add upscale 1.66x filter
+- VIDEO/D3D: Fix GPU screenshots
+- VIDEO/KMS: Force fullscreen when KMS is used
+- VIDEO/OpenGLES: Improve version directive granularity
+- VIDEO/SHADERS: Fix memory leak when shader parameter step is 0.0
+- VIDEO/SHADERS: Add 2 uniforms, OriginalAspect and OriginalAspectRot.
+- VIDEO/SHADERS: Add CoreFPS and FrameTimeDelta uniforms.
+- VIDEO/SLANG: Support optional includes
+- VIDEO/VULKAN: Fix Vulkan window freezes when swapchain becomes suboptimal
+- VIDEO/VULKAN: Prefer IMMEDIATE mode without vsync
+- VIDEO/X11: Support inhibit of Xss screensaver
+- VITA: Enable analog L2/R2 triggers when a DS3 controller is used with PS Vita
+- WAYLAND: Fix segfault when relative pointer is not supported
+- WAYLAND: Use reverse DNS name for desktop file and icon
+- WAYLAND: Commit viewport resizes for more responsive display when resizing window
+- WINDOWS: Fix restart if path to executable contains non-ASCII symbols
+- WINDOWS: Hide directories starting with $ from file browser
+
 # 1.19.1
 - Savestates: Revert savestate changes, was causing corruption and other issues
 

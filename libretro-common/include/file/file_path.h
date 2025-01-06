@@ -190,7 +190,7 @@ const char *path_basename_nocompression(const char *path);
  * Extracts base directory by mutating path.
  * Keeps trailing '/'.
  **/
-void path_basedir(char *path);
+size_t path_basedir(char *path);
 
 /**
  * path_parent_dir:
@@ -201,7 +201,7 @@ void path_basedir(char *path);
  * Assumes that path is a directory. Keeps trailing '/'.
  * If the path was already at the root directory, returns empty string
  **/
-void path_parent_dir(char *path, size_t len);
+size_t path_parent_dir(char *path, size_t len);
 
 /**
  * path_resolve_realpath:
@@ -400,7 +400,7 @@ size_t fill_pathname_base(char *out_path, const char *in_path, size_t size);
  * - Calls strlcpy
  * - Calls path_basedir()
  **/
-void fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
+size_t fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
 
 /**
  * fill_pathname_parent_dir_name:

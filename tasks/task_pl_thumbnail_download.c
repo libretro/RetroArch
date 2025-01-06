@@ -136,6 +136,41 @@ static void gfx_thumbnail_get_db_name(
       *db_name = path_data->content_db_name;
 }
 
+/* Fetches current thumbnail image name according to name flag
+ * (name is the same for all thumbnail types).
+ * Returns true if image name is valid. */
+static bool gfx_thumbnail_get_img_name(
+      gfx_thumbnail_path_data_t *path_data, const char **img_name,
+      enum playlist_thumbnail_name_flags name_flags)
+{
+   if (!path_data || !img_name || name_flags == PLAYLIST_THUMBNAIL_FLAG_NONE)
+      return false;
+
+   if (name_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+   {
+      if (string_is_empty(path_data->content_img_short))
+         return false;
+      *img_name = path_data->content_img_short;
+   }
+   else if (name_flags & PLAYLIST_THUMBNAIL_FLAG_STD_NAME)
+   {
+      if (string_is_empty(path_data->content_img))
+         return false;
+      *img_name = path_data->content_img;
+   }
+   else if (name_flags & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME)
+   {
+      if (string_is_empty(path_data->content_img_full))
+         return false;
+      *img_name = path_data->content_img_full;
+   }
+   else
+      return false;
+
+   return true;
+}
+
+
 /* Fetches local and remote paths for current thumbnail
  * of current type */
 static bool task_pl_thumbnail_get_thumbnail_paths(
@@ -147,22 +182,23 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
    char tmp_buf[PATH_MAX_LENGTH];
    size_t raw_url_len      = sizeof(char) * 8192; /* TODO/FIXME - check size */
    char *raw_url           = NULL;
-   const char *system      = NULL;
    const char *db_name     = NULL;
    const char *img_name    = NULL;
    const char *sub_dir     = NULL;
    const char *system_name = NULL;
+   const char *system      = NULL;
 
    content_dir[0]          = '\0';
 
    if (!pl_thumb->thumbnail_path_data)
       return false;
 
+   system = pl_thumb->thumbnail_path_data->system;
+
    if (string_is_empty(pl_thumb->dir_thumbnails))
       return false;
 
    /* Extract required strings */
-   gfx_thumbnail_get_system( pl_thumb->thumbnail_path_data, &system);
    gfx_thumbnail_get_db_name(pl_thumb->thumbnail_path_data, &db_name);
    if (!gfx_thumbnail_get_img_name(pl_thumb->thumbnail_path_data, &img_name, pl_thumb->name_flags))
       return false;
@@ -182,8 +218,8 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
       if (   string_is_equal(system, "history")
           || string_is_equal(system, "favorites"))
       {
-         if (!gfx_thumbnail_get_content_dir(
-               pl_thumb->thumbnail_path_data, content_dir, sizeof(content_dir)))
+         if (gfx_thumbnail_get_content_dir(
+               pl_thumb->thumbnail_path_data, content_dir, sizeof(content_dir)) == 0)
             return false;
 
          system_name = content_dir;
@@ -302,7 +338,8 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
             url,  sizeof(url)))
    {
       /* Only download missing thumbnails */
-      if (!path_is_valid(path) || (pl_thumb->flags & PL_THUMB_FLAG_OVERWRITE))
+      if (     !path_is_valid(path)
+            || (pl_thumb->flags & PL_THUMB_FLAG_OVERWRITE))
       {
          file_transfer_t *transf = (file_transfer_t*)malloc(sizeof(file_transfer_t));
          if (!transf)
@@ -419,12 +456,10 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
          if (gfx_thumbnail_set_content_playlist(
                   pl_thumb->thumbnail_path_data, pl_thumb->playlist, pl_thumb->list_index))
          {
-            const char *label = NULL;
-
             /* Update progress display */
             task_free_title(task);
-            if (gfx_thumbnail_get_label(pl_thumb->thumbnail_path_data, &label))
-               task_set_title(task, strdup(label));
+            if (!string_is_empty(pl_thumb->thumbnail_path_data->content_label))
+               task_set_title(task, strdup(pl_thumb->thumbnail_path_data->content_label));
             else
                task_set_title(task, strdup(""));
             task_set_progress(task, (pl_thumb->list_index * 100) / pl_thumb->list_size);
@@ -618,8 +653,6 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
 {
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    pl_thumb_handle_t *pl_thumb     = NULL;
-   const char *thumbnail_path      = NULL;
-   const char *left_thumbnail_path = NULL;
    bool do_refresh                 = false;
    playlist_t *current_playlist    = playlist_get_cached();
    menu_handle_t *menu             = menu_state_get_ptr()->driver_data;
@@ -671,15 +704,21 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
    if (   !(pl_thumb->flags & PL_THUMB_FLAG_RIGHT_THUMB_EXISTS)
          ||(pl_thumb->flags & PL_THUMB_FLAG_OVERWRITE))
       if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
-         if (gfx_thumbnail_get_path(pl_thumb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT, &thumbnail_path))
-            do_refresh = path_is_valid(thumbnail_path);
+      {
+         if (!string_is_empty(pl_thumb->thumbnail_path_data->right_path))
+            do_refresh = path_is_valid(pl_thumb->thumbnail_path_data->right_path);
+      }
 
    if (!do_refresh)
       if (    !(pl_thumb->flags & PL_THUMB_FLAG_LEFT_THUMB_EXISTS)
             || (pl_thumb->flags & PL_THUMB_FLAG_OVERWRITE))
+      {
          if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
-            if (gfx_thumbnail_get_path(pl_thumb->thumbnail_path_data, GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
-               do_refresh = path_is_valid(left_thumbnail_path);
+         {
+            if (!string_is_empty(pl_thumb->thumbnail_path_data->left_path))
+               do_refresh = path_is_valid(pl_thumb->thumbnail_path_data->left_path);
+         }
+      }
 
    if (do_refresh)
    {
@@ -721,52 +760,38 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
    switch (pl_thumb->status)
    {
       case PL_THUMB_BEGIN:
+         /* Check whether current right/left thumbnails
+          * already exist (required for menu refresh callback) */
+         pl_thumb->flags &= ~PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
+         pl_thumb->flags &= ~PL_THUMB_FLAG_LEFT_THUMB_EXISTS;
+
+         if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data,
+                  GFX_THUMBNAIL_RIGHT))
          {
-            const char *label                = NULL;
-            const char *right_thumbnail_path = NULL;
-            const char *left_thumbnail_path  = NULL;
-
-            /* Check whether current right/left thumbnails
-             * already exist (required for menu refresh callback) */
-            pl_thumb->flags &= ~PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
-            pl_thumb->flags &= ~PL_THUMB_FLAG_LEFT_THUMB_EXISTS;
-
-            if (gfx_thumbnail_update_path(
-                     pl_thumb->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
-            {
-               if (gfx_thumbnail_get_path(
-                        pl_thumb->thumbnail_path_data,
-                        GFX_THUMBNAIL_RIGHT, &right_thumbnail_path))
-               {
-                  if (path_is_valid(right_thumbnail_path))
-                     pl_thumb->flags |= PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
-               }
-            }
-
-            if (gfx_thumbnail_update_path(
-                     pl_thumb->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
-            {
-               if (gfx_thumbnail_get_path(
-                        pl_thumb->thumbnail_path_data,
-                        GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
-               {
-                  if (path_is_valid(left_thumbnail_path))
-                     pl_thumb->flags |= PL_THUMB_FLAG_LEFT_THUMB_EXISTS;
-               }
-            }
-
-            /* Set task title */
-            task_free_title(task);
-            if (gfx_thumbnail_get_label(
-                     pl_thumb->thumbnail_path_data, &label))
-               task_set_title(task, strdup(label));
-            else
-               task_set_title(task, strdup(""));
-            task_set_progress(task, 0);
-
-            /* All good - can start iterating */
-            pl_thumb->status = PL_THUMB_ITERATE_TYPE;
+            if (     !string_is_empty(pl_thumb->thumbnail_path_data->right_path)
+                  && path_is_valid(pl_thumb->thumbnail_path_data->right_path))
+               pl_thumb->flags |= PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
          }
+
+         if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data,
+                  GFX_THUMBNAIL_LEFT))
+         {
+            if (     !string_is_empty(pl_thumb->thumbnail_path_data->left_path)
+                  && path_is_valid(pl_thumb->thumbnail_path_data->left_path))
+               pl_thumb->flags |= PL_THUMB_FLAG_LEFT_THUMB_EXISTS;
+         }
+
+         /* Set task title */
+         task_free_title(task);
+         if (!string_is_empty(
+                  pl_thumb->thumbnail_path_data->content_label))
+            task_set_title(task, strdup(pl_thumb->thumbnail_path_data->content_label));
+         else
+            task_set_title(task, strdup(""));
+         task_set_progress(task, 0);
+
+         /* All good - can start iterating */
+         pl_thumb->status = PL_THUMB_ITERATE_TYPE;
          break;
       case PL_THUMB_ITERATE_TYPE:
          {
@@ -856,9 +881,9 @@ bool task_push_pl_entry_thumbnail_download(
 
    dir_thumbnails                = settings->paths.directory_thumbnails;
 
-   if (string_is_empty(system) ||
-       string_is_empty(dir_thumbnails) ||
-       string_is_empty(playlist_get_conf_path(playlist)))
+   if (   string_is_empty(system)
+       || string_is_empty(dir_thumbnails)
+       || string_is_empty(playlist_get_conf_path(playlist)))
       goto error;
 
    if (idx >= playlist_size(playlist))
@@ -916,10 +941,9 @@ bool task_push_pl_entry_thumbnail_download(
    }
    if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
    {
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
 
    }

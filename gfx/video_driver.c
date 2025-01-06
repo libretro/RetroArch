@@ -795,6 +795,7 @@ static void video_monitor_compute_fps_statistics(uint64_t
 
 void video_monitor_set_refresh_rate(float hz)
 {
+   size_t _len;
    char msg[256];
    char rate[8];
    settings_t        *settings = config_get_ptr();
@@ -804,13 +805,13 @@ void video_monitor_set_refresh_rate(float hz)
       return;
 
    snprintf(rate, sizeof(rate), "%.3f", hz);
-   snprintf(msg, sizeof(msg),
+   _len = snprintf(msg, sizeof(msg),
       msg_hash_to_str(MSG_VIDEO_REFRESH_RATE_CHANGED), rate);
 
    /* Message is visible for twice the usual duration */
    /* as modeswitch will cause monitors to go blank for a while */
    if (settings->bools.notification_show_refresh_rate)
-      runloop_msg_queue_push(msg, 1, 360, false, NULL,
+      runloop_msg_queue_push(msg, _len, 1, 360, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("[Video]: %s\n", msg);
 
@@ -1070,12 +1071,11 @@ void recording_dump_frame(
       if (     (vp.width  != record_st->gpu_width)
             || (vp.height != record_st->gpu_height))
       {
-         const char *recording_failed_str =
+         const char *_msg =
             msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE);
-         RARCH_WARN("[Recording]: %s\n", recording_failed_str);
+         RARCH_WARN("[Recording]: %s\n", _msg);
 
-         runloop_msg_queue_push(recording_failed_str,
-               1, 180, true,
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          return;
@@ -1940,7 +1940,6 @@ uint32_t video_driver_get_frame_time_delta_usec(void)
 float video_driver_get_original_fps(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
-   struct retro_system_av_info *av_info = &video_st->av_info;
    return (float)video_st->av_info.timing.fps;
 }
 
@@ -3666,6 +3665,7 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
    recording_state_t *recording_st= recording_state_get_ptr();
 
+   status_text[0]                 = '\0';
    video_driver_msg[0]            = '\0';
 
    if (!video_driver_active)
@@ -4041,6 +4041,7 @@ void video_driver_frame(const void *data, unsigned width,
             gfx_widgets_msg_queue_push(
                   NULL,
                   msg_entry.msg,
+                  strlen(msg_entry.msg),
                   roundf((float)msg_entry.duration / 60.0f * 1000.0f),
                   msg_entry.title,
                   msg_entry.icon,
@@ -4118,9 +4119,8 @@ void video_driver_frame(const void *data, unsigned width,
 
       {
          /* TODO/FIXME - localize */
-         size_t __len = strlcpy(video_info.stat_text, "LATENCY\n", sizeof(video_info.stat_text));
-         __len += snprintf(video_info.stat_text      + __len,
-                        sizeof(video_info.stat_text) - __len,
+         size_t __len = snprintf(video_info.stat_text,
+                        sizeof(video_info.stat_text),
                "CORE AV_INFO\n"
                " Size:        %u x %u\n"
                " - Base:      %u x %u\n"
@@ -4174,6 +4174,13 @@ void video_driver_frame(const void *data, unsigned width,
             audio_stats.close_to_blocking,
             audio_stats.samples
                );
+
+
+         /* TODO/FIXME - localize */
+         if (  (video_st->frame_delay_target > 0)
+            || (video_info.runahead && !video_info.runahead_second_instance))
+         __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
+                   sizeof(video_info.stat_text) - __len);
 
          /* TODO/FIXME - localize */
          if (video_st->frame_delay_target > 0)
@@ -4253,7 +4260,8 @@ void video_driver_frame(const void *data, unsigned width,
       else
 #endif
       {
-         runloop_msg_queue_push(status_text, 2, 1, true, NULL,
+         /* TODO/FIXME - get rid of strlen here */
+         runloop_msg_queue_push(status_text, strlen(status_text), 2, 1, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }

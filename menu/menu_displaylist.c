@@ -772,7 +772,7 @@ static int menu_displaylist_parse_core_info(
        * adjust the path to check for firmware files */
       if (systemfiles_in_content_dir && content_is_inited)
       {
-         fill_pathname_basedir(tmp_path,
+         size_t __len = fill_pathname_basedir(tmp_path,
                path_get(RARCH_PATH_CONTENT),
                sizeof(tmp_path));
 
@@ -781,14 +781,12 @@ static int menu_displaylist_parse_core_info(
             firmware_info.directory.system = settings->paths.directory_system;
          else
          {
-            size_t len       = strlen(tmp_path);
-
             /* Removes trailing slash (unless root dir), doesn't really matter
              * but it's more consistent with how the path is stored and
              * displayed without 'System Files are in Content Directory' */
             if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
-                  && tmp_path[len - 1] == PATH_DEFAULT_SLASH_C())
-               tmp_path[len - 1] = '\0';
+                  && tmp_path[__len - 1] == PATH_DEFAULT_SLASH_C())
+                     tmp_path[__len - 1] = '\0';
 
             firmware_info.directory.system = tmp_path;
          }
@@ -811,12 +809,12 @@ static int menu_displaylist_parse_core_info(
          const char *present_required = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
          const char *rdb_entry_name   =
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
-         size_t len = strlcpy(tmp,
+         size_t __len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
                sizeof(tmp));
-         tmp[  len] = ':';
-         tmp[++len] = ' ';
-         tmp[++len] = '\0';
+         tmp[  __len] = ':';
+         tmp[++__len] = ' ';
+         tmp[++__len] = '\0';
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
             count++;
@@ -868,12 +866,15 @@ static int menu_displaylist_parse_core_info(
             /* Show relevant note row and skip showing it later */
             if (core_info->notes)
             {
+               int spc;
                unsigned j;
                char firmware_basename[64];
                fill_pathname_base(firmware_basename,
                      core_info->firmware[i].desc, sizeof(firmware_basename));
 
-               firmware_basename[string_find_index_substring_string(firmware_basename, " ")] = '\0';
+               spc = string_find_index_substring_string(firmware_basename, " ");
+               if (spc >= 0)
+                  firmware_basename[spc] = '\0';
 
                for (j = 0; j < core_info->note_list->size; j++)
                {
@@ -885,8 +886,8 @@ static int menu_displaylist_parse_core_info(
                   pos = string_find_index_substring_string(core_info->note_list->elems[j].data, "(md5)");
 
                   core_info_list_hide[j] = true;
-                  len = strlcpy(tmp, "- ", sizeof(tmp));
-                  strlcpy(tmp + len, core_info->note_list->elems[j].data + pos, sizeof(tmp) - len);
+                  __len = strlcpy(tmp, "- ", sizeof(tmp));
+                  strlcpy(tmp + __len, core_info->note_list->elems[j].data + pos, sizeof(tmp) - __len);
 
                   if (menu_entries_append(list, tmp, "",
                         MENU_ENUM_LABEL_CORE_INFO_ENTRY,
@@ -2667,8 +2668,8 @@ static int create_string_list_rdb_entry_string(
 static int create_string_list_rdb_entry_int(
       enum msg_hash_enums enum_idx,
       const char *desc, const char *label,
-      int actual_int, const char *path,
-      size_t path_len,
+      int actual_int,
+      const char *path, size_t path_len,
       file_list_t *list)
 {
    size_t _len;
@@ -4101,19 +4102,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
                break;
             case PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV:
                {
-                  const char *tmp;
-                  char sys_thumb[64];
-                  size_t __len    = 0;
-
-                  if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-                     __len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
-
-                  if (!string_is_empty(sys_thumb))
+                  if (!string_is_empty(menu_st->thumbnail_path_data->system))
                      remove_entry_enabled =
-                           string_is_equal(sys_thumb, "history")
-                        || string_is_equal(sys_thumb, "favorites")
-                        || string_ends_with_size(sys_thumb, "_history",
-                              __len, STRLEN_CONST("_history"));
+                           string_is_equal(menu_st->thumbnail_path_data->system, "history")
+                        || string_is_equal(menu_st->thumbnail_path_data->system, "favorites")
+                        || string_ends_with_size(menu_st->thumbnail_path_data->system, "_history",
+                              menu_st->thumbnail_path_data->system_len, STRLEN_CONST("_history"));
 
                   /* An annoyance: if the user navigates to the information menu,
                    * then to the database entry, the thumbnail system will be changed.
@@ -4200,16 +4194,12 @@ static int menu_displaylist_parse_horizontal_content_actions(
             if (download_enabled)
             {
                /* Only show 'Download Thumbnails' on supported playlists */
-               char sys_thumb[64];
-               const char *tmp  = NULL;
-               size_t __len     = 0;
-
-               if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-                  __len = strlcpy(sys_thumb, tmp, sizeof(sys_thumb));
-
-               if (!string_is_empty(sys_thumb))
+               if (!string_is_empty(menu_st->thumbnail_path_data->system))
                   download_enabled = !string_ends_with_size(
-                        sys_thumb, "_history", __len, STRLEN_CONST("_history"));
+                        menu_st->thumbnail_path_data->system,
+                        "_history",
+                        menu_st->thumbnail_path_data->system_len,
+                        STRLEN_CONST("_history"));
                else
                   download_enabled = false;
             }
@@ -10193,6 +10183,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,           PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,   PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,   PARSE_ONLY_UINT,  false },
+               {MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,        PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_ROTATE,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE,                  PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_OVERLAY_SCALE_LANDSCAPE,                   PARSE_ONLY_FLOAT, false },
@@ -10259,6 +10250,12 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY:
                      if (input_overlay_enable &&
                          BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ABXY_AREA))
+                        build_list[i].checked = true;
+                     break;
+                  case MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE:
+                     if (input_overlay_enable &&
+                         (BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_LEFT)
+                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_RIGHT)))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS:
@@ -12686,13 +12683,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
                else
                {
+                  const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
                   /* TODO/FIXME - localize */
                   RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
-
-                  runloop_msg_queue_push(
-                        msg_hash_to_str(MSG_NO_DISC_INSERTED),
-                        1, 100, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
 
                if (count == 0)
@@ -12837,7 +12832,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                char text[128];
                const size_t profiles_count = sizeof(SWITCH_CPU_PROFILES)/sizeof(SWITCH_CPU_PROFILES[1]);
                /* TODO/FIXME - localize */
-               runloop_msg_queue_push("Warning : extended overclocking can damage the Switch",
+               runloop_msg_queue_push(
+                     "Warning : extended overclocking can damage the Switch",
+                     STRLEN_CONST("Warning : extended overclocking can damage the Switch"),
                      1, 90, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                menu_entries_clear(info->list);
                {

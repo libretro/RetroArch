@@ -4037,6 +4037,7 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
    }
 }
 
+#ifdef HAVE_ACCESSIBILITY
 static size_t get_current_menu_value(
       struct menu_state *menu_st, char *s, size_t len)
 {
@@ -4049,7 +4050,6 @@ static size_t get_current_menu_value(
    return strlcpy(s, entry.value, len);
 }
 
-#ifdef HAVE_ACCESSIBILITY
 static size_t menu_driver_get_current_menu_label(struct menu_state *menu_st,
       char *s, size_t len)
 {

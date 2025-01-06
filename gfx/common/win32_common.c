@@ -752,12 +752,24 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
             char *title_cp          = NULL;
+            wchar_t *title_wide     = NULL;
             size_t converted        = 0;
             const char *extensions  = "All Files (*.*)\0*.*\0\0";
             const char *title       = msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
             settings_t *settings    = config_get_ptr();
             const char *initial_dir = settings->paths.directory_menu_content;
+            bool browser            = true;
+
+            /* Menubar accelerator hotkey is hijacked always, therefore must
+             * press the keyboard event manually when blocking the accelerator. */
+            if (     !settings->bools.ui_menubar_enable
+                  || (!settings->bools.video_windowed_fullscreen && settings->bools.video_fullscreen))
+            {
+               input_keyboard_event(true, RETROK_o,
+                     0, RETROK_LCTRL, RETRO_DEVICE_KEYBOARD);
+               break;
+            }
 
             /* Convert UTF8 to UTF16, then back to the
              * local code page.
@@ -765,26 +777,20 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
              * string display until Unicode is
              * fully supported.
              */
-            wchar_t *title_wide     = utf8_to_utf16_string_alloc(title);
+            title_wide = utf8_to_utf16_string_alloc(title);
 
             if (title_wide)
-               title_cp             = utf16_to_utf8_string_alloc(title_wide);
+               title_cp = utf16_to_utf8_string_alloc(title_wide);
 
-            if (!win32_browser(owner, win32_file, sizeof(win32_file),
-                     extensions, title_cp, initial_dir))
-            {
-               if (title_wide)
-                  free(title_wide);
-               if (title_cp)
-                  free(title_cp);
-               break;
-            }
+            browser = win32_browser(owner, win32_file, sizeof(win32_file), extensions, title_cp, initial_dir);
 
             if (title_wide)
                free(title_wide);
             if (title_cp)
                free(title_cp);
-            win32_load_content_from_gui(win32_file);
+
+            if (browser)
+               win32_load_content_from_gui(win32_file);
          }
          break;
       case ID_M_RESET:
@@ -815,6 +821,18 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          command_event(CMD_EVENT_DISK_PREV, NULL);
          break;
       case ID_M_FULL_SCREEN:
+         {
+            /* Menubar accelerator hotkey is hijacked always, therefore must
+             * press the keyboard event manually when blocking the accelerator. */
+            settings_t *settings    = config_get_ptr();
+            if (     !settings->bools.ui_menubar_enable
+                  || (!settings->bools.video_windowed_fullscreen && settings->bools.video_fullscreen))
+            {
+               input_keyboard_event(true, RETROK_RETURN,
+                     0, RETROK_LALT, RETRO_DEVICE_KEYBOARD);
+               break;
+            }
+         }
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
          break;
       case ID_M_MOUSE_GRAB:

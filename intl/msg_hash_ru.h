@@ -2563,7 +2563,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Изменять масштаб только по высоте или по высоте и ширине. Значения в полшага применяются к источникам высокого разрешения."
+   "Изменять масштаб по высоте, ширине или по высоте и ширине. Значения в полшага применяются только к источникам высокого разрешения."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -3277,23 +3277,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Статус : Н/Д"
+   "Статус: Н/Д"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Статус : остановлено"
+   "Статус: остановлено"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Статус : воспроизведение"
+   "Статус: воспроизведение"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Статус : воспроизведение (зациклено)"
+   "Статус: воспроизведение (по кругу)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Статус : воспроизведение (по порядку)"
+   "Статус: воспроизведение (по порядку)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -5385,6 +5385,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "Настройка размера зон перекрытия для блока кнопок. Установите на 100% для симметрии по 8 направлениям."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Зона перецентровки аналог. оси"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "При нажатии внутри данной области ввод с аналогового стика отсчитывается от первого касания."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
@@ -14866,10 +14874,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Режим хардкора приостановлен. Ручная установка задержки кадра запрещена."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Режим хардкора приостановлен. Подкадры шейдера запрещены."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,

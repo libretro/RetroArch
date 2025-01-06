@@ -82,9 +82,9 @@ static void connmanctl_refresh_services(connman_t *connman)
       size_t ssid_len;
       wifi_network_info_t entry;
       struct string_list* list = NULL;
-      size_t len               = strlen(line);
-      if (len > 0 && line[len-1] == '\n')
-         line[--len] = '\0';
+      size_t _len              = strlen(line);
+      if (_len > 0 && line[_len-1] == '\n')
+                      line[--_len] = '\0';
 
       /* Parse lines directly and store net info directly */
       memset(&entry, 0, sizeof(entry));
@@ -142,7 +142,7 @@ static bool connmanctl_tether_status(connman_t *connman)
    /* Returns true if the tethering is active
     * false when tethering is not active
     */
-   size_t ln_size;
+   size_t ln_len;
    FILE *command_file = NULL;
    char ln[3]         = {0};
 
@@ -163,18 +163,16 @@ static bool connmanctl_tether_status(connman_t *connman)
 
    fgets(ln, sizeof(ln), command_file);
 
-   ln_size = strlen(ln) - 1;
-   if (ln[ln_size] == '\n')
-      ln[ln_size] = '\0';
+   ln_len = strlen(ln) - 1;
+   if (ln[ln_len] == '\n')
+       ln[ln_len] = '\0';
 
    RARCH_LOG("[CONNMANCTL] Tether Status: command: \"%s\", output: \"%s\"\n",
          connman->command, ln);
 
    pclose(command_file);
 
-   if (!ln)
-      return false;
-   if (ln[0] == '0')
+   if (!ln || ln[0] == '0')
       return false;
    if (ln[0] == '1')
       return true;
@@ -203,9 +201,9 @@ static void connmanctl_tether_toggle(
 
    while (fgets(output, sizeof(output), command_file))
    {
-      size_t output_size = strlen(output) - 1;
-      if (output[output_size] == '\n')
-         output[output_size] = '\0';
+      size_t output_len = strlen(output) - 1;
+      if (output[output_len] == '\n')
+          output[output_len] = '\0';
 
       RARCH_LOG("[CONNMANCTL] Tether toggle: output: \"%s\"\n",
             output);
@@ -213,7 +211,7 @@ static void connmanctl_tether_toggle(
 #ifdef HAVE_GFX_WIDGETS
       if (!widgets_active)
 #endif
-         runloop_msg_queue_push(output, 1, 180, true,
+         runloop_msg_queue_push(output, output_len, 1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -243,9 +241,9 @@ static void connmanctl_scan(void *data)
 
    if (connmanctl_tether_status(connman))
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF),
-            1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       configuration_set_bool(settings,
             settings->bools.localap_enable, false);
       connmanctl_tether_toggle(connman, false, "", "");
@@ -253,9 +251,11 @@ static void connmanctl_scan(void *data)
 
    pclose(popen("connmanctl scan wifi", "r"));
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE),
-         1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-         MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_WIFI_SCAN_COMPLETE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* Refresh now the services, to read the discovered networks */
    connman->scan.scan_time = time(NULL);
@@ -379,9 +379,9 @@ static bool connmanctl_connect_ssid(
 
    if (connmanctl_tether_status(connman))
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF),
-            1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       configuration_set_bool(settings,
             settings->bools.localap_enable, false);
       connmanctl_tether_toggle(connman, false, "", "");
@@ -416,13 +416,25 @@ static bool connmanctl_connect_ssid(
 #endif
    {
       if (success)
-         runloop_msg_queue_push("Connected", 1, 180, true,
+      {
+         /* TODO/FIXME - localize */
+         runloop_msg_queue_push(
+               "Connected",
+               STRLEN_CONST("Connected"),
+               1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                MESSAGE_QUEUE_CATEGORY_INFO);
+      }
       else
-         runloop_msg_queue_push("Connection failed!", 1, 180, true,
+      {
+         /* TODO/FIXME - localize */
+         runloop_msg_queue_push(
+               "Connection failed!",
+               STRLEN_CONST("Connection failed!"),
+               1, 180, true,
                NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    return success;
@@ -466,21 +478,21 @@ static void connmanctl_get_connected_ssid(
          connman->command, (ssid_size + 1) ? ssid : "<nothing_found>");
 }
 
-static void connmanctl_get_connected_servicename(
-      connman_t *connman, char* servicename, size_t buffersize)
+static size_t connmanctl_get_connected_servicename(
+      connman_t *connman, char *s, size_t len)
 {
    /* Stores the service name of currently connected Wi-Fi
-    * network in servicename
+    * network in @s
     */
    FILE *command_file = NULL;
    FILE *service_file = NULL;
    char ln[3]         = {0};
-   char *temp;
+   char *tmp;
 
-   if (buffersize < 1)
-      return;
+   if (len < 1)
+      return 0;
 
-   temp = (char*)malloc(sizeof(char) * buffersize);
+   tmp = (char*)malloc(sizeof(char) * len);
 
    /* Following command lists all stored services in
     * connman settings folder, which are then used in
@@ -500,16 +512,16 @@ static void connmanctl_get_connected_servicename(
    RARCH_LOG("[CONNMANCTL] Testing configured services for activity: command: \"%s\"\n",
          connman->command);
 
-   while (fgets(temp, buffersize, command_file))
+   while (fgets(tmp, len, command_file))
    {
-      size_t ln_size;
-      size_t temp_size = strlen(temp) - 1;
+      size_t ln_len;
+      size_t tmp_len = strlen(tmp) - 1;
 
-      if ((temp_size + 1) > 0)
-         if (temp[temp_size] == '\n')
-            temp[temp_size] = '\0';
+      if ((tmp_len + 1) > 0)
+         if (tmp[tmp_len] == '\n')
+             tmp[tmp_len] = '\0';
 
-      if ((temp_size + 1) == 0)
+      if ((tmp_len + 1) == 0)
       {
          RARCH_WARN("[CONNMANCTL] Service name empty.\n");
          continue;
@@ -523,37 +535,39 @@ static void connmanctl_get_connected_servicename(
             connmanctl services %s | \
             grep \"^  State = \\(online\\|ready\\)\" | \
             wc -l",
-            temp);
+            tmp);
 
       service_file = popen(connman->command, "r");
 
       fgets(ln, sizeof(ln), service_file);
-      ln_size = strlen(ln) - 1;
+      ln_len = strlen(ln) - 1;
 
-      if (ln[ln_size] == '\n')
-         ln[ln_size] = '\0';
+      if (ln[ln_len] == '\n')
+          ln[ln_len] = '\0';
 
       pclose(service_file);
 
       RARCH_LOG("[CONNMANCTL] Service: \"%s\", status: \"%s\"\n",
-            temp, ln);
+            tmp, ln);
 
       if (ln[0] == '1')
       {
+         size_t _len;
          pclose(command_file);
 
-         strlcpy(servicename, temp, buffersize);
+         _len = strlcpy(s, tmp, len);
 
-         free(temp);
+         free(tmp);
 
          RARCH_LOG("[CONNMANCTL] Service \"%s\" considered as currently online\n",
-               servicename);
+               s);
 
-         return;
+         return _len;
       }
    }
 
    pclose(command_file);
+   return 0;
 }
 
 static void connmanctl_tether_start_stop(void *data, bool start, char* configfile)
@@ -580,14 +594,15 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
    if (start) /* we want to start tethering */
    {
+      size_t __len;
       RARCH_LOG("[CONNMANCTL] Tether start stop: request to start access point\n");
 
       if (connmanctl_tether_status(connman)) /* check if already tethering and bail out if so */
       {
+         const char *_msg = msg_hash_to_str(MSG_LOCALAP_ALREADY_RUNNING);
          RARCH_LOG("[CONNMANCTL] Tether start stop: AP already running\n");
-         runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_ALREADY_RUNNING),
-               1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return;
       }
 
@@ -599,12 +614,12 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
          if (!(command_file = fopen(configfile, "w")))
          {
+            const char *_msg = msg_hash_to_str(MSG_LOCALAP_ERROR_CONFIG_CREATE);
             RARCH_ERR("[CONNMANCTL] Tether start stop: cannot create config file \"%s\"\n",
                   configfile);
 
-            runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_ERROR_CONFIG_CREATE),
-                  1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                  MESSAGE_QUEUE_CATEGORY_ERROR);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
             return;
          }
@@ -643,13 +658,13 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
          while (fgets(ln, sizeof(ln), command_file))
          {
-            size_t ln_size = strlen(ln) - 1;
+            size_t ln_len = strlen(ln) - 1;
 
             i++;
-            if ((ln_size + 1) > 1)
+            if ((ln_len + 1) > 1)
             {
-               if (ln[ln_size] == '\n')
-                  ln[ln_size] = '\0';
+               if (ln[ln_len] == '\n')
+                   ln[ln_len] = '\0';
 
                if (i == 1)
                {
@@ -682,15 +697,14 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
       if (!ap_name || !pass_key)
       {
+         size_t _len;
          RARCH_ERR("[CONNMANCTL] Tether start stop: APNAME or PASSWORD missing\n");
-
-         snprintf(ln, sizeof(ln),
+         _len = snprintf(ln, sizeof(ln),
                msg_hash_to_str(MSG_LOCALAP_ERROR_CONFIG_PARSE),
                configfile);
 
-         runloop_msg_queue_push(ln,
-               1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_ERROR);
+         runloop_msg_queue_push(ln, _len, 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
          return;
       }
@@ -701,19 +715,20 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
       if (strlen(ssid) != 0)
       {
-         connmanctl_get_connected_servicename(connman, service, sizeof(service));
+         size_t service_len = connmanctl_get_connected_servicename(connman, service, sizeof(service));
 
-         if (strlen(service) != 0)
+         if (service_len != 0)
          {
+            size_t _len;
             /* disconnect from wi-fi network */
             RARCH_LOG("[CONNMANCTL] Tether start stop: connected to SSID \"%s\", service \"%s\"\n",
                   ssid, service);
 
-            snprintf(ln, sizeof(ln),
+            _len = snprintf(ln, sizeof(ln),
                   msg_hash_to_str(MSG_WIFI_DISCONNECT_FROM),
                   ssid);
 
-            runloop_msg_queue_push(ln, 1, 180, true,
+            runloop_msg_queue_push(ln, _len, 1, 180, true,
                   NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                   MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -728,9 +743,9 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 
             while (fgets(ln, sizeof(ln), command_file))
             {
-               size_t ln_size = strlen(ln) - 1;
-               if (ln[ln_size] == '\n')
-                  ln[ln_size] = '\0';
+               size_t ln_len = strlen(ln) - 1;
+               if (ln[ln_len] == '\n')
+                   ln[ln_len] = '\0';
 
                RARCH_LOG("[CONNMANCTL] Tether start stop: output: \"%s\"\n",
                      ln);
@@ -738,9 +753,8 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
 #ifdef HAVE_GFX_WIDGETS
                if (!widgets_active)
 #endif
-                  runloop_msg_queue_push(ln, 1, 180, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                        MESSAGE_QUEUE_CATEGORY_INFO);
+                  runloop_msg_queue_push(ln, ln_len, 1, 180, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
 
             pclose(command_file);
@@ -749,32 +763,32 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
          }
       }
 
-      snprintf(connman->command, sizeof(connman->command),
+      __len = snprintf(connman->command, sizeof(connman->command),
             msg_hash_to_str(MSG_LOCALAP_STARTING),
             ap_name, pass_key);
 
-      runloop_msg_queue_push(connman->command,
-            1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(connman->command, __len, 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    else /* we want to stop tethering */
    {
+      const char *_msg;
       RARCH_LOG("[CONNMANCTL] Tether start stop: request to stop access point\n");
 
       if (!connmanctl_tether_status(connman)) /* check if not tethering and when not, bail out */
       {
+         const char *__msg = msg_hash_to_str(MSG_LOCALAP_NOT_RUNNING);
          RARCH_LOG("[CONNMANCTL] Tether start stop: access point is not running\n");
 
-         runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_NOT_RUNNING),
-               1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(__msg, strlen(__msg), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          return;
       }
 
-      runloop_msg_queue_push(msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF),
-            1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-            MESSAGE_QUEUE_CATEGORY_INFO);
+      _msg = msg_hash_to_str(MSG_LOCALAP_SWITCHING_OFF);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    RARCH_LOG("[CONNMANCTL] Tether start stop: calling tether_toggle()\n");

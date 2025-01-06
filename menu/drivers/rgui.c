@@ -1499,15 +1499,15 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->fonts.jpn_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_JAPANESE);
          rgui->fonts.kor_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_KOREAN);
 
-         if (!rgui->fonts.eng_10x10 ||
-             !rgui->fonts.chn_10x10 ||
-             !rgui->fonts.jpn_10x10 ||
-             !rgui->fonts.kor_10x10)
+         if (   !rgui->fonts.eng_10x10
+             || !rgui->fonts.chn_10x10
+             || !rgui->fonts.jpn_10x10
+             || !rgui->fonts.kor_10x10)
          {
+            const char *_msg = msg_hash_to_str(MSG_RGUI_MISSING_FONTS);
             rgui_fonts_free(rgui);
             *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             goto english;
          }
@@ -1526,13 +1526,13 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->fonts.eng_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.rus_10x10    = bitmapfont_10x10_load(RETRO_LANGUAGE_RUSSIAN);
 
-         if (!rgui->fonts.eng_10x10 ||
-             !rgui->fonts.rus_10x10)
+         if (   !rgui->fonts.eng_10x10
+             || !rgui->fonts.rus_10x10)
          {
+            const char *_msg = msg_hash_to_str(MSG_RGUI_MISSING_FONTS);
             rgui_fonts_free(rgui);
             *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             goto english;
          }
@@ -1565,13 +1565,13 @@ static bool rgui_fonts_init(rgui_t *rgui)
          rgui->fonts.eng_6x10 = bitmapfont_6x10_load(RETRO_LANGUAGE_ENGLISH);
          rgui->fonts.lse_6x10 = bitmapfont_6x10_load(language);
 
-         if (!rgui->fonts.eng_6x10 ||
-             !rgui->fonts.lse_6x10)
+         if (   !rgui->fonts.eng_6x10
+             || !rgui->fonts.lse_6x10)
          {
+            const char *_msg = msg_hash_to_str(MSG_RGUI_MISSING_FONTS);
             rgui_fonts_free(rgui);
             *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RGUI_MISSING_FONTS), 1, 256, false, NULL,
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             goto english;
          }
@@ -1589,13 +1589,15 @@ static bool rgui_fonts_init(rgui_t *rgui)
       case RETRO_LANGUAGE_PERSIAN:
       case RETRO_LANGUAGE_HEBREW:
       default:
+      {
+         const char *_msg = msg_hash_to_str(MSG_RGUI_INVALID_LANGUAGE);
          /* We do not have fonts for these
           * languages - fallback to English */
          *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) = RETRO_LANGUAGE_ENGLISH;
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_RGUI_INVALID_LANGUAGE), 1, 256, false, NULL,
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 256, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          goto english;
+      }
    }
 
    return true;
@@ -3034,13 +3036,13 @@ static void rgui_update_dynamic_theme_path(
    if (     (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
          && (!string_is_empty(rgui->menu_title)))
    {
-      size_t len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
+      size_t _len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
             rgui->menu_title, sizeof(rgui->theme_dynamic_path));
-      rgui->theme_dynamic_path[  len] = '.';
-      rgui->theme_dynamic_path[++len] = 'c';
-      rgui->theme_dynamic_path[++len] = 'f';
-      rgui->theme_dynamic_path[++len] = 'g';
-      rgui->theme_dynamic_path[++len] = '\0';
+      rgui->theme_dynamic_path[  _len] = '.';
+      rgui->theme_dynamic_path[++_len] = 'c';
+      rgui->theme_dynamic_path[++_len] = 'f';
+      rgui->theme_dynamic_path[++_len] = 'g';
+      rgui->theme_dynamic_path[++_len] = '\0';
       use_playlist_theme              = path_is_valid(rgui->theme_dynamic_path);
    }
 
@@ -3147,9 +3149,6 @@ static void rgui_load_custom_theme(
       particle_color = (normal_color & 0x00FFFFFF) |
                        (bg_light_color & 0xFF000000);
 
-   config_get_array(conf, wallpaper_key,
-         wallpaper_file, sizeof(wallpaper_file));
-
    success = true;
 
 end:
@@ -3166,8 +3165,10 @@ end:
       theme_colors->shadow_color       = (uint32_t)shadow_color;
       theme_colors->particle_color     = (uint32_t)particle_color;
 
+
       /* Load wallpaper, if required */
-      if (!string_is_empty(wallpaper_file))
+      if (config_get_array(conf, wallpaper_key,
+            wallpaper_file, sizeof(wallpaper_file)))
       {
          char wallpaper_path[PATH_MAX_LENGTH];
          wallpaper_path[0] = '\0';
@@ -4945,6 +4946,21 @@ static bool rgui_set_aspect_ratio(
       gfx_display_t *p_disp,
       bool delay_update);
 #endif
+
+/* Fetches current thumbnail label.
+ * Returns true if label is valid. */
+static bool gfx_thumbnail_get_label(
+      gfx_thumbnail_path_data_t *path_data, const char **label)
+{
+   if (!path_data || !label)
+      return false;
+   if (string_is_empty(path_data->content_label))
+      return false;
+
+   *label = path_data->content_label;
+
+   return true;
+}
 
 static void rgui_render(
       void *data,
@@ -6755,13 +6771,10 @@ static void rgui_navigation_clear(void *data, bool pending_push)
 
 static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_st, bool download_missing)
 {
-   const char *thumbnail_path      = NULL;
-   const char *left_thumbnail_path = NULL;
    bool thumbnails_missing         = false;
 
    /* Right (or fullscreen) thumbnail */
-   if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
-         GFX_THUMBNAIL_RIGHT, &thumbnail_path))
+   if (!string_is_empty(menu_st->thumbnail_path_data->right_path))
    {
       if (rgui_request_thumbnail(
             (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
@@ -6769,7 +6782,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
                   : &rgui->mini_thumbnail,
             GFX_THUMBNAIL_RIGHT,
             &rgui->thumbnail_queue_size,
-            thumbnail_path,
+            menu_st->thumbnail_path_data->right_path,
             &thumbnails_missing))
          rgui->flags |=  RGUI_FLAG_ENTRY_HAS_THUMBNAIL;
       else
@@ -6782,14 +6795,13 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
    if (     !(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          && string_is_empty(rgui->savestate_thumbnail_file_path))
    {
-      if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
-            GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
+      if (!string_is_empty(menu_st->thumbnail_path_data->left_path))
       {
          if (rgui_request_thumbnail(
                &rgui->mini_left_thumbnail,
                GFX_THUMBNAIL_LEFT,
                &rgui->left_thumbnail_queue_size,
-               left_thumbnail_path,
+               menu_st->thumbnail_path_data->left_path,
                &thumbnails_missing))
             rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
          else
@@ -6798,8 +6810,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
    }
    else if (!string_is_empty(rgui->savestate_thumbnail_file_path))
    {
-      if (gfx_thumbnail_get_path(menu_st->thumbnail_path_data,
-            GFX_THUMBNAIL_LEFT, &left_thumbnail_path))
+      if (!string_is_empty(menu_st->thumbnail_path_data->left_path))
       {
          if (rgui_request_thumbnail(
                   &rgui->mini_left_thumbnail,
@@ -6823,7 +6834,6 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
    /* On demand thumbnail downloads */
    if (thumbnails_missing && download_missing)
    {
-      const char *system         = NULL;
       playlist_t *playlist       = playlist_get_cached();
       struct menu_state *menu_st = menu_state_get_ptr();
       size_t selection           = menu_st->selection_ptr;
@@ -6834,8 +6844,9 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
             ? menu_st->thumbnail_path_data->playlist_index
             : 0;
 
-      if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &system))
-         task_push_pl_entry_thumbnail_download(system,
+      if (!string_is_empty(menu_st->thumbnail_path_data->system))
+         task_push_pl_entry_thumbnail_download(
+               menu_st->thumbnail_path_data->system,
                playlist, (unsigned)selection,
                false, true);
    }

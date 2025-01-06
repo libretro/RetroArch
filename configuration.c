@@ -2514,6 +2514,7 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("input_overlay_show_inputs_port",          &settings->uints.input_overlay_show_inputs_port, true, DEFAULT_OVERLAY_SHOW_INPUTS_PORT, false);
    SETTING_UINT("input_overlay_dpad_diagonal_sensitivity", &settings->uints.input_overlay_dpad_diagonal_sensitivity, true, DEFAULT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY, false);
    SETTING_UINT("input_overlay_abxy_diagonal_sensitivity", &settings->uints.input_overlay_abxy_diagonal_sensitivity, true, DEFAULT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY, false);
+   SETTING_UINT("input_overlay_analog_recenter_zone",      &settings->uints.input_overlay_analog_recenter_zone, true, DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE, false);
 #endif
 
 #ifdef HAVE_LIBNX
@@ -4467,9 +4468,11 @@ bool config_load_override(void *data)
 
    if (settings->bools.notification_show_config_override_load
          && show_notification)
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
-            1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -4521,9 +4524,11 @@ bool config_load_override_file(const char *config_path)
 
    if (settings->bools.notification_show_config_override_load
          && show_notification)
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED),
-            1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    /* Reset save paths. */
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
@@ -4729,9 +4734,11 @@ bool config_load_remap(const char *directory_input_remapping,
 
 success:
    if (notification_show_remap_load)
-      runloop_msg_queue_push(
-            msg_hash_to_str(msg_remap_loaded), 1, 100, false,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(msg_remap_loaded);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
    return true;
 }
 
@@ -4808,9 +4815,9 @@ static void save_keybind_joykey(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   size_t len = fill_pathname_join_delim(key, prefix,
+   size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   strlcpy(key + len, "_btn", sizeof(key) - len);
+   strlcpy(key + _len, "_btn", sizeof(key) - _len);
 
    if (bind->joykey == NO_BTN)
    {
@@ -4829,8 +4836,8 @@ static void save_keybind_axis(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   size_t len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcpy(key + len, "_axis", sizeof(key) - len);
+   size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
+   strlcpy(key + _len, "_axis", sizeof(key) - _len);
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -4863,9 +4870,9 @@ static void save_keybind_mbutton(config_file_t *conf,
       const struct retro_keybind *bind, bool save_empty)
 {
    char key[64];
-   size_t len = fill_pathname_join_delim(key, prefix,
+   size_t _len = fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
-   strlcpy(key + len, "_mbtn", sizeof(key) - len);
+   strlcpy(key + _len, "_mbtn", sizeof(key) - _len);
 
    switch (bind->mbutton)
    {
@@ -5998,7 +6005,6 @@ bool input_remapping_load_file(void *data, const char *path)
  **/
 bool input_remapping_save_file(const char *path)
 {
-   size_t _len;
    bool ret;
    unsigned i, j;
    char remap_file_dir[DIR_MAX_LENGTH];

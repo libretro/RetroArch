@@ -612,11 +612,11 @@ static void menu_driver_set_last_start_content(struct menu_state *menu_st, const
        * archive, must extract the string segment
        * before the archive delimiter (i.e. path of
        * 'parent' archive file) */
-      size_t len      = (size_t)(1 + archive_delim - start_content_path);
-      if (len >= PATH_MAX_LENGTH)
-         len          = PATH_MAX_LENGTH;
+      size_t _len     = (size_t)(1 + archive_delim - start_content_path);
+      if (_len >= PATH_MAX_LENGTH)
+         _len         = PATH_MAX_LENGTH;
 
-      strlcpy(archive_path, start_content_path, len * sizeof(char));
+      strlcpy(archive_path, start_content_path, _len * sizeof(char));
 
       file_name       = path_basename(archive_path);
    }
@@ -2881,6 +2881,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 error:
    runloop_msg_queue_push(
          "File could not be loaded from playlist.\n",
+         STRLEN_CONST("File could not be loaded from playlist.\n"),
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -2973,12 +2974,11 @@ static int action_ok_load_cdrom(const char *path,
 
    if (!cdrom_drive_has_media(label[0]))
    {
+      const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
       RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
 
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NO_DISC_INSERTED),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       return -1;
    }
@@ -3013,12 +3013,11 @@ static int action_ok_load_cdrom(const char *path,
    }
    else
    {
+      const char *_msg = msg_hash_to_str(MSG_LOAD_CORE_FIRST);
       RARCH_LOG("[CDROM]: Cannot load disc without a core.\n");
 
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_LOAD_CORE_FIRST),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       return -1;
    }
@@ -3034,11 +3033,10 @@ static int action_ok_dump_cdrom(const char *path,
 #ifdef HAVE_CDROM
    if (!cdrom_drive_has_media(label[0]))
    {
+      const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
       RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
 
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NO_DISC_INSERTED),
-            1, 100, true,
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       return -1;
@@ -3296,18 +3294,18 @@ static void menu_input_st_string_cb_disable_kiosk_mode(void *userdata,
 
       if (string_is_equal(label, path_kiosk_mode_password))
       {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_OK);
          settings->bools.kiosk_mode_enable = false;
 
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_OK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    menu_input_dialog_end();
@@ -3325,18 +3323,18 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
 
       if (string_is_equal(label, menu_content_show_settings_password))
       {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK);
          settings->bools.menu_content_show_settings = true;
 
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    menu_input_dialog_end();
@@ -3392,15 +3390,17 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
                true);
 
       if (ret)
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
       else
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    menu_input_dialog_end();
@@ -3458,17 +3458,17 @@ static int generic_action_ok_shader_preset_remove(const char *path,
          dir_video_shader, dir_menu_config))
    {
       struct menu_state *menu_st = menu_state_get_ptr();
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
    else
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    return 0;
 }
@@ -3508,15 +3508,17 @@ static int generic_action_ok_shader_preset_save(const char *path,
    if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type,
             dir_video_shader, dir_menu_config,
             true))
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
    else
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    return 0;
 }
@@ -3763,6 +3765,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {
+      const char *_msg;
       if (  !string_is_empty(remap_file_path)
           && input_remapping_save_file(remap_file_path))
       {
@@ -3779,18 +3782,18 @@ static int generic_action_ok_remap_file_operation(const char *path,
                break;
          }
 
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _msg = msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         /* TODO/FIXME - localize */
          RARCH_LOG("[Remap]: File saved successfully: \"%s\".\n",remap_file_path);
       }
       else
       {
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _msg = msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         /* TODO/FIXME - localize */
          RARCH_ERR("[Remap]: File save unsuccessful: \"%s\".\n",remap_file_path);
       }
    }
@@ -3799,6 +3802,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       if (   !string_is_empty(remap_file_path)
           && (filestream_delete(remap_file_path) == 0))
       {
+         const char *_msg;
          uint32_t flags = runloop_get_flags();
          switch (action_type)
          {
@@ -3816,10 +3820,9 @@ static int generic_action_ok_remap_file_operation(const char *path,
                break;
          }
 
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _msg = msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          /* After removing a remap file, attempt to
           * load any remaining remap file with the
@@ -3827,10 +3830,11 @@ static int generic_action_ok_remap_file_operation(const char *path,
          config_load_remap(directory_input_remapping, sys_info);
       }
       else
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_REMOVING_REMAP_FILE),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_REMAP_FILE);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    /* Refresh menu */
@@ -3920,17 +3924,17 @@ static int action_ok_remap_file_remove_game(const char *path,
 static int action_ok_remap_file_reset(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   const char *_msg = msg_hash_to_str(MSG_REMAP_FILE_RESET);
    input_remapping_set_defaults(false);
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_REMAP_FILE_RESET),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    return 0;
 }
 
 static int action_ok_remap_file_flush(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char msg[128];
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *path_remapfile  = runloop_st->name.remapfile;
@@ -3958,7 +3962,7 @@ static int action_ok_remap_file_flush(const char *path,
       RARCH_LOG(
             "[Remaps]: Saved input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
-      snprintf(msg, sizeof(msg), "%s \"%s\"",
+      _len = snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSHED),
             remapfile);
    }
@@ -3968,14 +3972,13 @@ static int action_ok_remap_file_flush(const char *path,
       RARCH_LOG(
             "[Remaps]: Failed to save input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
-      snprintf(msg, sizeof(msg), "%s \"%s\"",
+      _len = snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSH_FAILED),
             remapfile);
    }
 
-   runloop_msg_queue_push(
-         msg, 1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4023,10 +4026,8 @@ static void menu_input_st_string_cb_override_file_save_as(
             break;
       }
 
-      runloop_msg_queue_push(
-            msg_str,
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg_str, strlen(msg_str), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    menu_input_dialog_end();
@@ -4043,10 +4044,11 @@ static int action_ok_override_unload(const char *path,
 {
 #ifdef HAVE_CONFIGFILE
    if (config_unload_override())
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 #endif
    return 0;
 }
@@ -4154,9 +4156,10 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          &entry);
 
    /* Provide visual feedback */
-   _len = strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
-   strlcpy(msg + _len, core_display_name, sizeof(msg) - _len);
-   runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   _len  = strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
+   _len += strlcpy(msg + _len, core_display_name, sizeof(msg) - _len);
+   runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_st->selection_ptr = selection;
@@ -4191,10 +4194,10 @@ static int action_ok_set_switch_cpu_profile(const char *path,
       clkrstCloseSession(&session);
    }
    /* TODO/FIXME - localize */
-   _len = strlcpy(command, "Current clock set to", sizeof(command));
-   snprintf(command + _len, sizeof(command) - _len, "%i", profile_clock);
+   _len  = strlcpy(command, "Current clock set to", sizeof(command));
+   _len += snprintf(command + _len, sizeof(command) - _len, "%i", profile_clock);
 
-   runloop_msg_queue_push(command, 1, 90, true, NULL,
+   runloop_msg_queue_push(command, _len, 1, 90, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return -1;
@@ -4413,6 +4416,7 @@ static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
+   size_t _len;
    char msg[128];
    struct item_cheat tmp;
    struct menu_state *menu_st      = menu_state_get_ptr();
@@ -4435,10 +4439,9 @@ static int action_ok_cheat_add_top(const char *path,
 
    memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat));
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
@@ -4447,6 +4450,7 @@ static int action_ok_cheat_add_top(const char *path,
 static int action_ok_cheat_add_bottom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char msg[128];
    struct menu_state *menu_st      = menu_state_get_ptr();
    unsigned int new_size           = cheat_manager_get_size() + 1;
@@ -4455,11 +4459,10 @@ static int action_ok_cheat_add_bottom(const char *path,
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
-   strlcpy(msg,
+   _len = strlcpy(msg,
          msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
@@ -4468,6 +4471,7 @@ static int action_ok_cheat_add_bottom(const char *path,
 static int action_ok_cheat_delete_all(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char msg[128];
    struct menu_state *menu_st       = menu_state_get_ptr();
 
@@ -4476,11 +4480,10 @@ static int action_ok_cheat_delete_all(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS),
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS),
           sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
@@ -4490,6 +4493,7 @@ static int action_ok_cheat_add_new_after(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
+   size_t _len;
    char msg[128];
    struct item_cheat tmp;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -4512,10 +4516,11 @@ static int action_ok_cheat_add_new_after(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS),
+         sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4524,6 +4529,7 @@ static int action_ok_cheat_add_new_before(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
+   size_t _len;
    char msg[128];
    struct item_cheat tmp;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -4548,10 +4554,10 @@ static int action_ok_cheat_add_new_before(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4560,8 +4566,9 @@ static int action_ok_cheat_copy_before(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
-   struct item_cheat tmp;
+   size_t _len;
    char msg[128];
+   struct item_cheat tmp;
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned int new_size      = cheat_manager_get_size() + 1;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
@@ -4585,10 +4592,10 @@ static int action_ok_cheat_copy_before(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4597,6 +4604,7 @@ static int action_ok_cheat_copy_after(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
+   size_t _len;
    char msg[128];
    struct item_cheat tmp;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -4622,10 +4630,11 @@ static int action_ok_cheat_copy_after(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS),
+         sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4633,6 +4642,7 @@ static int action_ok_cheat_copy_after(const char *path,
 static int action_ok_cheat_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char msg[128];
    size_t new_selection_ptr   = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -4663,10 +4673,10 @@ static int action_ok_cheat_delete(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0; /* TODO/FIXME - is this necessary? */
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    new_selection_ptr      = menu_st->selection_ptr;
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
@@ -6682,6 +6692,7 @@ static int action_ok_push_netplay_refresh_lan(const char *path,
 static int action_ok_push_netplay_kick(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char msg[128];
    netplay_client_info_t client;
 
@@ -6689,13 +6700,13 @@ static int action_ok_push_netplay_kick(const char *path, const char *label,
    strlcpy(client.name, path, sizeof(client.name));
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_KICK_CLIENT, &client))
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_KICKED_CLIENT_S), client.name);
    else
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S), client.name);
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
@@ -6704,6 +6715,7 @@ static int action_ok_push_netplay_kick(const char *path, const char *label,
 static int action_ok_push_netplay_ban(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char msg[128];
    netplay_client_info_t client;
 
@@ -6711,13 +6723,13 @@ static int action_ok_push_netplay_ban(const char *path, const char *label,
    strlcpy(client.name, path, sizeof(client.name));
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_BAN_CLIENT, &client))
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_BANNED_CLIENT_S), client.name);
    else
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S), client.name);
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
@@ -7769,6 +7781,7 @@ static int action_ok_video_resolution(const char *path,
 
    if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
+      size_t _len;
       char msg[128];
       msg[0] = '\0';
 
@@ -7778,21 +7791,21 @@ static int action_ok_video_resolution(const char *path,
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         snprintf(msg, sizeof(msg),
+         _len = snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
       else
 #endif
       {
          if (!string_is_empty(desc))
-            snprintf(msg, sizeof(msg),
+            _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC),
                   width, height, desc);
          else
-            snprintf(msg, sizeof(msg),
+            _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC),
                   width, height);
       }
-      runloop_msg_queue_push(msg, 1, 100, true, NULL,
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -8078,18 +8091,15 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
       else if (!task_push_netplay_content_reload(line))
       {
 #ifdef HAVE_DYNAMIC
+         const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED);
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
          command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)line);
-
-         runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-            1, 480, true, NULL,
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
-            1, 480, true, NULL,
+         const char *_msg = msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
          menu_input_dialog_end();
@@ -8239,14 +8249,13 @@ int action_ok_core_lock(const char *path,
             sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
       RARCH_ERR("%s\n", msg);
 
-      runloop_msg_queue_push(msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       ret = -1;
    }
@@ -8301,15 +8310,13 @@ int action_ok_core_set_standalone_exempt(const char *path,
             sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
       RARCH_ERR("%s\n", msg);
 
-      runloop_msg_queue_push(
-         msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       return -1;
    }
@@ -8348,12 +8355,10 @@ static int action_ok_core_delete(const char *path,
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_DELETE_DISABLED), sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
-      runloop_msg_queue_push(
-         msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       /* We do not consider this an 'error' - we are
        * merely telling the user that this operation
@@ -8474,24 +8479,15 @@ static int action_ok_pl_content_thumbnails(const char *path,
 static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char system[PATH_MAX_LENGTH];
-   const char *tmp             = NULL;
    struct menu_state *menu_st  = menu_state_get_ptr();
    playlist_t *playlist        = playlist_get_cached();
    menu_handle_t *menu         = menu_st->driver_data;
-
    if (!playlist || !menu)
       return -1;
-
-   system[0] = '\0';
-
-   if (gfx_thumbnail_get_system(menu_st->thumbnail_path_data, &tmp))
-      strlcpy(system, tmp, sizeof(system));
-
-   task_push_pl_entry_thumbnail_download(system,
+   task_push_pl_entry_thumbnail_download(
+         menu_st->thumbnail_path_data->system,
          playlist, menu->rpl_entry_selection_ptr,
          true, false);
-
    return 0;
 }
 #endif
@@ -8556,6 +8552,7 @@ static int action_ok_playlist_refresh(const char *path,
 
    if (stat != MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK)
    {
+      size_t _len;
       char msg[128];
       char system_name[256];
       const char *msg_prefix  = NULL;
@@ -8610,10 +8607,10 @@ static int action_ok_playlist_refresh(const char *path,
        * scan record */
       if (string_is_empty(msg_subject))
          msg_subject = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-      fill_pathname_join_special(msg, msg_prefix, msg_subject, sizeof(msg));
+      _len = fill_pathname_join_special(msg, msg_prefix, msg_subject, sizeof(msg));
       RARCH_ERR(log_text, msg_subject);
-      runloop_msg_queue_push(msg, 1, 150, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 150, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       /* Even though this is a failure condition, we
        * let it fall-through to 0 here to suppress
        * any refreshing of the menu (this can appear

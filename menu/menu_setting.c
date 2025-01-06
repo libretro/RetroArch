@@ -2566,21 +2566,23 @@ static int setting_action_ok_bind_all_save_autoconfig(
    map          = settings->uints.input_joypad_index[index_offset];
    name         = input_config_get_device_name(map);
 
-   if (!string_is_empty(name) &&
-         config_save_autoconf_profile(name, index_offset))
+   if (    !string_is_empty(name)
+         && config_save_autoconf_profile(name, index_offset))
    {
+      size_t _len;
       char buf[128];
       char msg[NAME_MAX_LENGTH];
       config_get_autoconf_profile_filename(name, index_offset, buf, sizeof(buf));
-      snprintf(msg, sizeof(msg),msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
-      runloop_msg_queue_push(
-            msg, 1, 180, true,
+      _len = snprintf(msg, sizeof(msg),msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
+      runloop_msg_queue_push(msg, _len, 1, 180, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    else
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING), 1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_AUTOCONFIG_FILE_ERROR_SAVING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    return 0;
 }
@@ -8509,17 +8511,15 @@ static void general_write_handler(rarch_setting_t *setting)
 
             if (!frontend_driver_set_gamemode(on) && on)
             {
-
+#ifdef __linux__
+               const char *_msg = msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE_LINUX);
+#else
+               const char *_msg = msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE);
+#endif
                /* If we failed to enable game mode, display
                 * a notification and force disable the feature */
-               runloop_msg_queue_push(
-#ifdef __linux__
-                     msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE_LINUX),
-#else
-                     msg_hash_to_str(MSG_FAILED_TO_ENTER_GAMEMODE),
-#endif
-                     1, 180, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                configuration_set_bool(settings,
                      settings->bools.gamemode_enable, false);
             }
@@ -9120,16 +9120,18 @@ static void general_write_handler(rarch_setting_t *setting)
          switch (manual_content_scan_validate_dat_file_path())
          {
             case MANUAL_CONTENT_SCAN_DAT_FILE_INVALID:
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID),
-                     1, 100, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               {
+                  const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
                break;
             case MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE:
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE),
-                     1, 100, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               {
+                  const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
                break;
             default:
                /* No action required */
@@ -9205,6 +9207,7 @@ static void general_write_handler(rarch_setting_t *setting)
                if (!core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
                      path_libretro_info : dir_libretro))
                {
+                  const char *_msg = msg_hash_to_str(MSG_CORE_INFO_CACHE_UNSUPPORTED);
                   /* core_info_cache_force_refresh() will fail
                    * if we cannot write to the the core_info
                    * directory. This will typically only happen
@@ -9215,10 +9218,8 @@ static void general_write_handler(rarch_setting_t *setting)
                    * so we simply force-disable the feature */
                   configuration_set_bool(settings,
                         settings->bools.core_info_cache_enable, false);
-                  runloop_msg_queue_push(
-                        msg_hash_to_str(MSG_CORE_INFO_CACHE_UNSUPPORTED),
-                        1, 100, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                }
          }
          break;
@@ -9299,7 +9300,11 @@ static void runahead_change_handler(rarch_setting_t *setting)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    preempt_t *preempt          = runloop_st->preempt_data;
    unsigned run_ahead_frames   = settings->uints.run_ahead_frames;
-   bool preempt_enable, run_ahead_enabled, secondary_instance;
+   bool preempt_enable;
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   bool secondary_instance;
+   bool run_ahead_enabled;
+#endif
 
    if (!setting)
       return;
@@ -9334,8 +9339,10 @@ static void runahead_change_handler(rarch_setting_t *setting)
    }
 
    preempt_enable     = settings->bools.preemptive_frames_enable;
-   run_ahead_enabled  = settings->bools.run_ahead_enabled;
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
    secondary_instance = settings->bools.run_ahead_secondary_instance;
+   run_ahead_enabled  = settings->bools.run_ahead_enabled;
+#endif
 
    /* Toggle or update preemptive frames if needed */
    if (     preempt_enable != !!preempt
@@ -16541,7 +16548,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_SET_FRAME_LIMIT);
-         menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_FASTFORWARD_RATIO, 1.0, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, MAXIMUM_FASTFORWARD_RATIO, 0.1, true, true);
 
          CONFIG_BOOL(
                list, list_info,
@@ -17644,6 +17651,23 @@ static bool setting_append_list(
          MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_OVERLAY_SET_EIGHTWAY_DIAGONAL_SENSITIVITY);
          menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
          SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
+
+         CONFIG_UINT(
+               list, list_info,
+               &settings->uints.input_overlay_analog_recenter_zone,
+               MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+               MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+               DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler
+               );
+         (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_percentage;
+         menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
 
          CONFIG_FLOAT(
                list, list_info,

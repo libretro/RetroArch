@@ -2029,19 +2029,17 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
                true);
 
       if (ret)
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-               1, 100, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_INFO
-               );
+      {
+         const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
       else
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-               1, 100, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_ERROR
-               );
+      {
+         const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
    }
    else
    {
@@ -2050,24 +2048,20 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
                path_dir_video_shader,
                path_dir_menu_config))
       {
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
-               1, 100, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_INFO
-               );
+         const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
          menu_state_get_ptr()->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 #endif
       }
       else
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET),
-               1, 100, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT,
-               MESSAGE_QUEUE_CATEGORY_ERROR
-               );
+      {
+         const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      }
    }
 }
 

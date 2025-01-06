@@ -134,17 +134,17 @@ char *string_trim_whitespace_left(char *const s)
 {
    if (s && *s)
    {
-      size_t len     = strlen(s);
+      size_t _len    = strlen(s);
       char *current  = s;
 
       while (*current && ISSPACE((unsigned char)*current))
       {
          ++current;
-         --len;
+         --_len;
       }
 
       if (s != current)
-         memmove(s, current, len + 1);
+         memmove(s, current, _len + 1);
    }
 
    return s;
@@ -159,13 +159,13 @@ char *string_trim_whitespace_right(char *const s)
 {
    if (s && *s)
    {
-      size_t len     = strlen(s);
-      char  *current = s + len - 1;
+      size_t _len    = strlen(s);
+      char  *current = s + _len - 1;
 
       while (current != s && ISSPACE((unsigned char)*current))
       {
          --current;
-         --len;
+         --_len;
       }
 
       current[ISSPACE((unsigned char)*current) ? 0 : 1] = '\0';

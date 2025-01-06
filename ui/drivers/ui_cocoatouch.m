@@ -728,7 +728,7 @@ enum
 		   && icons->size > 1)
    {
       int i;
-      size_t len    = 0;
+      size_t _len    = 0;
       char *options = NULL;
       const char *icon_name;
 
@@ -736,12 +736,12 @@ enum
       icon_name = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; /* need to ask uico_st for this */
       for (i = 0; i < (int)icons->size; i++)
       {
-         len += strlen(icons->elems[i].data) + 1;
+         _len += strlen(icons->elems[i].data) + 1;
          if (string_is_equal(icon_name, icons->elems[i].data))
             appicon_setting->value.target.string = icons->elems[i].data;
       }
-      options = (char*)calloc(len, sizeof(char));
-      string_list_join_concat(options, len, icons, "|");
+      options = (char*)calloc(_len, sizeof(char));
+      string_list_join_concat(options, _len, icons, "|");
       if (appicon_setting->values)
          free((void*)appicon_setting->values);
       appicon_setting->values = options;

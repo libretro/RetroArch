@@ -320,6 +320,7 @@ static void handle_translation_cb(
             image_type = IMAGE_TYPE_PNG;
          else
          {
+            /* TODO/FIXME - localize */
             RARCH_LOG("Invalid image type returned from server.\n");
             goto finish;
          }
@@ -328,12 +329,11 @@ static void handle_translation_cb(
                raw_image_file_data, (unsigned)new_image_size,
                image_type))
          {
+            /* TODO/FIXME - localize */
+            const char *_msg = "Video driver not supported.";
             RARCH_LOG("Video driver not supported for AI Service.");
-            runloop_msg_queue_push(
-               /* msg_hash_to_str(MSG_VIDEO_DRIVER_NOT_SUPPORTED), */
-               "Video driver not supported.",
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          else if (gfx_widgets_paused)
          {
@@ -517,15 +517,15 @@ static void handle_translation_cb(
    {
       size_t i;
       char key[8];
-      size_t length = strlen(key_str);
+      size_t _len   = strlen(key_str);
       size_t start  = 0;
 
-      for (i = 1; i < length; i++)
+      for (i = 1; i < _len; i++)
       {
          char t = key_str[i];
-         if (i == length - 1 || t == ' ' || t == ',')
+         if (i == _len - 1 || t == ' ' || t == ',')
          {
-            if (i == length - 1 && t != ' ' && t!= ',')
+            if (i == _len - 1 && t != ' ' && t!= ',')
                i++;
 
             if (i-start > 7)
@@ -795,7 +795,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    char *bmp64_buffer                = NULL;
    rjsonwriter_t *jsonwriter         = NULL;
    const char *json_buffer           = NULL;
-   int bmp64_length                  = 0;
+   int bmp64_len                     = 0;
    bool TRANSLATE_USE_BMP            = false;
    char *sys_lbl                     = NULL;
    core_info_t *core_info            = NULL;
@@ -967,7 +967,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    if (!(bmp64_buffer = base64((void *)bmp_buffer,
          (int)(sizeof(uint8_t) * buffer_bytes),
-         &bmp64_length)))
+         &bmp64_len)))
       goto finish;
 
    if (!(jsonwriter = rjsonwriter_open_memory()))
@@ -978,7 +978,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    rjsonwriter_add_string(jsonwriter, "image");
    rjsonwriter_raw(jsonwriter, ":", 1);
    rjsonwriter_raw(jsonwriter, " ", 1);
-   rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_length);
+   rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_len);
 
    /* Form request... */
    if (sys_lbl)
@@ -1030,7 +1030,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
 #ifdef DEBUG
    if (access_st->ai_service_auto != 2)
-      RARCH_LOG("Request size: %d\n", bmp64_length);
+      RARCH_LOG("Request size: %d\n", bmp64_len);
 #endif
    {
       char new_ai_service_url[PATH_MAX_LENGTH];

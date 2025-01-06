@@ -42,7 +42,7 @@
 #define GFX_MAX_FRAME_HISTORY 128
 #endif
 
-#define RARCH_WC_DELIMITER "$"
+#define RARCH_WILDCARD_DELIMITER "$"
 
 /**
  * video_shader_parse_type:

@@ -727,21 +727,22 @@ static bool wl_setup_data_device(gfx_ctx_wayland_data_t *wl)
 static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
+   int found = 1;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    RARCH_DBG("[Wayland]: Add global %u, interface %s, version %u\n",
          id, interface, version);
 
-   if (string_is_equal(interface, wl_compositor_interface.name))
+   if (string_is_equal(interface, wl_compositor_interface.name) && found++)
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
             id, &wl_compositor_interface, MIN(version, 4));
-   else if (string_is_equal(interface, wp_viewporter_interface.name))
+   else if (string_is_equal(interface, wp_viewporter_interface.name) && found++)
       wl->viewporter = (struct wp_viewporter*)wl_registry_bind(reg,
             id, &wp_viewporter_interface, MIN(version, 1));
-   else if (string_is_equal(interface, wp_fractional_scale_manager_v1_interface.name))
+   else if (string_is_equal(interface, wp_fractional_scale_manager_v1_interface.name) && found++)
       wl->fractional_scale_manager = (struct wp_fractional_scale_manager_v1*)
          wl_registry_bind(reg, id, &wp_fractional_scale_manager_v1_interface, MIN(version, 1));
-   else if (string_is_equal(interface, wl_output_interface.name))
+   else if (string_is_equal(interface, wl_output_interface.name) && found++)
    {
       display_output_t *od = (display_output_t*)
          calloc(1, sizeof(display_output_t));
@@ -756,47 +757,59 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl_list_insert(&wl->all_outputs, &od->link);
       wl_display_roundtrip(wl->input.dpy);
    }
-   else if (string_is_equal(interface, xdg_wm_base_interface.name))
+   else if (string_is_equal(interface, xdg_wm_base_interface.name) && found++)
       wl->xdg_shell = (struct xdg_wm_base*)
          wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 3));
-   else if (string_is_equal(interface, wl_shm_interface.name))
+   else if (string_is_equal(interface, wl_shm_interface.name) && found++)
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, MIN(version, 1));
-   else if (string_is_equal(interface, wl_seat_interface.name))
+   else if (string_is_equal(interface, wl_seat_interface.name) && found++)
    {
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 2));
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
       wl_setup_data_device(wl);
    }
-   else if (string_is_equal(interface, wl_data_device_manager_interface.name))
+   else if (string_is_equal(interface, wl_data_device_manager_interface.name) && found++)
    {
       wl->data_device_manager = (struct wl_data_device_manager*)
          wl_registry_bind(
                reg, id, &wl_data_device_manager_interface, MIN(version, 3));
       wl_setup_data_device(wl);
    }
-   else if (string_is_equal(interface, zwp_idle_inhibit_manager_v1_interface.name))
+   else if (string_is_equal(interface, zwp_idle_inhibit_manager_v1_interface.name) && found++)
       wl->idle_inhibit_manager = (struct zwp_idle_inhibit_manager_v1*)
          wl_registry_bind(
             reg, id, &zwp_idle_inhibit_manager_v1_interface, MIN(version, 1));
-   else if (string_is_equal(
-            interface, zxdg_decoration_manager_v1_interface.name))
-      wl->deco_manager = (struct zxdg_decoration_manager_v1*)wl_registry_bind(
+   else if (string_is_equal(interface, zxdg_decoration_manager_v1_interface.name) && found++)
+      wl->deco_manager = (struct zxdg_decoration_manager_v1*)
+         wl_registry_bind(
             reg, id, &zxdg_decoration_manager_v1_interface, MIN(version, 1));
-   else if (string_is_equal(interface, zwp_pointer_constraints_v1_interface.name))
+   else if (string_is_equal(interface, zwp_pointer_constraints_v1_interface.name) && found++)
    {
       wl->pointer_constraints = (struct zwp_pointer_constraints_v1*)
          wl_registry_bind(
             reg, id, &zwp_pointer_constraints_v1_interface, MIN(version, 1));
       wl->locked_pointer = NULL;
    }
-   else if (string_is_equal(interface, zwp_relative_pointer_manager_v1_interface.name))
+   else if (string_is_equal(interface, zwp_relative_pointer_manager_v1_interface.name) && found++)
       wl->relative_pointer_manager = (struct zwp_relative_pointer_manager_v1*)
          wl_registry_bind(
             reg, id, &zwp_relative_pointer_manager_v1_interface, MIN(version, 1));
-   else if (string_is_equal(interface, wp_cursor_shape_manager_v1_interface.name))
+   else if (string_is_equal(interface, wp_cursor_shape_manager_v1_interface.name) && found++)
       wl->cursor_shape_manager = (struct wp_cursor_shape_manager_v1*)
          wl_registry_bind(
             reg, id, &wp_cursor_shape_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_content_type_manager_v1_interface.name) && found++)
+      wl->content_type_manager = (struct wp_content_type_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_content_type_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_single_pixel_buffer_manager_v1_interface.name) && found++)
+      wl->single_pixel_manager = (struct wp_single_pixel_buffer_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_single_pixel_buffer_manager_v1_interface, MIN(version, 1));
+
+   if (found > 1)
+   RARCH_LOG("[Wayland]: Registered interface %s at version %u\n",
+         interface, version);
 }
 
 static void wl_registry_handle_global_remove(void *data,

@@ -718,6 +718,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_auto_scale,      MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_osk_overlay_auto_scale,  MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_dpad_diag_sens,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_abxy_diag_sens,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_overlay_analog_recenter_zone,  MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_content_collection_list,       MENU_ENUM_SUBLABEL_PLAYLISTS_TAB)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer,           MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_scale_integer_axis,      MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS)
@@ -4282,6 +4283,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_abxy_diag_sens);
+            break;
+         case MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_overlay_analog_recenter_zone);
             break;
          case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_font_size);

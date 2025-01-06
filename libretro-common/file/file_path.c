@@ -437,12 +437,14 @@ size_t fill_pathname_base(char *s, const char *in_path, size_t len)
  * Copies base directory of @in_path into @s.
  * If in_path is a path without any slashes (relative current directory),
  * @s will get path "./".
+ *
+ * @return Length of the string copied in @s
  **/
-void fill_pathname_basedir(char *s, const char *in_path, size_t len)
+size_t fill_pathname_basedir(char *s, const char *in_path, size_t len)
 {
    if (s != in_path)
       strlcpy(s, in_path, len);
-   path_basedir(s);
+   return path_basedir(s);
 }
 
 /**
@@ -585,24 +587,30 @@ size_t fill_str_dated_filename(char *s,
  *
  * Extracts base directory by mutating path.
  * Keeps trailing '/'.
+ *
+ * @return The new size of @s
  **/
-void path_basedir(char *s)
+size_t path_basedir(char *s)
 {
    const char *slash;
    const char *backslash;
    char *last_slash = NULL;
    if (!s || s[0] == '\0' || s[1] == '\0')
-      return;
+      return (s && s[0] != '\0') ? 1 : 0;
    slash             = strrchr(s, '/');
    backslash         = strrchr(s, '\\');
    last_slash        = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (last_slash)
+   {
       last_slash[1]  = '\0';
+      return last_slash + 1 - s;
+   }
    else
    {
       s[0]           = '.';
       s[1]           = PATH_DEFAULT_SLASH_C();
       s[2]           = '\0';
+      return 2;
    }
 }
 
@@ -614,11 +622,13 @@ void path_basedir(char *s)
  * Extracts parent directory by mutating path.
  * Assumes that @s is a directory. Keeps trailing '/'.
  * If the path was already at the root directory, returns empty string
+ *
+ * @return The new size of @s
  **/
-void path_parent_dir(char *s, size_t len)
+size_t path_parent_dir(char *s, size_t len)
 {
    if (!s)
-      return;
+      return 0;
 
    if (len && PATH_CHAR_IS_SLASH(s[len - 1]))
    {
@@ -641,10 +651,10 @@ void path_parent_dir(char *s, size_t len)
           * gets erroneously treated as a relative one by path_basedir and returns "./".
           * What we really wanted is an empty string. */
          s[0] = '\0';
-         return;
+         return 0;
       }
    }
-   path_basedir(s);
+   return path_basedir(s);
 }
 
 /**

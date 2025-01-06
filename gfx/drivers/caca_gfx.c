@@ -231,7 +231,7 @@ static bool caca_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   size_t len                = 0;
+   size_t _len               = 0;
    void *buffer              = NULL;
    const void *frame_to_copy = frame;
    unsigned width            = 0;
@@ -297,11 +297,11 @@ static bool caca_frame(void *data, const void *frame,
             height,
             caca->dither, frame_to_copy);
 
-      buffer = caca_export_canvas_to_memory(caca->cv, "caca", &len);
+      buffer = caca_export_canvas_to_memory(caca->cv, "caca", &_len);
 
       if (buffer)
       {
-         if (len)
+         if (_len > 0)
             caca_refresh_display(caca->display);
 
          free(buffer);
