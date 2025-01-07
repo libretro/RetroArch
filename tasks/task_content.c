@@ -581,8 +581,8 @@ static bool content_file_list_set_info(
           * searching related content. For archived content,
           * this is the basename of the archive file without
           * extension */
-         fill_pathname(name, path_basename(archive_path), "",
-               sizeof(name));
+         fill_pathname_base(name, archive_path, sizeof(name));
+         path_remove_extension(name);
 
          file_info->file_in_archive = true;
       }
@@ -595,8 +595,8 @@ static bool content_file_list_set_info(
          /* For uncompressed content, 'canonical' name/id
           * is the basename of the content file, without
           * extension */
-         fill_pathname(name, path_basename(path), "",
-               sizeof(name));
+         fill_pathname_base(name, path, sizeof(name));
+         path_remove_extension(name);
       }
 
       if (!string_is_empty(dir))
