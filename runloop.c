@@ -4849,28 +4849,44 @@ void runloop_path_fill_names(void)
       return;
 
    if (string_is_empty(runloop_st->name.ups))
-      fill_pathname(runloop_st->name.ups,
+    {
+      size_t len = strlcpy(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
-            ".ups",
             sizeof(runloop_st->name.ups));
+      strlcpy(runloop_st->name.ups       + len,
+            ".ups",
+            sizeof(runloop_st->name.ups) - len);
+   }
 
    if (string_is_empty(runloop_st->name.bps))
-      fill_pathname(runloop_st->name.bps,
+   {
+      size_t len = strlcpy(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
-            ".bps",
             sizeof(runloop_st->name.bps));
+      strlcpy(runloop_st->name.bps       + len,
+            ".bps",
+            sizeof(runloop_st->name.bps) - len);
+   }
 
    if (string_is_empty(runloop_st->name.ips))
-      fill_pathname(runloop_st->name.ips,
+   {
+      size_t len = strlcpy(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
-            ".ips",
             sizeof(runloop_st->name.ips));
+      strlcpy(runloop_st->name.ips       + len,
+            ".ips",
+            sizeof(runloop_st->name.ips) - len);
+   }
 
    if (string_is_empty(runloop_st->name.xdelta))
-      fill_pathname(runloop_st->name.xdelta,
+   {
+      size_t len = strlcpy(runloop_st->name.xdelta,
             runloop_st->runtime_content_path_basename,
-            ".xdelta",
             sizeof(runloop_st->name.xdelta));
+      strlcpy(runloop_st->name.xdelta       + len,
+            ".xdelta",
+            sizeof(runloop_st->name.xdelta) - len);
+   }
 }
 
 
