@@ -162,13 +162,17 @@ bool pipewire_core_init(pipewire_core_t *pw, const char *loop_name)
    pw_thread_loop_lock(pw->thread_loop);
 
    pw->core = pw_context_connect(pw->ctx, NULL, 0);
-   if(!pw->core)
-      return false;
+   if (!pw->core)
+      goto unlock;
 
    if (pw_core_add_listener(pw->core,
                             &pw->core_listener,
                             &core_events, pw) < 0)
-      return false;
+      goto unlock;
 
    return true;
+
+unlock:
+   pw_thread_loop_unlock(pw->thread_loop);
+   return false;
 }
