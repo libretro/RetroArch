@@ -1325,13 +1325,13 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (gcs)
             {
                int i;
-               wchar_t wstr[4]={0,};
-               int len1 = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
-               wstr[2]  = wstr[1];
-               wstr[1]  = 0;
-               if ((len1 <= 0) || (len1 > 4))
+               wchar_t wstr[4] = {0,};
+               LONG _len       = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
+               wstr[2]         = wstr[1];
+               wstr[1]         = 0;
+               if ((_len <= 0) || (_len > 4))
                   break;
-               for (i = 0; i < len1; i = i + 2)
+               for (i = 0; i < _len; i = i + 2)
                {
                   size_t __len;
                   char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
@@ -1373,8 +1373,10 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                keysym |= 0x80;
 
             /* tell the driver about shift and alt key events */
-            if (keysym == 0x2A/*DIK_LSHIFT*/ || keysym == 0x36/*DIK_RSHIFT*/
-                     || keysym == 0x38/*DIK_LMENU*/ || keysym == 0xB8/*DIK_RMENU*/)
+            if (        keysym == 0x2A/*DIK_LSHIFT*/
+                     || keysym == 0x36/*DIK_RSHIFT*/
+                     || keysym == 0x38/*DIK_LMENU*/
+                     || keysym == 0xB8/*DIK_RMENU*/)
             {
                void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
                if (input_data && dinput_handle_message(input_data,
@@ -2173,21 +2175,21 @@ static void win32_localize_menu(HMENU menu)
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            size_t len1     = strlen(new_label);
-            size_t buf_size = len1 + __len + 2;
+            size_t _len     = strlen(new_label);
+            size_t buf_size = _len + __len + 2;
             new_label_text  = (char*)malloc(buf_size);
 
             if (new_label_text)
             {
-               size_t _len;
+               size_t __len;
                new_label2              = new_label_text;
-               _len                    = strlcpy(new_label_text, new_label,
+               __len                   = strlcpy(new_label_text, new_label,
                      buf_size);
-               new_label_text[  _len]  = '\t';
-               new_label_text[++_len]  = '\0';
-               strlcpy(new_label_text + _len, meta_key_name, buf_size - _len);
+               new_label_text[  __len] = '\t';
+               new_label_text[++__len] = '\0';
+               strlcpy(new_label_text + __len, meta_key_name, buf_size - __len);
                /* Make first character of shortcut name uppercase */
-               new_label_text[len1 + 1] = toupper(new_label_text[len1 + 1]);
+               new_label_text[_len + 1] = toupper(new_label_text[_len + 1]);
             }
          }
 

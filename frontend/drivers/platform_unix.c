@@ -2353,11 +2353,11 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
 static void frontend_unix_exec(const char *path, bool should_load_content)
 {
    char *newargv[]    = { NULL, NULL };
-   size_t len         = strlen(path);
+   size_t _len        = strlen(path);
 
-   newargv[0] = (char*)malloc(len);
+   newargv[0] = (char*)malloc(_len);
 
-   strlcpy(newargv[0], path, len);
+   strlcpy(newargv[0], path, _len);
 
    execv(path, newargv);
 }
