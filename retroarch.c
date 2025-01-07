@@ -6212,6 +6212,9 @@ static void retroarch_print_features(void)
 #ifdef HAVE_NETWORKING
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
 #endif
+#ifdef HAVE_SSL
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SSL,              "SSL",            "SSL Support");
+#endif
 #ifdef HAVE_LIBUSB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
 #endif
