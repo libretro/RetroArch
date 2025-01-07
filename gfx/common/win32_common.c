@@ -1333,14 +1333,14 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
                   break;
                for (i = 0; i < len1; i = i + 2)
                {
-                  size_t len2;
+                  size_t __len;
                   char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
                   if (!utf8)
                      continue;
-                  len2         = strlen(utf8) + 1;
-                  if (len2 >= 1 && len2 <= 3)
+                  __len         = strlen(utf8) + 1;
+                  if (__len >= 1 && __len <= 3)
                   {
-                     if (len2 >= 2)
+                     if (__len >= 2)
                         utf8[3] = (gcs) | (gcs >> 4);
                      input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD);
                   }
@@ -2137,7 +2137,7 @@ static void win32_localize_menu(HMENU menu)
       if (label_enum != MSG_UNKNOWN)
       {
          int len;
-         size_t len2;
+         size_t __len;
 #ifndef LEGACY_WIN32
          wchar_t* new_label_unicode = NULL;
 #else
@@ -2156,25 +2156,25 @@ static void win32_localize_menu(HMENU menu)
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
          {
             meta_key_name = "Ctrl+O";
-            len2          = STRLEN_CONST("Ctrl+O");
+            __len         = STRLEN_CONST("Ctrl+O");
          }
          else if (label_enum ==
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
          {
             meta_key_name = "Alt+Enter";
-            len2          = STRLEN_CONST("Alt+Enter");
+            __len        = STRLEN_CONST("Alt+Enter");
          }
          else if (meta_key != 0)
          {
             meta_key_name = win32_meta_key_to_name(meta_key);
-            len2          = strlen(meta_key_name);
+            __len        = strlen(meta_key_name);
          }
 
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
             size_t len1     = strlen(new_label);
-            size_t buf_size = len1 + len2 + 2;
+            size_t buf_size = len1 + __len + 2;
             new_label_text  = (char*)malloc(buf_size);
 
             if (new_label_text)

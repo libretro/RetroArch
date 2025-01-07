@@ -997,7 +997,7 @@ static void wl_data_device_handle_drop(void *data,
    int pipefd[2];
    void *buffer;
    size_t length;
-   size_t len                 = 0;
+   size_t _len                = 0;
    ssize_t read               = 0;
    char *line                 = NULL;
    char file_list[512][512]   = { 0 };
@@ -1030,7 +1030,7 @@ static void wl_data_device_handle_drop(void *data,
    }
 
    RARCH_WARN("[Wayland]: Files opp:\n");
-   while ((read = getline(&line,  &len, stream)) != -1)
+   while ((read = getline(&line,  &_len, stream)) != -1)
    {
       line[strcspn(line, "\r\n")] = 0;
       RARCH_DBG("[Wayland]: > \"%s\"\n", line);
