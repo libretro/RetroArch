@@ -2409,6 +2409,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_NETWORKING
          {SUPPORTS_NETPLAY     ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_NETPLAY_SUPPORT},
 #endif
+#ifdef HAVE_SSL
+         {SUPPORTS_SSL     ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT},
+#endif
 #ifdef HAVE_V4L2
          {SUPPORTS_V4L2        ,    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT},
 #endif
