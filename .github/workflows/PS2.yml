@@ -36,7 +36,7 @@ jobs:
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: RA-PS2-dummy-${{ steps.slug.outputs.sha8 }}
         path: |
