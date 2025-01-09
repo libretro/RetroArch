@@ -58,6 +58,7 @@ struct http_socket_state_t
    void *ssl_ctx;
    int fd;
    bool ssl;
+   bool connected;
 };
 
 struct http_t
@@ -65,6 +66,7 @@ struct http_t
    bool error;
 
    struct http_socket_state_t sock_state;
+   bool request_sent;
 
    struct request
    {
@@ -718,74 +720,6 @@ static void net_http_dns_cache_add(const char *domain, struct addrinfo *addr)
    dns_cache = entry;
 }
 
-static int net_http_new_socket(struct http_t *state)
-{
-   struct addrinfo *addr = NULL, *next_addr = NULL;
-   struct dns_cache_entry *entry;
-   int fd;
-
-   entry = net_http_dns_cache_find(state->request.domain);
-   if (entry)
-   {
-      addr = entry->addr;
-      fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-   }
-   else
-   {
-      fd = socket_init((void**)&addr, state->request.port, state->request.domain, SOCKET_TYPE_STREAM, 0);
-      if (addr)
-         net_http_dns_cache_add(state->request.domain, addr);
-   }
-
-#ifdef HAVE_SSL
-   if (state->sock_state.ssl)
-   {
-      if (fd < 0)
-         goto done;
-
-      if (!(state->sock_state.ssl_ctx = ssl_socket_init(fd, state->request.domain)))
-      {
-         socket_close(fd);
-         fd = -1;
-         goto done;
-      }
-
-      /* TODO: Properly figure out what's going wrong when the newer
-         timeout/poll code interacts with mbed and winsock
-         https://github.com/libretro/RetroArch/issues/14742 */
-
-      /* Temp fix, don't use new timeout/poll code for cheevos http requests */
-         bool timeout = true;
-#ifdef __WIN32
-      if (!strcmp(state->request.domain, "retroachievements.org"))
-         timeout = false;
-#endif
-
-      if (ssl_socket_connect(state->sock_state.ssl_ctx, addr, timeout, true) < 0)
-      {
-         socket_close(fd);
-         fd = -1;
-         goto done;
-      }
-   }
-   else
-#endif
-      for (next_addr = addr; fd >= 0; fd = socket_next((void**)&next_addr))
-      {
-         if (socket_connect_with_timeout(fd, next_addr, 5000))
-            break;
-
-         socket_close(fd);
-      }
-
-#ifdef HAVE_SSL
-done:
-#endif
-   state->sock_state.fd = fd;
-
-   return fd;
-}
-
 struct http_t *net_http_new(struct http_connection_t *conn)
 {
    struct http_t *state;
@@ -823,6 +757,92 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 }
 
+static int net_http_new_socket(struct http_t *state)
+{
+   struct addrinfo *addr = NULL;
+   struct dns_cache_entry *entry;
+   int fd;
+
+   entry = net_http_dns_cache_find(state->request.domain);
+   if (entry)
+   {
+      addr = entry->addr;
+      fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+   }
+   else
+   {
+      fd = socket_init((void**)&addr, state->request.port, state->request.domain, SOCKET_TYPE_STREAM, 0);
+      if (addr)
+         net_http_dns_cache_add(state->request.domain, addr);
+   }
+
+   state->sock_state.fd = fd;
+   state->sock_state.connected = false;
+   return fd;
+}
+
+static bool net_http_connect(struct http_t *state)
+{
+   struct addrinfo *addr = NULL, *next_addr = NULL;
+   struct dns_cache_entry *entry = net_http_dns_cache_find(state->request.domain);
+   /* we just used/added this in _new_socket above, if it's not there it's a big bug */
+   addr = entry->addr;
+
+#ifdef HAVE_SSL
+   if (state->sock_state.ssl)
+   {
+      if (state->sock_state.fd < 0)
+         return false;
+
+      if (!(state->sock_state.ssl_ctx = ssl_socket_init(state->sock_state.fd, state->request.domain)))
+      {
+         socket_close(state->sock_state.fd);
+         state->sock_state.fd = -1;
+         return false;
+      }
+
+      /* TODO: Properly figure out what's going wrong when the newer
+         timeout/poll code interacts with mbed and winsock
+         https://github.com/libretro/RetroArch/issues/14742 */
+
+      /* Temp fix, don't use new timeout/poll code for cheevos http requests */
+         bool timeout = true;
+#ifdef __WIN32
+      if (!strcmp(state->request.domain, "retroachievements.org"))
+         timeout = false;
+#endif
+
+      if (ssl_socket_connect(state->sock_state.ssl_ctx, addr, timeout, true) < 0)
+      {
+         socket_close(state->sock_state.fd);
+         state->sock_state.fd = -1;
+         return false;
+      }
+      else
+      {
+         state->sock_state.connected = true;
+         return true;
+      }
+   }
+   else
+#endif
+   {
+      for (next_addr = addr; state->sock_state.fd >= 0; state->sock_state.fd = socket_next((void**)&next_addr))
+      {
+         if (socket_connect_with_timeout(state->sock_state.fd, next_addr, 5000))
+         {
+            state->sock_state.connected = true;
+            return true;
+            break;
+         }
+
+         socket_close(state->sock_state.fd);
+      }
+      state->sock_state.fd = -1;
+      return false;
+   }
+}
+
 static void net_http_send_str(
       struct http_t *state, const char *text, size_t text_size)
 {
@@ -844,20 +864,9 @@ static void net_http_send_str(
    }
 }
 
-static bool net_http_start(struct http_t *state)
+static bool net_http_send_request(struct http_t *state)
 {
-   struct request *request;
-
-   if (!state || state->error)
-      return true;
-
-   if (net_http_new_socket(state) < 0)
-   {
-      state->error = true;
-      return true;
-   }
-
-   request = &state->request;
+   struct request *request = &state->request;
 
    /* This is a bit lazy, but it works. */
    if (request->method)
@@ -947,6 +956,7 @@ static bool net_http_start(struct http_t *state)
    if (request->postdata && request->contentlength)
       net_http_send_str(state, request->postdata, request->contentlength);
 
+   state->request_sent = true;
    return state->error;
 }
 
@@ -983,7 +993,21 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       return true;
 
    if (state->sock_state.fd < 0 && state->response.part < P_DONE)
-      return net_http_start(state);
+   {
+      if (net_http_new_socket(state) < 0)
+         state->error = true;
+      return state->error;
+   }
+
+   if (!state->sock_state.connected)
+   {
+      if (!net_http_connect(state))
+         state->error = true;
+      return state->error;
+   }
+
+   if (!state->request_sent)
+      return net_http_send_request(state);
 
    response = &state->response;
 
