@@ -7,7 +7,10 @@
 This is a fork of RetroArch that supports overriding player input with ML models.
 In the Quick Menu you can turn on the override feature for p1 or p2. If you want to do AI vs AI fights just override both players.
 More details on how to use the features here:
+
 [https://www.videogames.ai/2024/07/24/RetroArch-Machine-Learning-models](https://www.videogames.ai/2024/07/24/RetroArch-Machine-Learning-models)
+
+[![RetroArch and Pytorch](https://img.youtube.com/vi/hkOcxJvJVjk/0.jpg)](https://www.youtube.com/watch?v=hkOcxJvJVjk)
 
 ## Build on Linux
 git clone https://github.com/MatPoliquin/stable-retro-scripts
