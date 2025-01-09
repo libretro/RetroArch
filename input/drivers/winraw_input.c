@@ -128,14 +128,14 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
    char name[256];
    UINT name_size = sizeof(name);
 
-   name[0]        = '\0';
+   name[0] = '\0';
 
    for (i = 0; i < mouse_cnt; ++i)
    {
       UINT r = GetRawInputDeviceInfoA(mice[i].hnd, RIDI_DEVICENAME,
             name, &name_size);
       if (r == (UINT)-1 || r == 0)
-         name[0]   = '\0';
+         name[0] = '\0';
 
       if (name[0])
       {
@@ -146,7 +146,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
          if (hhid != INVALID_HANDLE_VALUE)
          {
             wchar_t prod_buf[128];
-            prod_buf[0]  = '\0';
+            prod_buf[0] = '\0';
             if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
                wcstombs(name, prod_buf, sizeof(name));
          }
@@ -158,7 +158,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       input_config_set_mouse_display_name(i, name);
 
-      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i, name);
+      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i + 1, name);
    }
 }
 
@@ -203,18 +203,22 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       }
    }
 
+   *mouse_cnt = mouse_cnt_r;
+
    /* count is already checked, so this is safe */
    for (i = mouse_cnt_r = 0; i < dev_cnt; ++i)
    {
       if (devs[i].dwType == RIM_TYPEMOUSE)
-         mice_r[mouse_cnt_r++].hnd = devs[i].hDevice;
+      {
+         mouse_cnt_r++;
+         mice_r[*mouse_cnt - mouse_cnt_r].hnd = devs[i].hDevice;
+      }
    }
+
+   *mice      = mice_r;
 
    winraw_log_mice_info(mice_r, mouse_cnt_r);
    free(devs);
-
-   *mice      = mice_r;
-   *mouse_cnt = mouse_cnt_r;
 
    return true;
 
