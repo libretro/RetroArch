@@ -4629,7 +4629,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Specifies whether to ignore core info savestate capabilities, allowing to experiment with related features (run ahead, rewind, etc)."
+   "Specifies whether to ignore core info save state capabilities, allowing to experiment with related features (run ahead, rewind, etc)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4873,7 +4873,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatically make a save state when content is closed. RetroArch will automatically load this save state if 'Load State Automatically' is enabled."
+   "Automatically make a save state when content is closed. This save state is loaded on startup if 'Auto Load State' is enabled."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -14176,10 +14176,6 @@ MSG_HASH(
    "Autodetect"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Auto-loading save state from"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Capabilities"
    )
@@ -15274,6 +15270,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Failed to close virtual disc tray."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Auto-loading save state from"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -16559,7 +16559,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the savestate date."
+   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the save state date."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
