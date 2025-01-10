@@ -1,4 +1,11 @@
 # Future
+- AUDIO/PIPEWIRE: Fix app launch when pipewire service is stopped
+- GENERAL: Fix save state auto increment
+- GENERAL: Fix softpatching with periods/dots in the file name
+- GENERAL: Fix compilation with --enable-videocore
+- MENU: Add SSL support to the information list
+- IOS: Ensure webserver notice can be dismissed
+- VIDEO/SHADERS: Allow exact refresh rate sync with shader subframes
 
 # 1.20.0
 - AUDIO: Fix audio handling in case of RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE
@@ -46,7 +53,7 @@
 - INPUT/UDEV: Enable mouse buttons 4 and 5
 - INPUT/WAYLAND: Enable horizontal scroll and mouse buttons 4 and 5
 - INPUT/WAYLAND: Simulate lightgun input for cores
-- INPUT/WAYLAND: Support for cursor-shape-v1 and content-type-v1 protocol
+- INPUT/WAYLAND: Support for cursor-shape-v1 protocol
 - INPUT/X11: Enable mouse buttons 4 and 5
 - iOS: Enable vibration by default
 - iOS: Better handling of physical mice/magic keyboard trackpad
@@ -114,6 +121,7 @@
 - VIDEO/VULKAN: Fix Vulkan window freezes when swapchain becomes suboptimal
 - VIDEO/VULKAN: Prefer IMMEDIATE mode without vsync
 - VIDEO/X11: Support inhibit of Xss screensaver
+- VIDEO/WAYLAND: Support for content-type-v1 protocol
 - VITA: Enable analog L2/R2 triggers when a DS3 controller is used with PS Vita
 - WAYLAND: Fix segfault when relative pointer is not supported
 - WAYLAND: Use reverse DNS name for desktop file and icon
