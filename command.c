@@ -1633,7 +1633,11 @@ void command_event_set_savestate_auto_index(settings_t *settings)
    unsigned max_idx          = 0;
    bool savestate_auto_index = settings->bools.savestate_auto_index;
    if (!savestate_auto_index)
+   {
+      /* Reset savestate index to 0 when loading content. */
+      configuration_set_int(settings, settings->ints.state_slot, 0);
       return;
+   }
    scan_states(settings, &max_idx, NULL);
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
    RARCH_LOG("[State]: %s: #%d.\n",
