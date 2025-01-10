@@ -36,6 +36,9 @@
 #include <lists/string_list.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 enum response_part
 {
@@ -113,14 +116,19 @@ struct http_connection_t
 struct dns_cache_entry
 {
    char *domain;
+   int port;
    struct addrinfo *addr;
    retro_time_t timestamp;
+   bool valid;
    struct dns_cache_entry *next;
 };
 
 static struct dns_cache_entry *dns_cache = NULL;
 /* 5 min timeout, in usec */
 static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 60 /* s/min */ * 5 /* min */;
+#ifdef HAVE_THREADS
+static slock_t *dns_cache_lock = NULL;
+#endif
 
 /**
  * net_http_urlencode:
@@ -689,7 +697,7 @@ static void net_http_dns_cache_remove_expired(void)
    }
 }
 
-static struct dns_cache_entry *net_http_dns_cache_find(const char *domain)
+static struct dns_cache_entry *net_http_dns_cache_find(const char *domain, int port)
 {
    struct dns_cache_entry *entry;
 
@@ -698,7 +706,7 @@ static struct dns_cache_entry *net_http_dns_cache_find(const char *domain)
    entry = dns_cache;
    while (entry)
    {
-      if (string_is_equal(entry->domain, domain))
+      if (port == entry->port && string_is_equal(entry->domain, domain))
       {
          entry->timestamp = cpu_features_get_time_usec();
          return entry;
@@ -708,16 +716,19 @@ static struct dns_cache_entry *net_http_dns_cache_find(const char *domain)
    return NULL;
 }
 
-static void net_http_dns_cache_add(const char *domain, struct addrinfo *addr)
+static struct dns_cache_entry *net_http_dns_cache_add(const char *domain, int port, struct addrinfo *addr)
 {
    struct dns_cache_entry *entry = (struct dns_cache_entry*)calloc(1, sizeof(*entry));
    if (!entry)
-      return;
+      return NULL;
    entry->domain = strdup(domain);
+   entry->port = port;
    entry->addr = addr;
    entry->timestamp = cpu_features_get_time_usec();
+   entry->valid = (addr != NULL);
    entry->next = dns_cache;
    dns_cache = entry;
+   return entry;
 }
 
 struct http_t *net_http_new(struct http_connection_t *conn)
@@ -757,34 +768,126 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 }
 
-static int net_http_new_socket(struct http_t *state)
+static void net_http_resolve(void *data)
+{
+   struct dns_cache_entry *entry = (struct dns_cache_entry*)data;
+   struct addrinfo hints         = {0};
+   struct addrinfo *addr         = NULL;
+   char *domain;
+   int port;
+   char port_buf[6];
+#if defined(HAVE_SOCKET_LEGACY) || defined(WIIU)
+   int family                    = AF_INET;
+#else
+   int family                    = AF_UNSPEC;
+#endif
+
+   hints.ai_family = family;
+   hints.ai_socktype = SOCK_STREAM;
+   hints.ai_flags |= AI_NUMERICSERV;
+
+#ifdef HAVE_THREADS
+   slock_lock(dns_cache_lock);
+#endif
+   domain = strdup(entry->domain);
+   port = entry->port;
+#ifdef HAVE_THREADS
+   slock_unlock(dns_cache_lock);
+#endif
+
+   if (!network_init())
+   {
+#ifdef HAVE_THREADS
+      slock_lock(dns_cache_lock);
+#endif
+      entry->valid = true;
+      entry->addr = NULL;
+#ifdef HAVE_THREADS
+      slock_unlock(dns_cache_lock);
+#endif
+      free(domain);
+      return;
+   }
+
+   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+
+   getaddrinfo_retro(domain, port_buf, &hints, &addr);
+   free(domain);
+
+#ifdef HAVE_THREADS
+   slock_lock(dns_cache_lock);
+#endif
+   entry->valid = true;
+   entry->addr = addr;
+#ifdef HAVE_THREADS
+   slock_unlock(dns_cache_lock);
+#endif
+}
+
+static bool net_http_new_socket(struct http_t *state)
 {
    struct addrinfo *addr = NULL;
    struct dns_cache_entry *entry;
-   int fd;
 
-   entry = net_http_dns_cache_find(state->request.domain);
+#ifdef HAVE_THREADS
+   sthread_t *thread;
+
+   if (!dns_cache_lock)
+      dns_cache_lock = slock_new();
+   slock_lock(dns_cache_lock);
+#endif
+
+   entry = net_http_dns_cache_find(state->request.domain, state->request.port);
    if (entry)
    {
-      addr = entry->addr;
-      fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+      if (entry->valid)
+      {
+         if (!entry->addr)
+         {
+            slock_unlock(dns_cache_lock);
+            return false;
+         }
+         addr = entry->addr;
+         state->sock_state.fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+         state->sock_state.connected = false;
+#ifdef HAVE_THREADS
+         /* still waiting on thread */
+         slock_unlock(dns_cache_lock);
+#endif
+         return (state->sock_state.fd >= 0);
+      }
+      else
+      {
+#ifdef HAVE_THREADS
+         /* still waiting on thread */
+         slock_unlock(dns_cache_lock);
+#endif
+         return true;
+      }
    }
    else
    {
-      fd = socket_init((void**)&addr, state->request.port, state->request.domain, SOCKET_TYPE_STREAM, 0);
-      if (addr)
-         net_http_dns_cache_add(state->request.domain, addr);
+      entry = net_http_dns_cache_add(state->request.domain, state->request.port, NULL);
+#ifdef HAVE_THREADS
+      /* create the entry for it as an indicator that the request is underway */
+      thread = sthread_create(net_http_resolve, entry);
+      sthread_detach(thread);
+#else
+      net_http_resolve(state);
+#endif
    }
 
-   state->sock_state.fd = fd;
-   state->sock_state.connected = false;
-   return fd;
+#ifdef HAVE_THREADS
+   slock_unlock(dns_cache_lock);
+#endif
+
+   return true;
 }
 
 static bool net_http_connect(struct http_t *state)
 {
    struct addrinfo *addr = NULL, *next_addr = NULL;
-   struct dns_cache_entry *entry = net_http_dns_cache_find(state->request.domain);
+   struct dns_cache_entry *entry = net_http_dns_cache_find(state->request.domain, state->request.port);
    /* we just used/added this in _new_socket above, if it's not there it's a big bug */
    addr = entry->addr;
 
@@ -994,7 +1097,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    if (state->sock_state.fd < 0 && state->response.part < P_DONE)
    {
-      if (net_http_new_socket(state) < 0)
+      if (!net_http_new_socket(state))
          state->error = true;
       return state->error;
    }
