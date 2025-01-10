@@ -539,6 +539,7 @@ static void task_cloud_sync_backup_file(struct item_file *file)
                                     CS_FILE_KEY(file),
                                     sizeof(new_path));
    strftime(new_path + len, sizeof(new_path) - len, "-%y%m%d-%H%M%S", &tm_);
+   pathname_conform_slashes_to_os(new_path);
    fill_pathname_basedir(new_dir, new_path, sizeof(new_dir));
    path_mkdir(new_dir);
    filestream_rename(file->path, new_path);
@@ -583,7 +584,8 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    struct string_list *dirlist     = task_cloud_sync_directory_map();
    struct item_file   *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char         *key         = CS_FILE_KEY(server_file);
-   const char         *path        = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
+   /* the key from the server file is in "portable" format, use '/' */
+   const char         *path        = strchr(key, '/') + 1;
    settings_t         *settings = config_get_ptr();
 
    /* we're just fetching a file the server has, we can update this now */
@@ -604,6 +606,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
       if (!string_starts_with(key, dirlist->elems[i].data))
          continue;
       fill_pathname_join_special(filename, dirlist->elems[i].userdata, path, sizeof(filename));
+      pathname_conform_slashes_to_os(filename);
       break;
    }
    if (string_is_empty(filename))
