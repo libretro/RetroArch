@@ -1275,11 +1275,11 @@ bool command_event_save_auto_state(void)
          sizeof(savestate_name_auto) - _len);
 
    if (content_auto_save_state((const char*)savestate_name_auto))
-	   RARCH_LOG("%s \"%s\" %s.\n",
+	   RARCH_LOG("[State]: %s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
 			   savestate_name_auto, "succeeded");
    else
-	   RARCH_LOG("%s \"%s\" %s.\n",
+	   RARCH_LOG("[State]: %s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
 			   savestate_name_auto, "failed");
 
@@ -1582,8 +1582,8 @@ static void scan_states(settings_t *settings,
          loa_idx = gap_idx - 1;
    }
 
-   RARCH_DBG("[State]: savestate scanning finished, used slots (in range): "
-             "%d (%d), max:%d, load index %d, gap index %d, delete index %d\n",
+   RARCH_DBG("[State]: Save state scanning finished, used slots (in range): "
+             "%d (%d), max:%d, load index %d, gap index %d, delete index %d.\n",
              cnt, cnt_in_range, max_idx, loa_idx, gap_idx, del_idx);
 
    if (last_index)
@@ -1636,7 +1636,7 @@ void command_event_set_savestate_auto_index(settings_t *settings)
       return;
    scan_states(settings, &max_idx, NULL);
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
-   RARCH_LOG("[State]: %s: #%d\n",
+   RARCH_LOG("[State]: %s: #%d.\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
          max_idx);
 }
@@ -1658,13 +1658,13 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
    if (!string_is_empty(state_to_delete))
    {
       filestream_delete(state_to_delete);
-      RARCH_DBG("[State]: garbage collect, deleting \"%s\" \n",state_to_delete);
+      RARCH_DBG("[State]: Garbage collect, deleting \"%s\".\n",state_to_delete);
       /* Construct the save state thumbnail name
        * and delete that one as well. */
       i = strlen(state_to_delete);
       strlcpy(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
       filestream_delete(state_to_delete);
-      RARCH_DBG("[State]: garbage collect, deleting \"%s\" \n",state_to_delete);
+      RARCH_DBG("[State]: Garbage collect, deleting \"%s\".\n",state_to_delete);
    }
 }
 
@@ -2137,12 +2137,12 @@ bool command_event_main_state(unsigned cmd)
               input_driver_state_t *input_st   = input_state_get_ptr();
               if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
               {
-                 RARCH_ERR("[Load] [Movie] Can't undo load state during movie record\n");
+                 RARCH_ERR("[State]: Can't undo load state during movie record.\n");
                  return false;
               }
               if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
               {
-                 RARCH_LOG("[Load] [Movie] Undo load state during movie playback, halting playback\n");
+                 RARCH_LOG("[State]: Undo load state during movie playback, halting playback.\n");
                  movie_stop(input_st);
               }
 #endif
