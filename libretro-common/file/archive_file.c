@@ -50,7 +50,7 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
-   attr.i = 0;
+   attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
 
    if (valid_exts)
    {
@@ -80,8 +80,6 @@ static int file_archive_get_file_list_cb(
             string_list_deinitialize(&ext_list);
             return -1;
          }
-
-         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
       }
 
       string_list_deinitialize(&ext_list);
