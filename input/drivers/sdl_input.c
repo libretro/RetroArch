@@ -733,8 +733,8 @@ static bool sdl_input_set_sensor_state (void *data, unsigned port, enum retro_se
    return true;
 }
 static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id) {
-#if SDL_SUPPORT_SENSORS
    sdl_input_t * sdl = (sdl_input_t *)data;
+#if SDL_SUPPORT_SENSORS
    SDL_GameController * gamepad=NULL;
    SDL_Sensor * sensor=NULL;
    SDL_SensorType sensor_type;
