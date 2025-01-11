@@ -55,9 +55,9 @@
 
 namespace
 {
-   /* UWP deals with paths containing / instead of 
+   /* UWP deals with paths containing / instead of
     * \ way worse than normal Windows */
-   /* and RetroArch may sometimes mix them 
+   /* and RetroArch may sometimes mix them
     * (e.g. on archive extraction) */
    static void windowsize_path(wchar_t* path)
    {
@@ -336,7 +336,7 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     if (mode == RETRO_VFS_FILE_ACCESS_READ)
         creationDisposition = OPEN_EXISTING;
     else
-        creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 
+        creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0
            ? OPEN_ALWAYS
            : CREATE_ALWAYS;
 
@@ -434,9 +434,9 @@ int retro_vfs_mkdir_impl(const char* dir)
     return uwp_mkdir_impl(std::filesystem::path(dir));
 }
 
-/* The first run paramater is used to avoid error checking 
+/* The first run parameter is used to avoid error checking
  * when doing recursion.
- * Unlike the initial implementation, this can move folders 
+ * Unlike the initial implementation, this can move folders
  * even empty ones when you want to move a directory structure.
  *
  * This will fail even if a single file cannot be moved.
@@ -460,8 +460,8 @@ static int uwp_move_path(
                  GetFileExInfoStandard, &lpFileInfo))
         {
             /* Check that the files attributes are not null or empty */
-            if (     lpFileInfo.dwFileAttributes 
-                  != INVALID_FILE_ATTRIBUTES 
+            if (     lpFileInfo.dwFileAttributes
+                  != INVALID_FILE_ATTRIBUTES
                   && lpFileInfo.dwFileAttributes != 0)
             {
                /* Parent path doesn't exist, so we gotta create it  */
@@ -474,7 +474,7 @@ static int uwp_move_path(
         if (GetFileAttributesExFromAppW(old_path.wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
         {
             /* Check that the files attributes are not null or empty */
-            if (     lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES 
+            if (     lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES
                   && lpFileInfo.dwFileAttributes != 0)
             {
                 /* Check if source path is a dir */
@@ -534,14 +534,14 @@ static int uwp_move_path(
           bool fail = false;
           do
           {
-             if (     wcscmp(findDataResult.cFileName, L".")  != 0 
+             if (     wcscmp(findDataResult.cFileName, L".")  != 0
                    && wcscmp(findDataResult.cFileName, L"..") != 0)
              {
                 std::filesystem::path temp_old = old_path;
                 std::filesystem::path temp_new = new_path;
                 temp_old /= findDataResult.cFileName;
                 temp_new /= findDataResult.cFileName;
-                if (    findDataResult.dwFileAttributes 
+                if (    findDataResult.dwFileAttributes
                       & FILE_ATTRIBUTE_DIRECTORY)
                 {
                    CreateDirectoryFromAppW(temp_new.wstring().c_str(), NULL);
@@ -561,7 +561,7 @@ static int uwp_move_path(
                                (targetfileinfo.dwFileAttributes !=
                                 INVALID_FILE_ATTRIBUTES)
                             && (targetfileinfo.dwFileAttributes != 0)
-                            && (!(targetfileinfo.dwFileAttributes 
+                            && (!(targetfileinfo.dwFileAttributes
                                   & FILE_ATTRIBUTE_DIRECTORY)))
                       {
                          if (DeleteFileFromAppW(temp_new.wstring().c_str()))
@@ -572,7 +572,7 @@ static int uwp_move_path(
                    if (!MoveFileFromAppW(temp_old.wstring().c_str(),
                             temp_new.wstring().c_str()))
                       fail = true;
-                   /* Set ACL - this step sucks or at least used to 
+                   /* Set ACL - this step sucks or at least used to
                     * before I made a whole function
                     * Don't know if we actually "need" to set the ACL
                     * though */
@@ -589,7 +589,7 @@ static int uwp_move_path(
     return 0;
 }
 
-/* C doesn't support default arguments so we wrap it up in a shell to enable 
+/* C doesn't support default arguments so we wrap it up in a shell to enable
  * us to use default arguments.
  * Default arguments mean that we can do better recursion */
 int retro_vfs_file_rename_impl(const char* old_path, const char* new_path)
@@ -634,8 +634,8 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
                }
            }
            free(path_wide);
-           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) 
-              ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY 
+           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+              ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY
               : RETRO_VFS_STAT_IS_VALID;
        }
    }

@@ -131,10 +131,10 @@ static void cue_append_multi_disc_suffix(char * str1, const char *filename)
    }
 }
 
-static int64_t task_database_cue_get_token(intfstream_t *fd, char *token, uint64_t max_len)
+static int64_t task_database_cue_get_token(intfstream_t *fd, char *s, uint64_t len)
 {
-   char *c       = token;
-   int64_t len   = 0;
+   char *c       = s;
+   int64_t _len  = 0;
    int in_string = 0;
 
    for (;;)
@@ -151,32 +151,32 @@ static int64_t task_database_cue_get_token(intfstream_t *fd, char *token, uint64
          case '\t':
          case '\r':
          case '\n':
-            if (c == token)
+            if (c == s)
                continue;
 
             if (!in_string)
             {
                *c = '\0';
-               return len;
+               return _len;
             }
             break;
          case '\"':
-            if (c == token)
+            if (c == s)
             {
                in_string = 1;
                continue;
             }
 
             *c = '\0';
-            return len;
+            return _len;
       }
 
-      len++;
+      _len++;
       c++;
-      if (len == (int64_t)max_len)
+      if (_len == (int64_t)len)
       {
          *c = '\0';
-         return len;
+         return _len;
       }
    }
 }
@@ -456,7 +456,7 @@ int detect_psp_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    return false;
 }
 
-int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+size_t detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    char region_id;
    char pre_game_id[20];
@@ -465,18 +465,18 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
    /* Load raw serial or quit */
    if (intfstream_seek(fd, 0, SEEK_SET) < 0)
-      return false;
+      return 0;
 
    if (intfstream_read(fd, raw_game_id, 4) <= 0)
-      return false;
+      return 0;
 
    if (     string_is_equal_fast(raw_game_id, "RVZ", STRLEN_CONST("RVZ"))
          || string_is_equal_fast(raw_game_id, "WIA", STRLEN_CONST("WIA")))
    {
       if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
-         return false;
+         return 0;
       if (intfstream_read(fd, raw_game_id, 4) <= 0)
-         return false;
+         return 0;
    }
 
    raw_game_id[4] = '\0';
@@ -487,26 +487,18 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 #ifdef DEBUG
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
 #endif
-      return false;
+      return 0;
    }
 
    /** convert raw gamecube serial to redump serial.
    not enough is known about the disc data to properly
    convert every raw serial to redump serial.  it will
-   only fail with the following excpetions: the
+   only fail with the following exceptions: the
    subregions of europe P-UKV, P-AUS, X-UKV, X-EUU
    will not match redump.**/
 
    /** insert prefix **/
-   pre_game_id[  _len] = 'D';
-   pre_game_id[++_len] = 'L';
-   pre_game_id[++_len] = '-';
-   pre_game_id[++_len] = 'D';
-   pre_game_id[++_len] = 'O';
-   pre_game_id[++_len] = 'L';
-   pre_game_id[++_len] = '-';
-   pre_game_id[++_len] = '\0';
-
+   _len = strlcpy(pre_game_id, "DL-DOL-", sizeof(pre_game_id));
    /** add raw serial **/
    strlcpy(pre_game_id + _len, raw_game_id, sizeof(pre_game_id) - _len);
 
@@ -520,74 +512,38 @@ int detect_gc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    switch (region_id)
    {
       case 'E':
-         s[  _len] = '-';
-         s[++_len] = 'U';
-         s[++_len] = 'S';
-         s[++_len] = 'A';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-USA", len - _len);
+         return _len;
       case 'J':
-         s[  _len] = '-';
-         s[++_len] = 'J';
-         s[++_len] = 'P';
-         s[++_len] = 'N';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-JPN", len - _len);
+         return _len;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
-         s[  _len] = '-';
-         s[++_len] = 'E';
-         s[++_len] = 'U';
-         s[++_len] = 'R';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-EUR", len - _len);
+         return _len;
       case 'Y':
-         s[  _len] = '-';
-         s[++_len] = 'F';
-         s[++_len] = 'A';
-         s[++_len] = 'H';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-FAH", len - _len);
+         return _len;
       case 'D':
-         s[  _len] = '-';
-         s[++_len] = 'N';
-         s[++_len] = 'O';
-         s[++_len] = 'E';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-NOE", len - _len);
+         return _len;
       case 'S':
-         s[  _len] = '-';
-         s[++_len] = 'E';
-         s[++_len] = 'S';
-         s[++_len] = 'P';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-ESP", len - _len);
+         return _len;
       case 'F':
-         s[  _len] = '-';
-         s[++_len] = 'F';
-         s[++_len] = 'R';
-         s[++_len] = 'A';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-FRA", len - _len);
+         return _len;
       case 'I':
-         s[  _len] = '-';
-         s[++_len] = 'I';
-         s[++_len] = 'T';
-         s[++_len] = 'A';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-ITA", len - _len);
+         return _len;
       case 'H':
-         s[  _len] = '-';
-         s[++_len] = 'H';
-         s[++_len] = 'O';
-         s[++_len] = 'L';
-         s[++_len] = '\0';
-         return true;
+         _len += strlcpy(s + _len, "-HOL", len - _len);
+         return _len;
       default:
     break;
    }
 
-   return false;
+   return 0;
 }
 
 int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
@@ -697,7 +653,8 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    }
    else
    {
-      string_trim_whitespace(raw_game_id);
+      string_trim_whitespace_right(raw_game_id);
+      string_trim_whitespace_left(raw_game_id);
       strlcpy(s, raw_game_id, len);
       return true;
    }
@@ -742,7 +699,8 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       return false;
    }
 
-   string_trim_whitespace(raw_game_id);
+   string_trim_whitespace_right(raw_game_id);
+   string_trim_whitespace_left(raw_game_id);
 
    /** Dissect this raw serial into parts **/
    length             = strlen(raw_game_id);
@@ -832,7 +790,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       return false;
    }
 
-   string_trim_whitespace(raw_game_id);
+   string_trim_whitespace_right(raw_game_id);
+   string_trim_whitespace_left(raw_game_id);
    string_replace_multi_space_with_single_space(raw_game_id);
    string_replace_whitespace_with_single_character(raw_game_id, '-');
    length        = strlen(raw_game_id);
@@ -986,32 +945,32 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    return false;
 }
 
-int detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
+size_t detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    char raw_game_id[15];
 
    /* Load raw serial or quit */
    if (intfstream_seek(fd, 0x0000, SEEK_SET) < 0)
-      return false;
+      return 0;
 
    if (intfstream_read(fd, raw_game_id, 6) <= 0)
-      return false;
+      return 0;
 
    if (string_is_equal_fast(raw_game_id, "WBFS", STRLEN_CONST("WBFS")))
    {
       if (intfstream_seek(fd, 0x0200, SEEK_SET) < 0)
-         return false;
+         return 0;
       if (intfstream_read(fd, raw_game_id, 6) <= 0)
-         return false;
+         return 0;
    }
 
    if (     string_is_equal_fast(raw_game_id, "RVZ", STRLEN_CONST("RVZ"))
          || string_is_equal_fast(raw_game_id, "WIA", STRLEN_CONST("WIA")))
    {
       if (intfstream_seek(fd, 0x0058, SEEK_SET) < 0)
-         return false;
+         return 0;
       if (intfstream_read(fd, raw_game_id, 6) <= 0)
-         return false;
+         return 0;
    }
    raw_game_id[6] = '\0';
 
@@ -1022,12 +981,11 @@ int detect_wii_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 #ifdef DEBUG
       RARCH_LOG("[Scanner]: Scrubbing: %s\n", filename);
 #endif
-      return false;
+      return 0;
    }
 
    cue_append_multi_disc_suffix(s, filename);
-   strlcpy(s, raw_game_id, len);
-   return true;
+   return strlcpy(s, raw_game_id, len);
 }
 
 #if 0
@@ -1132,26 +1090,27 @@ static int64_t intfstream_get_file_size(const char *path)
 
 static bool update_cand(int64_t *cand_index, int64_t *last_index,
       uint64_t *largest, char *last_file, uint64_t *offset,
-      size_t *size, char *track_path, uint64_t max_len)
+      size_t *size, char *s, size_t len)
 {
    if (*cand_index != -1)
    {
       if ((uint64_t)(*last_index - *cand_index) > *largest)
       {
+         size_t _len;
          *largest    = *last_index - *cand_index;
-         strlcpy(track_path, last_file, (size_t)max_len);
+         _len        = strlcpy(s, last_file, len);
          *offset     = *cand_index;
          *size       = (size_t)*largest;
          *cand_index = -1;
-         return true;
+         return _len;
       }
       *cand_index    = -1;
    }
-   return false;
+   return 0;
 }
 
 int cue_find_track(const char *cue_path, bool first,
-      uint64_t *offset, size_t *size, char *track_path, uint64_t max_len)
+      uint64_t *offset, size_t *size, char *s, size_t len)
 {
    int rv;
    intfstream_info_t info;
@@ -1203,7 +1162,7 @@ int cue_find_track(const char *cue_path, bool first,
          /* We're changing files since the candidate, update it */
          if (update_cand(&cand_index, &last_index,
                   &largest, last_file, offset,
-                  size, track_path, max_len))
+                  size, s, len))
          {
             rv = 0;
             if (first)
@@ -1228,11 +1187,11 @@ int cue_find_track(const char *cue_path, bool first,
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
-         int m, s, f;
+         int _m, _s, _f;
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
 
-         if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
+         if (sscanf(tmp_token, "%02d:%02d:%02d", &_m, &_s, &_f) < 3)
          {
 #ifdef DEBUG
             RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
@@ -1240,14 +1199,14 @@ int cue_find_track(const char *cue_path, bool first,
             goto error;
          }
 
-         last_index = (size_t) (((m * 60 + s) * 75) + f) * 2352;
+         last_index = (size_t)(((_m * 60 + _s) * 75) + _f) * 2352;
 
          /* If we've changed tracks since the candidate, update it */
          if (     (cand_track != -1)
                && (track != cand_track)
                && update_cand(&cand_index, &last_index, &largest,
                 last_file, offset,
-                size, track_path, max_len))
+                size, s, len))
          {
             rv = 0;
             if (first)
@@ -1270,7 +1229,7 @@ int cue_find_track(const char *cue_path, bool first,
 
    if (update_cand(&cand_index, &last_index,
             &largest, last_file, offset,
-            size, track_path, max_len))
+            size, s, len))
       rv = 0;
 
 clean:
@@ -1291,10 +1250,6 @@ bool cue_next_file(intfstream_t *fd,
       const char *cue_path, char *s, uint64_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
-   char cue_dir[DIR_MAX_LENGTH];
-   cue_dir[0]                 = '\0';
-
-   fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
 
    tmp_token[0] = '\0';
 
@@ -1302,6 +1257,8 @@ bool cue_next_file(intfstream_t *fd,
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
+         char cue_dir[DIR_MAX_LENGTH];
+         fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
          task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(s, cue_dir, tmp_token, (size_t)len);
          return true;
@@ -1311,8 +1268,7 @@ bool cue_next_file(intfstream_t *fd,
    return false;
 }
 
-int gdi_find_track(const char *gdi_path, bool first,
-      char *track_path, uint64_t max_len)
+int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
 {
    intfstream_info_t info;
    char tmp_token[MAX_TOKEN_LEN];
@@ -1384,7 +1340,7 @@ int gdi_find_track(const char *gdi_path, bool first,
 
          if ((uint64_t)file_size > largest)
          {
-            strlcpy(track_path, last_file, (size_t)max_len);
+            strlcpy(s, last_file, len);
 
             rv      = 0;
             largest = file_size;
@@ -1413,8 +1369,8 @@ error:
    return -1;
 }
 
-bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
-      char *path, uint64_t max_len)
+size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
+      char *s, size_t len)
 {
    char tmp_token[MAX_TOKEN_LEN];
 
@@ -1432,15 +1388,15 @@ bool gdi_next_file(intfstream_t *fd, const char *gdi_path,
    /* File name */
    if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
    {
+      size_t _len;
       char gdi_dir[DIR_MAX_LENGTH];
-
       fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
-      fill_pathname_join_special(path, gdi_dir, tmp_token, (size_t)max_len);
+      _len = fill_pathname_join_special(s, gdi_dir, tmp_token, len);
 
       /* Disc offset */
       task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-      return true;
+      return _len;
    }
 
-   return false;
+   return 0;
 }

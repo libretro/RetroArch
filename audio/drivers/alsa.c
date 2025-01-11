@@ -254,10 +254,8 @@ void alsa_device_list_free(void *data, void *array_list_data)
 {
    struct string_list *s = (struct string_list*)array_list_data;
 
-   if (!s)
-      return;
-
-   string_list_free(s);
+   if (s)
+      string_list_free(s);
 }
 
 audio_driver_t audio_alsa = {

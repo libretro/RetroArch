@@ -320,8 +320,7 @@ static const GLfloat white_color[16] = {
  * FORWARD DECLARATIONS
  */
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate);
 
 #ifdef IOS
@@ -906,7 +905,7 @@ static void gl2_raster_font_render_line(gl2_t *gl,
 
       if (font->block)
          video_coord_array_append(&font->block->carr,
-			 &coords, coords.vertices);
+               &coords, coords.vertices);
       else
          gl2_raster_font_draw_vertices(gl, font, &coords);
    }
@@ -1268,39 +1267,40 @@ static void gl2_set_projection(gl2_t *gl,
 }
 
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width,
+      unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings     = config_get_ptr();
-   float device_aspect = (float) viewport_width / (float)viewport_height;
+   float device_aspect      = (float)vp_width / (float)vp_height;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
-            gl->ctx_data, viewport_width, viewport_height);
+            gl->ctx_data, vp_width, vp_height);
 
    if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(),
             (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false,
             false);
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      vp_width     = gl->vp.width;
+      vp_height    = gl->vp.height;
    }
    else if ((gl->flags & GL2_FLAG_KEEP_ASPECT) && !force_full)
    {
       gl->vp.full_height = gl->video_height;
-      video_viewport_get_scaled_aspect2(&gl->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      video_viewport_get_scaled_aspect2(&gl->vp, vp_width, vp_height,
+            false, device_aspect, video_driver_get_aspect_ratio());
+      vp_width      = gl->vp.width;
+      vp_height     = gl->vp.height;
    }
    else
    {
       gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.width  = vp_width;
+      gl->vp.height = vp_height;
    }
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
@@ -1309,12 +1309,12 @@ static void gl2_set_viewport(gl2_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->vp_out_width  = viewport_width;
-      gl->vp_out_height = viewport_height;
+      gl->out_vp_width  = vp_width;
+      gl->out_vp_height = vp_height;
    }
 
 #if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+   RARCH_LOG("Setting viewport @ %ux%u\n", vp_width, vp_height);
 #endif
 }
 
@@ -1580,7 +1580,7 @@ static unsigned gl2_wrap_type_to_enum(enum gfx_wrap_type type)
       case RARCH_WRAP_MIRRORED_REPEAT:
          return GL_MIRRORED_REPEAT;
       default:
-	 break;
+         break;
    }
 
    return 0;
@@ -1783,13 +1783,11 @@ static void gl2_renderchain_recompute_pass_sizes(
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-            {
-               fbo_rect->img_width      = fbo_rect->max_img_width =
+               fbo_rect->img_width = fbo_rect->max_img_width =
                fbo_scale->scale_x * vp_height;
-            } else {
-               fbo_rect->img_width      = fbo_rect->max_img_width =
+            else
+               fbo_rect->img_width = fbo_rect->max_img_width =
                fbo_scale->scale_x * vp_width;
-            }
             break;
       }
 
@@ -1807,13 +1805,11 @@ static void gl2_renderchain_recompute_pass_sizes(
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-            {
-               fbo_rect->img_height      = fbo_rect->max_img_height =
+               fbo_rect->img_height = fbo_rect->max_img_height =
                fbo_scale->scale_y * vp_width;
-            } else {
-            fbo_rect->img_height     = fbo_rect->max_img_height =
-               fbo_scale->scale_y * vp_height;
-            }
+            else
+               fbo_rect->img_height = fbo_rect->max_img_height =
+                  fbo_scale->scale_y * vp_height;
             break;
       }
 
@@ -2391,8 +2387,11 @@ static void gl2_renderchain_readback(
    glReadBuffer(GL_BACK);
 #endif
 
-   glReadPixels(gl->vp.x, gl->vp.y,
-         gl->vp.width, gl->vp.height,
+   glReadPixels(
+         (gl->vp.x > 0) ? gl->vp.x : 0,
+         (gl->vp.y > 0) ? gl->vp.y : 0,
+         (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width,
+         (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
@@ -2766,12 +2765,11 @@ static void gl2_render_overlay(gl2_t *gl)
 }
 #endif
 
-static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+static void gl2_set_viewport_wrapper(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate)
 {
    gl2_t              *gl = (gl2_t*)data;
-   gl2_set_viewport(gl,
-         viewport_width, viewport_height, force_full, allow_rotate);
+   gl2_set_viewport(gl, vp_width, vp_height, force_full, allow_rotate);
 }
 
 /* Shaders */
@@ -2793,6 +2791,9 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    int i;
+   gfx_ctx_flags_t flags;
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
 
    if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
    {
@@ -2808,7 +2809,7 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
       {
          case RARCH_SHADER_CG:
 #ifdef HAVE_CG
-            if (video_shader_is_supported(type))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
                return type;
 #endif
             type = RARCH_SHADER_GLSL;
@@ -2816,7 +2817,7 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
 
          case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
-            if (video_shader_is_supported(type))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                return type;
 #endif
             type = RARCH_SHADER_CG;
@@ -3418,7 +3419,7 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_renderchain_recompute_pass_sizes(
             gl, chain,
             frame_width, frame_height,
-            gl->vp_out_width, gl->vp_out_height);
+            gl->out_vp_width, gl->out_vp_height);
 
       gl2_renderchain_start_render(gl, chain);
    }
@@ -3447,7 +3448,7 @@ static bool gl2_frame(void *data, const void *frame,
                if (     (img_width  > fbo_rect->width)
                      || (img_height > fbo_rect->height))
                {
-                  /* Check proactively since we might suddently
+                  /* Check proactively since we might suddenly
                    * get sizes of tex_w width or tex_h height. */
                   unsigned max                    = img_width > img_height ? img_width : img_height;
                   unsigned pow2_size              = next_pow2(max);
@@ -3556,19 +3557,19 @@ static bool gl2_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   params.data          = gl;
-   params.width         = frame_width;
-   params.height        = frame_height;
-   params.tex_width     = gl->tex_w;
-   params.tex_height    = gl->tex_h;
-   params.out_width     = gl->vp.width;
-   params.out_height    = gl->vp.height;
-   params.frame_counter = (unsigned int)frame_count;
-   params.info          = &gl->tex_info;
-   params.prev_info     = gl->prev_info;
-   params.feedback_info = &feedback_info;
-   params.fbo_info      = NULL;
-   params.fbo_info_cnt  = 0;
+   params.data             = gl;
+   params.width            = frame_width;
+   params.height           = frame_height;
+   params.tex_width        = gl->tex_w;
+   params.tex_height       = gl->tex_h;
+   params.out_width        = gl->vp.width;
+   params.out_height       = gl->vp.height;
+   params.frame_counter    = (unsigned int)frame_count;
+   params.info             = &gl->tex_info;
+   params.prev_info        = gl->prev_info;
+   params.feedback_info    = &feedback_info;
+   params.fbo_info         = NULL;
+   params.fbo_info_cnt     = 0;
 
    gl->shader->set_params(&params, gl->shader_data);
 
@@ -4321,17 +4322,17 @@ static void *gl2_init(const video_info_t *video,
    }
 
    {
-      size_t len    = 0;
+      size_t _len = 0;
 
       if (!string_is_empty(vendor))
       {
-        len                    = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
-        gl->device_str[  len]  = ' ';
-        gl->device_str[++len]  = '\0';
+        _len                   = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
+        gl->device_str[  _len]  = ' ';
+        gl->device_str[++_len]  = '\0';
       }
 
       if (!string_is_empty(renderer))
-        strlcpy(gl->device_str + len, renderer, sizeof(gl->device_str) - len);
+        strlcpy(gl->device_str + _len, renderer, sizeof(gl->device_str) - _len);
 
       if (!string_is_empty(version))
         video_driver_set_gpu_api_version_string(version);
@@ -5069,13 +5070,12 @@ static void gl2_apply_state_changes(void *data)
 }
 
 static void gl2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *width, unsigned *height, char *s, size_t len)
 {
    gl2_t *gl         = (gl2_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_size)
       gl->ctx_driver->get_video_output_size(
-            gl->ctx_data,
-            width, height, desc, desc_len);
+            gl->ctx_data, width, height, s, len);
 }
 
 static void gl2_get_video_output_prev(void *data)

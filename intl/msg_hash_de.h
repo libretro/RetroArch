@@ -493,7 +493,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Vollständiger Pfad des Cores"
+   "Vollständiger Pfad"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -521,7 +521,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Schaut in: '%s'"
+   "Schauen in: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -703,6 +703,30 @@ MSG_HASH(
    "SDL-2-Unterstützung"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Direct3D-8-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Direct3D-9-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Direct3D-10-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Direct3D-11-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Direct3D-12-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "GDI-Unterstützung"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Vulkan-Unterstützung"
    )
@@ -783,6 +807,10 @@ MSG_HASH(
    "PulseAudio-Unterstützung"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "PipeWire-Unterstützung"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "CoreAudio-Unterstützung"
    )
@@ -861,6 +889,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2-Unterstützung"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "SSL-Unterstützung"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -1662,6 +1694,10 @@ MSG_HASH(
    "PulseAudio-Treiber. Wenn das System PulseAudio verwendet, ist dieser Treiber anstelle von z. B. ALSA zu verwenden."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "PipeWire-Treiber. Falls das System PipeWire verwendet, sollte dieser Treiber anstelle von beispielsweise PulseAudio verwendet werden."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack-Audio-Connection-Kit-Treiber."
    )
@@ -2431,15 +2467,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Das Bild in ganzzahligen Schritten skalieren. Die Basisgröße hängt von der vom System gemeldeten Geometrie und dem Seitenverhältnis ab. Wenn \"Seitenverhältnis erzwingen\" nicht gewählt ist, werden Höhe u. Breite unabhängig skaliert."
+   "Video nur in Ganzzahlschritten skalieren. Die Grundgröße hängt von der vom Kern gemeldeten Geometrie und dem Seitenverhältnis ab."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Aufgerundete ganzzahlige Skalierung"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Ganzzahlige Skalenachse"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Bei ganzzahliger Skalierung den Skalierungsfaktor aufrunden, statt ihn abzurunden."
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Skaliert entweder Höhe oder Breite oder sowohl Höhe als auch Breite. Halbschritte gelten nur für hochauflösende Quellen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Ganzzahlige Skalierung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Auf die nächste Ganzzahl auf- oder abrunden. „Intelligent“ wechselt zu Unterskalieren, wenn das Bild zu stark beschnitten wird."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Unterskalieren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Überskalieren"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Intelligent"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2516,11 +2572,11 @@ MSG_HASH(
    "Ansichtsfenster-Ankerpunkt-Ausrichtung Y"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "Benutzerdefinierte Ausrichtung des Ansichtsfensters wird verwendet, um das Ansichtsfenster horizontal zu versetzen (wenn es breiter als die Inhaltshöhe ist). 0.0 bedeutet ganz links und 1.0 bedeutet ganz rechts."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Benutzerdefinierte Ausrichtung des Ansichtsfensters wird verwendet, um das Ansichtsfenster vertikal zu versetzen (wenn es höher als die Inhaltshöhe ist). 0.0 bedeutet oben und 1.0 bedeutet unten."
    )
 #if defined(RARCH_MOBILE)
@@ -2541,11 +2597,11 @@ MSG_HASH(
    "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "Benutzerdefinierte Ausrichtung des Ansichtsfensters wird verwendet, um das Ansichtsfenster horizontal zu versetzen (wenn es breiter als die Inhaltshöhe ist). 0.0 bedeutet ganz links und 1.0 bedeutet ganz rechts. (Hochformat)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Benutzerdefinierte Ausrichtung des Ansichtsfensters wird verwendet, um das Ansichtsfenster vertikal zu versetzen (wenn es höher als die Inhaltshöhe ist). 0.0 bedeutet oben und 1.0 bedeutet unten. (Hochformat)"
    )
 #endif
@@ -2897,7 +2953,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Gewünschte Audiolatenz in Millisekunden. Wird ignoriert, wenn der Audiotreiber die angegebene Latenz nicht liefern kann."
+   "Maximale Audio-Latenz in Millisekunden. Der Treiber versucht, die tatsächliche Latenz bei 50 % dieses Wertes zu halten. Dieser Wert kann nicht eingehalten werden, wenn der Audiotreiber die angegebene Latenz nicht liefern kann."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -3117,23 +3173,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Status : K.A."
+   "Status: k. A."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Status : Gestoppt"
+   "Status: Gestoppt"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Status : Wiedergabe"
+   "Status: Wiedergabe"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Status : Wiedergabe (Schleife)"
+   "Status: Wiedergabe (Schleife)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Status : Wiedergabe (Sequenziell)"
+   "Status: Wiedergabe (in Folge)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -3192,6 +3248,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Die Eingabebelegung mit der Neubelegung überschreiben, die für den aktuellen Core festgelegt wurde."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps nach Gamepad sortieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Remaps gelten nur für das aktive Gamepad, in dem sie gespeichert wurden."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3510,6 +3574,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "Wenn aktiviert, wird die Suchen-Taste ignoriert."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Linken Analogstick für Menü deaktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Linken Analogstick am Navigieren im Menü hindern."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Rechten Analogstick für Menü deaktivieren"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Rechten Analogstick am Navigieren im Menü hindern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -3997,7 +4077,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Verblassender Netzwerkspiel-Chat"
+   "Netplay Fade Chat (Umschalten)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -4263,14 +4343,6 @@ MSG_HASH(
    "Der aktuelle Core ist aufgrund fehlender deterministischer Savestate-Unterstützung nicht mit Run-ahead kompatibel."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Run-Ahead zur Reduzierung der Latenz"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Führt die Core-Logik einen oder mehrere Frames voraus aus und lädt den vorherigen Zustand zurück, um die wahrgenommene Eingangsverzögerung zu verringern."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Anzahl der Run-Ahead-Frames"
    )
@@ -4279,12 +4351,26 @@ MSG_HASH(
    "Die Anzahl Frames, die im Voraus ausgeführt werden sollen. Verursacht Gameplay-Probleme wie z. B. Ruckeln, wenn die Anzahl der spielinternen Verzögerungsframes überschritten wird."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Zweite Instanz für Run-Ahead verwenden"
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Führt zusätzliche Corelogik aus, um die Latenz zu reduzieren. Eine einzelne Instanz wird in einem zukünftigen Frame ausgeführt und lädt dann den aktuellen Status neu. Eine zweite Instanz behält eine reine Video-Coreinstanz in einem zukünftigen Frame bei, um Probleme mit dem Audiostatus zu vermeiden. Aus Effizienzgründen führen präemptive Frames bei Bedarf vergangene Frames mit neuen Eingaben durch."
+   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Führt zusätzliche Corelogik aus, um die Latenz zu reduzieren. Eine einzelne Instanz wird in einem zukünftigen Frame ausgeführt und lädt dann den aktuellen Status neu. Aus Effizienzgründen führen präemptive Frames bei Bedarf vergangene Frames mit neuen Eingaben durch."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "Einzelinstanz-Modus"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Für das Run-Ahead eine zweite Instanz des RetroArch-Cores verwenden. Vermeidet Audioprobleme."
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "Zweitinstanz-Modus"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "Präemptive-Frames-Modus"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4295,36 +4381,12 @@ MSG_HASH(
    "Blendet die Warnmeldung aus, die bei Verwendung von Run-Ahead angezeigt wird wenn der Core keine Savestates unterstützt."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Präemptive Frames nicht verfügbar]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Der aktuelle Core ist nicht mit präemptiven Frames kompatibel aufgrund fehlender deterministischer Savestateunterstützung."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Präemptive Frames ausführen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Führt die Corelogik mit der letzten Eingabe erneut aus, wenn sich der Status des Controllers ändert. Schneller als Run-Ahead, verhindert aber nicht Audioprobleme, die Cores beim Laden von Savestates haben können."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Anzahl präemptiver Frames"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Die Anzahl Frames, die im Voraus ausgeführt werden sollen. Verursacht Gameplayprobleme wie z. B. Ruckeln, wenn die Anzahl der spielinternen Verzögerungsframes überschritten wird."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Warnungen für präemptive Frames ausblenden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Die Warnmeldung verbergen, die erscheint, wenn ein Core nicht mit präemptive Frames kompatibel ist."
    )
 
 /* Settings > Core */
@@ -4392,10 +4454,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Umgehung der Core-Info-Savestates-Funktionen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Legt fest, ob Savestatefähigkeiten der Core Info ignoriert werden sollen, so dass mit verwandten Funktionen experimentiert werden kann (Run-Ahead, Zurückspulen usw)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4636,10 +4694,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Savestate automatisch erstellen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatisch ein Savestate erstellen, wenn der Inhalt geschlossen wird. RetroArch lädt dieses Savestate automatisch, wenn 'Savestate automatisch laden' aktiviert ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -5189,12 +5243,24 @@ MSG_HASH(
    "Größe der Überlappungszonen für ABXY-Tastenbereich anpassen. Für 8-Wege-Symmetrie auf 100 % setzen."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analoge Neuzentrierungszone"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Die Eingabe des analogen Sticks bezieht sich auf das erste Drücken, wenn er innerhalb dieser Zone gedrückt wird."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Overlays"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Bevorzugtes Overlay automatisch laden"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Bevorzugt das Laden von Overlays basierend auf Systemnamen, bevor auf die Standardeinstellung zurückgegriffen wird. Wird ignoriert, wenn eine Überschreibung für die Overlay-Voreinstellung festgelegt ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -7254,6 +7320,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "Südostasien"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "Ostasien (Chuncheon, Südkorea)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -12986,10 +13056,6 @@ MSG_HASH(
    "Automatisch erkennen"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Automatisches Laden des Speicherzustands aus"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Fähigkeiten"
    )
@@ -13192,10 +13258,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Kann neuen Konfigurationspfad nicht ableiten. Verwende aktuelle Zeit."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Errungenschaften-Hardcore-Modus aktiviert. Savestates & Rückspul-Funktion sind nicht nutzbar."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -14082,6 +14144,10 @@ MSG_HASH(
    "Virtuelles Laufwerk konnte nicht geschlossen werden."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Automatisches Laden des Speicherzustands aus"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "Automatisches Laden des Savestates aus \"%s\" fehlgeschlagen."
    )
@@ -14374,6 +14440,10 @@ MSG_HASH(
    "Fehler beim Empfang des Headers vom Host."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Angemeldet als „%s“."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Du musst den Errungenschaften-Hardcore-Modus pausieren oder deaktivieren um Savestates laden zu können."
    )
@@ -14392,6 +14462,66 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "%s vervollständigt"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Errungenschaften-Hardcore-Modus aktiviert. Savestates & Rückspul-Funktion sind nicht nutzbar."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Dieses Spiel hat keine Errungenschaften."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Alle %d Errungenschaften für diese Sitzung aktiviert"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "%d inoffizielle Errungenschaften aktiviert"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Es sind %d von %d Errungenschaften freigeschaltet"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d nicht unterstützt"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Zuschauer %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Hardcore pausiert. Manuelle Einstellung der Videobildverzögerung nicht gestattet."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Hardcore pausiert. Vsync-Swap-Intervall über 1 nicht gestattet."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Hardcore pausiert. Das Einfügen schwarzer Rahmen ist nicht gestattet."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Hardcore pausiert. Einstellung nicht gestattet: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Hardcore pausiert. Es lassen sich keine Hardcore-Errungenschaften für %s mit %s verdienen"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroAchievements: Spiel konnte nicht identifiziert werden."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "RetroAchievements Spielladen fehlgeschlagen: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "RetroAchievements Medienwechsel fehlgeschlagen: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15264,10 +15394,6 @@ MSG_HASH(
    "Schrift aktivieren"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Text am unteren Bildschirm einblenden. Aktivieren, um Tastenbeschreibungen auf dem unteren Bildschirm anzuzeigen. Dies schließt das Speicherdatum aus."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    "Schriftfarbe Rot"
    )
@@ -15321,6 +15447,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Mauseingabe per Touchscreen ist deaktiviert"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "sdl2-Mikrofon benötigt sdl2-Audiotreiber"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

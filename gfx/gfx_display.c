@@ -677,8 +677,8 @@ void gfx_display_draw_texture_slice(
    draw.x                   = 0;
    draw.y                   = 0;
 
-   /* vertex coords are specfied bottom-up in this order: BL BR TL TR */
-   /* texture coords are specfied top-down in this order: BL BR TL TR */
+   /* vertex coords are specified bottom-up in this order: BL BR TL TR */
+   /* texture coords are specified top-down in this order: BL BR TL TR */
 
    /* If someone wants to change this to not draw several times, the
     * coordinates will need to be modified because of the triangle strip usage. */
@@ -1132,7 +1132,6 @@ bool gfx_display_reset_icon_texture(
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height)
 {
-   char texpath[PATH_MAX_LENGTH];
    struct texture_image ti;
 
    ti.width                      = 0;
@@ -1142,15 +1141,11 @@ bool gfx_display_reset_icon_texture(
 
    if (string_is_empty(texture_path))
       return false;
-
-   strlcpy(texpath, texture_path, sizeof(texpath));
-
-   if (!image_texture_load(&ti, texpath))
+   if (!image_texture_load(&ti, texture_path))
       return false;
 
    if (width)
       *width = ti.width;
-
    if (height)
       *height = ti.height;
 

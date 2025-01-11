@@ -73,7 +73,7 @@ static bool wav_write_hdr(record_wav_t *handle, unsigned channels, unsigned samp
    handle->frame       = 2 * channels;
    /* set initial size to 4 hours; to be fixed inside record_wav_finalize */
    length              = 4 * 60 * 60 * samplerate * handle->frame;
-   header.riff_size    = swap_if_big32(sizeof(wav_hdr_t) - offsetof(wav_hdr_t, fourcc) + length),
+   header.riff_size    = swap_if_big32(sizeof(wav_hdr_t) - offsetof(wav_hdr_t, fourcc) + length);
    memcpy(header.fourcc, "WAVE", sizeof(header.fourcc));
    memcpy(header.fmt_tag, "fmt ", sizeof(header.fmt_tag));
    header.fmt_size     = swap_if_big32(sizeof(header.fmt));

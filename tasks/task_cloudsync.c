@@ -55,8 +55,10 @@ typedef struct
 {
    enum task_cloud_sync_phase phase;
    uint32_t waiting;
+   /* Manifest present on the server (may be modified by other clients)*/
    file_list_t *server_manifest;
    size_t server_idx;
+   /* Last-known state to compare agasint.*/
    file_list_t *local_manifest;
    size_t local_idx;
    file_list_t *current_manifest;
@@ -275,6 +277,15 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
    return false;
 }
 
+/**
+ * task_cloud_sync_manifest_append_dir:
+ * @manifest         : pointer to the current file_list
+ * @dir_fullpath     : the full path to the directory to be added
+ * @dir_name         : the name of the directory to be added
+ *
+ * Adds all the files within the given directory to the provided
+ * file list, with the exception of the ones that should be ignored
+ */
 static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
       const char *dir_fullpath, char *dir_name)
 {
@@ -307,11 +318,26 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
       if (task_cloud_sync_should_ignore_file(alt))
          continue;
 
+      /* The "alt" refers to the relative path of whatever we're syncing relative to the retroarch folder
+       * whereas the full_path is the absolute disk path of the file. When building the manifest, adhere
+       * to a portable standard, but use that as the portable representation of paths. While the actual
+       * "manifest" is comprised of full, local-style paths associated with "alt"s which are portable. */
+      pathname_make_slashes_portable(alt);
       file_list_append(manifest, full_path, NULL, 0, 0, 0);
       file_list_set_alt_at_offset(manifest, idx, alt);
    }
+
+   /* TODO Is this freed anywhere else? Am I missing something? The dir_list's contents are strdup'ed, so freeing this shouldn't break anything
+    * Remove this comment once a decision has been taken*/
+   string_list_free(dir_list);
 }
 
+/**
+ * task_cloud_sync_directory_map:
+ *
+ * Returns a string_list containing the folders that should be synced.
+ * This is hard-coded for now, and syncs the config, the saves and the states
+ */
 static struct string_list *task_cloud_sync_directory_map(void)
 {
    static struct string_list *list = NULL;
@@ -358,6 +384,12 @@ static struct string_list *task_cloud_sync_directory_map(void)
    return list;
 }
 
+/**
+ * task_cloud_sync_build_current_manifest:
+ * @sync_state       : pointer to the current sync state
+ *
+ * Create an in-memory manifest of actual, current disk data
+ */
 static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync_state)
 {
    struct string_list *dirlist = task_cloud_sync_directory_map();
@@ -381,6 +413,8 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
       return;
    }
 
+   /* The userdata of the elements is actually the full path to the directory, while data is the name of the folder itself */
+   /* The paths iterated here are not portable, because they are still used for iterating later on */
    for (i = 0; i < dirlist->size; i++)
       task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
             dirlist->elems[i].userdata, dirlist->elems[i].data);
@@ -390,6 +424,16 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
    RARCH_LOG(CSPFX "created in-memory manifest of current disk state\n");
 }
 
+/**
+ * task_cloud_sync_update_progress:
+ * @task       : pointer to the retro_task executing us
+ *
+ * Updates the percentage of the current task's progress based on
+ * current sync progress. It results in a percentage which is
+ * computed based on the total number of files to deal with and
+ * the current cumulative count that's been dealt with across
+ * the three types of manifests (server, old local, current local)
+ */
 static void task_cloud_sync_update_progress(retro_task_t *task)
 {
    task_cloud_sync_state_t *sync_state = NULL;
@@ -495,6 +539,7 @@ static void task_cloud_sync_backup_file(struct item_file *file)
                                     CS_FILE_KEY(file),
                                     sizeof(new_path));
    strftime(new_path + len, sizeof(new_path) - len, "-%y%m%d-%H%M%S", &tm_);
+   pathname_conform_slashes_to_os(new_path);
    fill_pathname_basedir(new_dir, new_path, sizeof(new_dir));
    path_mkdir(new_dir);
    filestream_rename(file->path, new_path);
@@ -539,7 +584,8 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    struct string_list *dirlist     = task_cloud_sync_directory_map();
    struct item_file   *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char         *key         = CS_FILE_KEY(server_file);
-   const char         *path        = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
+   /* the key from the server file is in "portable" format, use '/' */
+   const char         *path        = strchr(key, '/') + 1;
    settings_t         *settings = config_get_ptr();
 
    /* we're just fetching a file the server has, we can update this now */
@@ -560,6 +606,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
       if (!string_starts_with(key, dirlist->elems[i].data))
          continue;
       fill_pathname_join_special(filename, dirlist->elems[i].userdata, path, sizeof(filename));
+      pathname_conform_slashes_to_os(filename);
       break;
    }
    if (string_is_empty(filename))
@@ -645,6 +692,15 @@ static void task_cloud_sync_upload_cb(void *user_data, const char *path, bool su
    slock_unlock(tcs_running_lock);
 }
 
+/**
+ * task_cloud_sync_update_progress:
+ * @sync_state 	: pointer to the current sync task
+ *
+ * Uploads the current file to the cloud. The current file is defined
+ * as whatever file is indicated by the current manifest (that is, the
+ * local, actually true manifest) combined with whatever the iteration
+ * variable indicates (the one specific to the current manifest)
+ */
 static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_state)
 {
    struct item_file *item     = &sync_state->current_manifest->list[sync_state->current_idx];
@@ -746,7 +802,10 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
    else if (!CS_FILE_DELETED(server_file))
       task_cloud_sync_fetch_server_file(sync_state);
    else
+   {
       task_cloud_sync_delete_current_file(sync_state);
+      task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), CS_FILE_HASH(server_file), false);
+   }
 }
 
 static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool success, RFILE *file)
@@ -850,7 +909,7 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
       server_current_key_cmp = task_cloud_sync_key_cmp(server_file, current_file);
       if (server_current_key_cmp < 0)
       {
-         /* the server has a file we don't have */
+         /* the server has a file we don't have, we check the hash */
          if (!CS_FILE_DELETED(server_file))
             task_cloud_sync_fetch_server_file(sync_state);
          else
@@ -898,7 +957,17 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
       {
          /* the file has been deleted locally */
          if (!CS_FILE_DELETED(server_file))
-            task_cloud_sync_delete_server_file(sync_state);
+         {
+            if (CS_FILE_DELETED(local_file))
+               /* previously saw the delete, now it's resurrected */
+               task_cloud_sync_fetch_server_file(sync_state);
+            else if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(local_file)))
+               /* server didn't change, delete from the server */
+               task_cloud_sync_delete_server_file(sync_state);
+            else
+               /* the server changed and local deleted, that's a conflict */
+               task_cloud_sync_resolve_conflict(sync_state);
+         }
          else
          {
             /* already deleted, oh well */
@@ -969,7 +1038,7 @@ static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char
       return NULL;
    }
 
-   /* since we may be transfering files at the same time,
+   /* since we may be transferring files at the same time,
     * the newly created manifest might be out of order */
    file_list_sort_on_alt(manifest);
 

@@ -391,7 +391,12 @@ void GridView::paintEvent(QPaintEvent*)
    {
       QModelIndex index = model()->index(row, 0, rootIndex());
       QRectF rect = viewportRectForRow(row);
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+      QStyleOptionViewItem option;
+      initViewItemOption(&option);
+#else
       QStyleOptionViewItem option = viewOptions();
+#endif
 
       if (!rect.isValid() || rect.bottom() < 0 || rect.y() > viewport()->height())
          continue;

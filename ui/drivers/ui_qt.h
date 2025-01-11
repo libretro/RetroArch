@@ -68,6 +68,7 @@ extern "C" {
 #define THUMBNAIL_BOXART "Named_Boxarts"
 #define THUMBNAIL_SCREENSHOT "Named_Snaps"
 #define THUMBNAIL_TITLE "Named_Titles"
+#define THUMBNAIL_LOGO "Named_Logos"
 
 class QApplication;
 class QCloseEvent;
@@ -117,6 +118,7 @@ enum ThumbnailType
    THUMBNAIL_TYPE_BOXART,
    THUMBNAIL_TYPE_SCREENSHOT,
    THUMBNAIL_TYPE_TITLE_SCREEN,
+   THUMBNAIL_TYPE_LOGO,
 };
 
 static inline double lerp(double x, double y, double a, double b, double d)
@@ -411,6 +413,7 @@ signals:
    void thumbnailChanged(const QPixmap &pixmap);
    void thumbnail2Changed(const QPixmap &pixmap);
    void thumbnail3Changed(const QPixmap &pixmap);
+   void thumbnail4Changed(const QPixmap &pixmap);
    void gotLogMessage(const QString &msg);
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
@@ -443,6 +446,7 @@ public slots:
    void onResizeThumbnailOne(QPixmap &pixmap, bool acceptDrop);
    void onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop);
    void onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop);
+   void onResizeThumbnailFour(QPixmap &pixmap, bool acceptDrop);
    void appendLogMessage(const QString &msg);
    void onGotLogMessage(const QString &msg);
    void onGotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
@@ -457,6 +461,7 @@ public slots:
    void onBoxartThumbnailClicked();
    void onScreenshotThumbnailClicked();
    void onTitleThumbnailClicked();
+   void onLogoThumbnailClicked();
    void onTabWidgetIndexChanged(int index);
    void deleteCurrentPlaylistItem();
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
@@ -574,6 +579,7 @@ private:
    QPixmap *m_thumbnailPixmap;
    QPixmap *m_thumbnailPixmap2;
    QPixmap *m_thumbnailPixmap3;
+   QPixmap *m_thumbnailPixmap4;
    QSettings *m_settings;
    ViewOptionsDialog *m_viewOptionsDialog;
    CoreInfoDialog *m_coreInfoDialog;
@@ -634,7 +640,11 @@ private:
    QTimer *m_thumbnailTimer;
    GridItem m_gridItem;
    BrowserType m_currentBrowser;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   QRegularExpression m_searchRegularExpression;
+#else
    QRegExp m_searchRegExp;
+#endif
    QByteArray m_fileTableHeaderState;
    QWidget *m_zoomWidget;
    QString m_itemsCountLiteral;

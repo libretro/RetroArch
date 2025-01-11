@@ -1766,18 +1766,6 @@ MSG_HASH(
    "Escalar usant nombres sencers"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Limita l'escalat de vídeo a múltiples sencers. La mida base dependrà de la geometria indicada pel sistema i la relació d'aspect. Si l'opció «Forçar relació d'aspecte» està desactivada, els valors X i Y s'escalaran individualment."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Sobreescalar la imatge a l'usar nombres sencers"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Força l'escalat per nombres sencers a arrodonir sempre a un valor superior en comptes de a un d'inferior."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Relació d'aspecte"
    )
@@ -2099,10 +2087,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Latència de l'àudio (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Latència d'àudio desitjada en mil·lisegons. Pot ser ignorat si el controlador de l'àudio no pot proporcionar la latència especificada."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -2199,26 +2183,6 @@ MSG_HASH(
 
 /* Settings > Audio > Mixer Settings > Mixer Stream */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Estat: no disponible"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Estat: detingut"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Estat: reproduint"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Estat: reproduint (en bucle)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Estat: reproduint (seqüencialment)"
-   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -2435,14 +2399,6 @@ MSG_HASH(
    "El nucli actual és imcompatible amb la reducció predictiva de latència per mancar de suport de desats ràpids determinístics."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Reducció predictiva de latència"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Executa la lògica del nucli un o més fotogrames amb antelació i després carrega un guardat ràpid per a fer decréixer la latència d'entrada percebuda."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Nombre de fotogrames a la reducció predictiva"
    )
@@ -2450,14 +2406,8 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
    "Determina el nombre de fotogrames a executar amb antelació. Poden haver fluctuacions de senyal si el nombre de fotogrames endarrerits supera al valor intern del joc."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usa una segona instància per a la reducció predictiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Usa una segona instància del nucli RetroArch per portar a terme la reducció predictiva de latència. Evita els problemes d'àudio ocasionats al carregar guardats ràpids."
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Amagar avisos de la reducció predictiva"

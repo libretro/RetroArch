@@ -133,14 +133,10 @@ static void contentless_cores_init_info_entries(
 
          /* Populate licences string */
          if (core_info->licenses_list)
-         {
-            char tmp_str[MENU_LABEL_MAX_LENGTH - 2];
-            tmp_str[0] = '\0';
-            string_list_join_concat(tmp_str, sizeof(tmp_str),
+            string_list_join_concat_special(
+                          licenses_str + _len,
+                  sizeof(licenses_str) - _len,
                   core_info->licenses_list, ", ");
-            strlcpy(licenses_str       + _len, tmp_str,
-                  sizeof(licenses_str) - _len);
-         }
          /* No license found - set to N/A */
          else
             strlcpy(licenses_str       + _len,
@@ -332,14 +328,14 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          struct texture_image ti;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
-         size_t len              = fill_pathname_join_special(
+         size_t _len             = fill_pathname_join_special(
                icon_path, icon_directory,
                icon_name, sizeof(icon_path));
-         icon_path[  len]        = '.';
-         icon_path[++len]        = 'p';
-         icon_path[++len]        = 'n';
-         icon_path[++len]        = 'g';
-         icon_path[++len]        = '\0';
+         icon_path[  _len]       = '.';
+         icon_path[++_len]       = 'p';
+         icon_path[++_len]       = 'n';
+         icon_path[++_len]       = 'g';
+         icon_path[++_len]       = '\0';
 
          ti.pixels               = NULL;
          ti.width                = 0;

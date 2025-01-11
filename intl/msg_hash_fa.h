@@ -496,10 +496,6 @@ MSG_HASH(
    "API گرافیکی مورد نیاز"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "مسیر کامل هسته"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "پشتیبانی از ذخیرهٔ وضعیت"
    )
@@ -522,10 +518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "سفت‌افزار"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- جستجو در: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -2526,10 +2518,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "برای دوباره اجراشدن از نمونه دوم از هسته رترو‌آرچ استفاده می‌کند. از مشکلات صدا در هنگام بارگیری وضعیت جلوگیری می‌شود."
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "مخفی کردن هشدار های بازاجرایی"

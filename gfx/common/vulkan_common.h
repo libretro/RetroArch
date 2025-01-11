@@ -565,7 +565,8 @@ typedef struct vk
    unsigned video_height;
 
    unsigned tex_w, tex_h;
-   unsigned vp_out_width, vp_out_height;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
    unsigned rotation;
    unsigned num_swapchain_images;
    unsigned last_valid_index;
@@ -573,7 +574,7 @@ typedef struct vk
    video_info_t video;
 
    VkFormat tex_fmt;
-   math_matrix_4x4 mvp, mvp_no_rot; /* float alignment */
+   math_matrix_4x4 mvp, mvp_no_rot, mvp_menu; /* float alignment */
    VkViewport vk_vp;
    VkRenderPass render_pass;
    struct video_viewport vp;

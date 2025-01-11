@@ -102,7 +102,7 @@ typedef struct settings
       size_t rewind_buffer_size;
    } sizes;
 
-   video_viewport_t video_viewport_custom; /* int alignment */
+   video_viewport_t video_vp_custom; /* int alignment */
 
    struct
    {
@@ -244,6 +244,8 @@ typedef struct settings
       unsigned video_fullscreen_x;
       unsigned video_fullscreen_y;
       unsigned video_scale;
+      unsigned video_scale_integer_axis;
+      unsigned video_scale_integer_scaling;
       unsigned video_max_swapchain_images;
       unsigned video_max_frame_latency;
       unsigned video_swap_interval;
@@ -332,6 +334,7 @@ typedef struct settings
       unsigned input_overlay_show_inputs_port;
       unsigned input_overlay_dpad_diagonal_sensitivity;
       unsigned input_overlay_abxy_diagonal_sensitivity;
+      unsigned input_overlay_analog_recenter_zone;
       unsigned input_overlay_lightgun_trigger_delay;
       unsigned input_overlay_lightgun_two_touch_input;
       unsigned input_overlay_lightgun_three_touch_input;
@@ -384,11 +387,11 @@ typedef struct settings
    {
       float placeholder;
       float video_aspect_ratio;
-      float video_viewport_bias_x;
-      float video_viewport_bias_y;
+      float video_vp_bias_x;
+      float video_vp_bias_y;
 #if defined(RARCH_MOBILE)
-      float video_viewport_bias_portrait_x;
-      float video_viewport_bias_portrait_y;
+      float video_vp_bias_portrait_x;
+      float video_vp_bias_portrait_y;
 #endif
       float video_refresh_rate;
       float video_autoswitch_pal_threshold;
@@ -621,7 +624,6 @@ typedef struct settings
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
-      bool video_scale_integer_overscale;
       bool video_shader_enable;
       bool video_shader_watch_files;
       bool video_shader_remember_last_dir;
@@ -995,7 +997,6 @@ typedef struct settings
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
       bool preemptive_frames_enable;
-      bool preemptive_frames_hide_warnings;
       bool pause_nonactive;
       bool pause_on_disconnect;
       bool block_sram_overwrite;

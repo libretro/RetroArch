@@ -355,6 +355,8 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI), len);
                 else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_PULSE)))
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE), len);
+                else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_PIPEWIRE)))
+                   strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE), len);
                 else if (string_is_equal(lbl, msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DRIVER_JACK)))
                    strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK), len);
                 else

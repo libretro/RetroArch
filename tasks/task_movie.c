@@ -52,7 +52,7 @@
 #define IDENTIFIER_INDEX   4
 #define HEADER_LEN         6
 
-#define REPLAY_FORMAT_VERSION 0
+#define REPLAY_FORMAT_VERSION 1
 #define REPLAY_MAGIC       0x42535632
 
 /* Forward declaration */
@@ -66,6 +66,7 @@ static bool bsv_movie_init_playback(
    int64_t *identifier_loc;
    uint32_t state_size         = 0;
    uint32_t header[HEADER_LEN] = {0};
+   uint32_t vsn                = 0;
    intfstream_t *file          = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -85,13 +86,13 @@ static bool bsv_movie_init_playback(
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-#if 0
-   if (swap_if_big32(header[VERSION_INDEX]) > REPLAY_FORMAT_VERSION)
+   vsn                = swap_if_big32(header[VERSION_INDEX]);
+   if (vsn > REPLAY_FORMAT_VERSION)
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE));
       return false;
    }
-#endif
+   handle->version    = vsn;
 
    state_size         = swap_if_big32(header[STATE_SIZE_INDEX]);
    identifier_loc     = (int64_t *)(header+IDENTIFIER_INDEX);
@@ -137,6 +138,7 @@ static bool bsv_movie_init_playback(
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
+   bsv_movie_read_next_events(handle);
 
    return true;
 }
@@ -161,11 +163,12 @@ static bool bsv_movie_init_record(
    }
 
    handle->file             = file;
+   handle->version          = REPLAY_FORMAT_VERSION;
 
    content_crc              = content_get_crc();
 
    header[MAGIC_INDEX]      = swap_if_big32(REPLAY_MAGIC);
-   header[VERSION_INDEX]    = REPLAY_FORMAT_VERSION;
+   header[VERSION_INDEX]    = swap_if_big32(handle->version);
    header[CRC_INDEX]        = swap_if_big32(content_crc);
 
    info_size                = core_serialize_size();
@@ -250,29 +253,28 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 {
    size_t _len;
    char msg[128];
-   bsv_movie_t *state                       = NULL;
-   const char *movie_rec_str                = NULL;
+   bsv_movie_t *state              = NULL;
+   const char *_msg                = NULL;
 
    /* this should trigger a start recording task which on failure or
       success prints a message and on success sets the
       input_st->bsv_movie_state_handle. */
    if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_RECORD)))
    {
-      const char *movie_rec_fail_str        =
-         msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
-      runloop_msg_queue_push(movie_rec_fail_str,
-            1, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_ERR("%s.\n", movie_rec_fail_str);
+      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_ERR("%s.\n", _msg);
       return false;
    }
 
    bsv_movie_enqueue(input_st, state, BSV_FLAG_MOVIE_RECORDING);
-   movie_rec_str                            = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
-   _len = strlcpy(msg, movie_rec_str, sizeof(msg));
-   snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
-   runloop_msg_queue_push(msg, 2, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s \"%s\".\n", movie_rec_str, path);
+   _msg  = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
+   _len  = strlcpy(msg, _msg, sizeof(msg));
+   _len += snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
+   runloop_msg_queue_push(msg, _len, 2, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s \"%s\".\n", _msg, path);
 
    return true;
 }
@@ -280,7 +282,7 @@ static bool bsv_movie_start_record(input_driver_state_t * input_st, char *path)
 static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
 {
    bsv_movie_t *state                       = NULL;
-   const char *starting_movie_str           = NULL;
+   const char *_msg                         = NULL;
    /* This should trigger a start playback task which on failure or
       success prints a message and on success sets the
       input_st->bsv_movie_state_handle. */
@@ -293,13 +295,11 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
    }
 
    bsv_movie_enqueue(input_st, state, BSV_FLAG_MOVIE_PLAYBACK);
-   starting_movie_str                       =
-      msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK);
+   _msg = msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK);
 
-   runloop_msg_queue_push(starting_movie_str,
-         2, 180, false,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s.\n", starting_movie_str);
+   runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s.\n", _msg);
 
    return true;
 }
@@ -372,15 +372,14 @@ static void moviectl_start_record_cb(retro_task_t *task,
 /* In the future this should probably be a deferred task as well */
 bool movie_stop_playback(input_driver_state_t *input_st)
 {
-   const char *movie_playback_end_str = NULL;
+   const char *_msg = NULL;
    /* Checks if movie is being played back. */
    if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK))
       return false;
-   movie_playback_end_str = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
-   runloop_msg_queue_push(
-         movie_playback_end_str, 2, 180, false,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", movie_playback_end_str);
+   _msg = msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED);
+   runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s\n", _msg);
 
    bsv_movie_deinit_full(input_st);
 
@@ -392,13 +391,12 @@ bool movie_stop_playback(input_driver_state_t *input_st)
 /* in the future this should probably be a deferred task as well */
 bool movie_stop_record(input_driver_state_t *input_st)
 {
-   const char *movie_rec_stopped_str = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
+   const char *_msg = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
    if (!(input_st->bsv_movie_state_handle))
       return false;
-   runloop_msg_queue_push(movie_rec_stopped_str,
-         2, 180, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_LOG("%s\n", movie_rec_stopped_str);
+   runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_LOG("%s\n", _msg);
    bsv_movie_deinit_full(input_st);
    input_st->bsv_movie_state.flags &= ~(
          BSV_FLAG_MOVIE_END
@@ -451,7 +449,7 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
    size_t _len;
    char msg[128];
-   const char *movie_rec_str     = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
+   const char *_msg              = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
 
@@ -461,7 +459,7 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
    *state                        = input_st->bsv_movie_state;
    strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
 
-   _len                          = strlcpy(msg, movie_rec_str, sizeof(msg));
+   _len                          = strlcpy(msg, _msg, sizeof(msg));
    snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
 
    task->type                    = TASK_TYPE_NONE;

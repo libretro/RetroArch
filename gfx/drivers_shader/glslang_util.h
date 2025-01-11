@@ -129,7 +129,7 @@ enum glslang_format glslang_find_format(const char *fmt);
    Returns a Bool indicating if parsing was successful.
  */
 bool glslang_read_shader_file(const char *path,
-      struct string_list *output, bool root_file);
+      struct string_list *output, bool root_file, bool is_optional);
 
 bool slang_texture_semantic_is_array(enum slang_texture_semantic sem);
 

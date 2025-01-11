@@ -33,7 +33,7 @@
  * we approximate those with polynoms
  *
  * CC_RESAMPLER_PRECISION defines how accurate the approximation is
- * a setting of 5 or more means full precison.
+ * a setting of 5 or more means full precision.
  * setting 0 doesn't use a polynom
  * setting 1 uses P(X) = X - (3/4)*X^3 + (1/4)*X^5
  *

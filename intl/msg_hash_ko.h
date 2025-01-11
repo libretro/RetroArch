@@ -505,7 +505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "코어의 전체 경로"
+   "전체 경로"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -537,7 +537,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- 검색 중: '%s'"
+   "- 검색 중: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -727,6 +727,30 @@ MSG_HASH(
    "SDL2 지원"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Direct3D 8 지원"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Direct3D 9 지원"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Direct3D 10 지원"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Direct3D 11 지원"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Direct3D 12 지원"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "GDI 지원"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Vulkan 지원"
    )
@@ -807,6 +831,10 @@ MSG_HASH(
    "PulseAudio 지원"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "PipeWire 지원"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "CoreAudio 지원"
    )
@@ -885,6 +913,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2 지원"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "SSL 지원"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -1750,6 +1782,10 @@ MSG_HASH(
    "PulseAudio 드라이버입니다. 시스템이 PulseAudio를 사용할 경우, ALSA 등의 드라이버 대신 반드시 이 드라이버를 사용해야 합니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "PipeWire 드라이버입니다. 시스템이 PipeWire를 사용하는 경우, 예를 들어 PulseAudio 대신 이 드라이버를 사용해야 합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack Audio Connection Kit 드라이버입니다."
    )
@@ -2527,15 +2563,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "비디오의 크기를 정수 단위로만 조정합니다. 기본 크기는 각 시스템이 보고한 크기와 종횡비에 따라 결정되며 '강제 화면비'를 설정하지 않았을 경우 X/Y 크기를 각각 정수 단위로 조절합니다."
+   "화면 크기를 정수 단위 배율로 조정합니다. 기본 크기는 코어가 보고한 크기와 화면비에 따라 결정됩니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "정수 단위 오버스케일링"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "정수 단위 조정 기준 축"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "화면 크기를 조정할 정수 단위 배율을 버림 대신 올림으로 계산합니다."
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "화면 크기를 조정할 때 기준을 높이로 할지, 너비로 할지, 높이와 너비 모두로 할지 설정합니다. 절반 단위 조정은 고해상도 영상에만 적용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "정수 단위 조정 방식"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "정수 배율을 올림으로 계산할지 버림으로 계산할지 설정합니다. '스마트'로 설정하면 화면이 너무 많이 잘려 나갈 것 같을 때는 버림으로 계산합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "버림"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "올림"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "스마트"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2616,11 +2672,11 @@ MSG_HASH(
    "뷰포트 기준점 바이어스 Y"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다."
    )
 #if defined(RARCH_MOBILE)
@@ -2641,11 +2697,11 @@ MSG_HASH(
    "뷰포트 기준점 바이어스 Y (세로 화면)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다. (세로 화면)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다. (세로 화면)"
    )
 #endif
@@ -3017,7 +3073,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "오디오 지연(밀리초)을 설정합니다. 오디오 드라이버가 해당 지연시간을 지원하지 못할 경우 무시될 수 있습니다."
+   "최대 오디오 지연 시간 밀리초 입니다. 드라이버는 실제 지연 시간을 이 값의 50%로 유지하려고 합니다. 오디오 드라이버가 주어진 지연 시간을 제공할 수 없는 경우 적용되지 않을 수 있습니다."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -3237,23 +3293,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "상태 : 사용불가"
+   "상태: 사용 불가"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "상태 : 정지됨"
+   "상태: 정지됨"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "상태 : 재생 중"
+   "상태: 재생 중"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "상태 : 재생 중 (반복)"
+   "상태: 재생 중 (반복)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "상태 : 재생 중 (순차)"
+   "상태: 재생 중 (순차)"
    )
 
 /* Settings > Audio > Menu Sounds */
@@ -3316,6 +3372,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "재설정된 입력설정을 현재 코어에 설정된 입력보다 우선 적용합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "입력설정을 게임패드에 따라 적용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "입력설정을 해당 입력설정을 저장한 게임패드에만 적용되게 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3638,6 +3702,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
    "검색 버튼 입력을 무시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "메뉴에서 왼쪽 아날로그 비활성화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "메뉴를 탐색할 때 왼쪽 아날로그 스틱을 비활성화합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "메뉴에서 오른쪽 아날로그 비활성화"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "메뉴를 탐색할 때 오른쪽 아날로그 스틱을 비활성화합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -4129,7 +4209,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "넷플레이 채팅 페이드 켜기/끄기"
+   "넷플레이 채팅 페이드 (켜기/끄기)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
@@ -4399,12 +4479,8 @@ MSG_HASH(
    "이 코어는 결정식 상태저장을 지원하지 않아 미리 실행과 호환되지 않습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "미리 실행으로 지연 줄이기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "하나 혹은 그 이상의 프레임을 먼저 실행하고 이전 상태로 되돌리는 방식을 통해 입력지연을 줄여줍니다."
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "미리 실행"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -4415,12 +4491,26 @@ MSG_HASH(
    "먼저 실행할 프레임 수를 설정합니다. 게임 자체의 지연 프레임을 넘어설 경우 화면이 떨리는 등 게임플레이에 문제가 생길 수 있습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "미리 실행에 두 번째 인스턴스 사용"
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "코어 연산을 미리 실행하여 지연시간을 줄입니다. 단일 인스턴스 모드는 미래의 프레임까지 실행한 뒤 현재 상태로 되돌아옵니다. 이중 인스턴스 모드는 영상만 생성하는 두 번째 코어 인스턴스에서 미래의 프레임을 실행하여 만일의 오디오 문제를 우회합니다. 선제 프레임 모드는 필요한 경우 과거의 프레임을 새로운 입력으로 다시 실행하며 효율적입니다."
+   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "코어 연산을 미리 실행하여 지연시간을 줄입니다. 단일 인스턴스 모드는 미래의 프레임까지 실행한 뒤 현재 상태로 되돌아옵니다. 선제 프레임 모드는 필요한 경우 과거의 프레임을 새로운 입력으로 다시 실행하며 효율적입니다."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "단일 인스턴스 모드"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "미리 실행에 두 번째 인스턴스를 사용합니다. 상태저장 불러오기 중에 발생하는 오디오 문제를 해결할 수 있습니다."
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "이중 인스턴스 모드"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "선제 프레임 모드"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4431,36 +4521,12 @@ MSG_HASH(
    "상태저장을 지원하지 않는 코어에서 미리 실행 사용 시 경고 메시지를 표시하지 않습니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[선제 프레임 기능 사용불가]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "이 코어는 결정식 상태저장을 지원하지 않아 선제 프레임 기능과 호환되지 않습니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "선제 프레임 실행"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "컨트롤러 상태가 변경되면 최근 입력으로 코어 로직을 다시 실행합니다. 미리실행보다 빠르지만 상태 불러오기에서 코어에 발생할 수 있는 오디오 문제를 막지는 못합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "선제 프레임 수"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "다시 실행할 프레임 수를 설정합니다. 게임 자체의 지연 프레임을 넘어설 경우 화면이 떨리는 등 게임플레이에 문제가 생길 수 있습니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "선제 프레임 경고 숨김"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "선제 프레임 기능 사용시 호환되지 않는 코어에서 보이는 경고 메시지를 숨김니다."
    )
 
 /* Settings > Core */
@@ -4528,10 +4594,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "코어 정보 상태저장 기능 여부 무시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "코어 정보의 상태저장 기능 제공 여부를 무시할지 설정합니다. 관련 기능(미리 실행, 되감기 등)을 시험해볼 수 있게 됩니다."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4772,10 +4834,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "자동 상태저장"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "콘텐츠가 종료되면 자동으로 상태저장 파일을 생성합니다. 자동 상태 불러오기가 활성화 되어 있으면 다음 시작시 해당 상태저장을 자동으로 불러옵니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -5337,12 +5395,24 @@ MSG_HASH(
    "전면 버튼이 겹치는 부분의 크기를 조절합니다. 100%로 설정하면 8방향 구역의 크기가 모두 같아집니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "아날로그 중심점 재정의 구역 범위"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "지정한 구역 내에서 터치를 시작할 경우 처음 터치한 위치를 아날로그 스틱 입력의 중심점으로 사용합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "오버레이"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "선호 오버레이 자동 불러오기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "기본 사전 설정으로 돌아가기 전에 시스템 이름에 따라 오버레이를 로드하는 것을 선호합니다. 오버레이 사전 설정에 대한 오버라이드가 설정된 경우 무시됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -7418,6 +7488,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
    "동남아시아"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "동아시아 (춘천, 대한민국)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -12118,6 +12192,10 @@ MSG_HASH(
    "타이틀"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "로고"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    "전체 실행목록"
    )
@@ -13414,10 +13492,6 @@ MSG_HASH(
    "자동감지"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "상태저장 자동 불러오기: "
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "기능"
    )
@@ -13620,10 +13694,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "새 구성 경로를 유추할 수 없습니다. 현재 시간을 사용합니다."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "하드코어 모드 사용 중에는 상태저장 및 뒤로 감기 기능을 이용할 수 없습니다."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -14514,6 +14584,10 @@ MSG_HASH(
    "가상 디스크 트레이를 닫지 못했습니다."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "상태저장 자동 불러오기: "
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "\"%s\"에서 상태저장을 자동으로 불러오지 못했습니다."
    )
@@ -14806,6 +14880,10 @@ MSG_HASH(
    "호스트에서 헤더를 수신하지 못했습니다."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: \"%s\"(으)로 로그인되었습니다."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "상태저장을 불러오려면 도전과제 하드코어 모드를 일시정지 또는 비활성화해야 합니다."
    )
@@ -14824,6 +14902,66 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "%s 달성"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "하드코어 모드 사용 중에는 상태저장 및 뒤로 감기 기능을 이용할 수 없습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "이 게임에는 도전과제가 없습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "현재 세션에 모든 도전과제 (%d개) 활성화됨"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "%d개의 비공식 도전과제 활성화됨"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "%d/%d개 도전과제 해제"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d개 지원 안 됨"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "%s 관전 중"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "하드코어 일시정지됨. 수동 프레임 지연 설정은 허용되지 않습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "하드코어 일시정지됨. 1보다 높은 수직 동기화 스왑 간격은 허용되지 않습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "하드코어 일시정지됨. 검은 프레임 삽입은 허용되지 않습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "하드코어 일시정지됨. %s=%s 설정은 허용되지 않습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "하드코어 일시정지됨. %s의 하드코어 도전과제는 %s(으)로는 해제할 수 없습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroAchievements: 게임을 식별할 수 없습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "RetroAchievements 게임 불러오기 실패: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "RetroAchievements 미디어 변경 실패: %s"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -15712,10 +15850,6 @@ MSG_HASH(
    "폰트 사용"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "아래 화면 메뉴에 폰트를 사용합니다. 활성화하면 아래 화면에 버튼 설명이 표시됩니다. 상태저장 일자 표시는 영향을 받지 않습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    "폰트 색 빨강"
    )
@@ -15769,6 +15903,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "터치 마우스가 비활성화되었습니다"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "sdl2 마이크를 사용하려면 sdl2 오디오 드라이버가 필요합니다"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

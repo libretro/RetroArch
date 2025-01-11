@@ -670,7 +670,7 @@ static bool win32_browser(
        * FIXME: We should really handle the
        * error case when this isn't big enough. */
       char new_title[PATH_MAX];
-      char new_file[32768];
+      char new_file[32768]; /* TODO/FIXME - is this not way too big? */
 
       new_title[0] = '\0';
       new_file[0]  = '\0';
@@ -752,12 +752,24 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          {
             char win32_file[PATH_MAX_LENGTH] = {0};
             char *title_cp          = NULL;
+            wchar_t *title_wide     = NULL;
             size_t converted        = 0;
             const char *extensions  = "All Files (*.*)\0*.*\0\0";
             const char *title       = msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
             settings_t *settings    = config_get_ptr();
             const char *initial_dir = settings->paths.directory_menu_content;
+            bool browser            = true;
+
+            /* Menubar accelerator hotkey is hijacked always, therefore must
+             * press the keyboard event manually when blocking the accelerator. */
+            if (     !settings->bools.ui_menubar_enable
+                  || (!settings->bools.video_windowed_fullscreen && settings->bools.video_fullscreen))
+            {
+               input_keyboard_event(true, RETROK_o,
+                     0, RETROK_LCTRL, RETRO_DEVICE_KEYBOARD);
+               break;
+            }
 
             /* Convert UTF8 to UTF16, then back to the
              * local code page.
@@ -765,26 +777,20 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
              * string display until Unicode is
              * fully supported.
              */
-            wchar_t *title_wide     = utf8_to_utf16_string_alloc(title);
+            title_wide = utf8_to_utf16_string_alloc(title);
 
             if (title_wide)
-               title_cp             = utf16_to_utf8_string_alloc(title_wide);
+               title_cp = utf16_to_utf8_string_alloc(title_wide);
 
-            if (!win32_browser(owner, win32_file, sizeof(win32_file),
-                     extensions, title_cp, initial_dir))
-            {
-               if (title_wide)
-                  free(title_wide);
-               if (title_cp)
-                  free(title_cp);
-               break;
-            }
+            browser = win32_browser(owner, win32_file, sizeof(win32_file), extensions, title_cp, initial_dir);
 
             if (title_wide)
                free(title_wide);
             if (title_cp)
                free(title_cp);
-            win32_load_content_from_gui(win32_file);
+
+            if (browser)
+               win32_load_content_from_gui(win32_file);
          }
          break;
       case ID_M_RESET:
@@ -815,6 +821,18 @@ static LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          command_event(CMD_EVENT_DISK_PREV, NULL);
          break;
       case ID_M_FULL_SCREEN:
+         {
+            /* Menubar accelerator hotkey is hijacked always, therefore must
+             * press the keyboard event manually when blocking the accelerator. */
+            settings_t *settings    = config_get_ptr();
+            if (     !settings->bools.ui_menubar_enable
+                  || (!settings->bools.video_windowed_fullscreen && settings->bools.video_fullscreen))
+            {
+               input_keyboard_event(true, RETROK_RETURN,
+                     0, RETROK_LALT, RETRO_DEVICE_KEYBOARD);
+               break;
+            }
+         }
          command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
          break;
       case ID_M_MOUSE_GRAB:
@@ -1307,22 +1325,22 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (gcs)
             {
                int i;
-               wchar_t wstr[4]={0,};
-               int len1 = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
-               wstr[2]  = wstr[1];
-               wstr[1]  = 0;
-               if ((len1 <= 0) || (len1 > 4))
+               wchar_t wstr[4] = {0,};
+               LONG _len       = ImmGetCompositionStringW(hIMC, gcs, wstr, 4);
+               wstr[2]         = wstr[1];
+               wstr[1]         = 0;
+               if ((_len <= 0) || (_len > 4))
                   break;
-               for (i = 0; i < len1; i = i + 2)
+               for (i = 0; i < _len; i = i + 2)
                {
-                  size_t len2;
+                  size_t __len;
                   char *utf8   = utf16_to_utf8_string_alloc(wstr+i);
                   if (!utf8)
                      continue;
-                  len2         = strlen(utf8) + 1;
-                  if (len2 >= 1 && len2 <= 3)
+                  __len         = strlen(utf8) + 1;
+                  if (__len >= 1 && __len <= 3)
                   {
-                     if (len2 >= 2)
+                     if (__len >= 2)
                         utf8[3] = (gcs) | (gcs >> 4);
                      input_keyboard_event(true, 1, *((int*)utf8), 0, RETRO_DEVICE_KEYBOARD);
                   }
@@ -1354,14 +1372,19 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (extended)
                keysym |= 0x80;
 
-            keycode = input_keymaps_translate_keysym_to_rk(keysym);
-            switch (keycode)
+            /* tell the driver about shift and alt key events */
+            if (        keysym == 0x2A/*DIK_LSHIFT*/
+                     || keysym == 0x36/*DIK_RSHIFT*/
+                     || keysym == 0x38/*DIK_LMENU*/
+                     || keysym == 0xB8/*DIK_RMENU*/)
             {
-               /* L+R Shift handling done in dinput_poll */
-               case RETROK_LSHIFT:
-               case RETROK_RSHIFT:
-                  return 0;
+               void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+               if (input_data && dinput_handle_message(input_data,
+                        message, wparam, lparam))
+                  return 0; /* key up already handled by the driver */
             }
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
             if (GetKeyState(VK_SHIFT)   & 0x80)
                mod |= RETROKMOD_SHIFT;
@@ -2116,7 +2139,7 @@ static void win32_localize_menu(HMENU menu)
       if (label_enum != MSG_UNKNOWN)
       {
          int len;
-         size_t len2;
+         size_t __len;
 #ifndef LEGACY_WIN32
          wchar_t* new_label_unicode = NULL;
 #else
@@ -2135,38 +2158,38 @@ static void win32_localize_menu(HMENU menu)
                MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST)
          {
             meta_key_name = "Ctrl+O";
-            len2          = STRLEN_CONST("Ctrl+O");
+            __len         = STRLEN_CONST("Ctrl+O");
          }
          else if (label_enum ==
                MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY)
          {
             meta_key_name = "Alt+Enter";
-            len2          = STRLEN_CONST("Alt+Enter");
+            __len        = STRLEN_CONST("Alt+Enter");
          }
          else if (meta_key != 0)
          {
             meta_key_name = win32_meta_key_to_name(meta_key);
-            len2          = strlen(meta_key_name);
+            __len        = strlen(meta_key_name);
          }
 
          /* Append localized name, tab character, and Shortcut Key */
          if (meta_key_name && string_is_not_equal(meta_key_name, "nul"))
          {
-            size_t len1     = strlen(new_label);
-            size_t buf_size = len1 + len2 + 2;
+            size_t _len     = strlen(new_label);
+            size_t buf_size = _len + __len + 2;
             new_label_text  = (char*)malloc(buf_size);
 
             if (new_label_text)
             {
-               size_t _len;
+               size_t __len;
                new_label2              = new_label_text;
-               _len                    = strlcpy(new_label_text, new_label,
+               __len                   = strlcpy(new_label_text, new_label,
                      buf_size);
-               new_label_text[  _len]  = '\t';
-               new_label_text[++_len]  = '\0';
-               strlcpy(new_label_text + _len, meta_key_name, buf_size - _len);
+               new_label_text[  __len] = '\t';
+               new_label_text[++__len] = '\0';
+               strlcpy(new_label_text + __len, meta_key_name, buf_size - __len);
                /* Make first character of shortcut name uppercase */
-               new_label_text[len1 + 1] = toupper(new_label_text[len1 + 1]);
+               new_label_text[_len + 1] = toupper(new_label_text[_len + 1]);
             }
          }
 

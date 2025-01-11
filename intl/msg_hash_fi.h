@@ -505,7 +505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Ytimen koko polku"
+   "Koko polku"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -534,10 +534,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    "- Huomioi: \"Järjestelmätiedostot ovat sisältökansiossa\" on tällä hetkellä käytössä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Katsotaan: \"%s\""
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -723,6 +719,30 @@ MSG_HASH(
    "SDL 2 -tuki"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Direct3D 8 -tuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Direct3D 9 -tuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Direct3D 10 -tuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Direct3D 11 -tuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Direct3D 12 -tuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "GDI-tuki"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Vulkan-tuki"
    )
@@ -801,6 +821,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PULSEAUDIO_SUPPORT,
    "PulseAudio-tuki"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "PipeWire-tuki"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
@@ -1760,6 +1784,10 @@ MSG_HASH(
    "Valikko"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   "Käytettävä valikkoajuri. (Vaatii uudelleenkäynnistyksen)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
    "Nauhoitus"
    )
@@ -2362,16 +2390,8 @@ MSG_HASH(
    "Skaalaa kokonaisluvuin"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Skaalaa video vain kokonaisluvuilla. Peruskoko riippuu järjestelmän raportoidusta geometriasta ja kuvasuhteesta. Jos 'pakota kuvasuhde' ei ole asetettu, X/Y on itsenäisesti kokonaisluvuin skaalattu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Kokonaisluku skaalauksen yliskaalaus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Pakota kokonaisluku skaalaus pyöristämään seuraavaan suurempaan kokonaislukuun sen sijaan, että pyöristettäisiin alaspäin."
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Älykäs"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2739,10 +2759,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Äänen viive (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Haluttu ääniviive millisekunneissa. Ei saateta huomioida, jos ääniajuri ei kykene tuomaan annettua viivettä."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -2921,7 +2937,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Tila: E/S"
+   "Tila: -"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
@@ -3688,10 +3704,6 @@ MSG_HASH(
    "Lähettää chat-viestin nykyiseen netplay-istuntoon."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Verkoston Häivytys Chat (Aktivoi/Deaktivoi)"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Vaihda häivytettävän ja staattisten verkkochat-viestien välillä."
    )
@@ -3887,25 +3899,11 @@ MSG_HASH(
 /* Settings > Latency */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Edelläaja vähentääksesi viivettä"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Suorita ydinlogiikkaa yksi tai useampi kuva edellä ja lataa sitten tila takaisin vähentäen koettua syöteviivettä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "Edellä olevien kuvien lukumäärä"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Käytä toista instanssia edelläajossa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Käytä RetroArchin ytimen toista instanssia edelläajoon. Estää pelitilalatauksen aiheuttamia ääniongelmia."
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "Piilota edelläajoon liittyvät varoitukset"
@@ -4184,10 +4182,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Tilan automaattinen tallennus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Luo tilatallennus automaattisesti kun suljet sisällön. RetroArch lataa automaattisesti tämän tilatallennuksen, jos \"Lataa tilatallennus automaattisesti\" on käytössä."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -4866,6 +4860,10 @@ MSG_HASH(
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   "Valoaseen portti"
+   )
 
 /* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
 
@@ -6030,6 +6028,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "Näytä \"Käyttäjä\""
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Soittolistan kuvakkeet"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -8948,6 +8950,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
    "Jatka saavutusten hardcore-tilaa"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   "Kaikki odottavat pyynnöt on synkronoitu RetroAchievements-palvelimelle."
+)
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
    "Tunnistetaan peli"
@@ -12162,10 +12168,6 @@ MSG_HASH(
    "Havaitse automaattisesti"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Tilan lataaminen kohteesta"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Ominaisuudet"
    )
@@ -12290,6 +12292,14 @@ MSG_HASH(
    "Suosikin lisääminen epäonnistui: soittolista täynnä"
    )
 MSG_HASH(
+   MSG_ADDED_TO_PLAYLIST,
+   "Lisätty soittolistalle"
+   )
+MSG_HASH(
+   MSG_ADD_TO_PLAYLIST_FAILED,
+   "Ei voitu lisätä soittolistaan: soittolista täynnä"
+   )
+MSG_HASH(
    MSG_SET_CORE_ASSOCIATION,
    "Ydin asetettu: "
    )
@@ -12356,10 +12366,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "Ei voida päätellä uutta kokoonpanon polkua. Käytä nykyistä aikaa."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Saavutuksien hardcore tila käytössä, tilatallennukset ja takaisinkelaus poistettiin käytöstä."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -13218,6 +13224,10 @@ MSG_HASH(
    "Virtuaalisen levyaseman sulkeminen epäonnistui."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Tilan lataaminen kohteesta"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "Tilatallennuksen automaattinen lataus kohteesta \"%s\" epäonnistui."
    )
@@ -13430,12 +13440,20 @@ MSG_HASH(
    "Yhteyden muodostaminen isäntään epäonnistui."
    )
 MSG_HASH(
+   MSG_NETPLAY_HOST_FULL,
+   "Verkkopelin isäntä on täynnä."
+   )
+MSG_HASH(
    MSG_NETPLAY_BANNED,
    "Sinulla on porttikielto tälle palvelimelle."
    )
 MSG_HASH(
    MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
    "Otsakkeen vastaanottaminen isännältä epäonnistui."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: Kirjautuneena tilillä \"%s\"."
    )
 MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
@@ -13457,6 +13475,26 @@ MSG_HASH(
    MSG_CHEEVOS_COMPLETED_GAME,
    "Läpäisty %s"
    )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Saavutuksien hardcore tila käytössä, tilatallennukset ja takaisinkelaus poistettiin käytöstä."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Tälle pelille ei ole saavutuksia."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Kaikki %d saavutusta aktivoitu tälle istunnolle"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Aktivoitu %d epävirallista saavutusta"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Olet avannut %d/%d saavutusta"
+)
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Matalin"

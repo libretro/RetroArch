@@ -505,7 +505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "المسار الكامل للأساس"
+   "المسار الكامل"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -530,10 +530,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
    "- ملاحظة: تم تمكين 'ملفات النظام في دليل المحتوى' حاليا."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- جاري البحث في: '%s'"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -2099,10 +2095,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "لاتفيا الصوت (مللي ثانية)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "تأخير الصوت المطلوب بالمللي ثانية. قد لا يتم تكريمه إذا لم يتمكن مشغل الصوت من توفير وقت زمني معين."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -2819,25 +2811,11 @@ MSG_HASH(
 /* Settings > Latency */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "ابدأ بتخفيض لاتفيا"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "تشغيل المنطق الأساسي واحد أو أكثر من الأطر القادمة ثم تحميل الحالة مرة أخرى لتقليل التخلف المتوقع في الإدخال."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
    "عدد الإطارات إلى Run-Aforward"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "استخدام المثيل الثاني للتشغيل"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "استخدم مثيل ثان من قلب RetroArch للمضي قدما. يمنع مشاكل الصوت بسبب حالة التحميل."
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "إخفاء التحذيرات"
@@ -8046,10 +8024,6 @@ MSG_HASH(
    "الكشف التلقائي"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "التحميل التلقائي للحالة من"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "القدرات"
    )
@@ -8196,10 +8170,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    "لا يمكن استنتاج مسار تكوين جديد. استخدم الوقت الحالي."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "تم تمكين وضع الهرنج للإنجاز، حفظ الحالة وإعادة الإرسال تم تعطيلها."
    )
 MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
@@ -8910,6 +8880,10 @@ MSG_HASH(
    "فشل حساب حجم العرض! سوف يستمر في استخدام البيانات الخام. ربما لن يعمل هذا بشكل صحيح..."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "التحميل التلقائي للحالة من"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "فشل التحميل التلقائي لحالة الحفظ من \"%s\"."
    )
@@ -9048,6 +9022,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "تم تنشيط الغش. تم تعطيل وضع الهرنج للإنجازات في الدورة الحالية."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "تم تمكين وضع الهرنج للإنجاز، حفظ الحالة وإعادة الإرسال تم تعطيلها."
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
@@ -9674,10 +9652,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "تمكين الخط"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "عرض خط القائمة السفلية. تمكين عرض أوصاف الأزرار في أسفل الشاشة. يستبعد هذا تاريخ الحفظ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

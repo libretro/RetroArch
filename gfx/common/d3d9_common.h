@@ -77,7 +77,9 @@ typedef struct d3d9_video
    WNDCLASSEX windowClass;
 #endif
    LPDIRECT3DDEVICE9 dev;
-   D3DVIEWPORT9 final_viewport;
+   D3DVIEWPORT9 out_vp;
+   float translate_x;
+   float translate_y;
 
    char *shader_path;
 
@@ -256,7 +258,7 @@ void d3d9_set_osd_msg(void *data,
       const char *msg,
       const struct font_params *params, void *font);
 
-void d3d9_unload_texture(void *data, 
+void d3d9_unload_texture(void *data,
       bool threaded, uintptr_t id);
 
 void d3d9_set_video_mode(void *data,

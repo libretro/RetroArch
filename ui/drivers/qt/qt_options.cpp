@@ -254,9 +254,6 @@ QWidget *InputPage::widget()
       menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
          file_list_get_actiondata_at_offset(list, i);
 
-      if (cbs->enum_idx == MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS)
-         break;
-
       layout->add(menu_setting_find_enum(cbs->enum_idx));
    }
 
@@ -385,11 +382,12 @@ LatencyPage::LatencyPage(QObject *parent) :
 
 QWidget *LatencyPage::widget()
 {
-   QWidget                         *widget = new QWidget;
-   FormLayout                      *layout = new FormLayout;
-   CheckableSettingsGroup *runAheadGpuSync = new CheckableSettingsGroup(MENU_ENUM_LABEL_RUN_AHEAD_ENABLED);
+   QWidget                       *widget = new QWidget;
+   FormLayout                    *layout = new FormLayout;
+   SettingsGroup *runAheadGroup          = new SettingsGroup(
+           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE));
 
-   rarch_setting_t *hardSyncSetting        = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
+   rarch_setting_t *hardSyncSetting      = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HARD_SYNC);
 
    if (hardSyncSetting)
    {
@@ -408,10 +406,10 @@ QWidget *LatencyPage::widget()
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_AUDIO_LATENCY));
    layout->add(menu_setting_find_enum(MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR));
 
-   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES));
-   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_SECONDARY_INSTANCE));
-   runAheadGpuSync->add(menu_setting_find_enum(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS));
-   layout->addRow(runAheadGpuSync);
+   runAheadGroup->add(MENU_ENUM_LABEL_RUNAHEAD_MODE);
+   runAheadGroup->add(MENU_ENUM_LABEL_RUN_AHEAD_FRAMES);
+   runAheadGroup->add(MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS);
+   layout->addRow(runAheadGroup);
 
    widget->setLayout(layout);
 
@@ -548,8 +546,12 @@ QGroupBox *NetplayPage::createMitmServerGroup()
 
    groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   connect(buttonGroup, &QButtonGroup::idClicked, this, &NetplayPage::onRadioButtonClicked);
+#else
    connect(buttonGroup, SIGNAL(buttonClicked(int)), this,
       SLOT(onRadioButtonClicked(int)));
+#endif
 
    return groupBox;
 }
@@ -1438,7 +1440,13 @@ QWidget *VideoPage::widget()
 
    layout->addStretch();
 
-   connect(m_resolutionCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(onResolutionComboIndexChanged(const QString&)));
+#if (QT_VERSION > QT_VERSION_CHECK(6, 0, 0))
+   void (VideoPage::*cb)(int) = &VideoPage::onResolutionComboIndexChanged;
+   connect(m_resolutionCombo, &QComboBox::currentIndexChanged, this, cb);
+#else
+   connect(m_resolutionCombo, SIGNAL(currentIndexChanged(const QString&)), this,
+         SLOT(onResolutionComboIndexChanged(const QString&)));
+#endif
 
    widget->setLayout(layout);
 
@@ -1568,6 +1576,14 @@ QWidget *CrtSwitchresPage::widget()
 
 void VideoPage::onResolutionComboIndexChanged(const QString &text)
 {
+   const char *path     = text.toUtf8().constData();
+   action_cb_push_dropdown_item_resolution(path,
+         NULL, 0, 0, 0);
+}
+
+void VideoPage::onResolutionComboIndexChanged(int index)
+{
+   const QString& text  = m_resolutionCombo->itemText(index);
    const char *path     = text.toUtf8().constData();
    action_cb_push_dropdown_item_resolution(path,
          NULL, 0, 0, 0);

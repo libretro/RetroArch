@@ -1724,7 +1724,11 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->frame.output_size,       /* FinalViewportSize */
             &d3d12->pass[i].frame_count,     /* FrameCount */
             &d3d12->pass[i].frame_direction, /* FrameDirection */
+            &d3d12->pass[i].frame_time_delta,/* FrameTimeDelta */
+            &d3d12->pass[i].original_fps,        /* OriginalFPS */
             &d3d12->pass[i].rotation,        /* Rotation */
+            &d3d12->pass[i].core_aspect,     /* OriginalAspect */
+            &d3d12->pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d12->pass[i].total_subframes, /* TotalSubFrames */
             &d3d12->pass[i].current_subframe,/* CurrentSubFrame */
          }
@@ -3591,9 +3595,21 @@ static bool d3d12_gfx_frame(
             d3d12->pass[i].frame_direction = -1;
          else
 #endif
-            d3d12->pass[i].frame_direction = 1;
+         d3d12->pass[i].frame_direction = 1;
+
+         d3d12->pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+         d3d12->pass[i].original_fps = video_driver_get_original_fps();
 
          d3d12->pass[i].rotation = retroarch_get_rotation();
+
+         d3d12->pass[i].core_aspect = video_driver_get_core_aspect();
+
+         /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+         d3d12->pass[i].core_aspect_rot = video_driver_get_core_aspect();
+         uint32_t rot = retroarch_get_rotation();
+         if (rot == 1 || rot == 3)
+            d3d12->pass[i].core_aspect_rot = 1/d3d12->pass[i].core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */

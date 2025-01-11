@@ -128,14 +128,14 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
    char name[256];
    UINT name_size = sizeof(name);
 
-   name[0]        = '\0';
+   name[0] = '\0';
 
    for (i = 0; i < mouse_cnt; ++i)
    {
       UINT r = GetRawInputDeviceInfoA(mice[i].hnd, RIDI_DEVICENAME,
             name, &name_size);
       if (r == (UINT)-1 || r == 0)
-         name[0]   = '\0';
+         name[0] = '\0';
 
       if (name[0])
       {
@@ -146,7 +146,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
          if (hhid != INVALID_HANDLE_VALUE)
          {
             wchar_t prod_buf[128];
-            prod_buf[0]  = '\0';
+            prod_buf[0] = '\0';
             if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
                wcstombs(name, prod_buf, sizeof(name));
          }
@@ -158,7 +158,7 @@ static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
 
       input_config_set_mouse_display_name(i, name);
 
-      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i, name);
+      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i + 1, name);
    }
 }
 
@@ -203,18 +203,22 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       }
    }
 
+   *mouse_cnt = mouse_cnt_r;
+
    /* count is already checked, so this is safe */
    for (i = mouse_cnt_r = 0; i < dev_cnt; ++i)
    {
       if (devs[i].dwType == RIM_TYPEMOUSE)
-         mice_r[mouse_cnt_r++].hnd = devs[i].hDevice;
+      {
+         mouse_cnt_r++;
+         mice_r[*mouse_cnt - mouse_cnt_r].hnd = devs[i].hDevice;
+      }
    }
+
+   *mice      = mice_r;
 
    winraw_log_mice_info(mice_r, mouse_cnt_r);
    free(devs);
-
-   *mice      = mice_r;
-   *mouse_cnt = mouse_cnt_r;
 
    return true;
 
@@ -230,41 +234,24 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
       winraw_mouse_t *mouse,
       unsigned port, unsigned id)
 {
-   struct video_viewport vp;
+   struct video_viewport vp = {0};
    int16_t res_x         = 0;
    int16_t res_y         = 0;
    int16_t res_screen_x  = 0;
    int16_t res_screen_y  = 0;
 
-   vp.x                  = 0;
-   vp.y                  = 0;
-   vp.width              = 0;
-   vp.height             = 0;
-   vp.full_width         = 0;
-   vp.full_height        = 0;
-
    if ((video_driver_translate_coord_viewport_wrap(
                &vp, mouse->x, mouse->y,
                &res_x, &res_y, &res_screen_x, &res_screen_y)))
    {
-      const int edge_detect = 32700;
-      bool inside =    (res_x >= -edge_detect)
-         && (res_y >= -edge_detect)
-         && (res_x <=  edge_detect)
-         && (res_y <=  edge_detect);
-
       switch (id)
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            if (inside)
-               return res_x;
-            break;
+            return res_x;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            if (inside)
-               return res_y;
-            break;
+            return res_y;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return !inside;
+            return input_driver_pointer_is_offscreen(res_x, res_y);
          default:
             break;
       }
@@ -675,41 +662,6 @@ static void winraw_poll(void *data)
       memset(wr->kb_keys, 0, SC_LAST);
 }
 
-static unsigned winraw_retro_id_to_rarch(unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-         return RARCH_LIGHTGUN_DPAD_RIGHT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-         return RARCH_LIGHTGUN_DPAD_LEFT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-         return RARCH_LIGHTGUN_DPAD_UP;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-         return RARCH_LIGHTGUN_DPAD_DOWN;
-      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         return RARCH_LIGHTGUN_SELECT;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return RARCH_LIGHTGUN_START;
-      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-         return RARCH_LIGHTGUN_RELOAD;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return RARCH_LIGHTGUN_TRIGGER;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         return RARCH_LIGHTGUN_AUX_A;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         return RARCH_LIGHTGUN_AUX_B;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         return RARCH_LIGHTGUN_AUX_C;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return RARCH_LIGHTGUN_START;
-      default:
-         break;
-   }
-
-   return 0;
-}
-
 static int16_t winraw_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -876,9 +828,8 @@ static int16_t winraw_input_state(
          case RETRO_DEVICE_POINTER:
          case RARCH_DEVICE_POINTER_SCREEN:
             {
-               struct video_viewport vp;
+               struct video_viewport vp    = {0};
                bool pointer_down           = false;
-               bool inside                 = false;
                int x                       = 0;
                int y                       = 0;
                int16_t res_x               = 0;
@@ -888,13 +839,6 @@ static int16_t winraw_input_state(
                unsigned num                = 0;
                struct winraw_pointer_status *
                   check_pos                = wr->pointer_head.next;
-
-               vp.x                        = 0;
-               vp.y                        = 0;
-               vp.width                    = 0;
-               vp.height                   = 0;
-               vp.full_width               = 0;
-               vp.full_height              = 0;
 
                while (check_pos && num < idx)
                {
@@ -918,7 +862,7 @@ static int16_t winraw_input_state(
                   pointer_down = true;
                }
 
-               if (!(video_driver_translate_coord_viewport_wrap(&vp, x, y,
+               if (!(video_driver_translate_coord_viewport_confined_wrap(&vp, x, y,
                            &res_x, &res_y, &res_screen_x, &res_screen_y)))
                   return 0;
 
@@ -928,9 +872,6 @@ static int16_t winraw_input_state(
                   res_y        = res_screen_y;
                }
 
-               if (!(inside = (res_x >= -0x7fff) && (res_y >= -0x7fff)))
-                  return 0;
-
                switch (id)
                {
                   case RETRO_DEVICE_ID_POINTER_X:
@@ -939,6 +880,8 @@ static int16_t winraw_input_state(
                      return res_y;
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
                      return pointer_down;
+                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                     return input_driver_pointer_is_offscreen(res_x, res_y);
                   default:
                      break;
                }
@@ -966,7 +909,7 @@ static int16_t winraw_input_state(
                case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
                case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
                   {
-                     unsigned new_id                = winraw_retro_id_to_rarch(id);
+                     unsigned new_id                = input_driver_lightgun_id_convert(id);
                      const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
                      const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
                      const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;

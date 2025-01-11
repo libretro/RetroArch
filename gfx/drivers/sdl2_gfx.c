@@ -244,9 +244,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
             win_w, win_h, video_driver_get_aspect_ratio(),
             vid->video.force_aspect, true);
    else if (vid->video.force_aspect)
-   {
       video_viewport_get_scaled_aspect(&vid->vp, win_w, win_h, true);
-   }
 
    vid->flags &= ~SDL2_FLAG_SHOULD_RESIZE;
 
@@ -607,7 +605,7 @@ static void sdl2_poke_set_texture_frame(void *data,
       sdl_refresh_input_size(vid, true, rgb32, width, height,
             width * (rgb32 ? 4 : 2));
 
-      SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
+      SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);
    }
 }
 

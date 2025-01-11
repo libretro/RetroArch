@@ -81,7 +81,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
 {
     uint32_t *buttons        = &mfi_buttons[slot];
     /* Retain the values from the paused controller handler and pass them through.
-     * The menu button can be pressed/unpressed 
+     * The menu button can be pressed/unpressed
      * like any other button in iOS 13,
      * so no need to passthrough anything */
     if (@available(iOS 13, *))
@@ -231,7 +231,7 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
 {
 #ifdef __IPHONE_14_0
     /* Don't let tvOS or iOS do anything with **our** buttons!!
-     * iOS will start a screen recording if you hold or doubleclick  
+     * iOS will start a screen recording if you hold or doubleclick
      * the OPTIONS button, we don't want that. */
     if (@available(iOS 14.0, tvOS 14.0, macOS 11, *))
     {
@@ -241,8 +241,8 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
         gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
     }
 #endif
-    
-    /* controllerPausedHandler is deprecated in favor 
+
+    /* controllerPausedHandler is deprecated in favor
      * of being able to deal with the menu
      * button as any other button */
     if (@available(iOS 13, *))
@@ -257,16 +257,16 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
         {
            uint32_t slot      = (uint32_t)controller.playerIndex;
 
-           /* Support buttons that aren't supported by the mFi 
+           /* Support buttons that aren't supported by the mFi
             * controller via "hotkey" combinations:
             *
             * LS + Menu => Select
             * LT + Menu => L3
             * RT + Menu => R3
-            * Note that these are just button presses, and it 
+            * Note that these are just button presses, and it
             * does not simulate holding down the button
             */
-           if (     controller.gamepad.leftShoulder.pressed 
+           if (     controller.gamepad.leftShoulder.pressed
                  || controller.extendedGamepad.leftShoulder.pressed )
            {
               mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
@@ -436,6 +436,12 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
     if (!(desired_index >= 0 && desired_index < MAX_MFI_CONTROLLERS))
        desired_index     = 0;
 
+    if (mfi_controller_is_siri_remote(controller))
+    {
+        RARCH_WARN("[mfi] ignoring siri remote as a controller\n");
+        return;
+    }
+
     /* Prevent same controller getting set twice */
     if ([mfiControllers containsObject:controller])
     {
@@ -500,37 +506,6 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
 
     [mfiControllers addObject:controller];
 
-    /* Move any non-game controllers (like the Siri remote) to the end */
-    if (mfiControllers.count > 1)
-    {
-        int newPlayerIndex                        = 0;
-        NSInteger connectedNonGameControllerIndex = NSNotFound;
-        NSUInteger index                          = 0;
-
-        for (GCController *connectedController in mfiControllers)
-        {
-            if (     connectedController.microGamepad    != nil
-                     && connectedController.extendedGamepad == nil )
-                connectedNonGameControllerIndex = index;
-            index++;
-        }
-
-        if (connectedNonGameControllerIndex != NSNotFound)
-        {
-            GCController *nonGameController = [mfiControllers objectAtIndex:connectedNonGameControllerIndex];
-            [mfiControllers removeObjectAtIndex:connectedNonGameControllerIndex];
-            [mfiControllers addObject:nonGameController];
-        }
-        for (GCController *gc in mfiControllers)
-            gc.playerIndex = newPlayerIndex++;
-    }
-
-    if (mfi_controller_is_siri_remote(controller))
-    {
-        RARCH_WARN("[mfi] ignoring siri remote as a controller\n");
-        return;
-    }
-
     RARCH_LOG("[mfi] controller connected, beginning setup and autodetect\n");
     apple_gamecontroller_joypad_register(controller);
     apple_gamecontroller_joypad_setup_haptics(controller);
@@ -554,7 +529,7 @@ static void apple_gamecontroller_joypad_disconnect(GCController* controller)
 }
 
 #if TARGET_OS_IOS
-static void apple_gamecontroller_device_haptics_setup() IPHONE_RUMBLE_AVAIL
+static void apple_gamecontroller_device_haptics_setup(void) IPHONE_RUMBLE_AVAIL
 {
     if (!CHHapticEngine.capabilitiesForHardware.supportsHaptics)
         return;
@@ -621,14 +596,14 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_create_play
     return player;
 }
 
-static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_strong_player() IPHONE_RUMBLE_AVAIL
+static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_strong_player(void) IPHONE_RUMBLE_AVAIL
 {
     if (!deviceStrongPlayer)
         deviceStrongPlayer = apple_gamecontroller_device_haptics_create_player(1.0f);
     return deviceStrongPlayer;
 }
 
-static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_weak_player() IPHONE_RUMBLE_AVAIL
+static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_weak_player(void) IPHONE_RUMBLE_AVAIL
 {
     if (!deviceWeakPlayer)
         deviceWeakPlayer = apple_gamecontroller_device_haptics_create_player(0.5f);
@@ -728,14 +703,14 @@ static int16_t apple_gamecontroller_joypad_state(
             ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
          const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
             ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-         if (     (uint16_t)joykey != NO_BTN 
+         if (     (uint16_t)joykey != NO_BTN
                && !GET_HAT_DIR(i)
                && (i < 32)
                && ((mfi_buttons[port_idx] & (1 << i)) != 0)
             )
             ret |= ( 1 << i);
          else if (joyaxis != AXIS_NONE &&
-               ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis)) 
+               ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis))
                 / 0x8000) > joypad_info->axis_threshold)
             ret |= (1 << i);
       }
@@ -751,7 +726,8 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
     settings_t *settings            = config_get_ptr();
     bool enable_device_vibration    = settings->bools.enable_device_vibration;
 
-    if (@available(iOS 14, *)) {
+    if (@available(iOS 14, *))
+    {
         if (enable_device_vibration && pad == 0)
         {
             NSError *error;

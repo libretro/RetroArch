@@ -158,8 +158,24 @@ MSG_HASH(
    "Conoz más tocante a cómo funciona'l programa."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   "Reaniciar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   "Reanicia l'aplicación Retroarch."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
    "Colar"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   "Cola de l'aplicación Retroarch. El guardáu de la configuración al colar ta activáu."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   "Cola de l'aplicación Retroarch. El guardáu de la configuración al colar ta desactiváu."
    )
 
 /* Main Menu > Load Core */
@@ -404,6 +420,10 @@ MSG_HASH(
    "APIs gráfiques riquíes"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   "Camín completu"
+)
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    "Bloquiar el nucleu instaláu"
    )
@@ -464,7 +484,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Anchor de la pantalla (mm)"
+   "Llargor de la pantalla (mm)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
@@ -714,7 +734,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   "Espublizador"
+   "Publicador"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
@@ -915,6 +935,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
    "Interfaz d'usuariu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   "Camuda la configuración de la interfaz d'usuariu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
@@ -1450,6 +1474,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
@@ -1546,6 +1572,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    "Llocal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   "Baxa"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY,
+   "Mediana"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   "Alta"
    )
 
 /* Settings > On-Screen Display */
@@ -1770,8 +1808,32 @@ MSG_HASH(
    "Amosar la opción «Reaniciar RetroArch»"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
+   "Amosar «Configuración»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
+   "Amosar «Imáxenes»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
+   "Amosar «Música»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
+   "Amosar «Vídeos»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
+   "Amosar «Historial»"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    "Menú principal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   "Amosar «Nucleos ensin conteníu»"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
@@ -1789,13 +1851,89 @@ MSG_HASH(
 /* Settings > User Interface > Menu Item Visibility > Quick Menu */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   "Amosar «Siguir»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
+   "Amosar «Reaniciar»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   "Amosar «Zarrar el conteníu»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   "Amosar el somenú «Puntos de guardáu»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   "Amosar «Trampes»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   "Amosar «Asolombradores»"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    "Amosar la opción «Información»"
    )
 
 /* Settings > User Interface > Views > Settings */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+   "Amosar «Videu»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   "Amosar «Audiu»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+   "Amosar «Nucleu»"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   "Amosar «Configuración»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   "Amuesa les opciones de configuración."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
+   "Amosar «Serviciu d'IA»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
+   "Amuesa la configuración del serviciu d'IA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "Amosar «Xestión d'enerxía»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   "Amuesa la configuración de la xestión d'enerxía."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Amosar «Llogros»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   "Amuesa la configuración de los llogros."
+   )
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+   "Amosar «Steam»"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
+   "Amuesa la configuración de Steam."
+   )
 
 /* Settings > User Interface > Appearance */
 
@@ -1821,7 +1959,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
-   "Siempres"
+   "Siempre"
    )
 
 /* Settings > AI Service */
@@ -2148,6 +2286,10 @@ MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
    "Restolador de ficheros"
    )
+MSG_HASH( /* FIXME Not RGUI specific */
+   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   "Ficheros de configuración"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
    "Nucleos"
@@ -2163,6 +2305,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    "Asolombradores de videu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+   "Grabaciones"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+   "Les grabaciones atróxense nesti direutoriu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
@@ -2287,11 +2437,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
-   "Pol espublizador"
+   "Pol publicador"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
-   "Pol añu d'espublizamientu"
+   "Pol añu de publicación"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
@@ -2707,7 +2857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
-   "Siempres"
+   "Siempre"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
@@ -3307,11 +3457,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
-   "Llistes anubríes"
+   "Llistes escondíes"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_HIDE,
-   "Anubrir"
+   "Esconder"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
@@ -3596,7 +3746,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_PUBLISHER,
-   "Base de datos - Peñera: espublizador"
+   "Base de datos - Peñera: publicador"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_CURSOR_LIST_ENTRY_ORIGIN,

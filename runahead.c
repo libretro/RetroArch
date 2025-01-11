@@ -141,17 +141,17 @@ void runahead_set_load_content_info(void *data,
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void strcat_alloc(char **dst, const char *s)
 {
-   size_t len1;
+   size_t _len;
    char *src          = *dst;
 
    if (!src)
    {
       if (s)
       {
-         size_t   len = strlen(s);
-         if (len != 0)
+         size_t __len = strlen(s);
+         if (__len != 0)
          {
-            char *_dst= (char*)malloc(len + 1);
+            char *_dst= (char*)malloc(__len + 1);
             strcpy_literal(_dst, s);
             src       = _dst;
          }
@@ -168,13 +168,13 @@ static void strcat_alloc(char **dst, const char *s)
    if (!s)
       return;
 
-   len1               = strlen(src);
+   _len               = strlen(src);
 
-   if (!(src = (char*)realloc(src, len1 + strlen(s) + 1)))
+   if (!(src = (char*)realloc(src, _len + strlen(s) + 1)))
       return;
 
    *dst               = src;
-   strcpy_literal(src + len1, s);
+   strcpy_literal(src + _len, s);
 }
 
 void runahead_secondary_core_destroy(void *data)
@@ -241,10 +241,10 @@ static char *get_tmpdir_alloc(const char *override_dir)
 #endif
    if (src)
    {
-      size_t   len    = strlen(src);
-      if (len != 0)
+      size_t _len     = strlen(src);
+      if (_len != 0)
       {
-         char *dst    = (char*)malloc(len + 1);
+         char *dst    = (char*)malloc(_len + 1);
          strcpy_literal(dst, src);
          path         = dst;
       }
@@ -270,10 +270,10 @@ static bool write_file_with_random_name(char **temp_dll_path,
 
    if (src)
    {
-      size_t   len          = strlen(src);
-      if (len != 0)
+      size_t _len           = strlen(src);
+      if (_len != 0)
       {
-         char *dst          = (char*)malloc(len + 1);
+         char *dst          = (char*)malloc(_len + 1);
          strcpy_literal(dst, src);
          ext                = dst;
       }
@@ -1174,11 +1174,12 @@ void runahead_run(void *data,
 
       if (!runahead_create(runloop_st))
       {
-         const char *runahead_failed_str =
+         const char *_msg =
             msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES);
          if (!runahead_hide_warnings)
-            runloop_msg_queue_push(runahead_failed_str, 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", _msg);
          goto force_input_dirty;
       }
    }
@@ -1226,10 +1227,11 @@ void runahead_run(void *data,
          {
             if (!runahead_save_state(runloop_st))
             {
-               const char *runahead_failed_str =
+               const char *_msg =
                   msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", _msg);
                return;
             }
          }
@@ -1238,10 +1240,10 @@ void runahead_run(void *data,
          {
             if (!runahead_load_state(runloop_st))
             {
-               const char *runahead_failed_str =
-                  msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", _msg);
                return;
             }
          }
@@ -1252,12 +1254,13 @@ void runahead_run(void *data,
 #if HAVE_DYNAMIC
       if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
       {
-         const char *runahead_failed_str =
+         const char *_msg =
             msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
          runahead_secondary_core_destroy(runloop_st);
          runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-         runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+         runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", _msg);
          goto force_input_dirty;
       }
 
@@ -1276,19 +1279,19 @@ void runahead_run(void *data,
 
          if (!runahead_save_state(runloop_st))
          {
-            const char *runahead_failed_str =
-               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", _msg);
             return;
          }
 
          if (!runahead_load_state_secondary(runloop_st, settings))
          {
-            const char *runahead_failed_str =
-               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", _msg);
             return;
          }
 
@@ -1332,26 +1335,29 @@ force_input_dirty:
 static int16_t preempt_input_state(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   settings_t *settings         = config_get_ptr();
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   preempt_t *preempt           = runloop_st->preempt_data;
-   unsigned device_class        = device & RETRO_DEVICE_MASK;
-   unsigned *port_map           = settings->uints.input_remap_port_map[port];
-   uint8_t p;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   preempt_t *preempt          = runloop_st->preempt_data;
+   unsigned device_class       = device & RETRO_DEVICE_MASK;
 
    switch (device_class)
    {
       case RETRO_DEVICE_ANALOG:
          /* Add requested inputs to mask */
-         while ((p = *(port_map++)) < MAX_USERS)
-            preempt->analog_mask[p] |= (1 << (id + index * 2));
+         preempt->analog_mask[port] |= (1 << (id + index * 2));
          break;
       case RETRO_DEVICE_LIGHTGUN:
-      case RETRO_DEVICE_MOUSE:
       case RETRO_DEVICE_POINTER:
          /* Set pointing device for this port */
-         while ((p = *(port_map++)) < MAX_USERS)
-            preempt->ptr_dev[p] = device_class;
+         preempt->ptr_dev_needed[port] = device_class;
+         break;
+      case RETRO_DEVICE_MOUSE:
+         /* Set pointing device and return stored x,y */
+         if (id <= RETRO_DEVICE_ID_MOUSE_Y)
+         {
+            preempt->ptr_dev_needed[port] = device_class;
+            if (preempt->ptr_dev_polled[port] == device_class)
+               return preempt->ptrdev_state[port][id];
+         }
          break;
       default:
          break;
@@ -1394,10 +1400,10 @@ static const char* preempt_allocate(runloop_state_t *runloop_st,
  **/
 void preempt_deinit(void *data)
 {
+   size_t i;
    runloop_state_t *runloop_st       = (runloop_state_t*)data;
    preempt_t *preempt                = runloop_st->preempt_data;
    struct retro_core_t *current_core = &runloop_st->current_core;
-   size_t i;
 
    if (!preempt)
       return;
@@ -1431,7 +1437,7 @@ bool preempt_init(void *data)
 {
    runloop_state_t *runloop_st = (runloop_state_t*)data;
    settings_t *settings        = config_get_ptr();
-   const char *failed_str      = NULL;
+   const char *_msg            = NULL;
 
    if (     runloop_st->preempt_data
          || !settings->bools.preemptive_frames_enable
@@ -1442,7 +1448,7 @@ bool preempt_init(void *data)
    /* Check if supported - same requirements as runahead */
    if (!core_info_current_supports_runahead())
    {
-      failed_str = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
+      _msg = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
       goto error;
    }
 
@@ -1456,7 +1462,7 @@ bool preempt_init(void *data)
       runloop_st->current_core.retro_run();
 
    /* Allocate - same 'frames' setting as runahead */
-   if ((failed_str = preempt_allocate(runloop_st,
+   if ((_msg = preempt_allocate(runloop_st,
                settings->uints.run_ahead_frames)))
       goto error;
 
@@ -1470,17 +1476,16 @@ bool preempt_init(void *data)
 error:
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.preemptive_frames_hide_warnings)
-      runloop_msg_queue_push(
-            failed_str, 0, 2 * 60, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_WARN("[Preemptive Frames]: %s\n", failed_str);
+   if (!settings->bools.run_ahead_hide_warnings)
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_WARN("[Preemptive Frames]: %s\n", _msg);
 
    return false;
 }
 
 static INLINE bool preempt_analog_input_dirty(preempt_t *preempt,
-      retro_input_state_t state_cb, unsigned port, unsigned mapped_port)
+      retro_input_state_t state_cb, unsigned port)
 {
    int16_t state[20] = {0};
    uint8_t base, i;
@@ -1490,17 +1495,20 @@ static INLINE bool preempt_analog_input_dirty(preempt_t *preempt,
    {
       base = i * 2;
       if (preempt->analog_mask[port] & (1 << (base    )))
-         state[base    ] = state_cb(mapped_port, RETRO_DEVICE_ANALOG, i, 0);
+         state[base    ] = state_cb(port, RETRO_DEVICE_ANALOG, i, 0);
       if (preempt->analog_mask[port] & (1 << (base + 1)))
-         state[base + 1] = state_cb(mapped_port, RETRO_DEVICE_ANALOG, i, 1);
+         state[base + 1] = state_cb(port, RETRO_DEVICE_ANALOG, i, 1);
    }
 
    /* buttons */
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   if (preempt->analog_mask[port] & 0xfff0)
    {
-      if (preempt->analog_mask[port] & (1 << (i + 4)))
-         state[i + 4] = state_cb(mapped_port, RETRO_DEVICE_ANALOG,
-               RETRO_DEVICE_INDEX_ANALOG_BUTTON, i);
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      {
+         if (preempt->analog_mask[port] & (1 << (i + 4)))
+            state[i + 4] = state_cb(port, RETRO_DEVICE_ANALOG,
+                  RETRO_DEVICE_INDEX_ANALOG_BUTTON, i);
+      }
    }
 
    if (memcmp(preempt->analog_state[port], state, sizeof(state)) == 0)
@@ -1511,8 +1519,7 @@ static INLINE bool preempt_analog_input_dirty(preempt_t *preempt,
 }
 
 static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
-      retro_input_state_t state_cb, unsigned device,
-      unsigned port, unsigned mapped_port)
+      retro_input_state_t state_cb, unsigned device, unsigned port)
 {
    int16_t state[4]  = {0};
    unsigned count_id = 0;
@@ -1537,16 +1544,16 @@ static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
    }
 
    /* x, y */
-   state[0] = state_cb(mapped_port, device, 0, x_id    );
-   state[1] = state_cb(mapped_port, device, 0, x_id + 1);
+   state[0] = state_cb(port, device, 0, x_id    );
+   state[1] = state_cb(port, device, 0, x_id + 1);
 
    /* buttons */
    for (id = 2; id <= max_id; id++)
-      state[2] |= state_cb(mapped_port, device, 0, id) ? 1 << id : 0;
+      state[2] |= state_cb(port, device, 0, id) ? 1 << id : 0;
 
    /* ptr count */
    if (count_id)
-      state[3] = state_cb(mapped_port, device, 0, count_id);
+      state[3] = state_cb(port, device, 0, count_id);
 
    if (memcmp(preempt->ptrdev_state[port], state, sizeof(state)) == 0)
       return false;
@@ -1560,52 +1567,42 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
 {
    size_t p;
    int16_t joypad_state;
-   retro_input_state_t state_cb   = input_driver_state_wrapper;
-   unsigned max_users             = settings->uints.input_max_users;
+   retro_input_state_t state_cb = input_driver_state_wrapper;
+   unsigned max_users           = settings->uints.input_max_users;
 
    input_driver_poll();
 
    /* Check for input state changes */
    for (p = 0; p < max_users; p++)
    {
-      unsigned mapped_port = settings->uints.input_remap_ports[p];
-      unsigned device      = settings->uints.input_libretro_device[mapped_port]
-                             & RETRO_DEVICE_MASK;
-
-      switch (device)
+      /* Check full digital joypad */
+      joypad_state = state_cb(p, RETRO_DEVICE_JOYPAD,
+            0, RETRO_DEVICE_ID_JOYPAD_MASK);
+      if (joypad_state != preempt->joypad_state[p])
       {
-         case RETRO_DEVICE_JOYPAD:
-         case RETRO_DEVICE_ANALOG:
-            /* Check full digital joypad */
-            joypad_state = state_cb(mapped_port, RETRO_DEVICE_JOYPAD,
-                  0, RETRO_DEVICE_ID_JOYPAD_MASK);
-            if (joypad_state != preempt->joypad_state[p])
-            {
-               preempt->joypad_state[p] = joypad_state;
-               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
-            }
+         preempt->joypad_state[p] = joypad_state;
+         runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      }
 
-            /* Check requested analogs */
-            if (     preempt->analog_mask[p]
-                  && preempt_analog_input_dirty(preempt, state_cb, (unsigned)p, mapped_port))
-               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
-            break;
-         case RETRO_DEVICE_MOUSE:
-         case RETRO_DEVICE_LIGHTGUN:
-         case RETRO_DEVICE_POINTER:
-            /* Check full device state */
-            if (preempt_ptr_input_dirty(
-                  preempt, state_cb, preempt->ptr_dev[p], (unsigned)p, mapped_port))
-               runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
-            break;
-         default:
-            break;
+      /* Check requested analogs */
+      if (     preempt->analog_mask[p]
+            && preempt_analog_input_dirty(preempt, state_cb, (unsigned)p))
+      {
+         runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+         preempt->analog_mask[p] = 0;
+      }
+
+      /* Check requested pointing device */
+      if (preempt->ptr_dev_needed[p])
+      {
+         if (preempt_ptr_input_dirty(
+               preempt, state_cb, preempt->ptr_dev_needed[p], (unsigned)p))
+            runloop_st->flags |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+
+         preempt->ptr_dev_polled[p] = preempt->ptr_dev_needed[p];
+         preempt->ptr_dev_needed[p] = RETRO_DEVICE_NONE;
       }
    }
-
-   /* Clear requested inputs */
-   memset(preempt->analog_mask, 0, max_users * sizeof(uint32_t));
-   memset(preempt->ptr_dev, 0, max_users * sizeof(uint8_t));
 }
 
 /* macro for preempt_run */
@@ -1621,7 +1618,7 @@ void preempt_run(preempt_t *preempt, void *data)
 {
    runloop_state_t     *runloop_st   = (runloop_state_t*)data;
    struct retro_core_t *current_core = &runloop_st->current_core;
-   const char *failed_str            = NULL;
+   const char *_msg                  = NULL;
    settings_t *settings              = config_get_ptr();
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
@@ -1641,7 +1638,7 @@ void preempt_run(preempt_t *preempt, void *data)
       if (!current_core->retro_unserialize(
             preempt->buffer[preempt->start_ptr], preempt->state_size))
       {
-         failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
+         _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
          goto error;
       }
 
@@ -1653,7 +1650,7 @@ void preempt_run(preempt_t *preempt, void *data)
          if (!current_core->retro_serialize(
                preempt->buffer[preempt->replay_ptr], preempt->state_size))
          {
-            failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+            _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
             goto error;
          }
 
@@ -1669,7 +1666,7 @@ void preempt_run(preempt_t *preempt, void *data)
    if (!current_core->retro_serialize(
          preempt->buffer[preempt->start_ptr], preempt->state_size))
    {
-      failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+      _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
       goto error;
    }
    preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
@@ -1688,11 +1685,10 @@ error:
    video_st->flags   |=  VIDEO_FLAG_ACTIVE;
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.preemptive_frames_hide_warnings)
-      runloop_msg_queue_push(
-            failed_str, 0, 2 * 60, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_ERR("[Preemptive Frames]: %s\n", failed_str);
+   if (!settings->bools.run_ahead_hide_warnings)
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_ERR("[Preemptive Frames]: %s\n", _msg);
 }
 
 void runahead_clear_variables(void *data)

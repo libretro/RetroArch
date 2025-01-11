@@ -69,7 +69,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Выбраць ядро для выкарыстання."
+   "Выбраць ядро на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_CORE_LIST,
@@ -81,7 +81,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Выбраць змесціва для запуску."
+   "Выбраць змесціва на запуск."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
@@ -151,7 +151,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Сцягнуць дадатковыя кампаненты ды змесціва для RetroArch."
+   "Сцягнуць дадатковыя кампаненты ды змесціва на RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY,
@@ -343,7 +343,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_THUMBNAILS_UPDATER_LIST,
-   "Сцягнуць поўны пакет мініяцюр для выбранай сістэмы."
+   "Сцягнуць поўны пакет мініяцюр на выбраную сістэму."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
@@ -351,7 +351,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Сцягнуць мініяцюры для запісаў выбранага плэй-ліста."
+   "Сцягнуць мініяцюры да запісаў выбранага плэй-ліста."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -359,7 +359,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Сцягвае вольнае змесціва для выбранага ядра."
+   "Сцягвае вольнае змесціва да выбранага ядра."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -505,7 +505,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Поўны шлях да ядра"
+   "Поўны шлях"
 )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
@@ -537,11 +537,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- Прагляд у: '%s'"
+   "- Прагляд у: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "Адсутнічае, патрабуецца:"
+   "Адсутнічае, неабходнае:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
@@ -549,7 +549,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "Маецца, патрабуецца:"
+   "Маецца, неабходнае:"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
@@ -727,6 +727,30 @@ MSG_HASH(
    "Падтрымка SDL 2"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Падтрымка Direct3D 8"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Падтрымка Direct3D 9"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Падтрымка Direct3D 10"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Падтрымка Direct3D 11"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Падтрымка Direct3D 12"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "Падтрымка GDI"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Падтрымка Vulkan"
    )
@@ -807,6 +831,10 @@ MSG_HASH(
    "Падтрымка PulseAudio"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "Падтрымка PipeWire"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "Падтрымка CoreAudio"
    )
@@ -885,6 +913,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Падтрымка Video4Linux2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "Падтрымка SSL"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -1258,7 +1290,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
-   "Калі ўключана, сістэмныя файлы будуць сінхранізавацца з воблакам. Гэта можа значна павялічыць час, неабходны для сінхранізацыі; выкарыстоўвайце ўсвядомлена."
+   "Калі ўключана, сістэмныя файлы будуць сінхранізавацца з воблакам. Гэта можа значна павялічыць час на сінхранізацыю; выкарыстоўвайце ўсвядомлена."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
@@ -1278,7 +1310,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
-   "URL-адрас для пункту ўваходу API у воблачнае сховішча."
+   "URL-адрас на пункт увахода API у воблачнае сховішча."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
@@ -1298,11 +1330,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   "Журналяванне"
+   "Вядзенне журнала"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Змяніць налады журналявання."
+   "Змяніць налады вядзення журнала."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -1542,7 +1574,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Драйвер увода для выкарыстання. Некаторыя драйверы відэа прымусова ўжываюць іншыя драйверы ўвода."
+   "Драйвер увода на выкарыстанне. Некаторыя драйверы відэа прымусова ўжываюць іншыя драйверы ўвода."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
@@ -1562,7 +1594,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Драйвер кантролера для выкарыстання. (Патрабуецца перазапуск)"
+   "Драйвер кантролера на выкарыстанне. (Патрабуецца перазапуск)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
@@ -1599,7 +1631,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
-   "Драйвер відэа для выкарыстання."
+   "Драйвер відэа на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
@@ -1627,7 +1659,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
-   "Драйвер Metal для платформаў Apple. Падтрымлівае фармат шэйдараў Slang."
+   "Драйвер Metal на платформы Apple. Падтрымлівае фармат шэйдараў Slang."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
@@ -1655,15 +1687,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
-   "Драйвер DispmanX. Ужывае DispmanX API для Videocore IV GPU у Raspberry Pi 0..3. Накладкі ды шэйдары не падтрымліваюцца."
+   "Драйвер DispmanX. Ужывае DispmanX API на Videocore IV GPU у Raspberry Pi 0..3. Накладкі ды шэйдары не падтрымліваюцца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
-   "Драйвер LibCACA. Стварае сімвальны вывад замест графічнага. Не рэкамендуецца для практычнага выкарыстання."
+   "Драйвер LibCACA. Стварае сімвальны вывад замест графічнага. Не рэкамендуецца дзеля практычнага выкарыстання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
-   "Нізкаўзроўневы драйвер Exynos, які ўжывае блок G2D для аперацый блітавання ў аднакрыштальных сістэмах Samsung Exynos. Забяспечвае аптымальную прадукцыйнасць для ядраў з праграмным рэндэрынгам."
+   "Нізкаўзроўневы драйвер Exynos, які ўжывае блок G2D на аперацыі блітавання ў аднакрыштальных сістэмах Samsung Exynos. Забяспечвае аптымальную прадукцыйнасць у ядрах з праграмным рэндэрынгам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
@@ -1699,7 +1731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
-   "Гукавы драйвер для выкарыстання."
+   "Гукавы драйвер на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
@@ -1743,7 +1775,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
-   "Драйвер PulseAudio. Калі ў сістэме выкарыстоўваецца PulseAudio, пераканайцеся, што ўжыты гэты драйвер замест кшталту ALSA."
+   "Драйвер PulseAudio. Калі ў сістэме выкарыстоўваецца PulseAudio, пераканайцеся, што ўжыты гэты драйвер замест накшталт ALSA."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "Драйвер PipeWire. Калі ў сістэме выкарыстоўваецца PipeWire, пераканайцеся, што ўжыты гэты драйвер замест накшталт PulseAudio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
@@ -1756,7 +1792,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
-   "Драйвер мікрафона для выкарыстання."
+   "Драйвер мікрафона на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
@@ -1764,7 +1800,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
-   "Драйвер перадыскрэтызацыі мікрафона для выкарыстання."
+   "Драйвер перадыскрэтызацыі мікрафона на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
@@ -1777,7 +1813,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Драйвер перадыскрэтызацыі гуку для выкарыстання."
+   "Драйвер перадыскрэтызацыі гуку на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
@@ -1797,15 +1833,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
-   "Драйвер камеры для выкарыстання."
+   "Драйвер камеры на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
-   "Драйвер Bluetooth для выкарыстання."
+   "Драйвер Bluetooth на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_WIFI_DRIVER,
-   "Драйвер Wi-Fi для выкарыстання."
+   "Драйвер Wi-Fi на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
@@ -1813,7 +1849,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
-   "Драйвер месцазнаходжання для выкарыстання."
+   "Драйвер месцазнаходжання на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
@@ -1821,7 +1857,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Драйвер меню для выкарыстання. (Патрабуецца перазапуск)"
+   "Драйвер меню на выкарыстанне. (Патрабуецца перазапуск)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
@@ -1845,11 +1881,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RECORD_DRIVER,
-   "Драйвер запісу для выкарыстання."
+   "Драйвер запісу на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
-   "Драйвер MIDI для выкарыстання."
+   "Драйвер MIDI на выкарыстанне."
    )
 
 /* Settings > Video */
@@ -1860,7 +1896,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Вывад уласных сігналаў нізкай раздзяляльнасці для выкарыстання на ЭПТ-дысплэях."
+   "Вывад уласных сігналаў нізкай раздзяляльнасці на выкарыстанне разам з ЭПТ-дысплэямі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
@@ -2288,7 +2324,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   "Выбраць графічную картку для выкарыстання."
+   "Выбраць графічную картку на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
@@ -2523,15 +2559,35 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Маштабаваць малюнак з цэлалікім інтэрвалам. Базавы памер залежыць ад геаметрыі і суадносін бакоў сістэмы. Калі не ўключана 'Прымусовая ўстаноўка' для суадносін бакоў, значэнні X/Y будуць мяняцца незалежна адзін ад аднаго."
+   "Змяняць маштаб выявы толькі з цэлымі крокамі. Базавыя памеры залежаць ад геаметрыі і суадносін бакоў, перададзеныя ядром."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Павялічванне цэлалікавага маштабу"
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   "Вось цэлалікавага маштабу"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Рабіць акругленне пры цэлалікім маштабаванні ў бок большага, а не меншага цэлага ліку."
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   "Змяняць маштаб па вышыні ці па шырыні, або адразу па вышыні ды шырыні. Паўкрокі ўжываюцца толькі на крыніцах з высокай раздзяляльнасцю."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   "Цэлалікавае маштабаванне"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   "Акругліць у меншы або большы бок да наступнага цэлага ліку. 'Разумна' заніжае маштаб пры празмернай абрэзцы выявы."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   "Заніжэнне маштабу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   "Завышэнне маштабу"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   "Разумнае"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
@@ -2608,11 +2664,11 @@ MSG_HASH(
    "Зрух вобласці прагляду па Y"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "Ўстаноўка зрушэння вобласці прагляду па гарызанталі (калі шырыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Ўстаноўка зрушэння вобласці прагляду па вертыкалі (калі вышыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму."
    )
 #if defined(RARCH_MOBILE)
@@ -2633,11 +2689,11 @@ MSG_HASH(
    "Зрух вобласці прагляду па Y (партрэтны рэжым)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "Ўстаноўка зрушэння вобласці прагляду па гарызанталі (калі шырыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму. Для (партрэтнага рэжыму)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Ўстаноўка зрушэння вобласці прагляду па вертыкалі (калі вышыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму. Для (партрэтнага рэжыму)"
    )
 #endif
@@ -3005,7 +3061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Пажаданая латэнтнасць гуку ў мілісекундах. Можа не ўлічвацца, калі гукавы драйвер не зможа забяспечыць зададзенае значэнне."
+   "Максімальная латэнтнасць гуку ў мілісекундах. Драйвер імкнецца падтрымліваць фактычную латэнтнасць на ўзроўні 50% ад гэтага значэння. Не будзе прытрымлівацца, калі гукавы драйвер не зможа забяспечыць атрыманае значэнне."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -3304,6 +3360,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Перавызначыць прывязкі ўводу пераназначаным наборам прывязак, устаноўленымі для бягучага ядра."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Сартаванне пераназначэнняў па геймпадам"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   "Пераназначэнні будуць ужывацца толькі да актыўнага геймпада, да якога яны былі захаваныя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
@@ -3628,6 +3692,22 @@ MSG_HASH(
    "Калі ўключана, націсканні кнопкі пошуку будуць ігнаравацца."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Адключыць левы аналагавы стык у меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Прадухіліць пераход па меню левым аналагавымі стыкам."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Адключыць правы аналагавы стык у меню"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Прадухіліць пераход па меню правым аналагавымі стыкам."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "Замена кнопак кіравання меню Згода ды Скасаванне"
    )
@@ -3859,7 +3939,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Павялічвае бягучы індэкс дыска. Віртуальны латок дыска мусіць быць адкрытым."
+   "Павялічвае бягучы індэкс дыска. Віртуальны латок дыска мае быць адкрытым."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
@@ -3867,7 +3947,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Паніжае бягучы індэкс дыска. Віртуальны латок дыска мусіць быць адкрытым."
+   "Паніжае бягучы індэкс дыска. Віртуальны латок дыска мае быць адкрытым."
    )
 
 MSG_HASH(
@@ -4035,11 +4115,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
-   "Папярэджальныя кадры (пераключэнне)"
+   "Папераджальныя кадры (пераключэнне)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
-   "Уключае/выключае папярэджальныя кадры."
+   "Уключае/выключае папераджальныя кадры."
    )
 
 MSG_HASH(
@@ -4209,7 +4289,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-   "Скінуць да прадвызначанага кіравання"
+   "Скінуць да прадвызначанага"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
@@ -4387,12 +4467,8 @@ MSG_HASH(
    "Бягучае ядро ​​несумяшчальнае з забяганнем праз адсутнасць дэтэрмінаванай падтрымкі захавання стану."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_ENABLED,
-   "Забяганне для скарачэння латэнтнасці"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_ENABLED,
-   "Апрацоўваць логіку ядра на адзін або больш кадраў наперад з наступным адкатам стану для памяншэння атрыманай затрымкі ўводу."
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE,
+   "Забяганне"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
@@ -4403,12 +4479,26 @@ MSG_HASH(
    "Колькасць кадраў забягання. Выклікае нестабільнасць геймплэя пры завышэнні колькасці кадраў унутрагульнявой затрымкі."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Выкарыстоўваць другасны экзэмпляр для забягання"
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+   "Запускае дадатковую логіку ядра, каб скараціць затрымку. Адзіны асобнік сутыкае будучы кадр, затым перазагружае бягучы стан. Другі трымае толькі пад відэа асобнік ядра на будучым кадры, каб пазбегнуць праблем са станам гуку. Папераджальныя кадры могуць запускаць мінулыя [...]"
+   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+   "Запускае дадатковую логіку ядра, каб скараціць затрымку. Адзіны асобнік сутыкае будучы кадр, затым перазагружае бягучы стан. Папераджальныя кадры могуць дзеля эфектыўнасці запускаць мінулыя кадры з новым уводам."
+   )
+#endif
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   "Рэжым адзінага асобніка"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "Выкарыстоўваць для забягання другасны экзэмпляр ядра RetroArch. Прадухіляе праблемы з гукам падчас загрузкі стану."
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   "Рэжым другога асобніка"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   "Рэжым папераджальных кадраў"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
@@ -4419,36 +4509,12 @@ MSG_HASH(
    "Хаваць папярэджанні, якія паказваюцца пры выкарыстанні забягання з ядром без падтрымкі захавання станаў."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Кадры апярэджання недаступныя]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Бягучае ядро ​​несумяшчальнае з кадрамі апярэджання праз адсутнасць дэтэрмінаванай падтрымкі захавання стану."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Апрацоўка кадраў апярэджання"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_ENABLE,
-   "Паўторная апрацоўка логікі ядра з апошнімі падзеямі ўводу пры змене стану кантролера. Працуе хутчэй забегання, але можа выклікаць праблемы з гукам у ядраў пры загрузцы хуткіх захаванняў."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
-   "Колькасць папярэджальных кадраў"
+   "Колькасць папераджальных кадраў"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    "Колькасць кадраў для паўторнай апрацоўкі. Выклікае няроўнасць геймплэя, калі перавышана колькасць кадраў унутрагульнявой затрымкі."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Хаваць паведамленні аб папярэджальных кадрах"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Не паказваць папярэджанне пры несумяшчальнасці ядра з папярэджальнымі кадрамі."
    )
 
 /* Settings > Core */
@@ -4519,7 +4585,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Дазволіць абыход магчымасцяў хуткіх захаванняў ва ўласцівасцях ядра, гэта дазваляе эксперыментаваць са звязанымі функцыямі (забяганне, зваротная перамотка і г. д.)."
+   "Вызначае, ці варта ігнараваць уласцівасці захавання стану ў звестках ядра, што дазваляе эксперыментаваць з адпаведнымі функцыямі (забяганне, перамотка назад і г. д.)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4763,7 +4829,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Аўтаматычна ствараць захаванне пры зачыненні кантэнту. RetroArch будзе аўтаматычна загружаць дадзенае захаванне, калі ўключана 'Аўтазагрузка захаванняў'."
+   "Аўтаматычна ствараць захаванне стану падчас закрыцця змесціва. Гэты стан будзе загружаны пры запуску, калі ўключана 'Аўтаматычная загрузка стану'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -4866,19 +4932,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   "Узровень лагавання франтэнда"
+   "Узровень вядзення журнала франтэнда"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "Устанаўлівае ўзровень лагавання франтэнда. Паведамленні франтэнда ніжэй зададзенага ўзроўню ігнаруюцца."
+   "Задае ўзровень вядзення журнала франтэнда. Паведамленні франтэнда ніжэй гэтага ўзроўню ігнаруюцца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-   "Узровень журналявання ядра"
+   "Узровень вядзення журнала ядра"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-   "Устанаўлівае ўзровень лагавання ядраў. Паведамленні ядра ніжэй зададзенага ўзроўню ігнаруюцца."
+   "Задае ўзровень вядзення журнала ядраў. Паведамленні ядра ніжэй гэтага ўзроўню ігнаруюцца."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
@@ -4902,7 +4968,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-   "Журналяванне ў файл"
+   "Пісаць журнал у файл"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE,
@@ -4914,7 +4980,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "Пры журналяванні ў файл перанакіроўвае вывад з кожнага сеанса RetroArch у новы файл з адбіткам часу. Калі адключана, журнал будзе перазапісвацца пры кожным перазапуску RetroArch."
+   "Пры запісванні журналу ў файл перанакіроўвае вывад з кожнага сеанса RetroArch у новы файл з адбіткам часу. Калі адключана, журнал будзе перазапісвацца пры кожным перазапуску RetroArch."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -5125,7 +5191,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "Захопліваць малюнак пасля прымянення фільтраў (але не шэйдараў). Запісанае відэа будзе выглядаць гэтак жа, як на экране."
+   "Захопліваць выяву пасля ўжывання фільтраў (але не шэйдараў). Запісанае відэа будзе выглядаць гэтак жа, як на экране."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
@@ -5133,7 +5199,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-   "Калі падтрымліваецца, запісваць малюнак пасля апрацоўкі GPU."
+   "Пры магчымасці запісваць выяву пасля апрацоўкі графічным працэсарам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
@@ -5325,12 +5391,24 @@ MSG_HASH(
    "Настройка памеру зон перакрыцця для блока кнопак. Усталюйце на 100% для сіметрыі па 8 напрамках."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Зона перацэнтроўкі аналагавага ўвода"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Увод аналагавы стыку будзе адлічвацца адносна першага дотыку пры націсканні ў гэтай зоне."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Накладка"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "Аўтазагрузка аверлэя"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Загружаць накладкі на аснове назвы сістэмы, перш чым вяртаць прадвызначаны набор налад. Будзе ігнаравацца, калі зададзена перавызначэнне на папярэдні набор налад накладкі."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -6086,7 +6164,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "Выхад падчас закрыцця змесціва"
+   "Выхад па закрыцці змесціва"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
@@ -6809,11 +6887,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
-   "Паказ 'Журналяванне'"
+   "Паказ 'Вядзенне журнала'"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
-   "Паказваць налады 'Журналяванне'."
+   "Паказваць налады 'Вядзенне журнала'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
@@ -7056,7 +7134,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
-   "Адрас http:// URL, які накіроўвае на сэрвіс перакладу для выкарыстання."
+   "Адрас http:// URL, які накіроўвае на сэрвіс перакладу на выкарыстанне."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
@@ -7408,6 +7486,10 @@ MSG_HASH(
    "Паўднёва-Усходняя Азія"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_5,
+   "Усходняя Азія (Чхунчхон, Паўднёвая Карэя)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
    "Уласная"
    )
@@ -7652,7 +7734,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Адлюстроўваць у спісе сцягвальніка 'эксперыментальныя' ядры. Звычайна яны выкарыстоўваюцца для адладкі/тэставання і не рэкамендаваныя для сталага выкарыстання."
+   "Адлюстроўваць у спісе сцягвальніка 'эксперыментальныя' ядры. Звычайна яны выкарыстоўваюцца для адладкі/тэставання і не рэкамендаваныя дзеля сталага выкарыстання."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
@@ -7695,7 +7777,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Максімальны лік запісаў для плэйліста 'Абранае'. Пры дасягненні межавага значэння новыя запісы не будуць дадавацца да выдалення старых. Значэнне '-1' здымае абмежаванне на колькасць запісаў.\nУВАГА: памяншэнне значэння выдаліць існуючыя запісы!"
+   "Максімальны лік запісаў для плэйліста 'Абранае'. Пры дасягненні межавага значэння новыя запісы не будуць дадавацца да выдалення старых. Значэнне '-1' здымае абмежаванне на колькасць запісаў.\nУВАГА: памяншэнне значэння выдаліць існыя запісы!"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
@@ -8649,7 +8731,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Пры ўключэнні налады існуючы плэйліст будзе выдалены перад сканаваннем кантэнту. Калі выключана, у плэйліст дадаюцца толькі новыя запісы, а існуючыя застаюцца без зменаў."
+   "Пры ўключэнні налады існы плэйліст будзе выдалены перад сканаваннем кантэнту. Калі выключана, у плэйліст дадаюцца толькі новыя запісы, а існуючыя застаюцца без зменаў."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
@@ -10663,11 +10745,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TRUE,
-   "Праўда"
+   "Так"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FALSE,
-   "Хлусня"
+   "Не"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ENABLED,
@@ -10962,7 +11044,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Змяняць памер і становішча элементаў меню для аптымальнага выкарыстання месца. Адключыце, каб выкарыстоўваць стандартны макет у два слупка фіксаванай шырыні."
+   "Змяняць памер і становішча элементаў меню дзеля аптымальнага выкарыстання месца. Адключыце, каб выкарыстоўваць стандартны макет у два слупка фіксаванай шырыні."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
@@ -11448,7 +11530,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
-   "Згасанне па вертыкалі"
+   "Велічыня вертыкальнага згасання"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
@@ -11896,7 +11978,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
-   "Затуханне"
+   "Згасанне"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
@@ -12102,6 +12184,10 @@ MSG_HASH(
    "Тытульны экран"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "Лагатып"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    "Усе плэй-лісты"
    )
@@ -12115,7 +12201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
-   "<Пытацца>"
+   "<Запытваць>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
@@ -13398,10 +13484,6 @@ MSG_HASH(
    "Аўтавызначэнне"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Аўтазагрузка захавання з"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Магчымасці"
    )
@@ -13606,16 +13688,12 @@ MSG_HASH(
    "Не ўдалося вызначыць шлях да новай канфігурацыі. Выкарыстоўвайце бягучы час."
    )
 MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Уключаны рэжым хардкору, захаванне стану ды перамотка назад адключаныя."
-   )
-MSG_HASH(
    MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    "Параўнанне з вядомымі магічнымі лікамі..."
    )
 MSG_HASH(
    MSG_COMPILED_AGAINST_API,
-   "Скампіляваны супраць API"
+   "Скампіляваны паводле API"
    )
 MSG_HASH(
    MSG_CONFIG_DIRECTORY_NOT_SET,
@@ -14391,11 +14469,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_LEADERBOARD_STARTED,
-   "Спроба ўвайсці ў табліцу лідараў пачата"
+   "Спроба трапіць у табліцу лідараў пачата"
    )
 MSG_HASH(
    MSG_LEADERBOARD_FAILED,
-   "Не ўдалося ўвайсці ў табліцу лідараў"
+   "Не ўдалося трапіць у табліцу лідараў"
    )
 MSG_HASH(
    MSG_LEADERBOARD_SUBMISSION,
@@ -14496,6 +14574,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Не атрымалася зачыніць латок віртуальнага cd-прывада."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Аўтазагрузка захавання з"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -14631,7 +14713,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "Уключана забяганне з другім інстансам. Выдалена кадраў затрымкі: %u."
+   "Уключана забяганне з другім асобнікам. Выдалена кадраў затрымкі: %u."
    )
 MSG_HASH(
    MSG_RUNAHEAD_DISABLED,
@@ -14655,7 +14737,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Не ўдалося стварыць другі інстанс. Забяганне будзе выкарыстоўваць толькі адзін інстанс."
+   "Не ўдалося стварыць другі асобнік. Забяганне будзе выкарыстоўваць толькі адзін экзэмпляр."
    )
 MSG_HASH(
    MSG_PREEMPT_ENABLED,
@@ -14663,11 +14745,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_DISABLED,
-   "Папераджальныя кадры выключаны."
+   "Папераджальныя кадры выключаныя."
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Папераджальныя кадры выключаны, бо бягучае ядро ​​не падтрымлівае захаванне станаў."
+   "Папераджальныя кадры выключаныя, бо бягучае ядро ​​не падтрымлівае захаванне станаў."
    )
 MSG_HASH(
    MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
@@ -14679,11 +14761,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_SAVE_STATE,
-   "Не ўдалося стварыць захаванне. Папераджальныя кадры выключаны."
+   "Не ўдалося стварыць стан захавання. Папераджальныя кадры выключаныя."
    )
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_LOAD_STATE,
-   "Не атрымалася загрузіць захаванне. Папераджальныя кадры выключаны."
+   "Не атрымалася загрузіць стан. Папераджальныя кадры выключаныя."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,
@@ -14790,6 +14872,10 @@ MSG_HASH(
    "Не ўдалося атрымаць загаловак хаста."
    )
 MSG_HASH(
+   MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   "RetroAchievements: уваход як \"%s\"."
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "Для загрузкі захаванняў патрабуецца адключыць ці прыпыніць Рэжым хардкора для дасягненняў."
    )
@@ -14810,24 +14896,84 @@ MSG_HASH(
    "Атрымана %s"
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   "Уключаны рэжым хардкору, захаванне стану ды перамотка назад адключаныя."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   "Гэтая гульня не мае дасягненняў."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   "Усе %d дасягненняў актываваныя для гэтага сеанса"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   "Актывавана %d неафіцыйных дасягненняў"
+)
+MSG_HASH(
+   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   "Вы маеце %d сярод %d раскрытых дасягненняў"
+)
+MSG_HASH(
+   MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   "%d не падтрымліваюцца"
+)
+MSG_HASH(
+   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   "Назіраюць %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   "Хардкод прыпынены. Налада ручной затрымкі кадраў не дазваляецца."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   "Хардкор прыпынены. Інтэрвал абмену vsync вышэйшы за 1 не дазваляецца."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   "Хардкор прыпынены. Устаўка чорнага кадра не дазваляецца."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   "Хардкор прыпынены. Недазволеная налада: %s=%s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   "Хардкор прыпынены. Немажліва атрымаць хардкорныя дасягненні для %s з выкарыстаннем %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   "RetroAchievements: не ўдалося апазнаць гульню."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_GAME_LOAD_FAILED,
+   "Не атрымалася загрузіць RetroAchievements на гульню: %s"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   "Не атрымалася змяніць медыя RetroAchievements: %s"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
-   "Найніжэйшы"
+   "Найніжэйшая"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWER,
-   "Ніжэйшы"
+   "Ніжэйшая"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
-   "Звычайна"
+   "Звычайная"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHER,
-   "Вышэйшы"
+   "Вышэйшая"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHEST,
-   "Найвышэйшы"
+   "Найвышэйшая"
    )
 MSG_HASH(
    MSG_MISSING_ASSETS,
@@ -15681,7 +15827,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Паказвае шрыфт ніжняга меню. Уключыце для адлюстравання апісання кнопак на ніжнім экране. Не ўключае даты захаванняў."
+   "Адлюстроўвае шрыфт ніжняга меню. Уключыце, каб бачыць апісанне кнопак на ніжнім экране. Адкідае даты захаванняў стану."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
@@ -15737,6 +15883,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Адключана кіраванне мышшу з тачскрыну"
+   )
+MSG_HASH(
+   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   "Мікрафон sdl2 патрабуе гукавога драйвера sdl2"
    )
 MSG_HASH(
    MSG_ACCESSIBILITY_STARTUP,

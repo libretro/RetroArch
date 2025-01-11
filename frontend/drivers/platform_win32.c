@@ -267,7 +267,7 @@ static void gfx_set_dwm(void)
       g_plat_win32_flags |= PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED;
 }
 
-static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
+static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len            = 0;
    char build_str[11]     = {0};
@@ -424,6 +424,7 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       _len += strlcpy(s + _len, " ", len - _len);
       strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
+   return _len;
 }
 
 static void frontend_win32_init(void *data)

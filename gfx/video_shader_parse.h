@@ -246,9 +246,7 @@ bool video_shader_write_preset(const char *path,
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext, bool *is_preset);
 
-bool video_shader_is_supported(enum rarch_shader_type type);
-
-bool video_shader_any_supported(void);
+enum display_flags video_shader_type_to_flag(enum rarch_shader_type type);
 
 bool video_shader_check_for_changes(void);
 

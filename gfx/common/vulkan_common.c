@@ -210,7 +210,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
       /* VK_SUBOPTIMAL_KHR can be returned on Android 10
        * when prerotate is not dealt with.
        * It can also be returned by WSI when the surface
-       * is _temorarily_ suboptimal.
+       * is _temporarily_ suboptimal.
        * This is not an error we need to care about,
        * and we'll treat it as SUCCESS. */
       if (mailbox->result == VK_SUBOPTIMAL_KHR)
@@ -729,13 +729,13 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    {
       char version_str[128];
-      size_t len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
-      version_str[  len]    = '.';
-      version_str[++len]    = '\0';
-      len                  += snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
-      version_str[  len]    = '.';
-      version_str[++len]    = '\0';
-      snprintf(version_str + len, sizeof(version_str) - len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
+      size_t _len            = snprintf(version_str      , sizeof(version_str)      , "%u", VK_VERSION_MAJOR(vk->context.gpu_properties.apiVersion));
+      version_str[  _len]    = '.';
+      version_str[++_len]    = '\0';
+      _len                  += snprintf(version_str + _len, sizeof(version_str) - _len, "%u", VK_VERSION_MINOR(vk->context.gpu_properties.apiVersion));
+      version_str[  _len]    = '.';
+      version_str[++_len]    = '\0';
+      snprintf(version_str + _len, sizeof(version_str) - _len, "%u", VK_VERSION_PATCH(vk->context.gpu_properties.apiVersion));
       video_driver_set_gpu_api_version_string(version_str);
    }
 
@@ -1264,7 +1264,7 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
 
       if (vk->context.swapchain_wait_semaphores[i])
       {
-	      struct vulkan_context *ctx = &vk->context;
+         struct vulkan_context *ctx = &vk->context;
          VkSemaphore sem            = vk->context.swapchain_wait_semaphores[i];
          assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
          ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
@@ -1966,7 +1966,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       /* Do not bother creating a swapchain redundantly. */
 #ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan]: Do not need to re-create swapchain.\n");
+      RARCH_DBG("[Vulkan]: Do not need to re-create swapchain.\n");
 #endif
       vulkan_create_wait_fences(vk);
 
@@ -2025,42 +2025,76 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          vk->context.gpu, vk->vk_surface,
          &present_mode_count, present_modes);
 
-#ifdef VULKAN_DEBUG
-   for (i = 0; i < present_mode_count; i++)
-   {
-      RARCH_LOG("[Vulkan]: Swapchain supports present mode: %u.\n",
-            present_modes[i]);
-   }
-#endif
-
    vk->context.swap_interval = swap_interval;
+
+   /* Prefer IMMEDIATE without vsync */
    for (i = 0; i < present_mode_count; i++)
    {
       if (     !swap_interval
-            && (present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR))
-      {
-         swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-         break;
-      }
-      else if (!swap_interval
-            && (present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR))
+            && !vsync
+            && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
       {
          swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
          break;
       }
-      else if ( swap_interval
-            && (present_modes[i] == VK_PRESENT_MODE_FIFO_KHR))
+   }
+
+   /* If still in FIFO with no swap interval, try MAILBOX */
+   for (i = 0; i < present_mode_count; i++)
+   {
+      if (     !swap_interval
+            && swapchain_present_mode == VK_PRESENT_MODE_FIFO_KHR
+            && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
       {
-         /* Kind of tautological since FIFO must always be present. */
-         swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+         swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
          break;
       }
    }
 
-#ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
-         (unsigned)swapchain_present_mode);
-#endif
+   /* Present mode logging */
+   if (vk->swapchain == VK_NULL_HANDLE)
+   {
+      for (i = 0; i < present_mode_count; i++)
+      {
+         switch (present_modes[i])
+         {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: IMMEDIATE.\n");
+               break;
+            case VK_PRESENT_MODE_MAILBOX_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: MAILBOX.\n");
+               break;
+            case VK_PRESENT_MODE_FIFO_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: FIFO.\n");
+               break;
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+               RARCH_DBG("[Vulkan]: Swapchain supports present mode: FIFO_RELAXED.\n");
+               break;
+            default:
+               break;
+         }
+      }
+   }
+   else
+   {
+      switch (swapchain_present_mode)
+      {
+         case VK_PRESENT_MODE_IMMEDIATE_KHR:
+            RARCH_DBG("[Vulkan]: Creating swapchain with present mode: IMMEDIATE.\n");
+            break;
+         case VK_PRESENT_MODE_MAILBOX_KHR:
+            RARCH_DBG("[Vulkan]: Creating swapchain with present mode: MAILBOX.\n");
+            break;
+         case VK_PRESENT_MODE_FIFO_KHR:
+            RARCH_DBG("[Vulkan]: Creating swapchain with present mode: FIFO.\n");
+            break;
+         case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+            RARCH_DBG("[Vulkan]: Creating swapchain with present mode: FIFO_RELAXED.\n");
+            break;
+         default:
+            break;
+      }
+   }
 
    vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
@@ -2175,11 +2209,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       return true;
    }
 
-#ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan]: Using swapchain size %ux%u.\n",
-         swapchain_size.width, swapchain_size.height);
-#endif
-
    /* Unless we have other reasons to clamp, we should prefer 3 images.
     * We hard sync against the swapchain, so if we have 2 images,
     * we would be unable to overlap CPU and GPU, which can get very slow
@@ -2189,7 +2218,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    /* We don't clamp the number of images requested to what is reported
     * as supported by the implementation in surface_properties.minImageCount,
     * because MESA always reports a minImageCount of 4, but 3 and 2 work
-    * pefectly well, even if it's out of spec. */
+    * perfectly well, even if it's out of spec. */
 
    if (     (surface_properties.maxImageCount > 0)
          && (desired_swapchain_images > surface_properties.maxImageCount))
@@ -2584,7 +2613,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    /* VK_SUBOPTIMAL_KHR can be returned on
     * Android 10 when prerotate is not dealt with.
     * It can also be returned by WSI when the surface
-    * is _temorarily_ suboptimal.
+    * is _temporarily_ suboptimal.
     * This is not an error we need to care about,
     * and we'll treat it as SUCCESS. */
    if (result == VK_SUBOPTIMAL_KHR)

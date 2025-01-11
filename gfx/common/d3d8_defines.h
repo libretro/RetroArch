@@ -39,7 +39,7 @@ typedef struct d3d8_video
    WNDCLASSEX windowClass;
 #endif
    LPDIRECT3DDEVICE8 dev;
-   D3DVIEWPORT8 final_viewport;
+   D3DVIEWPORT8 out_vp;
 
    char *shader_path;
 

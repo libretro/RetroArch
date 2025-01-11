@@ -90,9 +90,9 @@ static int16_t rvl_input_state(
             unsigned input_mouse_scale = settings->uints.input_mouse_scale;
             int x_scale                = input_mouse_scale;
             int y_scale                = input_mouse_scale;
-            int x                      = (gx->mouse[joy_idx].x_abs 
+            int x                      = (gx->mouse[joy_idx].x_abs
                   - gx->mouse[joy_idx].x_last) * x_scale;
-            int y                      = (gx->mouse[joy_idx].y_abs 
+            int y                      = (gx->mouse[joy_idx].y_abs
                   - gx->mouse[joy_idx].y_last) * y_scale;
 
             switch (id)
@@ -102,10 +102,10 @@ static int16_t rvl_input_state(
                case RETRO_DEVICE_ID_MOUSE_Y:
                   return y;
                case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return gx->mouse[joy_idx].button & 
+                  return gx->mouse[joy_idx].button &
                      (1 << RETRO_DEVICE_ID_MOUSE_LEFT);
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return gx->mouse[joy_idx].button & 
+                  return gx->mouse[joy_idx].button &
                      (1 << RETRO_DEVICE_ID_MOUSE_RIGHT);
                default:
                   break;
@@ -120,9 +120,11 @@ static int16_t rvl_input_state(
             int16_t res_y               = 0;
             int16_t res_screen_x        = 0;
             int16_t res_screen_y        = 0;
-            int16_t x                   = 0;
-            int16_t y                   = 0;
+            int16_t x                   = gx->mouse[joy_idx].x_abs;
+            int16_t y                   = gx->mouse[joy_idx].y_abs;
 
+#if 1
+            /* TODO/FIXME - is this necessary? */
             video_driver_get_viewport_info(&vp);
 
             vp.x                        = 0;
@@ -131,9 +133,7 @@ static int16_t rvl_input_state(
             vp.height                   = 0;
             vp.full_width               = 0;
             vp.full_height              = 0;
-
-            x                           = gx->mouse[joy_idx].x_abs;
-            y                           = gx->mouse[joy_idx].y_abs;
+#endif
 
             if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y))
@@ -145,22 +145,22 @@ static int16_t rvl_input_state(
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
                      return res_screen_y;
                   case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-                     return gx->mouse[joy_idx].button & 
+                     return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
                   case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-                     return gx->mouse[joy_idx].button & 
+                     return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_A);
                   case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-                     return gx->mouse[joy_idx].button & 
+                     return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_B);
                   case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-                     return gx->mouse[joy_idx].button & 
+                     return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_AUX_C);
                   case RETRO_DEVICE_ID_LIGHTGUN_START:
-                     return gx->mouse[joy_idx].button & 
+                     return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_START);
                   case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-                     return gx->mouse[joy_idx].button & 
+                     return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_SELECT);
                   case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                      return !gxpad_mousevalid(joy_idx);
@@ -238,7 +238,7 @@ static void rvl_input_poll(void *data)
          {
             gx_input_mouse_t *tmp = (gx_input_mouse_t*)realloc(
                   gx->mouse, count * sizeof(gx_input_mouse_t));
-            if (!tmp) 
+            if (!tmp)
                free(gx->mouse);
             else
             {
@@ -260,7 +260,7 @@ static void rvl_input_poll(void *data)
             gx->mouse[i].y_last = gx->mouse[i].y_abs;
             gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
                   &gx->mouse[i].y_abs, &gx->mouse[i].button);
-         } 
+         }
       }
    }
 }

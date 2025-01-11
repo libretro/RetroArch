@@ -310,10 +310,6 @@ MSG_HASH(
 /* Settings > Video > Scaling */
 
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Integer Scale Over-scale"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    "Configuration Aspect Ratio"
    )
@@ -425,7 +421,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Desired audio latency in milliseconds. Might not be honoured if the audio driver cannot provide the given latency."
+   "Maximum audio latency in milliseconds. The driver aims to keep actual latency at 50% of this value. Might not be honoured if the audio driver can't provide given latency."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -556,6 +552,22 @@ MSG_HASH(
    "If enabled, Search button presses will be ignored."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Disable Left Analogue in Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   "Prevent Left Analogue stick from navigating in menu."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Disable Right Analogue in Menu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   "Prevent Right Analogue stick from navigating in menu."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
    "Menu Swap Okay and Cancel Buttons"
    )
@@ -648,10 +660,6 @@ MSG_HASH(
    "Sends a chat message to the current net-play session."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Net-play Fade Chat Toggle"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
    "Toggle between fading and static net-play chat messages."
    )
@@ -722,29 +730,11 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
    "[Run-Ahead is Unavailable]"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_UNSUPPORTED,
-   "[Pre-emptive Frames Unavailable]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_UNSUPPORTED,
-   "Current core is incompatible with pre-emptive frames due to lack of deterministic save state support."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_ENABLE,
-   "Run Pre-emptive Frames"
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    "Number of Pre-emptive Frames"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_HIDE_WARNINGS,
-   "Hide Pre-emptive Frames Warnings"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_HIDE_WARNINGS,
-   "Hide the warning message that appears when a core is incompatible with pre-emptive frames."
    )
 
 /* Settings > Core */
@@ -2278,10 +2268,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_DEFAULT,
    "Tap the Touch Screen to go\nto the RetroArch menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the save-state date."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

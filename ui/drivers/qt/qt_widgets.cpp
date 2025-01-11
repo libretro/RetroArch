@@ -454,7 +454,7 @@ StringComboBox::StringComboBox(rarch_setting_t *setting, QWidget *parent) :
 
 void StringComboBox::onCurrentTextChanged(const QString &text)
 {
-   strlcpy(m_value, text.toUtf8().data(), sizeof(m_value));
+   strlcpy(m_value, text.toUtf8().data(), m_setting->size);
 
    setting_generic_handle_change(m_setting);
 }
@@ -724,7 +724,11 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
       *setting->value.target.unsigned_integer = orig_value;
    }
    add_sublabel_and_whats_this(this, m_setting);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   connect(m_buttonGroup, &QButtonGroup::idClicked, this, &UIntRadioButtons::onButtonClicked);
+#else
    connect(m_buttonGroup, SIGNAL(buttonClicked(int)), this, SLOT(onButtonClicked(int)));
+#endif
 }
 
 UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
@@ -1240,6 +1244,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_BOXART);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
+               m_pendingThumbnailDownloadTypes.append(THUMBNAIL_LOGO);
                downloadThumbnail(system, title);
             }
             else

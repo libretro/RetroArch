@@ -107,7 +107,8 @@ scalers h:
 /* scale 4:5 */
 #define PICOSCALE_H_UPSCALE_SNN_4_5(di,ds,si,ss,w,f) do {    \
    uint16_t i;                                               \
-   for (i = w/4; i > 0; i--, si += 4, di += 5) {             \
+   for (i = w/4; i > 0; i--, si += 4, di += 5)               \
+   {                                                         \
       di[0] = f(si[0]);                                      \
       di[1] = f(si[1]);                                      \
       PICOSCALE_P_05(di[2], f(si[1]),f(si[2]));              \
@@ -120,7 +121,8 @@ scalers h:
 
 #define PICOSCALE_H_UPSCALE_BL2_4_5(di,ds,si,ss,w,f) do {    \
    uint16_t i;                                               \
-   for (i = w/4; i > 0; i--, si += 4, di += 5) {             \
+   for (i = w/4; i > 0; i--, si += 4, di += 5)               \
+   {                                                         \
       di[0] = f(si[0]);                                      \
       PICOSCALE_P_05(di[1], f(si[0]),f(si[1]));              \
       PICOSCALE_P_05(di[2], f(si[1]),f(si[2]));              \
@@ -133,7 +135,8 @@ scalers h:
 
 #define PICOSCALE_H_UPSCALE_BL4_4_5(di,ds,si,ss,w,f) do {    \
    uint16_t i, t; uint16_t p = f(si[0]);                     \
-   for (i = w/4; i > 0; i--, si += 4, di += 5) {             \
+   for (i = w/4; i > 0; i--, si += 4, di += 5)               \
+   {                                                         \
       PICOSCALE_P_025(di[0], p,       f(si[0]));             \
       PICOSCALE_P_05 (di[1], f(si[0]),f(si[1]));             \
       PICOSCALE_P_05 (di[2], f(si[1]),f(si[2]));             \
@@ -150,7 +153,8 @@ scalers v:
 
 #define PICOSCALE_V_MIX(di,li,ri,w,p_mix,f) do {    \
    uint16_t i, t, u; (void)t, (void)u;              \
-   for (i = 0; i < w; i += 4) {                     \
+   for (i = 0; i < w; i += 4)                       \
+   {                                                \
       p_mix((di)[i  ], f((li)[i  ]),f((ri)[i  ]));  \
       p_mix((di)[i+1], f((li)[i+1]),f((ri)[i+1]));  \
       p_mix((di)[i+2], f((li)[i+2]),f((ri)[i+2]));  \
@@ -240,7 +244,7 @@ void picoscale_upscale_rgb_snn_256_320x192_240(uint16_t *PICOSCALE_restrict di, 
       /* Next two lines */
       PICOSCALE_H_UPSCALE_SNN_4_5(di, ds, si, ss, 256, PICOSCALE_F_NOP);
       PICOSCALE_H_UPSCALE_SNN_4_5(di, ds, si, ss, 256, PICOSCALE_F_NOP);
-      
+
       /* mix lines 2-4 */
 
       di -= ds*3;
@@ -411,8 +415,11 @@ static void picoscale_256x_320x240_generic_output(void *data,
       unsigned *out_width, unsigned *out_height,
       unsigned width, unsigned height)
 {
-   if ((width == 256) &&
-       ((height == 224) || (height == 240) || (height == 192) || (height == 239)))
+   if (    (width  == 256)
+       && ((height == 224)
+       ||  (height == 240)
+       ||  (height == 192)
+       ||  (height == 239)))
    {
       *out_width  = 320;
       *out_height = 240;

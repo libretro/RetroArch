@@ -7,7 +7,6 @@ on:
   repository_dispatch:
     types: [run_build]
 
-
 permissions:
   contents: read
 
@@ -16,7 +15,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v3
@@ -31,7 +30,7 @@ jobs:
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: retroarch-android-${{ steps.slug.outputs.sha8 }}
         path: |

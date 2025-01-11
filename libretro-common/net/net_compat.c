@@ -389,7 +389,7 @@ bool addr_6to4(struct sockaddr_storage *addr)
 {
 #ifdef HAVE_INET6
    /* ::ffff:a.b.c.d */
-   static const uint16_t preffix[] = {0,0,0,0,0,0xffff};
+   static const uint16_t prefix[] = {0,0,0,0,0,0xffff};
    uint32_t address;
    uint16_t port;
    struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
@@ -402,14 +402,14 @@ bool addr_6to4(struct sockaddr_storage *addr)
          return true;
       case AF_INET6:
          /* Is the address provided an IPv4? */
-         if (!memcmp(&addr6->sin6_addr, preffix, sizeof(preffix)))
+         if (!memcmp(&addr6->sin6_addr, prefix, sizeof(prefix)))
             break;
       default:
          /* We don't know how to handle this. */
          return false;
    }
 
-   memcpy(&address, ((uint8_t*)&addr6->sin6_addr) + sizeof(preffix),
+   memcpy(&address, ((uint8_t*)&addr6->sin6_addr) + sizeof(prefix),
       sizeof(address));
    port = addr6->sin6_port;
 

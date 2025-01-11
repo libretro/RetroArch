@@ -257,7 +257,7 @@ static bool d3d10_init_shader(
    D3DBlob ps_code = NULL;
    D3DBlob gs_code = NULL;
 
-   bool success = true;
+   bool success    = true;
 
    if (!src) /* LPCWSTR filename */
    {
@@ -1335,7 +1335,11 @@ static bool d3d10_gfx_set_shader(void* data,
             &d3d10->frame.output_size,       /* FinalViewportSize */
             &d3d10->pass[i].frame_count,     /* FrameCount */
             &d3d10->pass[i].frame_direction, /* FrameDirection */
+            &d3d10->pass[i].frame_time_delta,/* FrameTimeDelta */
+            &d3d10->pass[i].original_fps,        /* OriginalFPS */
             &d3d10->pass[i].rotation,        /* Rotation */
+            &d3d10->pass[i].core_aspect,     /* OriginalAspect */
+            &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d10->pass[i].total_subframes, /* TotalSubFrames */
             &d3d10->pass[i].current_subframe,/* CurrentSubFrame */
          }
@@ -1362,17 +1366,16 @@ static bool d3d10_gfx_set_shader(void* data,
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
          strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
-         if (!d3d10_init_shader(
-                  d3d10->device, vs_src, 0, _path, "main",
-                  NULL, NULL, desc, countof(desc),
-                  &d3d10->pass[i].shader)) { }
+         d3d10_init_shader(d3d10->device, vs_src, 0,
+               _path, "main", NULL, NULL, desc,
+               countof(desc), &d3d10->pass[i].shader);
 
          strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
-         if (!d3d10_init_shader(
-                  d3d10->device, ps_src, 0, _path, NULL, "main",
-                  NULL, NULL, 0,
-                  &d3d10->pass[i].shader)) { }
+         d3d10_init_shader(d3d10->device, ps_src,
+               0, _path, NULL, "main",
+               NULL, NULL, 0,
+               &d3d10->pass[i].shader);
 
          free(d3d10->shader_preset->pass[i].source.string.vertex);
          free(d3d10->shader_preset->pass[i].source.string.fragment);
@@ -2169,7 +2172,11 @@ static bool d3d10_gfx_frame(
       *osd_params             = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text      = video_info->stat_text;
+#ifdef HAVE_MENU
    bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#else
+   bool menu_is_alive         = false;
+#endif
    bool overlay_behind_menu   = video_info->overlay_behind_menu;
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
@@ -2329,7 +2336,19 @@ static bool d3d10_gfx_frame(
          d3d10->pass[i].frame_direction = 1;
 #endif
 
+         d3d10->pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+         d3d10->pass[i].original_fps = video_driver_get_original_fps();
+
          d3d10->pass[i].rotation = retroarch_get_rotation();
+
+         d3d10->pass[i].core_aspect = video_driver_get_core_aspect();
+
+         /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+         d3d10->pass[i].core_aspect_rot = video_driver_get_core_aspect();
+         uint32_t rot = retroarch_get_rotation();
+         if (rot == 1 || rot == 3)
+            d3d10->pass[i].core_aspect_rot = 1/d3d10->pass[i].core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */

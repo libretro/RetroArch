@@ -70,6 +70,13 @@ typedef void (^GCDWebServerCompletionBlock)(GCDWebServerResponse* _Nullable resp
 typedef void (^GCDWebServerAsyncProcessBlock)(__kindof GCDWebServerRequest* request, GCDWebServerCompletionBlock completionBlock);
 
 /**
+ *  The GCDWebServerBuiltInLoggerBlock is used to override the built-in logger at runtime.
+ *  The block will be passed the log level and the log message, see setLogLevel for
+ *  documentation of the log levels for the built-in logger.
+ */
+typedef void (^GCDWebServerBuiltInLoggerBlock)(int level, NSString* _Nonnull message);
+
+/**
  *  The port used by the GCDWebServer (NSNumber / NSUInteger).
  *
  *  The default value is 0 i.e. let the OS pick a random port.
@@ -84,6 +91,13 @@ extern NSString* const GCDWebServerOption_Port;
  *  The default value is nil.
  */
 extern NSString* const GCDWebServerOption_BonjourName;
+
+/**
+*  The Bonjour TXT Data used by the GCDWebServer (NSDictionary<NSString, NSString>).
+*
+*  The default value is nil.
+*/
+extern NSString* const GCDWebServerOption_BonjourTXTData;
 
 /**
  *  The Bonjour service type used by the GCDWebServer (NSString).
@@ -572,6 +586,14 @@ extern NSString* const GCDWebServerAuthenticationMethod_DigestAccess;
  *  ERROR = 4
  */
 + (void)setLogLevel:(int)level;
+
+/**
+ *  Set a logger to be used instead of the built-in logger which logs to stderr.
+ *
+ *  IMPORTANT: In order for this override to work, you should not be specifying
+ *  a custom logger at compile time with "__GCDWEBSERVER_LOGGING_HEADER__".
+ */
++ (void)setBuiltInLogger:(GCDWebServerBuiltInLoggerBlock)block;
 
 /**
  *  Logs a message to the logging facility at the VERBOSE level.

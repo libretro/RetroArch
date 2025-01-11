@@ -205,9 +205,11 @@ static bool find_content_by_name(playlist_config_t *playlist_config,
                   continue;
             }
 
-            strlcpy(buf, path_basename(entry->path), sizeof(buf));
             if (!with_extension)
-               path_remove_extension(buf);
+               fill_pathname(buf, path_basename(entry->path),
+                     "", sizeof(buf));
+            else
+               strlcpy(buf, path_basename(entry->path), sizeof(buf));
 
             if (string_is_equal_case_insensitive(buf, name))
             {
@@ -684,6 +686,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
             if (data->current.core_loaded && (state->state & STATE_RELOAD))
             {
 #ifdef HAVE_DYNAMIC
+               const char *_msg;
                command_event(CMD_EVENT_UNLOAD_CORE, NULL);
 
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
@@ -708,14 +711,12 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   content_set_subsystem_by_name(data->current.subsystem);
                }
 
-               runloop_msg_queue_push(
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-                  1, 480, true, NULL,
+               _msg = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
-               runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
-                  1, 480, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
             }
