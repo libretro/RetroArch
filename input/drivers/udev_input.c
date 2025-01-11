@@ -4101,6 +4101,8 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
          /* If already disabled, then do nothing */
          linux_close_illuminance_sensor(udev->illuminance_sensor); /* noop if NULL */
          udev->illuminance_sensor = NULL;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          /** Unimplemented sensor actions that probably shouldn't fail */

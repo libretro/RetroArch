@@ -747,7 +747,7 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
       return linux_get_illuminance_reading(sdl->illuminance_sensor);
    #endif
 #if SDL_SUPPORT_SENSORS
-   else if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
+   if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
       (id == RETRO_SENSOR_ACCELEROMETER_Y) | 
       (id == RETRO_SENSOR_ACCELEROMETER_Z)
       ) sensor_type=SDL_SENSOR_ACCEL;
@@ -800,7 +800,7 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
       return 0.f; /*UNIMPLEMENTED*/
    }
    RARCH_DBG(
-      "[udev] sensor:\n"
+      "[sdl] sensor:\n"
       "\t%f\n"
       "\t%d\n"
       "\t%d\n",
@@ -810,8 +810,9 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
 
    );
    return sensor_value;
-#endif 
+#else 
    return 0.f;
+#endif 
 }
 
 
@@ -820,7 +821,7 @@ input_driver_t input_sdl = {
    sdl_input_poll,
    sdl_input_state,
    sdl_input_free,
-   sdl_input_set_sensor_state,
+   sdl_set_sensor_state,
    sdl_input_get_sensor_input,
    sdl_get_capabilities,
 #ifdef HAVE_SDL2
