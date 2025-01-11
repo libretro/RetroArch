@@ -4805,7 +4805,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Hace un guardado rápido de forma automática al cerrar un contenido. RetroArch lo cargará automáticamente si la opción «Cargar guardado rápido automáticamente» está activada."
+   "Hace un guardado rápido de forma automática al cerrar un contenido. El guardado rápido se cargará automáticamente si la opción «Cargar guardado rápido automáticamente» está activada."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13404,10 +13404,6 @@ MSG_HASH(
    "Detección automática"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Carga automática de guardado rápido en"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Funcionalidades"
    )
@@ -14486,6 +14482,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Error al cerrar la bandeja de discos virtual."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Carga automática de guardado rápido en"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,

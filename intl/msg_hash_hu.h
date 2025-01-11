@@ -4487,10 +4487,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Maginformációs fájl mentési tulajdonságainak átlépése"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "A maginformációs fájl állapotmentési információinak figyelmen kívül hagyása. Így lehet kísérletezni az ezzel összefüggő funkciókkal (runahead, visszatekerés, stb.)."
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4730,10 +4726,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Játékállás automatikus mentése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "A tartalom bezárásakor automatikusan készít egy mentést a játékállásról. Ha a \"Játékállás automatikus betöltése\" be van kapcsolva, ez fog betöltődni."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13084,10 +13076,6 @@ MSG_HASH(
    "Automatikus felismerés"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Játékállás automatikus betöltése innen"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Képességek"
    )
@@ -14170,6 +14158,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Virtuális lemeztálca becsukása sikertelen."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Játékállás automatikus betöltése innen"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15412,10 +15404,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Betűkészlet engedélyezése"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Az alsó menü betűkészlete, a gombleírásokhoz az alsó képernyőn. Nem vonatkozik a játékállás mentés dátumára."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

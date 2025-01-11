@@ -4455,10 +4455,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Umgehung der Core-Info-Savestates-Funktionen"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Legt fest, ob Savestatefähigkeiten der Core Info ignoriert werden sollen, so dass mit verwandten Funktionen experimentiert werden kann (Run-Ahead, Zurückspulen usw)."
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4698,10 +4694,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Savestate automatisch erstellen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatisch ein Savestate erstellen, wenn der Inhalt geschlossen wird. RetroArch lädt dieses Savestate automatisch, wenn 'Savestate automatisch laden' aktiviert ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13064,10 +13056,6 @@ MSG_HASH(
    "Automatisch erkennen"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Automatisches Laden des Speicherzustands aus"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Fähigkeiten"
    )
@@ -14154,6 +14142,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Virtuelles Laufwerk konnte nicht geschlossen werden."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Automatisches Laden des Speicherzustands aus"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15400,10 +15392,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Schrift aktivieren"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Text am unteren Bildschirm einblenden. Aktivieren, um Tastenbeschreibungen auf dem unteren Bildschirm anzuzeigen. Dies schließt das Speicherdatum aus."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

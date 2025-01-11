@@ -2516,10 +2516,6 @@ MSG_HASH(
    "Tự động phát hiện"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Đang tự đông tải savestate từ"
-   )
-MSG_HASH(
    MSG_CONNECTING_TO_NETPLAY_HOST,
    "Đang kết nối vào máy chủ netplay"
    )
@@ -2630,6 +2626,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIEWPORT_SIZE_CALCULATION_FAILED,
    "Viewport size calculation failed! Will continue using raw data. This will probably not work right ..."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Đang tự đông tải savestate từ"
    )
 
 /* Lakka */

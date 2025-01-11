@@ -8024,10 +8024,6 @@ MSG_HASH(
    "الكشف التلقائي"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "التحميل التلقائي للحالة من"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "القدرات"
    )
@@ -8884,6 +8880,10 @@ MSG_HASH(
    "فشل حساب حجم العرض! سوف يستمر في استخدام البيانات الخام. ربما لن يعمل هذا بشكل صحيح..."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "التحميل التلقائي للحالة من"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "فشل التحميل التلقائي لحالة الحفظ من \"%s\"."
    )
@@ -9652,10 +9652,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "تمكين الخط"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "عرض خط القائمة السفلية. تمكين عرض أوصاف الأزرار في أسفل الشاشة. يستبعد هذا تاريخ الحفظ."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

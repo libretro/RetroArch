@@ -3851,10 +3851,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Kringgå kärninformationens funktioner för sparad status"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Anger om kärninformationens spara status-möjligheter ska ignoreras, vilket gör det möjligt att experimentera med relaterade funktioner (run ahead, spola tillbaka, etc.)."
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4050,10 +4046,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Autospara status"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Sparar din status automatiskt när innehållet avslutas. RetroArch kommer kunna ladda in status filen automatiskt om 'Spara din status automatiskt' är aktiverat."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -9992,10 +9984,6 @@ MSG_HASH(
    "Autoupptäck"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Auto ladda sparad status från"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Förmågor"
    )
@@ -10674,6 +10662,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VERSION_OF_LIBRETRO_API,
    "Version av libretro API"
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Auto ladda sparad status från"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,

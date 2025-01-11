@@ -4805,7 +4805,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "İçerik kapatıldığında otomatik olarak durum kaydı oluşturur. 'Durumu Otomatik Olarak Yükle' etkinse RetroArch bu durum kaydını otomatik olarak yükler."
+   "İçerik kapatıldığında otomatik durum kaydı oluşturun. 'Otomatik Durum Yükleme' etkinse, bu durum kaydı başlangıçta yüklenir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13484,10 +13484,6 @@ MSG_HASH(
    "Otomatik algıla"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Durum kaydından otomatik yükle"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Yetenekler"
    )
@@ -14578,6 +14574,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Sanal disk tepsisi kapatılamadı."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Durum kaydından otomatik yükle"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,

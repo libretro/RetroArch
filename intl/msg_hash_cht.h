@@ -4419,10 +4419,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "忽略其他支援"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "開啟時執行核心忽略儲存狀態功能, 可用於開啟倒帶、超前執行和搶占幀數等相關功能。"
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4662,10 +4658,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "自動儲存即時存檔"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "「關閉」和「結束復古電玩」時, 自動儲存即時存檔, 儲存的編號為自動(.state.auto)。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13368,10 +13360,6 @@ MSG_HASH(
    "自動偵測"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "自動載入即時存檔從"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "容量"
    )
@@ -14456,6 +14444,10 @@ MSG_HASH(
    "虛擬光碟機托盤無法進入。"
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "自動載入即時存檔從"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "無法自動載入即時存檔, 位置: %s。"
    )
@@ -15516,10 +15508,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "顯示文字"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "在下螢幕上顯示按鍵說明, 不包括儲存即時存檔的日期。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

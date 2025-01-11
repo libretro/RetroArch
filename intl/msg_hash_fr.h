@@ -4765,7 +4765,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Créer automatiquement une sauvegarde instantanée à la fermeture de contenu. RetroArch chargera cette sauvegarde instantanée automatiquement si 'Chargement auto des sauvegardes instantanées' est activé."
+   "Faire automatiquement une sauvegarde instantanée lorsque le contenu est fermé. Cette sauvegarde instantanée est chargée au démarrage si l'option 'Chargement auto des sauvegardes instantanées' est activée."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13360,10 +13360,6 @@ MSG_HASH(
    "Détection automatique"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Chargement auto d'une sauvegarde instantanée depuis"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Capacités"
    )
@@ -14446,6 +14442,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Impossible de fermer le plateau du lecteur de disque virtuel."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Chargement auto d'une sauvegarde instantanée depuis"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,

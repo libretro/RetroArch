@@ -4080,10 +4080,6 @@ MSG_HASH(
    "Salvar jogo automaticamente"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Cria automaticamente um jogo salvo quando o conteúdo for fechado. O RetroArch carregará automaticamente este jogo salvo se \"Carregue automaticamente o jogo salvo\" estiver ativado."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Carrega o último jogo salvo automaticamente na inicialização do RetroArch."
    )
@@ -11640,10 +11636,6 @@ MSG_HASH(
    "Detectar automaticamente"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Autocarregando jogo salvo de"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Capacidades"
    )
@@ -12628,6 +12620,10 @@ MSG_HASH(
    "Houve uma falha ao fechar a bandeja virtual do disco."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Autocarregando jogo salvo de"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "O carregamento automático do jogo salvo a partir de \"%s\" falhou."
    )
@@ -13584,10 +13580,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Ativar fonte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Mostra a fonte do menu inferior. Ative para exibir as descrições dos botões na tela inferior. Não tem compatibilidade com a data do jogo salvo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

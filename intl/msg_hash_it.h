@@ -899,6 +899,10 @@ MSG_HASH(
    "Supporto Video4Linux2"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "Supporto SSL"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
    "Supporto Libusb"
    )
@@ -4483,10 +4487,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Supera le informazioni del core per le informazioni del salvataggio di stato"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Specifica se ignorare le funzionalità di salvataggio di stato delle informazioni di base, consentendo di sperimentare con le caratteristiche correlate (Run-Ahead, riavvolgi, ecc)."
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4726,10 +4726,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Stato di salvataggio automatico"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Crea automaticamente uno stato di salvataggio quando il contenuto è chiuso. RetroArch caricherà automaticamente questo stato di salvataggio se 'Carica automaticamente lo stato' è abilitato."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13204,10 +13200,6 @@ MSG_HASH(
    "Trovato automaticamente"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Carica automaticamente il salvataggio da"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Funzionalità"
    )
@@ -14294,6 +14286,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Chiusura del vassoio del disco virtuale non riuscita."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Carica automaticamente il salvataggio da"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15536,10 +15532,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Attiva Font"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Visualizza il carattere del menu inferiore. Abilita per visualizzare le descrizioni dei pulsanti nello schermo inferiore. Questo esclude la data di salvataggio."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

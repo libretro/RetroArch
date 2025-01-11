@@ -3736,10 +3736,6 @@ MSG_HASH(
    "Automatisch Slaan de Staat op"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatisch een slagstaat maken wanneer inhoud wordt gesloten. RetroArch zal deze slagstaat automatisch laden als 'Staat Automatisch Laden' is ingeschakeld."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    "Laad de slagstaat automatisch bij het opstarten."
    )

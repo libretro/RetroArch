@@ -2270,10 +2270,6 @@ MSG_HASH(
    "Tap the Touch Screen to go\nto the RetroArch menu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Display bottom menu font. Enable to display button descriptions on the bottom screen. This excludes the save-state date."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    "Font Colour Red"
    )

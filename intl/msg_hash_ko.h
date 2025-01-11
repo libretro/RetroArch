@@ -4595,10 +4595,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "코어 정보 상태저장 기능 여부 무시"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "코어 정보의 상태저장 기능 제공 여부를 무시할지 설정합니다. 관련 기능(미리 실행, 되감기 등)을 시험해볼 수 있게 됩니다."
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4838,10 +4834,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "자동 상태저장"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "콘텐츠가 종료되면 자동으로 상태저장 파일을 생성합니다. 자동 상태 불러오기가 활성화 되어 있으면 다음 시작시 해당 상태저장을 자동으로 불러옵니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13500,10 +13492,6 @@ MSG_HASH(
    "자동감지"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "상태저장 자동 불러오기: "
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "기능"
    )
@@ -14594,6 +14582,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "가상 디스크 트레이를 닫지 못했습니다."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "상태저장 자동 불러오기: "
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15856,10 +15848,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "폰트 사용"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "아래 화면 메뉴에 폰트를 사용합니다. 활성화하면 아래 화면에 버튼 설명이 표시됩니다. 상태저장 일자 표시는 영향을 받지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

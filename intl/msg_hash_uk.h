@@ -915,6 +915,10 @@ MSG_HASH(
    "Підтримка Video4Linux2"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "Підтримка SSL"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
    "Підтримка libusb"
    )
@@ -4569,7 +4573,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Визначає, чи ігнорувати можливості резервного копіювання інформаційних заощаджень, дозволяючи експериментувати з пов'язаними особами (виконуються наперед, перемотування тощо)."
+   "Визначає, чи ігнорувати основні інформаційні можливості збереження штатних можливостей, дозволяючи експериментувати з пов'язаними функціями (виконуючи попереду, перемотування тощо)."
    )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
@@ -4813,7 +4817,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Автоматично робити стан збереження при закритому вмісті. РетроАрка автоматично завантажить цей стан збереження, якщо увімкнуто \"Завантажити стан\"."
+   "Автоматично відтворювати стан збереження при закритті вмісту. При ввімкнені автозавантаження - збережений стану."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13492,10 +13496,6 @@ MSG_HASH(
    "Автовизначення"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Автоматичне завантаження стану збереження"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Можливості"
    )
@@ -14586,6 +14586,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Не вдалося закрити віртуальний диск лотку."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Автоматичне завантаження стану збереження"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15827,7 +15831,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Відображення шрифту в нижньому меню. Увімкніть відображення описів кнопок на нижньому екрані. Виключає дату збереження."
+   "Виводити шрифт нижнього меню. Увімкніть для відображення описів кнопок на нижньому екрані. Це не впливає на дату збереження."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

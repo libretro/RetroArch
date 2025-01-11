@@ -4079,6 +4079,10 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    "Utrzymuj stałą lokalną pamięć podręczną zainstalowanych informacji o rdzeniach. Znacznie skraca czas ładowania na platformach z wolnym dostępem do dysku."
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "Określa, czy zignorować podstawowe informacje zapisują możliwości stanu, pozwalające na eksperymentowanie z powiązanymi funkcjami (uruchamianie z przodu, przewijanie itp.)."
+   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4281,7 +4285,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatycznie utwórz stan zapisu, gdy zawartość jest zamknięta. RetroArch automatycznie załaduje ten stan zapisu, jeśli włączona jest opcja \"Załaduj stan automatycznie\"."
+   "Automatycznie utwórz stan zapisu, gdy zawartość jest zamknięta. Ten stan zapisów jest załadowany przy starcie, jeśli włączony jest \"Automatycznej wczytywanie\"."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
@@ -11960,10 +11964,6 @@ MSG_HASH(
    "Automatyczne wykrywanie"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Automatyczne ładowanie stanu zapisu"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Możliwości"
    )
@@ -12972,6 +12972,10 @@ MSG_HASH(
    "Obliczenie rozmiaru obszaru widoku nie powiodło się! Nadal używane będą surowe dane. To prawdopodobnie nie zadziała dobrze..."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Automatyczne ładowanie stanu zapisu"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "Automatyczne ładowanie stanu zapisu z \"%s\" nie powiodło się."
    )
@@ -13936,6 +13940,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_3DS_BOTTOM_MENU_LOAD_STATE,
    "Załaduj\nPunkt przywracania"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "Wyświetlaj czcionkę dolnego menu. Włącz, aby wyświetlić opisy przycisków na dolnym ekranie. Wyklucza to datę zapisu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,

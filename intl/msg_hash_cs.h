@@ -4251,10 +4251,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Obejít základní informace pro funkce uložených pozic"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Určuje, zda se mají ignorovat základní možnosti ukládání informací, což umožňuje experimentovat se souvisejícími funkcemi (běh dopředu, přetáčení atd.)."
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4486,10 +4482,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Automaticky uložit pozici"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Automatické vytvoření pozice uložení při zavření obsahu. Pokud je povolena volba 'Automaticky načíst pozici', RetroArch tuto pozici uložení automaticky načte."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -12792,10 +12784,6 @@ MSG_HASH(
    "Autodetekovat"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Automaticky načíst pozici uložení z"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Schopnosti"
    )
@@ -13846,6 +13834,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Nepodařilo se zavřít zásobník virtuálních disků."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Automaticky načíst pozici uložení z"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -14980,10 +14972,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Povolení písma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Zobrazení písma spodního menu. Povolit zobrazení popisů tlačítek na spodní obrazovce. To se netýká data uložení."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,

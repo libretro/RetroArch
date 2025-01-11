@@ -4491,10 +4491,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "Omite as funcións de gardar estados da información do núcleo"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Especifica se ignorar as capacidades de estado de salvamento da información básica, o que permite probar con funcións relacionadas (adiante, rebobinar, etc.)."
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4734,10 +4730,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "Estado de gardado automático"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Fai automaticamente un estado de gardado cando o contido estea pechado. RetroArch cargará automaticamente este estado de gardado se \"Cargar estado automaticamente\" está activado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -13228,10 +13220,6 @@ MSG_HASH(
    "Detección automática"
    )
 MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Cargando automaticamente o estado de gardar desde"
-   )
-MSG_HASH(
    MSG_CAPABILITIES,
    "Capacidades"
    )
@@ -14306,6 +14294,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,
    "Produciuse un erro ao pechar a bandexa do disco virtual."
+   )
+MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Cargando automaticamente o estado de gardar desde"
    )
 MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
@@ -15524,10 +15516,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "Activar fonte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Mostra a fonte do menú inferior. Activar para mostrar as descricións dos botóns na pantalla inferior. Isto exclúe a data do estado de salvación."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
