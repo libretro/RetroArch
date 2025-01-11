@@ -9974,9 +9974,11 @@ static bool setting_append_list_input_player_options(
          int len;
          const char *input_desc_btn;
          bool value_available=true;
+         /*default value*/
          unsigned cur_binding =  (i < RARCH_ANALOG_BIND_LIST_END)
             ? input_config_bind_order[i]
             : i;
+         input_desc_btn=input_config_bind_map_get_desc(cur_binding);
          snprintf(name, sizeof(name), "p%u_%s", user + 1,
             input_config_bind_map_get_base(cur_binding));
          len=snprintf(label, sizeof(label), "%s%s%s",
@@ -9986,8 +9988,6 @@ static bool setting_append_list_input_player_options(
          if (input_config_bind_map_get_meta(cur_binding))
             continue;
 
-         /*default value*/
-         input_desc_btn=input_config_bind_map_get_desc(cur_binding);
          if (settings->bools.input_descriptor_label_show
                && (cur_binding < RARCH_FIRST_META_KEY)
                && core_has_set_input_descriptor()
