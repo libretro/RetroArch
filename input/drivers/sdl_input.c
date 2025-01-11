@@ -728,11 +728,12 @@ static uint64_t sdl_get_capabilities(void *data)
          | (1 << RETRO_DEVICE_POINTER)
          | (1 << RETRO_DEVICE_ANALOG);
 }
-#if SDL_SUPPORT_SENSORS
+
 static bool sdl_input_set_sensor_state (void *data, unsigned port, enum retro_sensor_action action, unsigned rate) {
    return true;
 }
 static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id) {
+#if SDL_SUPPORT_SENSORS
    sdl_input_t * sdl = (sdl_input_t *)data;
    SDL_GameController * gamepad=NULL;
    SDL_Sensor * sensor=NULL;
@@ -740,7 +741,13 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
    int i;
    float sensor_data[3],sensor_value;
 
-   if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
+#endif
+   #ifdef __linux__
+   if (id == RETRO_SENSOR_ILLUMINANCE && sdl->illuminance_sensor)
+      return linux_get_illuminance_reading(sdl->illuminance_sensor);
+   #endif
+#if SDL_SUPPORT_SENSORS
+   else if ((id == RETRO_SENSOR_ACCELEROMETER_X) |
       (id == RETRO_SENSOR_ACCELEROMETER_Y) | 
       (id == RETRO_SENSOR_ACCELEROMETER_Z)
       ) sensor_type=SDL_SENSOR_ACCEL;
@@ -803,10 +810,9 @@ static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id)
 
    );
    return sensor_value;
-   
-
-}
 #endif 
+   return 0.f;
+}
 
 
 input_driver_t input_sdl = {
@@ -814,13 +820,8 @@ input_driver_t input_sdl = {
    sdl_input_poll,
    sdl_input_state,
    sdl_input_free,
-#if SDL_SUPPORT_SENSORS
    sdl_input_set_sensor_state,
    sdl_input_get_sensor_input,
-#else
-   sdl_set_sensor_state,
-   sdl_get_sensor_input,
-#endif
    sdl_get_capabilities,
 #ifdef HAVE_SDL2
    "sdl2",

@@ -4370,7 +4370,7 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
    float sensor_value;
    udev_input_sensor_limits_t limits;
 
-   if (udev->devices == NULL) return 0.f;
+   if (!udev || udev->devices == NULL) return 0.f;
 
    sensor=udev_get_sensor(udev,port);
    if (!sensor) return 0.f;
@@ -4381,7 +4381,9 @@ static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id)
    else
       return 0.f;
    
-   
+   if (id == RETRO_SENSOR_ILLUMINANCE && udev->illuminance_sensor)
+      return linux_get_illuminance_reading(udev->illuminance_sensor);
+      
    RARCH_DBG(
       "[udev] sensor:\n"
       "\t%d\n"
@@ -4410,7 +4412,7 @@ input_driver_t input_udev = {
    udev_input_poll,
    udev_input_state,
    udev_input_free,
-   udev_input_set_sensor_state,
+   udev_set_sensor_state,
    udev_input_get_sensor_input,
    udev_input_get_capabilities,
    "udev",

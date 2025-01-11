@@ -9968,12 +9968,21 @@ static bool setting_append_list_input_player_options(
    {
       unsigned i;
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
-      {
+      {  
+         char label[NAME_MAX_LENGTH];
+         char name[NAME_MAX_LENGTH];
+         int len;
          const char *input_desc_btn;
          bool value_available=true;
          unsigned cur_binding =  (i < RARCH_ANALOG_BIND_LIST_END)
             ? input_config_bind_order[i]
             : i;
+         snprintf(name, sizeof(name), "p%u_%s", user + 1,
+            input_config_bind_map_get_base(cur_binding));
+         len=snprintf(label, sizeof(label), "%s%s%s",
+            buffer[user],
+            string_is_empty(buffer[user])?"":" ",
+            input_desc_btn);
          if (input_config_bind_map_get_meta(cur_binding))
             continue;
 
@@ -9989,16 +9998,9 @@ static bool setting_append_list_input_player_options(
             else value_available=false;
          }
          if (value_available || !settings->bools.input_descriptor_hide_unbound){
-            char label[NAME_MAX_LENGTH];
-            char name[NAME_MAX_LENGTH];
-            int len;
 
-            snprintf(name, sizeof(name), "p%u_%s", user + 1,
-               input_config_bind_map_get_base(cur_binding));
-            len=snprintf(label, sizeof(label), "%s%s%s",
-               buffer[user],
-               string_is_empty(buffer[user])?"":" ",
-               input_desc_btn);
+
+
             if (!value_available)
                snprintf(label+len,sizeof(label)-len, " (%s)",
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
@@ -10017,14 +10019,14 @@ static bool setting_append_list_input_player_options(
             (*list)[list_info->index - 1].bind_type = cur_binding + MENU_SETTINGS_BIND_BEGIN;
          }
          else
-            strlcpy(label       + _len,
+            strlcpy(label       + len,
                   input_config_bind_map_get_desc(i),
-                  sizeof(label) - _len);
+                  sizeof(label) - len);
 
-         _len = snprintf(name, sizeof(name), "p%u_", user + 1);
-         strlcpy(name + _len,
+         len = snprintf(name, sizeof(name), "p%u_", user + 1);
+         strlcpy(name + len,
                input_config_bind_map_get_base(i),
-               sizeof(name) - _len);
+               sizeof(name) - len);
 
          CONFIG_BIND_ALT(
                list, list_info,
