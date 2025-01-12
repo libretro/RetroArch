@@ -574,7 +574,9 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
    addCategory(new OnscreenDisplayCategory(this));
    addCategory(new UserInterfaceCategory(mainwindow, this));
    addCategory(new AIServiceCategory(this));
+#ifdef HAVE_CHEEVOS
    addCategory(new AchievementsCategory(this));
+#endif
    addCategory(new NetworkCategory(this));
    addCategory(new PlaylistsCategory(this));
    addCategory(new UserCategory(this));
