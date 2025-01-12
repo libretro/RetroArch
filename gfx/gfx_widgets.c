@@ -1123,12 +1123,13 @@ static int gfx_widgets_draw_indicator(
    }
    else
    {
+      char txt[NAME_MAX_LENGTH];
       unsigned height       = p_dispwidget->simple_widget_height;
-      const char *txt       = msg_hash_to_str(msg);
+      size_t _len = strlcpy(txt, msg_hash_to_str(msg), sizeof(txt));
 
       width = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            txt, strlen(txt), 1.0f)
+            txt, _len, 1.0f)
          + p_dispwidget->simple_widget_padding * 2;
 
       gfx_display_draw_quad(

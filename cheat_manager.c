@@ -68,10 +68,10 @@ unsigned cheat_manager_get_size(void)
 #ifdef HAVE_CHEEVOS
 static void cheat_manager_pause_cheevos(void)
 {
-   const char *msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT);
+   char msg[128];
+   size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT), sizeof(msg));
    rcheevos_pause_hardcore();
-
-   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    RARCH_LOG("%s\n", msg);
 }
@@ -106,10 +106,11 @@ void cheat_manager_apply_cheats(void)
 
    if (cheat_st->size > 0 && settings->bools.notification_show_cheats_applied)
    {
-      const char *_msg = msg_hash_to_str(MSG_APPLYING_CHEAT);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+      char msg[128];
+      size_t _len = strlcpy(msg, msg_hash_to_str(MSG_APPLYING_CHEAT), sizeof(msg));
+      runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("%s\n", _msg);
+      RARCH_LOG("%s\n", msg);
    }
 
 #ifdef HAVE_CHEEVOS
@@ -854,8 +855,9 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
       meminfo.id = RETRO_MEMORY_SYSTEM_RAM;
       if (!core_get_memory(&meminfo))
       {
-         const char *_msg = msg_hash_to_str(MSG_CHEAT_INIT_FAIL);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+         char msg[128];
+         size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_INIT_FAIL), sizeof(msg));
+         runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
@@ -885,7 +887,6 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
    if (is_search_initialization)
    {
-      const char *msg = NULL;
       if (cheat_st->prev_memory_buf)
       {
          free(cheat_st->prev_memory_buf);
@@ -897,8 +898,9 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
       if (!cheat_st->prev_memory_buf)
       {
-         const char *_msg = msg_hash_to_str(MSG_CHEAT_INIT_FAIL);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+         char msg[128];
+         size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_INIT_FAIL), sizeof(msg));
+         runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
@@ -914,10 +916,11 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
 
       if (!cheat_st->matches)
       {
-         const char *_msg = msg_hash_to_str(MSG_CHEAT_INIT_FAIL);
+         char msg[128];
+         size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_INIT_FAIL), sizeof(msg));
          free(cheat_st->prev_memory_buf);
          cheat_st->prev_memory_buf = NULL;
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+         runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          return 0;
       }
@@ -934,9 +937,12 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
          offset += cheat_st->memory_size_list[i];
       }
 
-      msg = msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS);
-      runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         char msg[128];
+         size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_INIT_SUCCESS), sizeof(msg));
+         runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
 
       cheat_st->memory_search_initialized = true;
    }
@@ -1034,8 +1040,8 @@ static int cheat_manager_search(enum cheat_search_type search_type)
 
    if (cheat_st->num_memory_buffers == 0 || !prev || !cheat_st->matches)
    {
-      const char *msg = msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED);
-      runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+      _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_SEARCH_NOT_INITIALIZED), sizeof(msg));
+      runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
@@ -1241,8 +1247,8 @@ int cheat_manager_add_matches(const char *path,
 
    if (cheat_st->num_matches + cheat_st->size > 100)
    {
-      const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+      _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY), sizeof(msg));
+      runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return 0;
    }
@@ -1281,8 +1287,8 @@ int cheat_manager_add_matches(const char *path,
                if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, (mask << (byte_part * bits)),
                         cheat_st->big_endian, curr_val))
                {
-                  const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL);
-                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL), sizeof(msg));
+                  runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return 0;
                }
@@ -1296,8 +1302,8 @@ int cheat_manager_add_matches(const char *path,
                if (!cheat_manager_add_new_code(cheat_st->search_bit_size, idx, 0xFF,
                         cheat_st->big_endian, curr_val))
                {
-                  const char *_msg = msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL);
-                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL), sizeof(msg));
+                  runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   return 0;
                }
@@ -1638,30 +1644,30 @@ void cheat_manager_match_action(enum cheat_match_action_type match_action, unsig
 
       switch (bytes_per_item)
       {
-      case 2:
-         curr_val = cheat_st->big_endian ?
+         case 2:
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256) + *(curr + idx + 1 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256);
-         if (prev)
-            prev_val = cheat_st->big_endian ?
+            if (prev)
+               prev_val = cheat_st->big_endian ?
                   (*(prev + idx) * 256) + *(prev + idx + 1) :
                   *(prev + idx) + (*(prev + idx + 1) * 256);
-         break;
-      case 4:
-         curr_val = cheat_st->big_endian ?
+            break;
+         case 4:
+            curr_val = cheat_st->big_endian ?
                (*(curr + idx - offset) * 256 * 256 * 256) + (*(curr + idx + 1 - offset) * 256 * 256) + (*(curr + idx + 2 - offset) * 256) + *(curr + idx + 3 - offset) :
                *(curr + idx - offset) + (*(curr + idx + 1 - offset) * 256) + (*(curr + idx + 2 - offset) * 256 * 256) + (*(curr + idx + 3 - offset) * 256 * 256 * 256);
-         if (prev)
-            prev_val = cheat_st->big_endian ?
+            if (prev)
+               prev_val = cheat_st->big_endian ?
                   (*(prev + idx) * 256 * 256 * 256) + (*(prev + idx + 1) * 256 * 256) + (*(prev + idx + 2) * 256) + *(prev + idx + 3) :
                   *(prev + idx) + (*(prev + idx + 1) * 256) + (*(prev + idx + 2) * 256 * 256) + (*(prev + idx + 3) * 256 * 256 * 256);
-         break;
-      case 1:
-      default:
-         curr_val = *(curr + idx - offset);
-         if (prev)
-            prev_val = *(prev + idx);
-         break;
+            break;
+         case 1:
+         default:
+            curr_val = *(curr + idx - offset);
+            if (prev)
+               prev_val = *(prev + idx);
+            break;
       }
 
       if (match_action == CHEAT_MATCH_ACTION_TYPE_BROWSE)

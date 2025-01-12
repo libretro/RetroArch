@@ -273,58 +273,55 @@ error:
  * Generates an appropriate log/notification message
  * for a disk index change event
  **/
-static void disk_control_get_index_set_msg(
+static size_t disk_control_get_index_set_msg(
       disk_control_interface_t *disk_control,
       unsigned num_images, unsigned index, bool success,
-      unsigned *msg_duration, char *msg, size_t len)
+      unsigned *msg_duration, char *s, size_t len)
 {
-   bool has_label = false;
-   char image_label[128];
-
-   image_label[0] = '\0';
-
-   if (!disk_control || !msg_duration || !msg || len < 1)
-      return;
-
-   /* Attempt to get image label */
-   if (index < num_images)
-   {
-      disk_control_get_image_label(
-            disk_control, index, image_label, sizeof(image_label));
-      has_label = !string_is_empty(image_label);
-   }
-
-   /* Get message duration
-    * > Default is 60
-    * > If a label is shown, then increase duration by 50%
-    * > For errors, duration is always 180 */
-   *msg_duration = success ?
-         (has_label ? 90 : 60) :
-         180;
-
+   size_t _len    = 0;
+   if (!disk_control || !msg_duration || !s || len < 1)
+      return 0;
    /* Check whether image was inserted or removed */
    if (index < num_images)
    {
-      size_t _len = strlcpy(msg,
+      char image_label[128];
+      bool has_label = false;
+      image_label[0] = '\0';
+      disk_control_get_image_label(
+            disk_control, index, image_label, sizeof(image_label));
+
+      has_label      = !string_is_empty(image_label);
+
+      /* Get message duration
+       * > Default is 60
+       * > If a label is shown, then increase duration by 50%
+       * > For errors, duration is always 180 */
+      *msg_duration  = success ? (has_label ? 90 : 60) : 180;
+
+      _len = strlcpy(s,
             success
             ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY)
             : msg_hash_to_str(MSG_FAILED_TO_SET_DISK), len);
       if (has_label)
-         snprintf(
-               msg + _len, len - _len, ": %u/%u - %s",
+         _len += snprintf(
+               s + _len, len - _len, ": %u/%u - %s",
                index + 1, num_images, image_label);
       else
-         snprintf(
-               msg + _len, len - _len, ": %u/%u",
+         _len += snprintf(
+               s + _len, len - _len, ": %u/%u",
                index + 1, num_images);
    }
    else
-      strlcpy(
-            msg,
+   {
+      *msg_duration = success ? 60 : 180;
+      _len += strlcpy(
+            s,
             success
             ? msg_hash_to_str(MSG_REMOVED_DISK_FROM_TRAY)
             : msg_hash_to_str(MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY),
             len);
+   }
+   return _len;
 }
 
 /**
@@ -404,6 +401,7 @@ bool disk_control_set_index(
       disk_control_interface_t *disk_control,
       unsigned index, bool verbosity)
 {
+   size_t _len;
    bool error            = false;
    unsigned num_images   = 0;
    unsigned msg_duration = 0;
@@ -430,12 +428,12 @@ bool disk_control_set_index(
    error = !disk_control->cb.set_image_index(index);
 
    /* Get log/notification message */
-   disk_control_get_index_set_msg(
+   _len = disk_control_get_index_set_msg(
          disk_control, num_images, index, !error,
          &msg_duration, msg, sizeof(msg));
 
    /* Output log/notification message */
-   if (!string_is_empty(msg))
+   if (_len > 0)
    {
       if (error)
          RARCH_ERR("[Disc]: %s\n", msg);
@@ -444,7 +442,7 @@ bool disk_control_set_index(
 
       /* Errors should always be displayed */
       if (verbosity || error)
-         runloop_msg_queue_push(msg, strlen(msg), 1, msg_duration, true, NULL,
+         runloop_msg_queue_push(msg, _len, 1, msg_duration, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -799,7 +797,10 @@ bool disk_control_verify_initial_index(
    /* If current disk is incorrect, notify user */
    if (!success && enabled)
    {
-      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_SET_INITIAL_DISK);
+      char _msg[128];
+      size_t _len = strlcpy(_msg,
+            msg_hash_to_str(MSG_FAILED_TO_SET_INITIAL_DISK), sizeof(_msg));
+
       RARCH_ERR(
                "[Disc]: Failed to set initial disc index:\n> Expected"
                " [%u] %s\n> Detected [%u] %s\n",
@@ -810,7 +811,7 @@ bool disk_control_verify_initial_index(
 
       /* Ignore 'verbosity' setting - errors should
        * always be displayed */
-      runloop_msg_queue_push(_msg, strlen(_msg), 0, 60, true, NULL,
+      runloop_msg_queue_push(_msg, _len, 0, 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       /* Since a failure here typically means that the
@@ -835,12 +836,13 @@ bool disk_control_verify_initial_index(
     * is available */
    if (disk_control->initial_num_images > 1)
    {
+      size_t _len;
       unsigned msg_duration = 0;
       char msg[128];
 
       msg[0] = '\0';
 
-      disk_control_get_index_set_msg(
+      _len = disk_control_get_index_set_msg(
             disk_control, disk_control->initial_num_images, image_index, true,
             &msg_duration, msg, sizeof(msg));
 
@@ -852,7 +854,7 @@ bool disk_control_verify_initial_index(
        * we do not want to 'overwrite' them */
       if (verbosity)
          runloop_msg_queue_push(
-               msg, strlen(msg), 0, msg_duration, false, NULL,
+               msg, _len, 0, msg_duration, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_CHEEVOS
