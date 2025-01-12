@@ -438,12 +438,11 @@ void RARCH_ERR(const char *fmt, ...)
 }
 #endif
 
-void rarch_log_file_set_override(const char *path)
+size_t rarch_log_file_set_override(const char *path)
 {
    verbosity_state_t *g_verbosity = &main_verbosity_st;
-
    g_verbosity->override_active   = true;
-   strlcpy(g_verbosity->override_path, path,
+   return strlcpy(g_verbosity->override_path, path,
          sizeof(g_verbosity->override_path));
 }
 

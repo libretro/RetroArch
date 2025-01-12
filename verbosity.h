@@ -244,7 +244,7 @@ void rarch_log_file_init(
 
 void rarch_log_file_deinit(void);
 
-void rarch_log_file_set_override(const char *path);
+size_t rarch_log_file_set_override(const char *path);
 
 
 RETRO_END_DECLS
