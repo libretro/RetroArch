@@ -661,13 +661,6 @@ static void xdg_shell_ping(
     xdg_wm_base_pong(shell, serial);
 }
 
-static void xdg_surface_handle_configure(
-      void *data, struct xdg_surface *surface,
-      uint32_t serial)
-{
-    xdg_surface_ack_configure(surface, serial);
-}
-
 static void wl_output_handle_geometry(void *data,
       struct wl_output *output,
       int x, int y,
@@ -1086,10 +1079,6 @@ const struct wl_output_listener output_listener = {
 
 const struct xdg_wm_base_listener xdg_shell_listener = {
     xdg_shell_ping,
-};
-
-const struct xdg_surface_listener xdg_surface_listener = {
-    xdg_surface_handle_configure,
 };
 
 const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener = {
