@@ -96,7 +96,7 @@ void runtime_log_reset(runtime_log_t *runtime_log);
  * cleaner to have a symmetrical set/get interface) */
 
 /* Gets runtime as a pre-formatted string */
-void runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *str, size_t len);
+size_t runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *s, size_t len);
 
 /* Gets last played entry values */
 void runtime_log_get_last_played(runtime_log_t *runtime_log,

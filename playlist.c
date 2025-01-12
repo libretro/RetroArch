@@ -136,33 +136,33 @@ void playlist_set_cached_external(playlist_t* pl)
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
-void playlist_config_set_path(playlist_config_t *config, const char *path)
+size_t playlist_config_set_path(playlist_config_t *config, const char *path)
 {
-   if (!config)
-      return;
-
-   if (!string_is_empty(path))
-      strlcpy(config->path, path, sizeof(config->path));
-   else
+   if (config)
+   {
+      if (!string_is_empty(path))
+         return strlcpy(config->path, path, sizeof(config->path));
       config->path[0] = '\0';
+   }
+   return 0;
 }
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object.
  * Also sets autofix_paths boolean, depending on base
  * content directory value */
-void playlist_config_set_base_content_directory(
+size_t playlist_config_set_base_content_directory(
       playlist_config_t* config, const char* path)
 {
-   if (!config)
-      return;
-
-   config->autofix_paths = !string_is_empty(path);
-   if (config->autofix_paths)
-      strlcpy(config->base_content_directory, path,
-            sizeof(config->base_content_directory));
-   else
+   if (config)
+   {
+      config->autofix_paths = !string_is_empty(path);
+      if (config->autofix_paths)
+         return strlcpy(config->base_content_directory, path,
+               sizeof(config->base_content_directory));
       config->base_content_directory[0] = '\0';
+   }
+   return 0;
 }
 
 
