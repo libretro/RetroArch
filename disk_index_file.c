@@ -82,8 +82,7 @@ static bool DCifJSONStringHandler(void* context, const char *pValue, size_t leng
 
    if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
    {
-      if (*pCtx->current_entry_str_val)
-         free(*pCtx->current_entry_str_val);
+      free(*pCtx->current_entry_str_val);
 
       *pCtx->current_entry_str_val = strdup(pValue);
    }
