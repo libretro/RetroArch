@@ -2786,14 +2786,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
             if (entry->crc32)
             {
-               char *elem0           = NULL;
                char *save            = NULL;
                char *entry_crc32_cpy = strdup(entry->crc32);
                const char *con       = strtok_r(entry_crc32_cpy, "|", &save);
 
                if (con)
                {
-                  elem0              = strdup(con);
+                  char *elem0        = strdup(con);
                   if ((con = strtok_r(NULL, "|", &save)))
                   {
                      switch (extension_to_file_hash_type(con))
