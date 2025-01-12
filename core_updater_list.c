@@ -94,6 +94,12 @@ static void core_updater_list_free_entry(core_updater_list_entry_t *entry)
       string_list_free(entry->licenses_list);
       entry->licenses_list = NULL;
    }
+
+   if(entry->supported_extensions)
+   {
+      string_list_free(entry->supported_extensions);
+      entry->supported_extensions = NULL;
+   }
 }
 
 /* Creates a new, empty core updater list.
@@ -573,6 +579,12 @@ static bool core_updater_list_set_core_info(
       entry->licenses_list = NULL;
    }
 
+   if(entry->supported_extensions)
+   {
+      string_list_free(entry->supported_extensions);
+      entry->supported_extensions = NULL;
+   }
+
    entry->is_experimental = false;
 
    /* Read core info file
@@ -607,6 +619,9 @@ static bool core_updater_list_set_core_info(
       /* licenses_list */
       if (!string_is_empty(core_info->licenses))
          entry->licenses_list   = string_split(core_info->licenses, "|");
+
+      if (!string_is_empty(core_info->supported_extensions))
+         entry->supported_extensions   = string_split(core_info->supported_extensions, "|");
 
       /* Clean up */
       core_info_free_core_updater_info(core_info);
@@ -654,19 +669,20 @@ static bool core_updater_list_push_entry(
    memset(list_entry, 0, sizeof(*list_entry));
 
    /* Assign paths */
-   list_entry->remote_filename  = entry->remote_filename;
-   list_entry->remote_core_path = entry->remote_core_path;
-   list_entry->local_core_path  = entry->local_core_path;
-   list_entry->local_info_path  = entry->local_info_path;
+   list_entry->remote_filename      = entry->remote_filename;
+   list_entry->remote_core_path     = entry->remote_core_path;
+   list_entry->local_core_path      = entry->local_core_path;
+   list_entry->local_info_path      = entry->local_info_path;
 
    /* Assign core info */
-   list_entry->display_name     = entry->display_name;
-   list_entry->description      = entry->description;
-   list_entry->licenses_list    = entry->licenses_list;
-   list_entry->is_experimental  = entry->is_experimental;
+   list_entry->display_name         = entry->display_name;
+   list_entry->description          = entry->description;
+   list_entry->licenses_list        = entry->licenses_list;
+   list_entry->is_experimental      = entry->is_experimental;
+   list_entry->supported_extensions = entry->supported_extensions;
 
    /* Copy crc */
-   list_entry->crc              = entry->crc;
+   list_entry->crc                  = entry->crc;
 
    /* Copy date */
    memcpy(&list_entry->date, &entry->date, sizeof(core_updater_list_date_t));
