@@ -1714,6 +1714,10 @@ MSG_HASH(
    "Driver de Sistema de Som Aberto Legado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   "Driver ALSA padrão."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
    "Driver OpenSL."
    )
