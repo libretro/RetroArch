@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2024 - Viachaslau Khalikin
+ *  Copyright (C) 2024-2025 - Viachaslau Khalikin
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -82,7 +82,7 @@ static void playback_process_cb(void *data)
    buf = b->buffer;
    p = buf->datas[0].data;
    if (p == NULL)
-      return;
+      goto done;
 
    /* calculate the total no of bytes to read data from buffer */
    req = b->requested * audio->frame_size;
@@ -115,8 +115,10 @@ static void playback_process_cb(void *data)
    buf->datas[0].chunk->stride = audio->frame_size;
    buf->datas[0].chunk->size   = n_bytes;
 
+done:
    /* queue the buffer for playback */
    pw_stream_queue_buffer(audio->stream, b);
+   pw_thread_loop_signal(audio->pw->thread_loop, false);
 }
 
 static void pipewire_free(void *data);
@@ -317,8 +319,7 @@ error:
 
 static ssize_t pipewire_write(void *data, const void *buf_, size_t size)
 {
-   int32_t        writable;
-   int32_t           avail;
+   int32_t   filled, avail;
    uint32_t          index;
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    const char       *error = NULL;
@@ -327,25 +328,44 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t size)
       return 0;  /* wait for stream to become ready */
 
    pw_thread_loop_lock(audio->pw->thread_loop);
-   writable = spa_ringbuffer_get_write_index(&audio->ring, &index);
-   avail = audio->highwater_mark - writable;
+
+   while (size)
+   {
+      filled = spa_ringbuffer_get_write_index(&audio->ring, &index);
+      avail = audio->highwater_mark - filled;
 
 #if 0  /* Useful for tracing */
-   RARCH_DBG("[PipeWire]: Playback progress:  written %d, avail %d, index %d, size %d\n",
-             writable, avail, index, size);
+      RARCH_DBG("[PipeWire]: Ringbuffer utilization: filled %d, avail %d, index %d, size %d\n",
+                filled, avail, index, size);
 #endif
 
-   if (size > (size_t)avail)
-      size = avail;
+      /* in non-blocking mode we play as much as we can
+       * in blocking mode we expect a freed buffer of at least the given size
+       */
+      if (size > (size_t)avail)
+      {
+         if (audio->pw->nonblock)
+         {
+            size = avail;
+            break;
+         }
+         else
+         {
+            pw_thread_loop_wait(audio->pw->thread_loop);
+         }
+      }
+      else
+         break;
+   }
 
-   if (writable < 0)
-      RARCH_ERR("%p: underrun write:%u filled:%d\n", audio, index, writable);
+   if (filled < 0)
+      RARCH_ERR("[Pipewire]: %p: underrun write:%u filled:%d\n", audio, index, filled);
    else
    {
-      if ((uint32_t) writable + size > RINGBUFFER_SIZE)
+      if ((uint32_t) filled + size > RINGBUFFER_SIZE)
       {
-         RARCH_ERR("%p: overrun write:%u filled:%d + size:%zu > max:%u\n",
-         audio, index, writable, size, RINGBUFFER_SIZE);
+         RARCH_ERR("[PipeWire]: %p: overrun write:%u filled:%d + size:%zu > max:%u\n",
+         audio, index, filled, size, RINGBUFFER_SIZE);
       }
    }
 
