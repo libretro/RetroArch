@@ -14,13 +14,15 @@ More details on how to use the features here:
 
 ## Build on Linux
 git clone https://github.com/MatPoliquin/stable-retro-scripts
-and follow the instructions to build the ef_lib (Emulator frontend library that uses Pytorch C++)
+and follow the instructions to build the ef_lib (Emulator frontend library that uses Pytorch C++):
+https://github.com/MatPoliquin/stable-retro-scripts/tree/main/ef_lib
 
 ```
-git clone https://github.com/MatPoliquin/RetroArchML.git
-cd RetroArchML
+git clone https://github.com/MatPoliquin/RetroArchAI.git
+cd RetroArchAI
 ./configure
-export LD_LIBRARY_PATH=/paht/to/ef_lib
+make
+export LD_LIBRARY_PATH=/path/to/ef_lib
 ./retroarch
 ```
 ## Build on Windows
