@@ -2299,6 +2299,8 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_axis_threshold",         &settings->floats.input_axis_threshold,     true, DEFAULT_AXIS_THRESHOLD, false);
    SETTING_FLOAT("input_analog_deadzone",        &settings->floats.input_analog_deadzone,    true, DEFAULT_ANALOG_DEADZONE, false);
    SETTING_FLOAT("input_analog_sensitivity",     &settings->floats.input_analog_sensitivity, true, DEFAULT_ANALOG_SENSITIVITY, false);
+   SETTING_FLOAT("input_sensor_accelerometer_sensitivity",     &settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
+   SETTING_FLOAT("input_sensor_gyroscope_sensitivity",         &settings->floats.input_sensor_gyroscope_sensitivity, true, DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY, false);
 #ifdef HAVE_OVERLAY
    SETTING_FLOAT("input_overlay_opacity",                 &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
    SETTING_FLOAT("input_osk_overlay_opacity",             &settings->floats.input_osk_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
@@ -2983,6 +2985,7 @@ void config_set_defaults(void *data)
 #endif
       input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = (unsigned)i;
+      settings->uints.input_sensor_index[i] = (unsigned)i;
    }
 
    custom_vp->width  = 0;
@@ -3786,8 +3789,13 @@ static bool config_load_file(global_t *global,
          _len  = old_len;
          _len += snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
+
+         strlcpy(prefix + _len, "_sensor_index", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_sensor_index[i], prefix);
+
          strlcpy(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], prefix);
+
 
          strlcpy(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
@@ -5339,6 +5347,9 @@ bool config_save_file(const char *path)
 
       _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
       _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
+      
+      strlcpy(cfg + _len, "_sensor_index",       sizeof(cfg) - _len);
+      config_set_int(conf, cfg, settings->uints.input_sensor_index[i]);
 
       strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
       config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
@@ -5663,6 +5674,14 @@ int8_t config_save_overrides(enum override_type type,
          _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
          _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
+         if (settings->uints.input_sensor_index[i]
+               != overrides->uints.input_sensor_index[i])
+         {
+            strlcpy(cfg + _len, "_sensor_index",   sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_sensor_index[i]);
+            RARCH_DBG("[Overrides]: %s = \"%u\"\n", cfg, overrides->uints.input_sensor_index[i]);
+         }
+
          if (settings->uints.input_mouse_index[i]
                != overrides->uints.input_mouse_index[i])
          {
@@ -5880,7 +5899,7 @@ bool input_remapping_load_file(void *data, const char *path)
    config_file_t *conf                              = (config_file_t*)data;
    settings_t *settings                             = config_st;
    runloop_state_t *runloop_st                      = runloop_state_get_ptr();
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] = {
+   static const char *  key_strings[RARCH_FIRST_CUSTOM_BIND + 8] = {
       "b", "y", "select", "start",
       "up", "down", "left", "right",
       "a", "x", "l", "r", "l2", "r2",
@@ -5986,7 +6005,40 @@ bool input_remapping_load_file(void *data, const char *path)
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
-   }
+      {
+      static const char * sensor_strings[RETRO_SENSOR_MAX] =
+      {
+         "accel_x","accel_y", "accel_z",
+         "gyro_x","gyro_y","gyro_z",
+         "light"
+      };
+      static const char * sensor_strings_flip[RETRO_SENSOR_MAX] =
+      {
+         "accel_x_flip","accel_y_flip", "accel_z_flip",
+         "gyro_x_flip","gyro_y_flip","gyro_z_flip",
+         "light_flip"
+      };
+      for (j = 0; j < RETRO_SENSOR_MAX; j++){
+
+         int sensor_remap = -1;
+         bool sensor_flip_remap = false;
+         char sensor_ident[128];
+         char sensor_flip_ident[128];
+         fill_pathname_join_delim(sensor_ident, s1,
+               sensor_strings[j], '_', sizeof(sensor_ident));
+         fill_pathname_join_delim(sensor_flip_ident, s1,
+               sensor_strings_flip[j], '_', sizeof(sensor_flip_ident));
+         if(!config_get_int(conf, sensor_ident, &sensor_remap))
+            sensor_remap=RETROK_UNKNOWN;
+         configuration_set_uint(settings,
+            settings->uints.input_sensor_ids[i][j], sensor_remap);
+         config_get_bool(conf, sensor_flip_ident, &sensor_flip_remap);
+         configuration_set_bool(settings,
+            settings->bools.input_sensor_flip_axis[i][j], sensor_flip_remap);
+
+      }
+      }
+   } 
 
    input_remapping_update_port_map();
 
@@ -6011,7 +6063,7 @@ bool input_remapping_save_file(const char *path)
    bool ret;
    unsigned i, j;
    char remap_file_dir[DIR_MAX_LENGTH];
-   char key_strings[RARCH_FIRST_CUSTOM_BIND + 8][8] =
+   static const char * key_strings[RARCH_FIRST_CUSTOM_BIND + 8] =
    {
       "b",      "y",      "select", "start",
       "up",     "down",   "left",   "right",
@@ -6019,6 +6071,18 @@ bool input_remapping_save_file(const char *path)
       "l2",     "r2",     "l3",     "r3",
       "l_x+",   "l_x-",   "l_y+",   "l_y-",
       "r_x+",   "r_x-",   "r_y+",   "r_y-"
+   };
+   static const char * sensor_strings[RETRO_SENSOR_MAX] =
+   {
+      "accel_x","accel_y", "accel_z",
+      "gyro_x","gyro_y","gyro_z",
+      "light"
+   };
+   static const char * sensor_strings_flip[RETRO_SENSOR_MAX] =
+   {
+      "accel_x_flip","accel_y_flip", "accel_z_flip",
+      "gyro_x_flip","gyro_y_flip","gyro_z_flip",
+      "light_flip"
    };
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -6161,6 +6225,33 @@ bool input_remapping_save_file(const char *path)
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      for (j = 0; j < RETRO_SENSOR_MAX; j++){
+         char sensor_ident[128];
+         char sensor_ident_flip[128];
+         unsigned sensor_remap = settings->uints.input_sensor_ids[i][j];
+         
+         fill_pathname_join_delim(sensor_ident, s1,
+               sensor_strings[j], '_', sizeof(sensor_ident));
+         fill_pathname_join_delim(sensor_ident_flip, s1,
+            sensor_strings_flip[j], '_', sizeof(sensor_ident_flip));
+         
+         if (sensor_remap == j)
+            config_unset(conf, sensor_ident);
+         else
+         {
+            if (sensor_remap == RARCH_UNMAPPED)
+               config_set_int(conf, sensor_ident, -1);
+            else
+               config_set_int(conf, sensor_ident,
+                     settings->uints.input_sensor_ids[i][j]);
+         }
+         /*
+         configuration_set_bool(conf, 
+            settings->bools.input_sensor_flip_axis[i][j],
+            settings->bools.input_sensor_flip_axis[i][j]
+         );
+         */
+      }
    }
 
    ret = config_file_write(conf, path, true);
