@@ -1923,10 +1923,6 @@ MSG_HASH(
    "插入黑幀"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "在每幀之間插入黑幀, 以降低亮度為代價, 透過模擬映像管螢幕掃描方式減少動態模糊。\n請勿與「垂直同步切換間隔」設定大於<1> 「著色器補幀」 「幀數延遲」 「準確同步執行幀率」同時使用。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    "設定值必須與螢幕預設更新率相同, 在每幀之間插入黑幀以增強動態清晰度。\n請勿與「垂直同步切換間隔」設定大於<1> 「著色器補幀」 「幀數延遲」 「準確同步執行幀率」同時使用。\n不適用於非60Hz倍數的更新率, 例如144Hz、165Hz等。\n允許系統可變更新率開啟, 但不是那個設定。\n 如果發現任何影像殘留, 請在120hz測試後關閉此選項, 至於更高的更新率可調整下方暗幀設定。"
    )
@@ -1997,10 +1993,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
    "著色器補幀"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "設定值必須與螢幕預設更新率相同, 在每幀之間插入著色器補幀, 提高每秒顯示影格數符合螢幕更新率。\n請勿與「垂直同步切換間隔」設定大於<1> 「插入黑幀」 「幀數延遲」 「準確同步執行幀率」同時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,

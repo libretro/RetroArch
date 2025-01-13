@@ -1948,7 +1948,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Egy vagy több fekete képkocka beszúrása a képkockák közé. A mozgási elmosódást nagymértékben csökkentheti a CRT hatás emulálásával, a fényerő kárára. Nem kombinálható az 1-nél nagyobb váltóperiódussal, az alképkockákkal, képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással."
+   "FIGYELEM: a gyors villódzás bizonyos kijelzőkön képvisszatartást okozhat. Csak saját felelősségre. // Fekete képkockák beszúrása a képkockák közé. A mozgásból adódó elmosódást a CRT-szerű megjelenítéssel nagyban csökkenti, de a fényesség rovására."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
@@ -2032,7 +2032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "További képkockák előállítása a shaderek számára a képkockák közt, így a shaderek a tartalomnál magasabb frissítésű effekteket is használhatnak. Ajánlott a képernyő frissítési frekvenciájára állítani. Nem kombinálható az 1-nél nagyobb váltóperiódussal, a fekete képkocka beszúrással, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazodással."
+   "FIGYELEM: a gyors villódzás bizonyos kijelzőkön képvisszatartást okozhat. Csak saját felelősségre. // Egyszerű gördülő elektronsugár szimuláció több alképkockán keresztül, a képernyőt az alképkockák számának megfelelően függőlegesen felosztva és részlegesen megjelenítve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
@@ -2108,7 +2108,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "Egyszerű gördülő elektronsugár szimuláció több alképkockán keresztül, a képernyőt az alképkockák számának megfelelően függőlegesen felosztva és részlegesen megjelenítve."
+   "FIGYELEM: a gyors villódzás bizonyos kijelzőkön képvisszatartást okozhat. Csak saját felelősségre. // Egyszerű gördülő elektronsugár szimuláció több alképkockán keresztül, a képernyőt az alképkockák számának megfelelően függőlegesen felosztva és részlegesen megjelenítve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
