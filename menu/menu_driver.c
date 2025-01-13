@@ -4069,8 +4069,7 @@ static size_t menu_driver_get_current_menu_label(struct menu_state *menu_st,
 #endif
 
 static size_t menu_driver_get_current_menu_sublabel(
-      struct menu_state *menu_st,
-      char *s, size_t len)
+      struct menu_state *menu_st, char *s, size_t len)
 {
    menu_entry_t     entry;
    MENU_ENTRY_INITIALIZE(entry);

@@ -515,9 +515,9 @@ static int sevenzip_parse_file_iterate_step(void *context,
 }
 
 static uint32_t sevenzip_stream_crc32_calculate(uint32_t crc,
-      const uint8_t *data, size_t length)
+      const uint8_t *data, size_t len)
 {
-   return encoding_crc32(crc, data, length);
+   return encoding_crc32(crc, data, len);
 }
 
 const struct file_archive_file_backend sevenzip_backend = {

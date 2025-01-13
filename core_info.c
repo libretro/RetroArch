@@ -100,11 +100,11 @@ static core_info_state_t core_info_st = {
 /* JSON Handlers START */
 
 static bool CCJSONObjectMemberHandler(void *context,
-      const char *pValue, size_t length)
+      const char *pValue, size_t len)
 {
    CCJSONContext *pCtx = (CCJSONContext *)context;
 
-   if (length)
+   if (len)
    {
       switch (pCtx->array_depth)
       {
@@ -262,12 +262,12 @@ static bool CCJSONObjectMemberHandler(void *context,
 }
 
 static bool CCJSONStringHandler(void *context,
-      const char *pValue, size_t length)
+      const char *pValue, size_t len)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
    if (     pCtx->current_string_val
-         && length
+         && len
          && !string_is_empty(pValue))
    {
       if (*pCtx->current_string_val)
@@ -290,7 +290,7 @@ static bool CCJSONStringHandler(void *context,
 }
 
 static bool CCJSONNumberHandler(void *context,
-      const char *pValue, size_t length)
+      const char *pValue, size_t len)
 {
    CCJSONContext *pCtx              = (CCJSONContext*)context;
 

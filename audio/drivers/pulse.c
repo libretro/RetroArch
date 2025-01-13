@@ -142,7 +142,7 @@ static void stream_state_cb(pa_stream *s, void *data)
    }
 }
 
-static void stream_request_cb(pa_stream *s, size_t length, void *data)
+static void stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
    pa_threaded_mainloop_signal(pa->mainloop, 0);

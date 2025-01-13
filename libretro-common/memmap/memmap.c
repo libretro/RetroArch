@@ -92,7 +92,7 @@ void* mmap(void *addr, size_t len, int prot, int flags,
    return((void*) ((int8_t*)map + offset));
 }
 
-int munmap(void *addr, size_t length)
+int munmap(void *addr, size_t len)
 {
    if (!UnmapViewOfFile(addr))
       return -1;

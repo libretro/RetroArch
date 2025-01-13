@@ -125,7 +125,7 @@ static bool KTifJSONObjectEndHandler(void* context)
    return true;
 }
 
-static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
@@ -133,7 +133,7 @@ static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_
    if (pCtx->current_entry_str_val)
       return false;
 
-   if (length)
+   if (len)
    {
       if (string_is_equal(pValue, "frame"))
          pCtx->current_entry_uint_val = &pCtx->frame;
@@ -149,11 +149,11 @@ static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_
    return true;
 }
 
-static bool KTifJSONNumberHandler(void* context, const char *pValue, size_t length)
+static bool KTifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -162,11 +162,11 @@ static bool KTifJSONNumberHandler(void* context, const char *pValue, size_t leng
    return true;
 }
 
-static bool KTifJSONStringHandler(void* context, const char *pValue, size_t length)
+static bool KTifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
