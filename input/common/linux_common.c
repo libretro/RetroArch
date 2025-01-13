@@ -201,6 +201,10 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    if (!sensor)
       goto error;
 
+   device = retro_opendir(IIO_DEVICES_DIR);
+   if (!device)
+      goto error;
+
    sensor->millilux  = 0;
    sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
    sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
@@ -243,7 +247,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    }
 
 error:
-   RARCH_ERR("Failed to find an illuminance sensor\n");
+   RARCH_ERR("Failed to find an illuminance sensor in " IIO_DEVICES_DIR "\n");
    retro_closedir(device);
 
    free(sensor);
