@@ -31,7 +31,6 @@ static void core_error_cb(void *data, uint32_t id, int seq, int res, const char 
    RARCH_ERR("[PipeWire]: error id:%u seq:%d res:%d (%s): %s\n",
              id, seq, res, spa_strerror(res), message);
 
-   /* stop and exit the thread loop */
    pw_thread_loop_stop(pw->thread_loop);
 }
 
@@ -42,11 +41,9 @@ static void core_done_cb(void *data, uint32_t id, int seq)
    retro_assert(id == PW_ID_CORE);
 
    pw->last_seq = seq;
+
    if (pw->pending_seq == seq)
-   {
-      /* stop and exit the thread loop */
       pw_thread_loop_signal(pw->thread_loop, false);
-   }
 }
 
 static const struct pw_core_events core_events = {
@@ -55,7 +52,7 @@ static const struct pw_core_events core_events = {
       .error = core_error_cb,
 };
 
-size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
+size_t pipewire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
 {
    uint32_t sample_size = 1;
    switch (fmt)
@@ -85,7 +82,7 @@ size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
    return sample_size * nchannels;
 }
 
-void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+void pipewire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
 {
    memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
          sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
@@ -114,7 +111,7 @@ void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
    }
 }
 
-void pipewire_wait_resync(pipewire_core_t *pw)
+void pipewire_core_wait_resync(pipewire_core_t *pw)
 {
    retro_assert(pw);
    pw->pending_seq = pw_core_sync(pw->core, PW_ID_CORE, pw->pending_seq);
@@ -127,7 +124,7 @@ void pipewire_wait_resync(pipewire_core_t *pw)
    }
 }
 
-bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
+bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
 {
    enum pw_stream_state st;
    const char       *error;
