@@ -4020,7 +4020,30 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
       }
+#if HAVE_GAME_AI
+      /*if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION),
+               msg_hash_to_str(MENU_ENUM_LABEL_GAME_AI_MENU_OPTION),
+               MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
+               MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM, 0, 0, NULL))
+            count++;*/
+
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+      if (settings->bools.quick_menu_show_game_ai)
+      {
+         if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS),
+               msg_hash_to_str(MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS),
+               MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+            count++;
+      }
    }
+#endif
 
    return count;
 }
@@ -8443,6 +8466,29 @@ unsigned menu_displaylist_build_list(
          }
 #endif
          break;
+
+#ifdef HAVE_GAME_AI
+      case DISPLAYLIST_OPTIONS_GAME_AI:
+         //cheat_manager_alloc_if_empty();
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG,
+                        PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+         }
+               
+         break;
+#endif
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
          menu_entries_clear(list);
          {
@@ -11181,6 +11227,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,    PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_CHEATS,                 PARSE_ONLY_BOOL},
+
+#ifdef HAVE_GAME_AI
+               {MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI,                 PARSE_ONLY_BOOL},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11219,6 +11269,7 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,    PARSE_ONLY_BOOL},
 #endif
+
                {MENU_ENUM_LABEL_QUICK_MENU_SHOW_INFORMATION,            PARSE_ONLY_BOOL},
             };
 
@@ -14553,6 +14604,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_MIST
          case DISPLAYLIST_STEAM_SETTINGS_LIST:
 #endif
+#ifdef HAVE_GAME_AI
+         case DISPLAYLIST_OPTIONS_GAME_AI:
+#endif
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);
             count = menu_displaylist_build_list(info->list, settings, type, false);
@@ -16197,6 +16251,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags |= MD_FLAG_NEED_REFRESH
                          | MD_FLAG_NEED_PUSH;
             break;
+
          case DISPLAYLIST_NONE:
             break;
       }

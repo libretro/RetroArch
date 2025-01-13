@@ -1399,6 +1399,15 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_create_backup,                 
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_restore_backup_list,                      MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_delete_backup_list,                       MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST)
 
+#ifdef HAVE_GAME_AI
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_game_ai_menu_option,                       MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_quick_menu_show_game_ai,                       MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_game_ai_options,            MENU_ENUM_SUBLABEL_CORE_GAME_AI_OPTIONS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_game_ai_override_p1,            MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_game_ai_override_p2,            MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_game_ai_show_debug,            MENU_ENUM_SUBLABEL_GAME_AI_SHOW_DEBUG)
+#endif
+
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -5663,6 +5672,23 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_backup_entry);
             break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_quick_menu_show_game_ai);
+            break;
+         case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_game_ai_options);
+            break;
+         case MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_game_ai_override_p1);
+            break;
+         case MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_game_ai_override_p2);
+            break;
+         case MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_game_ai_show_debug);
+            break;
+#endif
          default:
             return -1;
       }
