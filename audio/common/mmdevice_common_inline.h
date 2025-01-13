@@ -20,10 +20,6 @@
 
 /* Fix for MSYS2 increasing _WIN32_WINNT to 0x0603*/
 #if defined(__MINGW32__) || defined(__MINGW64__)
-#ifdef _WIN32_WINNT
-#undef _WIN32_WINNT
-#endif
-#define _WIN32_WINNT 0x0600
 #define WIN32_LEAN_AND_MEAN
 #else
 typedef enum EDataFlow EDataFlow;
