@@ -102,9 +102,8 @@ static void capture_process_cb(void *data)
    }
 
    buf = b->buffer;
-   p = buf->datas[0].data;
-   if (p == NULL)
-      return;
+   if ((p = buf->datas[0].data) == NULL)
+      goto done;
 
    offs = SPA_MIN(buf->datas[0].chunk->offset, buf->datas[0].maxsize);
    n_bytes = SPA_MIN(buf->datas[0].chunk->size, buf->datas[0].maxsize - offs);
@@ -125,6 +124,7 @@ static void capture_process_cb(void *data)
    index += n_bytes;
    spa_ringbuffer_write_update(&microphone->ring, index);
 
+done:
    pw_stream_queue_buffer(microphone->stream, b);
 }
 
