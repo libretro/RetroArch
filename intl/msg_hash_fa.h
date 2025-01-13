@@ -496,10 +496,6 @@ MSG_HASH(
    "API گرافیکی مورد نیاز"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "مسیر کامل هسته"
-)
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
    "پشتیبانی از ذخیرهٔ وضعیت"
    )
@@ -522,10 +518,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
    "سفت‌افزار"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "- جستجو در: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
@@ -1963,6 +1955,8 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "نرخ نسبت سفارشی (موقعیت Y)"
    )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "نرخ نسبت سفارشی (عرض)"
@@ -2016,18 +2010,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    "خودکار"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "تاخیر فریم (میلی ثانیه)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "کاهش تاخیر به قیمت افزایش خطر خراب شدن ویدئو. این کار، تاخیری بر حسب میلی‌ثانیه به انتهای نمایش ویدئو و پیش از فریم هسته اضافه می‌کند."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "تنظیم می‌کند که چند میلی‌ثانیه تاخیر به انتهای نمایش ویدئو و پیش از هستهٔ در حال اجرا اضافه شود. می‌تواند تاخیر را به قیمت افزایش خطر خراب شدن تصویر کاهش دهد. مقدار بیشینه، %d است."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2536,10 +2518,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_SECONDARY_INSTANCE,
-   "برای دوباره اجراشدن از نمونه دوم از هسته رترو‌آرچ استفاده می‌کند. از مشکلات صدا در هنگام بارگیری وضعیت جلوگیری می‌شود."
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
    "مخفی کردن هشدار های بازاجرایی"
@@ -2915,7 +2895,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    "واپسین بازی:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

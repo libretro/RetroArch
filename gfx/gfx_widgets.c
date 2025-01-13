@@ -179,6 +179,7 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 void gfx_widgets_msg_queue_push(
       retro_task_t *task,
       const char *msg,
+      size_t len,
       unsigned duration,
       char *title,
       enum message_queue_icon icon,
@@ -203,7 +204,6 @@ void gfx_widgets_msg_queue_push(
       if (!msg_widget)
       {
          const char *title                      = msg;
-         size_t title_length                    = strlen(title);
 
          msg_widget                             = (disp_widget_msg_t*)malloc(sizeof(*msg_widget));
 
@@ -243,16 +243,16 @@ void gfx_widgets_msg_queue_push(
 
          if (task)
          {
+            len                                 = strlen(task->title);
             title = msg_widget->msg             = strdup(task->title);
             msg_widget->msg_new                 = strdup(title);
-            title_length                        = strlen(title);
-            msg_widget->msg_len                 = title_length;
+            msg_widget->msg_len                 = len;
 
             if (!string_is_empty(task->error))
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-            if (task->cancelled)
+            if ((task->flags & RETRO_TASK_FLG_CANCELLED) > 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
-            if (task->finished)
+            if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
             msg_widget->task_progress           = task->progress;
             msg_widget->task_ident              = task->ident;
@@ -288,11 +288,11 @@ void gfx_widgets_msg_queue_push(
             unsigned text_width                 = font_driver_get_message_width(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
-                  title_length,
+                  len,
                   1.0f);
             msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
             /* 1 byte uses for inserting '\n' */
-            msg_len                             = title_length + 1 + 1;
+            msg_len                             = len + 1 + 1;
             if (!(msg = (char *)malloc(msg_len)))
                return;
             msg[0] = '\0';
@@ -308,24 +308,22 @@ void gfx_widgets_msg_queue_push(
                if ((text_width - (text_width >> 2)) < width)
                   width = text_width - (text_width >> 2);
 
-               word_wrap(msg, msg_len, title, title_length,
-                     (int)((title_length * width) / text_width),
+               word_wrap(msg, msg_len, title, len,
+                     (int)((len * width) / text_width),
                      100, 2);
 
                /* Recalculate widget width with longest wrapped line */
                wrap_length              = string_index_last_occurance(msg, '\n');
                if (wrap_length)
                {
-                  title_length         -= wrap_length;
+                  len                  -= wrap_length;
 
-                  if (title_length < wrap_length)
-                     title_length       = wrap_length;
+                  if (len < wrap_length)
+                     len       = wrap_length;
 
                   text_width            = font_driver_get_message_width(
                      p_dispwidget->gfx_widget_fonts.msg_queue.font,
-                     title,
-                     title_length,
-                     1.0f);
+                     title, len, 1.0f);
 
                   width                 = text_width;
                }
@@ -358,7 +356,7 @@ void gfx_widgets_msg_queue_push(
 
          if (!string_is_equal(task->title, msg_widget->msg_new))
          {
-            size_t len;
+            size_t _len;
             unsigned new_width;
 
             if (msg_widget->msg_new)
@@ -369,17 +367,17 @@ void gfx_widgets_msg_queue_push(
 
             title       = msg_widget->msg_new      = strdup(task->title);
 
-            len         = strlen(title);
+            _len        = strlen(title);
             new_width   = font_driver_get_message_width(
                   p_dispwidget->gfx_widget_fonts.msg_queue.font,
                   title,
-                  len,
+                  _len,
                   1.0f);
 
-            msg_widget->msg_len                    = len;
+            msg_widget->msg_len                    = _len;
             msg_widget->msg_transition_animation   = 0;
 
-            if (!task->alternative_look)
+            if (!((task->flags & RETRO_TASK_FLG_ALTERNATIVE_LOOK) > 0))
             {
                gfx_animation_ctx_entry_t entry;
 
@@ -403,9 +401,9 @@ void gfx_widgets_msg_queue_push(
 
          if (!string_is_empty(task->error))
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-         if (task->cancelled)
+         if ((task->flags & RETRO_TASK_FLG_CANCELLED) > 0)
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
-         if (task->finished)
+         if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
          msg_widget->task_progress     = task->progress;
       }
@@ -873,14 +871,8 @@ static void gfx_widgets_layout(
 
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS)
    {
-#if 0
-      p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height
-         * 1.2347826087f; /* original image is 280x284 */
-      p_dispwidget->msg_queue_icon_size_x         = 0.98591549295f * p_dispwidget->msg_queue_icon_size_y;
-#else
       p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height;
       p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_icon_size_y;
-#endif
    }
    else
    {
@@ -1131,12 +1123,13 @@ static int gfx_widgets_draw_indicator(
    }
    else
    {
+      char txt[NAME_MAX_LENGTH];
       unsigned height       = p_dispwidget->simple_widget_height;
-      const char *txt       = msg_hash_to_str(msg);
+      size_t _len = strlcpy(txt, msg_hash_to_str(msg), sizeof(txt));
 
       width = font_driver_get_message_width(
             p_dispwidget->gfx_widget_fonts.regular.font,
-            txt, strlen(txt), 1.0f)
+            txt, _len, 1.0f)
          + p_dispwidget->simple_widget_padding * 2;
 
       gfx_display_draw_quad(
@@ -1963,38 +1956,6 @@ static void gfx_widgets_context_reset(
    else
       p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
 
-#if 0
-   /* Message queue */
-   gfx_display_reset_textures_list(
-         "msg_queue_icon.png",
-         p_dispwidget->gfx_widgets_path,
-         &p_dispwidget->msg_queue_icon,
-         TEXTURE_FILTER_LINEAR,
-         NULL,
-         NULL);
-   gfx_display_reset_textures_list(
-         "msg_queue_icon_outline.png",
-         p_dispwidget->gfx_widgets_path,
-         &p_dispwidget->msg_queue_icon_outline,
-         TEXTURE_FILTER_LINEAR,
-         NULL,
-         NULL);
-   gfx_display_reset_textures_list(
-         "msg_queue_icon_rect.png",
-         p_dispwidget->gfx_widgets_path,
-         &p_dispwidget->msg_queue_icon_rect,
-         TEXTURE_FILTER_NEAREST,
-         NULL,
-         NULL);
-
-   if (  p_dispwidget->msg_queue_icon
-      && p_dispwidget->msg_queue_icon_outline
-      && p_dispwidget->msg_queue_icon_rect)
-      p_dispwidget->flags |=  DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
-   else
-      p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
-#endif
-
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
@@ -2167,16 +2128,6 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
    /* Textures */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
       video_driver_texture_unload(&p_dispwidget->gfx_widgets_icons_textures[i]);
-
-#if 0
-   video_driver_texture_unload(&p_dispwidget->msg_queue_icon);
-   video_driver_texture_unload(&p_dispwidget->msg_queue_icon_outline);
-   video_driver_texture_unload(&p_dispwidget->msg_queue_icon_rect);
-
-   p_dispwidget->msg_queue_icon         = 0;
-   p_dispwidget->msg_queue_icon_outline = 0;
-   p_dispwidget->msg_queue_icon_rect    = 0;
-#endif
 
    /* Fonts */
    gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.regular);

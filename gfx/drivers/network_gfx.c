@@ -468,8 +468,8 @@ static void network_gfx_get_poke_interface(void *data,
    *iface = &network_poke_interface;
 }
 
-static void network_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate) { }
+static void network_gfx_set_viewport(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate) { }
 
 bool network_has_menu_frame(void)
 {

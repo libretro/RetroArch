@@ -87,9 +87,9 @@ struct defaults
 
    float settings_video_refresh_rate;
 
-   char dirs [DEFAULT_DIR_LAST + 1][PATH_MAX_LENGTH];
+   char dirs [DEFAULT_DIR_LAST + 1][DIR_MAX_LENGTH];
    char path_config[PATH_MAX_LENGTH];
-   char path_buildbot_server_url[255];
+   char path_buildbot_server_url[NAME_MAX_LENGTH];
    char settings_menu[32];
 
 #ifdef HAVE_MENU

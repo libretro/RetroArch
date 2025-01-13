@@ -58,8 +58,9 @@ static void task_auto_translate_handler(retro_task_t *task)
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings        = config_get_ptr();
 #endif
+   uint8_t flg                 = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       goto task_finished;
 
    switch (*mode_ptr)
@@ -87,7 +88,7 @@ task_finished:
    if (access_st->ai_service_auto == 1)
       access_st->ai_service_auto = 2;
 
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
    if (*mode_ptr == 1 || *mode_ptr == 2)
    {
@@ -124,7 +125,7 @@ static void call_auto_translate_task(
 
       t->user_data                       = NULL;
       t->handler                         = task_auto_translate_handler;
-      t->mute                            = true;
+      t->flags                          |= RETRO_TASK_FLG_MUTE;
 
       if (mode)
       {
@@ -141,7 +142,7 @@ static void handle_translation_cb(
       void *user_data, const char *error)
 {
    uint8_t* raw_output_data          = NULL;
-   char* raw_image_file_data         = NULL;
+   char *raw_image_file_data         = NULL;
    struct scaler_ctx* scaler         = NULL;
    http_transfer_data_t *data        = (http_transfer_data_t*)task_data;
    int new_image_size                = 0;
@@ -153,10 +154,10 @@ static void handle_translation_cb(
    void* raw_sound_data              = NULL;
    rjson_t *json                     = NULL;
    int json_current_key              = 0;
-   char* err_str                     = NULL;
-   char* txt_str                     = NULL;
-   char* auto_str                    = NULL;
-   char* key_str                     = NULL;
+   char *err_str                     = NULL;
+   char *txt_str                     = NULL;
+   char *auto_str                    = NULL;
+   char *key_str                     = NULL;
    settings_t* settings              = config_get_ptr();
    uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
@@ -198,8 +199,7 @@ static void handle_translation_cb(
    /* Parse JSON body for the image and sound data */
    for (;;)
    {
-      static const char* keys[] = { "image", "sound", "text", "error", "auto", "press" };
-
+      static const char *keys[] = { "image", "sound", "text", "error", "auto", "press" };
       const char *str           = NULL;
       size_t str_len            = 0;
       enum rjson_type json_type = rjson_next(json);
@@ -320,6 +320,7 @@ static void handle_translation_cb(
             image_type = IMAGE_TYPE_PNG;
          else
          {
+            /* TODO/FIXME - localize */
             RARCH_LOG("Invalid image type returned from server.\n");
             goto finish;
          }
@@ -328,12 +329,11 @@ static void handle_translation_cb(
                raw_image_file_data, (unsigned)new_image_size,
                image_type))
          {
+            /* TODO/FIXME - localize */
+            const char *_msg = "Video driver not supported.";
             RARCH_LOG("Video driver not supported for AI Service.");
-            runloop_msg_queue_push(
-               /* msg_hash_to_str(MSG_VIDEO_DRIVER_NOT_SUPPORTED), */
-               "Video driver not supported.",
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          else if (gfx_widgets_paused)
          {
@@ -517,15 +517,15 @@ static void handle_translation_cb(
    {
       size_t i;
       char key[8];
-      size_t length = strlen(key_str);
+      size_t _len   = strlen(key_str);
       size_t start  = 0;
 
-      for (i = 1; i < length; i++)
+      for (i = 1; i < _len; i++)
       {
          char t = key_str[i];
-         if (i == length - 1 || t == ' ' || t == ',')
+         if (i == _len - 1 || t == ' ' || t == ',')
          {
-            if (i == length - 1 && t != ' ' && t!= ',')
+            if (i == _len - 1 && t != ' ' && t!= ',')
                i++;
 
             if (i-start > 7)
@@ -795,7 +795,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    char *bmp64_buffer                = NULL;
    rjsonwriter_t *jsonwriter         = NULL;
    const char *json_buffer           = NULL;
-   int bmp64_length                  = 0;
+   int bmp64_len                     = 0;
    bool TRANSLATE_USE_BMP            = false;
    char *sys_lbl                     = NULL;
    core_info_t *core_info            = NULL;
@@ -967,7 +967,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    if (!(bmp64_buffer = base64((void *)bmp_buffer,
          (int)(sizeof(uint8_t) * buffer_bytes),
-         &bmp64_length)))
+         &bmp64_len)))
       goto finish;
 
    if (!(jsonwriter = rjsonwriter_open_memory()))
@@ -978,7 +978,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    rjsonwriter_add_string(jsonwriter, "image");
    rjsonwriter_raw(jsonwriter, ":", 1);
    rjsonwriter_raw(jsonwriter, " ", 1);
-   rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_length);
+   rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_len);
 
    /* Form request... */
    if (sys_lbl)
@@ -1030,7 +1030,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
 #ifdef DEBUG
    if (access_st->ai_service_auto != 2)
-      RARCH_LOG("Request size: %d\n", bmp64_length);
+      RARCH_LOG("Request size: %d\n", bmp64_len);
 #endif
    {
       char new_ai_service_url[PATH_MAX_LENGTH];
@@ -1088,7 +1088,7 @@ bool run_translation_service(settings_t *settings, bool paused)
       /* mode */
       {
          unsigned ai_service_mode   = settings->uints.ai_service_mode;
-         /*"image" is included for backwards compatability with
+         /*"image" is included for backwards compatibility with
           * vgtranslate < 1.04 */
 
          new_ai_service_url[  _len] = separator;

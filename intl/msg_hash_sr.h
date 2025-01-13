@@ -1746,18 +1746,6 @@ MSG_HASH(
    "Celobrojno skaliranje"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Samo skaliraj prozor u celobrojnim koracima. Osnovna veličina zavisi od geometrije koju prijavljuje sistem i odnosa ekrana. Ako opcija 'Forsiraj odnos ekrana' nije uključena, X/Y će biti nezavisno celobrojno skalirano."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Prekoračenje celobrojnog skaliranja"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_OVERSCALE,
-   "Pri celobrojnom skaliranju, zaokružuj na veći broj umesto na manji."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    "Odnos ekrana"
    )
@@ -1776,17 +1764,11 @@ MSG_HASH(
    "Postavi odnos ekrana (X pozicija)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na X osi.\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    "Postavi odnos ekrana (Y pozicija)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Postavi ofset za prozor prikaza kada se definiše pozicija prozora prikaza na Y osi.\nOvo se ignoriše ako je 'Celobrojno skaliranje' uključeno."
-   )
+#if defined(RARCH_MOBILE)
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    "Postavi odnos ekrana (širina)"
@@ -1873,10 +1855,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Kašnjenje zvuka (ms)"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Traženo kašnjenje zvuka u milisekundama. Neće biti uzeto u obzir ako audio drajver ne može postići traženo kašnjenje."
-   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -1960,6 +1938,8 @@ MSG_HASH(
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
@@ -2091,7 +2071,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    "Jezgro:"
    )
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

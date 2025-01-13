@@ -42,8 +42,8 @@ void uwp_fill_installed_core_packages(struct string_list *list);
 
 extern const struct rarch_key_map rarch_key_map_uwp[];
 
-extern char uwp_dir_install[PATH_MAX_LENGTH];
-extern char uwp_dir_data[PATH_MAX_LENGTH];
+extern char uwp_dir_install[DIR_MAX_LENGTH];
+extern char uwp_dir_data[DIR_MAX_LENGTH];
 extern char uwp_device_family[128];
 
 

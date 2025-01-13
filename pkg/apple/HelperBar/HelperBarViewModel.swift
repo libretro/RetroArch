@@ -8,11 +8,13 @@
 
 import Combine
 
+@available(iOS 13, *)
 protocol HelperBarViewModelDelegate: AnyObject {
    func setNavigationBarHidden(_ isHidden: Bool)
    func updateNavigationBarItems()
 }
 
+@available(iOS 13, *)
 class HelperBarViewModel {
    @Published var didInteractWithBar = false
    private var cancellable: AnyCancellable?

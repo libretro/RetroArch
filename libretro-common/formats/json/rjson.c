@@ -163,14 +163,15 @@ static INLINE bool _rjson_pushchar(rjson_t *json, _rjson_char_t c)
 static INLINE bool _rjson_pushchars(rjson_t *json,
       const unsigned char *from, const unsigned char *to)
 {
-   size_t len = json->string_len, new_len = len + (to - from);
    unsigned char* string;
+   size_t _len    = json->string_len;
+   size_t new_len = _len + (to - from);
    while (new_len >= json->string_cap)
       if (!_rjson_grow_string(json))
          return false;
    string = (unsigned char *)json->string;
-   while (len != new_len)
-      string[len++] = *(from++);
+   while (_len != new_len)
+      string[_len++] = *(from++);
    json->string_len = new_len;
    return true;
 }
@@ -455,7 +456,7 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
                case 'n':
                   esc = '\n';
                   goto escape_pushchar;
-               case 'r': 
+               case 'r':
                   if (!(json->option_flags & RJSON_OPTION_IGNORE_STRING_CARRIAGE_RETURN))
                   {
                      esc = '\r';
@@ -573,7 +574,7 @@ static enum rjson_type _rjson_read_number(rjson_t *json)
          goto invalid_number;
       if (*p < '0' || *p > '9')
          goto invalid_number;
-      do 
+      do
       {
          if (++p == end)
             return RJSON_NUMBER;
@@ -988,7 +989,7 @@ void rjson_set_max_depth(rjson_t *json, unsigned int max_depth)
 
 const char *rjson_get_string(rjson_t *json, size_t *length)
 {
-   char* str             = (json->string_pass_through 
+   char* str             = (json->string_pass_through
          ? json->string_pass_through : json->string);
    if (length)
       *length            = json->string_len;
@@ -1126,7 +1127,7 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
       bool (*null_handler         )(void *context))
 {
    bool in_object = false;
-   size_t len;
+   size_t _len;
    const char* string;
    if (!object_member_handler) object_member_handler = _rjson_nop_string;
    if (!string_handler       ) string_handler        = _rjson_nop_string;
@@ -1142,16 +1143,16 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
       switch (rjson_next(json))
       {
          case RJSON_STRING:
-            string = rjson_get_string(json, &len);
+            string = rjson_get_string(json, &_len);
             if (_rJSON_LIKELY(
                   (in_object && (json->stack_top->count & 1) ?
                      object_member_handler : string_handler)
-                     (context, string, len)))
+                     (context, string, _len)))
                continue;
             return RJSON_STRING;
          case RJSON_NUMBER:
-            string = rjson_get_string(json, &len);
-            if (_rJSON_LIKELY(number_handler(context, string, len)))
+            string = rjson_get_string(json, &_len);
+            if (_rJSON_LIKELY(number_handler(context, string, _len)))
                continue;
             return RJSON_NUMBER;
          case RJSON_OBJECT:

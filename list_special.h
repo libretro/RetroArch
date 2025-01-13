@@ -68,9 +68,6 @@ struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter,
       bool show_hidden_files);
 
-struct string_list *string_list_new_special(enum string_list_type type,
-      void *data, unsigned *len, size_t *list_size);
-
 const char *char_list_new_special(enum string_list_type type, void *data);
 
 RETRO_END_DECLS

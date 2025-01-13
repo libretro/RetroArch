@@ -23,7 +23,9 @@ enum x11_mouse_btn_flags
    X11_MOUSE_WU_BTN   = (1 << 0),
    X11_MOUSE_WD_BTN   = (1 << 1),
    X11_MOUSE_HWU_BTN  = (1 << 2),
-   X11_MOUSE_HWD_BTN  = (1 << 3)
+   X11_MOUSE_HWD_BTN  = (1 << 3),
+   X11_MOUSE_BTN_4    = (1 << 4),
+   X11_MOUSE_BTN_5    = (1 << 5)
 };
 
 /* TODO/FIXME - static globals */
@@ -51,6 +53,13 @@ int16_t x_mouse_state_wheel(unsigned id)
          ret                = (g_x11_mouse_flags & X11_MOUSE_HWD_BTN);
          g_x11_mouse_flags &= ~X11_MOUSE_HWD_BTN;
          break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+         ret                = (g_x11_mouse_flags & X11_MOUSE_BTN_4);
+         break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+         ret                = (g_x11_mouse_flags & X11_MOUSE_BTN_5);
+         break;
+
    }
 
    return ret;
@@ -73,6 +82,32 @@ void x_input_poll_wheel(XButtonEvent *event, bool latch)
       case 7:
          /* Scroll wheel right == HORIZ_WHEELUP */
          g_x11_mouse_flags |= X11_MOUSE_HWU_BTN;
+         break;
+      case 8:
+         /* Extra buttons are regular press-release events,
+          * while scroll wheels do not stay pressed. */
+         /* Mouse button 4 */
+         switch (event->type)
+         {
+            case ButtonPress:
+               g_x11_mouse_flags |= X11_MOUSE_BTN_4;
+               break;
+            case ButtonRelease:
+               g_x11_mouse_flags &= ~X11_MOUSE_BTN_4;
+               break;
+         }
+         break;
+      case 9:
+         /* Mouse button 5 */
+         switch (event->type)
+         {
+            case ButtonPress:
+               g_x11_mouse_flags |= X11_MOUSE_BTN_5;
+               break;
+            case ButtonRelease:
+               g_x11_mouse_flags &= ~X11_MOUSE_BTN_5;
+               break;
+         }
          break;
    }
 }

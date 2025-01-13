@@ -148,8 +148,7 @@ static const GLfloat gl1_white_color[16]     = {
  * FORWARD DECLARATIONS
  */
 static void gl1_set_viewport(gl1_t *gl1,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate);
 
 /**
@@ -1208,86 +1207,42 @@ static void gl1_set_projection(gl1_t *gl1,
 }
 
 static void gl1_set_viewport(gl1_t *gl1,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings     = config_get_ptr();
    unsigned height          = gl1->video_height;
    int x                    = 0;
    int y                    = 0;
-   float device_aspect      = (float)viewport_width / viewport_height;
+   float device_aspect      = (float)vp_width / vp_height;
 
    if (gl1->ctx_driver->translate_aspect)
       device_aspect         = gl1->ctx_driver->translate_aspect(
-            gl1->ctx_data, viewport_width, viewport_height);
+            gl1->ctx_data, vp_width, vp_height);
 
    if (settings->bools.video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl1->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(),
-            gl1->flags & GL1_FLAG_KEEP_ASPECT);
-      viewport_width  = gl1->vp.width;
-      viewport_height = gl1->vp.height;
+            gl1->flags & GL1_FLAG_KEEP_ASPECT, false);
+      vp_width              = gl1->vp.width;
+      vp_height             = gl1->vp.height;
    }
    else if ((gl1->flags & GL1_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* OpenGL has bottom-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = height - custom_vp->y - custom_vp->height;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl1->vp.x      = x;
-      gl1->vp.y      = y;
-      gl1->vp.width  = viewport_width;
-      gl1->vp.height = viewport_height;
+      gl1->vp.full_height = gl1->video_height;
+      video_viewport_get_scaled_aspect2(&gl1->vp, vp_width, vp_height,
+            false, device_aspect, video_driver_get_aspect_ratio());
+      vp_width              = gl1->vp.width;
+      vp_height             = gl1->vp.height;
    }
    else
    {
-      gl1->vp.x      = gl1->vp.y = 0;
-      gl1->vp.width  = viewport_width;
-      gl1->vp.height = viewport_height;
+      gl1->vp.x             = gl1->vp.y = 0;
+      gl1->vp.width         = vp_width;
+      gl1->vp.height        = vp_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl1->vp.y *= 2;
-#endif
 
    glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
@@ -1295,8 +1250,8 @@ static void gl1_set_viewport(gl1_t *gl1,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl1->vp_out_width  = viewport_width;
-      gl1->vp_out_height = viewport_height;
+      gl1->out_vp_width  = vp_width;
+      gl1->out_vp_height = vp_height;
    }
 }
 
@@ -1314,10 +1269,10 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
    GLenum type            = GL_UNSIGNED_BYTE;
 #endif
    float vertices[]       = {
-	   -1.0f, -1.0f, 0.0f,
-	   -1.0f,  1.0f, 0.0f,
-	    1.0f, -1.0f, 0.0f,
-	    1.0f,  1.0f, 0.0f,
+      -1.0f, -1.0f, 0.0f,
+      -1.0f,  1.0f, 0.0f,
+       1.0f, -1.0f, 0.0f,
+       1.0f,  1.0f, 0.0f,
    };
 
    float colors[]         = {
@@ -1452,6 +1407,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
 static void gl1_readback(gl1_t *gl1,
       unsigned alignment, unsigned fmt, unsigned type,
+      unsigned video_width, unsigned video_height,
       void *src)
 {
 #ifndef VITA
@@ -1459,8 +1415,12 @@ static void gl1_readback(gl1_t *gl1,
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
    glReadBuffer(GL_BACK);
 #endif
-   glReadPixels(gl1->vp.x, gl1->vp.y,
-         gl1->vp.width, gl1->vp.height,
+
+   glReadPixels(
+         (gl1->vp.x > 0) ? gl1->vp.x : 0,
+         (gl1->vp.y > 0) ? gl1->vp.y : 0,
+         (gl1->vp.width  > video_width)  ? video_width  : gl1->vp.width,
+         (gl1->vp.height > video_height) ? video_height : gl1->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 }
 
@@ -1700,6 +1660,7 @@ static bool gl1_frame(void *data, const void *frame,
 #else
             GL_UNSIGNED_BYTE,
 #endif
+            video_width, video_height,
             gl1->readback_buffer_screenshot);
 
 
@@ -2273,12 +2234,11 @@ static void gl1_get_poke_interface(void *data,
 static bool gl1_widgets_enabled(void *data) { return true; }
 #endif
 
-static void gl1_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+static void gl1_set_viewport_wrapper(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate)
 {
-   gl1_t               *gl1 = (gl1_t*)data;
-   gl1_set_viewport(gl1,
-         viewport_width, viewport_height, force_full, allow_rotate);
+   gl1_t *gl1 = (gl1_t*)data;
+   gl1_set_viewport(gl1, vp_width, vp_height, force_full, allow_rotate);
 }
 
 #ifdef HAVE_OVERLAY

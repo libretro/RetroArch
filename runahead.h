@@ -56,7 +56,9 @@ typedef struct preemptive_frames_data
    int16_t ptrdev_state[MAX_USERS][4];
 
    /* Pointing device requested */
-   uint8_t ptr_dev[MAX_USERS];
+   uint8_t ptr_dev_needed[MAX_USERS];
+   /* Device ID of ptrdev_state */
+   uint8_t ptr_dev_polled[MAX_USERS];
    /* Buffer indexes for replays */
    uint8_t start_ptr;
    uint8_t replay_ptr;

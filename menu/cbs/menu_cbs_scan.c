@@ -48,6 +48,9 @@ void handle_dbscan_finished(retro_task_t *task,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+#if IOS
+   char dir_path[DIR_MAX_LENGTH];
+#endif
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
    settings_t *settings           = config_get_ptr();
@@ -58,7 +61,6 @@ int action_scan_file(const char *path,
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
 #if IOS
-   char dir_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
    menu_path = dir_path;
 #endif
@@ -78,6 +80,9 @@ int action_scan_file(const char *path,
 int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+#if IOS
+   char dir_path[DIR_MAX_LENGTH];
+#endif
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
    settings_t *settings           = config_get_ptr();
@@ -88,7 +93,6 @@ int action_scan_directory(const char *path,
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
 #if IOS
-   char dir_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
    menu_path = dir_path;
 #endif

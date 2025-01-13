@@ -21,7 +21,7 @@ vec3 rgb565_to_rgb888(uint word)
 
 void main()
 {
-	// We work on two horizonal pixels in parallel since we cannot rely on 16-bit storage.
+	// We work on two horizontal pixels in parallel since we cannot rely on 16-bit storage.
 	uvec2 first_input_pixel = gl_GlobalInvocationID.xy;
 	uvec2 first_output_pixel = first_input_pixel * uvec2(2, 1);
 

@@ -677,8 +677,8 @@ void gfx_display_draw_texture_slice(
    draw.x                   = 0;
    draw.y                   = 0;
 
-   /* vertex coords are specfied bottom-up in this order: BL BR TL TR */
-   /* texture coords are specfied top-down in this order: BL BR TL TR */
+   /* vertex coords are specified bottom-up in this order: BL BR TL TR */
+   /* texture coords are specified top-down in this order: BL BR TL TR */
 
    /* If someone wants to change this to not draw several times, the
     * coordinates will need to be modified because of the triangle strip usage. */
@@ -1122,6 +1122,34 @@ bool gfx_display_reset_textures_list(
 
    video_driver_texture_load(&ti,
          filter_type, item);
+   image_texture_free(&ti);
+
+   return true;
+}
+
+bool gfx_display_reset_icon_texture(
+      const char *texture_path,
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height)
+{
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = video_driver_supports_rgba();
+
+   if (string_is_empty(texture_path))
+      return false;
+   if (!image_texture_load(&ti, texture_path))
+      return false;
+
+   if (width)
+      *width = ti.width;
+   if (height)
+      *height = ti.height;
+
+   video_driver_texture_load(&ti, filter_type, item);
    image_texture_free(&ti);
 
    return true;

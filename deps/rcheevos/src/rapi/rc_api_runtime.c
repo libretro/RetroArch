@@ -111,7 +111,6 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
   rc_api_leaderboard_definition_t* leaderboard;
   rc_json_field_t array_field;
   rc_json_iterator_t iterator;
-  const char* str;
   const char* last_author = "";
   const char* last_author_field = "";
   size_t last_author_len = 0;
@@ -180,17 +179,7 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
     return RC_MISSING_VALUE;
 
   /* ImageIcon will be '/Images/0123456.png' - only return the '0123456' */
-  if (patchdata_fields[3].value_end) {
-    str = patchdata_fields[3].value_end - 5;
-    if (memcmp(str, ".png\"", 5) == 0) {
-      patchdata_fields[3].value_end -= 5;
-
-      while (str > patchdata_fields[3].value_start && str[-1] != '/')
-        --str;
-
-      patchdata_fields[3].value_start = str;
-    }
-  }
+  rc_json_extract_filename(&patchdata_fields[3]);
   rc_json_get_optional_string(&response->image_name, &response->response, &patchdata_fields[3], "ImageIcon", "");
 
   /* estimate the amount of space necessary to store the rich presence script, achievements, and leaderboards.
@@ -248,9 +237,15 @@ int rc_api_process_fetch_game_data_server_response(rc_api_fetch_game_data_respon
         if (!rc_json_get_required_string(&achievement->author, &response->response, &achievement_fields[6], "Author"))
           return RC_MISSING_VALUE;
 
-        last_author = achievement->author;
-        last_author_field = achievement_fields[6].value_start;
-        last_author_len = len;
+        if (achievement->author == NULL) {
+          /* ensure we don't pass NULL out to client */
+          last_author = achievement->author = "";
+          last_author_len = 0;
+        } else {
+          last_author = achievement->author;
+          last_author_field = achievement_fields[6].value_start;
+          last_author_len = len;
+        }
       }
 
       if (!rc_json_get_required_unum(&timet, &response->response, &achievement_fields[8], "Created"))
@@ -417,6 +412,8 @@ int rc_api_init_award_achievement_request(rc_api_request_t* request, const rc_ap
     rc_url_builder_append_unum_param(&builder, "h", api_params->hardcore ? 1 : 0);
     if (api_params->game_hash && *api_params->game_hash)
       rc_url_builder_append_str_param(&builder, "m", api_params->game_hash);
+    if (api_params->seconds_since_unlock)
+      rc_url_builder_append_unum_param(&builder, "o", api_params->seconds_since_unlock);
 
     /* Evaluate the signature. */
     md5_init(&md5);
@@ -425,6 +422,14 @@ int rc_api_init_award_achievement_request(rc_api_request_t* request, const rc_ap
     md5_append(&md5, (md5_byte_t*)api_params->username, (int)strlen(api_params->username));
     snprintf(buffer, sizeof(buffer), "%d", api_params->hardcore ? 1 : 0);
     md5_append(&md5, (md5_byte_t*)buffer, (int)strlen(buffer));
+    if (api_params->seconds_since_unlock) {
+      /* second achievement id is needed by delegated unlock. including it here allows overloading
+       * the hash generating code on the server */
+      snprintf(buffer, sizeof(buffer), "%u", api_params->achievement_id);
+      md5_append(&md5, (md5_byte_t*)buffer, (int)strlen(buffer));
+      snprintf(buffer, sizeof(buffer), "%u", api_params->seconds_since_unlock);
+      md5_append(&md5, (md5_byte_t*)buffer, (int)strlen(buffer));
+    }
     md5_finish(&md5, digest);
     rc_format_md5(buffer, digest);
     rc_url_builder_append_str_param(&builder, "v", buffer);
@@ -510,6 +515,9 @@ int rc_api_init_submit_lboard_entry_request(rc_api_request_t* request, const rc_
     if (api_params->game_hash && *api_params->game_hash)
       rc_url_builder_append_str_param(&builder, "m", api_params->game_hash);
 
+    if (api_params->seconds_since_completion)
+      rc_url_builder_append_unum_param(&builder, "o", api_params->seconds_since_completion);
+
     /* Evaluate the signature. */
     md5_init(&md5);
     snprintf(buffer, sizeof(buffer), "%u", api_params->leaderboard_id);
@@ -517,6 +525,10 @@ int rc_api_init_submit_lboard_entry_request(rc_api_request_t* request, const rc_
     md5_append(&md5, (md5_byte_t*)api_params->username, (int)strlen(api_params->username));
     snprintf(buffer, sizeof(buffer), "%d", api_params->score);
     md5_append(&md5, (md5_byte_t*)buffer, (int)strlen(buffer));
+    if (api_params->seconds_since_completion) {
+      snprintf(buffer, sizeof(buffer), "%u", api_params->seconds_since_completion);
+      md5_append(&md5, (md5_byte_t*)buffer, (int)strlen(buffer));
+    }
     md5_finish(&md5, digest);
     rc_format_md5(buffer, digest);
     rc_url_builder_append_str_param(&builder, "v", buffer);

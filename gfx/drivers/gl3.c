@@ -86,13 +86,201 @@ static const float gl3_colors[16]    = {
  * FORWARD DECLARATIONS
  */
 static void gl3_set_viewport(gl3_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
-      bool force_full, bool allow_rotate);
+      unsigned vp_width, unsigned vp_height,
+      bool force_full,   bool allow_rotate);
 
 /**
  * GL3 COMMON
  */
+
+void gl3_framebuffer_copy(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLuint quad_vbo,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image)
+{
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      static float mvp[16] = {
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+
+   /* Draw quad */
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void gl3_framebuffer_copy_partial(
+      GLuint fb_id,
+      GLuint quad_program,
+      GLint flat_ubo_vertex,
+      struct Size2D size,
+      GLuint image,
+      float rx, float ry)
+{
+   GLuint vbo;
+   const float quad_data[16] = {
+      0.0f, 0.0f, 0.0f, 0.0f,
+      1.0f, 0.0f, rx,   0.0f,
+      0.0f, 1.0f, 0.0f, ry,
+      1.0f, 1.0f, rx,   ry,
+   };
+
+   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, image);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glViewport(0, 0, size.width, size.height);
+   glClear(GL_COLOR_BUFFER_BIT);
+
+   glUseProgram(quad_program);
+   if (flat_ubo_vertex >= 0)
+   {
+      static float mvp[16] = {
+                                2.0f, 0.0f, 0.0f, 0.0f,
+                                0.0f, 2.0f, 0.0f, 0.0f,
+                                0.0f, 0.0f, 2.0f, 0.0f,
+                               -1.0f,-1.0f, 0.0f, 1.0f
+                             };
+      glUniform4fv(flat_ubo_vertex, 4, mvp);
+   }
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_BLEND);
+   glDisable(GL_DEPTH_TEST);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+
+   /* A bit crude, but heeeey. */
+   glGenBuffers(1, &vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(0)));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
+                         (void *)((uintptr_t)(2 * sizeof(float))));
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glDeleteBuffers(1, &vbo);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+   glUseProgram(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+GLuint gl3_compile_shader(GLenum stage, const char *source)
+{
+   GLint status;
+   GLuint shader   = glCreateShader(stage);
+   const char *ptr = source;
+
+   glShaderSource(shader, 1, &ptr, NULL);
+   glCompileShader(shader);
+
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
+   if (!status)
+   {
+      GLint length;
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+      if (length > 0)
+      {
+         char *info_log = (char*)malloc(length);
+
+         if (info_log)
+         {
+            glGetShaderInfoLog(shader, length, &length, info_log);
+            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
+            free(info_log);
+            glDeleteShader(shader);
+            return 0;
+         }
+      }
+   }
+
+   return shader;
+}
+
+uint32_t gl3_get_cross_compiler_target_version(void)
+{
+   const char *version = (const char*)glGetString(GL_VERSION);
+   unsigned major      = 0;
+   unsigned minor      = 0;
+
+#ifdef HAVE_OPENGLES3
+   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+      return 300;
+
+   if (major == 2 && minor == 0)
+      return 100;
+#else
+   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
+      return 150;
+
+   if (major == 3)
+   {
+      switch (minor)
+      {
+         case 2:
+            return 150;
+         case 1:
+            return 140;
+         case 0:
+            return 130;
+      }
+   }
+   else if (major == 2)
+   {
+      switch (minor)
+      {
+         case 1:
+            return 120;
+         case 0:
+            return 110;
+      }
+   }
+#endif
+
+   return 100 * major + 10 * minor;
+}
 
 static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
 {
@@ -1375,88 +1563,40 @@ static void gl3_set_projection(gl3_t *gl,
 }
 
 static void gl3_set_viewport(gl3_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-   unsigned height                 = gl->video_height;
-   int x                           = 0;
-   int y                           = 0;
    settings_t *settings            = config_get_ptr();
-   float device_aspect             = (float)viewport_width / viewport_height;
+   float device_aspect             = (float)vp_width / vp_height;
    bool video_scale_integer        = settings->bools.video_scale_integer;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
-            gl->ctx_data, viewport_width, viewport_height);
+            gl->ctx_data, vp_width, vp_height);
 
    if (video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(),
-            (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false);
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+            (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false,
+            false);
+      vp_width  = gl->vp.width;
+      vp_height = gl->vp.height;
    }
    else if ((gl->flags & GL3_FLAG_KEEP_ASPECT) && !force_full)
    {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* OpenGL has bottom-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = height - custom_vp->y - custom_vp->height;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      gl->vp.x      = x;
-      gl->vp.y      = y;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.full_height = gl->video_height;
+      video_viewport_get_scaled_aspect2(&gl->vp, vp_width, vp_height, false, device_aspect, video_driver_get_aspect_ratio());
+      vp_width           = gl->vp.width;
+      vp_height          = gl->vp.height;
    }
    else
    {
-      gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.x           = gl->vp.y = 0;
+      gl->vp.width       = vp_width;
+      gl->vp.height      = vp_height;
    }
-
-#if defined(RARCH_MOBILE)
-   /* In portrait mode, we want viewport to gravitate to top of screen. */
-   if (device_aspect < 1.0f)
-      gl->vp.y *= 2;
-#endif
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    gl3_set_projection(gl, &gl3_default_ortho, allow_rotate);
@@ -1464,8 +1604,8 @@ static void gl3_set_viewport(gl3_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->vp_out_width  = viewport_width;
-      gl->vp_out_height = viewport_height;
+      gl->out_vp_width  = vp_width;
+      gl->out_vp_height = vp_height;
    }
 
    gl->filter_chain_vp.x = gl->vp.x;
@@ -1474,7 +1614,7 @@ static void gl3_set_viewport(gl3_t *gl,
    gl->filter_chain_vp.height = gl->vp.height;
 
 #if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+   RARCH_LOG("Setting viewport @ %ux%u\n", vp_width, vp_height);
 #endif
 }
 
@@ -1755,12 +1895,12 @@ static void gl3_begin_debug(gl3_t *gl)
 #endif
 
 static void gl3_set_viewport_wrapper(void *data,
-      unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+      unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate)
 {
    gl3_t *gl = (gl3_t*)data;
-   gl3_set_viewport(gl,
-         viewport_width, viewport_height, force_full, allow_rotate);
+   gl3_set_viewport(gl, vp_width, vp_height,
+         force_full, allow_rotate);
 }
 
 
@@ -2041,7 +2181,7 @@ static void video_texture_load_gl3(
          break;
 
       case TEXTURE_FILTER_MIPMAP_LINEAR:
-	  default:
+      default:
          mag_filter = GL_LINEAR;
          min_filter = GL_LINEAR_MIPMAP_LINEAR;
          break;
@@ -2204,8 +2344,11 @@ static bool gl3_alive(void *data)
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
-      //we can set it to 1920x1080 as xbox uwp windowsize is guaranteed to be 1920x1080 and currently there is now way to set angle to use a variable resolution swapchain so regardless of the size the window is always 1080p
-      temp_width = 1920;
+      /* We can set it to 1920x1080 as xbox uwp windowsize is guaranteed
+       * to be 1920x1080 and currently there is now way to set ANGLE to
+       * use a variable resolution swapchain so regardless of the size
+       * the window is always 1080p */
+      temp_width  = 1920;
       temp_height = 1080;
    }
 #endif
@@ -2320,10 +2463,9 @@ static void gl3_set_rotation(void *data, unsigned rotation)
 static void gl3_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
-   gl3_t *gl   = (gl3_t*)data;
+   gl3_t *gl       = (gl3_t*)data;
    unsigned width  = gl->video_width;
    unsigned height = gl->video_height;
-
 
    *vp             = gl->vp;
    vp->full_width  = width;
@@ -2345,6 +2487,7 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+
    num_pixels = gl->vp.width * gl->vp.height;
 
    if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
@@ -2579,10 +2722,10 @@ static bool gl3_frame(void *data, const void *frame,
       texture.padded_width  = gl->hw_render_max_width;
       texture.padded_height = gl->hw_render_max_height;
 
-	  if (texture.width == 0)
-		  texture.width       = 1;
-	  if (texture.height == 0)
-		  texture.height      = 1;
+      if (texture.width == 0)
+         texture.width      = 1;
+      if (texture.height == 0)
+         texture.height     = 1;
    }
    else
    {
@@ -2597,7 +2740,20 @@ static bool gl3_frame(void *data, const void *frame,
 #else
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
+   gl3_filter_chain_set_frame_time_delta(gl->filter_chain, video_driver_get_frame_time_delta_usec());
+
+   gl3_filter_chain_set_original_fps(gl->filter_chain, video_driver_get_original_fps());
+
    gl3_filter_chain_set_rotation(gl->filter_chain, retroarch_get_rotation());
+
+   gl3_filter_chain_set_core_aspect(gl->filter_chain, video_driver_get_core_aspect());
+
+   /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+   uint32_t rot = retroarch_get_rotation();
+   float core_aspect_rot = video_driver_get_core_aspect();
+   if (rot == 1 || rot == 3)
+      core_aspect_rot = 1/core_aspect_rot;
+   gl3_filter_chain_set_core_aspect_rot(gl->filter_chain, core_aspect_rot);
 
    /* Sub-frame info for multiframe shaders (per real content frame).
       Should always be 1 for non-use of subframes*/
@@ -2626,16 +2782,12 @@ static bool gl3_frame(void *data, const void *frame,
          &&  !video_info->runloop_is_slowmotion
          &&  !video_info->runloop_is_paused
          &&  (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)))
-   {
       gl3_filter_chain_set_simulate_scanline(
             gl->filter_chain, true);
-   }
    else
-   {
       gl3_filter_chain_set_simulate_scanline(
             gl->filter_chain, false);
-   }
-#endif // GL3_ROLLING_SCANLINE_SIMULATION
+#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
    gl3_filter_chain_set_input_texture(gl->filter_chain, &texture);
    gl3_filter_chain_build_offscreen_passes(gl->filter_chain,
@@ -2702,8 +2854,11 @@ static bool gl3_frame(void *data, const void *frame,
 #ifndef HAVE_OPENGLES
       glReadBuffer(GL_BACK);
 #endif
-      glReadPixels(gl->vp.x, gl->vp.y,
-            gl->vp.width, gl->vp.height,
+      glReadPixels(
+            (gl->vp.x > 0) ? gl->vp.x : 0,
+            (gl->vp.y > 0) ? gl->vp.y : 0,
+            (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width,
+            (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
    }
@@ -2715,7 +2870,6 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
          gl3_pbo_async_readback(gl);
    }
-
 
    if (gl->ctx_driver->swap_buffers)
       gl->ctx_driver->swap_buffers(gl->ctx_data);

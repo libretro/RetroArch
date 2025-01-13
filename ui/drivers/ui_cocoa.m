@@ -428,6 +428,9 @@ static ui_application_t ui_application_cocoa = {
 
             apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
                   keycode, character, mod, RETRO_DEVICE_KEYBOARD);
+            if ((mod & RETROKMOD_META) && (event_type == NSEventTypeKeyDown))
+               apple_input_keyboard_event(false,
+                     keycode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
 #if defined(HAVE_COCOA_METAL)
@@ -455,7 +458,7 @@ static ui_application_t ui_application_cocoa = {
             CGFloat delta_x             = event.deltaX;
             CGFloat delta_y             = event.deltaY;
             NSPoint pos                 = CONVERT_POINT();
-            cocoa_input_data_t 
+            cocoa_input_data_t
                *apple                   = (cocoa_input_data_t*)
                input_state_get_ptr()->current_data;
             if (!apple)
@@ -468,10 +471,13 @@ static ui_application_t ui_application_cocoa = {
             apple->touches[0].screen_x  = (int16_t)pos.x;
             apple->touches[0].screen_y  = (int16_t)pos.y;
 
-            if (apple->mouse_grabbed) {
+            if (apple->mouse_grabbed)
+            {
                apple->window_pos_x      += (int16_t)delta_x;
                apple->window_pos_y      += (int16_t)delta_y;
-            } else {
+            }
+            else
+            {
                apple->window_pos_x       = (int16_t)pos.x;
                apple->window_pos_y       = (int16_t)pos.y;
             }
@@ -490,7 +496,7 @@ static ui_application_t ui_application_cocoa = {
        {
            NSInteger number      = event.buttonNumber;
            NSPoint pos           = CONVERT_POINT();
-           cocoa_input_data_t 
+           cocoa_input_data_t
               *apple             = (cocoa_input_data_t*)
               input_state_get_ptr()->current_data;
            if (!apple || pos.y < 0)
@@ -505,7 +511,7 @@ static ui_application_t ui_application_cocoa = {
          {
             NSInteger number      = event.buttonNumber;
             NSPoint pos           = CONVERT_POINT();
-            cocoa_input_data_t 
+            cocoa_input_data_t
               *apple              = (cocoa_input_data_t*)
               input_state_get_ptr()->current_data;
             if (!apple || pos.y < 0)
@@ -533,7 +539,9 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
-    [apple_platform updateWindowedMode];
+   settings_t *settings             = config_get_ptr();
+   video_display_server_set_window_opacity(settings->uints.video_window_opacity);
+   video_display_server_set_window_decorations(settings->bools.video_window_show_decorations);
 }
 
 - (void)windowDidMove:(NSNotification *)notification
@@ -665,6 +673,16 @@ static ui_application_t ui_application_cocoa = {
    switch (vt)
    {
       case APPLE_VIEW_TYPE_VULKAN:
+         {
+            _renderView                 = [CocoaView get];
+            CAMetalLayer *metal_layer   = [[CAMetalLayer alloc] init];
+            metal_layer.device          = MTLCreateSystemDefaultDevice();
+            metal_layer.framebufferOnly = YES;
+            metal_layer.contentsScale   = [[NSScreen mainScreen] backingScaleFactor];
+            _renderView.layer           = metal_layer;
+            [_renderView setWantsLayer:YES];
+         }
+         break;
       case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v            = [MetalView new];
@@ -694,7 +712,7 @@ static ui_application_t ui_application_cocoa = {
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode
 {
-   BOOL is_fullscreen = (self.window.styleMask 
+   BOOL is_fullscreen = (self.window.styleMask
          & NSWindowStyleMaskFullScreen) == NSWindowStyleMaskFullScreen;
    if (mode.fullscreen)
    {
@@ -710,7 +728,6 @@ static ui_application_t ui_application_cocoa = {
       if (is_fullscreen)
          [self.window toggleFullScreen:self];
       [self updateWindowedSize:mode];
-      [self updateWindowedMode];
    }
 
    /* HACK(sgc): ensure MTKView posts a drawable resize event */
@@ -742,24 +759,6 @@ static ui_application_t ui_application_cocoa = {
    }
    else
       [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
-}
-
-- (void)updateWindowedMode
-{
-   settings_t *settings      = config_get_ptr();
-   bool windowed_full        = settings->bools.video_windowed_fullscreen;
-   bool show_decorations     = settings->bools.video_window_show_decorations;
-   CGFloat opacity           = (CGFloat)settings->uints.video_window_opacity / (CGFloat)100.0;
-
-   if (windowed_full || !self.window.keyWindow)
-       return;
-
-   if (show_decorations)
-       self.window.styleMask |= NSWindowStyleMaskTitled;
-   else
-       self.window.styleMask &= ~NSWindowStyleMaskTitled;
-
-   self.window.alphaValue = opacity;
 }
 
 - (void)setCursorVisible:(bool)v
@@ -810,7 +809,7 @@ static ui_application_t ui_application_cocoa = {
        steam_poll();
 #endif
 
-       while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) 
+       while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE)
              == kCFRunLoopRunHandledSource);
        if (ret == -1)
        {
@@ -864,7 +863,7 @@ static ui_application_t ui_application_cocoa = {
    }
    else
    {
-      const ui_msg_window_t *msg_window = 
+      const ui_msg_window_t *msg_window =
          ui_companion_driver_get_msg_window_ptr();
       if (msg_window)
       {
@@ -884,7 +883,7 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
    rarch_system_info_t *sys_info    = &runloop_state_get_ptr()->system;
    settings_t           *settings   = config_get_ptr();
-   bool set_supports_no_game_enable = 
+   bool set_supports_no_game_enable =
       settings->bools.set_supports_no_game_enable;
    if (!state || string_is_empty(state->result))
       return;
@@ -934,7 +933,7 @@ static void open_document_handler(
 
 - (IBAction)openCore:(id)sender
 {
-   const ui_browser_window_t *browser = 
+   const ui_browser_window_t *browser =
       ui_companion_driver_get_browser_window_ptr();
 
    if (browser)
@@ -961,7 +960,7 @@ static void open_document_handler(
 
 - (void)openDocument:(id)sender
 {
-   const ui_browser_window_t *browser = 
+   const ui_browser_window_t *browser =
       ui_companion_driver_get_browser_window_ptr();
 
    if (browser)

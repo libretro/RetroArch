@@ -91,6 +91,8 @@
 
 #if defined(DINGUX)
 #endif
+#if defined(RARCH_MOBILE)
+#endif
 
 /* Settings > Video > HDR */
 
@@ -156,6 +158,8 @@
 
 /* Settings > Latency */
 
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+#endif
 
 /* Settings > Core */
 
@@ -263,7 +267,7 @@
 
 /* Settings > Playlists */
 
-   
+
 /* Settings > Playlists > Playlist Management */
 
 

@@ -58,195 +58,80 @@ static void gl3_build_default_matrix(float *data)
    data[15] =  1.0f;
 }
 
-static void gl3_framebuffer_copy(
-      GLuint fb_id,
-      GLuint quad_program,
-      GLuint quad_vbo,
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image)
-{
-   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
+extern "C" {
 
-   glUseProgram(quad_program);
-   if (flat_ubo_vertex >= 0)
+   void gl3_framebuffer_copy(
+         GLuint fb_id,
+         GLuint quad_program,
+         GLuint quad_vbo,
+         GLint flat_ubo_vertex,
+         struct Size2D size,
+         GLuint image);
+
+   void gl3_framebuffer_copy_partial(
+         GLuint fb_id,
+         GLuint quad_program,
+         GLint flat_ubo_vertex,
+         struct Size2D size,
+         GLuint image,
+         float rx, float ry);
+
+   GLuint gl3_compile_shader(GLenum stage, const char *source);
+   uint32_t gl3_get_cross_compiler_target_version(void);
+
+   static GLenum address_to_gl(glslang_filter_chain_address type)
    {
-      static float mvp[16] = {
-                                2.0f, 0.0f, 0.0f, 0.0f,
-                                0.0f, 2.0f, 0.0f, 0.0f,
-                                0.0f, 0.0f, 2.0f, 0.0f,
-                               -1.0f,-1.0f, 0.0f, 1.0f
-                             };
-      glUniform4fv(flat_ubo_vertex, 4, mvp);
-   }
-
-   /* Draw quad */
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-static void gl3_framebuffer_copy_partial(
-      GLuint fb_id,
-      GLuint quad_program,
-      GLint flat_ubo_vertex,
-      struct Size2D size,
-      GLuint image,
-      float rx, float ry)
-{
-   GLuint vbo;
-   const float quad_data[16] = {
-      0.0f, 0.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, rx,   0.0f,
-      0.0f, 1.0f, 0.0f, ry,
-      1.0f, 1.0f, rx,   ry,
-   };
-
-   glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, image);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   glUseProgram(quad_program);
-   if (flat_ubo_vertex >= 0)
-   {
-      static float mvp[16] = {
-                                2.0f, 0.0f, 0.0f, 0.0f,
-                                0.0f, 2.0f, 0.0f, 0.0f,
-                                0.0f, 0.0f, 2.0f, 0.0f,
-                               -1.0f,-1.0f, 0.0f, 1.0f
-                             };
-      glUniform4fv(flat_ubo_vertex, 4, mvp);
-   }
-   glDisable(GL_CULL_FACE);
-   glDisable(GL_BLEND);
-   glDisable(GL_DEPTH_TEST);
-   glEnableVertexAttribArray(0);
-   glEnableVertexAttribArray(1);
-
-   /* A bit crude, but heeeey. */
-   glGenBuffers(1, &vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-   glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STREAM_DRAW);
-   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(0)));
-   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                         (void *)((uintptr_t)(2 * sizeof(float))));
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-   glBindBuffer(GL_ARRAY_BUFFER, 0);
-   glDeleteBuffers(1, &vbo);
-   glDisableVertexAttribArray(0);
-   glDisableVertexAttribArray(1);
-   glUseProgram(0);
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-static GLuint gl3_compile_shader(GLenum stage, const char *source)
-{
-   GLint status;
-   GLuint shader   = glCreateShader(stage);
-   const char *ptr = source;
-
-   glShaderSource(shader, 1, &ptr, NULL);
-   glCompileShader(shader);
-
-   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-
-   if (!status)
-   {
-      GLint length;
-      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
-      if (length > 0)
+      switch (type)
       {
-         char *info_log = (char*)malloc(length);
-
-         if (info_log)
-         {
-            glGetShaderInfoLog(shader, length, &length, info_log);
-            RARCH_ERR("[GLCore]: Failed to compile shader: %s\n", info_log);
-            free(info_log);
-            glDeleteShader(shader);
-            return 0;
-         }
-      }
-   }
-
-   return shader;
-}
-
-static uint32_t gl3_get_cross_compiler_target_version(void)
-{
-   const char *version = (const char*)glGetString(GL_VERSION);
-   unsigned major      = 0;
-   unsigned minor      = 0;
-
 #ifdef HAVE_OPENGLES3
-   if (!version || sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
-      return 300;
-
-   if (major == 2 && minor == 0)
-      return 100;
-#else
-   if (!version || sscanf(version, "%u.%u", &major, &minor) != 2)
-      return 150;
-
-   if (major == 3)
-   {
-      switch (minor)
-      {
-         case 2:
-            return 150;
-         case 1:
-            return 140;
-         case 0:
-            return 130;
-      }
-   }
-   else if (major == 2)
-   {
-      switch (minor)
-      {
-         case 1:
-            return 120;
-         case 0:
-            return 110;
-      }
-   }
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+#if 0
+            RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
 #endif
+            return GL_CLAMP_TO_EDGE;
+#else
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+            return GL_CLAMP_TO_BORDER;
+#endif
+         case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
+            return GL_REPEAT;
+         case GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
+            return GL_MIRRORED_REPEAT;
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
+         default:
+            break;
+      }
 
-   return 100 * major + 10 * minor;
+      return GL_CLAMP_TO_EDGE;
+   }
+
+   static GLenum convert_filter_to_mag_gl(glslang_filter_chain_filter filter)
+   {
+      switch (filter)
+      {
+         case GLSLANG_FILTER_CHAIN_LINEAR:
+            return GL_LINEAR;
+         case GLSLANG_FILTER_CHAIN_NEAREST:
+         default:
+            break;
+      }
+
+      return GL_NEAREST;
+   }
+
+   static GLenum convert_filter_to_min_gl(glslang_filter_chain_filter filter, glslang_filter_chain_filter mipfilter)
+   {
+      if (     (filter    == GLSLANG_FILTER_CHAIN_LINEAR)
+            && (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
+         )
+         return GL_LINEAR_MIPMAP_LINEAR;
+      else if (filter == GLSLANG_FILTER_CHAIN_LINEAR)
+         return GL_LINEAR_MIPMAP_NEAREST;
+      else if (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
+         return GL_NEAREST_MIPMAP_LINEAR;
+      return GL_NEAREST_MIPMAP_NEAREST;
+   }
 }
-
 
 GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
@@ -492,59 +377,6 @@ struct Texture
    glslang_filter_chain_filter mip_filter;
    glslang_filter_chain_address address;
 };
-
-static GLenum address_to_gl(glslang_filter_chain_address type)
-{
-   switch (type)
-   {
-#ifdef HAVE_OPENGLES3
-      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
-#if 0
-         RARCH_WARN("[GLCore]: No CLAMP_TO_BORDER in GLES3. Falling back to edge clamp.\n");
-#endif
-         return GL_CLAMP_TO_EDGE;
-#else
-      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
-         return GL_CLAMP_TO_BORDER;
-#endif
-      case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
-         return GL_REPEAT;
-      case GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
-         return GL_MIRRORED_REPEAT;
-      case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
-      default:
-         break;
-   }
-
-   return GL_CLAMP_TO_EDGE;
-}
-
-static GLenum convert_filter_to_mag_gl(glslang_filter_chain_filter filter)
-{
-   switch (filter)
-   {
-      case GLSLANG_FILTER_CHAIN_LINEAR:
-         return GL_LINEAR;
-      case GLSLANG_FILTER_CHAIN_NEAREST:
-      default:
-         break;
-   }
-
-   return GL_NEAREST;
-}
-
-static GLenum convert_filter_to_min_gl(glslang_filter_chain_filter filter, glslang_filter_chain_filter mipfilter)
-{
-   if (     (filter    == GLSLANG_FILTER_CHAIN_LINEAR)
-         && (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
-      )
-      return GL_LINEAR_MIPMAP_LINEAR;
-   else if (filter == GLSLANG_FILTER_CHAIN_LINEAR)
-      return GL_LINEAR_MIPMAP_NEAREST;
-   else if (mipfilter == GLSLANG_FILTER_CHAIN_LINEAR)
-      return GL_NEAREST_MIPMAP_LINEAR;
-   return GL_NEAREST_MIPMAP_NEAREST;
-}
 
 static GLenum convert_glslang_format(glslang_format fmt)
 {
@@ -920,9 +752,29 @@ public:
       frame_direction = direction;
    }
 
+   void set_frame_time_delta(uint32_t time_delta)
+   {
+      frame_time_delta = time_delta;
+   }
+
+   void set_original_fps(float fps)
+   {
+      original_fps = fps;
+   }
+
    void set_rotation(uint32_t rot)
    {
       rotation = rot;
+   }
+
+   void set_core_aspect(float coreaspect)
+   {
+      core_aspect = coreaspect;
+   }
+
+   void set_core_aspect_rot(float coreaspectrot)
+   {
+      core_aspect_rot = coreaspectrot;
    }
 
    void set_shader_subframes(uint32_t tot_subframes)
@@ -997,7 +849,7 @@ private:
    CommonResources *common         = nullptr;
 
    Size2D current_framebuffer_size = {};
-   gl3_viewport current_viewport;
+   gl3_viewport curr_vp;
    gl3_filter_chain_pass_info pass_info;
 
    std::vector<uint32_t> vertex_shader;
@@ -1023,6 +875,8 @@ private:
          slang_semantic semantic, uint32_t value);
    void build_semantic_int(uint8_t *data,
          slang_semantic semantic, int32_t value);
+   void build_semantic_float(uint8_t *data,
+         slang_semantic semantic, float value);
    void build_semantic_parameter(uint8_t *data, unsigned index, float value);
    void build_semantic_texture_vec4(uint8_t *data,
          slang_texture_semantic semantic,
@@ -1039,7 +893,11 @@ private:
    uint64_t frame_count = 0;
    unsigned frame_count_period = 0;
    int32_t frame_direction = 1;
+   uint32_t frame_time_delta = 0;
+   float original_fps = 0;
    uint32_t rotation = 0;
+   float core_aspect = 0;
+   float core_aspect_rot = 0;
    unsigned pass_number = 0;
    uint32_t total_subframes = 1;
    uint32_t current_subframe = 1;
@@ -1205,7 +1063,7 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
          frag = glGetUniformLocation(pipeline, frag_n);
 
          if (vert >= 0)
-            m->location.push_vertex = vert;
+            m->location.push_vertex   = vert;
          if (frag >= 0)
             m->location.push_fragment = frag;
       }
@@ -1247,7 +1105,11 @@ bool Pass::init_pipeline()
    reflect_parameter("FinalViewportSize", reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
    reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
    reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
+   reflect_parameter("FrameTimeDelta", reflection.semantics[SLANG_SEMANTIC_FRAME_TIME_DELTA]);
+   reflect_parameter("OriginalFPS", reflection.semantics[SLANG_SEMANTIC_ORIGINAL_FPS]);
    reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
+   reflect_parameter("OriginalAspect", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
+   reflect_parameter("OriginalAspectRotated", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
    reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
    reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
 
@@ -1292,7 +1154,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? current_viewport.height : current_viewport.width) * pass_info.scale_x;
+         width = (retroarch_get_rotation() % 2 ? curr_vp.height : curr_vp.width) * pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1314,7 +1176,7 @@ Size2D Pass::get_output_size(const Size2D &original,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? current_viewport.width : current_viewport.height) * pass_info.scale_y;
+         height = (retroarch_get_rotation() % 2 ? curr_vp.width : curr_vp.height) * pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1484,6 +1346,38 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
       }
       else
          *reinterpret_cast<int32_t *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+   }
+}
+
+void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
+                              float value)
+{
+   auto &refl = reflection.semantics[semantic];
+
+   if (data && refl.uniform)
+   {
+      if (refl.location.ubo_vertex >= 0 || refl.location.ubo_fragment >= 0)
+      {
+         if (refl.location.ubo_vertex >= 0)
+            glUniform1f(refl.location.ubo_vertex, value);
+         if (refl.location.ubo_fragment >= 0)
+            glUniform1f(refl.location.ubo_fragment, value);
+      }
+      else
+         *reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset) = value;
+   }
+
+   if (refl.push_constant)
+   {
+      if (refl.location.push_vertex >= 0 || refl.location.push_fragment >= 0)
+      {
+         if (refl.location.push_vertex >= 0)
+            glUniform1f(refl.location.push_vertex, value);
+         if (refl.location.push_fragment >= 0)
+            glUniform1f(refl.location.push_fragment, value);
+      }
+      else
+         *reinterpret_cast<float *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
    }
 }
 
@@ -1669,8 +1563,8 @@ void Pass::build_semantics(uint8_t *buffer,
                        current_framebuffer_size.width,
                        current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(current_viewport.width),
-                       unsigned(current_viewport.height));
+                       unsigned(curr_vp.width),
+                       unsigned(curr_vp.height));
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
                        frame_count_period
@@ -1680,8 +1574,20 @@ void Pass::build_semantics(uint8_t *buffer,
    build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       frame_direction);
 
+   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
+                      frame_time_delta);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
+                      original_fps);
+
    build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
                       rotation);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
+                      core_aspect);
+
+   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      core_aspect_rot);
 
    build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
                       total_subframes);
@@ -1734,7 +1640,7 @@ void Pass::build_commands(
       const gl3_viewport &vp,
       const float *mvp)
 {
-   current_viewport = vp;
+   curr_vp          = vp;
    Size2D size      = get_output_size(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
@@ -1814,22 +1720,22 @@ void Pass::build_commands(
 
    if (final_pass)
    {
-      glViewport(current_viewport.x, current_viewport.y,
-                 current_viewport.width, current_viewport.height);
+      glViewport(curr_vp.x, curr_vp.y,
+                 curr_vp.width, curr_vp.height);
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
       if (simulate_scanline)
       {
-         glScissor(  current_viewport.x,
-                     int32_t((float(current_viewport.height) / float(total_subframes))
+         glScissor(  curr_vp.x,
+                     int32_t((float(curr_vp.height) / float(total_subframes))
                               * float(current_subframe - 1)),
-                     current_viewport.width,
-                     uint32_t(float(current_viewport.height) / float(total_subframes))
+                     curr_vp.width,
+                     uint32_t(float(curr_vp.height) / float(total_subframes))
          );
       }
       else
       {
-         glScissor(  current_viewport.x, current_viewport.y,
-                     current_viewport.width, current_viewport.height);
+         glScissor(  curr_vp.x,     curr_vp.y,
+                     curr_vp.width, curr_vp.height);
       }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
    }
@@ -1931,7 +1837,11 @@ public:
    void set_frame_count(uint64_t count);
    void set_frame_count_period(unsigned pass, unsigned period);
    void set_frame_direction(int32_t direction);
+   void set_frame_time_delta(uint32_t rot);
+   void set_original_fps(float fps);
    void set_rotation(uint32_t rot);
+   void set_core_aspect(float coreaspect);
+   void set_core_aspect_rot(float coreaspectrot);
    void set_shader_subframes(uint32_t tot_subframes);
    void set_current_shader_subframe(uint32_t cur_subframe);
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
@@ -2145,10 +2055,11 @@ bool gl3_filter_chain::init_history()
    common.original_history.clear();
 
    for (i = 0; i < passes.size(); i++)
-      required_images =
-            std::max(required_images,
-                passes[i]->get_reflection().semantic_textures[
-                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
+   {
+      size_t _y = passes[i]->get_reflection().semantic_textures[
+                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size();
+      required_images = MAX(required_images, _y);
+   }
 
    if (required_images < 2)
    {
@@ -2419,12 +2330,41 @@ void gl3_filter_chain::set_frame_direction(int32_t direction)
       passes[i]->set_frame_direction(direction);
 }
 
+void gl3_filter_chain::set_frame_time_delta(uint32_t time_delta)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_frame_time_delta(time_delta);
+}
+
+void gl3_filter_chain::set_original_fps(float fps)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_original_fps(fps);
+}
+
 void gl3_filter_chain::set_rotation(uint32_t rot)
 {
    unsigned i;
    for (i = 0; i < passes.size(); i++)
       passes[i]->set_rotation(rot);
 }
+
+void gl3_filter_chain::set_core_aspect(float coreaspect)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect(coreaspect);
+}
+
+void gl3_filter_chain::set_core_aspect_rot(float coreaspectrot)
+{
+   unsigned i;
+   for (i = 0; i < passes.size(); i++)
+      passes[i]->set_core_aspect_rot(coreaspectrot);
+}
+
 
 void gl3_filter_chain::set_shader_subframes(uint32_t tot_subframes)
 {
@@ -2618,11 +2558,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          {
             /* Allow duplicate #pragma parameter, but
              * only if they are exactly the same. */
-            if (meta_param.desc    != itr->desc    ||
-                meta_param.initial != itr->initial ||
-                meta_param.minimum != itr->minimum ||
-                meta_param.maximum != itr->maximum ||
-                meta_param.step    != itr->step)
+            if (   meta_param.desc    != itr->desc
+                || meta_param.initial != itr->initial
+                || meta_param.minimum != itr->minimum
+                || meta_param.maximum != itr->maximum
+                || meta_param.step    != itr->step)
             {
                RARCH_ERR("[GLCore]: Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
@@ -2862,11 +2802,39 @@ void gl3_filter_chain_set_frame_direction(
    chain->set_frame_direction(direction);
 }
 
+void gl3_filter_chain_set_frame_time_delta(
+      gl3_filter_chain_t *chain,
+      uint32_t time_delta)
+{
+   chain->set_frame_time_delta(time_delta);
+}
+
+void gl3_filter_chain_set_original_fps(
+      gl3_filter_chain_t *chain,
+      float fps)
+{
+   chain->set_original_fps(fps);
+}
+
 void gl3_filter_chain_set_rotation(
       gl3_filter_chain_t *chain,
       uint32_t rot)
 {
    chain->set_rotation(rot);
+}
+
+void gl3_filter_chain_set_core_aspect(
+      gl3_filter_chain_t *chain,
+      float coreaspect)
+{
+   chain->set_core_aspect(coreaspect);
+}
+
+void gl3_filter_chain_set_core_aspect_rot(
+      gl3_filter_chain_t *chain,
+      float coreaspectrot)
+{
+   chain->set_core_aspect_rot(coreaspectrot);
 }
 
 void gl3_filter_chain_set_shader_subframes(

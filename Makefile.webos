@@ -17,7 +17,7 @@ WEBOS_INC_DIR         ?= $(STAGING_DIR)/usr/include
 WEBOS_LIB_DIR         ?= $(STAGING_DIR)/usr/lib
 
 ADD_SDL2_LIB          ?= 0
-SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.0-2/SDL2-2.30.0-webos.tar.gz
+SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.0-webos.2/SDL2-2.30.0-webos.tar.gz
 
 #########################
 #########################

@@ -225,7 +225,7 @@ static void init( init_t* impl, snes_ntsc_setup_t const* setup )
 					(float) pow( i * to_float, gamma ) * impl->contrast + impl->brightness;
 	}
 
-	/* setup decoder matricies */
+	/* setup decoder matrices */
 	{
 		float hue = (float) setup->hue * PI + PI / 180 * ext_decoder_hue;
 		float sat = (float) setup->saturation + 1;

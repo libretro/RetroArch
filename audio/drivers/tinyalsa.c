@@ -121,8 +121,8 @@
  */
 #define	PCM_STATE_RUNNING	0x03
 
-/** For inputs, this means an overrun occured.
- * For outputs, this means an underrun occured.
+/** For inputs, this means an overrun occurred.
+ * For outputs, this means an underrun occurred.
  */
 #define	PCM_STATE_XRUN 0x04
 
@@ -755,13 +755,13 @@ struct pcm
    unsigned int running:1;
    /** Whether or not the PCM has been prepared */
    unsigned int prepared:1;
-   /** The number of underruns that have occured */
+   /** The number of underruns that have occurred */
    int underruns;
    /** Size of the buffer */
    unsigned int buffer_size;
    /** The boundary for ring buffer pointers */
    unsigned int boundary;
-   /** Description of the last error that occured */
+   /** Description of the last error that occurred */
    char error[PCM_ERROR_MAX];
    /** Configuration that was passed to @ref pcm_open */
    struct pcm_config config;
@@ -845,10 +845,10 @@ static int pcm_get_file_descriptor(const struct pcm *pcm)
    return pcm->fd;
 }
 
-/** Gets the error message for the last error that occured.
- * If no error occured and this function is called, the results are undefined.
+/** Gets the error message for the last error that occurred.
+ * If no error occurred and this function is called, the results are undefined.
  * @param pcm A PCM handle.
- * @return The error message of the last error that occured.
+ * @return The error message of the last error that occurred.
  * @ingroup libtinyalsa-pcm
  */
 static const char* pcm_get_error(const struct pcm *pcm)
@@ -1195,7 +1195,7 @@ static int pcm_mmap_begin(struct pcm *pcm, void **areas, unsigned int *offset,
       avail = pcm->buffer_size;
    continuous = pcm->buffer_size - *offset;
 
-   /* we can only copy frames if the are availabale and continuos */
+   /* we can only copy frames if the are available and continuous */
    copy_frames = *frames;
    if (copy_frames > avail)
       copy_frames = avail;
@@ -1939,8 +1939,8 @@ static int pcm_state(struct pcm *pcm)
  * @param pcm A PCM handle.
  * @param timeout The maximum amount of time to wait for, in terms of milliseconds.
  * @returns If frames became available, one is returned.
- *  If a timeout occured, zero is returned.
- *  If an error occured, a negative number is returned.
+ *  If a timeout occurred, zero is returned.
+ *  If an error occurred, a negative number is returned.
  * @ingroup libtinyalsa-pcm
  */
 static int pcm_wait(struct pcm *pcm, int timeout)

@@ -117,7 +117,11 @@ run:
 	ps2client -h $(PS2_IP) execee host:$(EE_BIN)
 
 sim:
-	PCSX2 --elf=$(PWD)/$(EE_BIN) --nogui
+ifeq ($(shell uname), Darwin)
+	/Applications/PCSX2.app/Contents/MacOS/PCSX2 -elf $(PWD)/$(EE_BIN)
+else
+	PCSX2 -elf $(PWD)/$(EE_BIN) -nogui
+endif
 
 debug: clean all run
 

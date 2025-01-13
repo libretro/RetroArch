@@ -81,8 +81,8 @@ static const float vita2d_colors[16]    = {
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 static void vita2d_update_viewport(vita_video_t* vita,
       video_frame_info_t *video_info);
-static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate);
+static void vita2d_set_viewport_wrapper(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate);
 
 /*
  * DISPLAY DRIVER
@@ -861,8 +861,9 @@ static void vita2d_update_viewport(vita_video_t* vita,
 
    if (video_scale_integer)
    {
+      /* TODO: Does Vita use top-left or bottom-left origin?  I'm assuming top left. */
       video_viewport_get_scaled_integer(&vita->vp, temp_width,
-            temp_height, video_driver_get_aspect_ratio(), vita->keep_aspect);
+           temp_height, video_driver_get_aspect_ratio(), vita->keep_aspect, true);
       width  = vita->vp.width;
       height = vita->vp.height;
    }
@@ -876,54 +877,16 @@ static void vita2d_update_viewport(vita_video_t* vita,
          width = temp_height;
          height = temp_width;
       }
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+      video_viewport_get_scaled_aspect(&vita->vp, width, height, true);
+      if ( (vita->rotation == ORIENTATION_VERTICAL) ||
+           (vita->rotation == ORIENTATION_FLIPPED_ROTATED)
+         )
       {
-         x      = video_info->custom_vp_x;
-         y      = video_info->custom_vp_y;
-         width  = video_info->custom_vp_width;
-         height = video_info->custom_vp_height;
+         // swap x and y
+         unsigned tmp = vita->vp.x;
+         vita->vp.x = vita->vp.y;
+         vita->vp.y = tmp;
       }
-      else
-#endif
-      {
-         float delta;
-
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x     = (int)roundf(width * (0.5f - delta));
-            width = (unsigned)roundf(2.0f * width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y      = (int)roundf(height * (0.5f - delta));
-            height = (unsigned)roundf(2.0f * height * delta);
-         }
-
-         if ( (vita->rotation == ORIENTATION_VERTICAL) ||
-              (vita->rotation == ORIENTATION_FLIPPED_ROTATED)
-            )
-         {
-            x = (temp_width - width) * 0.5f;
-            y = (temp_height - height) * 0.5f;
-         }
-      }
-
-      vita->vp.x      = x;
-      vita->vp.y      = y;
-      vita->vp.width  = width;
-      vita->vp.height = height;
    }
    else
    {
@@ -940,12 +903,12 @@ static void vita2d_update_viewport(vita_video_t* vita,
 
 }
 
-static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+static void vita2d_set_viewport_wrapper(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate)
 {
    int x                     = 0;
    int y                     = 0;
-   float device_aspect       = (float)viewport_width / viewport_height;
+   float device_aspect       = (float)vp_width / vp_height;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    settings_t *settings      = config_get_ptr();
    vita_video_t *vita        = (vita_video_t*)data;
@@ -954,11 +917,12 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
 
    if (video_scale_integer && !force_full)
    {
+      /* TODO: Does Vita use top-left or bottom-left origin?  I'm assuming top left. */
       video_viewport_get_scaled_integer(&vita->vp,
-            viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), vita->keep_aspect);
-      viewport_width  = vita->vp.width;
-      viewport_height = vita->vp.height;
+            vp_width, vp_height,
+            video_driver_get_aspect_ratio(), vita->keep_aspect, true);
+      vp_width  = vita->vp.width;
+      vp_height = vita->vp.height;
    }
    else if (vita->keep_aspect && !force_full)
    {
@@ -967,11 +931,11 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
 #if defined(HAVE_MENU)
       if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
+         video_viewport_t *custom_vp = &settings->video_vp_custom;
          x                           = custom_vp->x;
          y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
+         vp_width                    = custom_vp->width;
+         vp_height                   = custom_vp->height;
       }
       else
 #endif
@@ -986,31 +950,34 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
          }
          else if (device_aspect > desired_aspect)
          {
+            float viewport_bias = settings->floats.video_vp_bias_x;
             delta          = (desired_aspect / device_aspect - 1.0f)
                / 2.0f + 0.5f;
-            x              = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
+            x              = (int)roundf(vp_width * ((0.5f - delta) * (viewport_bias * 2.0f)));
+            vp_width       = (unsigned)roundf(2.0f * vp_width * delta);
          }
          else
          {
+            /* TODO: Does Vita use top-left or bottom-left origin?  I'm assuming top left. */
+            float viewport_bias = settings->floats.video_vp_bias_y;
             delta           = (device_aspect / desired_aspect - 1.0f)
                / 2.0f + 0.5f;
-            y               = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
+            y               = (int)roundf(vp_height * ((0.5f - delta) * (viewport_bias * 2.0f)));
+            vp_height       = (unsigned)roundf(2.0f * vp_height * delta);
          }
       }
 
       vita->vp.x      = x;
       vita->vp.y      = y;
-      vita->vp.width  = viewport_width;
-      vita->vp.height = viewport_height;
+      vita->vp.width  = vp_width;
+      vita->vp.height = vp_height;
    }
    else
    {
       vita->vp.x      = 0;
       vita->vp.y      = 0;
-      vita->vp.width  = viewport_width;
-      vita->vp.height = viewport_height;
+      vita->vp.width  = vp_width;
+      vita->vp.height = vp_height;
    }
 
    vita2d_set_viewport(vita->vp.x, vita->vp.y, vita->vp.width, vita->vp.height);
@@ -1019,8 +986,8 @@ static void vita2d_set_viewport_wrapper(void *data, unsigned viewport_width,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      vita->vp.width  = viewport_width;
-      vita->vp.height = viewport_height;
+      vita->vp.width  = vp_width;
+      vita->vp.height = vp_height;
    }
 }
 

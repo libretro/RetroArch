@@ -106,12 +106,13 @@ enum rarch_state_flags
    RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
    RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14),
    RARCH_FLAGS_HAS_SET_XDELTA_PREF          = (1 << 15),
-   RARCH_FLAGS_XDELTA_PREF                  = (1 << 16)
+   RARCH_FLAGS_XDELTA_PREF                  = (1 << 16),
+   RARCH_FLAGS_HAS_SET_OVERLAY_PRESET       = (1 << 17)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
-int retroarch_get_capabilities(enum rarch_capabilities type,
+size_t retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);
 
 void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data);
@@ -206,7 +207,7 @@ void core_options_flush(void);
  **/
 void retroarch_fail(int error_code, const char *error);
 
-void check_quit_on_close(void);
+bool should_quit_on_close(void);
 
 uint16_t retroarch_get_flags(void);
 

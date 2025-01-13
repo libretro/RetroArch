@@ -7,7 +7,7 @@
 //
 
 extension CocoaView {
-   
+
    // A native swift wrapper around displaying notifications
    @objc func showRetroArchNotification(
       title: String? = nil,
@@ -23,6 +23,6 @@ extension CocoaView {
          }
          return nil
       }()
-      runloop_msg_queue_push(messageCString, 1, 100, true, titleCString, icon, category)
+      runloop_msg_queue_push(messageCString, strlen(messageCString), 1, 100, true, titleCString, icon, category)
    }
 }

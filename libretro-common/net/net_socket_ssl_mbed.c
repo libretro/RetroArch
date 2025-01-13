@@ -35,8 +35,13 @@
 #include "../../deps/mbedtls/mbedtls/ctr_drbg.h"
 #include "../../deps/mbedtls/mbedtls/entropy.h"
 #else
+#include <mbedtls/version.h>
+#if MBEDTLS_VERSION_MAJOR < 3
 #include <mbedtls/config.h>
 #include <mbedtls/certs.h>
+#else
+#include <mbedtls/build_info.h>
+#endif
 #include <mbedtls/debug.h>
 #include <mbedtls/platform.h>
 #include <mbedtls/net_sockets.h>
@@ -46,7 +51,7 @@
 #endif
 
 /* Not part of the mbedtls upstream source */
-#include "../../deps/mbedtls/cacert.h"
+#include "cacert.h"
 
 #define DEBUG_LEVEL 0
 

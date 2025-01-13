@@ -55,17 +55,16 @@ static void ctr_dsp_audio_loop(void* data)
    if (!ctr)
       return;
 
-   while (1)
+   for (;;)
    {
       size_t buf_avail, avail, to_write;
       slock_lock(ctr->fifo_lock);
 
-      do {
+      do
+      {
          avail = FIFO_READ_AVAIL(ctr->fifo);
-
-         if (!avail) {
+         if (!avail)
             scond_wait(ctr->fifo_avail, ctr->fifo_lock);
-         }
       } while (!avail && ctr->running);
 
       slock_unlock(ctr->fifo_lock);
@@ -81,7 +80,8 @@ static void ctr_dsp_audio_loop(void* data)
 
       slock_lock(ctr->fifo_lock);
 
-      if (to_write > 0) {
+      if (to_write > 0)
+      {
          fifo_read(ctr->fifo, ctr->dsp_buf.data_pcm8 + pos, to_write);
          DSP_FlushDataCache(ctr->dsp_buf.data_pcm8 + pos, to_write);
          scond_signal(ctr->fifo_done);
@@ -89,7 +89,8 @@ static void ctr_dsp_audio_loop(void* data)
 
       slock_unlock(ctr->fifo_lock);
 
-      if (buf_pos == pos) {
+      if (buf_pos == pos)
+      {
          svcSleepThread(100000);
       }
 
@@ -142,10 +143,10 @@ static void *ctr_dsp_thread_audio_init(const char *device, unsigned rate, unsign
 
    ctr->fifo = fifo_new(ctr->fifo_size);
 
-   if (!(ctr->fifo_lock = slock_new()) ||
-       !(ctr->fifo_avail = scond_new()) ||
-       !(ctr->fifo_done = scond_new()) ||
-       !(ctr->thread = sthread_create(ctr_dsp_audio_loop, ctr)))
+   if (   !(ctr->fifo_lock = slock_new())
+       || !(ctr->fifo_avail = scond_new())
+       || !(ctr->fifo_done = scond_new())
+       || !(ctr->thread = sthread_create(ctr_dsp_audio_loop, ctr)))
    {
       RARCH_LOG("[Audio]: thread creation failed.\n");
       ctr->running = false;
@@ -229,7 +230,8 @@ static ssize_t ctr_dsp_thread_audio_write(void *data, const void *buf, size_t si
             if (ctr->running)
             {
                /* Wait a maximum of one frame, skip the write if the thread is still busy */
-               if (!scond_wait_timeout(ctr->fifo_done, ctr->fifo_lock, ctr->frame_time)) {
+               if (!scond_wait_timeout(ctr->fifo_done, ctr->fifo_lock, ctr->frame_time))
+               {
                   slock_unlock(ctr->fifo_lock);
                   break;
                }
@@ -282,11 +284,11 @@ static bool ctr_dsp_thread_audio_start(void *data, bool is_shutdown)
 
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-   if (is_shutdown)
-      return true;
-
-   ndspSetMasterVol(1.0);
-   ctr->playing = true;
+   if (!is_shutdown)
+   {
+      ndspSetMasterVol(1.0);
+      ctr->playing = true;
+   }
 
    return true;
 }
@@ -298,11 +300,7 @@ static void ctr_dsp_thread_audio_set_nonblock_state(void *data, bool state)
       ctr->nonblocking = state;
 }
 
-static bool ctr_dsp_thread_audio_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+static bool ctr_dsp_thread_audio_use_float(void *data) { return false; }
 
 static size_t ctr_dsp_thread_audio_write_avail(void *data)
 {

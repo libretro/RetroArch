@@ -210,12 +210,20 @@ static void switch_input_poll(void *data)
    }
 
    hidGetKeyboardStates(&kbd_state, 1);
-   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftAlt) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightAlt))
+   if (kbd_state.modifiers & (HidKeyboardModifier_LeftAlt | HidKeyboardModifier_RightAlt))
       mod |= RETROKMOD_ALT;
-   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftControl) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightControl))
+   if (kbd_state.modifiers & HidKeyboardModifier_Control)
       mod |= RETROKMOD_CTRL;
-   if (hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_LeftShift) || hidKeyboardStateGetKey(&kbd_state, HidKeyboardKey_RightShift))
+   if (kbd_state.modifiers & HidKeyboardModifier_Shift)
       mod |= RETROKMOD_SHIFT;
+   if (kbd_state.modifiers & HidKeyboardModifier_Gui)
+      mod |= RETROKMOD_META;
+   if (kbd_state.modifiers & HidKeyboardModifier_CapsLock)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (kbd_state.modifiers & HidKeyboardModifier_ScrollLock)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (kbd_state.modifiers & HidKeyboardModifier_NumLock)
+      mod |= RETROKMOD_NUMLOCK;
 
    for (i = 0; i < SWITCH_NUM_SCANCODES; i++)
    {

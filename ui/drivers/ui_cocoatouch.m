@@ -47,6 +47,15 @@
 #import <MetricKit/MetricKit.h>
 #import <MetricKit/MXMetricManager.h>
 
+#ifdef HAVE_MFI
+#import <GameController/GCMouse.h>
+#endif
+
+#ifdef HAVE_SDL2
+#define SDL_MAIN_HANDLED
+#include "SDL.h"
+#endif
+
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 #import "JITSupport.h"
 id<ApplePlatform> apple_platform;
@@ -145,8 +154,6 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    uint32_t runloop_flags;
    int          ret   = runloop_iterate();
 
-   task_queue_check();
-
    if (ret == -1)
    {
       ui_companion_cocoatouch_event_command(
@@ -155,6 +162,8 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
       exit(0);
       return;
    }
+
+   task_queue_check();
 
    runloop_flags = runloop_get_flags();
    if (!(runloop_flags & RUNLOOP_FLAG_IDLE))
@@ -186,12 +195,23 @@ apple_frontend_settings_t apple_frontend_settings;
 
 void get_ios_version(int *major, int *minor)
 {
-    NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
+   static int savedMajor, savedMinor;
+   static dispatch_once_t onceToken;
 
-    if (major && decomposed_os_version.count > 0)
-        *major = (int)[decomposed_os_version[0] integerValue];
-    if (minor && decomposed_os_version.count > 1)
-        *minor = (int)[decomposed_os_version[1] integerValue];
+   dispatch_once(&onceToken, ^ {
+         NSArray *decomposed_os_version = [[UIDevice currentDevice].systemVersion componentsSeparatedByString:@"."];
+         if (decomposed_os_version.count > 0)
+            savedMajor = (int)[decomposed_os_version[0] integerValue];
+         if (decomposed_os_version.count > 1)
+            savedMinor = (int)[decomposed_os_version[1] integerValue];
+      });
+   if (major) *major = savedMajor;
+   if (minor) *minor = savedMinor;
+}
+
+bool ios_running_on_ipad(void)
+{
+   return (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
 }
 
 /* Input helpers: This is kept here because it needs ObjC */
@@ -377,10 +397,15 @@ enum
 #else
 - (void)handleUIPress:(UIPress *)press withEvent:(UIPressesEvent *)event down:(BOOL)down
 {
-   NSString       *ch = (NSString*)press.key.characters;
+   NSString       *ch;
    uint32_t character = 0;
    uint32_t mod       = 0;
-   NSUInteger mods    = event.modifierFlags;
+   NSUInteger mods    = 0;
+   if (@available(iOS 13.4, tvOS 13.4, *))
+   {
+      ch = (NSString*)press.key.characters;
+      mods = event.modifierFlags;
+   }
 
    if (mods & UIKeyModifierAlphaShift)
       mod |= RETROKMOD_CAPSLOCK;
@@ -410,9 +435,10 @@ enum
                                     RETRO_DEVICE_KEYBOARD);
    }
 
-   apple_input_keyboard_event(down,
-                              (uint32_t)press.key.keyCode, character, mod,
-                              RETRO_DEVICE_KEYBOARD);
+   if (@available(iOS 13.4, tvOS 13.4, *))
+      apple_input_keyboard_event(down,
+                                 (uint32_t)press.key.keyCode, character, mod,
+                                 RETRO_DEVICE_KEYBOARD);
 }
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
@@ -436,10 +462,11 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-    if (@available(iOS 13.4, tvOS 13.4, *)) {
-        if (event.type == UIEventTypeHover)
-            return;
-    }
+   if (@available(iOS 13.4, tvOS 13.4, *))
+   {
+      if (event.type == UIEventTypeHover)
+         return;
+   }
    if (event.allTouches.count)
       handle_touch_event(event.allTouches.allObjects);
 
@@ -453,16 +480,16 @@ enum
          /* Keyboard event hack for iOS versions prior to iOS 7.
           *
           * Derived from:
-	  * http://nacho4d-nacho4d.blogspot.com/2012/01/
-	  * catching-keyboard-events-in-ios.html
-	  */
+                  * http://nacho4d-nacho4d.blogspot.com/2012/01/
+                  * catching-keyboard-events-in-ios.html
+                  */
          const uint8_t *eventMem = objc_unretainedPointer([event performSelector:@selector(_gsEvent)]);
          int           eventType = eventMem ? *(int*)&eventMem[8] : 0;
 
          switch (eventType)
          {
             case GSEVENT_TYPE_KEYDOWN:
-            case GSEVENT_TYPE_KEYUP:
+              case GSEVENT_TYPE_KEYUP:
                apple_input_keyboard_event(eventType == GSEVENT_TYPE_KEYDOWN,
                      *(uint16_t*)&eventMem[0x3C], 0, 0, RETRO_DEVICE_KEYBOARD);
                break;
@@ -474,9 +501,42 @@ enum
 
 @end
 
-#if TARGET_OS_IOS
-@interface RetroArch_iOS () <MXMetricManagerSubscriber>
+#ifdef HAVE_COCOA_METAL
+@implementation MetalLayerView
 
++ (Class)layerClass {
+    return [CAMetalLayer class];
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self)
+        [self setupMetalLayer];
+    return self;
+}
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self)
+        [self setupMetalLayer];
+    return self;
+}
+
+- (CAMetalLayer *)metalLayer {
+    return (CAMetalLayer *)self.layer;
+}
+
+- (void)setupMetalLayer {
+    self.metalLayer.device = MTLCreateSystemDefaultDevice();
+    self.metalLayer.contentsScale = [UIScreen mainScreen].nativeScale;
+    self.metalLayer.opaque = YES;
+}
+
+@end
+#endif
+
+#if TARGET_OS_IOS
+@interface RetroArch_iOS () <MXMetricManagerSubscriber, UIPointerInteractionDelegate>
 @end
 #endif
 
@@ -505,6 +565,11 @@ enum
    {
 #ifdef HAVE_COCOA_METAL
        case APPLE_VIEW_TYPE_VULKAN:
+         _renderView = [MetalLayerView new];
+#if TARGET_OS_IOS
+         _renderView.multipleTouchEnabled = YES;
+#endif
+         break;
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
@@ -529,6 +594,13 @@ enum
    _renderView.translatesAutoresizingMaskIntoConstraints = NO;
    UIView *rootView = [CocoaView get].view;
    [rootView addSubview:_renderView];
+#if TARGET_OS_IOS
+   if (@available(iOS 13.4, *))
+   {
+      [_renderView addInteraction:[[UIPointerInteraction alloc] initWithDelegate:self]];
+      _renderView.userInteractionEnabled = YES;
+   }
+#endif
    [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
    [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
    [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
@@ -601,6 +673,38 @@ enum
    int argc           = 1;
    apple_platform     = self;
 
+   if ([NSUserDefaults.standardUserDefaults boolForKey:@"restore_default_config"])
+   {
+      [NSUserDefaults.standardUserDefaults setBool:NO forKey:@"restore_default_config"];
+      [NSUserDefaults.standardUserDefaults setObject:@"" forKey:@FILE_PATH_MAIN_CONFIG];
+
+      // Get the Caches directory path
+      NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+      NSString *cachesDirectory = [paths firstObject];
+
+      // Define the original and new file paths
+      NSString *originalPath = [cachesDirectory stringByAppendingPathComponent:@"RetroArch/config/retroarch.cfg"];
+      NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+      [dateFormatter setDateFormat:@"HHmm-yyMMdd"];
+      NSString *timestamp = [dateFormatter stringFromDate:[NSDate date]];
+      NSString *newPath = [cachesDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"RetroArch/config/RetroArch-%@.cfg", timestamp]];
+
+      // File manager instance
+      NSFileManager *fileManager = [NSFileManager defaultManager];
+
+      // Check if the file exists and rename it
+      if ([fileManager fileExistsAtPath:originalPath])
+      {
+          NSError *error = nil;
+          if ([fileManager moveItemAtPath:originalPath toPath:newPath error:&error])
+              NSLog(@"File renamed to %@", newPath);
+          else
+              NSLog(@"Error renaming file: %@", error.localizedDescription);
+      }
+      else
+          NSLog(@"File does not exist at path %@", originalPath);
+   }
+
    [self setDelegate:self];
 
    /* Setup window */
@@ -612,26 +716,32 @@ enum
    [self refreshSystemConfig];
    [self showGameView];
 
-   jb_start_altkit();
-
    rarch_main(argc, argv, NULL);
 
    uico_driver_state_t *uico_st     = uico_state_get_ptr();
    rarch_setting_t *appicon_setting = menu_setting_find_enum(MENU_ENUM_LABEL_APPICON_SETTINGS);
    struct string_list *icons;
-   if (appicon_setting && uico_st->drv && uico_st->drv->get_app_icons && (icons = uico_st->drv->get_app_icons()) && icons->size > 1)
+   if (               appicon_setting
+		   && uico_st->drv
+		   && uico_st->drv->get_app_icons
+		   && (icons = uico_st->drv->get_app_icons())
+		   && icons->size > 1)
    {
+      int i;
+      size_t _len    = 0;
+      char *options = NULL;
+      const char *icon_name;
+
       appicon_setting->default_value.string = icons->elems[0].data;
-      int len = 0, i = 0;
-      const char *iconName = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; // need to ask uico_st for this
-      for (; i < (int)icons->size; i++)
+      icon_name = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; /* need to ask uico_st for this */
+      for (i = 0; i < (int)icons->size; i++)
       {
-         len += strlen(icons->elems[i].data) + 1;
-         if (string_is_equal(iconName, icons->elems[i].data))
+         _len += strlen(icons->elems[i].data) + 1;
+         if (string_is_equal(icon_name, icons->elems[i].data))
             appicon_setting->value.target.string = icons->elems[i].data;
       }
-      char *options = (char*)calloc(len, sizeof(char));
-      string_list_join_concat(options, len, icons, "|");
+      options = (char*)calloc(_len, sizeof(char));
+      string_list_join_concat(options, _len, icons, "|");
       if (appicon_setting->values)
          free((void*)appicon_setting->values);
       appicon_setting->values = options;
@@ -644,12 +754,33 @@ enum
 #endif
 
 #if TARGET_OS_IOS
-   [MXMetricManager.sharedManager addSubscriber:self];
+   if (@available(iOS 13.0, *))
+      [MXMetricManager.sharedManager addSubscriber:self];
 #endif
 
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
+   if (@available(macOS 11, iOS 14, tvOS 14, *))
+   {
+      [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidConnectNotification
+                                                        object:nil
+                                                         queue:[NSOperationQueue mainQueue]
+                                                    usingBlock:^(NSNotification *note)
+       {
+         GCMouse *mouse = note.object;
+         mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float delta_x, float delta_y)
+         {
+            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+            if (!apple || !apple->mouse_grabbed)
+               return;
+            apple->mouse_rel_x       += (int16_t)delta_x;
+            apple->mouse_rel_y       -= (int16_t)delta_y;
+            apple->window_pos_x      += (int16_t)delta_x;
+            apple->window_pos_y      -= (int16_t)delta_y;
+         };
+      }];
+   }
 #endif
 }
 
@@ -659,6 +790,7 @@ enum
    update_topshelf();
 #endif
    rarch_stop_draw_observer();
+   command_event(CMD_EVENT_SAVE_FILES, NULL);
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
@@ -741,7 +873,8 @@ enum
    NSString  *destination = [NSString stringWithUTF8String:fullpath];
    /* Copy file to documents directory if it's not already
     * inside Documents directory */
-   if ([url startAccessingSecurityScopedResource]) {
+   if ([url startAccessingSecurityScopedResource])
+   {
       if (![[url path] containsString: self.documentsDirectory])
          if (![manager fileExistsAtPath:destination])
             [manager copyItemAtPath:[url path] toPath:destination error:&error];
@@ -789,10 +922,10 @@ enum
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
 
    if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
-      apple_frontend_settings.orientation_flags = 
+      apple_frontend_settings.orientation_flags =
            UIInterfaceOrientationMaskLandscape;
    else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
-      apple_frontend_settings.orientation_flags = 
+      apple_frontend_settings.orientation_flags =
            UIInterfaceOrientationMaskPortrait
          | UIInterfaceOrientationMaskPortraitUpsideDown;
 #endif
@@ -801,7 +934,7 @@ enum
 - (void)supportOtherAudioSessions { }
 
 #if TARGET_OS_IOS
-- (void)didReceiveMetricPayloads:(NSArray<MXMetricPayload *> *)payloads
+- (void)didReceiveMetricPayloads:(NSArray<MXMetricPayload *> *)payloads API_AVAILABLE(ios(13.0))
 {
     for (MXMetricPayload *payload in payloads)
     {
@@ -810,13 +943,38 @@ enum
     }
 }
 
-- (void)didReceiveDiagnosticPayloads:(NSArray<MXDiagnosticPayload *> *)payloads
+- (void)didReceiveDiagnosticPayloads:(NSArray<MXDiagnosticPayload *> *)payloads API_AVAILABLE(ios(14.0))
 {
     for (MXDiagnosticPayload *payload in payloads)
     {
         NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
         RARCH_LOG("Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
     }
+}
+
+- (UIPointerStyle *)pointerInteraction:(UIPointerInteraction *)interaction styleForRegion:(UIPointerRegion *)region API_AVAILABLE(ios(13.4))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return nil;
+   if (apple->mouse_grabbed)
+      return [UIPointerStyle hiddenPointerStyle];
+   return nil;
+}
+
+- (UIPointerRegion *)pointerInteraction:(UIPointerInteraction *)interaction
+                       regionForRequest:(UIPointerRegionRequest *)request
+                          defaultRegion:(UIPointerRegion *)defaultRegion API_AVAILABLE(ios(13.4))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple || apple->mouse_grabbed)
+      return nil;
+   CGPoint location = [apple_platform.renderView convertPoint:[request location] fromView:nil];
+   apple->touches[0].screen_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);
+   apple->touches[0].screen_y = (int16_t)(location.y * [[UIScreen mainScreen] scale]);
+   apple->window_pos_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);
+   apple->window_pos_y = (int16_t)(location.y * [[UIScreen mainScreen] scale]);
+   return [UIPointerRegion regionWithRect:[apple_platform.renderView bounds] identifier:@"game view"];
 }
 #endif
 
@@ -850,6 +1008,9 @@ int main(int argc, char *argv[])
         RARCH_LOG("Ptrace hack complete, JIT support is enabled.\n");
     else
         RARCH_WARN("Ptrace hack NOT available; Please use an app like Jitterbug.\n");
+#endif
+#ifdef HAVE_SDL2
+    SDL_SetMainReady();
 #endif
    @autoreleasepool {
       return UIApplicationMain(argc, argv, NSStringFromClass([RApplication class]), NSStringFromClass([RetroArch_iOS class]));

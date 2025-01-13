@@ -7,24 +7,25 @@
 //
 
 extension CocoaView {
+   @available(iOS 13, *)
    @objc func setupMouseSupport() {
       mouseHandler = EmulatorTouchMouseHandler(view: view, delegate: self as? EmulatorTouchMouseHandlerDelegate)
    }
    
    open override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-      mouseHandler.touchesBegan(touches: touches, event: event)
+      mouseHandler?.touchesBegan(touches: touches, event: event)
    }
    
    open override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-      mouseHandler.touchesMoved(touches: touches)
+      mouseHandler?.touchesMoved(touches: touches)
    }
    
    open override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-      mouseHandler.touchesCancelled(touches: touches, event: event)
+      mouseHandler?.touchesCancelled(touches: touches, event: event)
    }
    
    open override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-      mouseHandler.touchesEnded(touches: touches, event: event)
+      mouseHandler?.touchesEnded(touches: touches, event: event)
    }
    
 }

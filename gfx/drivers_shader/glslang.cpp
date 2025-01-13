@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2016 - Hans-Kristian Arntzen
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/posix_string.h>
 #include <string/stdstring.h>
 
 #include "glslang.hpp"
@@ -32,9 +33,6 @@
 
 #include "../../verbosity.h"
 
-using namespace glslang;
-using namespace std;
-
 struct SlangProcess
 {
    public:
@@ -46,8 +44,8 @@ struct SlangProcess
 };
 
 /* We don't use glslang from multiple threads, but to be sure.
- * Initializing TLS and freeing it for glslang works around 
- * a really bizarre issue where the TLS key is suddenly 
+ * Initializing TLS and freeing it for glslang works around
+ * a really bizarre issue where the TLS key is suddenly
  * corrupted *somehow*.
  */
 static std::mutex glslang_global_lock;
@@ -57,18 +55,19 @@ struct SlangProcessHolder
    SlangProcessHolder()
    {
       glslang_global_lock.lock();
-      InitializeProcess();
+      glslang::InitializeProcess();
    }
 
    ~SlangProcessHolder()
    {
-      FinalizeProcess();
+      glslang::FinalizeProcess();
       glslang_global_lock.unlock();
    }
 };
 
 SlangProcess::SlangProcess()
 {
+   char *save           = NULL;
    char DefaultConfig[] =
       "MaxLights 32\n"
       "MaxClipPlanes 6\n"
@@ -101,7 +100,7 @@ SlangProcess::SlangProcess()
       "MaxComputeImageUniforms 8\n"
       "MaxComputeAtomicCounters 8\n"
       "MaxComputeAtomicCounterBuffers 1\n"
-      "MaxVaryingComponents 60\n" 
+      "MaxVaryingComponents 60\n"
       "MaxVertexOutputComponents 64\n"
       "MaxGeometryInputComponents 64\n"
       "MaxGeometryOutputComponents 128\n"
@@ -165,11 +164,11 @@ SlangProcess::SlangProcess()
       "generalConstantMatrixVectorIndexing 1\n";
 
    const char *delims       = " \t\n\r";
-   char *token              = strtok(DefaultConfig, delims);
+   char *token              = strtok_r(DefaultConfig, delims, &save);
 
    while (token)
    {
-      const char *value_str = strtok(0, delims);
+      const char *value_str = strtok_r(NULL, delims, &save);
       int             value = (int)strtoul(value_str, nullptr, 0);
 
       if (string_starts_with_size(token, "Max", STRLEN_CONST("Max")))
@@ -384,14 +383,14 @@ SlangProcess::SlangProcess()
       else if (string_is_equal(token, "doWhileLoops"))
          Resources.limits.doWhileLoops = (value != 0);
 
-      token = strtok(0, delims);
+      token = strtok_r(NULL, delims, &save);
    }
 }
 
-bool glslang::compile_spirv(const string &source, Stage stage,
+bool glslang::compile_spirv(const std::string &source, Stage stage,
       std::vector<uint32_t> *spirv)
 {
-   string msg;
+	std::string msg;
    static SlangProcess process;
    SlangProcessHolder process_holder;
    TProgram program;
@@ -427,7 +426,7 @@ bool glslang::compile_spirv(const string &source, Stage stage,
 
    EShMessages messages = static_cast<EShMessages>(EShMsgDefault | EShMsgVulkanRules | EShMsgSpvRules);
 
-   glslang::TShader::ForbidIncluder forbid_include = 
+   glslang::TShader::ForbidIncluder forbid_include =
       glslang::TShader::ForbidIncluder();
 
    if (!shader.preprocess(&process.GetResources(),

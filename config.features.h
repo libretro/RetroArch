@@ -74,6 +74,42 @@
 #define SUPPORTS_OPENGL false
 #endif
 
+#ifdef HAVE_D3D8
+#define SUPPORTS_D3D8 true
+#else
+#define SUPPORTS_D3D8 false
+#endif
+
+#ifdef HAVE_D3D9
+#define SUPPORTS_D3D9 true
+#else
+#define SUPPORTS_D3D9 false
+#endif
+
+#ifdef HAVE_D3D10
+#define SUPPORTS_D3D10 true
+#else
+#define SUPPORTS_D3D10 false
+#endif
+
+#ifdef HAVE_D3D11
+#define SUPPORTS_D3D11 true
+#else
+#define SUPPORTS_D3D11 false
+#endif
+
+#ifdef HAVE_D3D12
+#define SUPPORTS_D3D12 true
+#else
+#define SUPPORTS_D3D12 false
+#endif
+
+#ifdef HAVE_GDI
+#define SUPPORTS_GDI true
+#else
+#define SUPPORTS_GDI false
+#endif
+
 #ifdef HAVE_VULKAN
 #define SUPPORTS_VULKAN true
 #else
@@ -132,6 +168,12 @@
 #define SUPPORTS_XVIDEO true
 #else
 #define SUPPORTS_XVIDEO false
+#endif
+
+#ifdef HAVE_SLANG
+#define SUPPORTS_SLANG true
+#else
+#define SUPPORTS_SLANG false
 #endif
 
 #ifdef HAVE_ALSA
@@ -218,6 +260,12 @@
 #define SUPPORTS_WASAPI false
 #endif
 
+#ifdef HAVE_PIPEWIRE
+#define SUPPORTS_PIPEWIRE true
+#else
+#define SUPPORTS_PIPEWIRE false
+#endif
+
 #ifdef HAVE_XAUDIO
 #define SUPPORTS_XAUDIO true
 #else
@@ -302,6 +350,12 @@
 #define SUPPORTS_NETPLAY false
 #endif
 
+#ifdef HAVE_SSL
+#define SUPPORTS_SSL true
+#else
+#define SUPPORTS_SSL false
+#endif
+
 #if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
 #define SUPPORTS_COCOA true
 #else
@@ -312,6 +366,12 @@
 #define SUPPORTS_QT true
 #else
 #define SUPPORTS_QT false
+#endif
+
+#ifdef HAVE_QT6
+#define SUPPORTS_QT6 true
+#else
+#define SUPPORTS_QT6 false
 #endif
 
 #ifdef HAVE_RPNG

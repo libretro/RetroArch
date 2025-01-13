@@ -61,7 +61,8 @@ enum playlist_thumbnail_mode
    PLAYLIST_THUMBNAIL_MODE_OFF,
    PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS,
    PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS,
-   PLAYLIST_THUMBNAIL_MODE_BOXARTS
+   PLAYLIST_THUMBNAIL_MODE_BOXARTS,
+   PLAYLIST_THUMBNAIL_MODE_LOGOS
 };
 
 enum playlist_thumbnail_match_mode
@@ -84,7 +85,8 @@ enum playlist_sort_mode
 enum playlist_thumbnail_id
 {
    PLAYLIST_THUMBNAIL_RIGHT = 0,
-   PLAYLIST_THUMBNAIL_LEFT
+   PLAYLIST_THUMBNAIL_LEFT,
+   PLAYLIST_THUMBNAIL_ICON
 };
 
 enum playlist_thumbnail_name_flags
@@ -149,18 +151,18 @@ typedef struct
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
-   bool autofix_paths;   
+   bool autofix_paths;
    char path[PATH_MAX_LENGTH];
-   char base_content_directory[PATH_MAX_LENGTH];
+   char base_content_directory[DIR_MAX_LENGTH];
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
-void playlist_config_set_path(playlist_config_t *config, const char *path);
+size_t playlist_config_set_path(playlist_config_t *config, const char *path);
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object */
-void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
+size_t playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
 
 /* Creates a copy of the specified playlist configuration.
  * Returns false in the event of an error */
@@ -301,7 +303,7 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry,
       bool register_update);
 
-void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx, 
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
      enum playlist_thumbnail_name_flags thumbnail_flags);
 enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx);
 enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx);

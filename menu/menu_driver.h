@@ -28,6 +28,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -409,9 +410,10 @@ typedef struct
 
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
-   char *core_buf;
 
-   size_t                     core_len;
+   char *core_buf;
+   size_t core_len;
+
    /* This is used for storing intermediary variables
     * that get used later on during menu actions -
     * for instance, selecting a shader pass for a shader
@@ -431,11 +433,10 @@ typedef struct
       enum rarch_shader_type preset_type;
       enum rarch_shader_type pass_type;
 
-      char preset_dir[PATH_MAX_LENGTH];
-      char preset_file_name[PATH_MAX_LENGTH];
-
-      char pass_dir[PATH_MAX_LENGTH];
-      char pass_file_name[PATH_MAX_LENGTH];
+      char pass_dir[DIR_MAX_LENGTH];
+      char preset_dir[DIR_MAX_LENGTH];
+      char preset_file_name[NAME_MAX_LENGTH];
+      char pass_file_name[NAME_MAX_LENGTH];
    } last_shader_selection;
 #endif
 
@@ -443,11 +444,11 @@ typedef struct
     * loaded via the menu file browser */
    struct
    {
-      char directory[PATH_MAX_LENGTH];
-      char file_name[PATH_MAX_LENGTH];
+      char directory[DIR_MAX_LENGTH];
+      char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
-   char menu_state_msg[8192];
+   char menu_state_msg[PATH_MAX_LENGTH * 2];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -456,7 +457,7 @@ typedef struct
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
    char db_playlist_file[PATH_MAX_LENGTH];
-   char filebrowser_label[PATH_MAX_LENGTH];
+   char filebrowser_label[NAME_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
 } menu_handle_t;
 
@@ -508,6 +509,9 @@ struct menu_state
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
+#ifdef HAVE_RUNAHEAD
+   enum menu_runahead_mode runahead_mode;
+#endif
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
@@ -521,9 +525,6 @@ struct menu_state
     * the entry with a label matching 'pending_selection' will
     * be selected automatically */
    char pending_selection[PATH_MAX_LENGTH];
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[255];
    /* Filled with current content path when a core calls
     * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
     * generic_menu_entry_action(), and must be cached
@@ -627,9 +628,9 @@ bool menu_driver_init(bool video_is_threaded);
 
 retro_time_t menu_driver_get_current_time(void);
 
-size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len);
 
-void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
+size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len);
 
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
@@ -668,9 +669,6 @@ int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enu
 void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
       file_list_t *list);
-
-void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len);
 
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
@@ -739,14 +737,13 @@ size_t menu_update_fullscreen_thumbnail_label(
       bool is_quick_menu, const char *title);
 
 bool menu_is_running_quick_menu(void);
-bool menu_is_nonrunning_quick_menu(void);
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
 
-void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
-
-size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
+#ifdef HAVE_RUNAHEAD
+void menu_update_runahead_mode(void);
+#endif
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

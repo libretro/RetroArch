@@ -368,7 +368,7 @@ typedef struct vulkan_context
    VkFormat swapchain_format;
 #ifdef VULKAN_HDR_SWAPCHAIN
    VkColorSpaceKHR swapchain_colour_space;
-#endif /* VULKAN_HDR_SWAPCHAIN */  
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_acquire_semaphore;
@@ -565,7 +565,8 @@ typedef struct vk
    unsigned video_height;
 
    unsigned tex_w, tex_h;
-   unsigned vp_out_width, vp_out_height;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
    unsigned rotation;
    unsigned num_swapchain_images;
    unsigned last_valid_index;
@@ -573,10 +574,12 @@ typedef struct vk
    video_info_t video;
 
    VkFormat tex_fmt;
-   math_matrix_4x4 mvp, mvp_no_rot; /* float alignment */
+   math_matrix_4x4 mvp, mvp_no_rot, mvp_menu; /* float alignment */
    VkViewport vk_vp;
    VkRenderPass render_pass;
    struct video_viewport vp;
+   float translate_x;
+   float translate_y;
    struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vk_image backbuffers[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vk_texture default_texture;
@@ -736,6 +739,24 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 #ifdef VULKAN_HDR_SWAPCHAIN
 bool vulkan_is_hdr10_format(VkFormat format);
 #endif /* VULKAN_HDR_SWAPCHAIN */
+
+void vulkan_initialize_render_pass(VkDevice device, VkFormat format,
+      VkRenderPass *render_pass);
+
+void vulkan_framebuffer_clear(VkImage image, VkCommandBuffer cmd);
+
+void vulkan_framebuffer_generate_mips(
+      VkFramebuffer framebuffer,
+      VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      unsigned levels
+      );
+
+void vulkan_framebuffer_copy(VkImage image,
+      struct Size2D size,
+      VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout);
 
 RETRO_END_DECLS
 

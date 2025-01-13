@@ -9,10 +9,13 @@ on:
 permissions:
   contents: read
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: 
+    container:
       image: git.libretro.com:5050/libretro-infrastructure/libretro-build-orbis:latest
       options: --user root
 
@@ -24,7 +27,7 @@ jobs:
         apk add ncurses-dev make bash python2
         apk add libintl icu-dev wget
         wget https://dot.net/v1/dotnet-install.sh && chmod 755 dotnet-install.sh && ./dotnet-install.sh -c 3.0 --install-dir ~/cli
-    
+
     - name: Compile RA
       run: |
         export PATH=~/cli:$PATH # .net cli
@@ -33,8 +36,8 @@ jobs:
     - name: Get short SHA
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
-    
-    - uses: actions/upload-artifact@v3
+
+    - uses: actions/upload-artifact@v4
       with:
         name: bin-${{ steps.slug.outputs.sha8 }}
         path: |

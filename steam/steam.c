@@ -6,6 +6,7 @@
 #include <retro_timers.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../input/input_driver.h"
 #include "../menu/menu_driver.h"
@@ -145,7 +146,7 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
 
    for (i = 0; core_info_list->count > i; i++)
    {
-      char core_info_name[256];
+      char core_info_name[NAME_MAX_LENGTH];
       core_info_t *core_info   = core_info_get(core_info_list, i);
       /* Find the opening parenthesis for the core name */
       char *start              = strchr(core_info->display_name, '(');
@@ -174,7 +175,7 @@ core_info_t* steam_find_core_info_for_dlc(const char* name)
 }
 
 /* Generate a list with core dlcs
- * Needs to be called after initializion because it uses core info */
+ * Needs to be called after initialization because it uses core info */
 MistResult steam_generate_core_dlcs_list(steam_core_dlc_list_t **list)
 {
    int count, i;
@@ -266,7 +267,8 @@ steam_core_dlc_t* steam_get_core_dlc_by_name(
 
 void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 {
-   char msg[PATH_MAX_LENGTH] = { 0 };
+   size_t _len;
+   char msg[128] = { 0 };
    bool downloading          = false;
    bool installed            = false;
    uint64_t bytes_downloaded = 0;
@@ -283,7 +285,8 @@ void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 
    if (downloading || installed)
    {
-      runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_STEAM_CURRENTLY_DOWNLOADING), 1, 180, true, NULL,
+      const char *_msg = msg_hash_to_str(MSG_CORE_STEAM_CURRENTLY_DOWNLOADING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       return;
    }
@@ -296,11 +299,11 @@ void steam_install_core_dlc(steam_core_dlc_t *core_dlc)
 
    return;
 error:
-   snprintf(msg, sizeof(msg), "%s: (%d-%d)",
+   _len = snprintf(msg, sizeof(msg), "%s: (%d-%d)",
          msg_hash_to_str(MSG_ERROR),
          MIST_UNPACK_RESULT(result));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
    RARCH_ERR("[Steam]: Error installing DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));
@@ -308,23 +311,25 @@ error:
 
 void steam_uninstall_core_dlc(steam_core_dlc_t *core_dlc)
 {
-   char msg[PATH_MAX_LENGTH] = { 0 };
-
+   size_t _len;
+   const char *_msg  = NULL;
+   char msg[128]     = { 0 };
    MistResult result = mist_steam_apps_uninstall_dlc(core_dlc->app_id);
 
    if (MIST_IS_ERROR(result))
       goto error;
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_CORE_STEAM_UNINSTALLED), 1, 180, true, NULL,
+   _msg = msg_hash_to_str(MSG_CORE_STEAM_UNINSTALLED);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    return;
 
 error:
-   snprintf(msg, sizeof(msg), "%s: (%d-%d)",
+   _len = snprintf(msg, sizeof(msg), "%s: (%d-%d)",
          msg_hash_to_str(MSG_ERROR),
          MIST_UNPACK_RESULT(result));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 
    RARCH_ERR("[Steam]: Error uninstalling DLC %d (%d-%d)\n", core_dlc->app_id, MIST_UNPACK_RESULT(result));

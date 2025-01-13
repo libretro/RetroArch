@@ -63,7 +63,9 @@
 #endif
 
 #if HAVE_INTTYPES_H
+#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
+#endif
 #include <inttypes.h>
 #endif
 

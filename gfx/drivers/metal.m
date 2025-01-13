@@ -1205,7 +1205,11 @@ typedef struct MTLALIGN(16)
       texture_t feedback;
       uint32_t frame_count;
       int32_t frame_direction;
+      int32_t frame_time_delta;
+      float original_fps;
       uint32_t rotation;
+      float_t core_aspect;
+      float_t core_aspect_rot;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -1574,10 +1578,23 @@ typedef struct MTLALIGN(16)
          _engine.pass[i].frame_direction = -1;
       else
 #else
-         _engine.pass[i].frame_direction = 1;
+      _engine.pass[i].frame_direction = 1;
 #endif
 
+      _engine.pass[i].frame_time_delta = video_driver_get_frame_time_delta_usec();
+
+      _engine.pass[i].original_fps = video_driver_get_original_fps();
+
       _engine.pass[i].rotation = retroarch_get_rotation();
+
+      _engine.pass[i].core_aspect = video_driver_get_core_aspect();
+
+      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+      int rot = retroarch_get_rotation();
+      float core_aspect_rot = video_driver_get_core_aspect();
+      if (rot == 1 || rot == 3)
+         core_aspect_rot = 1/core_aspect_rot;
+      _engine.pass[i].core_aspect_rot  = core_aspect_rot;
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
@@ -1835,7 +1852,11 @@ typedef struct MTLALIGN(16)
                &_engine.frame.output_size,       /* FinalViewportSize */
                &_engine.pass[i].frame_count,     /* FrameCount */
                &_engine.pass[i].frame_direction, /* FrameDirection */
+               &_engine.pass[i].frame_time_delta,/* FrameTimeDelta */
+               &_engine.pass[i].original_fps,        /* OriginalFPS */
                &_engine.pass[i].rotation,        /* Rotation */
+               &_engine.pass[i].core_aspect,     /* OriginalAspect */
+               &_engine.pass[i].core_aspect_rot, /* OriginalAspectRotated */
             }
          };
          /* clang-format on */
@@ -2375,12 +2396,12 @@ static void metal_free(void *data)
    md = nil;
 }
 
-static void metal_set_viewport(void *data, unsigned viewport_width,
-                               unsigned viewport_height, bool force_full, bool allow_rotate)
+static void metal_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md)
-      [md setViewportWidth:viewport_width height:viewport_height forceFull:force_full allowRotate:allow_rotate];
+      [md setViewportWidth:vp_width height:vp_height forceFull:force_full allowRotate:allow_rotate];
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)

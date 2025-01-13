@@ -42,7 +42,7 @@ typedef struct sdl_microphone
    bool nonblock;
 } sdl_microphone_t;
 
-static INLINE int find_num_frames(int rate, int latency)
+static INLINE int sdl_microphone_find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
 
@@ -132,6 +132,17 @@ static void *sdl_microphone_open_mic(void *driver_context,
    SDL_AudioSpec desired_spec          = {0};
    void *tmp                           = NULL;
 
+#if __APPLE__
+   if (!string_is_equal(audio_driver_get_ident(), "sdl2"))
+   {
+      const char *msg = msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO);
+      runloop_msg_queue_push(msg, strlen(msg),
+            1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      return NULL;
+   }
+#endif
+
    /* If the audio driver wasn't initialized yet... */
    if (!SDL_WasInit(SDL_INIT_AUDIO))
    {
@@ -145,7 +156,7 @@ static void *sdl_microphone_open_mic(void *driver_context,
 
    /* Only print SDL audio devices if verbose logging is enabled */
    if (verbosity_is_enabled())
-   { 
+   {
       int i;
       int num_available_microphones = SDL_GetNumAudioDevices(true);
       RARCH_DBG("[SDL mic]: %d audio capture devices found:\n", num_available_microphones);
@@ -157,7 +168,7 @@ static void *sdl_microphone_open_mic(void *driver_context,
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
-   frames                = find_num_frames(rate, latency / 4);
+   frames                = sdl_microphone_find_num_frames(rate, latency / 4);
 
    desired_spec.freq     = rate;
    desired_spec.format   = AUDIO_F32SYS;

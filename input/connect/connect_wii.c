@@ -398,7 +398,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
       {
          case 0:
             /* no ha habido nunca handshake, debemos forzar un
-             * mensaje de staus para ver que pasa. */
+             * mensaje de status para ver que pasa. */
 
             WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
             wiimote_set_leds(wm, WIIMOTE_LED_NONE);
@@ -439,7 +439,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
 
                      WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
                      /* forzamos un handshake por si venimos
-                      * de un hanshake completo. */
+                      * de un handshake completo. */
                      WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
                   }
 
@@ -478,7 +478,7 @@ static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
                   {
                      WIIMOTE_DISABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE_COMPLETE);
                      /* forzamos un handshake por si venimos
-                      * de un hanshake completo. */
+                      * de un handshake completo. */
                      WIIMOTE_ENABLE_STATE(wm, WIIMOTE_STATE_HANDSHAKE);
                   }
                }

@@ -60,6 +60,7 @@ static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
 
 void task_file_load_handler(retro_task_t *task)
 {
+   uint8_t flg;
    nbio_handle_t         *nbio  = (nbio_handle_t*)task->state;
 
    if (nbio)
@@ -80,12 +81,12 @@ void task_file_load_handler(retro_task_t *task)
                   return;
                }
 
-               task_set_cancelled(task, true);
+               task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
             }
             break;
          case NBIO_STATUS_TRANSFER_PARSE:
             if (!nbio || task_file_transfer_iterate_parse(nbio) == -1)
-               task_set_cancelled(task, true);
+               task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
             nbio->status = NBIO_STATUS_TRANSFER_FINISHED;
             break;
          case NBIO_STATUS_TRANSFER:
@@ -103,7 +104,7 @@ void task_file_load_handler(retro_task_t *task)
          case NBIO_TYPE_TGA:
          case NBIO_TYPE_BMP:
             if (!task_image_load_handler(task))
-               task_set_finished(task, true);
+               task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
             break;
          case NBIO_TYPE_MP3:
          case NBIO_TYPE_FLAC:
@@ -112,20 +113,22 @@ void task_file_load_handler(retro_task_t *task)
          case NBIO_TYPE_WAV:
 #ifdef HAVE_AUDIOMIXER
             if (!task_audio_mixer_load_handler(task))
-               task_set_finished(task, true);
+               task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 #endif
             break;
          case NBIO_TYPE_NONE:
          default:
             if (nbio->is_finished)
-               task_set_finished(task, true);
+               task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
             break;
       }
    }
 
-   if (task_get_cancelled(task))
+   flg = task_get_flags(task);
+
+   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
    {
       task_set_error(task, strldup("Task canceled.", sizeof("Task canceled.")));
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
 }

@@ -168,6 +168,7 @@ struct runloop
 #endif
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
+   retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;                /* int64_t alignment */
@@ -268,11 +269,7 @@ struct runloop
    uint32_t flags;
    int8_t run_frames_and_pause;
 
-   char runtime_content_path_basename[8192];
-   char current_library_name[NAME_MAX_LENGTH];
-   char current_library_version[256];
-   char current_valid_extensions[256];
-   char subsystem_path[256];
+   char runtime_content_path_basename[PATH_MAX_LENGTH];
 #ifdef HAVE_SCREENSHOTS
    char max_frames_screenshot_path[PATH_MAX_LENGTH];
 #endif
@@ -281,21 +278,25 @@ struct runloop
 #endif
    char runtime_content_path[PATH_MAX_LENGTH];
    char runtime_core_path[PATH_MAX_LENGTH];
-   char savefile_dir[PATH_MAX_LENGTH];
-   char savestate_dir[PATH_MAX_LENGTH];
+   char savefile_dir[DIR_MAX_LENGTH];
+   char savestate_dir[DIR_MAX_LENGTH];
+   char current_library_name[NAME_MAX_LENGTH];
+   char current_valid_extensions[256];
+   char subsystem_path[256];
+   char current_library_version[64];
 
    struct
    {
       char *remapfile;
-      char savefile[8192];
-      char savestate[8192];
-      char replay[8192];
-      char cheatfile[8192];
-      char ups[8192];
-      char bps[8192];
-      char ips[8192];
-      char xdelta[8192];
-      char label[8192];
+      char savefile [PATH_MAX_LENGTH*2];
+      char savestate[PATH_MAX_LENGTH*2];
+      char replay   [PATH_MAX_LENGTH*2];
+      char cheatfile[PATH_MAX_LENGTH*2];
+      char ups      [PATH_MAX_LENGTH*2];
+      char bps      [PATH_MAX_LENGTH*2];
+      char ips      [PATH_MAX_LENGTH*2];
+      char xdelta   [PATH_MAX_LENGTH*2];
+      char label    [PATH_MAX_LENGTH*2];
    } name;
 
    bool missing_bios;
@@ -320,7 +321,7 @@ void runloop_path_fill_names(void);
  **/
 bool runloop_environment_cb(unsigned cmd, void *data);
 
-void runloop_msg_queue_push(const char *msg,
+void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration,
       bool flush,
       char *title,
@@ -449,7 +450,7 @@ void runloop_path_deinit_subsystem(void);
  *                                load dummy symbols.
  *
  * Setup libretro callback symbols.
- * 
+ *
  * @return true on success, or false if symbols could not be loaded.
  **/
 bool runloop_init_libretro_symbols(

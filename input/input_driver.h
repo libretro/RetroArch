@@ -184,30 +184,45 @@ struct bsv_state
 struct bsv_key_data
 {
   uint8_t down;
-  uint16_t mod;
   uint8_t _padding;
+  uint16_t mod;
   uint32_t code;
   uint32_t character;
 };
-
 typedef struct bsv_key_data bsv_key_data_t;
+
+struct bsv_input_data
+{
+  uint8_t port;
+  uint8_t device;
+  uint8_t idx;
+  uint8_t _padding;
+  /* little-endian numbers */
+  uint16_t id;
+  int16_t value;
+};
+typedef struct bsv_input_data bsv_input_data_t;
 
 struct bsv_movie
 {
    intfstream_t *file;
    uint8_t *state;
+   int64_t identifier;
+   uint32_t version;
+   size_t min_file_pos;
+   size_t state_size;
+
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
    size_t *frame_pos;
-   int64_t identifier;
    size_t frame_mask;
-   size_t frame_ptr;
-   size_t min_file_pos;
-   size_t state_size;
-   bsv_key_data_t key_events[255]; /* uint32_t alignment */
+   uint64_t frame_counter;
 
-   /* Staging variables for keyboard events */
+   /* Staging variables for events */
    uint8_t key_event_count;
+   uint16_t input_event_count;
+   bsv_key_data_t key_events[128];
+   bsv_input_data_t input_events[512];
 
    /* Rewind state */
    bool playback;
@@ -257,7 +272,7 @@ typedef struct
    char joypad_driver[32];
    char name[128];
    char display_name[128];
-   char config_name[256]; /* Base name of the RetroArch config file */
+   char config_name[NAME_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
 
@@ -280,7 +295,7 @@ struct input_remote
 
 typedef struct
 {
-   char display_name[256];
+   char display_name[NAME_MAX_LENGTH];
 } input_mouse_info_t;
 
 typedef struct input_remote input_remote_t;
@@ -333,7 +348,7 @@ struct input_driver
    /**
     * Queries state for a specified control on a specified input port. This
     * function pointer can be set to NULL if not supported by the input driver,
-    * for example if a joypad driver is responsible for quering state for a
+    * for example if a joypad driver is responsible for querying state for a
     * particular driver/platform.
     *
     * @param joypad_data      Input state struct, defined by the input driver
@@ -395,7 +410,7 @@ struct input_driver
 
    /**
     * Retrieves the sensor state associated with the provided port and ID. This
-    * function pointer may be set to NULL if retreiving sensor state is not
+    * function pointer may be set to NULL if retrieving sensor state is not
     * supported.
     *
     * @param data
@@ -465,6 +480,9 @@ struct rarch_joypad_driver
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
    bool (*set_rumble_gain)(unsigned, unsigned);
+   bool (*set_sensor_state)(void *data, unsigned port,
+         enum retro_sensor_action action, unsigned rate);
+   float (*get_sensor_input)(void *data, unsigned port, unsigned id);
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -904,6 +922,10 @@ char *input_config_get_device_name_ptr(unsigned port);
  */
 size_t input_config_get_device_name_size(unsigned port);
 
+unsigned input_driver_lightgun_id_convert(unsigned id);
+
+bool input_driver_pointer_is_offscreen(int16_t x, int16_t y);
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
@@ -1015,6 +1037,7 @@ void input_overlay_check_mouse_cursor(void);
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
+void bsv_movie_read_next_events(bsv_movie_t*handle);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
@@ -1103,6 +1126,7 @@ extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
+extern input_driver_t input_test;
 
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;

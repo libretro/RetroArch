@@ -52,8 +52,8 @@ void _init_vita_heap(void) {
 	if (sceKernelCreateLwMutex((struct SceKernelLwMutexWork*)_newlib_sbrk_mutex, "sbrk mutex", 0, 0, 0) < 0) {
 		goto failure;
 	}
-	
-	// Always allocating the max avaliable USER_RW mem on the system
+
+	// Always allocating the max available USER_RW mem on the system
 	SceKernelFreeMemorySizeInfo info;
 	info.size = sizeof(SceKernelFreeMemorySizeInfo);
 	sceKernelGetFreeMemorySize(&info);

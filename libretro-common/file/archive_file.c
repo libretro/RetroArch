@@ -50,7 +50,7 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
-   attr.i = 0;
+   attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
 
    if (valid_exts)
    {
@@ -80,8 +80,6 @@ static int file_archive_get_file_list_cb(
             string_list_deinitialize(&ext_list);
             return -1;
          }
-
-         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
       }
 
       string_list_deinitialize(&ext_list);
@@ -336,7 +334,7 @@ bool file_archive_extract_file(
       const char *archive_path,
       const char *valid_exts,
       const char *extraction_directory,
-      char *out_path, size_t len)
+      char *s, size_t len)
 {
    struct archive_extract_userdata userdata;
    bool ret                                 = true;
@@ -377,7 +375,7 @@ bool file_archive_extract_file(
    }
 
    if (!string_is_empty(userdata.first_extracted_file_path))
-      strlcpy(out_path, userdata.first_extracted_file_path, len);
+      strlcpy(s, userdata.first_extracted_file_path, len);
 
 end:
    if (userdata.first_extracted_file_path)
@@ -455,8 +453,8 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   file_archive_file_handle_t handle;
    int ret;
+   file_archive_file_handle_t handle;
 
    if (!userdata->transfer || !userdata->transfer->backend)
       return false;

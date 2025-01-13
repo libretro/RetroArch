@@ -536,13 +536,12 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 
 static void action_ok_get_file_browser_start_path(
       const char *current_path, const char *default_path,
-      char *start_path, size_t start_path_len,
-      bool set_pending)
+      char *s, size_t len, bool set_pending)
 {
    const char *pending_selection = NULL;
    bool current_path_valid       = false;
 
-   if (!start_path || (start_path_len < 1))
+   if (!s || (len < 1))
       return;
 
    /* Parse current path */
@@ -550,16 +549,13 @@ static void action_ok_get_file_browser_start_path(
    {
       /* Start path is the parent directory of
        * the current path */
-      fill_pathname_parent_dir(start_path, current_path,
-            start_path_len);
-
+      fill_pathname_parent_dir(s, current_path, len);
       /* 'Pending selection' is the basename of
        * the current path - either a file name
        * or a directory name */
       pending_selection = path_basename(current_path);
-
       /* Check if current path is valid */
-      if (    path_is_directory(start_path)
+      if (    path_is_directory(s)
           && !string_is_empty(pending_selection))
          current_path_valid = true;
    }
@@ -567,14 +563,14 @@ static void action_ok_get_file_browser_start_path(
    /* If current path is invalid, use default path */
    if (!current_path_valid)
    {
-      if (string_is_empty(default_path) ||
-          !path_is_directory(default_path))
+      if (    string_is_empty(default_path)
+          || !path_is_directory(default_path))
       {
-         start_path[0] = '\0';
+         s[0] = '\0';
          return;
       }
 
-      strlcpy(start_path, default_path, start_path_len);
+      strlcpy(s, default_path, len);
       return;
    }
    /* Current path is valid - set pending selection,
@@ -583,17 +579,68 @@ static void action_ok_get_file_browser_start_path(
       menu_driver_set_pending_selection(pending_selection);
 }
 
+static void menu_driver_set_last_start_content(struct menu_state *menu_st, const char *start_content_path)
+{
+   char archive_path[PATH_MAX_LENGTH];
+   menu_handle_t *menu         = menu_st->driver_data;
+   settings_t *settings        = config_get_ptr();
+   bool use_last               = settings->bools.use_last_start_directory;
+   const char *archive_delim   = NULL;
+   const char *file_name       = NULL;
+
+   if (!menu)
+      return;
+
+   /* Reset existing cache */
+   menu->last_start_content.directory[0] = '\0';
+   menu->last_start_content.file_name[0] = '\0';
+
+   /* If 'use_last_start_directory' is disabled or
+    * path is empty, do nothing */
+   if (!use_last ||
+       string_is_empty(start_content_path))
+      return;
+
+   /* Cache directory */
+   fill_pathname_parent_dir(menu->last_start_content.directory,
+         start_content_path, sizeof(menu->last_start_content.directory));
+
+   /* Cache file name */
+   if ((archive_delim = path_get_archive_delim(start_content_path)))
+   {
+      /* If path references a file inside an
+       * archive, must extract the string segment
+       * before the archive delimiter (i.e. path of
+       * 'parent' archive file) */
+      size_t _len     = (size_t)(1 + archive_delim - start_content_path);
+      if (_len >= PATH_MAX_LENGTH)
+         _len         = PATH_MAX_LENGTH;
+
+      strlcpy(archive_path, start_content_path, _len * sizeof(char));
+
+      file_name       = path_basename(archive_path);
+   }
+   else
+      file_name       = path_basename_nocompression(start_content_path);
+
+   if (!string_is_empty(file_name))
+      strlcpy(menu->last_start_content.file_name, file_name,
+            sizeof(menu->last_start_content.file_name));
+}
+
 static const char *menu_driver_get_last_start_file_name(void)
 {
    struct menu_state *menu_st  = menu_state_get_ptr();
    menu_handle_t *menu         = menu_st->driver_data;
    settings_t *settings        = config_get_ptr();
    bool use_last               = settings->bools.use_last_start_directory;
+
    /* Return NULL if there is no last 'file name' */
    if (   !menu
        || !use_last
        || string_is_empty(menu->last_start_content.file_name))
       return NULL;
+
    return menu->last_start_content.file_name;
 }
 
@@ -604,6 +651,13 @@ static const char *menu_driver_get_last_start_directory(void)
    settings_t *settings          = config_get_ptr();
    bool use_last                 = settings->bools.use_last_start_directory;
    const char *default_directory = settings->paths.directory_menu_content;
+
+   /* Also treat content launched from CLI as last start content */
+   if (     menu
+         && use_last
+         && string_is_empty(menu->last_start_content.file_name)
+         && !string_is_empty(path_get(RARCH_PATH_CONTENT)))
+      menu_driver_set_last_start_content(menu_st, path_get(RARCH_PATH_CONTENT));
 
    /* Return default directory if there is no
     * last directory or it's invalid */
@@ -616,7 +670,6 @@ static const char *menu_driver_get_last_start_directory(void)
    return menu->last_start_content.directory;
 }
 
-
 int generic_action_ok_displaylist_push(
       const char *path, const char *new_path,
       const char *label, unsigned type,
@@ -625,7 +678,7 @@ int generic_action_ok_displaylist_push(
 {
    menu_displaylist_info_t info;
    char tmp[PATH_MAX_LENGTH];
-   char parent_dir[PATH_MAX_LENGTH];
+   char parent_dir[DIR_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_NONE;
    const char           *menu_label        = NULL;
    const char            *menu_path        = NULL;
@@ -943,7 +996,12 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
          if (menu)
          {
+#if IOS
+            fill_pathname_expand_special(tmp, menu->scratch2_buf, sizeof(tmp));
+            menu_path    = tmp;
+#else
             menu_path    = menu->scratch2_buf;
+#endif
             content_path = menu->scratch_buf;
          }
          if (content_path)
@@ -1292,8 +1350,8 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          {
             filebrowser_clear_type();
-            strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
-            path_basedir(tmp);
+            fill_pathname_basedir(tmp,
+                  path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
             info.type          = type;
             info.directory_ptr = idx;
@@ -1357,7 +1415,7 @@ int generic_action_ok_displaylist_push(
          break;
       case ACTION_OK_DL_RGUI_MENU_THEME_PRESET:
          {
-            char rgui_assets_dir[PATH_MAX_LENGTH];
+            char rgui_assets_dir[DIR_MAX_LENGTH];
 
             filebrowser_clear_type();
             info.type          = type;
@@ -1512,17 +1570,16 @@ int generic_action_ok_displaylist_push(
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
          {
-            char lpl_basename[PATH_MAX_LENGTH];
+            char lpl_basename[NAME_MAX_LENGTH];
             struct menu_state *menu_st = menu_state_get_ptr();
             filebrowser_clear_type();
             fill_pathname_join_special(tmp,
                   settings->paths.path_content_database,
                   path, sizeof(tmp));
-
-            fill_pathname_base(lpl_basename, path, sizeof(lpl_basename));
-            path_remove_extension(lpl_basename);
-            menu_driver_set_thumbnail_system(
-                  menu_st->userdata, lpl_basename, sizeof(lpl_basename));
+            fill_pathname(lpl_basename, path_basename(path), "",
+                  sizeof(lpl_basename));
+            gfx_thumbnail_set_system(menu_st->thumbnail_path_data, lpl_basename,
+                  playlist_get_cached());
 
             info.directory_ptr = idx;
             info_path          = tmp;
@@ -1905,54 +1962,6 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
-static void menu_driver_set_last_start_content(struct menu_state *menu_st, const char *start_content_path)
-{
-   char archive_path[PATH_MAX_LENGTH];
-   menu_handle_t *menu         = menu_st->driver_data;
-   settings_t *settings        = config_get_ptr();
-   bool use_last               = settings->bools.use_last_start_directory;
-   const char *archive_delim   = NULL;
-   const char *file_name       = NULL;
-
-   if (!menu)
-      return;
-
-   /* Reset existing cache */
-   menu->last_start_content.directory[0] = '\0';
-   menu->last_start_content.file_name[0] = '\0';
-
-   /* If 'use_last_start_directory' is disabled or
-    * path is empty, do nothing */
-   if (!use_last ||
-       string_is_empty(start_content_path))
-      return;
-
-   /* Cache directory */
-   fill_pathname_parent_dir(menu->last_start_content.directory,
-         start_content_path, sizeof(menu->last_start_content.directory));
-
-   /* Cache file name */
-   if ((archive_delim = path_get_archive_delim(start_content_path)))
-   {
-      /* If path references a file inside an
-       * archive, must extract the string segment
-       * before the archive delimiter (i.e. path of
-       * 'parent' archive file) */
-      size_t len      = (size_t)(1 + archive_delim - start_content_path);
-      if (len >= PATH_MAX_LENGTH)
-         len          = PATH_MAX_LENGTH;
-
-      strlcpy(archive_path, start_content_path, len * sizeof(char));
-
-      file_name       = path_basename(archive_path);
-   }
-   else
-      file_name       = path_basename_nocompression(start_content_path);
-
-   if (!string_is_empty(file_name))
-      strlcpy(menu->last_start_content.file_name, file_name,
-            sizeof(menu->last_start_content.file_name));
-}
 
 
 static int file_load_with_detect_core_wrapper(
@@ -1970,6 +1979,9 @@ static int file_load_with_detect_core_wrapper(
 
    {
       menu_content_ctx_defer_info_t def_info;
+#if IOS
+      char tmp_path[PATH_MAX_LENGTH];
+#endif
       char menu_path_new[PATH_MAX_LENGTH];
       char new_core_path[PATH_MAX_LENGTH];
       const char *menu_path                  = NULL;
@@ -1980,7 +1992,6 @@ static int file_load_with_detect_core_wrapper(
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
 #if IOS
-      char tmp_path[PATH_MAX_LENGTH];
       if (menu_path)
       {
          fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
@@ -1997,8 +2008,16 @@ static int file_load_with_detect_core_wrapper(
          if (path_is_absolute(menu->scratch_buf))
             strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
          else
+         {
+#if IOS
+            fill_pathname_join_special(tmp_path,
+                  menu->scratch2_buf, menu->scratch_buf, sizeof(tmp_path));
+            fill_pathname_expand_special(menu_path_new, tmp_path, sizeof(menu_path_new));
+#else
             fill_pathname_join_special(menu_path_new,
                   menu->scratch2_buf, menu->scratch_buf, sizeof(menu_path_new));
+#endif
+         }
       }
       else if (string_is_equal(menu_label,
                msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
@@ -2012,6 +2031,17 @@ static int file_load_with_detect_core_wrapper(
 
       core_info_get_list(&list);
 
+      /* If loading a directory, use only path */
+      if (path == NULL && !string_is_empty(menu_path_new))
+      {
+         strlcpy(menu->deferred_path, menu_path_new,
+                 sizeof(menu->deferred_path));
+         strlcpy(menu->detect_content_path, menu_path_new,
+                 sizeof(menu->detect_content_path));
+         path = menu->detect_content_path;
+         menu_path_new[0] = '\0';
+      }
+
       def_info.data       = list;
       def_info.dir        = menu_path_new;
       def_info.path       = path;
@@ -2023,7 +2053,8 @@ static int file_load_with_detect_core_wrapper(
                sizeof(new_core_path)))
          ret = -1;
 
-      if (     !is_carchive && !string_is_empty(path)
+      if (     !is_carchive
+            && !string_is_empty(path)
             && !string_is_empty(menu_path_new))
          fill_pathname_join_special(menu->detect_content_path,
                menu_path_new, path,
@@ -2088,7 +2119,7 @@ static int action_ok_file_load_with_detect_core_carchive(
          menu->detect_content_path, path,
          '#', sizeof(menu->detect_content_path));
 
-   type = 0;
+   type  = 0;
    label = NULL;
 
    return file_load_with_detect_core_wrapper(
@@ -2099,10 +2130,14 @@ static int action_ok_file_load_with_detect_core_carchive(
 static int action_ok_file_load_with_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
+         && string_is_equal(label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+   if (is_dir)
+      path     = NULL;
 
-   type  = 0;
-   label = NULL;
-
+   type        = 0;
+   label       = NULL;
    return file_load_with_detect_core_wrapper(
          MSG_UNKNOWN, idx, entry_idx,
          path, label, type, false);
@@ -2156,6 +2191,9 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
 {
+#if IOS
+   char tmp_path[PATH_MAX_LENGTH];
+#endif
    char action_path[PATH_MAX_LENGTH];
    unsigned flush_type               = 0;
    int ret                           = 0;
@@ -2180,7 +2218,6 @@ static int generic_action_ok(const char *path,
          &menu_label, NULL, &enum_idx, NULL);
 
 #if IOS
-   char tmp_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;
 #endif
@@ -2310,24 +2347,21 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_REMAPPING_FILE:
 #ifdef HAVE_CONFIGFILE
          {
-            char conf_key[64];
-            config_file_t     *conf = config_file_new_from_path_to_string(
-                  action_path);
             retro_ctx_controller_info_t pad;
-            unsigned current_device = 0;
-            unsigned port           = 0;
-            int conf_val            = 0;
+            config_file_t *conf     = NULL;
             flush_char              = msg_hash_to_str(flush_id);
 
-            conf_key[0]             = '\0';
-
-            if (conf)
+            if ((conf = config_file_new_from_path_to_string(action_path)))
             {
+               char conf_key[64];
                if (input_remapping_load_file(conf, action_path))
                {
+                  unsigned port;
                   size_t _len = strlcpy(conf_key, "input_libretro_device_p", sizeof(conf_key));
                   for (port = 0; port < MAX_USERS; port++)
                   {
+                     unsigned current_device;
+                     int conf_val = 0;
                      snprintf(conf_key + _len, sizeof(conf_key) - _len, "%u", port + 1);
                      if (!config_get_int(conf, conf_key, &conf_val))
                         continue;
@@ -2413,6 +2447,7 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_SET_PATH_OVERLAY:
          flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST);
+         retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
          ret        = set_path_generic(menu_label, action_path);
          break;
       case ACTION_OK_SET_PATH_OSK_OVERLAY:
@@ -2523,7 +2558,7 @@ static int action_ok_file_load(const char *path,
       {
          case FILE_TYPE_IN_CARCHIVE:
             fill_pathname_join_delim(full_path_new, menu_path_new, path,
-                  '#',sizeof(full_path_new));
+                  '#', sizeof(full_path_new));
             break;
          default:
             fill_pathname_join_special(full_path_new, menu_path_new, path,
@@ -2603,9 +2638,7 @@ static bool playlist_entry_path_is_valid(const char *entry_path)
     *   path_get_archive_delim() returns a const char *
     *   (this cast is safe, though, and is done in many
     *   places throughout the codebase...) */
-   archive_delim = (char *)path_get_archive_delim(file_path);
-
-   if (archive_delim)
+   if ((archive_delim = (char *)path_get_archive_delim(file_path)))
    {
       *archive_delim = '\0';
       if (string_is_empty(file_path))
@@ -2634,7 +2667,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    playlist_config_t playlist_config;
    char content_path[PATH_MAX_LENGTH];
-   char content_label[PATH_MAX_LENGTH];
+   char content_label[NAME_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    size_t selection_ptr                   = entry_idx;
    bool playlist_initialized              = false;
@@ -2668,30 +2701,28 @@ static int action_ok_playlist_entry_collection(const char *path,
    /* Get playlist */
    if (!(tmp_playlist = playlist_get_cached()))
    {
+      enum playlist_sort_mode current_sort_mode;
       /* If playlist is not cached, have to load
        * it here
        * > Since the menu will always sort playlists
        *   based on current user config, have to do
        *   the same here - otherwise entry_idx may
        *   go out of sync... */
-      bool is_content_history = string_is_equal(menu->db_playlist_file, path_content_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_image_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_music_history) ||
-                                string_is_equal(menu->db_playlist_file, path_content_video_history);
-
-      enum playlist_sort_mode current_sort_mode;
+      bool is_content_history =    string_is_equal(menu->db_playlist_file, path_content_history)
+                                || string_is_equal(menu->db_playlist_file, path_content_image_history)
+                                || string_is_equal(menu->db_playlist_file, path_content_music_history)
+                                || string_is_equal(menu->db_playlist_file, path_content_video_history);
 
       playlist_config_set_path(&playlist_config, menu->db_playlist_file);
-      tmp_playlist = playlist_init(&playlist_config);
 
-      if (!tmp_playlist)
+      if (!(tmp_playlist = playlist_init(&playlist_config)))
          goto error;
 
       current_sort_mode = playlist_get_sort_mode(tmp_playlist);
 
-      if (!is_content_history &&
-          ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT)) ||
-           (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL)))
+      if (     !is_content_history
+          && ((playlist_sort_alphabetical && (current_sort_mode == PLAYLIST_SORT_MODE_DEFAULT))
+          ||  (current_sort_mode == PLAYLIST_SORT_MODE_ALPHABETICAL)))
          playlist_qsort(tmp_playlist);
 
       playlist_initialized = true;
@@ -2850,6 +2881,7 @@ static int action_ok_playlist_entry_collection(const char *path,
 error:
    runloop_msg_queue_push(
          "File could not be loaded from playlist.\n",
+         STRLEN_CONST("File could not be loaded from playlist.\n"),
          1, 100, true,
          NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -2942,12 +2974,11 @@ static int action_ok_load_cdrom(const char *path,
 
    if (!cdrom_drive_has_media(label[0]))
    {
+      const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
       RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
 
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NO_DISC_INSERTED),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       return -1;
    }
@@ -2956,14 +2987,14 @@ static int action_ok_load_cdrom(const char *path,
 
    if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
-      char cdrom_path[256] = {0};
-
+      char cdrom_path[256];
       cdrom_device_fillpath(cdrom_path, sizeof(cdrom_path), label[0], 0, true);
 
       RARCH_LOG("[CDROM]: Loading disc from path: %s\n", cdrom_path);
 
       path_clear(RARCH_PATH_CONTENT);
-      path_set(RARCH_PATH_CONTENT, cdrom_path);
+      if (!string_is_empty(cdrom_path))
+         path_set(RARCH_PATH_CONTENT, cdrom_path);
 
 #if defined(HAVE_DYNAMIC)
       {
@@ -2982,12 +3013,11 @@ static int action_ok_load_cdrom(const char *path,
    }
    else
    {
+      const char *_msg = msg_hash_to_str(MSG_LOAD_CORE_FIRST);
       RARCH_LOG("[CDROM]: Cannot load disc without a core.\n");
 
-      runloop_msg_queue_push(
-         msg_hash_to_str(MSG_LOAD_CORE_FIRST),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       return -1;
    }
@@ -3003,11 +3033,10 @@ static int action_ok_dump_cdrom(const char *path,
 #ifdef HAVE_CDROM
    if (!cdrom_drive_has_media(label[0]))
    {
+      const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
       RARCH_LOG("[CDROM]: No media is inserted or drive is not ready.\n");
 
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NO_DISC_INSERTED),
-            1, 100, true,
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       return -1;
@@ -3236,7 +3265,7 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
 
       if (!string_is_empty(label))
       {
-         struct playlist_entry entry = {0};
+         struct playlist_entry entry  = {0};
          struct menu_state *menu_st   = menu_state_get_ptr();
          unsigned idx                 = menu_st->input_dialog_kb_idx;
 
@@ -3244,6 +3273,9 @@ static void menu_input_st_string_cb_rename_entry(void *userdata,
           * so these casts are safe */
          entry.label                  = (char*)label;
          command_playlist_update_write(NULL, idx, &entry);
+
+         menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                         |  MENU_ST_FLAG_PREVENT_POPULATE;
       }
    }
 
@@ -3262,18 +3294,18 @@ static void menu_input_st_string_cb_disable_kiosk_mode(void *userdata,
 
       if (string_is_equal(label, path_kiosk_mode_password))
       {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_OK);
          settings->bools.kiosk_mode_enable = false;
 
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_OK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD_NOK);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    menu_input_dialog_end();
@@ -3291,18 +3323,18 @@ static void menu_input_st_string_cb_enable_settings(void *userdata,
 
       if (string_is_equal(label, menu_content_show_settings_password))
       {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK);
          settings->bools.menu_content_show_settings = true;
 
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
       else
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    menu_input_dialog_end();
@@ -3358,15 +3390,17 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
                true);
 
       if (ret)
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
       else
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    menu_input_dialog_end();
@@ -3424,17 +3458,17 @@ static int generic_action_ok_shader_preset_remove(const char *path,
          dir_video_shader, dir_menu_config))
    {
       struct menu_state *menu_st = menu_state_get_ptr();
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
    else
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_SHADER_PRESET);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    return 0;
 }
@@ -3474,15 +3508,17 @@ static int generic_action_ok_shader_preset_save(const char *path,
    if (menu_shader_manager_save_auto_preset(menu_shader_get(), preset_type,
             dir_video_shader, dir_menu_config,
             true))
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_SHADER_PRESET_SAVED_SUCCESSFULLY);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
    else
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_ERROR_SAVING_SHADER_PRESET);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 
    return 0;
 }
@@ -3544,7 +3580,6 @@ static int action_ok_shader_preset_remove_game(const char *path,
 }
 #endif
 
-
 static int action_ok_video_filter_remove(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3558,8 +3593,8 @@ static int action_ok_video_filter_remove(const char *path,
       settings->paths.path_softfilter_plugin[0] = '\0';
       command_event(CMD_EVENT_REINIT, NULL);
       /* Refresh menu */
-      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
+      menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                             |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
    return 0;
 }
@@ -3580,8 +3615,8 @@ static int action_ok_audio_dsp_plugin_remove(const char *path,
       command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
       /* Refresh menu */
-      menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                                      |  MENU_ST_FLAG_PREVENT_POPULATE;
+      menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                             |  MENU_ST_FLAG_PREVENT_POPULATE;
    }
 
    return 0;
@@ -3644,17 +3679,21 @@ static int generic_action_ok_remap_file_operation(const char *path,
       unsigned action_type)
 {
 #ifdef HAVE_CONFIGFILE
-   char content_dir_name[PATH_MAX_LENGTH];
    char remap_file_path[PATH_MAX_LENGTH];
-   struct menu_state *menu_st            = menu_state_get_ptr();
-   rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
-   const char *core_name                 = sys_info ? sys_info->info.library_name : NULL;
-   const char *rarch_path_basename       = path_get(RARCH_PATH_BASENAME);
-   bool has_content                      = !string_is_empty(rarch_path_basename);
-   settings_t *settings                  = config_get_ptr();
-   const char *directory_input_remapping = settings->paths.directory_input_remapping;
+   char remap_path[PATH_MAX_LENGTH];
+   struct menu_state *menu_st             = menu_state_get_ptr();
+   rarch_system_info_t *sys_info          = &runloop_state_get_ptr()->system;
+   const char *core_name                  = sys_info ? sys_info->info.library_name : NULL;
+   const char *rarch_path_basename        = path_get(RARCH_PATH_BASENAME);
+   bool has_content                       = !string_is_empty(rarch_path_basename);
+   settings_t *settings                   = config_get_ptr();
+   const char *directory_input_remapping  = settings->paths.directory_input_remapping;
+   unsigned joypad_port                   = settings->uints.input_joypad_index[0];
+   const char *input_device_name          = input_config_get_device_display_name(joypad_port);
+   const char *input_device_dir           = NULL;
+   bool sort_remaps_by_controller         = settings->bools.input_remap_sort_by_controller_enable;
+   size_t _len                            = 0;
 
-   content_dir_name[0] = '\0';
    remap_file_path[0]  = '\0';
 
    /* Cannot perform remap file operation if we
@@ -3662,11 +3701,31 @@ static int generic_action_ok_remap_file_operation(const char *path,
    if (string_is_empty(core_name))
       return -1;
 
+   if (   sort_remaps_by_controller
+       && (input_device_name != NULL)
+       && !string_is_empty(input_device_name))
+   {
+      /* Ensure directory does not contain special chars */
+      input_device_dir = sanitize_path_part(input_device_name, strlen(input_device_name));
+
+      /* Allocate memory for the new path */
+      /* Build the new path with the controller name */
+      _len  = strlcpy(remap_path, core_name, sizeof(remap_path));
+      _len += strlcpy(remap_path + _len, PATH_DEFAULT_SLASH(), sizeof(remap_path) - _len);
+      _len += strlcpy(remap_path + _len, input_device_dir,     sizeof(remap_path) - _len);
+
+      /* Deallocate as we no longer this */
+      free((char*)input_device_dir);
+      input_device_dir = NULL;
+   }
+   else /* We're not using controller path, just use core name */
+      strlcpy(remap_path, core_name, sizeof(remap_path));
+
    switch (action_type)
    {
       case ACTION_OK_REMAP_FILE_SAVE_AS:
          fill_pathname_join_special_ext(remap_file_path,
-               directory_input_remapping, core_name,
+               directory_input_remapping, remap_path,
                path,
                FILE_PATH_REMAP_EXTENSION,
                sizeof(remap_file_path));
@@ -3674,7 +3733,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       case ACTION_OK_REMAP_FILE_SAVE_CORE:
       case ACTION_OK_REMAP_FILE_REMOVE_CORE:
          fill_pathname_join_special_ext(remap_file_path,
-               directory_input_remapping, core_name,
+               directory_input_remapping, remap_path,
                core_name,
                FILE_PATH_REMAP_EXTENSION,
                sizeof(remap_file_path));
@@ -3683,7 +3742,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       case ACTION_OK_REMAP_FILE_REMOVE_GAME:
          if (has_content)
             fill_pathname_join_special_ext(remap_file_path,
-                  directory_input_remapping, core_name,
+                  directory_input_remapping, remap_path,
                   path_basename(rarch_path_basename),
                   FILE_PATH_REMAP_EXTENSION,
                   sizeof(remap_file_path));
@@ -3692,11 +3751,11 @@ static int generic_action_ok_remap_file_operation(const char *path,
       case ACTION_OK_REMAP_FILE_REMOVE_CONTENT_DIR:
          if (has_content)
          {
+            char content_dir_name[DIR_MAX_LENGTH];
             fill_pathname_parent_dir_name(content_dir_name,
                   rarch_path_basename, sizeof(content_dir_name));
-
             fill_pathname_join_special_ext(remap_file_path,
-                  directory_input_remapping, core_name,
+                  directory_input_remapping, remap_path,
                   content_dir_name,
                   FILE_PATH_REMAP_EXTENSION,
                   sizeof(remap_file_path));
@@ -3706,6 +3765,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
 
    if (action_type < ACTION_OK_REMAP_FILE_REMOVE_CORE)
    {
+      const char *_msg;
       if (  !string_is_empty(remap_file_path)
           && input_remapping_save_file(remap_file_path))
       {
@@ -3722,18 +3782,18 @@ static int generic_action_ok_remap_file_operation(const char *path,
                break;
          }
 
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _msg = msg_hash_to_str(MSG_REMAP_FILE_SAVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         /* TODO/FIXME - localize */
          RARCH_LOG("[Remap]: File saved successfully: \"%s\".\n",remap_file_path);
       }
       else
       {
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _msg = msg_hash_to_str(MSG_ERROR_SAVING_REMAP_FILE);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         /* TODO/FIXME - localize */
          RARCH_ERR("[Remap]: File save unsuccessful: \"%s\".\n",remap_file_path);
       }
    }
@@ -3742,6 +3802,7 @@ static int generic_action_ok_remap_file_operation(const char *path,
       if (   !string_is_empty(remap_file_path)
           && (filestream_delete(remap_file_path) == 0))
       {
+         const char *_msg;
          uint32_t flags = runloop_get_flags();
          switch (action_type)
          {
@@ -3759,10 +3820,9 @@ static int generic_action_ok_remap_file_operation(const char *path,
                break;
          }
 
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _msg = msg_hash_to_str(MSG_REMAP_FILE_REMOVED_SUCCESSFULLY);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          /* After removing a remap file, attempt to
           * load any remaining remap file with the
@@ -3770,10 +3830,11 @@ static int generic_action_ok_remap_file_operation(const char *path,
          config_load_remap(directory_input_remapping, sys_info);
       }
       else
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_ERROR_REMOVING_REMAP_FILE),
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      {
+         const char *_msg = msg_hash_to_str(MSG_ERROR_REMOVING_REMAP_FILE);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
    }
 
    /* Refresh menu */
@@ -3863,22 +3924,22 @@ static int action_ok_remap_file_remove_game(const char *path,
 static int action_ok_remap_file_reset(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   const char *_msg = msg_hash_to_str(MSG_REMAP_FILE_RESET);
    input_remapping_set_defaults(false);
-   runloop_msg_queue_push(
-         msg_hash_to_str(MSG_REMAP_FILE_RESET),
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    return 0;
 }
 
 static int action_ok_remap_file_flush(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
+   char msg[128];
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *path_remapfile  = runloop_st->name.remapfile;
    const char *remapfile       = NULL;
    bool success                = false;
-   char msg[256];
 
    msg[0] = '\0';
 
@@ -3901,7 +3962,7 @@ static int action_ok_remap_file_flush(const char *path,
       RARCH_LOG(
             "[Remaps]: Saved input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
-      snprintf(msg, sizeof(msg), "%s \"%s\"",
+      _len = snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSHED),
             remapfile);
    }
@@ -3911,14 +3972,13 @@ static int action_ok_remap_file_flush(const char *path,
       RARCH_LOG(
             "[Remaps]: Failed to save input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
-      snprintf(msg, sizeof(msg), "%s \"%s\"",
+      _len = snprintf(msg, sizeof(msg), "%s \"%s\"",
             msg_hash_to_str(MSG_REMAP_FILE_FLUSH_FAILED),
             remapfile);
    }
 
-   runloop_msg_queue_push(
-         msg, 1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -3966,10 +4026,8 @@ static void menu_input_st_string_cb_override_file_save_as(
             break;
       }
 
-      runloop_msg_queue_push(
-            msg_str,
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg_str, strlen(msg_str), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    menu_input_dialog_end();
@@ -3986,10 +4044,11 @@ static int action_ok_override_unload(const char *path,
 {
 #ifdef HAVE_CONFIGFILE
    if (config_unload_override())
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY),
-            1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *_msg = msg_hash_to_str(MSG_OVERRIDES_UNLOADED_SUCCESSFULLY);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
 #endif
    return 0;
 }
@@ -4019,7 +4078,7 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char content_dir[PATH_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
    const char *flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST);
    unsigned flush_type    = 0;
    const char *menu_path  = NULL;
@@ -4042,7 +4101,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
        * can start with /private and this ensures the path starts with it.
        * This will allow the path to be properly substituted when
        * fill_pathname_expand_special() is called. */
-      char tmp_dir[PATH_MAX_LENGTH];
+      char tmp_dir[DIR_MAX_LENGTH];
       tmp_dir[0] = '\0';
       fill_pathname_expand_special(tmp_dir, content_dir, sizeof(content_dir));
       realpath(tmp_dir, content_dir);
@@ -4097,9 +4156,10 @@ static int action_ok_core_deferred_set(const char *new_core_path,
          &entry);
 
    /* Provide visual feedback */
-   _len = strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
-   strlcpy(msg + _len, core_display_name, sizeof(msg) - _len);
-   runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   _len  = strlcpy(msg, msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
+   _len += strlcpy(msg + _len, core_display_name, sizeof(msg) - _len);
+   runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    menu_entries_pop_stack(&selection, 0, 1);
    menu_st->selection_ptr = selection;
@@ -4117,9 +4177,10 @@ static int action_ok_deferred_list_stub(const char *path,
 static int action_ok_set_switch_cpu_profile(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   size_t _len;
    char command[PATH_MAX_LENGTH] = {0};
-   unsigned profile_clock          = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
-   settings_t *settings            = config_get_ptr();
+   unsigned profile_clock        = SWITCH_CPU_SPEEDS_VALUES[entry_idx];
+   settings_t *settings          = config_get_ptr();
 
    settings->uints.libnx_overclock = entry_idx;
 
@@ -4133,10 +4194,10 @@ static int action_ok_set_switch_cpu_profile(const char *path,
       clkrstCloseSession(&session);
    }
    /* TODO/FIXME - localize */
-   snprintf(command, sizeof(command),
-         "Current Clock set to %i", profile_clock);
+   _len  = strlcpy(command, "Current clock set to", sizeof(command));
+   _len += snprintf(command + _len, sizeof(command) - _len, "%i", profile_clock);
 
-   runloop_msg_queue_push(command, 1, 90, true, NULL,
+   runloop_msg_queue_push(command, _len, 1, 90, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return -1;
@@ -4179,7 +4240,6 @@ static int action_ok_file_load_ffmpeg(const char *path,
    char new_path[PATH_MAX_LENGTH];
    const char *menu_path           = NULL;
    struct menu_state *menu_st      = menu_state_get_ptr();
-   menu_handle_t *menu             = menu_st->driver_data;
    menu_list_t *menu_list          = menu_st->entries.list;
    file_list_t *menu_stack         = MENU_LIST_GET(menu_list, 0);
 
@@ -4226,15 +4286,15 @@ static int action_ok_audio_run(const char *path,
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char option_path_str[256];
-   char option_lbl_str[256];
+   size_t _len;
+   char option_path_str[64];
+   char option_lbl_str[64];
    core_option_manager_t *coreopts = NULL;
    struct core_option *option      = NULL;
    const char *value_label_0       = NULL;
    const char *value_label_1       = NULL;
    size_t option_index             = type - MENU_SETTINGS_CORE_OPTION_START;
 
-   option_path_str[0]              = '\0';
    option_lbl_str[0]               = '\0';
 
    /* Boolean options are toggled directly,
@@ -4268,9 +4328,9 @@ int action_ok_core_option_dropdown_list(const char *path,
    if (   string_is_empty(value_label_0)
        || string_is_empty(value_label_1)
        || !( (  string_is_equal(value_label_0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON))
-             && string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+          &&    string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
           || (  string_is_equal(value_label_0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
-             && string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
+          &&    string_is_equal(value_label_1, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))))
       goto push_dropdown_list;
 
    /* > Update value and return */
@@ -4282,8 +4342,11 @@ int action_ok_core_option_dropdown_list(const char *path,
 push_dropdown_list:
    /* If this option is not a boolean toggle,
     * push drop-down list */
-   snprintf(option_path_str, sizeof(option_path_str),
-         "core_option_%d", (int)option_index);
+   _len = strlcpy(option_path_str, "core_option_",
+         sizeof(option_path_str));
+   snprintf(option_path_str      + _len,
+         sizeof(option_path_str) - _len,
+         "%d", (int)option_index);
    snprintf(option_lbl_str, sizeof(option_lbl_str),
          "%d", type);
 
@@ -4353,7 +4416,8 @@ static int action_ok_cheat_add_top(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
-   char msg[256];
+   size_t _len;
+   char msg[128];
    struct item_cheat tmp;
    struct menu_state *menu_st      = menu_state_get_ptr();
    unsigned int new_size           = cheat_manager_get_size() + 1;
@@ -4375,10 +4439,9 @@ static int action_ok_cheat_add_top(const char *path,
 
    memcpy(&cheat_manager_state.cheats[0], &tmp, sizeof(struct item_cheat));
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_TOP_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
@@ -4387,7 +4450,8 @@ static int action_ok_cheat_add_top(const char *path,
 static int action_ok_cheat_add_bottom(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char msg[256];
+   size_t _len;
+   char msg[128];
    struct menu_state *menu_st      = menu_state_get_ptr();
    unsigned int new_size           = cheat_manager_get_size() + 1;
 
@@ -4395,11 +4459,10 @@ static int action_ok_cheat_add_bottom(const char *path,
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
 
-   strlcpy(msg,
+   _len = strlcpy(msg,
          msg_hash_to_str(MSG_CHEAT_ADD_BOTTOM_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
@@ -4408,7 +4471,8 @@ static int action_ok_cheat_add_bottom(const char *path,
 static int action_ok_cheat_delete_all(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char msg[256];
+   size_t _len;
+   char msg[128];
    struct menu_state *menu_st       = menu_state_get_ptr();
 
    cheat_manager_state.delete_state = 0;
@@ -4416,11 +4480,10 @@ static int action_ok_cheat_delete_all(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS),
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_ALL_SUCCESS),
           sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
@@ -4430,7 +4493,8 @@ static int action_ok_cheat_add_new_after(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
-   char msg[256];
+   size_t _len;
+   char msg[128];
    struct item_cheat tmp;
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned int new_size      = cheat_manager_get_size() + 1;
@@ -4452,10 +4516,11 @@ static int action_ok_cheat_add_new_after(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_AFTER_SUCCESS),
+         sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4464,7 +4529,8 @@ static int action_ok_cheat_add_new_before(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
-   char msg[256];
+   size_t _len;
+   char msg[128];
    struct item_cheat tmp;
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned int new_size      = cheat_manager_get_size() + 1;
@@ -4488,10 +4554,10 @@ static int action_ok_cheat_add_new_before(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_ADD_BEFORE_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4500,8 +4566,9 @@ static int action_ok_cheat_copy_before(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
+   size_t _len;
+   char msg[128];
    struct item_cheat tmp;
-   char msg[256];
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned int new_size      = cheat_manager_get_size() + 1;
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
@@ -4525,10 +4592,10 @@ static int action_ok_cheat_copy_before(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_BEFORE_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4537,8 +4604,9 @@ static int action_ok_cheat_copy_after(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    int i;
+   size_t _len;
+   char msg[128];
    struct item_cheat tmp;
-   char msg[256];
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned int new_size      = cheat_manager_get_size() + 1;
 
@@ -4562,10 +4630,11 @@ static int action_ok_cheat_copy_after(const char *path,
    menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                     | MENU_ST_FLAG_PREVENT_POPULATE;
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_COPY_AFTER_SUCCESS),
+         sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return 0;
 }
@@ -4573,7 +4642,8 @@ static int action_ok_cheat_copy_after(const char *path,
 static int action_ok_cheat_delete(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char msg[256];
+   size_t _len;
+   char msg[128];
    size_t new_selection_ptr   = 0;
    struct menu_state *menu_st = menu_state_get_ptr();
    size_t selection           = menu_st->selection_ptr;
@@ -4603,10 +4673,10 @@ static int action_ok_cheat_delete(const char *path,
 
    cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_RETRO);
 
-   strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS), sizeof(msg));
-   msg[sizeof(msg) - 1] = 0;
+   _len = strlcpy(msg, msg_hash_to_str(MSG_CHEAT_DELETE_SUCCESS), sizeof(msg));
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    new_selection_ptr      = menu_st->selection_ptr;
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
@@ -4650,10 +4720,8 @@ static int action_ok_file_load_current_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
-
    if (!menu)
       return -1;
-
    return default_action_ok_load_content_with_core_from_menu(
          menu->detect_content_path, CORE_TYPE_PLAIN);
 }
@@ -4940,23 +5008,18 @@ finish:
             STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
             ))
    {
-      char parent_dir[PATH_MAX_LENGTH];
-      char parent_dir_encoded[PATH_MAX_LENGTH];
-      file_transfer_t *transf     = NULL;
-
+      char parent_dir_encoded[DIR_MAX_LENGTH];
+      file_transfer_t *transf     = (file_transfer_t*)malloc(sizeof(*transf));
       parent_dir_encoded[0]       = '\0';
 
-      fill_pathname_parent_dir(parent_dir,
-            state->path, sizeof(parent_dir));
-      strlcat(parent_dir, FILE_PATH_INDEX_DIRS_URL,
-            sizeof(parent_dir));
+      transf->enum_idx            = MSG_UNKNOWN;
 
-      transf           = (file_transfer_t*)malloc(sizeof(*transf));
+      fill_pathname_parent_dir(transf->path,
+            state->path, sizeof(transf->path));
+      strlcat(transf->path, FILE_PATH_INDEX_DIRS_URL,
+            sizeof(transf->path));
 
-      transf->enum_idx = MSG_UNKNOWN;
-      strlcpy(transf->path, parent_dir, sizeof(transf->path));
-
-      net_http_urlencode_full(parent_dir_encoded, parent_dir,
+      net_http_urlencode_full(parent_dir_encoded, transf->path,
             sizeof(parent_dir_encoded));
       task_push_http_transfer_file(parent_dir_encoded, true,
             "index_dirs", cb_net_generic_subdir, transf);
@@ -5110,7 +5173,7 @@ void cb_generic_download(retro_task_t *task,
 
    output_path[0] = '\0';
 
-   /* we have to determine dir_path at the time of writting or else
+   /* we have to determine dir_path at the time of writing or else
     * we'd run into races when the user changes the setting during an
     * http transfer. */
    switch (transf->enum_idx)
@@ -5150,7 +5213,7 @@ void cb_generic_download(retro_task_t *task,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
-            static char shaderdir[PATH_MAX_LENGTH] = {0};
+            static char shaderdir[DIR_MAX_LENGTH] = {0};
             const char *dirname                    = NULL;
             const char *dir_video_shader           = settings->paths.directory_video_shader;
 
@@ -5468,15 +5531,13 @@ static int action_ok_switch_installed_cores_pfd(const char *path,
 static int action_ok_sideload_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char backup_path[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
-   const char *core_file    = path;
    bool core_loaded         = false;
    menu_handle_t *menu      = menu_state_get_ptr()->driver_data;
    settings_t *settings     = config_get_ptr();
    const char *dir_libretro = settings->paths.directory_libretro;
 
-   if (string_is_empty(core_file) || !menu)
+   if (string_is_empty(path) || !menu)
       return -1;
 
    /* Get path of source (core 'backup') file */
@@ -5484,13 +5545,14 @@ static int action_ok_sideload_core(const char *path,
          &menu_path, NULL, NULL, NULL, NULL);
 
    if (!string_is_empty(menu_path))
+   {
+      char backup_path[PATH_MAX_LENGTH];
       fill_pathname_join_special(
-            backup_path, menu_path, core_file, sizeof(backup_path));
+            backup_path, menu_path, path, sizeof(backup_path));
+      task_push_core_restore(backup_path, dir_libretro, &core_loaded);
+   }
    else
-      strlcpy(backup_path, core_file, sizeof(backup_path));
-
-   /* Push core 'restore' task */
-   task_push_core_restore(backup_path, dir_libretro, &core_loaded);
+      task_push_core_restore(path, dir_libretro, &core_loaded);
 
    /* Flush stack
     * > Since the 'sideload core' option is present
@@ -5598,9 +5660,10 @@ int action_ok_close_content(const char *path, const char *label, unsigned type, 
    menu_st->selection_ptr       = 0;
 
    /* Check if we need to quit */
-   check_quit_on_close();
+   if (should_quit_on_close())
+      return generic_action_ok_command(CMD_EVENT_QUIT);
 
-   /* Unload core */
+   /* Otherwise, unload core */
    ret = generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 
    /* If close content was selected via any means other than
@@ -5694,16 +5757,15 @@ static int action_ok_add_to_favorites(const char *path,
     * > If content path is empty, cannot do anything... */
    if (!string_is_empty(content_path))
    {
+      union string_list_elem_attr attr;
+      char core_name[NAME_MAX_LENGTH];
+      char content_label[NAME_MAX_LENGTH];
+      char core_path[PATH_MAX_LENGTH];
       runloop_state_t *runloop_st       = runloop_state_get_ptr();
       struct retro_system_info *sysinfo = &runloop_st->system.info;
       struct string_list *str_list      = NULL;
       const char *crc32                 = NULL;
       const char *db_name               = NULL;
-
-      union string_list_elem_attr attr;
-      char content_label[PATH_MAX_LENGTH];
-      char core_path[PATH_MAX_LENGTH];
-      char core_name[PATH_MAX_LENGTH];
 
       core_path[0]     = '\0';
       core_name[0]     = '\0';
@@ -5820,13 +5882,13 @@ static int action_ok_add_entry_to_playlist(const char *path,
    if(!label)
       return 0;
 
-/*
- *
- * path = menu entry select.  use this to identify the menu item to add the content to
- * entry->path = The file path of the currently selected content
- * [INFO] [playlist] = Add to Favorites
- * [INFO] [content_path] = C:\roms\Arcade - Mame 2003 Plus\aburner2.zip
-*/
+   /*
+    *
+    * path = menu entry select.  use this to identify the menu item to add the content to
+    * entry->path = The file path of the currently selected content
+    * [INFO] [playlist] = Add to Favorites
+    * [INFO] [content_path] = C:\roms\Arcade - Mame 2003 Plus\aburner2.zip
+    */
    /* Read current playlist parameters */
    playlist_get_index(playlist_curr, menu->rpl_entry_selection_ptr, &entry);
 
@@ -5835,11 +5897,10 @@ static int action_ok_add_entry_to_playlist(const char *path,
    if (!string_is_empty(entry->path))
    {
       union string_list_elem_attr attr;
-      char core_display_name[PATH_MAX_LENGTH];
+      char core_display_name[NAME_MAX_LENGTH];
+      char core_name[NAME_MAX_LENGTH];
       char core_path[PATH_MAX_LENGTH];
-      char core_name[PATH_MAX_LENGTH];
-      struct string_list
-         *str_list         = NULL;
+      struct string_list *str_list         = NULL;
 
       core_display_name[0] = '\0';
       core_path[0]         = '\0';
@@ -6002,11 +6063,10 @@ static int action_ok_add_to_favorites_playlist(const char *path,
    if (!string_is_empty(entry->path))
    {
       union string_list_elem_attr attr;
-      char core_display_name[PATH_MAX_LENGTH];
+      char core_display_name[NAME_MAX_LENGTH];
+      char core_name[NAME_MAX_LENGTH];
       char core_path[PATH_MAX_LENGTH];
-      char core_name[PATH_MAX_LENGTH];
-      struct string_list
-         *str_list         = NULL;
+      struct string_list *str_list         = NULL;
 
       core_display_name[0] = '\0';
       core_path[0]         = '\0';
@@ -6468,10 +6528,8 @@ static int action_ok_netplay_connect_room(const char *path, const char *label,
       retroarch_menu_running_finished(false);
    }
    else
-   {
       task_push_netplay_crc_scan(room->gamecrc, room->gamename,
          room->subsystem_name, room->corename, hostname);
-   }
 
    return 0;
 }
@@ -6634,20 +6692,21 @@ static int action_ok_push_netplay_refresh_lan(const char *path,
 static int action_ok_push_netplay_kick(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   char msg[256];
+   size_t _len;
+   char msg[128];
    netplay_client_info_t client;
 
    client.id = (int)strtol(label, NULL, 10);
    strlcpy(client.name, path, sizeof(client.name));
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_KICK_CLIENT, &client))
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_KICKED_CLIENT_S), client.name);
    else
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S), client.name);
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
@@ -6656,20 +6715,21 @@ static int action_ok_push_netplay_kick(const char *path, const char *label,
 static int action_ok_push_netplay_ban(const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-   char msg[256];
+   size_t _len;
+   char msg[128];
    netplay_client_info_t client;
 
    client.id = (int)strtol(label, NULL, 10);
    strlcpy(client.name, path, sizeof(client.name));
 
    if (netplay_driver_ctl(RARCH_NETPLAY_CTL_BAN_CLIENT, &client))
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_BANNED_CLIENT_S), client.name);
    else
-      snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
          msg_hash_to_str(MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S), client.name);
 
-   runloop_msg_queue_push(msg, 1, 180, true, NULL,
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
@@ -6721,19 +6781,23 @@ static int action_ok_push_downloads_dir(const char *path,
 int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   menu_entry_t entry;
+#if IOS
+   char tmp[PATH_MAX_LENGTH];
+#endif
    char current_value[PATH_MAX_LENGTH];
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_handle_t *menu        = menu_st->driver_data;
-
-   current_value[0] = '\0';
 
    if (!menu)
       return -1;
 
    /* Start browsing from current directory */
-   get_current_menu_value(menu_st, current_value, sizeof(current_value));
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+   strlcpy(current_value, entry.value, sizeof(current_value));
 #if IOS
-   char tmp[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
    if (!path_is_directory(tmp))
       current_value[0] = '\0';
@@ -6741,7 +6805,6 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
    if (!path_is_directory(current_value))
       current_value[0] = '\0';
 #endif
-
    filebrowser_set_type(FILEBROWSER_SELECT_DIR);
    strlcpy(menu->filebrowser_label, label, sizeof(menu->filebrowser_label));
    return generic_action_ok_displaylist_push(
@@ -6845,9 +6908,8 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-
 static int generic_action_ok_dropdown_setting(const char *path, const char *label,
-      unsigned type, size_t idx)
+      unsigned type, size_t idx, size_t entry_idx)
 {
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(label);
    rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
@@ -6910,12 +6972,6 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
-static int action_ok_push_dropdown_setting(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   return generic_action_ok_dropdown_setting(path, label, type, idx);
-}
-
 static int action_ok_push_dropdown_item(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -6925,22 +6981,24 @@ static int action_ok_push_dropdown_item(const char *path,
 int action_cb_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char str[100];
-   char *pch            = NULL;
+   char *save           = NULL;
+   char *tok            = NULL;
    unsigned width       = 0;
    unsigned height      = 0;
    float refreshrate    = 0.0f;
+   char *str            = path ? strdup(path) : NULL;
 
-   strlcpy(str, path, sizeof(str));
-   pch            = strtok(str, "x");
-   if (pch)
-      width       = (unsigned)strtoul(pch, NULL, 0);
-   pch            = strtok(NULL, " ");
-   if (pch)
-      height      = (unsigned)strtoul(pch, NULL, 0);
-   pch            = strtok(NULL, "(");
-   if (pch)
-      refreshrate = (float)strtod(pch, NULL);
+   if (!str)
+      return -1;
+
+   if ((tok = strtok_r(str, "x", &save)))
+      width       = (unsigned)strtoul(tok, NULL, 0);
+   if ((tok = strtok_r(NULL, " ", &save)))
+      height      = (unsigned)strtoul(tok, NULL, 0);
+   if ((tok = strtok_r(NULL, "(", &save)))
+      refreshrate = (float)strtod(tok, NULL);
+
+   free(str);
 
    if (video_display_server_set_resolution(width, height,
          floor(refreshrate), refreshrate, 0, 0, 0, 0))
@@ -7067,8 +7125,8 @@ static int action_ok_push_dropdown_item_playlist_default_core(
       return -1;
 
    /* Handle N/A or empty path input */
-   if (string_is_empty(core_name) ||
-       string_is_equal(core_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
+   if (   string_is_empty(core_name)
+       || string_is_equal(core_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
    {
       playlist_set_default_core_path(playlist, FILE_PATH_DETECT);
       playlist_set_default_core_name(playlist, FILE_PATH_DETECT);
@@ -7232,9 +7290,9 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
 static int action_ok_push_dropdown_item_audio_device(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path        = NULL;
    enum msg_hash_enums enum_idx;
    rarch_setting_t     *setting;
+   const char *menu_path        = NULL;
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
    enum_idx = (enum msg_hash_enums)atoi(menu_path);
    setting  = menu_setting_find_enum(enum_idx);
@@ -7304,6 +7362,7 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
 static int action_ok_push_dropdown_item_input_select_reserved_device(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+    unsigned user;
     const char *no_device;
     const char *reserved_device_name;
     enum msg_hash_enums enum_idx;
@@ -7311,7 +7370,6 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
     settings_t *settings         = config_get_ptr();
     const char *menu_path        = NULL;
     struct menu_state *menu_st   = menu_state_get_ptr();
-    unsigned user;
 
     menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
     enum_idx = (enum msg_hash_enums)atoi(menu_path);
@@ -7347,7 +7405,8 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
           }
        }
     }
-    settings->modified = true;
+
+    settings->flags |= SETTINGS_FLG_MODIFIED;
 
     command_event(CMD_EVENT_REINIT, NULL);
 
@@ -7405,7 +7464,7 @@ static int action_ok_push_dropdown_item_input_select_physical_keyboard(const cha
         * now or already working as the physical keyboard.
         */
     }
-    settings->modified = true;
+    settings->flags |= SETTINGS_FLG_MODIFIED;
 
     command_event(CMD_EVENT_REINIT, NULL);
 
@@ -7493,8 +7552,7 @@ static int action_ok_push_dropdown_item_netplay_mitm_server(const char *path,
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string,
-           label, setting->size);
+   strlcpy(setting->value.target.string, label, setting->size);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7723,6 +7781,7 @@ static int action_ok_video_resolution(const char *path,
 
    if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
+      size_t _len;
       char msg[128];
       msg[0] = '\0';
 
@@ -7732,21 +7791,21 @@ static int action_ok_video_resolution(const char *path,
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         snprintf(msg, sizeof(msg),
+         _len = snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
       else
 #endif
       {
          if (!string_is_empty(desc))
-            snprintf(msg, sizeof(msg),
+            _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC),
                   width, height, desc);
          else
-            snprintf(msg, sizeof(msg),
+            _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC),
                   width, height);
       }
-      runloop_msg_queue_push(msg, 1, 100, true, NULL,
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -7925,7 +7984,6 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_disk_image_append(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char image_path[PATH_MAX_LENGTH];
    rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_handle_t *menu           = menu_st->driver_data;
@@ -7936,8 +7994,6 @@ static int action_ok_disk_image_append(const char *path,
    bool audio_enable_menu_ok     = settings->bools.audio_enable_menu_ok;
 #endif
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
-
-   image_path[0]                 = '\0';
 
    if (!menu)
       return -1;
@@ -7953,15 +8009,26 @@ static int action_ok_disk_image_append(const char *path,
 
    if (!string_is_empty(menu_path))
    {
-      if (!string_is_empty(path))
+      char image_path[PATH_MAX_LENGTH];
+      bool is_dir = (entry_idx == FILE_TYPE_USE_DIRECTORY
+            && string_is_equal(label,
+                     msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY)));
+      if (is_dir)
+      {
+         size_t past_slash;
+         strlcpy(image_path, menu_path, sizeof(image_path));
+         past_slash = fill_pathname_slash(image_path, sizeof(image_path));
+         if (past_slash > 1)
+            image_path[past_slash - 1] = '\0';
+      }
+      else if (!string_is_empty(path))
          fill_pathname_join_special(image_path,
                menu_path, path, sizeof(image_path));
       else
          strlcpy(image_path, menu_path, sizeof(image_path));
+      /* Append image */
+      command_event(CMD_EVENT_DISK_APPEND_IMAGE, image_path);
    }
-
-   /* Append image */
-   command_event(CMD_EVENT_DISK_APPEND_IMAGE, image_path);
 
    /* In all cases, return to the disk options menu */
    menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_DISK_OPTIONS), 0);
@@ -8024,21 +8091,17 @@ static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
       else if (!task_push_netplay_content_reload(line))
       {
 #ifdef HAVE_DYNAMIC
+         const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED);
          command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
          netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
          command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)line);
-
-         runloop_msg_queue_push(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-            1, 480, true, NULL,
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
-         runloop_msg_queue_push(
-            msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
-            1, 480, true, NULL,
+         const char *_msg = msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
-
          menu_input_dialog_end();
       }
       else
@@ -8186,14 +8249,13 @@ int action_ok_core_lock(const char *path,
             sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
       RARCH_ERR("%s\n", msg);
 
-      runloop_msg_queue_push(msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       ret = -1;
    }
@@ -8215,7 +8277,6 @@ int action_ok_core_set_standalone_exempt(const char *path,
 {
    const char *core_path = path;
    bool exempt           = false;
-   int ret               = 0;
 
    if (string_is_empty(core_path))
       return -1;
@@ -8249,20 +8310,18 @@ int action_ok_core_set_standalone_exempt(const char *path,
             sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
       RARCH_ERR("%s\n", msg);
 
-      runloop_msg_queue_push(
-         msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-      ret = -1;
+      return -1;
    }
 
-   return ret;
+   return 0;
 }
 
 static int action_ok_core_delete(const char *path,
@@ -8296,12 +8355,10 @@ static int action_ok_core_delete(const char *path,
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_DELETE_DISABLED), sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
-      runloop_msg_queue_push(
-         msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       /* We do not consider this an 'error' - we are
        * merely telling the user that this operation
@@ -8392,18 +8449,19 @@ static int action_ok_pl_content_thumbnails(const char *path,
 
    if (settings)
    {
-      playlist_config_t playlist_config;
       const char *path_dir_playlist       = settings->paths.directory_playlist;
-      const char *path_dir_thumbnails     = settings->paths.directory_thumbnails;
-
-      playlist_config.capacity            = COLLECTION_SIZE;
-      playlist_config.old_format          = settings->bools.playlist_use_old_format;
-      playlist_config.compress            = settings->bools.playlist_compression;
-      playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
 
       if (!string_is_empty(path_dir_playlist))
       {
+         playlist_config_t playlist_config;
          char playlist_path[PATH_MAX_LENGTH];
+         const char *path_dir_thumbnails     = settings->paths.directory_thumbnails;
+
+         playlist_config.capacity            = COLLECTION_SIZE;
+         playlist_config.old_format          = settings->bools.playlist_use_old_format;
+         playlist_config.compress            = settings->bools.playlist_compression;
+         playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+
          fill_pathname_join_special(
                playlist_path, path_dir_playlist, label,
                sizeof(playlist_path));
@@ -8421,23 +8479,15 @@ static int action_ok_pl_content_thumbnails(const char *path,
 static int action_ok_pl_entry_content_thumbnails(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char system[PATH_MAX_LENGTH];
    struct menu_state *menu_st  = menu_state_get_ptr();
    playlist_t *playlist        = playlist_get_cached();
    menu_handle_t *menu         = menu_st->driver_data;
-
-   system[0] = '\0';
-
    if (!playlist || !menu)
       return -1;
-
-   menu_driver_get_thumbnail_system(
-         menu_st->userdata, system, sizeof(system));
-
-   task_push_pl_entry_thumbnail_download(system,
+   task_push_pl_entry_thumbnail_download(
+         menu_st->thumbnail_path_data->system,
          playlist, menu->rpl_entry_selection_ptr,
          true, false);
-
    return 0;
 }
 #endif
@@ -8483,16 +8533,10 @@ static int action_ok_playlist_clean(const char *path,
 static int action_ok_playlist_refresh(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   enum manual_content_scan_playlist_refresh_status stat;
    playlist_config_t *playlist_config = NULL;
    playlist_t *playlist               = playlist_get_cached();
    settings_t *settings               = config_get_ptr();
-   bool scan_record_valid             = false;
-   const char *msg_prefix             = NULL;
-   const char *msg_subject            = NULL;
-   const char *log_text               = NULL;
-   char system_name[256];
-
-   system_name[0] = '\0';
 
    if (!playlist || !settings)
       return -1;
@@ -8502,91 +8546,94 @@ static int action_ok_playlist_refresh(const char *path,
    if (!playlist_config || string_is_empty(playlist_config->path))
       return -1;
 
-   /* Configure manual scan using playlist record */
-   switch (manual_content_scan_set_menu_from_playlist(playlist,
+   stat = manual_content_scan_set_menu_from_playlist(playlist,
          settings->paths.path_content_database,
-         settings->bools.show_hidden_files))
+         settings->bools.show_hidden_files);
+
+   if (stat != MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK)
    {
-      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_OK:
-         scan_record_valid = true;
-         break;
-      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR:
-         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR);
-         msg_subject = playlist_get_scan_content_dir(playlist);
-         log_text    = "[Playlist Refresh]: Invalid content directory: %s\n";
-         break;
-      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME:
-         {
-            const char *playlist_file = NULL;
-
-            if ((playlist_file = path_basename(playlist_config->path)))
-            {
-               strlcpy(system_name, playlist_file, sizeof(system_name));
-               path_remove_extension(system_name);
-            }
-
-            msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME);
-            msg_subject = system_name;
-            log_text    = "[Playlist Refresh]: Invalid system name: %s\n";
-         }
-         break;
-      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CORE:
-         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE);
-         msg_subject = playlist_get_default_core_name(playlist);
-         log_text    = "[Playlist Refresh]: Invalid core name: %s\n";
-         break;
-      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE:
-         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE);
-         msg_subject = playlist_get_scan_dat_file_path(playlist);
-         log_text    = "[Playlist Refresh]: Invalid arcade dat file: %s\n";
-         break;
-      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE:
-         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE);
-         msg_subject = playlist_get_scan_dat_file_path(playlist);
-         log_text    = "[Playlist Refresh]: Arcade dat file too large: %s\n";
-         break;
-      case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_MISSING_CONFIG:
-      default:
-         msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG);
-         msg_subject = path_basename(playlist_config->path);
-         log_text    = "[Playlist Refresh]: No scan record found: %s\n";
-         break;
-   }
-
-   /* Log errors in the event of an invalid
-    * scan record */
-   if (!scan_record_valid)
-   {
+      size_t _len;
       char msg[128];
+      char system_name[256];
+      const char *msg_prefix  = NULL;
+      const char *msg_subject = NULL;
+      const char *log_text    = NULL;
+
+      switch (stat)
+      {
+         case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CONTENT_DIR:
+            msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR);
+            msg_subject    = playlist_get_scan_content_dir(playlist);
+            log_text       = "[Playlist Refresh]: Invalid content directory: %s\n";
+            break;
+         case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_SYSTEM_NAME:
+            {
+               const char *playlist_file = NULL;
+               if ((playlist_file = path_basename(playlist_config->path)))
+                  fill_pathname(system_name, playlist_file, "",
+                        sizeof(system_name));
+               else
+                  system_name[0] = '\0';
+
+               msg_prefix  = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME);
+               msg_subject = system_name;
+               log_text    = "[Playlist Refresh]: Invalid system name: %s\n";
+            }
+            break;
+         case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_CORE:
+            msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE);
+            msg_subject    = playlist_get_default_core_name(playlist);
+            log_text       = "[Playlist Refresh]: Invalid core name: %s\n";
+            break;
+         case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_INVALID_DAT_FILE:
+            msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE);
+            msg_subject    = playlist_get_scan_dat_file_path(playlist);
+            log_text       = "[Playlist Refresh]: Invalid arcade dat file: %s\n";
+            break;
+         case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_DAT_FILE_TOO_LARGE:
+            msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE);
+            msg_subject    = playlist_get_scan_dat_file_path(playlist);
+            log_text       = "[Playlist Refresh]: Arcade dat file too large: %s\n";
+            break;
+         case MANUAL_CONTENT_SCAN_PLAYLIST_REFRESH_MISSING_CONFIG:
+         default:
+            msg_prefix     = msg_hash_to_str(MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG);
+            msg_subject    = path_basename(playlist_config->path);
+            log_text       = "[Playlist Refresh]: No scan record found: %s\n";
+            break;
+      }
+
+      /* Log errors in the event of an invalid
+       * scan record */
       if (string_is_empty(msg_subject))
          msg_subject = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
-      fill_pathname_join_special(msg, msg_prefix, msg_subject, sizeof(msg));
+      _len = fill_pathname_join_special(msg, msg_prefix, msg_subject, sizeof(msg));
       RARCH_ERR(log_text, msg_subject);
-      runloop_msg_queue_push(msg, 1, 150, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-
+      runloop_msg_queue_push(msg, _len, 1, 150, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       /* Even though this is a failure condition, we
-       * return 0 here to suppress any refreshing of
-       * the menu (this can appear ugly, depending
-       * on the active menu driver...) */
-      return 0;
+       * let it fall-through to 0 here to suppress
+       * any refreshing of the menu (this can appear
+       * ugly, depending on the active menu driver...) */
    }
+   else
+   {
+      /* Perform manual scan
+       * > Since we are refreshing the playlist,
+       *   additionally ensure that all pertinent
+       *   'playlist_config' parameters are synchronised
+       *   with the current settings struct */
+      playlist_config->capacity            = COLLECTION_SIZE;
+      playlist_config->old_format          = settings->bools.playlist_use_old_format;
+      playlist_config->compress            = settings->bools.playlist_compression;
+      playlist_config->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+      playlist_config_set_base_content_directory(playlist_config,
+            settings->bools.playlist_portable_paths ?
+            settings->paths.directory_menu_content : NULL);
 
-   /* Perform manual scan
-    * > Since we are refreshing the playlist,
-    *   additionally ensure that all pertinent
-    *   'playlist_config' parameters are synchronised
-    *   with the current settings struct */
-   playlist_config->capacity            = COLLECTION_SIZE;
-   playlist_config->old_format          = settings->bools.playlist_use_old_format;
-   playlist_config->compress            = settings->bools.playlist_compression;
-   playlist_config->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(playlist_config,
-         settings->bools.playlist_portable_paths ?
-               settings->paths.directory_menu_content : NULL);
-
-   task_push_manual_content_scan(playlist_config,
-         settings->paths.directory_playlist);
+      task_push_manual_content_scan(playlist_config,
+            settings->paths.directory_playlist);
+   }
    return 0;
 }
 
@@ -9243,7 +9290,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_DROPDOWN_SETTING_STRING_OPTIONS_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL:
          case MENU_SETTING_DROPDOWN_SETTING_FLOAT_ITEM_SPECIAL:
-            BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting);
+            BIND_ACTION_OK(cbs, generic_action_ok_dropdown_setting);
             break;
          case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_setting_uint_item_special);

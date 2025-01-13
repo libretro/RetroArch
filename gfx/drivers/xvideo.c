@@ -599,9 +599,10 @@ static void xv_calc_out_rect(bool keep_aspect,
    vp->full_width       = vp_width;
    vp->full_height      = vp_height;
 
+   /* TODO: Does xvideo have its origin in top left or bottom-left? Assuming top left. */
    if (scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height,
-            video_driver_get_aspect_ratio(), keep_aspect);
+           video_driver_get_aspect_ratio(), keep_aspect, true);
    else if (!keep_aspect)
    {
       vp->x      = 0;
@@ -610,38 +611,7 @@ static void xv_calc_out_rect(bool keep_aspect,
       vp->height = vp_height;
    }
    else
-   {
-      float desired_aspect = video_driver_get_aspect_ratio();
-      float device_aspect  = (float)vp_width / vp_height;
-
-      /* If the aspect ratios of screen and desired aspect ratio
-       * are sufficiently equal (floating point stuff),
-       * assume they are actually equal.
-       */
-      if (fabs(device_aspect - desired_aspect) < 0.0001)
-      {
-         vp->x       = 0;
-         vp->y       = 0;
-         vp->width   = vp_width;
-         vp->height  = vp_height;
-      }
-      else if (device_aspect > desired_aspect)
-      {
-         float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         vp->x       = vp_width * (0.5 - delta);
-         vp->y       = 0;
-         vp->width   = 2.0 * vp_width * delta;
-         vp->height  = vp_height;
-      }
-      else
-      {
-         float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         vp->x       = 0;
-         vp->y       = vp_height * (0.5 - delta);
-         vp->width   = vp_width;
-         vp->height  = 2.0 * vp_height * delta;
-      }
-   }
+      video_viewport_get_scaled_aspect(vp, vp_width, vp_height, true);
 }
 
 static void *xv_init(const video_info_t *video,
@@ -704,7 +674,7 @@ static void *xv_init(const video_info_t *video,
       else if (ret == XvBadAlloc)
          RARCH_ERR("[XVideo]: XvQueryAdaptors() failed to allocate memory.\n");
       else
-         RARCH_ERR("[XVideo]: Unkown error in XvQueryAdaptors().\n");
+         RARCH_ERR("[XVideo]: Unknown error in XvQueryAdaptors().\n");
 
       goto error;
    }

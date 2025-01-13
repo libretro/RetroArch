@@ -334,16 +334,6 @@ command_t* command_uds_new(void);
 
 bool command_network_send(const char *cmd_);
 
-#ifdef HAVE_CONFIGFILE
-bool command_event_save_config(
-      const char *config_path,
-      char *s, size_t len);
-#endif
-
-void command_event_undo_save_state(char *s, size_t len);
-
-void command_event_undo_load_state(char *s, size_t len);
-
 void command_event_set_mixer_volume(
       settings_t *settings,
       float gain);
@@ -381,10 +371,8 @@ void command_event_load_auto_state(void);
 void command_event_set_savestate_auto_index(
       settings_t *settings);
 
-void command_event_set_savestate_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      );
+int command_event_get_next_savestate_auto_index(
+      settings_t *settings);
 
 void command_event_set_replay_auto_index(
       settings_t *settings);

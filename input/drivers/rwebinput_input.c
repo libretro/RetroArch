@@ -81,7 +81,7 @@ typedef struct rwebinput_input
 } rwebinput_input_t;
 
 /* KeyboardEvent.keyCode has been deprecated for a while and doesn't have
- * separate left/right modifer codes, so we have to map string labels from
+ * separate left/right modifier codes, so we have to map string labels from
  * KeyboardEvent.code to retro keys */
 static const rwebinput_key_to_code_map_entry_t rwebinput_key_to_code_map[] =
 {
@@ -489,7 +489,7 @@ static int16_t rwebinput_input_state(
             }
             if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
-               if (rwebinput_is_pressed(rwebinput, 
+               if (rwebinput_is_pressed(rwebinput,
                         binds[port], idx, id_minus,
                         keyboard_mapping_blocked))
                   ret += -0x7fff;
@@ -507,26 +507,17 @@ static int16_t rwebinput_input_state(
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
          {
-            struct video_viewport vp;
-            rwebinput_mouse_state_t 
+            struct video_viewport vp    = {0};
+            rwebinput_mouse_state_t
                *mouse                   = &rwebinput->mouse;
-            const int edge_detect       = 32700;
-            bool screen                 = device == 
+            bool screen                 = device ==
                RARCH_DEVICE_POINTER_SCREEN;
-            bool inside                 = false;
             int16_t res_x               = 0;
             int16_t res_y               = 0;
             int16_t res_screen_x        = 0;
             int16_t res_screen_y        = 0;
 
-            vp.x                        = 0;
-            vp.y                        = 0;
-            vp.width                    = 0;
-            vp.height                   = 0;
-            vp.full_width               = 0;
-            vp.full_height              = 0;
-
-            if (!(video_driver_translate_coord_viewport_wrap(
+            if (!(video_driver_translate_coord_viewport_confined_wrap(
                         &vp, mouse->x, mouse->y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y)))
                return 0;
@@ -537,25 +528,16 @@ static int16_t rwebinput_input_state(
                res_y = res_screen_y;
             }
 
-            inside =    (res_x >= -edge_detect) 
-               && (res_y >= -edge_detect)
-               && (res_x <= edge_detect)
-               && (res_y <= edge_detect);
-
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_X:
-                  if (inside)
-                     return res_x;
-                  break;
+                  return res_x;
                case RETRO_DEVICE_ID_POINTER_Y:
-                  if (inside)
-                     return res_y;
-                  break;
+                  return res_y;
                case RETRO_DEVICE_ID_POINTER_PRESSED:
                   return !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
-               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                  return !inside;
+               case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                  return input_driver_pointer_is_offscreen(res_x, res_y);
                default:
                   break;
             }
@@ -586,7 +568,7 @@ static void rwebinput_process_keyboard_events(
    uint32_t character                       = 0;
    uint16_t mod                             = 0;
    const EmscriptenKeyboardEvent *key_event = &event->event;
-   bool keydown                             = 
+   bool keydown                             =
       event->type == EMSCRIPTEN_EVENT_KEYDOWN;
 
    /* a printable key: populate character field */
@@ -620,8 +602,8 @@ static void rwebinput_process_keyboard_events(
    if (translated_keycode != RETROK_UNKNOWN)
       input_keyboard_event(keydown, translated_keycode, character, mod,
          RETRO_DEVICE_KEYBOARD);
-   
-   if (     translated_keycode  < RETROK_LAST 
+
+   if (     translated_keycode  < RETROK_LAST
          && translated_keycode != RETROK_UNKNOWN)
       rwebinput->keys[translated_keycode] = keydown;
 }

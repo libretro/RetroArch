@@ -89,7 +89,7 @@ typedef struct
    unsigned char cur_track;
    char drive_letter[2];
    char cdrom_path[64];
-   char title[512];
+   char title[NAME_MAX_LENGTH];
    bool next;
 } task_cdrom_dump_state_t;
 
@@ -106,7 +106,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
       state->file        = NULL;
       state->output_file = NULL;
 
-      task_set_finished(task, true);
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
       RARCH_LOG("[CDROM]: Dump finished.\n");
 
@@ -139,11 +139,10 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          }
       case DUMP_STATE_WRITE_CUE:
          {
-            size_t _len;
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
             settings_t              *settings = config_get_ptr();
-            const char *directory_core_assets = settings 
+            const char *directory_core_assets = settings
                ? settings->paths.directory_core_assets : NULL;
             /* write cuesheet to a file */
             int64_t cue_size     = filestream_get_size(state->file);
@@ -159,11 +158,8 @@ static void task_cdrom_dump_handler(retro_task_t *task)
 
             filestream_close(state->file);
 
-            _len = strlcpy(cue_filename,
-                  state->title, sizeof(cue_filename));
-            strlcpy(cue_filename       + _len,
-                  ".cue",
-                  sizeof(cue_filename) - _len);
+            fill_pathname(cue_filename, state->title,
+                  ".cue", sizeof(cue_filename));
 
             fill_pathname_join_special(output_file,
                   directory_core_assets, cue_filename, sizeof(output_file));
@@ -257,7 +253,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
                char output_path[PATH_MAX_LENGTH];
                char track_filename[PATH_MAX_LENGTH];
                settings_t              *settings = config_get_ptr();
-               const char *directory_core_assets = settings 
+               const char *directory_core_assets = settings
                   ? settings->paths.directory_core_assets : NULL;
 
                track_filename[0] = '\0';

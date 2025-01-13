@@ -287,6 +287,7 @@ extern const struct softfilter_implementation *gameboy4x_get_implementation(soft
 extern const struct softfilter_implementation *dot_matrix_3x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *dot_matrix_4x_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *upscale_1_5x_get_implementation(softfilter_simd_mask_t simd);
+extern const struct softfilter_implementation *upscale_1_66x_fast_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *upscale_256x_320x240_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *picoscale_256x_320x240_get_implementation(softfilter_simd_mask_t simd);
 extern const struct softfilter_implementation *upscale_240x160_320x240_get_implementation(softfilter_simd_mask_t simd);
@@ -315,6 +316,7 @@ static const softfilter_get_implementation_t soft_plugs_builtin[] = {
    dot_matrix_3x_get_implementation,
    dot_matrix_4x_get_implementation,
    upscale_1_5x_get_implementation,
+   upscale_1_66x_fast_get_implementation,
    upscale_256x_320x240_get_implementation,
    picoscale_256x_320x240_get_implementation,
    upscale_240x160_320x240_get_implementation,
@@ -354,7 +356,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
       softfilter_get_implementation_t cb;
       const struct softfilter_implementation *impl = NULL;
       struct rarch_soft_plug *new_plugs            = NULL;
-      dylib_t lib                                  = 
+      dylib_t lib                                  =
          dylib_load(list->elems[i].data);
 
       if (!lib)
@@ -419,7 +421,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 {
    softfilter_simd_mask_t cpu_features = (softfilter_simd_mask_t)cpu_features_get();
 #ifdef HAVE_DYLIB
-   char basedir[PATH_MAX_LENGTH];
+   char basedir[DIR_MAX_LENGTH];
    char ext_name[16];
 #endif
    struct string_list *plugs     = NULL;
@@ -440,9 +442,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
          goto error;
 
-   plugs = dir_list_new(basedir, ext_name, false, false, false, false);
-
-   if (!plugs)
+   if (!(plugs = dir_list_new(basedir, ext_name, false, false, false, false)))
    {
       RARCH_ERR("[SoftFilter]: Could not build up string list...\n");
       goto error;
@@ -450,7 +450,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 #endif
    if (!append_softfilter_plugs(filt, plugs))
    {
-      RARCH_ERR("[SoftFitler]: Failed to append softfilter plugins...\n");
+      RARCH_ERR("[SoftFilter]: Failed to append softfilter plugins...\n");
       goto error;
    }
 
@@ -461,7 +461,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    if (!create_softfilter_graph(filt, in_pixel_format,
             max_width, max_height, cpu_features, threads))
    {
-      RARCH_ERR("[SoftFitler]: Failed to create softfilter graph...\n");
+      RARCH_ERR("[SoftFilter]: Failed to create softfilter graph...\n");
       goto error;
    }
 

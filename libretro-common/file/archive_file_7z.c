@@ -205,7 +205,7 @@ static int64_t sevenzip_file_read(
 
       for (i = 0; i < db.NumFiles; i++)
       {
-         size_t len;
+         size_t _len;
          char infile[PATH_MAX_LENGTH];
          size_t offset                = 0;
          size_t outSizeProcessed      = 0;
@@ -215,14 +215,14 @@ static int64_t sevenzip_file_read(
          if (SzArEx_IsDir(&db, i))
             continue;
 
-         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+         _len = SzArEx_GetFileNameUtf16(&db, i, NULL);
 
-         if (len > temp_size)
+         if (_len > temp_size)
          {
             if (temp)
                free(temp);
-            temp_size = len;
-            temp = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
+            temp_size = _len;
+            temp      = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
 
             if (temp == 0)
             {
@@ -412,14 +412,19 @@ error:
 }
 
 static int sevenzip_parse_file_iterate_step_internal(
-      struct sevenzip_context_t *sevenzip_context, char *filename,
-      const uint8_t **cdata, unsigned *cmode,
-      uint32_t *size, uint32_t *csize, uint32_t *checksum,
-      unsigned *payback, struct archive_extract_userdata *userdata)
+      struct sevenzip_context_t *sevenzip_context,
+      char *s,
+      const uint8_t **cdata,
+      unsigned *cmode,
+      uint32_t *size,
+      uint32_t *csize,
+      uint32_t *checksum,
+      unsigned *payback,
+      struct archive_extract_userdata *userdata)
 {
    if (sevenzip_context->parse_index < sevenzip_context->db.NumFiles)
    {
-      size_t len = SzArEx_GetFileNameUtf16(&sevenzip_context->db,
+      size_t _len = SzArEx_GetFileNameUtf16(&sevenzip_context->db,
             sevenzip_context->parse_index, NULL);
       uint64_t compressed_size = 0;
 
@@ -431,12 +436,12 @@ static int sevenzip_parse_file_iterate_step_internal(
          sevenzip_context->packIndex++;
       }
 
-      if (len < PATH_MAX_LENGTH &&
-          !SzArEx_IsDir(&sevenzip_context->db, sevenzip_context->parse_index))
+      if (   (_len < PATH_MAX_LENGTH)
+          && !SzArEx_IsDir(&sevenzip_context->db, sevenzip_context->parse_index))
       {
          char infile[PATH_MAX_LENGTH];
-         SRes res                     = SZ_ERROR_FAIL;
-         uint16_t *temp               = (uint16_t*)malloc(len * sizeof(uint16_t));
+         SRes res       = SZ_ERROR_FAIL;
+         uint16_t *temp = (uint16_t*)malloc(_len * sizeof(uint16_t));
 
          if (!temp)
             return -1;
@@ -456,7 +461,7 @@ static int sevenzip_parse_file_iterate_step_internal(
          if (res != SZ_OK)
             return -1;
 
-         strlcpy(filename, infile, PATH_MAX_LENGTH);
+         strlcpy(s, infile, PATH_MAX_LENGTH);
 
          *cmode    = 0; /* unused for 7zip */
          *checksum = sevenzip_context->db.CRCs.Vals[sevenzip_context->parse_index];

@@ -87,8 +87,8 @@ enum cheat_rumble_type
 struct item_cheat
 {
    /* Clock value for when rumbling should stop */
-   retro_time_t rumble_primary_end_time; 
-   retro_time_t rumble_secondary_end_time; 
+   retro_time_t rumble_primary_end_time;
+   retro_time_t rumble_secondary_end_time;
 
    char *desc;
    char *code;
@@ -128,7 +128,7 @@ struct item_cheat
    unsigned int rumble_prev_value;
    unsigned int rumble_initialized;
    /* 0-15 for specific port, anything else means "all ports" */
-   unsigned int rumble_port; 
+   unsigned int rumble_port;
    unsigned int rumble_primary_strength; /* 0-65535 */
    unsigned int rumble_primary_duration; /* in milliseconds */
    unsigned int rumble_secondary_strength; /* 0-65535 */
@@ -141,7 +141,7 @@ struct item_cheat
     * repeat_add_to_address - every iteration of repeat_count will have this amount added to item_cheat.address
     *
     * Note that repeat_add_to_address represents the number of "memory_search_size" blocks to add to
-    * item_cheat.address.  If memory_seach_size is 16-bits and repeat_add_to_address is 2, then item_cheat.address
+    * item_cheat.address.  If memory_search_size is 16-bits and repeat_add_to_address is 2, then item_cheat.address
     * will be increased by 4 bytes 2*(16-bits) for every iteration.
     *
     * This is a cheating structure used for codes like unlocking all levels, giving yourself 1 of every item,etc.

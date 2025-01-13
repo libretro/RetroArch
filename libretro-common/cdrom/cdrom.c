@@ -62,6 +62,7 @@
 #define CDROM_CUE_TRACK_BYTES 107
 #define CDROM_MAX_SENSE_BYTES 16
 #define CDROM_MAX_RETRIES 10
+#define CDROM_MIN_BUFSIZE 9
 
 typedef enum
 {
@@ -75,11 +76,11 @@ void cdrom_lba_to_msf(unsigned lba, unsigned char *min, unsigned char *sec, unsi
    if (!min || !sec || !frame)
       return;
 
-   *frame = lba % 75;
-   lba /= 75;
-   *sec = lba % 60;
-   lba /= 60;
-   *min = lba;
+   *frame  = lba % 75;
+   lba    /= 75;
+   *sec    = lba % 60;
+   lba    /= 60;
+   *min    = lba;
 }
 
 unsigned cdrom_msf_to_lba(unsigned char min, unsigned char sec, unsigned char frame)
@@ -92,9 +93,9 @@ void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame)
    if (!min || !sec || !frame)
       return;
 
-   *min = (*frame == 74) ? (*sec < 59 ? *min : *min + 1) : *min;
-   *sec = (*frame == 74) ? (*sec < 59 ? (*sec + 1) : 0) : *sec;
-   *frame = (*frame < 74) ? (*frame + 1) : 0;
+   *min   = (*frame == 74) ? (*sec < 59 ? *min : *min + 1) : *min;
+   *sec   = (*frame == 74) ? (*sec < 59 ? (*sec + 1) : 0) : *sec;
+   *frame = (*frame  < 74) ? (*frame + 1) : 0;
 }
 
 #ifdef CDROM_DEBUG
@@ -113,16 +114,14 @@ static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
       return;
    }
 
-   key = sense[2] & 0xF;
-   asc = sense[12];
+   key  = sense[2] & 0xF;
+   asc  = sense[12];
    ascq = sense[13];
 
    printf("[CDROM] Sense Data: ");
 
    for (i = 0; i < MIN(len, 16); i++)
-   {
       printf("%02X ", sense[i]);
-   }
 
    printf("\n");
 
@@ -262,10 +261,10 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
    DWORD ioctl_bytes;
    BOOL ioctl_rv;
 #ifdef CDROM_DEBUG
-   clock_t t = clock();
-   const char *extra = " ";
-   static unsigned char last_min = 0;
-   static unsigned char last_sec = 0;
+   clock_t t                       = clock();
+   const char *extra               = " ";
+   static unsigned char last_min   = 0;
+   static unsigned char last_sec   = 0;
    static unsigned char last_frame = 0;
 
    unsigned lba_cur = cdrom_msf_to_lba(last_min, last_sec, last_frame);
@@ -279,7 +278,7 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
 
    memset(&sptd, 0, sizeof(sptd));
 
-   sptd.s.Length = sizeof(sptd.s);
+   sptd.s.Length    = sizeof(sptd.s);
    sptd.s.CdbLength = cmd_len;
 
    switch (dir)
@@ -296,11 +295,11 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
          break;
    }
 
-   sptd.s.TimeOutValue = 5;
-   sptd.s.DataBuffer = buf;
+   sptd.s.TimeOutValue       = 5;
+   sptd.s.DataBuffer         = buf;
    sptd.s.DataTransferLength = len;
-   sptd.s.SenseInfoLength = sizeof(sptd.sense);
-   sptd.s.SenseInfoOffset = offsetof(struct sptd_with_sense, sense);
+   sptd.s.SenseInfoLength    = sizeof(sptd.sense);
+   sptd.s.SenseInfoOffset    = offsetof(struct sptd_with_sense, sense);
 
    memcpy(sptd.s.Cdb, cmd, cmd_len);
 
@@ -320,8 +319,8 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
       fflush(stdout);
    }
 
-   last_min = cmd[3];
-   last_sec = cmd[4];
+   last_min   = cmd[3];
+   last_sec   = cmd[4];
    last_frame = cmd[5];
    increment_msf(&last_min, &last_sec, &last_frame);
 #endif
@@ -336,8 +335,8 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
 #if defined(__linux__) && !defined(ANDROID)
 static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, unsigned char *sense, size_t sense_len)
 {
-   sg_io_hdr_t sgio = {0};
    int rv;
+   sg_io_hdr_t sgio = {0};
 
    switch (dir)
    {
@@ -354,13 +353,13 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
    }
 
    sgio.interface_id = 'S';
-   sgio.cmd_len = cmd_len;
-   sgio.cmdp = cmd;
-   sgio.dxferp = buf;
-   sgio.dxfer_len = len;
-   sgio.sbp = sense;
-   sgio.mx_sb_len = sense_len;
-   sgio.timeout = 5000;
+   sgio.cmd_len      = cmd_len;
+   sgio.cmdp         = cmd;
+   sgio.dxferp       = buf;
+   sgio.dxfer_len    = len;
+   sgio.sbp          = sense;
+   sgio.mx_sb_len    = sense_len;
+   sgio.timeout      = 5000;
 
    rv = ioctl(fileno(stream->fp), SG_IO, &sgio);
 
@@ -371,7 +370,8 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
 }
 #endif
 
-static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir, void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
+static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir,
+      void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
    unsigned char *xfer_buf = NULL;
    unsigned char *xfer_buf_pos = xfer_buf;
@@ -383,7 +383,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
    size_t copied_bytes = 0;
    bool read_cd = false;
 
-   if (!cmd || cmd_len == 0)
+   if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
 
    if (cmd[0] == 0xBE || cmd[0] == 0xB9)
@@ -401,7 +401,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
       padded_req_bytes = len + skip;
    }
 
-   xfer_buf = (unsigned char*)memalign_alloc(4096, padded_req_bytes);
+   xfer_buf     = (unsigned char*)memalign_alloc(4096, padded_req_bytes);
    xfer_buf_pos = xfer_buf;
 
    if (!xfer_buf)
@@ -574,88 +574,62 @@ retry:
    return rv;
 }
 
-static const char* get_profile(unsigned short profile)
+static const char *cdrom_get_profile(unsigned short profile)
 {
    switch (profile)
    {
       case 2:
          return "Removable disk";
-         break;
       case 8:
          return "CD-ROM";
-         break;
       case 9:
          return "CD-R";
-         break;
       case 0xA:
          return "CD-RW";
-         break;
       case 0x10:
          return "DVD-ROM";
-         break;
       case 0x11:
          return "DVD-R Sequential Recording";
-         break;
       case 0x12:
          return "DVD-RAM";
-         break;
       case 0x13:
          return "DVD-RW Restricted Overwrite";
-         break;
       case 0x14:
          return "DVD-RW Sequential recording";
-         break;
       case 0x15:
          return "DVD-R Dual Layer Sequential Recording";
-         break;
       case 0x16:
          return "DVD-R Dual Layer Jump Recording";
-         break;
       case 0x17:
          return "DVD-RW Dual Layer";
-         break;
       case 0x1A:
          return "DVD+RW";
-         break;
       case 0x1B:
          return "DVD+R";
-         break;
       case 0x2A:
          return "DVD+RW Dual Layer";
-         break;
       case 0x2B:
          return "DVD+R Dual Layer";
-         break;
       case 0x40:
          return "BD-ROM";
-         break;
       case 0x41:
          return "BD-R SRM";
-         break;
       case 0x42:
          return "BD-R RRM";
-         break;
       case 0x43:
          return "BD-RE";
-         break;
       case 0x50:
          return "HD DVD-ROM";
-         break;
       case 0x51:
          return "HD DVD-R";
-         break;
       case 0x52:
          return "HD DVD-RAM";
-         break;
       case 0x53:
          return "HD DVD-RW";
-         break;
       case 0x58:
          return "HD DVD-R Dual Layer";
-         break;
       case 0x5A:
          return "HD DVD-RW Dual Layer";
-         break;
       default:
          break;
    }
@@ -663,9 +637,10 @@ static const char* get_profile(unsigned short profile)
    return "Unknown";
 }
 
+/* TODO/FIXME - sense never used here? */
 int cdrom_get_sense(libretro_vfs_implementation_file *stream, unsigned char *sense, size_t len)
 {
-   unsigned char cdb[] = {0x3, 0, 0, 0, 0xFC, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x3, 0, 0, 0, 0xFC, 0};
    unsigned char buf[0xFC] = {0};
    int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
 
@@ -820,7 +795,7 @@ void cdrom_get_current_config_profiles(libretro_vfs_implementation_file *stream)
    {
       unsigned short profile = (buf[8 + (4 * (i + 1))] << 8) | buf[8 + (4 * (i + 1)) + 1];
 
-      printf("[CDROM] Profile Number: %04X (%s) ", profile, get_profile(profile));
+      printf("[CDROM] Profile Number: %04X (%s) ", profile, cdrom_get_profile(profile));
 
       if (buf[8 + (4 * (i + 1)) + 2] & 1)
          printf("(current)\n");
@@ -892,7 +867,7 @@ void cdrom_get_current_config_core(libretro_vfs_implementation_file *stream)
    printf("[CDROM] Physical Interface Standard: %u (%s)\n", intf_std, intf_std_name);
 }
 
-int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf, size_t len)
+int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, size_t len)
 {
    /* MMC Command: READ TOC/PMA/ATIP */
    unsigned char cdb[] = {0x43, 0x2, 0x2, 0, 0, 0, 0x1, 0x9, 0x30, 0};
@@ -904,18 +879,18 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
 #endif
    int rv;
 
-   if (!buf)
+   if (!s)
       return 1;
 
-   rv = cdrom_send_command(stream, DIRECTION_IN, buf, len, cdb, sizeof(cdb), 0);
+   rv = cdrom_send_command(stream, DIRECTION_IN, s, len, cdb, sizeof(cdb), 0);
 
    if (rv)
      return 1;
 
 #ifdef CDROM_DEBUG
-   data_len = buf[0] << 8 | buf[1];
-   first_session = buf[2];
-   last_session = buf[3];
+   data_len      = s[0] << 8 | s[1];
+   first_session = s[2];
+   last_session  = s[3];
 
    printf("[CDROM] Data Length: %d\n", data_len);
    printf("[CDROM] First Session: %d\n", first_session);
@@ -923,14 +898,16 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf
 
    for (i = 0; i < (data_len - 2) / 11; i++)
    {
-      unsigned char session_num = buf[4 + (i * 11) + 0];
-      unsigned char adr = (buf[4 + (i * 11) + 1] >> 4) & 0xF;
-      /*unsigned char control = buf[4 + (i * 11) + 1] & 0xF;*/
-      unsigned char tno = buf[4 + (i * 11) + 2];
-      unsigned char point = buf[4 + (i * 11) + 3];
-      unsigned char pmin = buf[4 + (i * 11) + 8];
-      unsigned char psec = buf[4 + (i * 11) + 9];
-      unsigned char pframe = buf[4 + (i * 11) + 10];
+      unsigned char session_num = s[4 + (i * 11) + 0];
+      unsigned char adr         = (s[4 + (i * 11) + 1] >> 4) & 0xF;
+#if 0
+      unsigned char control     = s[4 + (i * 11) + 1] & 0xF;
+#endif
+      unsigned char tno         = s[4 + (i * 11) + 2];
+      unsigned char point       = s[4 + (i * 11) + 3];
+      unsigned char pmin        = s[4 + (i * 11) + 8];
+      unsigned char psec        = s[4 + (i * 11) + 9];
+      unsigned char pframe      = s[4 + (i * 11) + 10];
 
       /*printf("i %d control %d adr %d tno %d point %d: ", i, control, adr, tno, point);*/
       /* why is control always 0? */
@@ -977,9 +954,8 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
 
    cdb[5] = track;
 
-   rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
-
-   if (rv)
+   if ((rv = cdrom_send_command(stream, DIRECTION_IN, buf,
+         sizeof(buf), cdb, sizeof(cdb), 0)))
      return 1;
 
    memcpy(&lba, buf + 8, 4);
@@ -1158,10 +1134,10 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 }
 
 /* needs 32 bytes for full vendor, product and version */
-int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int len, bool *is_cdrom)
+int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *s, size_t len, bool *is_cdrom)
 {
    /* MMC Command: INQUIRY */
-   unsigned char cdb[] = {0x12, 0, 0, 0, 0xff, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x12, 0, 0, 0, 0xff, 0};
    unsigned char buf[256] = {0};
    int rv = cdrom_send_command(stream, DIRECTION_IN, buf, sizeof(buf), cdb, sizeof(cdb), 0);
    bool cdrom = false;
@@ -1169,22 +1145,17 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int
    if (rv)
       return 1;
 
-   if (model && len >= 32)
+   if (s && len >= 32)
    {
-      memset(model, 0, len);
-
+      memset(s, 0, len);
       /* vendor */
-      memcpy(model, buf + 8, 8);
-
-      model[8] = ' ';
-
+      memcpy(s, buf + 8, 8);
+      s[8] = ' ';
       /* product */
-      memcpy(model + 9, buf + 16, 16);
-
-      model[25] = ' ';
-
+      memcpy(s + 9, buf + 16, 16);
+      s[25] = ' ';
       /* version */
-      memcpy(model + 26, buf + 32, 4);
+      memcpy(s + 26, buf + 32, 4);
    }
 
    cdrom = (buf[0] == 5);
@@ -1193,7 +1164,7 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *model, int
       *is_cdrom = true;
 
 #ifdef CDROM_DEBUG
-   printf("[CDROM] Device Model: %s (is CD-ROM? %s)\n", model, (cdrom ? "yes" : "no"));
+   printf("[CDROM] Device Model: %s (is CD-ROM? %s)\n", s, (cdrom ? "yes" : "no"));
 #endif
    return 0;
 }
@@ -1248,7 +1219,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t 
 int cdrom_stop(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
-   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x0, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1B, 0, 0, 0, 0x0, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
@@ -1265,7 +1236,7 @@ int cdrom_stop(libretro_vfs_implementation_file *stream)
 int cdrom_unlock(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: PREVENT ALLOW MEDIUM REMOVAL */
-   unsigned char cdb[] = {0x1E, 0, 0, 0, 0x2, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1E, 0, 0, 0, 0x2, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
@@ -1294,7 +1265,7 @@ int cdrom_unlock(libretro_vfs_implementation_file *stream)
 int cdrom_open_tray(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
-   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x2, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1B, 0, 0, 0, 0x2, 0};
    int rv;
 
    cdrom_unlock(stream);
@@ -1316,7 +1287,7 @@ int cdrom_open_tray(libretro_vfs_implementation_file *stream)
 int cdrom_close_tray(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: START STOP UNIT */
-   unsigned char cdb[] = {0x1B, 0, 0, 0, 0x3, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x1B, 0, 0, 0, 0x3, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
@@ -1401,7 +1372,7 @@ struct string_list* cdrom_get_available_drives(void)
          struct string_list mods = {0};
 
          string_list_initialize(&mods);
-         
+
          if (string_split_noalloc(&mods, buf, "\n"))
          {
             for (i = 0; i < (int)mods.size; i++)
@@ -1495,7 +1466,7 @@ struct string_list* cdrom_get_available_drives(void)
 bool cdrom_is_media_inserted(libretro_vfs_implementation_file *stream)
 {
    /* MMC Command: TEST UNIT READY */
-   unsigned char cdb[] = {0x00, 0, 0, 0, 0, 0};
+   unsigned char cdb[CDROM_MIN_BUFSIZE] = {0x00, 0, 0, 0, 0, 0};
    int rv = cdrom_send_command(stream, DIRECTION_NONE, NULL, 0, cdb, sizeof(cdb), 0);
 
 #ifdef CDROM_DEBUG
@@ -1685,46 +1656,52 @@ bool cdrom_has_atip(libretro_vfs_implementation_file *stream)
    return true;
 }
 
-void cdrom_device_fillpath(char *path, size_t len, char drive, unsigned char track, bool is_cue)
+size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char track, bool is_cue)
 {
-   if (!path || len == 0)
-      return;
-   if (is_cue)
+   if (s && len > 0)
    {
+      if (is_cue)
+      {
 #ifdef _WIN32
-      size_t pos = strlcpy(path, "cdrom://", len);
-      if (len > pos)
-         path[pos++] = drive;
-      pos = strlcat(path, ":/drive.cue", len);
+         size_t _len = strlcpy(s, "cdrom://", len);
+         if (len > _len)
+            s[_len++] = drive;
+         _len += strlcpy(s + _len, ":/drive.cue", len - _len);
+         return _len;
 #else
 #ifdef __linux__
-      size_t pos = strlcpy(path, "cdrom://drive", len);
-      if (len > pos + 1)
-      {
-         path[pos++] = drive;
-         path[pos]   = '\0';
+         size_t _len = strlcpy(s, "cdrom://drive", len);
+         if (len > _len + 1)
+         {
+            s[_len++] = drive;
+            s[_len]   = '\0';
+         }
+         _len += strlcpy(s + _len, ".cue", len - _len);
+         return _len;
+#endif
+#endif
       }
-      pos = strlcat(path, ".cue", len);
-#endif
-#endif
-   }
-   else
-   {
+      else
+      {
 #ifdef _WIN32
-      size_t pos = strlcpy(path, "cdrom://", len);
-      if (len > pos + 1)
-      {
-         path[pos++] = drive;
-         path[pos]   = '\0';
-      }
-      pos += snprintf(path + pos, len - pos, ":/drive-track%02d.bin", track);
+         size_t _len = strlcpy(s, "cdrom://", len);
+         if (len > _len + 1)
+         {
+            s[_len++] = drive;
+            s[_len]   = '\0';
+         }
+         _len += snprintf(s + _len, len - _len, ":/drive-track%02d.bin", track);
+         return _len;
 #else
 #ifdef __linux__
-      size_t pos = strlcpy(path, "cdrom://drive", len);
-      if (len > pos)
-         path[pos++] = drive;
-      pos += snprintf(path + pos, len - pos, "-track%02d.bin", track);
+         size_t _len = strlcpy(s, "cdrom://drive", len);
+         if (len > _len)
+            s[_len++] = drive;
+         _len += snprintf(s + _len, len - _len, "-track%02d.bin", track);
+         return _len;
 #endif
 #endif
+      }
    }
+   return 0;
 }
