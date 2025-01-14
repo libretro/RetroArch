@@ -216,8 +216,15 @@ net_driver_state_t *networking_state_get_ptr(void)
    return &networking_driver_st;
 }
 
-static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info);
+static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info, bool force_capture_achievements);
 static bool netplay_process_savestate(retro_ctx_serialize_info_t* serial_info);
+
+/* Align to 8-byte boundary */
+#define CONTENT_ALIGN_SIZE(size) ((((size) + 7) & ~7))
+#define NETPLAYSTATE_VERSION 1
+#define NETPLAYSTATE_MEM_BLOCK "MEM "
+#define NETPLAYSTATE_CHEEVOS_BLOCK "ACHV"
+#define NETPLAYSTATE_END_BLOCK "END "
 
 #ifdef HAVE_NETPLAYDISCOVERY
 /** Initialize Netplay discovery (client) */
@@ -2111,8 +2118,29 @@ static uint32_t netplay_delta_frame_crc(netplay_t *netplay,
       struct delta_frame *delta)
 {
    NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
-   return encoding_crc32(0L, (const unsigned char*)delta->state,
-         netplay->state_size);
+   const uint8_t* input = (const uint8_t*)delta->state;
+
+   /* If the container header is detected, find the coremem block */
+   if (memcmp(input, "NETPLAY", 7) == 0)
+   {
+      const uint8_t* stop = input + netplay->state_size;
+      input += 8; /* NETPLAY# */
+
+      while (input < stop)
+      {
+         size_t block_size = (input[7] << 24 | input[6] << 16 | input[5] << 8 | input[4]);
+         const uint8_t* marker = input;
+
+         input += 8;
+
+         if (memcmp(marker, NETPLAYSTATE_MEM_BLOCK, 4) == 0)
+            break;
+
+         input += CONTENT_ALIGN_SIZE(block_size);
+      }
+   }
+
+   return encoding_crc32(0L, input, netplay->coremem_size);
 }
 
 /*
@@ -3661,7 +3689,7 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
       {
          retro_ctx_serialize_info_t serial_info = {0};
 
-         if (netplay_build_savestate(netplay, &serial_info))
+         if (netplay_build_savestate(netplay, &serial_info, false))
          {
             if (netplay->force_send_savestate && !netplay->stall &&
                   !netplay->remote_paused)
@@ -3905,7 +3933,7 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
 
          /* Remember the current state */
          memset(serial_info.data, 0, serial_info.size);
-         core_serialize_special(&serial_info);
+         netplay_build_savestate(netplay, &serial_info, true);
 
          if (netplay->replay_frame_count < netplay->unread_frame_count)
             netplay_handle_frame_hash(netplay, ptr);
@@ -6998,13 +7026,6 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
    return true;
 }
 
-/* Align to 8-byte boundary */
-#define CONTENT_ALIGN_SIZE(size) ((((size) + 7) & ~7))
-#define NETPLAYSTATE_VERSION 1
-#define NETPLAYSTATE_MEM_BLOCK "MEM "
-#define NETPLAYSTATE_CHEEVOS_BLOCK "ACHV"
-#define NETPLAYSTATE_END_BLOCK "END "
-
 static void netplay_write_block_header(unsigned char* output, const char* header, size_t size)
 {
    memcpy(output, header, 4);
@@ -7091,7 +7112,7 @@ static bool netplay_try_init_serialization(netplay_t *netplay)
    /* Check if we can actually save. */
    serial_info.data_const = NULL;
    serial_info.data       = netplay->buffer[netplay->run_ptr].state;
-   serial_info.size       = netplay->state_size;
+   serial_info.size       = netplay->coremem_size;
    if (!core_serialize_special(&serial_info))
       return false;
 
@@ -7625,7 +7646,7 @@ static bool netplay_process_savestate(retro_ctx_serialize_info_t* serial_info)
    }
 }
 
-static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info)
+static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info, bool force_capture_achievements)
 {
    uint8_t* buffer = (uint8_t*)netplay->buffer[netplay->run_ptr].state;
    uint8_t* output = buffer;
@@ -7647,8 +7668,7 @@ static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info
    output += CONTENT_ALIGN_SIZE(netplay->coremem_size);
 
 #ifdef HAVE_CHEEVOS
-   /* only pass the achievement state from the server */
-   if (netplay->is_server)
+   if (netplay->is_server || force_capture_achievements)
    {
       size_t cheevos_size = 8;
       if (netplay->cheevos_size > 8 && rcheevos_get_serialized_data(output + 16))
@@ -7691,7 +7711,7 @@ void netplay_load_savestate(netplay_t *netplay,
 
       if (!serial_info)
       {
-         if (!netplay_build_savestate(netplay, &tmp_serial_info))
+         if (!netplay_build_savestate(netplay, &tmp_serial_info, false))
             return;
          serial_info                = &tmp_serial_info;
       }
