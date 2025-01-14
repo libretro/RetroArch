@@ -455,6 +455,9 @@ static bool take_screenshot_viewport(
       unsigned pixel_format_type)
 {
    struct video_viewport vp;
+   bool success;
+   bool shaders_used;
+   settings_t* settings;
    video_driver_state_t *video_st        = video_state_get_ptr();
    uint8_t *buffer                       = NULL;
 
@@ -465,6 +468,8 @@ static bool take_screenshot_viewport(
    vp.full_width                         = 0;
    vp.full_height                        = 0;
 
+   settings = config_get_ptr();
+
    video_driver_get_viewport_info(&vp);
 
    if (!vp.width || !vp.height)
@@ -472,10 +477,34 @@ static bool take_screenshot_viewport(
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!(   video_st->current_video->read_viewport
-         && video_st->current_video->read_viewport(
-            video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
+   shaders_used = settings->bools.video_shader_enable;
+   if (!settings->bools.video_gpu_screenshot_include_shaders &&
+      shaders_used)
+   {
+      command_event(CMD_EVENT_SHADER_TOGGLE, NULL);
+      video_driver_cached_frame();
+   }
+   if (!settings->bools.video_gpu_screenshot_include_overlay &&
+      settings->bools.input_overlay_enable)
+   {
+      command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
+      video_driver_cached_frame();
+   }
+
+   success = (video_st->current_video->read_viewport
+      && video_st->current_video->read_viewport(
+         video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE));
+
+   if (!settings->bools.video_gpu_screenshot_include_shaders &&
+      shaders_used)
+      command_event(CMD_EVENT_SHADER_TOGGLE, NULL);
+   if (!settings->bools.video_gpu_screenshot_include_overlay &&
+      settings->bools.input_overlay_enable)
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+
+   if (!success)
       goto error;
+   
 
    /* Limit image to screen size */
    if (vp.width > video_st->width)
