@@ -120,3 +120,11 @@ FONTS
 #include "../deps/discord-rpc/src/connection_unix.cpp"
 #endif
 #endif
+
+
+/*============================================================
+GAME AI
+============================================================ */
+#if defined(HAVE_GAME_AI)
+#include "../ai/game_ai.cpp"
+#endif
