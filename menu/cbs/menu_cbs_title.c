@@ -1316,8 +1316,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_deferred_core_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET,
          action_get_title_deferred_core_list},
+#if defined(HAVE_GAME_AI)
       {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS,
          action_get_core_game_ai_options_list},
+#endif
    };
 
    if (cbs->setting)
