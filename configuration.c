@@ -2228,7 +2228,6 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 
 #ifdef HAVE_GAME_AI
-   //SETTING_BOOL("ai_player_override", &settings->bools.ai_player_override, true, 0, false);
    SETTING_BOOL("quick_menu_show_game_ai",  &settings->bools.quick_menu_show_game_ai, true, 1, false);
 #endif
 

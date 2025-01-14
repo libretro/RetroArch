@@ -7666,7 +7666,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
       runloop_st->current_core.flags |=  RETRO_CORE_FLAG_GAME_LOADED;
 
 #ifdef HAVE_GAME_AI
-      // load models
+      /* load models */
       game_ai_load(load_info->info->path, runloop_st->current_core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM), runloop_st->current_core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM), libretro_log_cb);
 #endif
       return true;
