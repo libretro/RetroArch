@@ -7609,14 +7609,24 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
       else if (memcmp(marker, NETPLAYSTATE_CHEEVOS_BLOCK, 4) == 0)
       {
          const bool hardcore_state = (input[0] != 0);
-         if (!hardcore_state && rcheevos_hardcore_active() && !netplay_is_spectating())
+         if (hardcore_state != rcheevos_hardcore_active() && !netplay_is_spectating())
          {
             const char *msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST);
             runloop_msg_queue_push(msg, strlen(msg), 0, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-            /* use pause_hardcore to ensure player can't re-enabled it on client side */
-            rcheevos_pause_hardcore();
+            if (!hardcore_state)
+            {
+               /* use pause_hardcore to ensure player can't re-enabled it on client side */
+               rcheevos_pause_hardcore();
+            }
+            else
+            {
+               /* if the player had hardcore on, this will reset it to on. otherwise, it'll
+                * stay off, even if the server is playing with hardcore restrictions now. we
+                * don't want to force hardcore unlocks for a player that doesn't want them. */
+               rcheevos_hardcore_enabled_changed();
+            }
          }
 
          input += 8;
