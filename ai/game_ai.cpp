@@ -1,6 +1,6 @@
 #include "game_ai.h"
 #include <stdio.h>
-#include <assert.h>
+#include <retro_assert.h>
 #include <bitset>
 #include <iostream>
 #include <string>
@@ -102,25 +102,25 @@ void GameAIManager::Init()
    if (CreateGameAI == nullptr)
    {
 #ifdef _WIN32
-    HINSTANCE hinstLib; 
-    BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
+   HINSTANCE hinstLib; 
+   BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
 
-    hinstLib = LoadLibrary(TEXT("game_ai.dll"));
-    assert(hinstLib);
+   hinstLib = LoadLibrary(TEXT("game_ai.dll"));
+   assert(hinstLib);
 
-    char full_module_path[MAX_PATH];
-    DWORD dwLen = GetModuleFileNameA(hinstLib, (char *) &full_module_path, MAX_PATH);
+   char full_module_path[MAX_PATH];
+   DWORD dwLen = GetModuleFileNameA(hinstLib, static_cast<char*>(&full_module_path), MAX_PATH);
 
-    // for debugging  
-    //_splitpath((const char *) full_module_path, NULL, (char *) game_ai_lib_path, NULL, NULL);
-    //std::cout << game_ai_lib_path << std::endl;
+   // for debugging  
+   //_splitpath((const char *) full_module_path, NULL, static_cast<char*>(game_ai_lib_path), NULL, NULL);
+   //std::cout << game_ai_lib_path << std::endl;
 
-    if (hinstLib != NULL) 
-    { 
-        CreateGameAI = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI"); 
+   if (hinstLib != NULL) 
+   { 
+      CreateGameAI = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI"); 
 
-        assert(CreateGameAI);
-    } 
+      assert(CreateGameAI);
+   } 
 #else
       void *myso = dlopen("libgame_ai.so", RTLD_NOW);
       assert(myso);
