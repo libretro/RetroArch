@@ -105,9 +105,9 @@ static void input_autoconfigure_free(retro_task_t *task)
  * 'affinity' between the connected input
  * device and the specified config file
  * > 0: No match
- * > 2: Device name matches
- * > 3: VID+PID match
- * > 5: Both device name and VID+PID match */
+ * > 20-29: Device name matches
+ * > 30-39: VID+PID match
+ * > 50-59: Both device name and VID+PID match */
 static unsigned input_autoconfigure_get_config_file_affinity(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
@@ -172,7 +172,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
 #endif
 
       if (pid_match)
-         affinity += 3;
+         affinity += 30;
 
       /* Check for matching device name */
       _len  = strlcpy(config_key, "input_device",
@@ -183,7 +183,11 @@ static unsigned input_autoconfigure_get_config_file_affinity(
             && !string_is_empty(entry->value)
             &&  string_is_equal(entry->value,
                 autoconfig_handle->device_info.name))
-         affinity += 2;
+         affinity += 20;
+
+      /* Store the selected alternative as last digit of affinity. */
+      if (affinity > 0)
+         affinity += i;
 
       if (max_affinity < affinity)
          max_affinity = affinity;
@@ -196,9 +200,12 @@ static unsigned input_autoconfigure_get_config_file_affinity(
  * handle, parsing required device info metadata */
 static void input_autoconfigure_set_config_file(
       autoconfig_handle_t *autoconfig_handle,
-      config_file_t *config)
+      config_file_t *config, unsigned alternative)
 {
    struct config_entry_list *entry    = NULL;
+   char config_key[32]                = {0};
+   char config_key_postfix[7]         = {0};
+   size_t _len;
 
    /* Attach config file */
    autoconfig_handle->autoconfig_file = config;
@@ -214,7 +221,17 @@ static void input_autoconfigure_set_config_file(
    }
 
    /* Read device display name */
-   if (  (entry = config_get_entry(config, "input_device_display_name"))
+   if (alternative > 0)
+      snprintf(config_key_postfix, sizeof(config_key_postfix),
+               "_alt%d",alternative);
+
+   /* Parse config file */
+   _len  = strlcpy(config_key, "input_device_display_name",
+            sizeof(config_key));
+   _len += strlcpy(config_key  + _len, config_key_postfix,
+            sizeof(config_key) - _len);
+
+   if (  (entry = config_get_entry(config, config_key))
          && !string_is_empty(entry->value))
       strlcpy(autoconfig_handle->device_info.display_name,
             entry->value,
@@ -299,9 +316,9 @@ static bool input_autoconfigure_scan_config_files_external(
          config       = NULL;
          max_affinity = affinity;
 
-         /* An affinity of 5 is a 'perfect' match,
+         /* An affinity of 5x is a 'perfect' match,
           * and means we can return immediately */
-         if (affinity == 5)
+         if (affinity >= 50)
             break;
       }
       /* No match - just clean up config file */
@@ -318,7 +335,8 @@ static bool input_autoconfigure_scan_config_files_external(
    {
       if (autoconfig_handle && best_config)
          input_autoconfigure_set_config_file(
-               autoconfig_handle, best_config);
+               autoconfig_handle, best_config,
+               max_affinity % 10);
       match_found = true;
    }
 
@@ -372,7 +390,8 @@ static bool input_autoconfigure_scan_config_files_internal(
       {
          if (autoconfig_handle && config)
             input_autoconfigure_set_config_file(
-                  autoconfig_handle, config);
+                  autoconfig_handle, config,
+                  affinity % 10);
          return true;
       }
 
