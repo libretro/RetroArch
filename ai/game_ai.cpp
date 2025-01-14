@@ -14,8 +14,7 @@
 
 #define GAME_AI_MAX_PLAYERS 2
 
-#include "../../stable-retro-scripts/ef_lib/GameAI.h"
-
+#include "GameAILibAPI.h"
 
 class GameAIManager {
 public:
@@ -49,7 +48,7 @@ extern "C" void game_ai_debug_log(int level, const char *fmt, ...)
    va_list vp;
    va_start(vp, fmt);
 
-   if(g_log)
+   if (g_log)
    {
       g_log((enum retro_log_level)level, fmt, vp);
    }
@@ -59,7 +58,8 @@ extern "C" void game_ai_debug_log(int level, const char *fmt, ...)
 
 void array_to_bits_16(volatile signed short & result, const bool b[16])
 {
-   for(int bit=0; bit<=15; bit++){
+   for (int bit = 0; bit <= 15; bit++)
+   {
       result |= b[bit] ? (1 << bit) : 0;
 	}
 }
@@ -85,10 +85,10 @@ GameAIManager::GameAIManager()
 //======================================================
 signed short int GameAIManager::Input(unsigned int port, unsigned int device, unsigned int idx, unsigned int id, signed short int result)
 {
-   if(ga == nullptr)
+   if (ga == nullptr)
       return 0;
 
-   if(port < GAME_AI_MAX_PLAYERS)
+   if (port < GAME_AI_MAX_PLAYERS)
       return g_buttons_bits[port];
 
    return 0;
@@ -99,9 +99,7 @@ signed short int GameAIManager::Input(unsigned int port, unsigned int device, un
 //======================================================
 void GameAIManager::Init()
 {
-      //printf("GAME AI INIT");
-
-   if(CreateGameAI == nullptr)
+   if (CreateGameAI == nullptr)
    {
 #ifdef _WIN32
     HINSTANCE hinstLib; 
@@ -113,8 +111,9 @@ void GameAIManager::Init()
     char full_module_path[MAX_PATH];
     DWORD dwLen = GetModuleFileNameA(hinstLib, (char *) &full_module_path, MAX_PATH);
 
-    _splitpath((const char *) full_module_path, NULL, (char *) game_ai_lib_path, NULL, NULL);
-    std::cout << game_ai_lib_path << std::endl;
+    // for debugging  
+    //_splitpath((const char *) full_module_path, NULL, (char *) game_ai_lib_path, NULL, NULL);
+    //std::cout << game_ai_lib_path << std::endl;
 
     if (hinstLib != NULL) 
     { 
@@ -139,7 +138,7 @@ void GameAIManager::Init()
 //======================================================
 void GameAIManager::Load(const char *name, void *ram_ptr, int ram_size, retro_log_printf_t log)
 {
-      g_game_name = name;
+   g_game_name = name;
 
    g_ram_ptr = ram_ptr;
    g_ram_size = ram_size;
@@ -152,12 +151,10 @@ void GameAIManager::Load(const char *name, void *ram_ptr, int ram_size, retro_lo
 //======================================================
 void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format)
 {
-     if(ga)
-   {
+   if (ga)
       ga->SetShowDebug(show_debug);
-   }
 
-   if(ga == nullptr && g_ram_ptr != nullptr)
+   if (ga == nullptr && g_ram_ptr != nullptr)
    {
       ga = CreateGameAI(g_game_name.c_str());
       assert(ga);
@@ -173,7 +170,7 @@ void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, c
 
    if (g_frameCount >= 3)
 	{
-		if(ga)
+      if (ga)
 		{
          bool b[16] = {0};
 
@@ -200,7 +197,6 @@ void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, c
 		g_frameCount++;
 	}
 }
-
 
 //======================================================
 // Interface to RA
