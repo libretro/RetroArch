@@ -87,7 +87,6 @@ static rcheevos_locals_t rcheevos_locals =
    {{0}},/* memory */
 #ifdef HAVE_THREADS
    CMD_EVENT_NONE, /* queued_command */
-   false, /* game_placard_requested */
 #endif
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */
@@ -686,7 +685,6 @@ bool rcheevos_unload(void)
 
 #ifdef HAVE_THREADS
    rcheevos_locals.queued_command = CMD_EVENT_NONE;
-   rcheevos_locals.game_placard_requested = false;
 #endif
 
    if (rcheevos_locals.memory.count > 0)
