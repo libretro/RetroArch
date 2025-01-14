@@ -7062,16 +7062,9 @@ static bool netplay_init_serialization(netplay_t *netplay)
       info_size = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
 
 #ifdef HAVE_CHEEVOS
-      if (netplay->is_server)
-      {
-         /* 8-byte block header + 8-byte flags + content */
-         netplay->cheevos_size = 8 + rcheevos_get_serialize_size();
-         info_size += 8 + CONTENT_ALIGN_SIZE(netplay->cheevos_size);
-      }
-      else
-      {
-         netplay->cheevos_size = 0;
-      }
+      /* 8-byte block header + 8-byte flags + content */
+      netplay->cheevos_size = 8 + rcheevos_get_serialize_size();
+      info_size += 8 + CONTENT_ALIGN_SIZE(netplay->cheevos_size);
 #endif
 
       netplay->state_size = info_size;
