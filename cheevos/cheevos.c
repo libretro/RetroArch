@@ -824,6 +824,11 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 #endif
             command_event(CMD_EVENT_REWIND_INIT, NULL);
       }
+
+#ifdef HAVE_NETWORKING
+      /* force sending a savestate to clients so they'll drop out of hardcore too */
+      netplay_force_send_savestate();
+#endif
    }
 }
 

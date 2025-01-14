@@ -4695,6 +4695,9 @@ static void netplay_announce_play_spectate(netplay_t *netplay,
 
 #ifdef HAVE_CHEEVOS
    rcheevos_spectating_changed();
+
+   if (!netplay->is_server && !netplay_is_spectating()) /* force sync of achievement state */
+      netplay_cmd_request_savestate(netplay);
 #endif
 
    RARCH_LOG("[Netplay] %s\n", _msg);
@@ -9252,6 +9255,15 @@ bool netplay_is_spectating(void)
    net_driver_state_t* net_st = &networking_driver_st;
    netplay_t* netplay = net_st->data;
    return (netplay && (netplay->self_mode == NETPLAY_CONNECTION_SPECTATING));
+}
+
+void netplay_force_send_savestate(void)
+{
+   net_driver_state_t* net_st = &networking_driver_st;
+   netplay_t* netplay = net_st->data;
+
+   if (netplay && netplay->is_server)
+      netplay->force_send_savestate = true;
 }
 
 bool netplay_reinit_serialization(void)
