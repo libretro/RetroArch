@@ -3688,6 +3688,7 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
       if (!(netplay->quirks & NETPLAY_QUIRK_INITIALIZATION))
       {
          retro_ctx_serialize_info_t serial_info = {0};
+         serial_info.data = netplay->buffer[netplay->run_ptr].state;
 
          if (netplay_build_savestate(netplay, &serial_info, false))
          {
@@ -7654,7 +7655,7 @@ static bool netplay_process_savestate(retro_ctx_serialize_info_t* serial_info)
 
 static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info, bool force_capture_achievements)
 {
-   uint8_t* buffer = (uint8_t*)netplay->buffer[netplay->run_ptr].state;
+   uint8_t* buffer = (uint8_t*)serial_info->data;
    uint8_t* output = buffer;
 
    memcpy(output, "NETPLAY", 7);
@@ -7717,6 +7718,7 @@ void netplay_load_savestate(netplay_t *netplay,
 
       if (!serial_info)
       {
+         tmp_serial_info.data = netplay->buffer[netplay->run_ptr].state;
          if (!netplay_build_savestate(netplay, &tmp_serial_info, false))
             return;
          serial_info                = &tmp_serial_info;
