@@ -61,7 +61,7 @@ void array_to_bits_16(volatile signed short & result, const bool b[16])
    for (int bit = 0; bit <= 15; bit++)
    {
       result |= b[bit] ? (1 << bit) : 0;
-	}
+   }
 }
 
 //======================================================
@@ -169,9 +169,9 @@ void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, c
    }
 
    if (g_frameCount >= 3)
-	{
+   {
       if (ga)
-		{
+      {
          bool b[16] = {0};
 
          g_buttons_bits[0]=0;
@@ -189,13 +189,12 @@ void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, c
             array_to_bits_16(g_buttons_bits[1], b);
          }
       }
-		
-		g_frameCount=0;
-	}
-	else
+      g_frameCount=0;
+   }
+   else
    {
-		g_frameCount++;
-	}
+      g_frameCount++;
+   }
 }
 
 //======================================================
