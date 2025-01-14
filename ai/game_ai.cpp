@@ -111,10 +111,6 @@ void GameAIManager::Init()
    char full_module_path[MAX_PATH];
    DWORD dwLen = GetModuleFileNameA(hinstLib, static_cast<char*>(&full_module_path), MAX_PATH);
 
-   // for debugging  
-   //_splitpath((const char *) full_module_path, NULL, static_cast<char*>(game_ai_lib_path), NULL, NULL);
-   //std::cout << game_ai_lib_path << std::endl;
-
    if (hinstLib != NULL) 
    { 
       CreateGameAI = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI"); 
