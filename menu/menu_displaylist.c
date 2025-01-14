@@ -4021,13 +4021,6 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 #if HAVE_GAME_AI
-      /*if (menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION),
-               msg_hash_to_str(MENU_ENUM_LABEL_GAME_AI_MENU_OPTION),
-               MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
-               MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM, 0, 0, NULL))
-            count++;*/
-
       if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_GAME_AI_MENU_OPTION,
                         PARSE_ONLY_BOOL, false) == 0)
@@ -4042,8 +4035,9 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
       }
-   }
 #endif
+   }
+
 
    return count;
 }
@@ -8469,7 +8463,6 @@ unsigned menu_displaylist_build_list(
 
 #ifdef HAVE_GAME_AI
       case DISPLAYLIST_OPTIONS_GAME_AI:
-         //cheat_manager_alloc_if_empty();
          {
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1,
