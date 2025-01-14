@@ -15584,6 +15584,10 @@ MSG_HASH(
    "A cheat was activated. Achievements Hardcore Mode disabled for the current session."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Achievements Hardcore Mode changed by host."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Mastered %s"
    )

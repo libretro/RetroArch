@@ -217,6 +217,7 @@ net_driver_state_t *networking_state_get_ptr(void)
 }
 
 static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info);
+static bool netplay_process_savestate(retro_ctx_serialize_info_t* serial_info);
 
 #ifdef HAVE_NETPLAYDISCOVERY
 /** Initialize Netplay discovery (client) */
@@ -3888,7 +3889,7 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
       serial_info.data       = NULL;
       serial_info.data_const = netplay->buffer[netplay->replay_ptr].state;
       serial_info.size       = netplay->state_size;
-      if (!core_unserialize_special(&serial_info))
+      if (!netplay_process_savestate(&serial_info))
          RARCH_ERR("[Netplay] Netplay savestate loading failed: Prepare for desync!\n");
 
       while (netplay->replay_frame_count < netplay->run_frame_count)
@@ -6037,8 +6038,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             state_size     = ntohl(state_size);
             state_size_raw = cmd_size - (sizeof(frame) + sizeof(state_size));
 
-            if (state_size != netplay->state_size ||
-                  state_size_raw > netplay->zbuffer_size)
+            if (state_size_raw > netplay->zbuffer_size)
             {
                RARCH_ERR("[Netplay] Netplay state load with an unexpected save state size.\n");
                return netplay_cmd_nak(netplay, connection);
@@ -6057,6 +6057,18 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   break;
             }
 
+            if (state_size > netplay->state_size)
+            {
+               /* other client state size is larger than ours, grow ours */
+               netplay->state_size = state_size;
+               for (i = 0; i < netplay->buffer_size; i++)
+               {
+                  netplay->buffer[i].state = realloc(netplay->buffer[i].state, netplay->state_size);
+                  if (!netplay->buffer[i].state)
+                     return false;
+               }
+            }
+
             ctrans->decompression_backend->set_in(
                ctrans->decompression_stream,
                netplay->zbuffer, state_size_raw);
@@ -6066,6 +6078,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
             ctrans->decompression_backend->trans(
                ctrans->decompression_stream,
                true, &rd, &wn, NULL);
+
+            if (state_size != netplay->state_size && memcmp(netplay->buffer[load_ptr].state, "NETPLAY", 7) != 0)
+            {
+               RARCH_ERR("[Netplay] Netplay state load with an unexpected save state size.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
 
             /* Force a rewind to the relevant frame. */
             netplay->force_rewind = true;
@@ -7020,10 +7038,15 @@ static bool netplay_init_serialization(netplay_t *netplay)
       info_size = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
 
 #ifdef HAVE_CHEEVOS
+      if (netplay->is_server)
       {
          /* 8-byte block header + 8-byte flags + content */
          netplay->cheevos_size = 8 + rcheevos_get_serialize_size();
          info_size += 8 + CONTENT_ALIGN_SIZE(netplay->cheevos_size);
+      }
+      else
+      {
+         netplay->cheevos_size = 0;
       }
 #endif
 
@@ -7533,6 +7556,75 @@ static void netplay_core_reset(netplay_t *netplay)
    }
 }
 
+static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
+{
+   const uint8_t* input = serial_info->data_const;
+   const uint8_t* stop  = input + serial_info->size;
+   bool seen_core       = false;
+
+   input += 8; /* NETPLAY1 */
+
+   while (input < stop)
+   {
+      size_t block_size     = (input[7] << 24 | input[6] << 16 |  input[5] << 8 | input[4]);
+      const uint8_t *marker = input;
+
+      input += 8;
+
+      if (memcmp(marker, NETPLAYSTATE_MEM_BLOCK, 4) == 0)
+      {
+         retro_ctx_serialize_info_t serial_info;
+         serial_info.data_const = (void*)input;
+         serial_info.size       = block_size;
+         if (!core_unserialize_special(&serial_info))
+            return false;
+
+         seen_core = true;
+      }
+#ifdef HAVE_CHEEVOS
+      else if (memcmp(marker, NETPLAYSTATE_CHEEVOS_BLOCK, 4) == 0)
+      {
+         const bool hardcore_state = (input[0] != 0);
+         if (!hardcore_state && rcheevos_hardcore_active() && !netplay_is_spectating())
+         {
+            const char *msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST);
+            runloop_msg_queue_push(msg, strlen(msg), 0, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+            /* use pause_hardcore to ensure player can't re-enabled it on client side */
+            rcheevos_pause_hardcore();
+         }
+
+         input += 8;
+         rcheevos_set_serialized_data((void*)input);
+      }
+#endif
+
+      input += CONTENT_ALIGN_SIZE(block_size);
+   }
+
+   if (!seen_core)
+      return false;
+
+   return true;
+}
+
+static bool netplay_process_savestate(retro_ctx_serialize_info_t* serial_info)
+{
+   /* if no NETPLAY marker, it's just raw core data */
+   if (memcmp(serial_info->data_const, "NETPLAY", 7) != 0)
+      return core_unserialize_special(serial_info);
+
+   switch (((uint8_t*)serial_info->data_const)[7])
+   {
+      case 1:
+         return netplay_process_savestate1(serial_info);
+
+      default:
+         return false;
+   }
+}
+
 static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info)
 {
    uint8_t* buffer = (uint8_t*)netplay->buffer[netplay->run_ptr].state;
@@ -7555,6 +7647,8 @@ static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info
    output += CONTENT_ALIGN_SIZE(netplay->coremem_size);
 
 #ifdef HAVE_CHEEVOS
+   /* only pass the achievement state from the server */
+   if (netplay->is_server)
    {
       size_t cheevos_size = 8;
       if (netplay->cheevos_size > 8 && rcheevos_get_serialized_data(output + 16))
@@ -9151,8 +9245,13 @@ bool netplay_reinit_serialization(void)
 
    netplay->state_size = 0;
 
+   /* netplay_init_serialization rebuilds the delta states and zbuffer, but
+    * nothing else, so we have to free them directly */
    for (i = 0; i < netplay->buffer_size; i++)
+   {
       free(netplay->buffer[i].state);
+      netplay->buffer[i].state = NULL;
+   }
 
    if (netplay->zbuffer)
    {
