@@ -2,37 +2,6 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/8936/badge.svg)](https://scan.coverity.com/projects/retroarch)
 [![Crowdin](https://badges.crowdin.net/retroarch/localized.svg)](https://crowdin.com/project/retroarch)
 
-
-# RetroArch (with Machine Learning support)
-This is a fork of RetroArch that supports overriding player input with ML models.
-In the Quick Menu you can turn on the override feature for p1 or p2. If you want to do AI vs AI fights just override both players.
-More details on how to use the features here:
-
-[https://www.videogames.ai/2024/07/24/RetroArch-Machine-Learning-models](https://www.videogames.ai/2024/07/24/RetroArch-Machine-Learning-models)
-
-[![RetroArch and Pytorch](https://img.youtube.com/vi/hkOcxJvJVjk/0.jpg)](https://www.youtube.com/watch?v=hkOcxJvJVjk)
-
-## Build on Linux
-git clone https://github.com/MatPoliquin/stable-retro-scripts
-and follow the instructions to build the ef_lib (Emulator frontend library that uses Pytorch C++):
-https://github.com/MatPoliquin/stable-retro-scripts/tree/main/ef_lib
-
-```
-git clone https://github.com/MatPoliquin/RetroArchAI.git
-cd RetroArchAI
-./configure
-make
-export LD_LIBRARY_PATH=/path/to/ef_lib
-./retroarch
-```
-## Build on Windows
-RetroArch docs have build instructions for Windows:
-[https://docs.libretro.com/development/retroarch/compilation/windows/](https://docs.libretro.com/development/retroarch/compilation/windows/)
-
-If you just want to support new games or modify existing ones you can simply download the pre-built package in the releases sections of this repo and update the game_ai dll and data.
-
-![image](https://github.com/user-attachments/assets/72a314aa-c0ad-46f1-a8ea-f173b42fe90c)
-
 # RetroArch
 
 RetroArch is the reference frontend for the libretro API.
