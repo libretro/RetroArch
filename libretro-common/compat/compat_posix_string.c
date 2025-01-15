@@ -56,12 +56,11 @@ int retro_strcasecmp__(const char *a, const char *b)
 
 char *retro_strdup__(const char *orig)
 {
-   size_t len = strlen(orig) + 1;
-   char *ret  = (char*)malloc(len);
+   size_t _len = strlen(orig) + 1;
+   char *ret   = (char*)malloc(_len);
    if (!ret)
       return NULL;
-
-   strlcpy(ret, orig, len);
+   strlcpy(ret, orig, _len);
    return ret;
 }
 

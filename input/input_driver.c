@@ -4088,7 +4088,6 @@ static bool input_keyboard_line_event(
    bool            ret         = false;
    const char            *word = NULL;
    char            c           = (character >= 128) ? '?' : character;
-
 #ifdef HAVE_LANGEXTRA
    static uint32_t composition = 0;
    /* reset composition, when edit box is opened. */
@@ -4099,12 +4098,12 @@ static bool input_keyboard_line_event(
       composition = 0;
    if (IS_COMPOSITION(character) || IS_END_COMPOSITION(character))
    {
-      size_t len = strlen((char*)&composition);
-      if (composition && state->buffer && state->size >= len && state->ptr >= len)
+      size_t _len = strlen((char*)&composition);
+      if (composition && state->buffer && state->size >= _len && state->ptr >= _len)
       {
-         memmove(state->buffer + state->ptr-len, state->buffer + state->ptr, len + 1);
-         state->ptr  -= len;
-         state->size -= len;
+         memmove(state->buffer + state->ptr - _len, state->buffer + state->ptr, _len + 1);
+         state->ptr  -= _len;
+         state->size -= _len;
       }
       if (IS_COMPOSITION_KR(character) && composition)
       {
@@ -4123,7 +4122,7 @@ static bool input_keyboard_line_event(
             composition = character & 0xffffff;
          character     &= 0xffffff;
       }
-      if (len && composition == 0)
+      if (_len && composition == 0)
          word = state->buffer;
       if (character)
          input_keyboard_line_append(state, (char*)&character, strlen((char*)&character));
@@ -4134,7 +4133,6 @@ static bool input_keyboard_line_event(
 
    /* Treat extended chars as ? as we cannot support
     * printable characters for unicode stuff. */
-
    if (c == '\r' || c == '\n')
    {
       state->cb(state->userdata, state->buffer);

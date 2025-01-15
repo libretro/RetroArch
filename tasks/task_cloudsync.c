@@ -175,13 +175,11 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
    return list;
 }
 
-static void task_cloud_sync_manifest_filename(char *path, size_t len, bool server)
+static void task_cloud_sync_manifest_filename(char *s, size_t len, bool server)
 {
    settings_t *settings             = config_get_ptr();
    const char *path_dir_core_assets = settings->paths.directory_core_assets;
-
-   fill_pathname_join_special(path,
-         path_dir_core_assets,
+   fill_pathname_join_special(s, path_dir_core_assets,
          server ? MANIFEST_FILENAME_SERVER : MANIFEST_FILENAME_LOCAL,
          len);
 }
@@ -1121,15 +1119,15 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
       char title[128];
-      size_t len = strlcpy(title, "Cloud Sync finished", sizeof(title));
+      size_t _len = strlcpy(title, "Cloud Sync finished", sizeof(title));
       if (sync_state->failures || sync_state->conflicts)
-         len += strlcpy(title + len, " with ", sizeof(title) - len);
+         _len += strlcpy(title + _len, " with ", sizeof(title) - _len);
       if (sync_state->failures)
-         len += strlcpy(title + len, "failures", sizeof(title) - len);
+         _len += strlcpy(title + _len, "failures", sizeof(title) - _len);
       if (sync_state->failures && sync_state->conflicts)
-         len += strlcpy(title + len, " and ", sizeof(title) - len);
+         _len += strlcpy(title + _len, " and ", sizeof(title) - _len);
       if (sync_state->conflicts)
-         strlcpy(title + len, "conflicts", sizeof(title) - len);
+         strlcpy(title + _len, "conflicts", sizeof(title) - _len);
       task_set_title(task, strdup(title));
    }
 

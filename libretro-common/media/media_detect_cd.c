@@ -28,34 +28,31 @@
 
 /*#define MEDIA_CUE_PARSE_DEBUG*/
 
-static void media_zero_trailing_spaces(char *buf, size_t len)
+static void media_zero_trailing_spaces(char *s, size_t len)
 {
    int i;
-
    for (i = len - 1; i >= 0; i--)
    {
-      if (buf[i] == ' ')
-         buf[i] = '\0';
-      else if (buf[i] != '\0')
+      if (s[i] == ' ')
+         s[i] = '\0';
+      else if (s[i] != '\0')
          break;
    }
 }
 
-static bool media_skip_spaces(const char **buf, size_t len)
+static bool media_skip_spaces(const char **s, size_t len)
 {
-   if (buf && *buf && **buf)
+   if (s && *s && **s)
    {
       size_t i;
       for (i = 0; i < len; i++)
       {
-         if ((*buf)[i] == ' ' || (*buf)[i] == '\t')
+         if ((*s)[i] == ' ' || (*s)[i] == '\t')
             continue;
-
-         *buf += i;
+         *s += i;
          return true;
       }
    }
-
    return false;
 }
 
@@ -86,7 +83,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 
    while (!filestream_eof(file) && (line = filestream_getline(file)))
    {
-      size_t len = 0;
+      size_t _len = 0;
       const char *command = NULL;
 
       if (string_is_empty(line))
@@ -95,15 +92,15 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          continue;
       }
 
-      len     = strlen(line);
+      _len    = strlen(line);
       command = line;
 
-      media_skip_spaces(&command, len);
+      media_skip_spaces(&command, _len);
 
       if (!found_file && !strncasecmp(command, "FILE", 4))
       {
          const char *file = command + 4;
-         media_skip_spaces(&file, len - 4);
+         media_skip_spaces(&file, _len - 4);
 
          if (!string_is_empty(file))
          {
@@ -137,7 +134,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
       else if (found_file && !found_track && !strncasecmp(command, "TRACK", 5))
       {
          const char *track = command + 5;
-         media_skip_spaces(&track, len - 5);
+         media_skip_spaces(&track, _len - 5);
 
          if (!string_is_empty(track))
          {
@@ -173,7 +170,7 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
       else if (found_file && found_track && first_data_track && !strncasecmp(command, "INDEX", 5))
       {
          const char *index = command + 5;
-         media_skip_spaces(&index, len - 5);
+         media_skip_spaces(&index, _len - 5);
 
          if (!string_is_empty(index))
          {

@@ -1414,11 +1414,11 @@ size_t fill_pathname_application_path(char *s, size_t len)
       }
 #elif defined(__QNX__)
       char *buff = malloc(len);
-      size_t rv = 0;
+      size_t _len = 0;
       if (_cmdname(buff))
-         rv = strlcpy(s, buff, len);
+         _len = strlcpy(s, buff, len);
       free(buff);
-      return rv;
+      return _len;
 #else
       size_t i;
       static const char *exts[] = { "exe", "file", "path/a.out" };
