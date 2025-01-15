@@ -556,6 +556,9 @@ static bool content_file_list_set_info(
       {
          char archive_path[PATH_MAX_LENGTH];
          size_t _len      = 0;
+
+         file_info->file_in_archive = true;
+
          /* Extract path of parent archive */
          if ((_len = (size_t)(1 + archive_delim - path))
                  >= PATH_MAX_LENGTH)
@@ -582,9 +585,6 @@ static bool content_file_list_set_info(
           * this is the basename of the archive file without
           * extension */
          fill_pathname_base(name, archive_path, sizeof(name));
-         path_remove_extension(name);
-
-         file_info->file_in_archive = true;
       }
       else
       {
@@ -596,8 +596,8 @@ static bool content_file_list_set_info(
           * is the basename of the content file, without
           * extension */
          fill_pathname_base(name, path, sizeof(name));
-         path_remove_extension(name);
       }
+      path_remove_extension(name);
 
       if (!string_is_empty(dir))
       {

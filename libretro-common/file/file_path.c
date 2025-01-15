@@ -597,21 +597,18 @@ size_t path_basedir(char *s)
    char *last_slash = NULL;
    if (!s || s[0] == '\0' || s[1] == '\0')
       return (s && s[0] != '\0') ? 1 : 0;
-   slash             = strrchr(s, '/');
-   backslash         = strrchr(s, '\\');
-   last_slash        = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+   slash            = strrchr(s, '/');
+   backslash        = strrchr(s, '\\');
+   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
    if (last_slash)
    {
-      last_slash[1]  = '\0';
+      last_slash[1] = '\0';
       return last_slash + 1 - s;
    }
-   else
-   {
-      s[0]           = '.';
-      s[1]           = PATH_DEFAULT_SLASH_C();
-      s[2]           = '\0';
-      return 2;
-   }
+   s[0]             = '.';
+   s[1]             = PATH_DEFAULT_SLASH_C();
+   s[2]             = '\0';
+   return 2;
 }
 
 /**
@@ -1446,13 +1443,13 @@ size_t fill_pathname_application_path(char *s, size_t len)
    return 0;
 }
 
-void fill_pathname_application_dir(char *s, size_t len)
+size_t fill_pathname_application_dir(char *s, size_t len)
 {
 #ifdef __WINRT__
-   strlcpy(s, uwp_dir_install, len);
+   return strlcpy(s, uwp_dir_install, len);
 #else
    fill_pathname_application_path(s, len);
-   path_basedir(s);
+   return path_basedir(s);
 #endif
 }
 

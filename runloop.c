@@ -7928,10 +7928,10 @@ void runloop_path_set_redirect(settings_t *settings,
    if (     string_is_empty(intermediate_savefile_dir)
          || savefiles_in_content_dir)
    {
-      strlcpy(intermediate_savefile_dir,
-              runloop_st->runtime_content_path_basename,
-              sizeof(intermediate_savefile_dir));
-      path_basedir(intermediate_savefile_dir);
+      fill_pathname_basedir(
+            intermediate_savefile_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(intermediate_savefile_dir));
 
       if (string_is_empty(intermediate_savefile_dir))
          RARCH_LOG("Cannot resolve save file path.\n");
@@ -7941,10 +7941,9 @@ void runloop_path_set_redirect(settings_t *settings,
    if (   string_is_empty(intermediate_savestate_dir)
        || savestates_in_content_dir)
    {
-      strlcpy(intermediate_savestate_dir,
-              runloop_st->runtime_content_path_basename,
-              sizeof(intermediate_savestate_dir));
-      path_basedir(intermediate_savestate_dir);
+      fill_pathname_basedir(intermediate_savestate_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(intermediate_savestate_dir));
 
       if (string_is_empty(intermediate_savestate_dir))
          RARCH_LOG("Cannot resolve save state file path.\n");

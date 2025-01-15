@@ -2985,16 +2985,12 @@ static bool menu_shader_manager_save_preset_internal(
          fill_pathname_join(buffer, target_dirs[i],
                fullname, sizeof(buffer));
 
-         strlcpy(basedir, buffer, sizeof(basedir));
-         path_basedir(basedir);
+         fill_pathname_basedir(basedir, buffer, sizeof(basedir));
 
-         if (!path_is_directory(basedir))
+         if (!path_is_directory(basedir) && !(ret = path_mkdir(basedir)))
          {
-            if (!(ret = path_mkdir(basedir)))
-            {
-               RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
-               continue;
-            }
+            RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
+            continue;
          }
 
          preset_path = buffer;

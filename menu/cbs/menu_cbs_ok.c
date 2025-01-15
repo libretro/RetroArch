@@ -1377,10 +1377,12 @@ int generic_action_ok_displaylist_push(
          {
             filebrowser_clear_type();
             if (content_get_subsystem_rom_id() > 0)
-               strlcpy(tmp, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(tmp));
+               fill_pathname_basedir(tmp,
+                     content_get_subsystem_rom(content_get_subsystem_rom_id() - 1),
+                     sizeof(tmp));
             else
-               strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
-            path_basedir(tmp);
+               fill_pathname_basedir(tmp,
+                     path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
             if (content_get_subsystem() != (int)type - MENU_SETTINGS_SUBSYSTEM_ADD)
                content_clear_subsystem();

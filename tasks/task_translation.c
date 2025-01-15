@@ -780,7 +780,6 @@ static const char *ai_service_get_str(enum translation_lang id)
 bool run_translation_service(settings_t *settings, bool paused)
 {
    struct video_viewport vp;
-   uint8_t header[54];
    size_t pitch;
    unsigned width, height;
    const void *data                  = NULL;
@@ -947,11 +946,10 @@ bool run_translation_service(settings_t *settings, bool paused)
         the BMP header as bytes, and then covert that to a
         b64 encoded array for transport in JSON.
       */
-      form_bmp_header(header, width, height, false);
       if (!(bmp_buffer  = (uint8_t*)malloc(width * height * 3 + 54)))
          goto finish;
 
-      memcpy(bmp_buffer, header, 54 * sizeof(uint8_t));
+      form_bmp_header(bmp_buffer, width, height, false);
       memcpy(bmp_buffer + 54,
             bit24_image,
             width * height * 3 * sizeof(uint8_t));
