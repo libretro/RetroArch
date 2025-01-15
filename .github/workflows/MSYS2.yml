@@ -1,0 +1,77 @@
+name: CI Windows (MSYS2)
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+jobs:
+  msys2-build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: [MINGW64, UCRT64,CLANG64]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          update: true
+          install: base-devel git
+          pacboy: >-
+            gettext:p
+            gobject-introspection:p
+            graphite2:p
+            p11-kit:p
+            qt6:p
+            qt6-3d:p
+            qt6-charts:p
+            qt6-datavis3d:p
+            qt6-imageformats:p
+            qt6-location:p
+            qt6-lottie:p
+            qt6-networkauth:p
+            qt6-quick3dphysics:p
+            qt6-quicktimeline:p
+            qt6-remoteobjects:p
+            qt6-scxml:p
+            qt6-sensors:p
+            qt6-serialbus:p
+            qt6-speech:p
+            qt6-tools:p
+            qt6-translations:p
+            qt6-virtualkeyboard:p
+            qt6-webchannel:p
+            qt6-websockets:p
+            x264:p
+            cc:p
+
+      - name: Configure and build RetroArch
+        shell: msys2 {0}
+        run: |
+          echo "Building RetroArch in ${{ matrix.sys }} environment"
+          ./configure
+          make -j$(nproc)
+
+      - name: Collect DLLs and binaries
+        shell: msys2 {0}
+        run: |
+          echo "Collecting DLLs and binaries"
+          mkdir -p dist
+          cp retroarch.exe dist/
+          ldd retroarch.exe|grep $MINGW_PREFIX |awk '{print $3}'|xargs -I {} cp {} dist/
+
+      - name: Archive build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retroarch-${{ matrix.sys }}
+          path: dist/

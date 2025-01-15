@@ -2648,4 +2648,32 @@ ifeq ($(HAVE_ODROIDGO2), 1)
          gfx/drivers/oga_gfx.o
 endif
 
+# Detect the operating system
+UNAME := $(shell uname -s)
+
+# Check if the system is MSYS2 (MINGW64 or MINGW32)
+ifneq ($(findstring MINGW,$(UNAME)),)
+$(info Detected MSYS2 environment)
+
+NT_VERSION := $(shell \
+  echo '#include <windows.h>' > temp.c; \
+  echo '#ifdef _WIN32_WINNT' >> temp.c; \
+  echo '#define GET_MACRO_VALUE(x) #x' >> temp.c; \
+  echo '#define EXPAND_MACRO_VALUE(x) GET_MACRO_VALUE(x)' >> temp.c; \
+  echo '#pragma message("_WIN32_WINNT=" EXPAND_MACRO_VALUE(_WIN32_WINNT))' >> temp.c; \
+  echo '#endif' >> temp.c; \
+  $(CC) -c temp.c 2>&1 | sed -n 's/^.*_WIN32_WINNT=\(0x[0-9A-Fa-f]\+\).*/\1/p'; \
+  rm -f temp.c temp.o)
+
+ifneq ($(NT_VERSION),)
+ifeq ($(shell [ $$(( $(NT_VERSION) )) -gt $$(( 0x602 )) ] && echo true),true)
+LIBS += -lxaudio2_9
+endif
+else
+$(warning Windows NT version macro (_WIN32_WINNT) is not defined.)
+endif
+
+
+endif
+
 ##################################
