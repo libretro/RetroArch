@@ -1951,10 +1951,6 @@ MSG_HASH(
    "Inserción de Black Frame"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insira cadro(s) negros entre cadros. Pode reducir moito o desenfoque de movemento emulando a exploración CRT, pero a costa do brillo. Non combine con Intervalo de intercambio > 1, sub-fotogramas, Retraso de fotogramas ou Sincronizar a velocidade de fotogramas de contido exacto."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    "Insire cadro(s) negros entre cadros para mellorar a claridade do movemento. Use só a opción designada para a súa frecuencia de actualización da pantalla actual. Non se debe usar con frecuencias de actualización que non sexan múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Non combines con Intervalo de intercambio > 1, subfotogramas, Retraso de fotogramas ou Sincronización con frecuencia de fotogramas de contido exacto. Deixar o sistema VRR activado está ben, pero non esa configuración. Se[...]"
    )
@@ -2035,10 +2031,6 @@ MSG_HASH(
    "Subcadros de sombreadores"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "Insira marco(s) de sombreado extra entre cadros. Permite aos sombreadores facer efectos que se executan a un fps superior á taxa de contido real. Debe configurarse na pantalla actual Hz. Non combines con Intervalo de intercambio > 1, BFI, Retraso de fotogramas ou Sincronizar a velocidade de fotogramas de contido exacto."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "Insire cadro(s) de sombreado extra entre os fotogramas para os posibles efectos de sombreado que estean deseñados para executarse máis rápido que a taxa de contido. Use só a opción designada para a súa frecuencia de actualización da pantalla actual. Non debe usarse con frecuencias de actualización que non sexan múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. Non combine con Intervalo de intercambio > 1, BFI, Retraso de fotogramas ou Sincronización con frecuencia de fotogramas de contido [...]"
    )
@@ -2109,10 +2101,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "Simulación de liña de escaneo rodante"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "Simula unha liña de escaneo en rotación básica sobre varios subfotogramas dividindo a pantalla verticalmente e representando cada parte da pantalla segundo cantos subfotogramas haxa."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,

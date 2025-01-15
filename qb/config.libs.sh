@@ -304,11 +304,11 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_enabled QT6NETWORK QT Qt 'Qt6Network is' user
       #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' user
 
-      if [ "$HAVE_QT6CORE" == 'yes' ] && \
-         [ "$HAVE_QT6GUI" == 'yes' ] &&  \
-         [ "$HAVE_QT6WIDGETS" == 'yes' ] &&  \
-         [ "$HAVE_QT6CONCURRENT" == 'yes' ] && \
-         [ "$HAVE_QT6NETWORK" == 'yes' ]
+      if [ "$HAVE_QT6CORE" = 'yes' ] && \
+         [ "$HAVE_QT6GUI" = 'yes' ] &&  \
+         [ "$HAVE_QT6WIDGETS" = 'yes' ] &&  \
+         [ "$HAVE_QT6CONCURRENT" = 'yes' ] && \
+         [ "$HAVE_QT6NETWORK" = 'yes' ]
       then
          HAVE_QT6='yes'
          add_define MAKEFILE HAVE_QT6 1

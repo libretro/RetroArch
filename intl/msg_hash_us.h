@@ -2008,7 +2008,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Insert black frame(s) between frames. Can greatly reduce motion blur by emulating CRT scan out, but at cost of brightness. Do not combine with Swap Interval > 1, sub-frames, Frame Delay, or Sync to Exact Content Framerate."
+   "WARNING: Rapid flickering may cause image persistence on some displays. Use at your own risk // Insert black frame(s) between frames. Can greatly reduce motion blur by emulating CRT scan out, but at cost of brightness."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
@@ -2092,7 +2092,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "Insert extra shader frame(s) between frames. Allows shaders to do effects that run at a higher fps than actual content rate. Should be set to current screen Hz. Do not combine with Swap Interval > 1, BFI, Frame Delay, or Sync to Exact Content Framerate."
+   "WARNING: Rapid flickering may cause image persistence on some displays. Use at your own risk // Simulates a basic rolling scanline over multiple sub-frames by dividing the screen up vertically and rendering each part of the screen according to how many sub-frames there are."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
@@ -2168,7 +2168,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "Simulates a basic rolling scanline over multiple sub-frames by dividing the screen up vertically and rendering each part of the screen according to how many sub-frames there are."
+   "WARNING: Rapid flickering may cause image persistence on some displays. Use at your own risk // Simulates a basic rolling scanline over multiple sub-frames by dividing the screen up vertically and rendering each part of the screen according to how many sub-frames there are."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,

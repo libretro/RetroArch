@@ -927,7 +927,11 @@
 #define DEFAULT_INPUT_BACKTOUCH_TOGGLE false
 #endif
 
+#if defined(ANDROID) || defined(IOS)
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
+#else
+#define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED false
+#endif
 
 #if defined(HAVE_OVERLAY)
 #if defined(RARCH_MOBILE)

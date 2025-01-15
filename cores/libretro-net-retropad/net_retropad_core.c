@@ -279,7 +279,7 @@ static bool ITifJSONObjectEndHandler(void* context)
    return true;
 }
 
-static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_t len)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
@@ -287,7 +287,7 @@ static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_
    if (pCtx->current_entry_str_val)
       return false;
 
-   if (length)
+   if (len)
    {
       if (string_is_equal(pValue, "expected_button"))
          pCtx->current_entry_uint_val = &pCtx->expected_button;
@@ -299,11 +299,11 @@ static bool ITifJSONObjectMemberHandler(void* context, const char *pValue, size_
    return true;
 }
 
-static bool ITifJSONNumberHandler(void* context, const char *pValue, size_t length)
+static bool ITifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -312,11 +312,11 @@ static bool ITifJSONNumberHandler(void* context, const char *pValue, size_t leng
    return true;
 }
 
-static bool ITifJSONStringHandler(void* context, const char *pValue, size_t length)
+static bool ITifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    ITifJSONContext *pCtx = (ITifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
@@ -729,7 +729,7 @@ static void retropad_update_input(void)
                         pointer_y = (int16_t)state;
                   }
                }
-               
+
                /* Do not send extra descriptor state - RA side is not prepared to receive it */
                if (i>1)
                   continue;
@@ -1036,7 +1036,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
             sensor_item_colors[median_index]   = (uint16_t)(fabsf(32*4*value)) << 11;
       }
    }
-   
+
    /* Button values for sensor test screen, since they do not follow any pattern, it is *
     * provided as a direct list. */
    if (mouse_type == NETRETROPAD_MOUSE)
@@ -1063,7 +1063,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
       offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
       sensor_item_colors[86] = mouse.value[offset] ? 0xA000 : 0x0000;
-      
+
       offset = DESC_OFFSET(&mouse, 0, 0, RETRO_DEVICE_ID_MOUSE_BUTTON_4);
       sensor_item_colors[88] = mouse.value[offset] ? 0xA000 : 0x0000;
 
@@ -1095,7 +1095,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
       offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_SELECT);
       sensor_item_colors[76] = lightgun.value[offset] ? 0xA000 : 0x0000;
-      
+
       offset = DESC_OFFSET(&lightgun, 0, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN);
       sensor_item_colors[77] = lightgun.value[offset] ? 0xA000 : 0x0000;
 
@@ -1391,7 +1391,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
          pointer_prev_y = pointer_y_coord;
       }
    }
-   
+
    NETRETROPAD_CORE_PREFIX(video_cb)(frame_buf, 320, 240, 640);
    retro_sleep(4);
 }

@@ -3183,6 +3183,7 @@ static bool menu_shader_manager_operate_auto_preset(
                {
                   if (!(BIT32_GET(flags.flags, shader_types_flags[j])))
                      continue;
+
                   strlcpy(end, video_shader_get_preset_extension(shader_types[j]),
                         sizeof(preset_path) - (end - preset_path));
 
@@ -3227,7 +3228,7 @@ static bool menu_shader_manager_operate_auto_preset(
 
                for (j = 0; j < ARRAY_SIZE(shader_types); j++)
                {
-                  if (!(BIT32_GET(flags.flags, shader_types[j])))
+                  if (!(BIT32_GET(flags.flags, shader_types_flags[j])))
                      continue;
 
                   strlcpy(end, video_shader_get_preset_extension(shader_types[j]),
@@ -4068,8 +4069,7 @@ static size_t menu_driver_get_current_menu_label(struct menu_state *menu_st,
 #endif
 
 static size_t menu_driver_get_current_menu_sublabel(
-      struct menu_state *menu_st,
-      char *s, size_t len)
+      struct menu_state *menu_st, char *s, size_t len)
 {
    menu_entry_t     entry;
    MENU_ENTRY_INITIALIZE(entry);

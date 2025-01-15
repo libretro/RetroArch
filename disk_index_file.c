@@ -43,7 +43,7 @@ typedef struct
    char *image_path;
 } DCifJSONContext;
 
-static bool DCifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+static bool DCifJSONObjectMemberHandler(void* context, const char *pValue, size_t len)
 {
    DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
@@ -51,7 +51,7 @@ static bool DCifJSONObjectMemberHandler(void* context, const char *pValue, size_
    if (pCtx->current_entry_str_val)
       return false;
 
-   if (length)
+   if (len)
    {
       if (string_is_equal(pValue, "image_index"))
          pCtx->current_entry_uint_val = &pCtx->image_index;
@@ -63,11 +63,11 @@ static bool DCifJSONObjectMemberHandler(void* context, const char *pValue, size_
    return true;
 }
 
-static bool DCifJSONNumberHandler(void* context, const char *pValue, size_t length)
+static bool DCifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -76,14 +76,13 @@ static bool DCifJSONNumberHandler(void* context, const char *pValue, size_t leng
    return true;
 }
 
-static bool DCifJSONStringHandler(void* context, const char *pValue, size_t length)
+static bool DCifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    DCifJSONContext *pCtx = (DCifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
    {
-      if (*pCtx->current_entry_str_val)
-         free(*pCtx->current_entry_str_val);
+      free(*pCtx->current_entry_str_val);
 
       *pCtx->current_entry_str_val = strdup(pValue);
    }

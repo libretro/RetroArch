@@ -158,11 +158,11 @@ typedef struct
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
-void playlist_config_set_path(playlist_config_t *config, const char *path);
+size_t playlist_config_set_path(playlist_config_t *config, const char *path);
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object */
-void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
+size_t playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
 
 /* Creates a copy of the specified playlist configuration.
  * Returns false in the event of an error */

@@ -4477,8 +4477,9 @@ bool config_load_override(void *data)
    if (settings->bools.notification_show_config_override_load
          && show_notification)
    {
-      const char *_msg = msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+      char msg[128];
+      size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED), sizeof(msg));
+      runloop_msg_queue_push(msg, _len, 1, 100, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -4533,8 +4534,9 @@ bool config_load_override_file(const char *config_path)
    if (settings->bools.notification_show_config_override_load
          && show_notification)
    {
-      const char *_msg = msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+      char msg[128];
+      size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED), sizeof(msg));
+      runloop_msg_queue_push(msg, _len, 1, 100, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
@@ -4743,8 +4745,9 @@ bool config_load_remap(const char *directory_input_remapping,
 success:
    if (notification_show_remap_load)
    {
-      const char *_msg = msg_hash_to_str(msg_remap_loaded);
-      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+      char _msg[128];
+      size_t _len = strlcpy(_msg, msg_hash_to_str(msg_remap_loaded), sizeof(_msg));
+      runloop_msg_queue_push(_msg, _len, 1, 100, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return true;

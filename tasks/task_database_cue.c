@@ -551,14 +551,12 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    #define SCD_SERIAL_OFFSET 0x0193
    #define SCD_SERIAL_LEN    11
    #define SCD_REGION_OFFSET 0x0200
-   size_t _len;
+   int index;
+   size_t _len, __len, ___len;
    char pre_game_id[SCD_SERIAL_LEN+1];
    char raw_game_id[SCD_SERIAL_LEN+1];
    char check_suffix_50[10];
    char region_id;
-   size_t length;
-   size_t lengthref;
-   int index;
    char lgame_id[10];
 
    /* Load raw serial or quit */
@@ -588,9 +586,9 @@ int detect_scd_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    string_remove_all_whitespace(pre_game_id, raw_game_id);  /** rule: remove all spaces from the raw serial globally **/
 
    /** Dissect this pre serial into parts **/
-   length             = strlen(pre_game_id);
-   lengthref          = length - 2;
-   strncpy(check_suffix_50, &pre_game_id[lengthref], length - 2 + 1);
+   __len              = strlen(pre_game_id);
+   ___len             = __len - 2;
+   strncpy(check_suffix_50, &pre_game_id[___len], __len - 2 + 1);
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each prefix **/
@@ -666,7 +664,7 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    #define SAT_SERIAL_OFFSET 0x0030
    #define SAT_SERIAL_LEN    9
    #define SAT_REGION_OFFSET 0x0050
-   size_t _len, length;
+   size_t _len, __len;
    char raw_game_id[SAT_SERIAL_LEN+1];
    char region_id;
    char check_suffix_5[10];
@@ -703,10 +701,10 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    string_trim_whitespace_left(raw_game_id);
 
    /** Dissect this raw serial into parts **/
-   length             = strlen(raw_game_id);
-   strncpy(check_suffix_5,  &raw_game_id[length - 2], 2);
+   __len              = strlen(raw_game_id);
+   strncpy(check_suffix_5,  &raw_game_id[__len - 2], 2);
    check_suffix_5[2]  = '\0';
-   strncpy(check_suffix_50, &raw_game_id[length - 2], 2);
+   strncpy(check_suffix_50, &raw_game_id[__len - 2], 2);
    check_suffix_50[2] = '\0';
 
    /** redump serials are built differently for each region **/
@@ -717,8 +715,8 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
                && raw_game_id[1] == 'K'
                && raw_game_id[2] == '-')
          {
-            strncpy(s, &raw_game_id[3], length - 3);
-            s[length - 3] = '\0';
+            strncpy(s, &raw_game_id[3], __len - 3);
+            s[__len - 3] = '\0';
          }
          else
             strlcpy(s, raw_game_id, len);
@@ -730,13 +728,13 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          if (     !strcmp(check_suffix_5, "-5")
                || !strcmp(check_suffix_50, "50"))
          {
-            strncpy(rgame_id, &raw_game_id[2], length - 4);
-            rgame_id[length - 4] = '\0';
+            strncpy(rgame_id, &raw_game_id[2], __len - 4);
+            rgame_id[__len - 4] = '\0';
          }
          else
          {
-            strncpy(rgame_id, &raw_game_id[2], length - 1);
-            rgame_id[length - 1] = '\0';
+            strncpy(rgame_id, &raw_game_id[2], __len - 1);
+            rgame_id[__len - 1] = '\0';
          }
          _len      = strlcat(s, lgame_id, len);
          _len     += strlcpy(s + _len, rgame_id, len - _len);
@@ -759,13 +757,11 @@ int detect_sat_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
 int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
-   size_t _len;
+   size_t _len, __len, ___len;
    int total_hyphens;
    int total_hyphens_recalc;
    char pre_game_id[50];
    char raw_game_id[50];
-   size_t length;
-   size_t length_recalc;
    int index;
    size_t size_t_var;
    char lgame_id[20];
@@ -794,7 +790,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    string_trim_whitespace_left(raw_game_id);
    string_replace_multi_space_with_single_space(raw_game_id);
    string_replace_whitespace_with_single_character(raw_game_id, '-');
-   length        = strlen(raw_game_id);
+   __len         = strlen(raw_game_id);
    total_hyphens = string_count_occurrences_single_character(raw_game_id, '-');
 
    /** redump serials are built differently for each prefix **/
@@ -809,14 +805,14 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          size_t_var           = (size_t)index;
          strncpy(lgame_id, &raw_game_id[0], size_t_var);
          lgame_id[index]      = '\0';
-         strncpy(rgame_id, &raw_game_id[index + 1], length - 1);
-         rgame_id[length - 1] = '\0';
+         strncpy(rgame_id, &raw_game_id[index + 1], __len - 1);
+         rgame_id[__len - 1] = '\0';
          _len                 = strlcat(s, lgame_id, len);
          s[  _len]            = '-';
          s[++_len]            = '\0';
          strlcpy(s + _len, rgame_id, len - _len);
       }
-      else if (length <= 7)
+      else if (__len <= 7)
       {
          strncpy(s, raw_game_id, 7);
          s[7] = '\0';
@@ -825,8 +821,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       {
          strncpy(lgame_id, raw_game_id, 7);
          lgame_id[7]          = '\0';
-         strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
-         rgame_id[length - 1] = '\0';
+         strncpy(rgame_id, &raw_game_id[__len - 2], __len - 1);
+         rgame_id[__len - 1]  = '\0';
          _len                 = strlcat(s, lgame_id, len);
          s[  _len]            = '-';
          s[++_len]            = '\0';
@@ -839,8 +835,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    {
       strncpy(lgame_id, raw_game_id, 1);
       lgame_id[1]          = '\0';
-      strncpy(rgame_id, &raw_game_id[1], length - 1);
-      rgame_id[length - 1] = '\0';
+      strncpy(rgame_id, &raw_game_id[1], __len - 1);
+      rgame_id[__len - 1]  = '\0';
       _len                 = strlcpy(pre_game_id, lgame_id, sizeof(pre_game_id));
       pre_game_id[  _len]  = '-';
       pre_game_id[++_len]  = '\0';
@@ -855,12 +851,12 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          size_t_var                  = (size_t)index;
          strncpy(lgame_id, pre_game_id, size_t_var);
          lgame_id[index]             = '\0';
-         length_recalc               = strlen(pre_game_id);
+         ___len                      = strlen(pre_game_id);
       }
       else
       {
-         length_recalc = strlen(pre_game_id) - 1;
-         if (length_recalc <= 8)
+         ___len = strlen(pre_game_id) - 1;
+         if (___len <= 8)
          {
             strncpy(s, pre_game_id, 8);
             s[8] = '\0';
@@ -870,8 +866,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          strncpy(lgame_id, pre_game_id, 7);
          lgame_id[7] = '\0';
       }
-      strncpy(rgame_id, &pre_game_id[length_recalc - 2], length_recalc - 1);
-      rgame_id[length_recalc - 1] = '\0';
+      strncpy(rgame_id, &pre_game_id[___len - 2], ___len - 1);
+      rgame_id[___len - 1] = '\0';
       _len                        = strlcat(s, lgame_id, len);
       s[  _len]                   = '-';
       s[++_len]                   = '\0';
@@ -891,8 +887,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
             return false;
          strncpy(lgame_id, raw_game_id, index - 1);
          lgame_id[index - 1]  = '\0';
-         strncpy(rgame_id, &raw_game_id[length - 4], length - 3);
-         rgame_id[length - 3] = '\0';
+         strncpy(rgame_id, &raw_game_id[__len - 4], __len - 3);
+         rgame_id[__len - 3]  = '\0';
          _len                 = strlcat(s, lgame_id, len);
          s[  _len]            = '-';
          s[++_len]            = '\0';
@@ -907,7 +903,7 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
          && raw_game_id[1] == 'K'
          && raw_game_id[2] == '-')
    {
-      if (length <= 8)
+      if (__len <= 8)
       {
          /* For 8 chars serials in 'MK-xxxxx' format, we need to remove 'MK-' to match Redump database
           * Sega GT being the only exception (MK-51053), we have to check if it's not that game first */
@@ -926,8 +922,8 @@ int detect_dc_game(intfstream_t *fd, char *s, size_t len, const char *filename)
       {
          strncpy(lgame_id, raw_game_id, 8);
          lgame_id[8]          = '\0';
-         strncpy(rgame_id, &raw_game_id[length - 2], length - 1);
-         rgame_id[length - 1] = '\0';
+         strncpy(rgame_id, &raw_game_id[__len - 2], __len - 1);
+         rgame_id[__len - 1]  = '\0';
          _len                 = strlcat(s, lgame_id, len);
          s[  _len]            = '-';
          s[++_len]            = '\0';

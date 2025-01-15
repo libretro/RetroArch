@@ -487,29 +487,19 @@ static void runtime_log_get_runtime_hms(runtime_log_t *runtime_log,
 }
 
 /* Gets runtime as a pre-formatted string */
-void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
+size_t runtime_log_get_runtime_str(runtime_log_t *runtime_log,
       char *s, size_t len)
 {
    size_t _len = strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
          len);
-   s[_len  ]   = ' ';
    if (runtime_log)
-      snprintf(s + _len + 1, len - _len - 1, "%02u:%02u:%02u",
+      _len += snprintf(s + _len, len - _len, " %02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
    else
-   {
-      s[_len+1]   = '0';
-      s[_len+2]   = '0';
-      s[_len+3]   = ':';
-      s[_len+4]   = '0';
-      s[_len+5]   = '0';
-      s[_len+6]   = ':';
-      s[_len+7]   = '0';
-      s[_len+8]   = '0';
-      s[_len+9]   = '\0';
-   }
+      _len += strlcpy(s + _len, " 00:00:00", len - _len);
+   return _len;
 }
 
 /* Gets last played entry values */
