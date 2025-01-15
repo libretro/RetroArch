@@ -7063,9 +7063,22 @@ static bool netplay_init_serialization(netplay_t *netplay)
       info_size = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
 
 #ifdef HAVE_CHEEVOS
-      /* 8-byte block header + 8-byte flags + content */
-      netplay->cheevos_size = 8 + rcheevos_get_serialize_size();
-      info_size += 8 + CONTENT_ALIGN_SIZE(netplay->cheevos_size);
+      {
+         const settings_t* settings = config_get_ptr();
+         if (settings->bools.cheevos_enable)
+         {
+            /* 8-byte flags + content */
+            netplay->cheevos_size = 8 + rcheevos_get_serialize_size();
+         }
+         else
+         {
+            /* just 8-byte flags */
+            netplay->cheevos_size = 8;
+         }
+
+         /* 8-byte block header + content */
+         info_size += 8 + CONTENT_ALIGN_SIZE(netplay->cheevos_size);
+      }
 #endif
 
       netplay->state_size = info_size;
@@ -7576,9 +7589,12 @@ static void netplay_core_reset(netplay_t *netplay)
 
 static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
 {
-   const uint8_t* input = serial_info->data_const;
-   const uint8_t* stop  = input + serial_info->size;
-   bool seen_core       = false;
+#ifdef HAVE_CHEEVOS
+   const settings_t* settings = config_get_ptr();
+#endif
+   const uint8_t* input       = serial_info->data_const;
+   const uint8_t* stop        = input + serial_info->size;
+   bool seen_core             = false;
 
    input += 8; /* NETPLAY1 */
 
@@ -7600,7 +7616,7 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
          seen_core = true;
       }
 #ifdef HAVE_CHEEVOS
-      else if (memcmp(marker, NETPLAYSTATE_CHEEVOS_BLOCK, 4) == 0)
+      else if (memcmp(marker, NETPLAYSTATE_CHEEVOS_BLOCK, 4) == 0 && settings->bools.cheevos_enable)
       {
          const bool hardcore_state = (input[0] != 0);
          if (hardcore_state != rcheevos_hardcore_active() && !netplay_is_spectating())
@@ -7623,8 +7639,11 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
             }
          }
 
-         input += 8;
-         rcheevos_set_serialized_data((void*)input);
+         if (block_size > 8)
+         {
+            input += 8;
+            rcheevos_set_serialized_data((void*)input);
+         }
       }
 #endif
 
@@ -7675,11 +7694,16 @@ static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info
    output += CONTENT_ALIGN_SIZE(netplay->coremem_size);
 
 #ifdef HAVE_CHEEVOS
-   if (netplay->is_server || force_capture_achievements)
+   if (netplay->is_server || (force_capture_achievements && netplay->cheevos_size > 8))
    {
+      const settings_t* settings = config_get_ptr();
       size_t cheevos_size = 8;
-      if (netplay->cheevos_size > 8 && rcheevos_get_serialized_data(output + 16))
-         cheevos_size = netplay->cheevos_size;
+
+      if (settings->bools.cheevos_enable)
+      {
+         if (netplay->cheevos_size > 8 && rcheevos_get_serialized_data(output + 16))
+            cheevos_size = netplay->cheevos_size;
+      }
 
       netplay_write_block_header(output, NETPLAYSTATE_CHEEVOS_BLOCK, cheevos_size);
       output += 8;
