@@ -83,26 +83,25 @@ enum wildcard_type
 struct wildcard_token
 {
    enum wildcard_type token_id;
-   char token_name[64];
-   size_t token_size;
+   char token_name[32];
 };
 
 static struct wildcard_token wildcard_tokens[SHADER_NUM_WILDCARDS] = {
-   {RARCH_WILDCARD_CONTENT_DIR,                 "$CONTENT-DIR$", STRLEN_CONST("$CONTENT-DIR$")},
-   {RARCH_WILDCARD_CORE,                        "$CORE$", STRLEN_CONST("$CORE$")},
-   {RARCH_WILDCARD_GAME,                        "$GAME$", STRLEN_CONST("$GAME$")},
-   {RARCH_WILDCARD_VIDEO_DRIVER,                "$VID-DRV$", STRLEN_CONST("$VID-DRV$")},
-   {RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT,     "$VID-DRV-PRESET-EXT$", STRLEN_CONST("$VID-DRV-PRESET-EXT$")},
-   {RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,     "$VID-DRV-SHADER-EXT$", STRLEN_CONST("$VID-DRV-SHADER-EXT$")},
-   {RARCH_WILDCARD_CORE_REQUESTED_ROTATION,     "$CORE-REQ-ROT$", STRLEN_CONST("$CORE-REQ-ROT$")},
-   {RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,   "$VID-ALLOW-CORE-ROT$", STRLEN_CONST("$VID-ALLOW-CORE-ROT$")},
-   {RARCH_WILDCARD_VIDEO_USER_ROTATION,         "$VID-USER-ROT$", STRLEN_CONST("$VID-USER-ROT$")},
-   {RARCH_WILDCARD_VIDEO_FINAL_ROTATION,        "$VID-FINAL-ROT$", STRLEN_CONST("$VID-FINAL-ROT$")},
-   {RARCH_WILDCARD_SCREEN_ORIENTATION,          "$SCREEN-ORIENT$", STRLEN_CONST("$SCREEN-ORIENT$")},
-   {RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION, "$VIEW-ASPECT-ORIENT$", STRLEN_CONST("$VIEW-ASPECT-ORIENT$")},
-   {RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,     "$CORE-ASPECT-ORIENT$", STRLEN_CONST("$CORE-ASPECT-ORIENT$")},
-   {RARCH_WILDCARD_PRESET_DIR,                  "$PRESET-DIR$", STRLEN_CONST("$PRESET-DIR$")},
-   {RARCH_WILDCARD_PRESET,                      "$PRESET$", STRLEN_CONST("$PRESET$")},
+   {RARCH_WILDCARD_CONTENT_DIR,                 "$CONTENT-DIR$"},
+   {RARCH_WILDCARD_CORE,                        "$CORE$"},
+   {RARCH_WILDCARD_GAME,                        "$GAME$"},
+   {RARCH_WILDCARD_VIDEO_DRIVER,                "$VID-DRV$"},
+   {RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT,     "$VID-DRV-PRESET-EXT$"},
+   {RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,     "$VID-DRV-SHADER-EXT$"},
+   {RARCH_WILDCARD_CORE_REQUESTED_ROTATION,     "$CORE-REQ-ROT$"},
+   {RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,   "$VID-ALLOW-CORE-ROT$"},
+   {RARCH_WILDCARD_VIDEO_USER_ROTATION,         "$VID-USER-ROT$"},
+   {RARCH_WILDCARD_VIDEO_FINAL_ROTATION,        "$VID-FINAL-ROT$"},
+   {RARCH_WILDCARD_SCREEN_ORIENTATION,          "$SCREEN-ORIENT$"},
+   {RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION, "$VIEW-ASPECT-ORIENT$"},
+   {RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,     "$CORE-ASPECT-ORIENT$"},
+   {RARCH_WILDCARD_PRESET_DIR,                  "$PRESET-DIR$"},
+   {RARCH_WILDCARD_PRESET,                      "$PRESET$"},
 };
 
 /* TODO/FIXME - global state - perhaps move outside this file */
@@ -334,8 +333,7 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                   const int requested_rotation = retroarch_get_core_requested_rotation();
                   _len = strlcpy(replace_text,
                         (video_driver_get_core_aspect() < 1 || requested_rotation == 1 || requested_rotation == 3)
-                        ? "CORE-ASPECT-ORIENT-VERT"
-                        : "CORE-ASPECT-ORIENT-HORZ",
+                        ? "CORE-ASPECT-ORIENT-VERT" : "CORE-ASPECT-ORIENT-HORZ",
                         sizeof(replace_text));
                }
                break;
@@ -354,13 +352,17 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
             case RARCH_WILDCARD_PRESET_DIR:
                {
                   char preset_dir_name[DIR_MAX_LENGTH];
-                  fill_pathname_parent_dir_name(preset_dir_name, in_preset_path, sizeof(preset_dir_name));
+                  fill_pathname_parent_dir_name(preset_dir_name,
+                        in_preset_path, sizeof(preset_dir_name));
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
-                     strlcpy(preset_dir_name, path_basename_nocompression(preset_dir_name), sizeof(preset_dir_name));
+                     strlcpy(preset_dir_name,
+                           path_basename_nocompression(preset_dir_name),
+                           sizeof(preset_dir_name));
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
                      path_remove_extension(preset_dir_name);
                   if (string_is_not_equal_fast(preset_dir_name, "", sizeof("")))
-                     _len = strlcpy(replace_text, preset_dir_name, sizeof(replace_text));
+                     _len = strlcpy(replace_text,
+                           preset_dir_name, sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }
@@ -368,11 +370,14 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
             case RARCH_WILDCARD_PRESET:
                {
                   char preset_name[NAME_MAX_LENGTH];
-                  strlcpy(preset_name, path_basename_nocompression(in_preset_path), sizeof(preset_name));
+                  strlcpy(preset_name,
+                        path_basename_nocompression(in_preset_path),
+                        sizeof(preset_name));
                   if (string_is_not_equal_fast(preset_name, "", sizeof("")))
                      path_remove_extension(preset_name);
                   if (string_is_not_equal_fast(preset_name, "", sizeof("")))
-                     _len = strlcpy(replace_text, preset_name, sizeof(replace_text));
+                     _len = strlcpy(replace_text,
+                           preset_name, sizeof(replace_text));
                   else
                      replace_text[0] = '\0';
                }
@@ -417,12 +422,10 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
             char *replace_output = string_replace_substring(replaced_path,
                sizeof(replaced_path),
                wildcard_tokens[i].token_name,
-               wildcard_tokens[i].token_size,
+               STRLEN_CONST(wildcard_tokens[i].token_name),
                replace_text,
                _len);
-
             strlcpy(replaced_path, replace_output, sizeof(replaced_path));
-
             free(replace_output);
          }
       }
@@ -1168,6 +1171,18 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       config_set_path(conf, key, tmp_rel);
 
+      _len = strlcpy(key, "alias", sizeof(key));
+      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
+      config_set_string(conf, key, pass->alias);
+
+      _len = strlcpy(key, "wrap_mode",   sizeof(key));
+      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
+      config_set_string(conf, key, video_shader_wrap_mode_to_str(pass->wrap));
+
+      _len = strlcpy(key, "mipmap_input", sizeof(key));
+      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
+      config_set_string(conf, key, pass->mipmap ? "true" : "false");
+
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
          _len = strlcpy(key, "filter_linear", sizeof(key));
@@ -1178,24 +1193,12 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
                : "false");
       }
 
-      _len = strlcpy(key, "wrap_mode",   sizeof(key));
-      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
-      config_set_string(conf, key, video_shader_wrap_mode_to_str(pass->wrap));
-
       if (pass->frame_count_mod)
       {
          _len = strlcpy(key, "frame_count_mod", sizeof(key));
          strlcpy(key + _len, formatted_num, sizeof(key) - _len);
          config_set_int(conf, key, pass->frame_count_mod);
       }
-
-      _len = strlcpy(key, "mipmap_input", sizeof(key));
-      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
-      config_set_string(conf, key, pass->mipmap ? "true" : "false");
-
-      _len = strlcpy(key, "alias", sizeof(key));
-      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
-      config_set_string(conf, key, pass->alias);
 
       video_shader_write_fbo(conf, formatted_num, &pass->fbo);
    }
@@ -1224,16 +1227,24 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       /* Step through the textures in the shader */
       for (i = 0; i < shader->luts; i++)
       {
+         size_t _len;
+         char k[128];
          fill_pathname_abbreviated_or_relative(tmp_rel,
                tmp_base, shader->lut[i].path, PATH_MAX_LENGTH);
          pathname_make_slashes_portable(tmp_rel);
          config_set_string(conf, shader->lut[i].id, tmp_rel);
 
+         _len = strlcpy(k, shader->lut[i].id, sizeof(k));
+
+         /* Mipmap On or Off */
+         strlcpy(k + _len, "_mipmap", sizeof(k) - _len);
+         config_set_string(conf, k, shader->lut[i].mipmap
+               ? "true"
+               : "false");
+
          /* Linear filter ON or OFF */
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
-            char k[128];
-            size_t _len = strlcpy(k, shader->lut[i].id, sizeof(k));
             strlcpy(k + _len, "_linear", sizeof(k) - _len);
             config_set_string(conf, k,
                   (shader->lut[i].filter == RARCH_FILTER_LINEAR)
@@ -1242,23 +1253,9 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          }
 
          /* Wrap Mode */
-         {
-            char k[128];
-            size_t _len = strlcpy(k, shader->lut[i].id, sizeof(k));
-            strlcpy(k + _len, "_wrap_mode", sizeof(k) - _len);
-            config_set_string(conf, k,
-                  video_shader_wrap_mode_to_str(shader->lut[i].wrap));
-         }
-
-         /* Mipmap On or Off */
-         {
-            char k[128];
-            size_t _len = strlcpy(k, shader->lut[i].id, sizeof(k));
-            strlcpy(k + _len, "_mipmap", sizeof(k) - _len);
-            config_set_string(conf, k, shader->lut[i].mipmap
-                  ? "true"
-                  : "false");
-         }
+         strlcpy(k + _len, "_wrap_mode", sizeof(k) - _len);
+         config_set_string(conf, k,
+               video_shader_wrap_mode_to_str(shader->lut[i].wrap));
       }
    }
 
@@ -1422,7 +1419,7 @@ static bool video_shader_check_reference_chain_for_save(
             break;
          }
 
-         ref_depth += 1;
+         ref_depth++;
       }
 
       free(path_to_save_conformed);
