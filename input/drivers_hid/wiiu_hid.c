@@ -170,11 +170,11 @@ static int16_t wiiu_hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && pad->iface->button && pad->iface->button(pad->connection, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE && pad->iface->get_axis &&
-            ((float)abs(pad->iface->get_axis(pad->connection, joyaxis)) 
+            ((float)abs(pad->iface->get_axis(pad->connection, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -194,12 +194,11 @@ static bool wiiu_hid_joypad_rumble(void *data, unsigned slot,
    return false;
 }
 
-static void *wiiu_hid_alloc_zeroed(size_t alignment, size_t size)
+static void *wiiu_hid_alloc_zeroed(size_t alignment, size_t len)
 {
-   void *result = memalign(alignment, size);
+   void *result = memalign(alignment, len);
    if (result)
-      memset(result, 0, size);
-
+      memset(result, 0, len);
    return result;
 }
 
@@ -663,7 +662,7 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
          adapter->device_name);
 
    adapter->pad_driver = entry->iface;
-   
+
    if (entry->iface->multi_pad)
       return wiiu_hid_try_init_driver_multi(adapter, entry);
 
@@ -749,7 +748,7 @@ static void wiiu_hid_poll(void *data)
    synchronized_process_adapters(hid);
 }
 
-static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t size)
+static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t len)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
    int32_t result;
@@ -761,7 +760,7 @@ static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t size)
    }
 
    memset(adapter->tx_buffer, 0, adapter->tx_size);
-   memcpy(adapter->tx_buffer, buf, size);
+   memcpy(adapter->tx_buffer, buf, len);
 
    /* From testing, HIDWrite returns an error that looks like it's two
     * int16_t's bitmasked together. For example, one error I saw when trying
@@ -848,23 +847,18 @@ static int32_t wiiu_hid_set_protocol(void *data, uint8_t protocol)
          NULL, NULL);
 }
 
-static int32_t wiiu_hid_read(void *data, void *buffer, size_t size)
+static int32_t wiiu_hid_read(void *data, void *buffer, size_t len)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
    int32_t result;
-
    if (!adapter)
       return -1;
-
-   if (size > adapter->rx_size)
+   if (len > adapter->rx_size)
       return -1;
-
-   if ((result = HIDRead(adapter->handle, buffer, size, NULL, NULL)) < 0)
+   if ((result = HIDRead(adapter->handle, buffer, len, NULL, NULL)) < 0)
       wiiu_hid_report_hid_error("read failed", adapter, result);
-
    return result;
 }
-
 
 static void wiiu_hid_init_cachealigned_buffer(int32_t min_size, uint8_t **out_buf_ptr, int32_t *actual_size)
 {

@@ -930,14 +930,14 @@ static int _rjson_buffer_io(void* buf, int len, void *user)
    return len;
 }
 
-rjson_t *rjson_open_buffer(const void *buffer, size_t size)
+rjson_t *rjson_open_buffer(const void *buffer, size_t len)
 {
    rjson_t *json   = (rjson_t *)malloc(sizeof(rjson_t) + sizeof(const char *)*2);
    const char **ud = (const char **)(json + 1);
    if (!json)
       return NULL;
    ud[0] = (const char *)buffer;
-   ud[1] = ud[0] + size;
+   ud[1] = ud[0] + len;
    _rjson_setup(json, _rjson_buffer_io, (void*)ud, sizeof(json->input_buf));
    return json;
 }

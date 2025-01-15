@@ -331,15 +331,15 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 }
 
-void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
+void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
    unsigned i, offset;
-   int padding     = size % 16;
+   int padding     = len % 16;
    uint8_t buf[16] = {0};
 
-   RARCH_LOG("== %d-byte buffer ==================\n", (int)size);
+   RARCH_LOG("== %d-byte buffer ==================\n", (int)len);
 
-   for (i = 0, offset = 0; i < size; i++)
+   for (i = 0, offset = 0; i < len; i++)
    {
       buf[offset] = data[i];
       offset++;
@@ -468,7 +468,9 @@ void rarch_log_file_init(
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
-      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
+      strftime(timestamped_log_file_name,
+            sizeof(timestamped_log_file_name),
+            "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
    }
 
    /* If nothing has changed, do nothing */
@@ -506,10 +508,10 @@ void rarch_log_file_init(
       if (last_slash)
       {
          char tmp_buf[PATH_MAX_LENGTH] = {0};
-         size_t path_length            = last_slash + 1 - override_path;
+         size_t _len                   = last_slash + 1 - override_path;
 
-         if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
-            strlcpy(tmp_buf, override_path, path_length * sizeof(char));
+         if ((_len > 1) && (_len < PATH_MAX_LENGTH))
+            strlcpy(tmp_buf, override_path, _len * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));
       }
 

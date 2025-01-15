@@ -152,7 +152,7 @@ static void autosave_thread(void *data)
  * autosave_new:
  * @path            : path to autosave file
  * @data            : pointer to buffer
- * @size            : size of @data buffer
+ * @len             : size of @data buffer
  * @interval        : interval at which saves should be performed.
  *
  * Create and initialize autosave object.
@@ -161,7 +161,7 @@ static void autosave_thread(void *data)
  * NULL.
  **/
 static autosave_t *autosave_new(const char *path,
-      const void *data, size_t size,
+      const void *data, size_t len,
       unsigned interval, bool compress)
 {
    void       *buf               = NULL;
@@ -170,14 +170,14 @@ static autosave_t *autosave_new(const char *path,
       return NULL;
 
    handle->flags                 = 0;
-   handle->bufsize               = size;
+   handle->bufsize               = len;
    handle->interval              = interval;
    if (compress)
       handle->flags             |= AUTOSAVE_FLAG_COMPRESS_FILES;
    handle->retro_buffer          = data;
    handle->path                  = path;
 
-   if (!(buf = malloc(size)))
+   if (!(buf = malloc(len)))
    {
       free(handle);
       return NULL;

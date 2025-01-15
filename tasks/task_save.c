@@ -371,19 +371,20 @@ size_t content_get_serialized_size(void)
    rastate_size_info_t size;
    return content_get_rastate_size(&size, false);
 }
+
 size_t content_get_serialized_size_rewind(void)
 {
    rastate_size_info_t size;
    return content_get_rastate_size(&size, true);
 }
 
-static void content_write_block_header(unsigned char* output, const char* header, size_t size)
+static void content_write_block_header(unsigned char* output, const char* header, size_t len)
 {
    memcpy(output, header, 4);
-   output[4] = ((size) & 0xFF);
-   output[5] = ((size >> 8) & 0xFF);
-   output[6] = ((size >> 16) & 0xFF);
-   output[7] = ((size >> 24) & 0xFF);
+   output[4] = ((len) & 0xFF);
+   output[5] = ((len >> 8) & 0xFF);
+   output[6] = ((len >> 16) & 0xFF);
+   output[7] = ((len >> 24) & 0xFF);
 }
 
 static bool content_write_serialized_state(void* buffer,
@@ -523,9 +524,9 @@ static void task_save_handler(retro_task_t *task)
 
    if (!state->data)
    {
-      size_t size = 0;
-      state->data = content_get_serialized_data(&size);
-      state->size = (ssize_t)size;
+      size_t _len = 0;
+      state->data = content_get_serialized_data(&_len);
+      state->size = (ssize_t)_len;
    }
 
    remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
@@ -608,7 +609,7 @@ static void task_save_handler(retro_task_t *task)
  *
  * Create a new task to undo the last save of the content state.
  **/
-static bool task_push_undo_save_state(const char *path, void *data, size_t size)
+static bool task_push_undo_save_state(const char *path, void *data, size_t len)
 {
    settings_t     *settings;
    retro_task_t       *task      = task_init();
@@ -623,7 +624,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t size)
 
    strlcpy(state->path, path, sizeof(state->path));
    state->data                   = data;
-   state->size                   = size;
+   state->size                   = len;
    state->flags                 |= SAVE_TASK_FLAG_UNDO_SAVE;
    state->state_slot             = settings->ints.state_slot;
    if (video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID))
@@ -829,9 +830,9 @@ end:
    task_load_handler_finished(task, state);
 }
 
-static bool content_load_rastate1(unsigned char* input, size_t size)
+static bool content_load_rastate1(unsigned char* input, size_t len)
 {
-   unsigned char *stop = input + size;
+   unsigned char *stop = input + len;
    bool seen_core      = false;
 #ifdef HAVE_CHEEVOS
    bool seen_cheevos   = false;
@@ -934,18 +935,16 @@ static bool content_load_rastate1(unsigned char* input, size_t size)
    return true;
 }
 
-bool content_deserialize_state(
-      const void* serialized_data, size_t serialized_size)
+bool content_deserialize_state(const void *s, size_t len)
 {
-   if (memcmp(serialized_data, "RASTATE", 7) != 0)
+   if (memcmp(s, "RASTATE", 7) != 0)
    {
       /* old format is just core data, load it directly */
       retro_ctx_serialize_info_t serial_info;
-      serial_info.data_const = serialized_data;
-      serial_info.size       = serialized_size;
+      serial_info.data_const = s;
+      serial_info.size       = len;
       if (!core_unserialize(&serial_info))
          return false;
-
 #ifdef HAVE_CHEEVOS
       rcheevos_set_serialized_data(NULL);
 #endif
@@ -963,18 +962,17 @@ bool content_deserialize_state(
    }
    else
    {
-      unsigned char* input = (unsigned char*)serialized_data;
+      unsigned char* input = (unsigned char*)s;
       switch (input[7]) /* version */
       {
          case 1:
-            if (content_load_rastate1(input, serialized_size))
+            if (content_load_rastate1(input, len))
                break;
             /* fall-through intentional */
          default:
             return false;
       }
    }
-
    return true;
 }
 
@@ -1158,7 +1156,7 @@ static void save_state_cb(retro_task_t *task,
  *
  * Create a new task to save the content state.
  **/
-static void task_push_save_state(const char *path, void *data, size_t size, bool autosave)
+static void task_push_save_state(const char *path, void *data, size_t len, bool autosave)
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
@@ -1170,11 +1168,11 @@ static void task_push_save_state(const char *path, void *data, size_t size, bool
 
    strlcpy(state->path, path, sizeof(state->path));
    state->data                   = data;
-   state->size                   = size;
+   state->size                   = len;
    /* Don't show OSD messages if we are auto-saving */
    if (autosave)
-      state->flags              |= (SAVE_TASK_FLAG_AUTOSAVE |
-                                    SAVE_TASK_FLAG_MUTE);
+      state->flags              |= (  SAVE_TASK_FLAG_AUTOSAVE
+                                    | SAVE_TASK_FLAG_MUTE);
    if (settings->bools.savestate_thumbnail_enable)
    {
       /* Delay OSD messages and widgets for a few frames
@@ -1264,7 +1262,7 @@ static void content_load_and_save_state_cb(retro_task_t *task,
  * and then save the content state.
  **/
 static void task_push_load_and_save_state(const char *path, void *data,
-      size_t size, bool load_to_backup_buffer, bool autosave)
+      size_t len, bool load_to_backup_buffer, bool autosave)
 {
    retro_task_t      *task         = NULL;
    settings_t        *settings     = config_get_ptr();
@@ -1285,7 +1283,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    strlcpy(state->path, path, sizeof(state->path));
    if (load_to_backup_buffer)
       state->flags              |= SAVE_TASK_FLAG_LOAD_TO_BACKUP_BUFF;
-   state->undo_size              = size;
+   state->undo_size              = len;
    state->undo_data              = data;
    /* Don't show OSD messages if we are auto-saving */
    if (autosave)
@@ -1337,9 +1335,9 @@ static void task_push_load_and_save_state(const char *path, void *data,
  **/
 bool content_auto_save_state(const char *path)
 {
+   size_t _len;
    settings_t *settings = config_get_ptr();
    void *serial_data  = NULL;
-   size_t serial_size;
    intfstream_t *file = NULL;
 
    if (!core_info_current_supports_savestate())
@@ -1349,12 +1347,11 @@ bool content_auto_save_state(const char *path)
       return false;
    }
 
-   serial_size = core_serialize_size();
-
-   if (serial_size == 0)
+   _len = core_serialize_size();
+   if (_len == 0)
       return false;
 
-   serial_data = content_get_serialized_data(&serial_size);
+   serial_data = content_get_serialized_data(&_len);
    if (!serial_data)
       return false;
 
@@ -1372,7 +1369,7 @@ bool content_auto_save_state(const char *path)
       return false;
    }
 
-   if (serial_size != (size_t)intfstream_write(file, serial_data, serial_size))
+   if (_len != (size_t)intfstream_write(file, serial_data, _len))
    {
       intfstream_close(file);
       free(serial_data);
@@ -1395,7 +1392,6 @@ bool content_auto_save_state(const char *path)
       take_screenshot(dir_screenshot, path, true, validfb, false, false);
    }
 #endif
-
    return true;
 }
 
@@ -1410,7 +1406,7 @@ bool content_auto_save_state(const char *path)
  **/
 bool content_save_state(const char *path, bool save_to_disk)
 {
-   size_t serial_size;
+   size_t _len;
    void *data  = NULL;
 
    if (!core_info_current_supports_savestate())
@@ -1420,14 +1416,13 @@ bool content_save_state(const char *path, bool save_to_disk)
       return false;
    }
 
-   serial_size = core_serialize_size();
-
-   if (serial_size == 0)
+   _len = core_serialize_size();
+   if (_len == 0)
       return false;
 
    if (!save_state_in_background)
    {
-      if (!(data = content_get_serialized_data(&serial_size)))
+      if (!(data = content_get_serialized_data(&_len)))
       {
          RARCH_ERR("[State]: %s \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
@@ -1438,7 +1433,7 @@ bool content_save_state(const char *path, bool save_to_disk)
       RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
             msg_hash_to_str(MSG_SAVING_STATE),
             path,
-            (unsigned)serial_size,
+            (unsigned)_len,
             msg_hash_to_str(MSG_BYTES));
    }
 
@@ -1451,16 +1446,16 @@ bool content_save_state(const char *path, bool save_to_disk)
          /* TODO/FIXME - Use msg_hash_to_str here */
          RARCH_LOG("[State]: %s ...\n",
                msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
-         task_push_load_and_save_state(path, data, serial_size, true, false);
+         task_push_load_and_save_state(path, data, _len, true, false);
       }
       else
-         task_push_save_state(path, data, serial_size, false);
+         task_push_save_state(path, data, _len, false);
    }
    else
    {
       if (!data)
       {
-         if (!(data = content_get_serialized_data(&serial_size)))
+         if (!(data = content_get_serialized_data(&_len)))
          {
             RARCH_ERR("[State]: %s \"%s\".\n",
                   msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
@@ -1479,15 +1474,15 @@ bool content_save_state(const char *path, bool save_to_disk)
          undo_load_buf.data = NULL;
       }
 
-      if (!(undo_load_buf.data = malloc(serial_size)))
+      if (!(undo_load_buf.data = malloc(_len)))
       {
          free(data);
          return false;
       }
 
-      memcpy(undo_load_buf.data, data, serial_size);
+      memcpy(undo_load_buf.data, data, _len);
       free(data);
-      undo_load_buf.size = serial_size;
+      undo_load_buf.size = _len;
       strlcpy(undo_load_buf.path, path, sizeof(undo_load_buf.path));
    }
 
@@ -1735,8 +1730,8 @@ bool content_load_state_from_ram(void)
  **/
 bool content_save_state_to_ram(void)
 {
+   size_t _len;
    void *data  = NULL;
-   size_t serial_size;
 
    if (!core_info_current_supports_savestate())
    {
@@ -1745,14 +1740,14 @@ bool content_save_state_to_ram(void)
       return false;
    }
 
-   serial_size = core_serialize_size();
+   _len = core_serialize_size();
 
-   if (serial_size == 0)
+   if (_len == 0)
       return false;
 
    if (!save_state_in_background)
    {
-      if (!(data = content_get_serialized_data(&serial_size)))
+      if (!(data = content_get_serialized_data(&_len)))
       {
          RARCH_ERR("[State]: %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
@@ -1761,13 +1756,13 @@ bool content_save_state_to_ram(void)
 
       RARCH_LOG("[State]: %s, %u %s.\n",
             msg_hash_to_str(MSG_SAVING_STATE),
-            (unsigned)serial_size,
+            (unsigned)_len,
             msg_hash_to_str(MSG_BYTES));
    }
 
    if (!data)
    {
-      if (!(data = content_get_serialized_data(&serial_size)))
+      if (!(data = content_get_serialized_data(&_len)))
       {
          RARCH_ERR("[State]: %s.\n",
                msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
@@ -1782,15 +1777,15 @@ bool content_save_state_to_ram(void)
       ram_buf.state_buf.data = NULL;
    }
 
-   if (!(ram_buf.state_buf.data = malloc(serial_size)))
+   if (!(ram_buf.state_buf.data = malloc(_len)))
    {
       free(data);
       return false;
    }
 
-   memcpy(ram_buf.state_buf.data, data, serial_size);
+   memcpy(ram_buf.state_buf.data, data, _len);
    free(data);
-   ram_buf.state_buf.size = serial_size;
+   ram_buf.state_buf.size = _len;
    ram_buf.to_write_file  = true;
 
    return true;
