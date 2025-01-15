@@ -53,7 +53,7 @@
 
 /* TODO/FIXME -
  * fix game focus toggle */
-enum SDL_AUXILIARY_DEVICE_TYPE{
+enum sdl_input_auxiliary_device_type{
    SDL_AUXILIARY_DEVICE_TYPE_NONE,
    SDL_AUXILIARY_DEVICE_TYPE_SENSOR,
    SDL_AUXILIARY_DEVICE_TYPE_TOUCHID,
@@ -61,7 +61,7 @@ enum SDL_AUXILIARY_DEVICE_TYPE{
 };
 #ifdef HAVE_SDL2
 #if SDL_SUPPORT_FANCY_GAMEPAD
-struct game_controller_data{
+struct sdl_input_game_controller_data{
    SDL_GameController * ptr;
    bool has_accelerometer : 1;
    bool has_gyro : 1;
@@ -75,11 +75,11 @@ typedef struct {
 #endif
       SDL_TouchID touch_id;
 #if SDL_SUPPORT_FANCY_GAMEPAD
-      struct game_controller_data game_controller;
+      struct sdl_input_game_controller_data game_controller;
 #endif
    } dev;
-   enum SDL_AUXILIARY_DEVICE_TYPE type;
-} sdl_auxiliary_device;
+   enum sdl_input_auxiliary_device_type type;
+} sdl_input_auxiliary_device;
 #endif
 
 typedef struct sdl_input
@@ -99,7 +99,7 @@ typedef struct sdl_input
    int mouse_wr;
 #ifdef HAVE_SDL2
    unsigned auxiliary_device_number;
-   sdl_auxiliary_device * auxiliary_devices;
+   sdl_input_auxiliary_device * auxiliary_devices;
 #endif
 #ifdef __linux__
    /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
@@ -148,7 +148,7 @@ static void *sdl_input_init(const char *joypad_driver)
       );
 #endif
       sdl->auxiliary_device_number=0;
-      sdl->auxiliary_devices=malloc(sizeof(sdl_auxiliary_device)*(numJoysticks+numTouchDevices+numSensors));
+      sdl->auxiliary_devices=malloc(sizeof(sdl_input_auxiliary_device)*(numJoysticks+numTouchDevices+numSensors));
       for (i=0; i<numTouchDevices; i++){
          sdl->auxiliary_devices[sdl->auxiliary_device_number].
             dev.touch_id=SDL_GetTouchDevice(i);
@@ -575,28 +575,6 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
    return false;
 }
 
-static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
-{
-   sdl_input_t *sdl = (sdl_input_t*)data;
-
-   if (!sdl)
-      return 0.0f;
-
-   switch (id)
-   {
-      case RETRO_SENSOR_ILLUMINANCE:
-#ifdef __linux__
-         if (sdl->illuminance_sensor)
-            return linux_get_illuminance_reading(sdl->illuminance_sensor);
-#endif
-      /* Unsupported on non-Linux platforms */
-      default:
-         break;
-   }
-
-   return 0.0f;
-}
-
 #ifdef HAVE_SDL2
 static void sdl2_grab_mouse(void *data, bool state)
 {
@@ -729,9 +707,7 @@ static uint64_t sdl_get_capabilities(void *data)
          | (1 << RETRO_DEVICE_ANALOG);
 }
 
-static bool sdl_input_set_sensor_state (void *data, unsigned port, enum retro_sensor_action action, unsigned rate) {
-   return true;
-}
+
 static float sdl_input_get_sensor_input (void *data, unsigned port, unsigned id) {
    sdl_input_t * sdl = (sdl_input_t *)data;
 #if SDL_SUPPORT_SENSORS

@@ -2690,7 +2690,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
 
 /**
  * Function handling incoming udev events pertaining to a touch device.
-udev_handle_touch *
+ *
  * @param data Data passed by the callback -> udev_input_t*
  * @param event Incoming event.
  * @param dev The source device.
@@ -4361,11 +4361,6 @@ static void udev_input_grab_mouse(void *data, bool state)
 }
 
 
-static bool udev_input_set_sensor_state (void *data, unsigned port, enum retro_sensor_action action, unsigned rate) {
-   /*TODO*/
-   RARCH_DBG("udev_input_set_sensor_state: %d %d %d\n", port, action,rate);
-   return true;
-}
 static float udev_input_get_sensor_input(void *data, unsigned port, unsigned id) {
    const udev_input_t *udev = (const udev_input_t *)data;
    const udev_input_sensor_t * sensor;

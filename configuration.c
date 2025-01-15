@@ -3789,7 +3789,6 @@ static bool config_load_file(global_t *global,
          _len  = old_len;
          _len += snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
-
          strlcpy(prefix + _len, "_sensor_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_sensor_index[i], prefix);
 
@@ -6030,11 +6029,13 @@ bool input_remapping_load_file(void *data, const char *path)
                sensor_strings_flip[j], '_', sizeof(sensor_flip_ident));
          if(!config_get_int(conf, sensor_ident, &sensor_remap))
             sensor_remap=RETROK_UNKNOWN;
+         /*
          configuration_set_uint(settings,
             settings->uints.input_sensor_ids[i][j], sensor_remap);
+         */
          config_get_bool(conf, sensor_flip_ident, &sensor_flip_remap);
-         configuration_set_bool(settings,
-            settings->bools.input_sensor_flip_axis[i][j], sensor_flip_remap);
+         // configuration_set_bool(settings,
+         //    settings->bools.input_sensor_flip_axis[i][j], sensor_flip_remap);
 
       }
       }
@@ -6225,6 +6226,7 @@ bool input_remapping_save_file(const char *path)
       _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      #if 0
       for (j = 0; j < RETRO_SENSOR_MAX; j++){
          char sensor_ident[128];
          char sensor_ident_flip[128];
@@ -6252,6 +6254,7 @@ bool input_remapping_save_file(const char *path)
          );
          */
       }
+      #endif
    }
 
    ret = config_file_write(conf, path, true);
