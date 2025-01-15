@@ -83,7 +83,7 @@ enum wildcard_type
 struct wildcard_token
 {
    enum wildcard_type token_id;
-   char token_name[32];
+   char token_name[24];
 };
 
 static struct wildcard_token wildcard_tokens[SHADER_NUM_WILDCARDS] = {
