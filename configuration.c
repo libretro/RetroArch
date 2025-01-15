@@ -6034,8 +6034,10 @@ bool input_remapping_load_file(void *data, const char *path)
             settings->uints.input_sensor_ids[i][j], sensor_remap);
          */
          config_get_bool(conf, sensor_flip_ident, &sensor_flip_remap);
-         // configuration_set_bool(settings,
-         //    settings->bools.input_sensor_flip_axis[i][j], sensor_flip_remap);
+         /*
+          configuration_set_bool(settings,
+             settings->bools.input_sensor_flip_axis[i][j], sensor_flip_remap);
+         */
 
       }
       }
