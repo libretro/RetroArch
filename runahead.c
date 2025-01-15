@@ -150,11 +150,7 @@ static void strcat_alloc(char **dst, const char *s)
       {
          size_t __len = strlen(s);
          if (__len != 0)
-         {
-            char *_dst= (char*)malloc(__len + 1);
-            strcpy_literal(_dst, s);
-            src       = _dst;
-         }
+            src       = strldup(s, __len);
          else
             src       = NULL;
       }
@@ -243,11 +239,7 @@ static char *get_tmpdir_alloc(const char *override_dir)
    {
       size_t _len     = strlen(src);
       if (_len != 0)
-      {
-         char *dst    = (char*)malloc(_len + 1);
-         strcpy_literal(dst, src);
-         path         = dst;
-      }
+         path         = strldup(src, _len);
    }
    else
       path            = (char*)calloc(1,1);
@@ -272,11 +264,7 @@ static bool write_file_with_random_name(char **temp_dll_path,
    {
       size_t _len           = strlen(src);
       if (_len != 0)
-      {
-         char *dst          = (char*)malloc(_len + 1);
-         strcpy_literal(dst, src);
-         ext                = dst;
-      }
+         ext                = strldup(src, _len);
    }
    else
       ext                   = (char*)calloc(1,1);

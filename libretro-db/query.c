@@ -272,15 +272,13 @@ static void query_raise_unknown_function(
       ssize_t where, const char *name,
       ssize_t len, const char **error)
 {
-   int n = snprintf(s, _len,
+   int __len = snprintf(s, _len,
          "%" PRIu64 "::Unknown function '",
          (uint64_t)where
          );
-
-   if (len < ((ssize_t)_len - n - 3))
-      strncpy(s + n, name, len);
-
-   strcpy_literal(s + n + len, "'");
+   if (len < ((ssize_t)_len - __len - 3))
+      strncpy(s + __len, name, len);
+   strcpy_literal(s + __len + len, "'");
    *error = s;
 }
 
@@ -671,8 +669,7 @@ static struct buffer query_parse_method_call(
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         strcpy_literal(s,
-               "Too many arguments in function call.");
+         strlcpy(s, "Too many arguments in function call.", len);
          *error = s;
          goto clean;
       }
@@ -797,8 +794,7 @@ static struct buffer query_parse_table(
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         strcpy_literal(s,
-               "Too many arguments in function call.");
+         strlcpy(s, "Too many arguments in function call.", len);
          *error = s;
          goto clean;
       }
@@ -846,8 +842,7 @@ static struct buffer query_parse_table(
 
       if (argi >= QUERY_MAX_ARGS)
       {
-         strcpy_literal(s,
-               "Too many arguments in function call.");
+         strlcpy(s, "Too many arguments in function call.", len);
          *error = s;
          goto clean;
       }
