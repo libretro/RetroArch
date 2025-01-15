@@ -1983,6 +1983,10 @@ MSG_HASH(
    "검은 프레임 삽입"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "주의: 빠른 깜빡임은 일부 디스플레이에 잔상을 남길 수 있습니다. 사용에 주의가 필요합니다 // 프레임 사이에 검은 프레임을 삽입합니다. CRT 스캔을 흉내내어 모션 블러를 크게 줄일 수 있지만, 화면 밝기가 저하됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    "향상된 모션 선명도를 위해 프레임 사이에 검정색 프레임을 삽입합니다. 현재 디스플레이의 주사율과 일치하는 옵션만 사용하십시오. 144Hz, 165Hz 등과 같이 60Hz의 배수가 아닌 새로 고침 빈도에서는 사용하지 마십시오. 스왑 간격 > 1, 서브프레임, 프레임 지연, 정확한 프레임 동기화 설정들과 함께 사용하지 마십시오. 시스템의 VRR 설정을 켜두는 것은 괜찮습니다. 일시적인 화면 [...]"
    )
@@ -2063,6 +2067,10 @@ MSG_HASH(
    "셰이더 서브프레임"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   "주의: 빠른 깜빡임은 일부 디스플레이에 잔상을 남길 수 있습니다. 사용에 주의가 필요합니다 // 화면을 여러 세로 구간으로 나누고 다수의 서브프레임으로부터 각 구간에 해당하는 서브프레임을 렌더하는 방식으로 롤링 스캔라인 효과를 흉내냅니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
    "콘텐츠의 프레임 레이트보다 더 높은 프레임 레이트로 실행되도록 설계된 셰이더를 위해 프레임 사이에 추가 셰이더 프레임을 삽입합니다. 현재 디스플레이의 주사율과 일치하는 옵션만 사용하십시오. 144Hz, 165Hz 등과 같이 60Hz의 배수가 아닌 새로 고침 빈도에서는 사용하지 마십시오. 스왑 간격 > 1, 검정색 프레임 삽입, 프레임 지연, 정확한 프레임 동기화 설정들과 함께 사용[...]"
    )
@@ -2133,6 +2141,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    "롤링 스캔라인 시뮬레이션"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   "주의: 빠른 깜빡임은 일부 디스플레이에 잔상을 남길 수 있습니다. 사용에 주의가 필요합니다 // 화면을 여러 세로 구간으로 나누고 다수의 서브프레임으로부터 각 구간에 해당하는 서브프레임을 렌더하는 방식으로 롤링 스캔라인 효과를 흉내냅니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
@@ -4583,6 +4595,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "코어 정보 상태저장 기능 여부 무시"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   "코어 정보의 상태저장 기능 제공 여부를 무시할지 설정합니다. 관련 기능(미리 실행, 되감기 등)을 시험해볼 수 있게 됩니다."
+   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4822,6 +4838,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
    "자동 상태저장"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   "컨텐츠를 종료할 때 자동으로 상태저장을 생성합니다. '상태저장 자동으로 불러오기'가 활성화되어 있는 경우, 이 상태저장을 다음 시작 시에 자동으로 불러옵니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -15836,6 +15856,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    "폰트 사용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   "아래 화면 메뉴에 폰트를 사용합니다. 활성화하면 아래 화면에 버튼 설명이 표시됩니다. 상태저장 일자 표시는 영향을 받지 않습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
