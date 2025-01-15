@@ -106,7 +106,7 @@ void GameAIManager::Init()
    BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
 
    hinstLib = LoadLibrary(TEXT("game_ai.dll"));
-   assert(hinstLib);
+   retro_assert(hinstLib);
 
    char full_module_path[MAX_PATH];
    DWORD dwLen = GetModuleFileNameA(hinstLib, static_cast<char*>(&full_module_path), MAX_PATH);
@@ -115,16 +115,19 @@ void GameAIManager::Init()
    { 
       CreateGameAI = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI"); 
 
-      assert(CreateGameAI);
+      retro_assert(CreateGameAI);
    } 
 #else
       void *myso = dlopen("libgame_ai.so", RTLD_NOW);
-      assert(myso);
+      retro_assert(myso);
 
-      dlinfo(myso, RTLD_DI_ORIGIN, (void *) &game_ai_lib_path);
+      if(myso != NULL)
+      {
+         dlinfo(myso, RTLD_DI_ORIGIN, (void *) &game_ai_lib_path);
 
-      CreateGameAI = reinterpret_cast<creategameai_t>(dlsym(myso, "CreateGameAI"));
-      assert(CreateGameAI);
+         CreateGameAI = reinterpret_cast<creategameai_t>(dlsym(myso, "CreateGameAI"));
+         retro_assert(CreateGameAI);
+      }
 #endif
    }
 }
@@ -153,15 +156,18 @@ void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, c
    if (ga == nullptr && g_ram_ptr != nullptr)
    {
       ga = CreateGameAI(g_game_name.c_str());
-      assert(ga);
+      retro_assert(ga);
 
-      std::string data_path((char *)game_ai_lib_path);
-      data_path += "/data/";
-      data_path += g_game_name;
+      if (ga)
+      {
+         std::string data_path((char *)game_ai_lib_path);
+         data_path += "/data/";
+         data_path += g_game_name;
 
-      ga->Init((void *) g_ram_ptr, g_ram_size);
+         ga->Init((void *) g_ram_ptr, g_ram_size);
 
-      ga->SetDebugLog(game_ai_debug_log);
+         ga->SetDebugLog(game_ai_debug_log);
+      }
    }
 
    if (g_frameCount >= 3)
