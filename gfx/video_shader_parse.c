@@ -290,17 +290,12 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                strlcpy(replace_text, config_get_ptr()->arrays.video_driver, sizeof(replace_text));
                break;
             case RARCH_WILDCARD_CORE_REQUESTED_ROTATION:
-               {
-                  char rotation_replace_strings[4][24] = {
-                     "CORE-REQ-ROT-0",
-                     "CORE-REQ-ROT-90",
-                     "CORE-REQ-ROT-180",
-                     "CORE-REQ-ROT-270"
-                  };
-                  _len = strlcpy(replace_text,
-                        rotation_replace_strings[retroarch_get_core_requested_rotation()],
-                        sizeof(replace_text));
-               }
+               _len  = strlcpy(replace_text, "CORE-REQ-ROT-", sizeof(replace_text));
+               _len += snprintf(
+                     replace_text         + _len,
+                     sizeof(replace_text) - _len,
+                     "%d",
+                     retroarch_get_core_requested_rotation() * 90);
                break;
             case RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION:
                _len = strlcpy(replace_text, "VID-ALLOW-CORE-ROT-O",
@@ -311,44 +306,28 @@ static void video_shader_replace_wildcards(char *s, size_t len, char *in_preset_
                   _len += strlcpy(replace_text + _len, "FF", sizeof(replace_text) - _len);
                break;
             case RARCH_WILDCARD_VIDEO_USER_ROTATION:
-               {
-                  char rotation_replace_strings[4][24] = {
-                     "VID-USER-ROT-0",
-                     "VID-USER-ROT-90",
-                     "VID-USER-ROT-180",
-                     "VID-USER-ROT-270"
-                  };
-                  settings_t *settings           = config_get_ptr();
-                  _len = strlcpy(replace_text,
-                        rotation_replace_strings[settings->uints.video_rotation],
-                        sizeof(replace_text));
-               }
+               _len  = strlcpy(replace_text, "VID-USER-ROT-", sizeof(replace_text));
+               _len += snprintf(
+                     replace_text         + _len,
+                     sizeof(replace_text) - _len,
+                     "%d",
+                     config_get_ptr()->uints.video_rotation * 90);
                break;
             case RARCH_WILDCARD_VIDEO_FINAL_ROTATION:
-               {
-                  char rotation_replace_strings[4][24] = {
-                     "VID-FINAL-ROT-0",
-                     "VID-FINAL-ROT-90",
-                     "VID-FINAL-ROT-180",
-                     "VID-FINAL-ROT-270"
-                  };
-                  _len = strlcpy(replace_text,
-                        rotation_replace_strings[retroarch_get_rotation()],
-                        sizeof(replace_text));
-               }
+               _len  = strlcpy(replace_text, "VID-FINAL-ROT-", sizeof(replace_text));
+               _len += snprintf(
+                     replace_text         + _len,
+                     sizeof(replace_text) - _len,
+                     "%d",
+                     retroarch_get_rotation() * 90);
                break;
             case RARCH_WILDCARD_SCREEN_ORIENTATION:
-               {
-                  char rotation_replace_strings[4][24] = {
-                     "SCREEN-ORIENT-0",
-                     "SCREEN-ORIENT-90",
-                     "SCREEN-ORIENT-180",
-                     "SCREEN-ORIENT-270"
-                  };
-                  _len = strlcpy(replace_text,
-                        rotation_replace_strings[config_get_ptr()->uints.screen_orientation],
-                        sizeof(replace_text));
-               }
+               _len  = strlcpy(replace_text, "SCREEN-ORIENT-", sizeof(replace_text));
+               _len += snprintf(
+                     replace_text         + _len,
+                     sizeof(replace_text) - _len,
+                     "%d",
+                     config_get_ptr()->uints.screen_orientation * 90);
                break;
             case RARCH_WILDCARD_CORE_ASPECT_ORIENTATION:
                {
