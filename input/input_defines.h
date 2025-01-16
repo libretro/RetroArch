@@ -245,6 +245,7 @@ enum input_turbo_default_button
    INPUT_TURBO_DEFAULT_BUTTON_LAST
 };
 
+
 enum input_device_reservation_type
 {
   INPUT_DEVICE_RESERVATION_NONE = 0,
