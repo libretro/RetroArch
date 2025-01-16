@@ -2865,26 +2865,22 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
    return false;
 }
 
-void content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len)
+size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len)
 {
-   unsigned i                                   = 0;
+   unsigned i;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
    rarch_system_info_t                *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */
    const struct retro_subsystem_info *subsystem = runloop_st->subsystem_data;
-
    /* Core fully loaded, use the subsystem data */
    if (sys_info->subsystem.data)
       subsystem = sys_info->subsystem.data;
-
    for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
-      {
-         strlcpy(s, subsystem->desc, len);
-         break;
-      }
+         return strlcpy(s, subsystem->desc, len);
    }
+   return 0;
 }
 
 /* Add a rom to the subsystem ROM buffer */
