@@ -6126,7 +6126,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
 
 #ifdef HAVE_CHEEVOS
-               if (rcheevos_hardcore_active() && !netplay_is_spectating())
+               /* did not receive a protocol 7 packet. server isn't sending achievement data. disable hardcore */
+               if (!netplay->is_server && rcheevos_hardcore_active() && !netplay_is_spectating())
                {
                   const char* msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST);
                   runloop_msg_queue_push(msg, strlen(msg), 0, 180, true, NULL,
@@ -7460,7 +7461,7 @@ static void netplay_send_savestate(netplay_t *netplay,
       struct netplay_connection* connection = &netplay->connections[i];
       bool can_send;
 
-      /* if is_legacy_data is true, only send to peers on protocol 7 or higher */
+      /* if is_legacy_data is false, only send to peers on protocol 7 or higher */
       REQUIRE_PROTOCOL_VERSION(connection, 7)
          can_send = !is_legacy_data;
       else
@@ -7468,17 +7469,15 @@ static void netplay_send_savestate(netplay_t *netplay,
 
       if (can_send)
       {
-         if ((!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
-            || (connection->mode < NETPLAY_CONNECTION_CONNECTED)
-            || (connection->compression_supported != cx))
+         if ( (!(connection->flags & NETPLAY_CONN_FLAG_ACTIVE))
+            ||  (connection->mode < NETPLAY_CONNECTION_CONNECTED)
+            ||  (connection->compression_supported != cx))
             continue;
 
-         if (!netplay_send(&connection->send_packet_buffer,
-            connection->fd, header,
-            sizeof(header))
+         if (  !netplay_send(&connection->send_packet_buffer,
+                 connection->fd, header, sizeof(header))
             || !netplay_send(&connection->send_packet_buffer,
-               connection->fd,
-               netplay->zbuffer, wn))
+                 connection->fd, netplay->zbuffer, wn))
             netplay_hangup(netplay, connection);
       }
       else
@@ -7492,7 +7491,7 @@ static void netplay_send_savestate(netplay_t *netplay,
       /* at least one peer is not on protocol 7 or higher. extract the coremem segment
        * and only send it. */
       const uint8_t* input = netplay_get_savestate_coremem(netplay,
-         (const uint8_t*)serial_info->data_const);
+            (const uint8_t*)serial_info->data_const);
 
       if (input != serial_info->data_const)
       {
