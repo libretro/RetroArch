@@ -9906,7 +9906,6 @@ static bool setting_append_list_input_player_options(
 
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
-      /*
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_sensor_index[user],
@@ -9926,7 +9925,6 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
-      */
       CONFIG_ACTION_ALT(
             list, list_info,
             bind_all[user],
@@ -10035,6 +10033,26 @@ static bool setting_append_list_input_player_options(
                &subgroup_info,
                parent_group);
          (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
+      }
+      for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
+         //TODO Retro Sensor
+
+         char label[NAME_MAX_LENGTH];
+         char name[NAME_MAX_LENGTH];
+         snprintf(label,NAME_MAX_LENGTH, "test label %d", j);
+         snprintf(name,NAME_MAX_LENGTH, "test name %d", j);
+
+         CONFIG_BIND_ALT(
+            list, list_info,
+            &input_config_binds[user][i],
+            user + 1,
+            user,
+            strdup(name),
+            strdup(label),
+            &defaults[i],
+            &group_info,
+            &subgroup_info,
+            parent_group);
       }
    }
 
