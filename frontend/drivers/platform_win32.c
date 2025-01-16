@@ -567,6 +567,7 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    const char *libretro_directory = getenv("LIBRETRO_DIRECTORY");
    const char *libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
    const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
    const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
    if (!string_is_empty(tmp_dir))
@@ -647,8 +648,13 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       ":\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
       ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-      ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   if (!string_is_empty(libretro_system_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+	       libretro_system_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+             ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 

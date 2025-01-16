@@ -1326,6 +1326,7 @@ static void frontend_unix_get_env(int *argc,
    const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
    const char* libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
    const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
    const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
 #ifdef ANDROID
@@ -1916,8 +1917,13 @@ static void frontend_unix_get_env(int *argc,
          "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], base_path,
          "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], base_path,
-         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   if (!string_is_empty(libretro_system_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+	       libretro_system_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], base_path,
+             "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 #endif
 
 #ifndef IS_SALAMANDER
