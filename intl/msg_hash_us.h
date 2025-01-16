@@ -15588,6 +15588,10 @@ MSG_HASH(
    "Achievements Hardcore Mode changed by host."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "Netplay host needs to be updated. Achievements Hardcore Mode disabled for current session."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Mastered %s"
    )
