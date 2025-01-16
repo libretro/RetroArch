@@ -2142,8 +2142,10 @@ static const uint8_t* netplay_get_savestate_coremem(netplay_t* netplay, const ui
 static uint32_t netplay_delta_frame_crc(netplay_t *netplay,
       struct delta_frame *delta)
 {
+   const uint8_t* input;
+
    NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
-   const uint8_t* input = netplay_get_savestate_coremem(netplay,
+   input = netplay_get_savestate_coremem(netplay,
       (const uint8_t*)delta->state);
 
    return encoding_crc32(0L, input, netplay->coremem_size);
