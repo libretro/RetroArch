@@ -9906,6 +9906,7 @@ static bool setting_append_list_input_player_options(
 
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
+      /*
       CONFIG_UINT_ALT(
             list, list_info,
             &settings->uints.input_sensor_index[user],
@@ -9925,7 +9926,7 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
-      
+      */
       CONFIG_ACTION_ALT(
             list, list_info,
             bind_all[user],
@@ -9964,69 +9965,63 @@ static bool setting_append_list_input_player_options(
       (*list)[list_info->index - 1].action_cancel  = NULL;
 #endif
    }
-
-   {
-      unsigned i;
-      for (i = 0; i < RARCH_BIND_LIST_END; i++)
-      {  
+   { 
+      unsigned i,j;
+      const char *value_na =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
-         int len;
-         const char *input_desc_btn;
-         bool value_available=true;
-         /*default value*/
-         unsigned cur_binding =  (i < RARCH_ANALOG_BIND_LIST_END)
-            ? input_config_bind_order[i]
-            : i;
-         input_desc_btn=input_config_bind_map_get_desc(cur_binding);
-         snprintf(name, sizeof(name), "p%u_%s", user + 1,
-            input_config_bind_map_get_base(cur_binding));
-         len=snprintf(label, sizeof(label), "%s%s%s",
-            buffer[user],
-            string_is_empty(buffer[user])?"":" ",
-            input_desc_btn);
-         if (input_config_bind_map_get_meta(cur_binding))
+         size_t _len = 0;
+         i           =  (j < RARCH_ANALOG_BIND_LIST_END)
+            ? input_config_bind_order[j]
+            : j;
+
+         if (input_config_bind_map_get_meta(i))
             continue;
 
-         if (settings->bools.input_descriptor_label_show
-               && (cur_binding < RARCH_FIRST_META_KEY)
-               && core_has_set_input_descriptor()
-               && (cur_binding != RARCH_TURBO_ENABLE))
+         name[0]          = '\0';
+
+         if (!string_is_empty(buffer[user]))
          {
-            if (sys_info->input_desc_btn[user][cur_binding])
-               input_desc_btn=sys_info->input_desc_btn[user][cur_binding];
-            else value_available=false;
-         }
-         if (value_available || !settings->bools.input_descriptor_hide_unbound){
-
-
-
-            if (!value_available)
-               snprintf(label+len,sizeof(label)-len, " (%s)",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-
-            CONFIG_BIND_ALT(
-                  list, list_info,
-                  &input_config_binds[user][cur_binding],
-                  user + 1,
-                  user,
-                  strdup(name),
-                  strdup(label),
-                  &defaults[cur_binding],
-                  &group_info,
-                  &subgroup_info,
-                  parent_group);
-            (*list)[list_info->index - 1].bind_type = cur_binding + MENU_SETTINGS_BIND_BEGIN;
+            _len          = strlcpy(label, buffer[user], sizeof(label));
+            label[  _len] = ' ';
+            label[++_len] = '\0';
          }
          else
-            strlcpy(label       + len,
-                  input_config_bind_map_get_desc(i),
-                  sizeof(label) - len);
+            label[0]      = '\0';
 
-         len = snprintf(name, sizeof(name), "p%u_", user + 1);
-         strlcpy(name + len,
+         if (
+               settings->bools.input_descriptor_label_show
+               && (i < RARCH_FIRST_META_KEY)
+               && core_has_set_input_descriptor()
+               && (i != RARCH_TURBO_ENABLE)
+            )
+         {
+            if (sys_info->input_desc_btn[user][i])
+               strlcpy(label       + _len,
+                     sys_info->input_desc_btn[user][i],
+                     sizeof(label) - _len);
+            else
+            {
+               snprintf(label, sizeof(label), "%s (%s)",
+                     input_config_bind_map_get_desc(i),
+                     value_na);
+
+               if (settings->bools.input_descriptor_hide_unbound)
+                  continue;
+            }
+         }
+         else
+            strlcpy(label       + _len,
+                  input_config_bind_map_get_desc(i),
+                  sizeof(label) - _len);
+
+         _len = snprintf(name, sizeof(name), "p%u_", user + 1);
+         strlcpy(name + _len,
                input_config_bind_map_get_base(i),
-               sizeof(name) - len);
+               sizeof(name) - _len);
 
          CONFIG_BIND_ALT(
                list, list_info,
