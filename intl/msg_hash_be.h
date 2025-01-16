@@ -2296,7 +2296,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "Прымушае пэўны паварот выявы. Дадаецца да паваротаў, што задае ядро."
+   "Прымушае ўжыць пэўны паварот выявы. Дадаецца да паваротаў, што задае ядро."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
@@ -2304,7 +2304,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   "Прымушае пэўную арыентацыю экрана паводле аперацыйнай сістэмы."
+   "Прымушае ўжыць пэўную арыентацыю экрана паводле аперацыйнай сістэмы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
@@ -2320,7 +2320,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   "Прымушае пэўнае зрушэнне выявы па гарызанталі. Ужываецца глабальна."
+   "Прымушае ўжыць пэўнае зрушэнне выявы па гарызанталі. Ужываецца глабальна."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
@@ -2328,7 +2328,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   "Прымушае пэўнае зрушэнне выявы па вертыкалі. Ужываецца глабальна."
+   "Прымушае ўжыць пэўнае зрушэнне выявы па вертыкалі. Ужываецца глабальна."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
