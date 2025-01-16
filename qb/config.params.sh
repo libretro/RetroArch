@@ -207,3 +207,4 @@ HAVE_MEMFD_CREATE=auto     # libc supports memfd_create
 C89_CRTSWITCHRES=no
 HAVE_MICROPHONE=yes        # Microphone support
 HAVE_TEST_DRIVERS=yes      # Test input driver
+HAVE_GAME_AI=no

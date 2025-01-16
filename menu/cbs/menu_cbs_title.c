@@ -807,6 +807,10 @@ DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load,        
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_cheat_file_load_append, MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND)
 DEFAULT_FILL_TITLE_SEARCH_FILTER_MACRO(action_get_title_overlay,                MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET)
 
+#ifdef HAVE_GAME_AI
+DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_game_ai_options_list,       MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS)
+#endif
+
 static int action_get_title_generic(char *s, size_t len,
       const char *path, const char *text)
 {
@@ -1312,6 +1316,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          action_get_title_deferred_core_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET,
          action_get_title_deferred_core_list},
+#if defined(HAVE_GAME_AI)
+      {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS,
+         action_get_core_game_ai_options_list},
+#endif
    };
 
    if (cbs->setting)
@@ -1751,6 +1759,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_manual_content_scan_dir);
             break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
+            BIND_ACTION_GET_TITLE(cbs, action_get_core_game_ai_options_list);
+            break;
+
+#endif
          default:
             return -1;
       }
