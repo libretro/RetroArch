@@ -255,7 +255,8 @@ const char *path_get_extension(const char *path)
 char *path_get_extension_mutable(const char *path)
 {
    char *ext = NULL;
-   if (!string_is_empty(path) && ((ext = (char*)strrchr(path_basename(path), '.'))))
+   if (    !string_is_empty(path)
+       && ((ext = (char*)strrchr(path_basename(path), '.'))))
       return ext;
    return NULL;
 }
@@ -276,8 +277,7 @@ char *path_get_extension_mutable(const char *path)
  **/
 char *path_remove_extension(char *s)
 {
-   char *last = !string_is_empty(s)
-      ? (char*)strrchr(path_basename(s), '.') : NULL;
+   char *last = path_get_extension_mutable(s);
    if (!last)
       return NULL;
    if (*last)

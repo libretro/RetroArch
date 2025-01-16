@@ -7856,7 +7856,8 @@ void runloop_path_set_basename(const char *path)
     */
    path_basedir_wrapper(runloop_st->runtime_content_path_basename);
    if (!string_is_empty(runloop_st->runtime_content_path_basename))
-      fill_pathname_dir(runloop_st->runtime_content_path_basename, path, "", sizeof(runloop_st->runtime_content_path_basename));
+      fill_pathname_dir(runloop_st->runtime_content_path_basename, path,
+            "", sizeof(runloop_st->runtime_content_path_basename));
 #endif
 
    if ((dst = strrchr(runloop_st->runtime_content_path_basename, '.')))

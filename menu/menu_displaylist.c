@@ -5145,7 +5145,7 @@ static unsigned menu_displaylist_parse_content_information(
             settings->paths.path_content_database,
             db_name,
             sizeof(db_path));
-      last = (char*)strrchr(path_basename(db_path), '.');
+      last = path_get_extension_mutable(db_path);
       if (*last)
       {
          last[0] = '.';
