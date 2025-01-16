@@ -5428,6 +5428,22 @@ static void runloop_pause_toggle(
       command_event(CMD_EVENT_PAUSE, NULL);
 }
 
+static bool runloop_is_libretro_running(runloop_state_t* runloop_st, settings_t* settings)
+{
+   const bool runloop_is_inited = (runloop_st->flags & RUNLOOP_FLAG_IS_INITED) ? true : false;
+#ifdef HAVE_NETWORKING
+   const bool menu_pause_libretro = settings->bools.menu_pause_libretro
+      && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
+   const bool menu_pause_libretro = settings->bools.menu_pause_libretro;
+#endif
+
+   return runloop_is_inited
+      && !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+      && (!menu_pause_libretro
+         && runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
+}
+
 static enum runloop_state_enum runloop_check_state(
       bool error_on_init,
       settings_t *settings,
@@ -5963,18 +5979,7 @@ static enum runloop_state_enum runloop_check_state(
 
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
-         bool runloop_is_inited      = (runloop_st->flags & RUNLOOP_FLAG_IS_INITED) ? true : false;
-#ifdef HAVE_NETWORKING
-         bool menu_pause_libretro    = settings->bools.menu_pause_libretro
-            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-#else
-         bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
-#endif
-         bool libretro_running       =
-                  runloop_is_inited
-               && !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-               && (  !menu_pause_libretro
-                  && runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
+         const bool libretro_running = runloop_is_libretro_running(runloop_st, settings);
 
          if (menu)
          {
@@ -6967,7 +6972,12 @@ int runloop_iterate(void)
 #endif
 #ifdef HAVE_CHEEVOS
          if (cheevos_enable)
-            rcheevos_idle();
+         {
+            if (runloop_is_libretro_running(runloop_st, settings))
+               rcheevos_test();
+            else
+               rcheevos_idle();
+         }
 #endif
 #ifdef HAVE_MENU
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
