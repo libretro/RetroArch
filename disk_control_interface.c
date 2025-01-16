@@ -243,9 +243,9 @@ unsigned disk_control_get_image_index(
  **/
 void disk_control_get_image_label(
       disk_control_interface_t *disk_control,
-      unsigned index, char *label, size_t len)
+      unsigned index, char *s, size_t len)
 {
-   if (!label || len < 1)
+   if (!s || len < 1)
       return;
 
    if (!disk_control)
@@ -254,13 +254,13 @@ void disk_control_get_image_label(
    if (!disk_control->cb.get_image_label)
       goto error;
 
-   if (!disk_control->cb.get_image_label(index, label, len))
+   if (!disk_control->cb.get_image_label(index, s, len))
       goto error;
 
    return;
 
 error:
-   label[0] = '\0';
+   s[0] = '\0';
 }
 
 /***********/

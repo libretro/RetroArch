@@ -522,9 +522,7 @@ bool event_save_files(bool is_sram_used)
       return false;
 
    for (i = 0; i < task_save_files->size; i++)
-   {
       content_save_ram_file(i, compress_files);
-   }
 
    return true;
 }

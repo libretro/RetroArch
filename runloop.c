@@ -1192,8 +1192,8 @@ static bool validate_folder_specific_options(char *s, size_t len)
  **/
 static void runloop_init_core_options_path(
       settings_t *settings,
-      char *s, size_t len,
-      char *src_path, size_t src_len)
+      char *s,  size_t len,
+      char *s2, size_t len2)
 {
    runloop_state_t *runloop_st    = &runloop_state;
    bool game_specific_options     = settings->bools.game_specific_options;
@@ -1250,11 +1250,9 @@ static void runloop_init_core_options_path(
       if (     !per_core_options
             || !per_core_options_exist)
       {
-         const char *options_path   = path_core_options;
-
-         if (!string_is_empty(options_path))
+         if (!string_is_empty(path_core_options))
             strlcpy(global_options_path,
-                  options_path, sizeof(global_options_path));
+                  path_core_options, sizeof(global_options_path));
          else if (!path_is_empty(RARCH_PATH_CONFIG))
             fill_pathname_resolve_relative(
                   global_options_path, path_get(RARCH_PATH_CONFIG),
@@ -1266,7 +1264,7 @@ static void runloop_init_core_options_path(
       {
          strlcpy(s, per_core_options_path, len);
          if (!per_core_options_exist)
-            strlcpy(src_path, global_options_path, src_len);
+            strlcpy(s2, global_options_path, len2);
       }
       else
          strlcpy(s, global_options_path, len);

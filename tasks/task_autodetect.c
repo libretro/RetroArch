@@ -202,10 +202,9 @@ static void input_autoconfigure_set_config_file(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config, unsigned alternative)
 {
-   struct config_entry_list *entry    = NULL;
-   char config_key[32]                = {0};
-   char config_key_postfix[7]         = {0};
    size_t _len;
+   char config_key[32];
+   struct config_entry_list *entry    = NULL;
 
    /* Attach config file */
    autoconfig_handle->autoconfig_file = config;
@@ -220,16 +219,13 @@ static void input_autoconfigure_set_config_file(
                sizeof(autoconfig_handle->device_info.config_name));
    }
 
-   /* Read device display name */
-   if (alternative > 0)
-      snprintf(config_key_postfix, sizeof(config_key_postfix),
-               "_alt%d",alternative);
-
    /* Parse config file */
    _len  = strlcpy(config_key, "input_device_display_name",
             sizeof(config_key));
-   _len += strlcpy(config_key  + _len, config_key_postfix,
-            sizeof(config_key) - _len);
+   /* Read device display name */
+   if (alternative > 0)
+      _len += snprintf(config_key + _len, sizeof(config_key) - _len,
+               "_alt%d",alternative);
 
    if (  (entry = config_get_entry(config, config_key))
          && !string_is_empty(entry->value))
@@ -483,12 +479,12 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
             strlcpy(settings_value_device_name, settings_value,
                     sizeof(settings_value_device_name));
             device_has_reserved_slot =
-               string_is_equal(device_name, settings_value_device_name) ||
-               string_is_equal(device_display_name, settings_value_device_name);
+                  string_is_equal(device_name, settings_value_device_name)
+               || string_is_equal(device_display_name, settings_value_device_name);
          }
          else
-            device_has_reserved_slot = (vendor_id == settings_value_vendor_id &&
-                                       product_id == settings_value_product_id);
+            device_has_reserved_slot = (  vendor_id  == settings_value_vendor_id
+                                       && product_id == settings_value_product_id);
 
          if (device_has_reserved_slot)
          {

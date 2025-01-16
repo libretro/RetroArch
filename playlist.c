@@ -194,43 +194,40 @@ playlist_config_t *playlist_get_config(playlist_t *playlist)
 {
    if (!playlist)
       return NULL;
-
    return &playlist->config;
 }
 
 static void path_replace_base_path_and_convert_to_local_file_system(
-      char *out_path,
+      char *s,
       const char *in_path,
-      const char *in_oldrefpath,
-      const char *in_refpath,
-      size_t size)
+      const char *in_oldrefpath, const char *in_refpath,
+      size_t len)
 {
    size_t in_oldrefpath_length = strlen(in_oldrefpath);
-
    /* If entry path is inside playlist base path,
     * replace it with new base content directory */
    if (string_starts_with_size(in_path, in_oldrefpath, in_oldrefpath_length))
    {
       size_t in_refpath_length = strlen(in_refpath);
-      memcpy(out_path, in_refpath, in_refpath_length);
+      memcpy(s, in_refpath, in_refpath_length);
       memcpy(
-            out_path + in_refpath_length,
-            in_path  + in_oldrefpath_length,
+            s               + in_refpath_length,
+            in_path         + in_oldrefpath_length,
             strlen(in_path) - in_oldrefpath_length + 1);
 #ifdef _WIN32
       /* If we are running under a Windows filesystem,
        * '/' characters are not allowed anywhere.
        * We replace with '\' and hope for the best... */
-      string_replace_all_chars(out_path,
+      string_replace_all_chars(s,
             POSIX_PATH_DELIMITER, WINDOWS_PATH_DELIMITER);
 #else
       /* Under POSIX filesystem, we replace '\' characters with '/' */
-      string_replace_all_chars(out_path,
+      string_replace_all_chars(s,
             WINDOWS_PATH_DELIMITER, POSIX_PATH_DELIMITER);
 #endif
    }
    else
-      strlcpy(out_path, in_path, size);
+      strlcpy(s, in_path, len);
 }
 
 /* Generates a case insensitive hash for the
@@ -2980,7 +2977,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
             tmp_entry_path[0] = '\0';
             path_replace_base_path_and_convert_to_local_file_system(
                   tmp_entry_path, entry->path,
-                  playlist->base_content_directory, playlist->config.base_content_directory,
+                  playlist->base_content_directory,
+                  playlist->config.base_content_directory,
                   sizeof(tmp_entry_path));
 
             free(entry->path);
