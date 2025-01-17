@@ -331,11 +331,11 @@ static int task_database_cue_get_serial(const char *name, char *s, size_t len)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
-   size_t size      = 0;
+   size_t _len      = 0;
 
    track_path[0]    = '\0';
 
-   if (cue_find_track(name, true, &offset, &size,
+   if (cue_find_track(name, true, &offset, &_len,
          track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
@@ -345,7 +345,7 @@ static int task_database_cue_get_serial(const char *name, char *s, size_t len)
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, offset, size, s, len);
+   return intfstream_file_get_serial(track_path, offset, _len, s, len);
 }
 
 static int task_database_gdi_get_serial(const char *name, char *s, size_t len)
@@ -385,7 +385,7 @@ static int task_database_chd_get_serial(const char *name, char *serial, size_t l
 }
 
 static bool intfstream_file_get_crc(const char *name,
-      uint64_t offset, size_t size, uint32_t *crc)
+      uint64_t offset, size_t len, uint32_t *crc)
 {
    bool rv;
    intfstream_t *fd  = intfstream_open_file(name,
@@ -407,20 +407,20 @@ static bool intfstream_file_get_crc(const char *name,
    if (file_size < 0)
       goto error;
 
-   if (offset != 0 || size < (uint64_t) file_size)
+   if (offset != 0 || len < (uint64_t) file_size)
    {
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
-      data = (uint8_t*)malloc(size);
+      data = (uint8_t*)malloc(len);
 
-      if (intfstream_read(fd, data, size) != (int64_t) size)
+      if (intfstream_read(fd, data, len) != (int64_t)len)
          goto error;
 
       intfstream_close(fd);
       free(fd);
       fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE, size);
+            RETRO_VFS_FILE_ACCESS_HINT_NONE, len);
 
       if (!fd)
          goto error;
@@ -447,11 +447,11 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
-   size_t size      = 0;
+   size_t _len      = 0;
 
    track_path[0]    = '\0';
 
-   if (cue_find_track(name, false, &offset, &size,
+   if (cue_find_track(name, false, &offset, &_len,
          track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
@@ -461,7 +461,7 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-   return intfstream_file_get_crc(track_path, offset, size, crc);
+   return intfstream_file_get_crc(track_path, offset, _len, crc);
 }
 
 static int task_database_gdi_get_crc(const char *name, uint32_t *crc)

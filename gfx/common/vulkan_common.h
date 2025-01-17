@@ -683,7 +683,7 @@ typedef struct vk
 } vk_t;
 
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
-      struct vk_buffer_chain *chain, size_t size,
+      struct vk_buffer_chain *chain, size_t len,
       struct vk_buffer_range *range);
 
 struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
@@ -703,7 +703,7 @@ void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 
 struct vk_buffer vulkan_create_buffer(
       const struct vulkan_context *context,
-      size_t size, VkBufferUsageFlags usage);
+      size_t len, VkBufferUsageFlags usage);
 
 void vulkan_destroy_buffer(
       VkDevice device,

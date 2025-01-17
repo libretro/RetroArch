@@ -3592,13 +3592,13 @@ static int menu_displaylist_parse_horizontal_list(
    struct item_file *item              = NULL;
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
    size_t selection                    = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
-   size_t size                         = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
+   size_t _len = driver_ctx->list_get_size ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
 
    if (!driver_ctx->list_get_entry)
       return -1;
 
    if (!(item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
-               (unsigned)(selection - (size +1)))))
+               (unsigned)(selection - (_len +1)))))
       return -1;
 
    /* When opening a saved view the explore menu will handle the list */

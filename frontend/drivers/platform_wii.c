@@ -126,7 +126,7 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 }
 
 static void dol_copy_raw_argv(const char *dolpath,
-      const void *args, size_t size)
+      const void *args, size_t len)
 {
    struct __argv *argv    = (struct __argv*)ARGS_ADDR;
    char          *cmdline = (char*)++argv;
@@ -154,8 +154,8 @@ static void dol_copy_raw_argv(const char *dolpath,
    argv->length  = (int)strlcat(cmdline, dolpath, PATH_MAX_LENGTH);
    argv->length += 1;
 
-   memcpy(cmdline + argv->length, args, size);
-   argv->length += size;
+   memcpy(cmdline + argv->length, args, len);
+   argv->length += len;
 
    DCFlushRange(argv, sizeof(*argv) + argv->length);
 }

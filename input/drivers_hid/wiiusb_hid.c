@@ -120,7 +120,7 @@ static int32_t wiiusb_hid_read_cb(int32_t size, void *data)
 }
 
 static void wiiusb_hid_device_send_control(void *data,
-      uint8_t* data_buf, size_t size)
+      uint8_t* data_buf, size_t len)
 {
    uint8_t control_type;
    struct wiiusb_adapter *adapter = (struct wiiusb_adapter*)data;
@@ -129,9 +129,9 @@ static void wiiusb_hid_device_send_control(void *data,
 
    /* first byte contains the type of control to use
     * which can be NONE, INT_MSG, CTRL_MSG, CTRL_MSG2 */
-   control_type = data_buf[0];
+   control_type               = data_buf[0];
    /* decrement size by one as we are getting rid of first byte */
-   adapter->send_control_size = size - 1;
+   adapter->send_control_size = len - 1;
    /* increase the buffer address so we access the actual data */
    data_buf++;
    memcpy(adapter->send_control_buffer, data_buf,  adapter->send_control_size);

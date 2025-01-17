@@ -94,14 +94,14 @@ static void cb_task_menu_explore_init(
       const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
       if (driver_ctx->list_get_entry)
       {
-         size_t selection                 = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
-         size_t size                      = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
-         if (selection > 0 && size > 0)
+         size_t selection = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+         size_t _len      = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
+         if (selection > 0 && _len > 0)
          {
             struct item_file *item        = NULL;
             /* Label contains the path and path contains the label */
             if ((item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
-                        (unsigned)(selection - (size +1)))))
+                        (unsigned)(selection - (_len +1)))))
                menu_type = item->type;
          }
       }

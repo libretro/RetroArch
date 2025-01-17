@@ -220,7 +220,7 @@ size_t path_parent_dir(char *path, size_t len);
  *       e.g. on Android it is "/"
  *       Use of fill_pathname_resolve_relative() should be preferred
  **/
-char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks);
+char *path_resolve_realpath(char *buf, size_t len, bool resolve_symlinks);
 
 /**
  * path_relative_to:
@@ -238,8 +238,8 @@ char *path_resolve_realpath(char *buf, size_t size, bool resolve_symlinks);
  *
  * @return Length of the string copied into @out
  **/
-size_t path_relative_to(char *out, const char *path, const char *base,
-      size_t size);
+size_t path_relative_to(char *s, const char *path, const char *base,
+      size_t len);
 
 /**
  * path_is_absolute:
@@ -253,24 +253,24 @@ bool path_is_absolute(const char *path);
 
 /**
  * fill_pathname:
- * @out_path           : output path
+ * @s                  : output path
  * @in_path            : input  path
  * @replace            : what to replace
- * @size               : buffer size of output path
+ * @len                : buffer size of output path
  *
  * FIXME: Verify
  *
- * Replaces filename extension with 'replace' and outputs result to out_path.
+ * Replaces filename extension with 'replace' and outputs result to s.
  * The extension here is considered to be the string from the last '.'
  * to the end.
  *
  * Only '.'s after the last slash are considered as extensions.
  * If no '.' is present, in_path and replace will simply be concatenated.
- * 'size' is buffer size of 'out_path'.
+ * 'len' is buffer size of 's'.
  * E.g.: in_path = "/foo/bar/baz/boo.c", replace = ".asm" =>
- * out_path = "/foo/bar/baz/boo.asm"
+ * s = "/foo/bar/baz/boo.asm"
  * E.g.: in_path = "/foo/bar/baz/boo.c", replace = ""     =>
- * out_path = "/foo/bar/baz/boo"
+ * s = "/foo/bar/baz/boo"
  *
  * Hidden non-leaf function cost:
  * - calls strlcpy 2x
@@ -279,20 +279,20 @@ bool path_is_absolute(const char *path);
  *
  * @return Length of the string copied into @out
  */
-size_t fill_pathname(char *out_path, const char *in_path,
-      const char *replace, size_t size);
+size_t fill_pathname(char *s, const char *in_path,
+      const char *replace, size_t len);
 
 /**
  * fill_dated_filename:
- * @out_filename       : output filename
+ * @s                  : output filename
  * @ext                : extension of output filename
- * @size               : buffer size of output filename
+ * @len                : buffer size of output filename
  *
  * Creates a 'dated' filename prefixed by 'RetroArch', and
  * concatenates extension (@ext) to it.
  *
  * E.g.:
- * out_filename = "RetroArch-{month}{day}-{Hours}{Minutes}.{@ext}"
+ * s = "RetroArch-{month}{day}-{Hours}{Minutes}.{@ext}"
  *
  * Hidden non-leaf function cost:
  * - Calls rtime_localtime()
@@ -300,21 +300,20 @@ size_t fill_pathname(char *out_path, const char *in_path,
  * - Calls strlcat
  *
  **/
-size_t fill_dated_filename(char *out_filename,
-      const char *ext, size_t size);
+size_t fill_dated_filename(char *s, const char *ext, size_t len);
 
 /**
  * fill_str_dated_filename:
- * @out_filename       : output filename
+ * @s                  : output filename
  * @in_str             : input string
  * @ext                : extension of output filename
- * @size               : buffer size of output filename
+ * @len                : buffer size of output filename
  *
  * Creates a 'dated' filename prefixed by the string @in_str, and
  * concatenates extension (@ext) to it.
  *
  * E.g.:
- * out_filename = "RetroArch-{year}{month}{day}-{Hour}{Minute}{Second}.{@ext}"
+ * s = "RetroArch-{year}{month}{day}-{Hour}{Minute}{Second}.{@ext}"
  *
  * Hidden non-leaf function cost:
  * - Calls time
@@ -324,15 +323,13 @@ size_t fill_dated_filename(char *out_filename,
  * - Calls strftime
  * - Calls strlcat
  *
- * @return Length of the string copied into @out_path
+ * @return Length of the string copied into @s
  **/
-size_t fill_str_dated_filename(char *out_filename,
-      const char *in_str, const char *ext, size_t size);
+size_t fill_str_dated_filename(char *s, const char *in_str, const char *ext, size_t len);
 
 /**
  * find_last_slash:
  * @str                : path
- * @size               : size of path
  *
  * Find last slash in path. Tries to find
  * a backslash on Windows too which takes precedence
@@ -347,36 +344,36 @@ char *find_last_slash(const char *str);
 
 /**
  * fill_pathname_dir:
- * @in_dir             : input directory path
- * @in_basename        : input basename to be appended to @in_dir
+ * @s                  : input directory path
+ * @in_basename        : input basename to be appended to @s
  * @replace            : replacement to be appended to @in_basename
- * @size               : size of buffer
+ * @len                : size of buffer
  *
- * Appends basename of 'in_basename', to 'in_dir', along with 'replace'.
+ * Appends basename of 'in_basename', to 's', along with 'replace'.
  * Basename of in_basename is the string after the last '/' or '\\',
  * i.e the filename without directories.
  *
  * If in_basename has no '/' or '\\', the whole 'in_basename' will be used.
- * 'size' is buffer size of 'in_dir'.
+ * 'len' is buffer size of 's'.
  *
- * E.g..: in_dir = "/tmp/some_dir", in_basename = "/some_content/foo.c",
- * replace = ".asm" => in_dir = "/tmp/some_dir/foo.c.asm"
+ * E.g..: s = "/tmp/some_dir", in_basename = "/some_content/foo.c",
+ * replace = ".asm" => s = "/tmp/some_dir/foo.c.asm"
  *
  * Hidden non-leaf function cost:
  * - Calls fill_pathname_slash()
  * - Calls path_basename()
  * - Calls strlcpy 2x
  **/
-size_t fill_pathname_dir(char *in_dir, const char *in_basename,
-      const char *replace, size_t size);
+size_t fill_pathname_dir(char *s, const char *in_basename,
+      const char *replace, size_t len);
 
 /**
  * fill_pathname_base:
- * @out                : output path
+ * @s                  : output path
  * @in_path            : input path
  * @size               : size of output path
  *
- * Copies basename of @in_path into @out_path.
+ * Copies basename of @in_path into @s.
  *
  * Hidden non-leaf function cost:
  * - Calls path_basename()
@@ -384,23 +381,23 @@ size_t fill_pathname_dir(char *in_dir, const char *in_basename,
  *
  * @return length of the string copied into @out
  **/
-size_t fill_pathname_base(char *out_path, const char *in_path, size_t size);
+size_t fill_pathname_base(char *s, const char *in_path, size_t len);
 
 /**
  * fill_pathname_basedir:
- * @out_dir            : output directory
+ * @s                  : output directory
  * @in_path            : input path
  * @size               : size of output directory
  *
- * Copies base directory of @in_path into @out_path.
+ * Copies base directory of @in_path into @s.
  * If in_path is a path without any slashes (relative current directory),
- * @out_path will get path "./".
+ * @s will get path "./".
  *
  * Hidden non-leaf function cost:
  * - Calls strlcpy
  * - Calls path_basedir()
  **/
-size_t fill_pathname_basedir(char *out_path, const char *in_path, size_t size);
+size_t fill_pathname_basedir(char *s, const char *in_path, size_t len);
 
 /**
  * fill_pathname_parent_dir_name:
@@ -435,27 +432,27 @@ size_t fill_pathname_parent_dir_name(char *s,
  * - Calls strlen if (@out_dir == @in_dir)
  * - Calls path_parent_dir()
  **/
-void fill_pathname_parent_dir(char *out_dir,
-      const char *in_dir, size_t size);
+void fill_pathname_parent_dir(char *s,
+      const char *in_dir, size_t len);
 
 /**
  * fill_pathname_resolve_relative:
- * @out_path           : output path
+ * @s                  : output path
  * @in_refpath         : input reference path
  * @in_path            : input path
- * @size               : size of @out_path
+ * @size               : size of @s
  *
  * Joins basedir of @in_refpath together with @in_path.
- * If @in_path is an absolute path, out_path = in_path.
+ * If @in_path is an absolute path, s = in_path.
  * E.g.: in_refpath = "/foo/bar/baz.a", in_path = "foobar.cg",
- * out_path = "/foo/bar/foobar.cg".
+ * s = "/foo/bar/foobar.cg".
  **/
-void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
-      const char *in_path, size_t size);
+void fill_pathname_resolve_relative(char *s, const char *in_refpath,
+      const char *in_path, size_t len);
 
 /**
  * fill_pathname_join:
- * @out_path           : output path
+ * @s                  : output path
  * @dir                : directory
  * @path               : path
  * @size               : size of output path
@@ -469,24 +466,24 @@ void fill_pathname_resolve_relative(char *out_path, const char *in_refpath,
  * - calls fill_pathname_slash()
  *
  * Deprecated. Use fill_pathname_join_special() instead
- * if you can ensure @dir != @out_path
+ * if you can ensure @dir != @s
  *
- * @return Length of the string copied into @out_path
+ * @return Length of the string copied into @s
  **/
-size_t fill_pathname_join(char *out_path, const char *dir,
-      const char *path, size_t size);
+size_t fill_pathname_join(char *s, const char *dir,
+      const char *path, size_t len);
 
 /**
  * fill_pathname_join_special:
- * @out_path           : output path
- * @dir                : directory. Cannot be identical to @out_path
+ * @s                  : output path
+ * @dir                : directory. Cannot be identical to @s
  * @path               : path
  * @size               : size of output path
  *
  *
  * Specialized version of fill_pathname_join.
  * Unlike fill_pathname_join(),
- * @dir and @out_path CANNOT be identical.
+ * @dir and @s CANNOT be identical.
  *
  * Joins a directory (@dir) and path (@path) together.
  * Makes sure not to get two consecutive slashes
@@ -495,19 +492,19 @@ size_t fill_pathname_join(char *out_path, const char *dir,
  * Hidden non-leaf function cost:
  * - calls strlcpy 2x
  *
- * @return Length of the string copied into @out_path
+ * @return Length of the string copied into @s
  **/
-size_t fill_pathname_join_special(char *out_path,
-      const char *dir, const char *path, size_t size);
+size_t fill_pathname_join_special(char *s,
+      const char *dir, const char *path, size_t len);
 
-size_t fill_pathname_join_special_ext(char *out_path,
+size_t fill_pathname_join_special_ext(char *s,
       const char *dir,  const char *path,
       const char *last, const char *ext,
-      size_t size);
+      size_t len);
 
 /**
  * fill_pathname_join_delim:
- * @out_path           : output path
+ * @s                  : output path
  * @dir                : directory
  * @path               : path
  * @delim              : delimiter
@@ -521,14 +518,14 @@ size_t fill_pathname_join_special_ext(char *out_path,
  * - can call strlcpy
  * - can call strlcat
  **/
-size_t fill_pathname_join_delim(char *out_path, const char *dir,
-      const char *path, const char delim, size_t size);
+size_t fill_pathname_join_delim(char *s, const char *dir,
+      const char *path, const char delim, size_t len);
 
-size_t fill_pathname_expand_special(char *out_path,
-      const char *in_path, size_t size);
+size_t fill_pathname_expand_special(char *s,
+      const char *in_path, size_t len);
 
-size_t fill_pathname_abbreviate_special(char *out_path,
-      const char *in_path, size_t size);
+size_t fill_pathname_abbreviate_special(char *s,
+      const char *in_path, size_t len);
 
 /**
  * fill_pathname_abbreviated_or_relative:
@@ -540,10 +537,10 @@ size_t fill_pathname_abbreviate_special(char *out_path,
  * the relative path will be used
  * @in_path can be an absolute, relative or abbreviated path
  *
- * @return Length of the string copied into @out_path
+ * @return Length of the string copied into @s
  **/
-size_t fill_pathname_abbreviated_or_relative(char *out_path,
-		const char *in_refpath, const char *in_path, size_t size);
+size_t fill_pathname_abbreviated_or_relative(char *s,
+		const char *in_refpath, const char *in_path, size_t len);
 
 /**
  * sanitize_path_part:
@@ -557,7 +554,7 @@ size_t fill_pathname_abbreviated_or_relative(char *out_path,
  *
  * @returns new string that has been sanitized
  **/
-const char *sanitize_path_part(const char *path_part, size_t size);
+const char *sanitize_path_part(const char *path_part, size_t len);
 
 /**
  * pathname_conform_slashes_to_os:
@@ -569,7 +566,7 @@ const char *sanitize_path_part(const char *path_part, size_t size);
  * Changes the slashes to the correct kind for the os
  * So forward slash on linux and backslash on Windows
  **/
-void pathname_conform_slashes_to_os(char *path);
+void pathname_conform_slashes_to_os(char *s);
 
 /**
  * pathname_make_slashes_portable:
@@ -580,7 +577,7 @@ void pathname_conform_slashes_to_os(char *path);
  * Change all slashes to forward so they are more
  * portable between Windows and Linux
  **/
-void pathname_make_slashes_portable(char *path);
+void pathname_make_slashes_portable(char *s);
 
 /**
  * path_basedir:
@@ -589,7 +586,7 @@ void pathname_make_slashes_portable(char *path);
  * Extracts base directory by mutating path.
  * Keeps trailing '/'.
  **/
-void path_basedir_wrapper(char *path);
+void path_basedir_wrapper(char *s);
 
 /**
  * path_char_is_slash:
@@ -632,12 +629,12 @@ void path_basedir_wrapper(char *path);
  * - can call strlcat once if it returns false
  * - calls strlen
  **/
-size_t fill_pathname_slash(char *path, size_t size);
+size_t fill_pathname_slash(char *s, size_t len);
 
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-size_t fill_pathname_application_path(char *buf, size_t size);
-size_t fill_pathname_application_dir(char *buf, size_t size);
-size_t fill_pathname_home_dir(char *buf, size_t size);
+size_t fill_pathname_application_path(char *s, size_t len);
+size_t fill_pathname_application_dir(char *s, size_t len);
+size_t fill_pathname_home_dir(char *s, size_t len);
 #endif
 
 /**

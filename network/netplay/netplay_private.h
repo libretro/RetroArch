@@ -811,7 +811,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
  */
 bool netplay_send_raw_cmd(netplay_t *netplay,
    struct netplay_connection *connection, uint32_t cmd, const void *data,
-   size_t size);
+   size_t len);
 
 /**
  * netplay_send_raw_cmd_all
@@ -822,7 +822,7 @@ bool netplay_send_raw_cmd(netplay_t *netplay,
  */
 void netplay_send_raw_cmd_all(netplay_t *netplay,
    struct netplay_connection *except, uint32_t cmd, const void *data,
-   size_t size);
+   size_t len);
 
 /**
  * netplay_cmd_mode

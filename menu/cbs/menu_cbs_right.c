@@ -290,12 +290,12 @@ static int action_right_mainmenu(unsigned type, const char *label,
    const char *menu_ident              = (driver_ctx && driver_ctx->ident)
       ? driver_ctx->ident
       : NULL;
-   size_t size                         = (driver_ctx && driver_ctx->list_get_size)
+   size_t _len                         = (driver_ctx && driver_ctx->list_get_size)
       ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN)
       : 0;
    /* Tab switching functionality only applies
     * to XMB */
-   if (  (size == 1)
+   if (  (_len == 1)
        && string_is_equal(menu_ident, "xmb"))
    {
       size_t horiz_size = 0, tabs_size = 0, selection = 0;

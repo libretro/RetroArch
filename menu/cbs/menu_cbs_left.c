@@ -258,11 +258,11 @@ static int action_left_mainmenu(unsigned type, const char *label,
 #ifdef HAVE_XMB
    struct menu_state    *menu_st       = menu_state_get_ptr();
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
-   size_t size                         = (driver_ctx && driver_ctx->list_get_size) ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) : 0;
+   size_t _len                         = (driver_ctx && driver_ctx->list_get_size) ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) : 0;
    const char *menu_ident              = (driver_ctx && driver_ctx->ident) ? driver_ctx->ident : NULL;
    /* Tab switching functionality only applies
     * to XMB */
-   if (  (size == 1)
+   if (  (_len == 1)
        && string_is_equal(menu_ident, "xmb"))
    {
       settings_t            *settings  = config_get_ptr();

@@ -388,8 +388,7 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
-const void *frontend_driver_get_cpu_architecture_str(
-      char *s, size_t len)
+const void *frontend_driver_get_cpu_architecture_str(char *s, size_t len)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;

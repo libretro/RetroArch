@@ -179,7 +179,7 @@ static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
-void sha256_hash(char *s, const uint8_t *in, size_t size)
+void sha256_hash(char *s, const uint8_t *in, size_t len)
 {
    unsigned i;
    struct sha256_ctx sha;
@@ -191,7 +191,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
    } shahash;
 
    sha256_init(&sha);
-   sha256_chunk(&sha, in, (unsigned)size);
+   sha256_chunk(&sha, in, (unsigned)len);
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 

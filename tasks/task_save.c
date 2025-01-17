@@ -989,7 +989,7 @@ static void content_load_state_cb(retro_task_t *task,
    unsigned i;
    bool ret;
    load_task_data_t *load_data = (load_task_data_t*)task_data;
-   ssize_t size                = load_data->size;
+   ssize_t _len                = load_data->size;
    unsigned num_blocks         = 0;
    void *buf                   = load_data->data;
    struct sram_block *blocks   = NULL;
@@ -1005,10 +1005,10 @@ static void content_load_state_cb(retro_task_t *task,
    RARCH_LOG("[State]: %s \"%s\", %u %s.\n",
          msg_hash_to_str(MSG_LOADING_STATE),
          load_data->path,
-         (unsigned)size,
+         (unsigned)_len,
          msg_hash_to_str(MSG_BYTES));
 
-   if (size < 0 || !buf)
+   if (_len < 0 || !buf)
       goto error;
 
    /* This means we're backing up the file in memory,
@@ -1023,11 +1023,11 @@ static void content_load_state_cb(retro_task_t *task,
          undo_save_buf.data = NULL;
       }
 
-      if (!(undo_save_buf.data = malloc(size)))
+      if (!(undo_save_buf.data = malloc(_len)))
          goto error;
 
-      memcpy(undo_save_buf.data, buf, size);
-      undo_save_buf.size = size;
+      memcpy(undo_save_buf.data, buf, _len);
+      undo_save_buf.size = _len;
       strlcpy(undo_save_buf.path, load_data->path, sizeof(undo_save_buf.path));
 
       free(buf);
@@ -1083,7 +1083,7 @@ static void content_load_state_cb(retro_task_t *task,
    /* Backup the current state so we can undo this load */
    content_save_state("RAM", false);
 
-   ret = content_deserialize_state(buf, size);
+   ret = content_deserialize_state(buf, _len);
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
