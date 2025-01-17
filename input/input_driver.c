@@ -1022,6 +1022,39 @@ static int16_t input_joypad_analog_axis(
    if (!bind_y_minus->valid || !bind_y_plus->valid)
       return 0;
 
+   /* Keyboard bind priority */
+   if (     bind_plus->key  != RETROK_UNKNOWN
+         || bind_minus->key != RETROK_UNKNOWN)
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+
+      if (bind_plus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL,
+            joypad_info,
+            (*input_st->libretro_input_binds),
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_plus->key))
+         res  = 0x7fff;
+      if (bind_minus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL,
+            joypad_info,
+            (*input_st->libretro_input_binds),
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_minus->key))
+         res += -0x7fff;
+
+      if (res)
+         return res;
+   }
+
    {
       uint32_t axis_minus            = (bind_minus->joyaxis   == AXIS_NONE)
          ? joypad_info->auto_binds[ident_minus].joyaxis
@@ -1796,17 +1829,18 @@ static int16_t input_state_internal(
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   unsigned mapped_port;
    float input_analog_deadzone             = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
-   unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
-   bool input_driver_analog_requested      = input_st->analog_requested[port];
    const input_device_driver_t *joypad     = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
 #else
    const input_device_driver_t *sec_joypad = NULL;
 #endif
+   unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
+   uint8_t max_users                       = settings->uints.input_max_users;
+   uint8_t mapped_port                     = 0;
+   int16_t result                          = 0;
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
    bool input_blocked                      =    (menu_st->input_driver_flushing_input > 0)
@@ -1814,9 +1848,8 @@ static int16_t input_state_internal(
 #else
    bool input_blocked                      = (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT) ? true : false;
 #endif
+   bool input_driver_analog_requested      = input_st->analog_requested[port];
    bool bitmask_enabled                    = false;
-   unsigned max_users                      = settings->uints.input_max_users;
-   int16_t result                          = 0;
 
    device                                 &= RETRO_DEVICE_MASK;
    bitmask_enabled                         =    (device == RETRO_DEVICE_JOYPAD)
@@ -1827,12 +1860,12 @@ static int16_t input_state_internal(
     * 'virtual' port index */
    while ((mapped_port = *(input_remap_port_map++)) < MAX_USERS)
    {
-      int32_t ret                     = 0;
-      int32_t port_result             = 0;
-      unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[mapped_port];
+      int16_t ret                    = 0;
+      int16_t port_result            = 0;
+      uint8_t input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[mapped_port];
 
-      joypad_info.joy_idx             = settings->uints.input_joypad_index[mapped_port];
-      joypad_info.auto_binds          = input_autoconf_binds[joypad_info.joy_idx];
+      joypad_info.joy_idx            = settings->uints.input_joypad_index[mapped_port];
+      joypad_info.auto_binds         = input_autoconf_binds[joypad_info.joy_idx];
 
       /* Skip disabled input devices */
       if (mapped_port >= max_users)
@@ -1871,8 +1904,13 @@ static int16_t input_state_internal(
             (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
             mapped_port, device, idx, id);
 
-      if (   (device == RETRO_DEVICE_ANALOG)
-          && (ret == 0))
+      /* Ignore analog sticks when using Analog to Digital */
+      if (     (device == RETRO_DEVICE_ANALOG)
+            && (input_analog_dpad_mode != ANALOG_DPAD_NONE))
+         ret = 0;
+
+      if (     (device == RETRO_DEVICE_ANALOG)
+            && (ret == 0))
       {
          if (input_st->libretro_input_binds[mapped_port])
          {
@@ -1942,7 +1980,7 @@ static int16_t input_state_internal(
 
          if (bitmask_enabled)
          {
-            unsigned i;
+            uint8_t i;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                if (input_state_device(input_st,
                         settings, handle,
@@ -1955,6 +1993,69 @@ static int16_t input_state_internal(
                   settings, handle,
                   input_analog_dpad_mode, ret, mapped_port,
                   device, idx, id, false);
+
+         /* Handle Analog to Digital */
+         if (     (device == RETRO_DEVICE_JOYPAD)
+               && (input_analog_dpad_mode != ANALOG_DPAD_NONE)
+               && (bitmask_enabled || (id >= RETRO_DEVICE_ID_JOYPAD_UP && id <= RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+         {
+            int16_t ret_axis;
+            uint8_t s;
+            uint8_t a;
+
+            for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
+            {
+               if (     (s == RETRO_DEVICE_INDEX_ANALOG_LEFT  && input_analog_dpad_mode != ANALOG_DPAD_LSTICK)
+                     || (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT && input_analog_dpad_mode != ANALOG_DPAD_RSTICK))
+                  continue;
+
+               for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
+               {
+                  ret_axis = input_joypad_analog_axis(
+                        ANALOG_DPAD_NONE,
+                        settings->floats.input_analog_deadzone,
+                        settings->floats.input_analog_sensitivity,
+                        joypad,
+                        &joypad_info,
+                        s,
+                        a,
+                        (*input_st->libretro_input_binds[mapped_port]));
+
+                  if (ret_axis)
+                  {
+                     if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret_axis / 0x7fff < -joypad_info.axis_threshold)
+                     {
+                        if (bitmask_enabled)
+                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+                        else if (id == RETRO_DEVICE_ID_JOYPAD_UP)
+                           port_result = RETRO_DEVICE_ID_JOYPAD_UP;
+                     }
+                     else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret_axis / 0x7fff > joypad_info.axis_threshold)
+                     {
+                        if (bitmask_enabled)
+                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+                        else if (id == RETRO_DEVICE_ID_JOYPAD_DOWN)
+                           port_result = RETRO_DEVICE_ID_JOYPAD_DOWN;
+                     }
+
+                     if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret_axis / 0x7fff < -joypad_info.axis_threshold)
+                     {
+                        if (bitmask_enabled)
+                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+                        else if (id == RETRO_DEVICE_ID_JOYPAD_LEFT)
+                           port_result = RETRO_DEVICE_ID_JOYPAD_LEFT;
+                     }
+                     else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret_axis / 0x7fff > joypad_info.axis_threshold)
+                     {
+                        if (bitmask_enabled)
+                           port_result |= (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                        else if (id == RETRO_DEVICE_ID_JOYPAD_RIGHT)
+                           port_result = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+                     }
+                  }
+               }
+            }
+         }
       }
 
       /* Digital values are represented by a bitmap;
@@ -7038,9 +7139,8 @@ void input_remapping_set_defaults(bool clear_cache)
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits)
 {
-   int port;
    rarch_joypad_info_t joypad_info;
-   unsigned block_delay                = settings->uints.input_hotkey_block_delay;
+   input_driver_t *current_input       = input_st->current_driver;
    const input_device_driver_t *joypad = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
@@ -7049,16 +7149,17 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    const input_device_driver_t
       *sec_joypad                      = NULL;
 #endif
+   unsigned block_delay                = settings->uints.input_hotkey_block_delay;
+   uint8_t max_users                   = settings->uints.input_max_users;
+   uint8_t port                        = 0;
 #ifdef HAVE_MENU
+   bool all_users_control_menu         = settings->bools.input_all_users_control_menu;
    bool display_kb                     = menu_input_dialog_get_display_kb();
    bool menu_is_alive                  = (menu_state_get_ptr()->flags &
          MENU_ST_FLAG_ALIVE) ? true : false;
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
 #endif
-   input_driver_t *current_input       = input_st->current_driver;
-   unsigned max_users                  = settings->uints.input_max_users;
-   bool all_users_control_menu         = settings->bools.input_all_users_control_menu;
    joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
 
    /* Gather input from each (enabled) joypad */
@@ -7066,68 +7167,47 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    {
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
       const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
-      struct retro_keybind *auto_binds       = input_autoconf_binds[port];
-      struct retro_keybind *general_binds    = input_config_binds[port];
+
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
       joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
 
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         int k;
-         int s;
-
-         /* Remember original analog D-pad binds. */
-         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-         {
-            (auto_binds)[k].orig_joyaxis    = (auto_binds)[k].joyaxis;
-            (general_binds)[k].orig_joyaxis = (general_binds)[k].joyaxis;
-         }
+         int16_t ret;
+         uint8_t s;
+         uint8_t a;
 
          /* Read input from analog sticks according to settings. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
          {
-            unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
-            unsigned y_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
-            unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
-            unsigned y_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+            if (     (settings->bools.menu_disable_left_analog  && s == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+                  || (settings->bools.menu_disable_right_analog && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+               continue;
 
-            if ((settings->bools.menu_disable_left_analog  && s == RETRO_DEVICE_INDEX_ANALOG_LEFT ) ||
-                (settings->bools.menu_disable_right_analog && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
-                continue;
-            if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
             {
-               x_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
-               y_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
-               x_minus = RARCH_ANALOG_RIGHT_X_MINUS;
-               y_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
-            }
+               ret = input_joypad_analog_axis(
+                     ANALOG_DPAD_NONE,
+                     settings->floats.input_analog_deadzone,
+                     settings->floats.input_analog_sensitivity,
+                     joypad,
+                     &joypad_info,
+                     s,
+                     a,
+                     (*input_st->libretro_input_binds[port]));
 
-            if (!INHERIT_JOYAXIS(auto_binds))
-            {
-               unsigned j = x_plus + 3;
-               /* Inherit joyaxis from analogs. */
-               for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               if (ret)
                {
-                  if ((auto_binds)[j].joyaxis != AXIS_NONE &&
-                        ((float)abs(joypad->axis(port, (uint32_t)(auto_binds)[j].joyaxis))
-                         / 0x8000) > joypad_info.axis_threshold)
-                     (auto_binds)[k].joyaxis = (auto_binds)[j].joyaxis;
-                  j--;
-               }
-            }
+                  if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff < -joypad_info.axis_threshold)
+                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+                  else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff > joypad_info.axis_threshold)
+                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
 
-            if (!INHERIT_JOYAXIS(general_binds))
-            {
-               unsigned j = x_plus + 3;
-               /* Inherit joyaxis from analogs. */
-               for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               {
-                  if ((general_binds)[j].joyaxis != AXIS_NONE &&
-                        ((float)abs(joypad->axis(port, (uint32_t)(general_binds)[j].joyaxis))
-                         / 0x8000) > joypad_info.axis_threshold)
-                     (general_binds)[k].joyaxis = (general_binds)[j].joyaxis;
-                  j--;
+                  if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff < -joypad_info.axis_threshold)
+                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff > joypad_info.axis_threshold)
+                     BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
                }
             }
          }
@@ -7153,15 +7233,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #ifdef HAVE_MENU
       if (menu_is_alive)
       {
-         int k;
-
-         /* Restore analog D-pad binds temporarily overridden. */
-         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-         {
-            (auto_binds)[k].joyaxis    = (auto_binds)[k].orig_joyaxis;
-            (general_binds)[k].joyaxis = (general_binds)[k].orig_joyaxis;
-         }
-
          if (!all_users_control_menu)
             break;
       }

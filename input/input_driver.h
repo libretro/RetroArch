@@ -100,8 +100,6 @@
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
-#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
 #define REPLAY_TOKEN_INVALID          '\0'
 #define REPLAY_TOKEN_REGULAR_FRAME    'f'
 #define REPLAY_TOKEN_CHECKPOINT_FRAME 'c'

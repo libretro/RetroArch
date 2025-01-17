@@ -6496,9 +6496,6 @@ void input_config_parse_joy_axis(
          else
             bind->joyaxis = AXIS_NEG(i_axis);
       }
-
-      /* Ensure that D-pad emulation doesn't screw this over. */
-      bind->orig_joyaxis = bind->joyaxis;
    }
 
    fill_pathname_join_delim(key, s,
