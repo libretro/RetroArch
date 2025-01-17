@@ -5154,7 +5154,7 @@ static unsigned menu_displaylist_parse_content_information(
             db_name,
             sizeof(db_path));
       last = path_get_extension_mutable(db_path);
-      if (*last)
+      if (last && *last)
       {
          last[0] = '.';
          last[1] = 'r';
