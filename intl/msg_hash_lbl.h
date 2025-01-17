@@ -2009,65 +2009,29 @@ MSG_HASH(
    "input_player%u_sensor_index"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_MAPPINGS,
-   "input_player%u_sensor_mappings"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_X,
+   MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_X,
    "input_player%u_accelerometer_x_binding"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_X_FLIP,
-   "input_player%u_accelerometer_x_flip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_Y,
+   MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_Y,
    "input_player%u_accelerometer_y_binding"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_Y_FLIP,
-   "input_player%u_accelerometer_y_flip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_Z,
+   MENU_ENUM_LABEL_INPUT_SENSOR_ACCELEROMETER_Z,
    "input_player%u_accelerometer_z_binding"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_Z_FLIP,
-   "input_player%u_accelerometer_z_flip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_X,
+   MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_X,
    "input_player%u_gyroscope_x"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_X_FLIP,
-   "input_player%u_gyroscope_x_flip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_Y,
+   MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_Y,
    "input_player%u_gyroscope_y"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_Y_FLIP,
-   "input_player%u_gyroscope_y_flip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_Z,
+   MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_Z,
    "input_player%u_gyroscope_z"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_Z_FLIP,
-   "input_player%u_gyroscope_z_flip"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_LIGHT,
-   "input_player%u_light"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_LIGHT_FLIP,
-   "input_player%u_light_flip"
-)
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX,
    "input_player%u_joypad_index"

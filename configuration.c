@@ -6009,13 +6009,11 @@ bool input_remapping_load_file(void *data, const char *path)
       {
          "accel_x","accel_y", "accel_z",
          "gyro_x","gyro_y","gyro_z"
-         /*,"light"*/
       };
       static const char * sensor_strings_flip[RETROPAD_RETRO_SENSOR_LAST] =
       {
          "accel_x_flip","accel_y_flip", "accel_z_flip",
          "gyro_x_flip","gyro_y_flip","gyro_z_flip"
-         /*,"light_flip"*/
       };
       for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
 
@@ -6032,12 +6030,6 @@ bool input_remapping_load_file(void *data, const char *path)
          
          configuration_set_uint(settings,
             settings->uints.input_sensor_ids[i][j], sensor_remap);
-         
-         config_get_bool(conf, sensor_flip_ident, &sensor_flip_remap);
-         
-         configuration_set_bool(settings,
-            settings->bools.input_sensor_flip_axis[i][j], sensor_flip_remap);
-         
 
       }
       }
@@ -6079,13 +6071,11 @@ bool input_remapping_save_file(const char *path)
    {
       "accel_x","accel_y", "accel_z",
       "gyro_x","gyro_y","gyro_z"
-      /*,"light" */ 
    };
    static const char * sensor_strings_flip[RETROPAD_RETRO_SENSOR_LAST] =
    {
       "accel_x_flip","accel_y_flip", "accel_z_flip",
       "gyro_x_flip","gyro_y_flip","gyro_z_flip"
-      /*,"light_flip"*/
    };
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -6417,6 +6407,7 @@ uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
       return 0;
    return keybind->retro_key;
 }
+
 
 void input_config_reset_autoconfig_binds(unsigned port)
 {

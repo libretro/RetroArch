@@ -192,6 +192,10 @@
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_float(a, b, c, d, e, f, g, h, i, j, k, l)
 
+#define CONFIG_FLOAT_ALT(a, b, c, d, e, f, g, h, i, j, k, l) \
+   if (SETTINGS_LIST_APPEND(a, b)) \
+      config_float_alt(a, b, c, d, e, f, g, h, i, j, k, l)
+
 #define CONFIG_DIR(a, b, c, d, e, f, g, h, i, j, k, l, m) \
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_dir(a, b, c, d, e, f, g, h, i, j, k, l, m)
@@ -2321,6 +2325,29 @@ static void config_float(
 
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info, SHORT_enum_idx);
+}
+
+static void config_float_alt(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      float *target,
+      const char *name, const char *SHORT,
+      float default_value, const char *rounding,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group,
+      change_handler_t change_handler, change_handler_t read_handler)
+{
+   (*list)[list_info->index++]             = setting_float_setting(
+         name,
+         SHORT, target, default_value, rounding,
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler, false);
+   (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FLOAT_SPINBOX;
+   /*
+   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
+   MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_VALUE_IDX(list, list_info, SHORT_enum_idx);
+   */
 }
 
 static void config_path(
@@ -8242,6 +8269,19 @@ setting_get_string_representation_st_float_video_refresh_rate_auto(
    else
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
 }
+static void
+setting_get_string_representation_st_float_sensor_auto(
+      rarch_setting_t *setting, char *s, size_t len){
+
+   settings_t * settings = config_get_ptr();
+   int remapped_port = settings->uints.input_sensor_index[setting->index_offset];
+   int sensor_poll=input_driver_get_sensor(
+         remapped_port,settings->bools.input_sensors_enable,setting->retropad_sensor_index);
+   if (settings->bools.input_sensors_enable)
+      snprintf(s,len,"%.0f", 100.f*sensor_poll);
+   else 
+      strlcpy(s, "Disabled", len);
+}
 
 #ifdef HAVE_LIBNX
 static void get_string_representation_split_joycon(rarch_setting_t *setting, char *s,
@@ -8396,6 +8436,11 @@ static void get_string_representation_input_sensor_index(
    if (string_is_empty(s))
       strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
+static void get_string_representation_of_abs_device(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE),setting->retropad_sensor_index);
+}
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -8415,6 +8460,7 @@ static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
       audio_set_float(AUDIO_ACTION_RATE_CONTROL_DELTA, *setting->value.target.fraction);
    }
 }
+
 
 static void general_read_handler(rarch_setting_t *setting)
 {
@@ -10034,25 +10080,68 @@ static bool setting_append_list_input_player_options(
                parent_group);
          (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
       }
-      for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
-         //TODO Retro Sensor
+      if (settings->bools.input_sensors_enable){
+         for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
+            /* TODO Retro Sensor */
 
-         char label[NAME_MAX_LENGTH];
-         char name[NAME_MAX_LENGTH];
-         snprintf(label,NAME_MAX_LENGTH, "test label %d", j);
-         snprintf(name,NAME_MAX_LENGTH, "test name %d", j);
+            char label[NAME_MAX_LENGTH];
+            char name[NAME_MAX_LENGTH];
+            strlcpy(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_FIRST+j),NAME_MAX_LENGTH);
+            //snprintf(label,NAME_MAX_LENGTH, input_config_sensor_map_get_desc(j),user+1);
+            snprintf(name,NAME_MAX_LENGTH, "tmp name sensor bind %d", j);
+            CONFIG_UINT_ALT(
+                  list, list_info,
+                  &settings->uints.input_sensor_ids[user][j],
+                  strdup(name),
+                  strdup(label),
+                  user,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].index                     = user + 1;
+            (*list)[list_info->index - 1].index_offset              = user;
+            (*list)[list_info->index - 1].retropad_sensor_index     = j;
+            (*list)[list_info->index - 1].get_string_representation =
+               &get_string_representation_of_abs_device;
+            //(*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+            //menu_settings_list_current_add_range(list, list_info, 0, RETROPAD_RETRO_SENSOR_LAST - 1, 1, true, true);
+         }
 
-         CONFIG_BIND_ALT(
-            list, list_info,
-            &input_config_binds[user][i],
-            user + 1,
-            user,
-            strdup(name),
-            strdup(label),
-            &defaults[i],
-            &group_info,
-            &subgroup_info,
-            parent_group);
+         //static float dummy[RETROPAD_RETRO_SENSOR_LAST];
+         for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
+            /* TODO Retro Sensor */
+            char name[NAME_MAX_LENGTH];
+            char label[NAME_MAX_LENGTH];
+
+            static float dummy[6];
+            snprintf(
+               label,
+               NAME_MAX_LENGTH,
+               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE_VALUE),
+               j
+            );
+            RARCH_DBG("label: %s\n",label);
+            snprintf(name,NAME_MAX_LENGTH, "tmp name sensor poll %d", j);
+            CONFIG_FLOAT_ALT(
+               list, list_info,
+               &dummy[j],
+               strdup(name),
+               strdup(label),
+               0.f,
+               "%.3f",
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+            (*list)[list_info->index - 1].index                     = user + 1;
+            (*list)[list_info->index - 1].index_offset              = user;
+            (*list)[list_info->index - 1].retropad_sensor_index     = j;
+            (*list)[list_info->index - 1].get_string_representation =
+               &setting_get_string_representation_st_float_sensor_auto;
+         }
       }
    }
 

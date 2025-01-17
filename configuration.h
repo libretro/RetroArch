@@ -725,7 +725,6 @@ typedef struct settings
       bool input_touch_vmouse_trackball;
       bool input_touch_vmouse_gesture;
 #endif
-      bool input_sensor_flip_axis[MAX_USERS][RETROPAD_RETRO_SENSOR_LAST];
 
       /* Frame time counter */
       bool frame_time_counter_reset_after_fastforwarding;
