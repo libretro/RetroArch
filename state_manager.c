@@ -513,7 +513,8 @@ static void state_manager_push_do(state_manager_t *state)
       uint8_t *compressed;
       const uint8_t *oldb, *newb;
       size_t headpos, tailpos, remaining;
-      if (state->capacity < sizeof(size_t) + state->maxcompsize) {
+      if (state->capacity < sizeof(size_t) + state->maxcompsize)
+      {
          RARCH_ERR("State capacity insufficient\n");
          return;
       }

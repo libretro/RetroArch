@@ -911,10 +911,11 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
       input += CONTENT_ALIGN_SIZE(block_size);
    }
 
-   if (!seen_core) {
+   if (!seen_core)
+   {
       RARCH_LOG("[State] no core\n");
       return false;
-    }
+   }
 
 #ifdef HAVE_CHEEVOS
    if (!seen_cheevos)
