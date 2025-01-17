@@ -14840,6 +14840,14 @@ MSG_HASH(
    "Активирован чит-код. Режим харкдора для достижений в текущем сеансе отключен."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Режим хардкора для достижений изменён хостом."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "Требуется обновить хост сетевой игры. Режим хардкора для достижений отключен в текущем сеансе."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Завершено %s"
    )
