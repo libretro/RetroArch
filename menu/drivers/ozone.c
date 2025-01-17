@@ -6751,7 +6751,7 @@ static void ozone_draw_osk(
       0.00, 0.00, 0.00, 0.15,
       0.00, 0.00, 0.00, 0.15,
    };
-   char *tok, *save;
+   char *tok, *save               = NULL;
    unsigned i                     = 0;
    static retro_time_t last_time  = 0;
    unsigned list_size             = 0;

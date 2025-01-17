@@ -102,8 +102,8 @@ static void task_overlay_load_desc_image(
 static void task_overlay_redefine_eightway_direction(
       char *str, input_bits_t *data)
 {
-   char *tok, *save;
    unsigned bit;
+   char *tok, *save = NULL;
 
    BIT256_CLEAR_ALL(*data);
 
@@ -230,7 +230,7 @@ static bool task_overlay_load_desc(
    char overlay_desc_key[32];
    char overlay_key[64];
    char overlay[256];
-   char *tok, *save;
+   char *tok, *save                     = NULL;
    unsigned list_size                   = 0;
    char *elem0                          = NULL;
    char *elem1                          = NULL;
@@ -835,7 +835,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
-         char *tok, *save;
+         char *tok, *save         = NULL;
          char *elem0              = NULL;
          char *elem1              = NULL;
          char *elem2              = NULL;

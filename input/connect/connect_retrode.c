@@ -187,7 +187,7 @@ static void hidpad_retrode_packet_handler(void *device_data, uint8_t *packet, ui
     * 4 = right Genesis/MD
     */
 
-   hidpad_retrode_pad_packet_handler(&device->pad_data[packet[0] - 1], &device->data[0], size);
+   hidpad_retrode_pad_packet_handler(&device->pad_data[packet[0] - 1], &device->data[0], len);
 }
 
 static void hidpad_retrode_set_rumble(void *data,

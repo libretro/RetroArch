@@ -2823,7 +2823,7 @@ static bool playlist_read_file(playlist_t *playlist)
                      line_buf[3], thumbnail_mode_str,
                      sizeof(thumbnail_mode_str)) > 0)
                {
-                  char *tok, *save;
+                  char *tok, *save             = NULL;
                   char *thumbnail_mode_str_cpy = strdup(thumbnail_mode_str);
 
                   if ((tok = strtok_r(thumbnail_mode_str_cpy, "|", &save)))

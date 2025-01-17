@@ -222,7 +222,7 @@ bool content_file_override_set(
 
    for (i = 0; overrides[i].extensions; i++)
    {
-      char *tok, *save;
+      char *tok, *save        = NULL;
       char *overrides_ext_cpy = strdup(overrides[i].extensions);
 
       /* Get list of extensions affected by overrides */

@@ -13073,7 +13073,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
                if (!string_is_empty(info->label))
                {
-                  char *tok, *save;
+                  char *tok, *save     = NULL;
                   char *info_label_cpy = strdup(info->label);
 
                   if ((tok = strtok_r(info_label_cpy, "|", &save)))
@@ -15594,7 +15594,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         case ST_STRING_OPTIONS:
                            {
                               char val_d[16];
-                              char *tok, *save;
+                              char *tok, *save         = NULL;
                               unsigned i               = 0;
                               bool checked_found       = false;
                               unsigned checked         = 0;
@@ -15943,7 +15943,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      case ST_STRING_OPTIONS:
                         {
                            char val_d[16];
-                           char *tok, *save;
+                           char *tok, *save         = NULL;
                            unsigned i               = 0;
                            bool checked_found       = false;
                            unsigned checked         = 0;
