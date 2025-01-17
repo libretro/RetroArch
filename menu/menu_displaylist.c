@@ -492,7 +492,7 @@ static int filebrowser_parse(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0, NULL);
 
-#ifdef IOS
+#if defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
    {
       /* Check if we're allowed to escape our sandbox */
       struct string_list *str_list = string_list_new();
@@ -5154,7 +5154,7 @@ static unsigned menu_displaylist_parse_content_information(
             db_name,
             sizeof(db_path));
       last = path_get_extension_mutable(db_path);
-      if (*last)
+      if (last && *last)
       {
          last[0] = '.';
          last[1] = 'r';

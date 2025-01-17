@@ -6467,8 +6467,11 @@ static int action_ok_open_uwp_permission_settings(const char *path,
 static int action_ok_open_picker(const char *path,
    const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if TARGET_OS_IOS
+#ifdef IOS
    ios_show_file_sheet();
+   return 0;
+#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+   osx_show_file_sheet();
    return 0;
 #else
    char *new_path = NULL;
