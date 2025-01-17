@@ -802,6 +802,13 @@ void ios_show_file_sheet(void)
 }
 #endif
 
+#if TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
+void osx_show_file_sheet(void)
+{
+   [apple_platform openDocument:nil];
+}
+#endif
+
 void *cocoa_screen_get_chosen(void)
 {
     unsigned monitor_index;

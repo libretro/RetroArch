@@ -704,7 +704,7 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
 static int frontend_darwin_parse_drive_list(void *data, bool load_content)
 {
    int ret = -1;
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE || defined(HAVE_APPLE_STORE)
 #ifdef HAVE_MENU
    struct string_list *str_list          = NULL;
    file_list_t *list                     = (file_list_t*)data;
@@ -733,7 +733,7 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    string_list_free(str_list);
 
-#if TARGET_OS_IOS
+#if !TARGET_OS_TV
    if (   filebrowser_get_type() == FILEBROWSER_NONE ||
           filebrowser_get_type() == FILEBROWSER_SCAN_FILE ||
           filebrowser_get_type() == FILEBROWSER_SELECT_FILE)

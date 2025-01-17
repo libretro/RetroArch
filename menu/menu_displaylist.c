@@ -492,7 +492,7 @@ static int filebrowser_parse(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0, NULL);
 
-#ifdef IOS
+#if defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
    {
       /* Check if we're allowed to escape our sandbox */
       struct string_list *str_list = string_list_new();
