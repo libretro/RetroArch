@@ -2342,7 +2342,7 @@ static void config_float_alt(
          name,
          SHORT, target, default_value, rounding,
          group_info->name, subgroup_info->name, parent_group,
-         change_handler, read_handler, false);
+         change_handler, read_handler, true);
    (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_FLOAT_SPINBOX;
    /*
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
@@ -8275,10 +8275,11 @@ setting_get_string_representation_st_float_sensor_auto(
 
    settings_t * settings = config_get_ptr();
    int remapped_port = settings->uints.input_sensor_index[setting->index_offset];
-   int sensor_poll=input_driver_get_sensor(
+   if (settings->bools.input_sensors_enable) {
+      float sensor_poll = input_driver_get_sensor(
          remapped_port,settings->bools.input_sensors_enable,setting->retropad_sensor_index);
-   if (settings->bools.input_sensors_enable)
       snprintf(s,len,"%.0f", 100.f*sensor_poll);
+   }
    else 
       strlcpy(s, "Disabled", len);
 }
@@ -8439,7 +8440,9 @@ static void get_string_representation_input_sensor_index(
 static void get_string_representation_of_abs_device(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE),setting->retropad_sensor_index);
+   settings_t      *settings = config_get_ptr();
+   unsigned index=settings->uints.input_sensor_ids[setting->index_offset][setting->retropad_sensor_index];
+   snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE),index);
 }
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
 {
@@ -9963,11 +9966,11 @@ static bool setting_append_list_input_player_options(
             parent_group,
             general_write_handler,
             general_read_handler);
-      (*list)[list_info->index - 1].index         = user + 1;
-      (*list)[list_info->index - 1].index_offset  = user;
+      (*list)[list_info->index - 1].index                     = user + 1;
+      (*list)[list_info->index - 1].index_offset              = user;
       (*list)[list_info->index - 1].get_string_representation =
             &get_string_representation_input_sensor_index;
-      (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
+      (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_INDEX + user));
@@ -10080,69 +10083,70 @@ static bool setting_append_list_input_player_options(
                parent_group);
          (*list)[list_info->index - 1].bind_type = i + MENU_SETTINGS_BIND_BEGIN;
       }
-      if (settings->bools.input_sensors_enable){
-         for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
-            /* TODO Retro Sensor */
+      for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
 
-            char label[NAME_MAX_LENGTH];
-            char name[NAME_MAX_LENGTH];
-            strlcpy(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_FIRST+j),NAME_MAX_LENGTH);
-            //snprintf(label,NAME_MAX_LENGTH, input_config_sensor_map_get_desc(j),user+1);
-            snprintf(name,NAME_MAX_LENGTH, "tmp name sensor bind %d", j);
-            CONFIG_UINT_ALT(
-                  list, list_info,
-                  &settings->uints.input_sensor_ids[user][j],
-                  strdup(name),
-                  strdup(label),
-                  user,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-            (*list)[list_info->index - 1].index                     = user + 1;
-            (*list)[list_info->index - 1].index_offset              = user;
-            (*list)[list_info->index - 1].retropad_sensor_index     = j;
-            (*list)[list_info->index - 1].get_string_representation =
-               &get_string_representation_of_abs_device;
-            //(*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
-            //menu_settings_list_current_add_range(list, list_info, 0, RETROPAD_RETRO_SENSOR_LAST - 1, 1, true, true);
-         }
-
-         //static float dummy[RETROPAD_RETRO_SENSOR_LAST];
-         for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
-            /* TODO Retro Sensor */
-            char name[NAME_MAX_LENGTH];
-            char label[NAME_MAX_LENGTH];
-
-            static float dummy[6];
-            snprintf(
-               label,
-               NAME_MAX_LENGTH,
-               msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE_VALUE),
-               j
-            );
-            RARCH_DBG("label: %s\n",label);
-            snprintf(name,NAME_MAX_LENGTH, "tmp name sensor poll %d", j);
-            CONFIG_FLOAT_ALT(
+         char label[NAME_MAX_LENGTH];
+         char name[NAME_MAX_LENGTH];
+         strlcpy(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_FIRST+j),NAME_MAX_LENGTH);
+         snprintf(name,NAME_MAX_LENGTH, "tmp name sensor bind %d", j);
+         CONFIG_UINT_ALT(
                list, list_info,
-               &dummy[j],
+               &settings->uints.input_sensor_ids[user][j],
                strdup(name),
                strdup(label),
-               0.f,
-               "%.3f",
+               user,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
-            (*list)[list_info->index - 1].index                     = user + 1;
-            (*list)[list_info->index - 1].index_offset              = user;
-            (*list)[list_info->index - 1].retropad_sensor_index     = j;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_st_float_sensor_auto;
-         }
+         (*list)[list_info->index - 1].index                     = user + 1;
+         (*list)[list_info->index - 1].index_offset              = user;
+         (*list)[list_info->index - 1].retropad_sensor_index     = j;
+         (*list)[list_info->index - 1].action_start              = &setting_action_start_input_mouse_index;
+         (*list)[list_info->index - 1].action_left               = &setting_action_left_input_mouse_index;
+         (*list)[list_info->index - 1].action_right              = &setting_action_right_input_mouse_index;
+         (*list)[list_info->index - 1].action_select             = &setting_action_right_input_mouse_index;
+         (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
+         (*list)[list_info->index - 1].get_string_representation = &get_string_representation_of_abs_device;
+         menu_settings_list_current_add_range(list, list_info, 0, RETROPAD_RETRO_SENSOR_LAST - 1, 1, true, true);
+         MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+                     (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_MAPPING + j));
       }
+
+      for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
+         char name[NAME_MAX_LENGTH];
+         char label[NAME_MAX_LENGTH];
+         static float dummy;
+         snprintf(
+            label,
+            NAME_MAX_LENGTH,
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE_VALUE),
+            j
+         );
+         snprintf(name,NAME_MAX_LENGTH, "tmp name sensor poll %d", j);
+         CONFIG_FLOAT_ALT(
+            list, list_info,
+            &dummy,
+            strdup(name),
+            strdup(label),
+            0.f,
+            "%.3f",
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+         (*list)[list_info->index - 1].index                     = user + 1;
+         (*list)[list_info->index - 1].index_offset              = user;
+         (*list)[list_info->index - 1].retropad_sensor_index     = j;
+         (*list)[list_info->index - 1].get_string_representation =
+            &setting_get_string_representation_st_float_sensor_auto;
+         MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_AUTO_DISPLAY + j));
+      
+      }
+      
    }
 
    END_SUB_GROUP(list, list_info, parent_group);
