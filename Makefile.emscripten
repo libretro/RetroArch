@@ -48,6 +48,7 @@ HAVE_CORE_INFO_CACHE = 1
 HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
 HAVE_AL = 1
+HAVE_CHD ?= 0
 
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
@@ -150,8 +151,7 @@ LDFLAGS += -s STACK_SIZE=131072
 
 LDFLAGS += --extern-pre-js emscripten/pre.js
 
-CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99 #\
-#          -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
+CFLAGS += -Wall -I. -Ilibretro-common/include -Ideps/7zip -std=gnu99
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
