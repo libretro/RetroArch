@@ -602,9 +602,7 @@ static bool content_file_list_set_info(
       if (!string_is_empty(dir))
       {
          /* Remove any trailing slash */
-         const char *slash        = strrchr(dir, '/');
-         const char *backslash    = strrchr(dir, '\\');
-         char *last_slash         = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+         char *last_slash         = find_last_slash(dir);
          if (last_slash && (last_slash[1] == '\0'))
             *last_slash           = '\0';
 

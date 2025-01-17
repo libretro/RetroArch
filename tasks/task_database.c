@@ -1287,9 +1287,7 @@ static void task_database_handler(retro_task_t *task)
 
                if (!string_is_empty(db->fullpath))
                {
-                  const char *slash     = strrchr(db->fullpath, '/');
-                  const char *backslash = strrchr(db->fullpath, '\\');
-                  char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+                  char *last_slash      = find_last_slash(db->fullpath);
                   dirname               = last_slash + 1;
                }
 
@@ -1298,20 +1296,14 @@ static void task_database_handler(retro_task_t *task)
                   for (i = 0; i < dbstate->list->size; i++)
                   {
                      char *last_slash;
-                     const char *slash;
-                     const char *backslash;
                      const char *data = dbstate->list->elems[i].data;
-                     char *dbname     = NULL;
                      bool strmatch    = false;
                      char *dbpath     = strdup(data);
 
                      path_remove_extension(dbpath);
 
-                     slash            = strrchr(dbpath, '/');
-                     backslash        = strrchr(dbpath, '\\');
-                     last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
-                     dbname           = last_slash + 1;
-                     strmatch         = strcasecmp(dbname, dirname) == 0;
+                     last_slash       = find_last_slash(dbpath);
+                     strmatch         = strcasecmp(last_slash + 1, dirname) == 0;
 
                      free(dbpath);
 
