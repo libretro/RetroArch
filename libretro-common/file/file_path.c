@@ -1170,7 +1170,7 @@ size_t fill_pathname_abbreviate_special(char *s,
  *
  * @returns new string that has been sanitized
  **/
-const char *sanitize_path_part(const char *path_part, size_t size)
+const char *sanitize_path_part(const char *path_part, size_t len)
 {
    int i;
    int j = 0;
@@ -1180,7 +1180,7 @@ const char *sanitize_path_part(const char *path_part, size_t size)
    if (string_is_empty(path_part))
       return NULL;
 
-   tmp = (char *)malloc((size + 1) * sizeof(char));
+   tmp = (char *)malloc((len + 1) * sizeof(char));
 
    for (i = 0; path_part[i] != '\0'; i++)
    {

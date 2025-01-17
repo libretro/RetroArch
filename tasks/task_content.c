@@ -407,7 +407,7 @@ static void content_file_list_free(
    free(file_list);
 }
 
-static content_file_list_t *content_file_list_init(size_t size)
+static content_file_list_t *content_file_list_init(size_t len)
 {
    content_file_list_t *file_list = NULL;
 
@@ -424,17 +424,17 @@ static content_file_list_t *content_file_list_init(size_t size)
       {
          /* Create entries list */
          if ((file_list->entries             = (content_file_info_t *)
-               calloc(size, sizeof(content_file_info_t))))
+               calloc(len, sizeof(content_file_info_t))))
          {
-            file_list->size                  = size;
+            file_list->size                  = len;
             /* Create retro_game_info object */
             if ((file_list->game_info        = (struct retro_game_info *)
-                     calloc(size, sizeof(struct retro_game_info))))
+                     calloc(len, sizeof(struct retro_game_info))))
             {
                /* Create retro_game_info_ext object */
                if ((file_list->game_info_ext =
                         (struct retro_game_info_ext *)
-                        calloc(size, sizeof(struct retro_game_info_ext))))
+                        calloc(len, sizeof(struct retro_game_info_ext))))
                   return file_list;
             }
          }

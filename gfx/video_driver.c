@@ -198,18 +198,15 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
    { 4.0f / 3.0f  , ""              }  /* full -          initialized in video_driver_init_internal */
 };
 
-static INLINE bool realloc_checked(void **ptr, size_t size)
+static INLINE bool realloc_checked(void **ptr, size_t len)
 {
    void *nptr = NULL;
-
    if (*ptr)
-      nptr = realloc(*ptr, size);
+      nptr = realloc(*ptr, len);
    else
-      nptr = malloc(size);
-
+      nptr = malloc(len);
    if (nptr)
       *ptr = nptr;
-
    return *ptr == nptr;
 }
 

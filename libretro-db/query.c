@@ -347,13 +347,12 @@ static struct buffer query_expect_eof(char *s, size_t len,
 }
 
 static int query_peek(struct buffer buff, const char * data,
-      size_t size_data)
+      size_t len)
 {
    size_t remain    = buff.len - buff.offset;
-   if (remain < size_data)
+   if (remain < len)
       return 0;
-   return (strncmp(buff.data + buff.offset,
-            data, size_data) == 0);
+   return (strncmp(buff.data + buff.offset, data, len) == 0);
 }
 
 static struct buffer query_get_char(

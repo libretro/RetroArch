@@ -558,7 +558,7 @@ void libretro_get_environment_info(
 }
 
 static dylib_t load_dynamic_core(const char *path, char *buf,
-      size_t size)
+      size_t len)
 {
 #if defined(ANDROID)
    /* Can't resolve symlinks when dealing with cores
@@ -589,7 +589,7 @@ static dylib_t load_dynamic_core(const char *path, char *buf,
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(buf, size, resolve_symlinks);
+   path_resolve_realpath(buf, len, resolve_symlinks);
    return dylib_load(path);
 }
 

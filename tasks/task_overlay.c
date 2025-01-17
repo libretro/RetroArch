@@ -517,24 +517,21 @@ end:
 }
 
 static ssize_t task_overlay_find_index(const struct overlay *ol,
-      const char *name, size_t size)
+      const char *name, size_t len)
 {
    size_t i;
-
    if (!ol)
       return -1;
-
-   for (i = 0; i < size; i++)
+   for (i = 0; i < len; i++)
    {
       if (string_is_equal(ol[i].name, name))
          return i;
    }
-
    return -1;
 }
 
 static bool task_overlay_resolve_targets(struct overlay *ol,
-      size_t idx, size_t size)
+      size_t idx, size_t len)
 {
    unsigned i;
    struct overlay *current = (struct overlay*)&ol[idx];
@@ -543,11 +540,11 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
    {
       struct overlay_desc *desc = (struct overlay_desc*)&current->descs[i];
       const char *next          = desc->next_index_name;
-      ssize_t         next_idx  = (idx + 1) % size;
+      ssize_t         next_idx  = (idx + 1) % len;
 
       if (!string_is_empty(next))
       {
-         next_idx = task_overlay_find_index(ol, next, size);
+         next_idx = task_overlay_find_index(ol, next, len);
 
          if (next_idx < 0)
          {

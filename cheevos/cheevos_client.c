@@ -289,20 +289,20 @@ static void rcheevos_client_http_task_save_callback(retro_task_t* task,
 void rcheevos_client_http_load_response(const rc_api_request_t* request,
    rc_client_server_callback_t callback, void* callback_data)
 {
-   size_t size = 0;
    char* contents;
-   FILE* file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
+   size_t _len = 0;
+   FILE* file  = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
 
    fseek(file, 0, SEEK_END);
-   size = ftell(file);
+   _len = ftell(file);
    fseek(file, 0, SEEK_SET);
 
-   contents = (char*)malloc(size + 1);
-   fread((void*)contents, 1, size, file);
+   contents = (char*)malloc(_len + 1);
+   fread((void*)contents, 1, _len, file);
    fclose(file);
 
-   contents[size] = 0;
-   CHEEVOS_LOG(RCHEEVOS_TAG "Loaded game info. Read %u bytes to %s\n", size, CHEEVOS_JSON_OVERRIDE);
+   contents[_len] = 0;
+   CHEEVOS_LOG(RCHEEVOS_TAG "Loaded game info. Read %u bytes to %s\n", _len, CHEEVOS_JSON_OVERRIDE);
 
    callback(contents, 200, callback_data);
 }

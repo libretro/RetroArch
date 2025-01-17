@@ -735,12 +735,12 @@ static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb(void);
  *
  * Initialize a new socket buffer.
  */
-static bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t size)
+static bool netplay_init_socket_buffer(struct socket_buffer *sbuf, size_t len)
 {
-   sbuf->data  = (unsigned char*)malloc(size);
+   sbuf->data  = (unsigned char*)malloc(len);
    if (!sbuf->data)
       return false;
-   sbuf->bufsz = size;
+   sbuf->bufsz = len;
    sbuf->start = sbuf->read = sbuf->end = 0;
 
    return true;
@@ -2197,7 +2197,7 @@ static void netplay_delta_frame_free(struct delta_frame *delta)
  */
 static netplay_input_state_t netplay_input_state_for(
       netplay_input_state_t *list,
-      uint32_t client_num, size_t size,
+      uint32_t client_num, size_t len,
       bool must_create, bool must_not_create)
 {
    netplay_input_state_t ret;
@@ -2206,16 +2206,16 @@ static netplay_input_state_t netplay_input_state_for(
    while (*list)
    {
       ret = *list;
-      if (!ret->used && !must_not_create && ret->size == size)
+      if (!ret->used && !must_not_create && ret->size == len)
       {
          ret->client_num = client_num;
          ret->used       = true;
-         memset(ret->data, 0, size*sizeof(uint32_t));
+         memset(ret->data, 0, len * sizeof(uint32_t));
          return ret;
       }
       else if (ret->used && ret->client_num == client_num)
       {
-         if (!must_create && ret->size == size)
+         if (!must_create && ret->size == len)
             return ret;
          return NULL;
       }
@@ -2226,8 +2226,8 @@ static netplay_input_state_t netplay_input_state_for(
       return NULL;
 
    /* Couldn't find a slot, allocate a fresh one */
-   if (size > 1)
-      ret = (netplay_input_state_t)calloc(1, sizeof(struct netplay_input_state) + (size-1) * sizeof(uint32_t));
+   if (len > 1)
+      ret = (netplay_input_state_t)calloc(1, sizeof(struct netplay_input_state) + (len - 1) * sizeof(uint32_t));
    else
       ret = (netplay_input_state_t)calloc(1, sizeof(struct netplay_input_state));
    if (!ret)
@@ -2235,7 +2235,7 @@ static netplay_input_state_t netplay_input_state_for(
    *list           = ret;
    ret->client_num = client_num;
    ret->used       = true;
-   ret->size       = (uint32_t)size;
+   ret->size       = (uint32_t)len;
    return ret;
 }
 
@@ -4477,21 +4477,19 @@ bool netplay_send_cur_input(netplay_t *netplay,
  */
 bool netplay_send_raw_cmd(netplay_t *netplay,
    struct netplay_connection *connection, uint32_t cmd, const void *data,
-   size_t size)
+   size_t len)
 {
    uint32_t cmdbuf[2];
 
    cmdbuf[0] = htonl(cmd);
-   cmdbuf[1] = htonl(size);
+   cmdbuf[1] = htonl(len);
 
    if (!netplay_send(&connection->send_packet_buffer, connection->fd, cmdbuf,
          sizeof(cmdbuf)))
       return false;
-
-   if (size > 0)
-      if (!netplay_send(&connection->send_packet_buffer, connection->fd, data, size))
+   if (len > 0)
+      if (!netplay_send(&connection->send_packet_buffer, connection->fd, data, len))
          return false;
-
    return true;
 }
 
@@ -4503,7 +4501,7 @@ bool netplay_send_raw_cmd(netplay_t *netplay,
  */
 void netplay_send_raw_cmd_all(netplay_t *netplay,
    struct netplay_connection *except, uint32_t cmd, const void *data,
-   size_t size)
+   size_t len)
 {
    size_t i;
    for (i = 0; i < netplay->connections_size; i++)
@@ -4514,7 +4512,7 @@ void netplay_send_raw_cmd_all(netplay_t *netplay,
       if (     (connection->flags & NETPLAY_CONN_FLAG_ACTIVE)
             && (connection->mode >= NETPLAY_CONNECTION_CONNECTED))
       {
-         if (!netplay_send_raw_cmd(netplay, connection, cmd, data, size))
+         if (!netplay_send_raw_cmd(netplay, connection, cmd, data, len))
             netplay_hangup(netplay, connection);
       }
    }
@@ -7054,13 +7052,13 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
    return true;
 }
 
-static void netplay_write_block_header(unsigned char* output, const char* header, size_t size)
+static void netplay_write_block_header(unsigned char* output, const char* header, size_t len)
 {
    memcpy(output, header, 4);
-   output[4] = ((size) & 0xFF);
-   output[5] = ((size >> 8) & 0xFF);
-   output[6] = ((size >> 16) & 0xFF);
-   output[7] = ((size >> 24) & 0xFF);
+   output[4] = ((len) & 0xFF);
+   output[5] = ((len >> 8) & 0xFF);
+   output[6] = ((len >> 16) & 0xFF);
+   output[7] = ((len >> 24) & 0xFF);
 }
 
 static bool netplay_init_serialization(netplay_t *netplay)

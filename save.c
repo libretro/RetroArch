@@ -407,7 +407,7 @@ static bool content_load_ram_file(unsigned slot)
  * Attempt to save valuable RAM data somewhere.
  **/
 static bool dump_to_file_desperate(const void *data,
-      size_t size, unsigned type)
+      size_t len, unsigned type)
 {
    char path[PATH_MAX_LENGTH + 256 + 32];
    path            [0]    = '\0';
@@ -434,7 +434,7 @@ static bool dump_to_file_desperate(const void *data,
        * > In this case, we don't want to further
        *   complicate matters by introducing zlib
        *   compression overheads */
-      if (filestream_write_file(path, data, size))
+      if (filestream_write_file(path, data, len))
       {
          RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
          return true;

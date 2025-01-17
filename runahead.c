@@ -533,15 +533,14 @@ bool secondary_core_ensure_exists(void *data, settings_t *settings)
 
 #if defined(HAVE_DYNAMIC)
 static bool secondary_core_deserialize(runloop_state_t *runloop_st,
-      settings_t *settings,
-      const void *data, size_t size)
+      settings_t *settings, const void *data, size_t len)
 {
    bool ret = false;
 
    if (secondary_core_ensure_exists(runloop_st, settings))
    {
       runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-      ret                = runloop_st->secondary_core.retro_unserialize(data, size);
+      ret                = runloop_st->secondary_core.retro_unserialize(data, len);
       runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    }
    else
@@ -828,12 +827,12 @@ static void runahead_reset_hook(void)
       runloop_st->retro_reset_callback_original();
 }
 
-static bool runahead_unserialize_hook(const void *buf, size_t size)
+static bool runahead_unserialize_hook(const void *buf, size_t len)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
    if (runloop_st->retro_unserialize_callback_original)
-      return runloop_st->retro_unserialize_callback_original(buf, size);
+      return runloop_st->retro_unserialize_callback_original(buf, len);
    return false;
 }
 

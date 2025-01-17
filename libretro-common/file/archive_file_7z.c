@@ -62,11 +62,11 @@ struct sevenzip_context_t
    uint32_t   block_index;
 };
 
-static void *sevenzip_stream_alloc_impl(ISzAllocPtr p, size_t size)
+static void *sevenzip_stream_alloc_impl(ISzAllocPtr p, size_t len)
 {
-   if (size == 0)
+   if (len == 0)
       return 0;
-   return malloc(size);
+   return malloc(len);
 }
 
 static void sevenzip_stream_free_impl(ISzAllocPtr p, void *address)
@@ -77,12 +77,12 @@ static void sevenzip_stream_free_impl(ISzAllocPtr p, void *address)
       free(address);
 }
 
-static void *sevenzip_stream_alloc_tmp_impl(ISzAllocPtr p, size_t size)
+static void *sevenzip_stream_alloc_tmp_impl(ISzAllocPtr p, size_t len)
 {
    (void)p;
-   if (size == 0)
+   if (len == 0)
       return 0;
-   return malloc(size);
+   return malloc(len);
 }
 
 static void* sevenzip_stream_new(void)

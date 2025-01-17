@@ -458,9 +458,9 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
             if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
             {
                size_t j;
-               size_t size = strlcpy(entry->password_value, entry->value,
+               size_t _len = strlcpy(entry->password_value, entry->value,
                      sizeof(entry->password_value));
-               for (j = 0; j < size; j++)
+               for (j = 0; j < _len; j++)
                   entry->password_value[j] = '*';
             }
          }

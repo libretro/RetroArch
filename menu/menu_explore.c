@@ -183,23 +183,21 @@ static explore_state_t* explore_state;
 
 static void ex_arena_grow(ex_arena *arena, size_t min_size)
 {
-   size_t size = EX_ARENA_ALIGN_UP(
+   size_t _len = EX_ARENA_ALIGN_UP(
          MAX(min_size, EX_ARENA_BLOCK_SIZE), EX_ARENA_ALIGNMENT);
-   arena->ptr  = (char *)malloc(size);
-   arena->end  = arena->ptr + size;
+   arena->ptr  = (char *)malloc(_len);
+   arena->end  = arena->ptr + _len;
    RBUF_PUSH(arena->blocks, arena->ptr);
 }
 
-static void *ex_arena_alloc(ex_arena *arena, size_t size)
+static void *ex_arena_alloc(ex_arena *arena, size_t len)
 {
    void *ptr  = NULL;
-
-   if (size > (size_t)(arena->end - arena->ptr))
-      ex_arena_grow(arena, size);
-
+   if (len > (size_t)(arena->end - arena->ptr))
+      ex_arena_grow(arena, len);
    ptr        = arena->ptr;
    arena->ptr = (char *)
-      EX_ARENA_ALIGN_UP((uintptr_t)(arena->ptr + size), EX_ARENA_ALIGNMENT);
+      EX_ARENA_ALIGN_UP((uintptr_t)(arena->ptr + len), EX_ARENA_ALIGNMENT);
    return ptr;
 }
 
@@ -996,14 +994,14 @@ static const char* explore_get_view_path(struct menu_state *menu_st, menu_list_t
       const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
       if (driver_ctx->list_get_entry)
       {
-         size_t selection                 = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
-         size_t size                      = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
-         if (selection > 0 && size > 0)
+         size_t selection = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
+         size_t _len      = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
+         if (selection > 0 && _len > 0)
          {
             struct item_file *item        = NULL;
             /* Label contains the path and path contains the label */
             if ((item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
-                        (unsigned)(selection - (size +1)))))
+                        (unsigned)(selection - (_len +1)))))
                return item->label;
          }
       }
