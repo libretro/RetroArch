@@ -6010,21 +6010,13 @@ bool input_remapping_load_file(void *data, const char *path)
          "accel_x","accel_y", "accel_z",
          "gyro_x","gyro_y","gyro_z"
       };
-      static const char * sensor_strings_flip[RETROPAD_RETRO_SENSOR_LAST] =
-      {
-         "accel_x_flip","accel_y_flip", "accel_z_flip",
-         "gyro_x_flip","gyro_y_flip","gyro_z_flip"
-      };
       for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
 
          int sensor_remap = -1;
-         bool sensor_flip_remap = false;
          char sensor_ident[128];
-         char sensor_flip_ident[128];
          fill_pathname_join_delim(sensor_ident, s1,
                sensor_strings[j], '_', sizeof(sensor_ident));
-         fill_pathname_join_delim(sensor_flip_ident, s1,
-               sensor_strings_flip[j], '_', sizeof(sensor_flip_ident));
+         RARCH_DBG("Sensor Ident: %s %d\n", sensor_ident,sensor_remap);
          if(!config_get_int(conf, sensor_ident, &sensor_remap))
             sensor_remap=RETROK_UNKNOWN;
          
@@ -6071,11 +6063,6 @@ bool input_remapping_save_file(const char *path)
    {
       "accel_x","accel_y", "accel_z",
       "gyro_x","gyro_y","gyro_z"
-   };
-   static const char * sensor_strings_flip[RETROPAD_RETRO_SENSOR_LAST] =
-   {
-      "accel_x_flip","accel_y_flip", "accel_z_flip",
-      "gyro_x_flip","gyro_y_flip","gyro_z_flip"
    };
    config_file_t         *conf = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
@@ -6220,14 +6207,11 @@ bool input_remapping_save_file(const char *path)
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
       for (j = 0; j < RETROPAD_RETRO_SENSOR_LAST; j++){
          char sensor_ident[128];
-         char sensor_ident_flip[128];
          unsigned sensor_remap = settings->uints.input_sensor_ids[i][j];
          
          fill_pathname_join_delim(sensor_ident, s1,
                sensor_strings[j], '_', sizeof(sensor_ident));
-         fill_pathname_join_delim(sensor_ident_flip, s1,
-            sensor_strings_flip[j], '_', sizeof(sensor_ident_flip));
-         
+         RARCH_DBG("sensor ident2: %s %d\n",sensor_ident,sensor_remap);
          if (sensor_remap == j)
             config_unset(conf, sensor_ident);
          else
@@ -6238,12 +6222,6 @@ bool input_remapping_save_file(const char *path)
                config_set_int(conf, sensor_ident,
                      settings->uints.input_sensor_ids[i][j]);
          }
-         /*
-         configuration_set_bool(conf, 
-            settings->bools.input_sensor_flip_axis[i][j],
-            settings->bools.input_sensor_flip_axis[i][j]
-         );
-         */
       }
    }
 

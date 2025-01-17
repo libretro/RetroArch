@@ -8441,8 +8441,21 @@ static void get_string_representation_of_abs_device(
       rarch_setting_t *setting, char *s, size_t len)
 {
    settings_t      *settings = config_get_ptr();
-   unsigned index=settings->uints.input_sensor_ids[setting->index_offset][setting->retropad_sensor_index];
-   snprintf(s, len, msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE),index);
+   unsigned index=settings->uints.input_sensor_ids
+      [setting->index_offset]
+      [setting->retropad_sensor_index];
+   
+
+   snprintf(
+      s,len,
+      msg_hash_to_str(
+         (index%2)?MENU_ENUM_LABEL_INPUT_ABS_SOURCE_INVERTED:MENU_ENUM_LABEL_INPUT_ABS_SOURCE
+      ),
+      index/2
+   );
+   
+
+   
 }
 static void read_handler_audio_rate_control_delta(rarch_setting_t *setting)
 {
@@ -10109,7 +10122,7 @@ static bool setting_append_list_input_player_options(
          (*list)[list_info->index - 1].action_select             = &setting_action_right_input_mouse_index;
          (*list)[list_info->index - 1].action_ok                 = &setting_action_ok_uint;
          (*list)[list_info->index - 1].get_string_representation = &get_string_representation_of_abs_device;
-         menu_settings_list_current_add_range(list, list_info, 0, RETROPAD_RETRO_SENSOR_LAST - 1, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, (RETROPAD_RETRO_SENSOR_LAST*2) - 1, 1, true, true);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_SENSOR_MAPPING + j));
       }
@@ -10121,7 +10134,7 @@ static bool setting_append_list_input_player_options(
          snprintf(
             label,
             NAME_MAX_LENGTH,
-            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE_VALUE),
+            msg_hash_to_str(MENU_ENUM_LABEL_INPUT_ABS_SOURCE_AUTO),
             j
          );
          snprintf(name,NAME_MAX_LENGTH, "tmp name sensor poll %d", j);
