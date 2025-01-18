@@ -704,7 +704,7 @@ bool cheat_manager_get_code_state(unsigned i)
    return cheat_st->cheats[i].state;
 }
 
-static bool cheat_manager_get_game_specific_filename(
+static size_t cheat_manager_get_game_specific_filename(
       char *s, size_t len,
       const char *path_cheat_database,
       bool saving)
@@ -714,32 +714,23 @@ static bool cheat_manager_get_game_specific_filename(
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *core_name       = NULL;
    const char *game_name       = NULL;
-
    if (!core_get_system_info(&sysinfo))
-      return false;
-
+      return 0;
    core_name = sysinfo.library_name;
    game_name = path_basename_nocompression(runloop_st->name.cheatfile);
-
    if (     string_is_empty(path_cheat_database)
          || string_is_empty(core_name)
          || string_is_empty(game_name))
-      return false;
-
-   fill_pathname_join_special(s1,
-         path_cheat_database, core_name,
+      return 0;
+   fill_pathname_join_special(s1, path_cheat_database, core_name,
          sizeof(s1));
-
    if (saving)
    {
       /* Check if directory is valid, if not, create it */
       if (!path_is_valid(s1))
          path_mkdir(s1);
    }
-
-   fill_pathname_join_special(s, s1, game_name, len);
-
-   return true;
+   return fill_pathname_join_special(s, s1, game_name, len);
 }
 
 void cheat_manager_load_game_specific_cheats(const char *path_cheat_database)
@@ -789,7 +780,7 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
    bool is_search_initialization          = (setting != NULL);
    rarch_system_info_t *sys_info          = &runloop_state_get_ptr()->system;
    unsigned offset                        = 0;
-   cheat_manager_t              *cheat_st = &cheat_manager_state;
+   cheat_manager_t *cheat_st              = &cheat_manager_state;
 #ifdef HAVE_MENU
    struct menu_state *menu_st             = menu_state_get_ptr();
 #endif

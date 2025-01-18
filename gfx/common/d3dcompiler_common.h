@@ -24,7 +24,7 @@
 
 typedef ID3DBlob*                D3DBlob;
 
-bool d3d_compile(const char* src, size_t size,
+bool d3d_compile(const char* src, size_t len,
       LPCSTR src_name, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);
 
 bool d3d_compile_from_file(LPCWSTR filename, LPCSTR entrypoint, LPCSTR target, D3DBlob* out);

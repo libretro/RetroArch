@@ -562,7 +562,7 @@ void libretro_get_environment_info(
 }
 
 static dylib_t load_dynamic_core(const char *path, char *buf,
-      size_t size)
+      size_t len)
 {
 #if defined(ANDROID)
    /* Can't resolve symlinks when dealing with cores
@@ -593,7 +593,7 @@ static dylib_t load_dynamic_core(const char *path, char *buf,
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(buf, size, resolve_symlinks);
+   path_resolve_realpath(buf, len, resolve_symlinks);
    return dylib_load(path);
 }
 
@@ -1145,8 +1145,7 @@ static bool validate_game_specific_options(char *s, size_t len)
    return true;
 }
 
-static bool validate_folder_options(
-      char *s, size_t len, bool mkdir)
+static bool validate_folder_options(char *s, size_t len, bool mkdir)
 {
    const char *game_path       = path_get(RARCH_PATH_BASENAME);
 
@@ -1197,8 +1196,8 @@ static bool validate_folder_specific_options(char *s, size_t len)
  **/
 static void runloop_init_core_options_path(
       settings_t *settings,
-      char *s, size_t len,
-      char *src_path, size_t src_len)
+      char *s,  size_t len,
+      char *s2, size_t len2)
 {
    runloop_state_t *runloop_st    = &runloop_state;
    bool game_specific_options     = settings->bools.game_specific_options;
@@ -1255,11 +1254,9 @@ static void runloop_init_core_options_path(
       if (     !per_core_options
             || !per_core_options_exist)
       {
-         const char *options_path   = path_core_options;
-
-         if (!string_is_empty(options_path))
+         if (!string_is_empty(path_core_options))
             strlcpy(global_options_path,
-                  options_path, sizeof(global_options_path));
+                  path_core_options, sizeof(global_options_path));
          else if (!path_is_empty(RARCH_PATH_CONFIG))
             fill_pathname_resolve_relative(
                   global_options_path, path_get(RARCH_PATH_CONFIG),
@@ -1271,7 +1268,7 @@ static void runloop_init_core_options_path(
       {
          strlcpy(s, per_core_options_path, len);
          if (!per_core_options_exist)
-            strlcpy(src_path, global_options_path, src_len);
+            strlcpy(s2, global_options_path, len2);
       }
       else
          strlcpy(s, global_options_path, len);
@@ -4856,42 +4853,42 @@ void runloop_path_fill_names(void)
 
    if (string_is_empty(runloop_st->name.ups))
     {
-      size_t len = strlcpy(runloop_st->name.ups,
+      size_t _len = strlcpy(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ups));
-      strlcpy(runloop_st->name.ups       + len,
+      strlcpy(runloop_st->name.ups       + _len,
             ".ups",
-            sizeof(runloop_st->name.ups) - len);
+            sizeof(runloop_st->name.ups) - _len);
    }
 
    if (string_is_empty(runloop_st->name.bps))
    {
-      size_t len = strlcpy(runloop_st->name.bps,
+      size_t _len = strlcpy(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.bps));
-      strlcpy(runloop_st->name.bps       + len,
+      strlcpy(runloop_st->name.bps       + _len,
             ".bps",
-            sizeof(runloop_st->name.bps) - len);
+            sizeof(runloop_st->name.bps) - _len);
    }
 
    if (string_is_empty(runloop_st->name.ips))
    {
-      size_t len = strlcpy(runloop_st->name.ips,
+      size_t _len = strlcpy(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ips));
-      strlcpy(runloop_st->name.ips       + len,
+      strlcpy(runloop_st->name.ips       + _len,
             ".ips",
-            sizeof(runloop_st->name.ips) - len);
+            sizeof(runloop_st->name.ips) - _len);
    }
 
    if (string_is_empty(runloop_st->name.xdelta))
    {
-      size_t len = strlcpy(runloop_st->name.xdelta,
+      size_t _len = strlcpy(runloop_st->name.xdelta,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.xdelta));
-      strlcpy(runloop_st->name.xdelta       + len,
+      strlcpy(runloop_st->name.xdelta       + _len,
             ".xdelta",
-            sizeof(runloop_st->name.xdelta) - len);
+            sizeof(runloop_st->name.xdelta) - _len);
    }
 }
 
@@ -5433,6 +5430,22 @@ static void runloop_pause_toggle(
       command_event(CMD_EVENT_PAUSE, NULL);
 }
 
+static bool runloop_is_libretro_running(runloop_state_t* runloop_st, settings_t* settings)
+{
+   const bool runloop_is_inited = (runloop_st->flags & RUNLOOP_FLAG_IS_INITED) ? true : false;
+#ifdef HAVE_NETWORKING
+   const bool menu_pause_libretro = settings->bools.menu_pause_libretro
+      && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
+   const bool menu_pause_libretro = settings->bools.menu_pause_libretro;
+#endif
+
+   return runloop_is_inited
+      && !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+      && (!menu_pause_libretro
+         && runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
+}
+
 static enum runloop_state_enum runloop_check_state(
       bool error_on_init,
       settings_t *settings,
@@ -5968,18 +5981,7 @@ static enum runloop_state_enum runloop_check_state(
 
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
-         bool runloop_is_inited      = (runloop_st->flags & RUNLOOP_FLAG_IS_INITED) ? true : false;
-#ifdef HAVE_NETWORKING
-         bool menu_pause_libretro    = settings->bools.menu_pause_libretro
-            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
-#else
-         bool menu_pause_libretro    = settings->bools.menu_pause_libretro;
-#endif
-         bool libretro_running       =
-                  runloop_is_inited
-               && !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-               && (  !menu_pause_libretro
-                  && runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
+         const bool libretro_running = runloop_is_libretro_running(runloop_st, settings);
 
          if (menu)
          {
@@ -6821,8 +6823,6 @@ static enum runloop_state_enum runloop_check_state(
  **/
 int runloop_iterate(void)
 {
-   int i;
-   enum analog_dpad_mode dpad_mode[MAX_USERS];
    input_driver_state_t               *input_st = input_state_get_ptr();
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
    video_driver_state_t               *video_st = video_state_get_ptr();
@@ -6834,7 +6834,6 @@ int runloop_iterate(void)
    settings_t *settings                         = config_get_ptr();
    runloop_state_t *runloop_st                  = &runloop_state;
    bool vrr_runloop_enable                      = settings->bools.vrr_runloop_enable;
-   unsigned max_users                           = settings->uints.input_max_users;
    retro_time_t current_time                    = cpu_features_get_time_usec();
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
@@ -6972,7 +6971,12 @@ int runloop_iterate(void)
 #endif
 #ifdef HAVE_CHEEVOS
          if (cheevos_enable)
-            rcheevos_idle();
+         {
+            if (runloop_is_libretro_running(runloop_st, settings))
+               rcheevos_test();
+            else
+               rcheevos_idle();
+         }
 #endif
 #ifdef HAVE_MENU
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
@@ -7012,77 +7016,6 @@ int runloop_iterate(void)
       camera_st->driver->poll(camera_st->data,
             camera_st->cb.frame_raw_framebuffer,
             camera_st->cb.frame_opengl_texture);
-
-   /* Update binds for analog dpad modes. */
-   for (i = 0; i < (int)max_users; i++)
-   {
-      dpad_mode[i] = (enum analog_dpad_mode)
-            settings->uints.input_analog_dpad_mode[i];
-
-      switch (dpad_mode[i])
-      {
-         case ANALOG_DPAD_LSTICK:
-         case ANALOG_DPAD_RSTICK:
-            {
-               unsigned mapped_port = settings->uints.input_remap_ports[i];
-               if (input_st->analog_requested[mapped_port])
-                  dpad_mode[i] = ANALOG_DPAD_NONE;
-            }
-            break;
-         case ANALOG_DPAD_LSTICK_FORCED:
-            dpad_mode[i] = ANALOG_DPAD_LSTICK;
-            break;
-         case ANALOG_DPAD_RSTICK_FORCED:
-            dpad_mode[i] = ANALOG_DPAD_RSTICK;
-            break;
-         default:
-            break;
-      }
-
-      /* Push analog to D-Pad mappings to binds. */
-      if (dpad_mode[i] != ANALOG_DPAD_NONE)
-      {
-         unsigned k;
-         unsigned joy_idx                    = settings->uints.input_joypad_index[i];
-         struct retro_keybind *general_binds = input_config_binds[joy_idx];
-         struct retro_keybind *auto_binds    = input_autoconf_binds[joy_idx];
-         unsigned x_plus                     = RARCH_ANALOG_RIGHT_X_PLUS;
-         unsigned y_plus                     = RARCH_ANALOG_RIGHT_Y_PLUS;
-         unsigned x_minus                    = RARCH_ANALOG_RIGHT_X_MINUS;
-         unsigned y_minus                    = RARCH_ANALOG_RIGHT_Y_MINUS;
-
-         if (dpad_mode[i] == ANALOG_DPAD_LSTICK)
-         {
-            x_plus                           = RARCH_ANALOG_LEFT_X_PLUS;
-            y_plus                           = RARCH_ANALOG_LEFT_Y_PLUS;
-            x_minus                          = RARCH_ANALOG_LEFT_X_MINUS;
-            y_minus                          = RARCH_ANALOG_LEFT_Y_MINUS;
-         }
-
-         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-         {
-            (auto_binds)[k].orig_joyaxis     = (auto_binds)[k].joyaxis;
-            (general_binds)[k].orig_joyaxis  = (general_binds)[k].joyaxis;
-         }
-
-         if (!INHERIT_JOYAXIS(auto_binds))
-         {
-            unsigned j = x_plus + 3;
-            /* Inherit joyaxis from analogs. */
-            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               (auto_binds)[k].joyaxis = (auto_binds)[j--].joyaxis;
-         }
-
-         if (!INHERIT_JOYAXIS(general_binds))
-         {
-            unsigned j = x_plus + 3;
-            /* Inherit joyaxis from analogs. */
-            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
-         }
-      }
-   }
-
    /* Measure the time between core_run() and video_driver_frame() */
    runloop_st->core_run_time = cpu_features_get_time_usec();
 
@@ -7131,25 +7064,6 @@ int runloop_iterate(void)
 #ifdef HAVE_PRESENCE
    presence_update(PRESENCE_GAME);
 #endif
-
-   /* Restores analog D-pad binds temporarily overridden. */
-   for (i = 0; i < (int)max_users; i++)
-   {
-      if (dpad_mode[i] != ANALOG_DPAD_NONE)
-      {
-         int j;
-         unsigned joy_idx                    = settings->uints.input_joypad_index[i];
-         struct retro_keybind *general_binds = input_config_binds[joy_idx];
-         struct retro_keybind *auto_binds    = input_autoconf_binds[joy_idx];
-
-         for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
-         {
-            (auto_binds)[j].joyaxis    = (auto_binds)[j].orig_joyaxis;
-            (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
-         }
-      }
-   }
-
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_finish_rewind(input_st);
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
@@ -7349,19 +7263,19 @@ void runloop_task_msg_queue_push(
 }
 
 
-bool runloop_get_current_savestate_path(char *path, size_t len)
+bool runloop_get_current_savestate_path(char *s, size_t len)
 {
    settings_t *settings        = config_get_ptr();
    int state_slot              = settings ? settings->ints.state_slot : 0;
-   return runloop_get_savestate_path(path, len, state_slot);
+   return runloop_get_savestate_path(s, len, state_slot);
 }
 
-bool runloop_get_savestate_path(char *path, size_t len, int state_slot)
+bool runloop_get_savestate_path(char *s, size_t len, int state_slot)
 {
    runloop_state_t *runloop_st = &runloop_state;
    const char *name_savestate  = NULL;
 
-   if (!path)
+   if (!s)
       return false;
 
    name_savestate              = runloop_st->name.savestate;
@@ -7369,61 +7283,61 @@ bool runloop_get_savestate_path(char *path, size_t len, int state_slot)
       return false;
 
    if (state_slot < 0)
-      fill_pathname_join_delim(path, name_savestate, "auto", '.', len);
+      fill_pathname_join_delim(s, name_savestate, "auto", '.', len);
    else
    {
-      size_t _len = strlcpy(path, name_savestate, len);
+      size_t _len = strlcpy(s, name_savestate, len);
       if (state_slot > 0)
-         snprintf(path + _len, len - _len, "%d", state_slot);
+         snprintf(s + _len, len - _len, "%d", state_slot);
    }
 
    return true;
 }
 
 
-bool runloop_get_current_replay_path(char *path, size_t len)
+bool runloop_get_current_replay_path(char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
    int slot = settings ? settings->ints.replay_slot : 0;
-   return runloop_get_replay_path(path, len, slot);
+   return runloop_get_replay_path(s, len, slot);
 }
 
-bool runloop_get_replay_path(char *path, size_t len, unsigned slot)
+bool runloop_get_replay_path(char *s, size_t len, unsigned slot)
 {
    size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
    const char *name_replay  = NULL;
 
-   if (!path)
+   if (!s)
       return false;
 
    name_replay = runloop_st->name.replay;
    if (string_is_empty(name_replay))
       return false;
 
-   _len = strlcpy(path, name_replay, len);
+   _len = strlcpy(s, name_replay, len);
    if (slot >= 0)
-      snprintf(path + _len, len - _len, "%d",  slot);
+      snprintf(s + _len, len - _len, "%d",  slot);
 
    return true;
 }
 
 
-bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot)
+bool runloop_get_entry_state_path(char *s, size_t len, unsigned slot)
 {
    size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
    const char *name_savestate  = NULL;
 
-   if (!path || !slot)
+   if (!s || !slot)
       return false;
 
    name_savestate              = runloop_st->name.savestate;
    if (string_is_empty(name_savestate))
       return false;
 
-   _len = strlcpy(path, name_savestate, len);
-   snprintf(path + _len, len - _len, "%d.entry", slot);
+   _len = strlcpy(s, name_savestate, len);
+   snprintf(s + _len, len - _len, "%d.entry", slot);
 
    return true;
 }
@@ -7866,7 +7780,8 @@ void runloop_path_set_basename(const char *path)
     */
    path_basedir_wrapper(runloop_st->runtime_content_path_basename);
    if (!string_is_empty(runloop_st->runtime_content_path_basename))
-      fill_pathname_dir(runloop_st->runtime_content_path_basename, path, "", sizeof(runloop_st->runtime_content_path_basename));
+      fill_pathname_dir(runloop_st->runtime_content_path_basename, path,
+            "", sizeof(runloop_st->runtime_content_path_basename));
 #endif
 
    if ((dst = strrchr(runloop_st->runtime_content_path_basename, '.')))
@@ -7911,8 +7826,8 @@ void runloop_path_set_names(void)
 }
 
 void runloop_path_set_redirect(settings_t *settings,
-                               const char *old_savefile_dir,
-                               const char *old_savestate_dir)
+      const char *old_savefile_dir,
+      const char *old_savestate_dir)
 {
    char content_dir_name[DIR_MAX_LENGTH];
    char new_savefile_dir[DIR_MAX_LENGTH];
@@ -7948,10 +7863,10 @@ void runloop_path_set_redirect(settings_t *settings,
    if (     string_is_empty(intermediate_savefile_dir)
          || savefiles_in_content_dir)
    {
-      strlcpy(intermediate_savefile_dir,
-              runloop_st->runtime_content_path_basename,
-              sizeof(intermediate_savefile_dir));
-      path_basedir(intermediate_savefile_dir);
+      fill_pathname_basedir(
+            intermediate_savefile_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(intermediate_savefile_dir));
 
       if (string_is_empty(intermediate_savefile_dir))
          RARCH_LOG("Cannot resolve save file path.\n");
@@ -7961,10 +7876,9 @@ void runloop_path_set_redirect(settings_t *settings,
    if (   string_is_empty(intermediate_savestate_dir)
        || savestates_in_content_dir)
    {
-      strlcpy(intermediate_savestate_dir,
-              runloop_st->runtime_content_path_basename,
-              sizeof(intermediate_savestate_dir));
-      path_basedir(intermediate_savestate_dir);
+      fill_pathname_basedir(intermediate_savestate_dir,
+            runloop_st->runtime_content_path_basename,
+            sizeof(intermediate_savestate_dir));
 
       if (string_is_empty(intermediate_savestate_dir))
          RARCH_LOG("Cannot resolve save state file path.\n");

@@ -1377,10 +1377,12 @@ int generic_action_ok_displaylist_push(
          {
             filebrowser_clear_type();
             if (content_get_subsystem_rom_id() > 0)
-               strlcpy(tmp, content_get_subsystem_rom(content_get_subsystem_rom_id() - 1), sizeof(tmp));
+               fill_pathname_basedir(tmp,
+                     content_get_subsystem_rom(content_get_subsystem_rom_id() - 1),
+                     sizeof(tmp));
             else
-               strlcpy(tmp, path_get(RARCH_PATH_CONTENT), sizeof(tmp));
-            path_basedir(tmp);
+               fill_pathname_basedir(tmp,
+                     path_get(RARCH_PATH_CONTENT), sizeof(tmp));
 
             if (content_get_subsystem() != (int)type - MENU_SETTINGS_SUBSYSTEM_ADD)
                content_clear_subsystem();
@@ -5374,8 +5376,8 @@ static int action_ok_download_generic(const char *path,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          {
-            char *tok, *save;
-            char *menu_label_cpy         = strdup(menu_label);
+            char *tok, *save     = NULL;
+            char *menu_label_cpy = strdup(menu_label);
             if ((tok = strtok_r(menu_label_cpy, ";", &save)))
                strlcpy(s, tok, sizeof(s));
             free(menu_label_cpy);
@@ -6241,17 +6243,17 @@ static int action_ok_delete_entry(const char *path,
 static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char *tok, *save;
    char new_str[PATH_MAX_LENGTH];
    char new_label[PATH_MAX_LENGTH];
-   size_t _len                     = 0;
-   char *label_cpy                 = NULL;
+   char *tok, *save = NULL;
+   size_t _len      = 0;
+   char *label_cpy  = NULL;
 
    if (!label)
       return -1;
 
-   new_label[0]                    =  '\0';
-   label_cpy                       = strdup(label);
+   new_label[0]     =  '\0';
+   label_cpy        = strdup(label);
 
    /* element 0: label */
    if ((tok = strtok_r(label_cpy, "|", &save)))
@@ -6467,6 +6469,9 @@ static int action_ok_open_picker(const char *path,
 {
 #if TARGET_OS_IOS
    ios_show_file_sheet();
+   return 0;
+#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+   osx_show_file_sheet();
    return 0;
 #else
    char *new_path = NULL;
@@ -6937,7 +6942,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
       case ST_STRING_OPTIONS:
          if (setting->get_string_representation)
          {
-            char *tok, *save;
+            char *tok, *save         = NULL;
             unsigned tok_idx         = 0;
             char *setting_values_cpy = strdup(setting->values);
 

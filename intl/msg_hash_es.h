@@ -14796,6 +14796,14 @@ MSG_HASH(
    "Se ha activado un truco. Los logros Hardcore han sido desactivados para esta sesión."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Logros Hardcore cambiados por el servidor."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "El servidor de juego en red necesita una actualización. Los logros Hardcore han sido desactivados para esta sesión."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Has dominado %s"
    )
@@ -14833,23 +14841,23 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
-   "Modo «hardcore» pausado. No se permite ajustar manualmente el retraso en los fotogramas de vídeo."
+   "Modo Hardcore pausado. No se permite ajustar manualmente el retraso en los fotogramas de vídeo."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
-   "Modo «hardcore» pausado. No se permite un valor de intercambio de sincronía vertical superior a 1."
+   "Modo Hardcore pausado. No se permite un valor de intercambio de sincronía vertical superior a 1."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
-   "Modo «hardcore» pausado. No se permite insertar fotogramas negros."
+   "Modo Hardcore pausado. No se permite insertar fotogramas negros."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
-   "Modo «hardcore» pausado. Ajuste no permitido: %s=%s"
+   "Modo Hardcore pausado. Ajuste no permitido: %s=%s"
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
-   "Modo «hardcore» pausado. No puedes desbloquear logros «hardcore» de %s con %s"
+   "Modo Hardcore pausado. No puedes desbloquear logros Hardcore de %s con %s"
    )
 MSG_HASH(
    MSG_CHEEVOS_GAME_NOT_IDENTIFIED,

@@ -930,14 +930,14 @@ static int _rjson_buffer_io(void* buf, int len, void *user)
    return len;
 }
 
-rjson_t *rjson_open_buffer(const void *buffer, size_t size)
+rjson_t *rjson_open_buffer(const void *buffer, size_t len)
 {
    rjson_t *json   = (rjson_t *)malloc(sizeof(rjson_t) + sizeof(const char *)*2);
    const char **ud = (const char **)(json + 1);
    if (!json)
       return NULL;
    ud[0] = (const char *)buffer;
-   ud[1] = ud[0] + size;
+   ud[1] = ud[0] + len;
    _rjson_setup(json, _rjson_buffer_io, (void*)ud, sizeof(json->input_buf));
    return json;
 }
@@ -987,12 +987,12 @@ void rjson_set_max_depth(rjson_t *json, unsigned int max_depth)
    json->stack_max = max_depth;
 }
 
-const char *rjson_get_string(rjson_t *json, size_t *length)
+const char *rjson_get_string(rjson_t *json, size_t *len)
 {
    char* str             = (json->string_pass_through
          ? json->string_pass_through : json->string);
-   if (length)
-      *length            = json->string_len;
+   if (len)
+      *len               = json->string_len;
    str[json->string_len] = '\0';
    return str;
 }
@@ -1112,7 +1112,7 @@ void rjson_free(rjson_t *json)
 }
 
 static bool _rjson_nop_default(void *context) { return true; }
-static bool _rjson_nop_string(void *context, const char *value, size_t length) { return true; }
+static bool _rjson_nop_string(void *context, const char *value, size_t len) { return true; }
 static bool _rjson_nop_bool(void *context, bool value) { return true; }
 
 enum rjson_type rjson_parse(rjson_t *json, void* context,

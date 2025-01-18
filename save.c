@@ -152,7 +152,7 @@ static void autosave_thread(void *data)
  * autosave_new:
  * @path            : path to autosave file
  * @data            : pointer to buffer
- * @size            : size of @data buffer
+ * @len             : size of @data buffer
  * @interval        : interval at which saves should be performed.
  *
  * Create and initialize autosave object.
@@ -161,7 +161,7 @@ static void autosave_thread(void *data)
  * NULL.
  **/
 static autosave_t *autosave_new(const char *path,
-      const void *data, size_t size,
+      const void *data, size_t len,
       unsigned interval, bool compress)
 {
    void       *buf               = NULL;
@@ -170,14 +170,14 @@ static autosave_t *autosave_new(const char *path,
       return NULL;
 
    handle->flags                 = 0;
-   handle->bufsize               = size;
+   handle->bufsize               = len;
    handle->interval              = interval;
    if (compress)
       handle->flags             |= AUTOSAVE_FLAG_COMPRESS_FILES;
    handle->retro_buffer          = data;
    handle->path                  = path;
 
-   if (!(buf = malloc(size)))
+   if (!(buf = malloc(len)))
    {
       free(handle);
       return NULL;
@@ -407,7 +407,7 @@ static bool content_load_ram_file(unsigned slot)
  * Attempt to save valuable RAM data somewhere.
  **/
 static bool dump_to_file_desperate(const void *data,
-      size_t size, unsigned type)
+      size_t len, unsigned type)
 {
    char path[PATH_MAX_LENGTH + 256 + 32];
    path            [0]    = '\0';
@@ -434,7 +434,7 @@ static bool dump_to_file_desperate(const void *data,
        * > In this case, we don't want to further
        *   complicate matters by introducing zlib
        *   compression overheads */
-      if (filestream_write_file(path, data, size))
+      if (filestream_write_file(path, data, len))
       {
          RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
          return true;
@@ -522,9 +522,7 @@ bool event_save_files(bool is_sram_used)
       return false;
 
    for (i = 0; i < task_save_files->size; i++)
-   {
       content_save_ram_file(i, compress_files);
-   }
 
    return true;
 }

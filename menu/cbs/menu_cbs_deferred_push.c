@@ -357,11 +357,11 @@ static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
    char query[256];
-   char *tok, *save;
-   char *elem0                   = NULL;
-   char *elem1                   = NULL;
-   char *path_cpy                = NULL;
-   const char *path              = info->path;
+   char *tok, *save  = NULL;
+   char *elem0       = NULL;
+   char *elem1       = NULL;
+   char *path_cpy    = NULL;
+   const char *path  = info->path;
 
    if (!path)
       return -1;
@@ -530,8 +530,8 @@ static int general_push(menu_displaylist_info_t *info,
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
-                  char *tok, *save;
-                  char *all_ext_cpy    = strdup(list->all_ext);
+                  char *tok, *save  = NULL;
+                  char *all_ext_cpy = strdup(list->all_ext);
 
                   /* If the current core already supports
                    * this extension, skip adding it */
@@ -542,8 +542,8 @@ static int general_push(menu_displaylist_info_t *info,
 
                      if (!string_is_empty(newstr2))
                      {
-                        char *tok2, *save2;
-                        char *newstr2_cpy = strdup(newstr2);
+                        char *tok2, *save2 = NULL;
+                        char *newstr2_cpy  = strdup(newstr2);
                         for ( tok2 = strtok_r(newstr2_cpy, "|", &save2); tok2;
                               tok2 = strtok_r(NULL, "|", &save2))
                         {

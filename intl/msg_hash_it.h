@@ -14608,6 +14608,14 @@ MSG_HASH(
    "Un trucco è stato attivato. Trofei della modalità Hardcore disabilitati per la sessione attuale."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Modalirà Obiettivi Hardcore cambiata dall'host."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "L'host Netplay deve essere aggiornato. La modalirà Obiettivi Hardcore disattivata per la sessione corrente."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Padroneggiato %s"
    )

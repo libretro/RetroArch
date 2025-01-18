@@ -492,7 +492,7 @@ static int filebrowser_parse(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0, NULL);
 
-#ifdef IOS
+#if defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
    {
       /* Check if we're allowed to escape our sandbox */
       struct string_list *str_list = string_list_new();
@@ -500,9 +500,9 @@ static int filebrowser_parse(
       if (str_list->size <= 0)
       {
          char dir[DIR_MAX_LENGTH];
-         fill_pathname_application_dir(dir, sizeof(dir));
+         size_t _len = fill_pathname_application_dir(dir, sizeof(dir));
          if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
-            strlcat(dir, "/", sizeof(dir));
+            strlcpy(dir + _len, "/", sizeof(dir) - _len);
          if (string_is_equal(dir, full_path))
             allow_parent_directory = false;
          else
@@ -2093,8 +2093,12 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          /* RetroRating Level */
          if (frontend->get_rating)
          {
-            snprintf(entry, sizeof(entry), "%s: %d",
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
+            _len  = strlcpy(entry,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETRORATING_LEVEL),
+                  sizeof(entry));
+            _len += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            snprintf(entry + _len, sizeof(entry) - _len, "%d",
                   frontend->get_rating());
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2170,11 +2174,15 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       video_context_driver_get_ident(&ident_info);
 
       /* Video Context Driver */
-      snprintf(entry, sizeof(entry), "%s: %s",
+      _len  = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
+            sizeof(entry));
+      _len +=  strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      strlcpy(entry + _len,
             string_is_empty(ident_info.ident)
             ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-            : ident_info.ident);
+            : ident_info.ident,
+            sizeof(entry) - _len);
       if (menu_entries_append(list, entry, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
@@ -3584,13 +3592,13 @@ static int menu_displaylist_parse_horizontal_list(
    struct item_file *item              = NULL;
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
    size_t selection                    = driver_ctx->list_get_selection ? driver_ctx->list_get_selection(menu_st->userdata) : 0;
-   size_t size                         = driver_ctx->list_get_size      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
+   size_t _len = driver_ctx->list_get_size ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_TABS) : 0;
 
    if (!driver_ctx->list_get_entry)
       return -1;
 
    if (!(item = (struct item_file*)driver_ctx->list_get_entry(menu_st->userdata, MENU_LIST_HORIZONTAL,
-               (unsigned)(selection - (size +1)))))
+               (unsigned)(selection - (_len +1)))))
       return -1;
 
    /* When opening a saved view the explore menu will handle the list */
@@ -5156,13 +5164,21 @@ static unsigned menu_displaylist_parse_content_information(
    if (     !string_is_empty(content_label)
          && !string_is_empty(db_name))
    {
+      char *last;
       char db_path[PATH_MAX_LENGTH];
       fill_pathname_join_special(db_path,
             settings->paths.path_content_database,
             db_name,
             sizeof(db_path));
-      path_remove_extension(db_path);
-      strlcat(db_path, ".rdb", sizeof(db_path));
+      last = path_get_extension_mutable(db_path);
+      if (last && *last)
+      {
+         last[0] = '.';
+         last[1] = 'r';
+         last[2] = 'd';
+         last[3] = 'b';
+         last[4] = '\0';
+      }
 
       if (path_is_valid(db_path))
          if (menu_entries_append(info_list,
@@ -6569,14 +6585,16 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
    {
       char drive[2];
       char drive_string[NAME_MAX_LENGTH] = {0};
-      size_t pos             = snprintf(drive_string, sizeof(drive_string),
+      size_t _len = snprintf(drive_string, sizeof(drive_string),
             msg_drive_number, i + 1);
-      pos                   += snprintf(drive_string + pos,
-            sizeof(drive_string) - pos,
-            ": %s", list->elems[i].data);
+      _len += strlcpy(drive_string + _len, ": ",
+              sizeof(drive_string) - _len);
+      strlcpy(        drive_string + _len,
+            list->elems[i].data,
+              sizeof(drive_string) - _len);
 
-      drive[0]               = list->elems[i].attr.i;
-      drive[1]               = '\0';
+      drive[0]   = list->elems[i].attr.i;
+      drive[1]   = '\0';
 
       if (menu_entries_append(info_list,
                drive_string, drive, MSG_UNKNOWN,
@@ -7228,6 +7246,7 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
 
+            /* TODO/FIXME - should we dehardcode this? */
             if (    string_is_equal(current_input->ident, "android")
                 || (string_is_equal(current_input->ident, "cocoa")
                 &&  string_is_equal(os_ver, "iOS")))
@@ -13098,7 +13117,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
                if (!string_is_empty(info->label))
                {
-                  char *tok, *save;
+                  char *tok, *save     = NULL;
                   char *info_label_cpy = strdup(info->label);
 
                   if ((tok = strtok_r(info_label_cpy, "|", &save)))
@@ -13285,29 +13304,27 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   for (i = 0; i < pass_count; i++)
                   {
-                     size_t _len2;
-                     char buf[128];
-                     snprintf(buf_tmp + _len, sizeof(buf_tmp) - _len, " #%u", i);
+                     size_t _len3;
+                     size_t _len2 = _len + snprintf(buf_tmp + _len, sizeof(buf_tmp) - _len, " #%u", i);
 
                      if (menu_entries_append(info->list, buf_tmp, shdr_pass,
                               MENU_ENUM_LABEL_VIDEO_SHADER_PASS,
                               MENU_SETTINGS_SHADER_PASS_0 + i, 0, 0, NULL))
                         count++;
 
-                     _len2        = strlcpy(buf, buf_tmp, sizeof(buf));
-                     buf[  _len2] = ' ';
-                     buf[++_len2] = '\0';
-                     strlcpy(buf + _len2, val_filter, sizeof(buf) - _len2);
-                     if (menu_entries_append(info->list, buf, shdr_filter_pass,
+                     buf_tmp[  _len2] = ' ';
+                     buf_tmp[++_len2] = '\0';
+
+                     _len3            = _len2;
+                     strlcpy(buf_tmp + _len3, val_filter, sizeof(buf_tmp) - _len3);
+                     if (menu_entries_append(info->list, buf_tmp, shdr_filter_pass,
                               MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS,
                               MENU_SETTINGS_SHADER_PASS_FILTER_0 + i, 0, 0, NULL))
                         count++;
 
-                     _len2        = strlcpy(buf, buf_tmp, sizeof(buf));
-                     buf[  _len2] = ' ';
-                     buf[++_len2] = '\0';
-                     strlcpy(buf + _len2, val_scale, sizeof(buf) - _len2);
-                     if (menu_entries_append(info->list, buf, shdr_scale_pass,
+                     _len3            = _len2;
+                     strlcpy(buf_tmp + _len3, val_scale, sizeof(buf_tmp) - _len3);
+                     if (menu_entries_append(info->list, buf_tmp, shdr_scale_pass,
                               MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
                               MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0, NULL))
                         count++;
@@ -13328,7 +13345,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORE_CONTENT:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
-            count = print_buf_lines(info->list, menu->core_buf, "",
+            count = (unsigned)print_buf_lines(info->list, menu->core_buf, "",
                   menu->core_len, FILE_TYPE_DOWNLOAD_CORE_CONTENT,
                   true);
 
@@ -13361,7 +13378,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   strlcpy(menu->core_buf, con, menu->core_len);
                free(info_path_cpy);
 
-               if ((count = print_buf_lines(
+               if ((count = (unsigned)print_buf_lines(
                            info->list, menu->core_buf, new_label,
                            menu->core_len, FILE_TYPE_DOWNLOAD_URL,
                            false)) == 0)
@@ -13391,7 +13408,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      network_buildbot_assets_url,
                      "cores", sizeof(new_label));
 
-               if ((count = print_buf_lines(info->list, menu->core_buf, new_label,
+               if ((count = (unsigned)print_buf_lines(info->list, menu->core_buf, new_label,
                            menu->core_len, FILE_TYPE_DOWNLOAD_URL, true)) == 0)
                   menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
@@ -13408,7 +13425,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORE_SYSTEM_FILES:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
-            count = print_buf_lines(info->list, menu->core_buf, "",
+            count = (unsigned)print_buf_lines(info->list, menu->core_buf, "",
                   menu->core_len, FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES,
                   true);
 
@@ -13512,7 +13529,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_THUMBNAILS_UPDATER:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
-            count = print_buf_lines(info->list, menu->core_buf, "",
+            count = (unsigned)print_buf_lines(info->list, menu->core_buf, "",
                   menu->core_len, FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT,
                   true);
 
@@ -13550,7 +13567,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_LAKKA:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
-            count = print_buf_lines(info->list, menu->core_buf, "",
+            count = (unsigned)print_buf_lines(info->list, menu->core_buf, "",
                   menu->core_len, FILE_TYPE_DOWNLOAD_LAKKA,
                   true);
 
@@ -15203,13 +15220,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_USER_BINDS_LIST:
             menu_entries_clear(info->list);
             {
-               char lbl[NAME_MAX_LENGTH];
                unsigned val              = atoi(info->path);
                const char *temp_val      = msg_hash_to_str(
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
-               strlcpy(lbl, temp_val, sizeof(lbl));
                ret                = MENU_DISPLAYLIST_PARSE_SETTINGS(info->list,
-                     lbl, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
+                     temp_val, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
                info->flags       |=  MD_FLAG_NEED_REFRESH
                                   |  MD_FLAG_NEED_PUSH;
             }
@@ -15323,7 +15338,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
                if (!string_is_empty(info->exts))
                   free(info->exts);
-               info->exts = strdup(new_exts);
+               info->exts         = strdup(new_exts);
                use_filebrowser    = true;
             }
 #endif
@@ -15626,7 +15641,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         case ST_STRING_OPTIONS:
                            {
                               char val_d[16];
-                              char *tok, *save;
+                              char *tok, *save         = NULL;
                               unsigned i               = 0;
                               bool checked_found       = false;
                               unsigned checked         = 0;
@@ -15975,7 +15990,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      case ST_STRING_OPTIONS:
                         {
                            char val_d[16];
-                           char *tok, *save;
+                           char *tok, *save         = NULL;
                            unsigned i               = 0;
                            bool checked_found       = false;
                            unsigned checked         = 0;

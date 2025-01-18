@@ -64,9 +64,9 @@ static void bluetoothctl_scan(void *data)
 
    while (fgets(line, 512, dev_file))
    {
-      size_t len = strlen(line);
-      if (len > 0 && line[len-1] == '\n')
-         line[--len] = '\0';
+      size_t _len = strlen(line);
+      if (_len > 0 && line[_len - 1] == '\n')
+         line[--_len] = '\0';
 
       string_list_append(btctl->lines, line, attr);
    }

@@ -1000,12 +1000,11 @@ int cdrom_set_read_speed(libretro_vfs_implementation_file *stream, unsigned spee
 
 int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc)
 {
+   int i;
    unsigned char buf[2352] = {0};
    unsigned short data_len = 0;
-   size_t len = 0;
-   size_t pos = 0;
+   size_t _len = 0, pos = 0;
    int rv = 0;
-   int i;
 
    if (!out_buf || !out_len || !num_tracks || !toc)
    {
@@ -1052,10 +1051,10 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
       return 1;
    }
 
-   len = CDROM_CUE_TRACK_BYTES * (*num_tracks);
+   _len            = CDROM_CUE_TRACK_BYTES * (*num_tracks);
    toc->num_tracks = *num_tracks;
-   *out_buf = (char*)calloc(1, len);
-   *out_len = len;
+   *out_buf        = (char*)calloc(1, _len);
+   *out_len        = _len;
 
    for (i = 0; i < (data_len - 2) / 11; i++)
    {
@@ -1104,11 +1103,11 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
             track_type = "MODE2/2352";
 
 #if defined(_WIN32) && !defined(_XBOX)
-         pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://%c:/drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
+         pos += snprintf(*out_buf + pos, _len - pos, "FILE \"cdrom://%c:/drive-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #else
-         pos += snprintf(*out_buf + pos, len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
+         pos += snprintf(*out_buf + pos, _len - pos, "FILE \"cdrom://drive%c-track%02d.bin\" BINARY\n", cdrom_drive, point);
 #endif
-         pos += snprintf(*out_buf + pos, len - pos, "  TRACK %02d %s\n", point, track_type);
+         pos += snprintf(*out_buf + pos, _len - pos, "  TRACK %02d %s\n", point, track_type);
 
          {
             unsigned pregap_lba_len = toc->track[point - 1].lba - toc->track[point - 1].lba_start;
@@ -1121,11 +1120,11 @@ int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, si
 
                cdrom_lba_to_msf(pregap_lba_len, &min, &sec, &frame);
 
-               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 00 00:00:00\n");
-               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
+               pos += snprintf(*out_buf + pos, _len - pos, "    INDEX 00 00:00:00\n");
+               pos += snprintf(*out_buf + pos, _len - pos, "    INDEX 01 %02u:%02u:%02u\n", (unsigned)min, (unsigned)sec, (unsigned)frame);
             }
             else
-               pos += snprintf(*out_buf + pos, len - pos, "    INDEX 01 00:00:00\n");
+               pos += snprintf(*out_buf + pos, _len - pos, "    INDEX 01 00:00:00\n");
          }
       }
    }

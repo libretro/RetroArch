@@ -14888,6 +14888,14 @@ MSG_HASH(
    "Bir hile etkinleştirildi. Başarılar mevcut oturum için Zorlu Kip devre dışı bırakıldı."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Başarımlar Zorlu Mod, sunucu tarafından değiştirildi."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "Netplay ana bilgisayarının güncellenmesi gerekiyor. Başarımlar Zorlu Mod mevcut oturum için devre dışı bırakıldı."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Ustalıkla %s"
    )

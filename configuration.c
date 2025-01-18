@@ -3572,6 +3572,12 @@ static bool config_load_file(global_t *global,
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
+   char* libretro_directory                        = NULL;
+   char* libretro_assets_directory                 = NULL;
+   char* libretro_autoconfig_directory             = NULL;
+   char* libretro_system_directory                 = NULL;
+   char* libretro_video_filter_directory           = NULL;
+   char* libretro_video_shader_directory           = NULL;
    static bool first_load                          = true;
    bool without_overrides                          = false;
    unsigned msg_color                              = 0;
@@ -3853,18 +3859,32 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-#if !IOS
-   if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
-      configuration_set_string(settings,
-            settings->paths.directory_libretro, tmp_str);
-#endif
-
 #ifdef RARCH_CONSOLE
    if (conf)
       video_driver_load_settings(global, conf);
 #endif
 
    /* Post-settings load */
+
+   libretro_directory = getenv("LIBRETRO_DIRECTORY");
+   if (libretro_directory) {
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, libretro_directory);
+      configuration_set_string(settings,
+            settings->paths.path_libretro_info, libretro_directory);
+   }
+
+   libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   if (libretro_autoconfig_directory)
+       configuration_set_string(settings,
+				settings->paths.directory_autoconfig,
+				libretro_autoconfig_directory);
+
+   libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
+   if (libretro_system_directory)
+       configuration_set_string(settings,
+				settings->paths.directory_system,
+				libretro_system_directory);
 
    if (     (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
          && (override_username))
@@ -4030,15 +4050,27 @@ static bool config_load_file(global_t *global,
       *settings->paths.path_menu_wallpaper = '\0';
    if (string_is_equal(settings->paths.path_rgui_theme_preset, "default"))
       *settings->paths.path_rgui_theme_preset = '\0';
-   if (string_is_equal(settings->paths.directory_video_shader, "default"))
+   libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
+   if (libretro_video_shader_directory) { /* override configuration value */
+      configuration_set_string(settings, settings->paths.directory_video_shader,
+			       libretro_video_shader_directory);
+   } else if (string_is_equal(settings->paths.directory_video_shader, "default"))
       *settings->paths.directory_video_shader = '\0';
-   if (string_is_equal(settings->paths.directory_video_filter, "default"))
+   libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   if (libretro_video_filter_directory) { /* override configuration value */
+       configuration_set_string(settings, settings->paths.directory_video_filter,
+				libretro_video_filter_directory);
+   } else if (string_is_equal(settings->paths.directory_video_filter, "default"))
       *settings->paths.directory_video_filter = '\0';
    if (string_is_equal(settings->paths.directory_audio_filter, "default"))
       *settings->paths.directory_audio_filter = '\0';
    if (string_is_equal(settings->paths.directory_core_assets, "default"))
       *settings->paths.directory_core_assets = '\0';
-   if (string_is_equal(settings->paths.directory_assets, "default"))
+   libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
+   if (libretro_assets_directory) { /* override configuration value */
+      configuration_set_string(settings,
+           settings->paths.directory_assets, libretro_assets_directory);
+   } else if (string_is_equal(settings->paths.directory_assets, "default"))
       *settings->paths.directory_assets = '\0';
 #ifdef _3DS
    if (string_is_equal(settings->paths.directory_bottom_assets, "default"))
@@ -4493,28 +4525,14 @@ bool config_load_override(void *data)
 
 bool config_load_override_file(const char *config_path)
 {
-   char config_directory[DIR_MAX_LENGTH];
-   bool should_append                     = false;
-   bool show_notification                 = true;
-   settings_t *settings                   = config_st;
-
-   config_directory[0] = '\0';
+   settings_t *settings   = config_st;
 
    path_clear(RARCH_PATH_CONFIG_OVERRIDE);
 
-   /* Get base config directory */
-   fill_pathname_application_special(config_directory,
-         sizeof(config_directory),
-         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-
-   if (path_is_valid(config_path))
-   {
-      path_set(RARCH_PATH_CONFIG_OVERRIDE, config_path);
-      should_append = true;
-   }
-
-   if (!should_append)
+   if (!path_is_valid(config_path))
       return false;
+
+   path_set(RARCH_PATH_CONFIG_OVERRIDE, config_path);
 
    /* Re-load the configuration with any overrides
     * that might have been found */
@@ -4527,8 +4545,7 @@ bool config_load_override_file(const char *config_path)
             path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
-   if (settings->bools.notification_show_config_override_load
-         && show_notification)
+   if (settings->bools.notification_show_config_override_load)
    {
       char msg[128];
       size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CONFIG_OVERRIDE_LOADED), sizeof(msg));
@@ -6209,12 +6226,10 @@ static bool config_file_salamander_get_path(char *s, size_t len)
 
 void config_load_file_salamander(void)
 {
-   config_file_t *config = NULL;
    char config_path[PATH_MAX_LENGTH];
-   char libretro_path[PATH_MAX_LENGTH];
+   config_file_t *config = NULL;
 
    config_path[0]   = '\0';
-   libretro_path[0] = '\0';
 
    /* Get config file path */
    if (!config_file_salamander_get_path(
@@ -6231,10 +6246,10 @@ void config_load_file_salamander(void)
          config_path);
 
    if (config_get_path(config, "libretro_path",
-         libretro_path, sizeof(libretro_path))
-       && !string_is_empty(libretro_path)
-       && !string_is_equal(libretro_path, "builtin"))
-      path_set(RARCH_PATH_CORE, libretro_path);
+         config_path, sizeof(config_path))
+       && !string_is_empty(config_path)
+       && !string_is_equal(config_path, "builtin"))
+      path_set(RARCH_PATH_CORE, config_path);
 
    config_file_free(config);
 }
@@ -6456,7 +6471,6 @@ void input_config_parse_joy_axis(
 {
    char       tmp[64];
    char       key[64];
-   char key_label[64];
    config_file_t *conf                     = (config_file_t*)conf_data;
    struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a         = NULL;
@@ -6465,8 +6479,6 @@ void input_config_parse_joy_axis(
 
    fill_pathname_join_delim(key, s,
          "axis", '_', sizeof(key));
-   fill_pathname_join_delim(key_label, s,
-         "axis_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -6488,12 +6500,12 @@ void input_config_parse_joy_axis(
          else
             bind->joyaxis = AXIS_NEG(i_axis);
       }
-
-      /* Ensure that D-pad emulation doesn't screw this over. */
-      bind->orig_joyaxis = bind->joyaxis;
    }
 
-   tmp_a = config_get_entry(conf, key_label);
+   fill_pathname_join_delim(key, s,
+         "axis_label", '_', sizeof(key));
+
+   tmp_a = config_get_entry(conf, key);
 
    if (tmp_a && (!string_is_empty(tmp_a->value)))
    {
@@ -6547,7 +6559,6 @@ void input_config_parse_joy_button(
 {
    char tmp[64];
    char key[64];
-   char key_label[64];
    config_file_t *conf                     = (config_file_t*)data;
    struct retro_keybind *bind              = (struct retro_keybind*)bind_data;
    struct config_entry_list *tmp_a         = NULL;
@@ -6556,8 +6567,6 @@ void input_config_parse_joy_button(
 
    fill_pathname_join_delim(key, s,
          "btn", '_', sizeof(key));
-   fill_pathname_join_delim(key_label, s,
-         "btn_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -6588,7 +6597,10 @@ void input_config_parse_joy_button(
       }
    }
 
-   tmp_a = config_get_entry(conf, key_label);
+   fill_pathname_join_delim(key, s,
+         "btn_label", '_', sizeof(key));
+
+   tmp_a = config_get_entry(conf, key);
 
    if (tmp_a && !string_is_empty(tmp_a->value))
    {

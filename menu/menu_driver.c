@@ -458,9 +458,9 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
             if (entry->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
             {
                size_t j;
-               size_t size = strlcpy(entry->password_value, entry->value,
+               size_t _len = strlcpy(entry->password_value, entry->value,
                      sizeof(entry->password_value));
-               for (j = 0; j < size; j++)
+               for (j = 0; j < _len; j++)
                   entry->password_value[j] = '*';
             }
          }
@@ -2985,16 +2985,12 @@ static bool menu_shader_manager_save_preset_internal(
          fill_pathname_join(buffer, target_dirs[i],
                fullname, sizeof(buffer));
 
-         strlcpy(basedir, buffer, sizeof(basedir));
-         path_basedir(basedir);
+         fill_pathname_basedir(basedir, buffer, sizeof(basedir));
 
-         if (!path_is_directory(basedir))
+         if (!path_is_directory(basedir) && !(ret = path_mkdir(basedir)))
          {
-            if (!(ret = path_mkdir(basedir)))
-            {
-               RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
-               continue;
-            }
+            RARCH_WARN("[Shaders]: Failed to create preset directory \"%s\".\n", basedir);
+            continue;
          }
 
          preset_path = buffer;
@@ -4069,8 +4065,7 @@ static size_t menu_driver_get_current_menu_label(struct menu_state *menu_st,
 #endif
 
 static size_t menu_driver_get_current_menu_sublabel(
-      struct menu_state *menu_st,
-      char *s, size_t len)
+      struct menu_state *menu_st, char *s, size_t len)
 {
    menu_entry_t     entry;
    MENU_ENTRY_INITIALIZE(entry);

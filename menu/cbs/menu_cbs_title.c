@@ -816,8 +816,8 @@ static int action_get_title_generic(char *s, size_t len,
 {
    if (!string_is_empty(path))
    {
-      char *tok, *save;
-      char *path_cpy = strdup(path);
+      char *tok, *save = NULL;
+      char *path_cpy   = strdup(path);
 
       if ((tok = strtok_r(path_cpy, "|", &save)))
       {

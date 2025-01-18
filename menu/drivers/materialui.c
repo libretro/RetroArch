@@ -11098,13 +11098,13 @@ static void materialui_list_insert(
 static void materialui_list_clear(file_list_t *list)
 {
    size_t i;
-   size_t size = list ? list->size : 0;
+   size_t _len = list ? list->size : 0;
 
    /* Must cancel pending thumbnail requests before
     * freeing node->thumbnails objects */
    gfx_thumbnail_cancel_pending_requests();
 
-   for (i = 0; i < size; i++)
+   for (i = 0; i < _len; i++)
    {
       materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
 

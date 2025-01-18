@@ -133,24 +133,19 @@ static void omapfb_page_flip(omapfb_data_t *pdata)
       pdata->old_page->used = false;
 }
 
-static int omapfb_read_sysfs(const char *fname, char *buff, size_t size)
+static int omapfb_read_sysfs(const char *fname, char *s, size_t len)
 {
    int ret;
    FILE *f = fopen(fname, "r");
-
    if (!f)
       return -1;
-
-   ret = fread(buff, 1, size - 1, f);
+   ret = fread(s, 1, len - 1, f);
    fclose(f);
-
    if (ret <= 0)
       return -1;
-
-   buff[ret] = 0;
-   for (ret--; ret >= 0 && isspace(buff[ret]); ret--)
-      buff[ret] = 0;
-
+   s[ret] = 0;
+   for (ret--; ret >= 0 && isspace(s[ret]); ret--)
+      s[ret] = 0;
    return 0;
 }
 

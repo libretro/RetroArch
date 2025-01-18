@@ -67,7 +67,7 @@
 #include "version.h"
 #include "version_git.h"
 
-#define CMD_BUF_SIZE           4096
+#define CMD_BUF_SIZE 4096
 
 static void command_post_state_loaded(void)
 {
@@ -160,8 +160,7 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
       RARCH_WARN(msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND), tok);
 }
 
-static void command_parse_msg(
-      command_t *handle, char *buf)
+static void command_parse_msg(command_t *handle, char *buf)
 {
    char     *save  = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
@@ -235,8 +234,8 @@ command_t* command_network_new(uint16_t port)
    command_t            *cmd = (command_t*)calloc(1, sizeof(*cmd));
    command_network_t *netcmd = (command_network_t*)calloc(
                                    1, sizeof(command_network_t));
-   int fd                    = socket_init(
-         (void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET);
+   int fd = socket_init((void**)&res, port, NULL,
+         SOCKET_TYPE_DATAGRAM, AF_INET);
 
    RARCH_LOG("[NetCMD]: %s %hu.\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
@@ -1255,25 +1254,22 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    return true;
 }
 
-bool command_event_save_auto_state(void)
+size_t command_event_save_auto_state(void)
 {
    size_t _len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    char savestate_name_auto[PATH_MAX_LENGTH];
-
    if (runloop_st->entry_state_slot)
-      return false;
+      return 0;
    if (!core_info_current_supports_savestate())
-      return false;
+      return 0;
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
-      return false;
-
+      return 0;
    _len = strlcpy(savestate_name_auto,
          runloop_st->name.savestate,
          sizeof(savestate_name_auto));
-   strlcpy(savestate_name_auto + _len, ".auto",
-         sizeof(savestate_name_auto) - _len);
-
+   _len += strlcpy(savestate_name_auto + _len, ".auto",
+           sizeof(savestate_name_auto) - _len);
    if (content_auto_save_state((const char*)savestate_name_auto))
 	   RARCH_LOG("[State]: %s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
@@ -1282,8 +1278,7 @@ bool command_event_save_auto_state(void)
 	   RARCH_LOG("[State]: %s \"%s\" %s.\n",
 			   msg_hash_to_str(MSG_AUTO_SAVE_STATE_TO),
 			   savestate_name_auto, "failed");
-
-   return true;
+   return _len;
 }
 
 #ifdef HAVE_CHEATS
@@ -1740,25 +1735,23 @@ void command_event_set_replay_garbage_collect(
 {
   /* TODO: debugme */
    size_t i, cnt = 0;
-   char state_base[128];
-   char state_dir[DIR_MAX_LENGTH];
+   char tmp[DIR_MAX_LENGTH];
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
-
    struct string_list *dir_list      = NULL;
    unsigned min_idx                  = UINT_MAX;
    const char *oldest_save           = NULL;
 
    /* Similar to command_event_set_replay_auto_index(),
     * this will find the lowest numbered replay */
-   fill_pathname_basedir(state_dir, runloop_st->name.replay,
-         sizeof(state_dir));
+   fill_pathname_basedir(tmp, runloop_st->name.replay,
+         sizeof(tmp));
 
-   if (!(dir_list = dir_list_new_special(state_dir,
+   if (!(dir_list = dir_list_new_special(tmp,
                DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
-   fill_pathname_base(state_base, runloop_st->name.replay,
-         sizeof(state_base));
+   fill_pathname_base(tmp, runloop_st->name.replay,
+         sizeof(tmp));
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1783,7 +1776,7 @@ void command_event_set_replay_garbage_collect(
 
       /* Check whether this file is associated with
        * the current content */
-      if (!string_starts_with(elem_base, state_base))
+      if (!string_starts_with(elem_base, tmp))
          continue;
 
       /* This looks like a valid save */
@@ -1966,17 +1959,11 @@ void command_event_save_current_config(enum override_type type)
             else
             {
                if (runloop_st->flags & RUNLOOP_FLAG_OVERRIDES_ACTIVE)
-               {
                   _len = strlcpy(msg, msg_hash_to_str(MSG_OVERRIDES_ACTIVE_NOT_SAVING), sizeof(msg));
-                  runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               }
                else
-               {
                   _len = command_event_save_config(path_get(RARCH_PATH_CONFIG), msg, sizeof(msg));
-                  runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               }
+               runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
          }
          break;
@@ -2061,7 +2048,7 @@ void command_event_remove_current_config(enum override_type type)
 bool command_event_main_state(unsigned cmd)
 {
    char msg[128];
-   char state_path[16384];
+   char state_path[16384]; /* TODO/FIXME - reduce this */
    size_t _len                 = 0;
    settings_t *settings        = config_get_ptr();
    bool savestates_enabled     = core_info_current_supports_savestate();
@@ -2081,8 +2068,13 @@ bool command_event_main_state(unsigned cmd)
 
   /* TODO: Load state should act in one of three ways:
      - [X] Not during recording or playback: normally
-     - [-] During playback: If the state is part of this replay, go back to that state and rewind the replay (not yet implemented); otherwise halt playback and go to that state normally.
-     - [-] During recording: If the state is part of this replay, go back to that state and rewind the replay, clobbering the stuff in between then and now (not yet implemented); if the state is not part of the replay, do nothing and log a warning.
+     - [-] During playback: If the state is part of this replay, go back to
+           that state and rewind the replay (not yet implemented); otherwise
+           halt playback and go to that state normally.
+     - [-] During recording: If the state is part of this replay, go back to
+           that state and rewind the replay, clobbering the stuff in between
+           then and now (not yet implemented); if the state is not part of
+           the replay, do nothing and log a warning.
    */
 
 
@@ -2093,7 +2085,8 @@ bool command_event_main_state(unsigned cmd)
          case CMD_EVENT_SAVE_STATE:
          case CMD_EVENT_SAVE_STATE_TO_RAM:
             {
-               /* TODO: Saving state during recording should associate the state with the replay. */
+               /* TODO: Saving state during recording should associate
+                * the state with the replay. */
                video_driver_state_t *video_st                 =
                   video_state_get_ptr();
                bool savestate_auto_index                      =
@@ -2136,7 +2129,11 @@ bool command_event_main_state(unsigned cmd)
             break;
         case CMD_EVENT_UNDO_LOAD_STATE:
            {
-              /* TODO: To support this through re-recording would take some care around moving the replay recording forward to the time when the undo happened, which would need undo support for replays. For now, forbid it during recording and halt playback. */
+              /* TODO: To support this through re-recording would take some
+               * care around moving the replay recording forward to the time
+               * when the undo happened, which would need undo support for
+               * replays. For now, forbid it during recording and halt
+               * playback. */
 #ifdef HAVE_BSV_MOVIE
               input_driver_state_t *input_st   = input_state_get_ptr();
               if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
@@ -2179,8 +2176,8 @@ bool command_event_disk_control_append_image(
 {
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    rarch_system_info_t *sys_info  = runloop_st ? (rarch_system_info_t*)&runloop_st->system : NULL;
-   if (  !sys_info ||
-         !disk_control_append_image(&sys_info->disk_control, path))
+   if (     !sys_info
+         || !disk_control_append_image(&sys_info->disk_control, path))
       return false;
 
 #ifdef HAVE_THREADS
@@ -2230,12 +2227,11 @@ void command_event_reinit(const int flags)
 
    video_driver_reinit(flags);
    /* Poll input to avoid possibly stale data to corrupt things. */
-   if (  joypad && joypad->poll)
+   if (joypad && joypad->poll)
       joypad->poll();
-   if (  sec_joypad && sec_joypad->poll)
+   if (sec_joypad && sec_joypad->poll)
       sec_joypad->poll();
-   if (  input_st->current_driver &&
-         input_st->current_driver->poll)
+   if (input_st->current_driver && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
 

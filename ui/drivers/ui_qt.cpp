@@ -1623,9 +1623,9 @@ void MainWindow::updateVisibleItems()
    {
       size_t i;
       QVector<QModelIndex> indexes = m_gridView->visibleIndexes();
-      size_t size                  = indexes.size();
+      size_t _len                  = indexes.size();
 
-      for (i = 0; i < size; i++)
+      for (i = 0; i < _len; i++)
          m_playlistModel->loadThumbnail(m_proxyModel->mapToSource(indexes.at(i)));
    }
 }
@@ -1662,9 +1662,9 @@ QVector<QPair<QString, QString> > MainWindow::getPlaylists()
 {
    size_t i;
    QVector<QPair<QString, QString> > playlists;
-   size_t size  = m_listWidget->count();
+   size_t _len  = m_listWidget->count();
 
-   for (i = 0; i < size; i++)
+   for (i = 0; i < _len; i++)
    {
       QString label, path;
       QPair<QString, QString> pair;
@@ -1740,10 +1740,10 @@ void MainWindow::onZoomValueChanged(int zoom_val)
    int new_size = 0;
 
    if (zoom_val < 50)
-      new_size               = exp_scale(
-            lerp(0, 49, 25, 49, zoom_val) / 50.0, 102, 256);
+      new_size  = exp_scale(lerp(0, 49, 25, 49, zoom_val)
+		/ 50.0, 102, 256);
    else
-      new_size               = exp_scale(zoom_val / 100.0, 256, 1024);
+      new_size  = exp_scale(zoom_val / 100.0, 256, 1024);
 
    m_gridView->setGridSize(new_size);
 

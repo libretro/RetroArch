@@ -227,7 +227,7 @@ void logger_send_v(const char *__format, va_list args);
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_DBG(const char *fmt, ...);
 void RARCH_LOG(const char *fmt, ...);
-void RARCH_LOG_BUFFER(uint8_t *buffer, size_t size);
+void RARCH_LOG_BUFFER(uint8_t *buffer, size_t len);
 void RARCH_LOG_OUTPUT(const char *msg, ...);
 void RARCH_WARN(const char *fmt, ...);
 void RARCH_ERR(const char *fmt, ...);

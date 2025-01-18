@@ -105,9 +105,9 @@ static void input_autoconfigure_free(retro_task_t *task)
  * 'affinity' between the connected input
  * device and the specified config file
  * > 0: No match
- * > 2: Device name matches
- * > 3: VID+PID match
- * > 5: Both device name and VID+PID match */
+ * > 20-29: Device name matches
+ * > 30-39: VID+PID match
+ * > 50-59: Both device name and VID+PID match */
 static unsigned input_autoconfigure_get_config_file_affinity(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
@@ -172,7 +172,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
 #endif
 
       if (pid_match)
-         affinity += 3;
+         affinity += 30;
 
       /* Check for matching device name */
       _len  = strlcpy(config_key, "input_device",
@@ -183,7 +183,11 @@ static unsigned input_autoconfigure_get_config_file_affinity(
             && !string_is_empty(entry->value)
             &&  string_is_equal(entry->value,
                 autoconfig_handle->device_info.name))
-         affinity += 2;
+         affinity += 20;
+
+      /* Store the selected alternative as last digit of affinity. */
+      if (affinity > 0)
+         affinity += i;
 
       if (max_affinity < affinity)
          max_affinity = affinity;
@@ -196,8 +200,10 @@ static unsigned input_autoconfigure_get_config_file_affinity(
  * handle, parsing required device info metadata */
 static void input_autoconfigure_set_config_file(
       autoconfig_handle_t *autoconfig_handle,
-      config_file_t *config)
+      config_file_t *config, unsigned alternative)
 {
+   size_t _len;
+   char config_key[32];
    struct config_entry_list *entry    = NULL;
 
    /* Attach config file */
@@ -213,8 +219,15 @@ static void input_autoconfigure_set_config_file(
                sizeof(autoconfig_handle->device_info.config_name));
    }
 
+   /* Parse config file */
+   _len  = strlcpy(config_key, "input_device_display_name",
+            sizeof(config_key));
    /* Read device display name */
-   if (  (entry = config_get_entry(config, "input_device_display_name"))
+   if (alternative > 0)
+      _len += snprintf(config_key + _len, sizeof(config_key) - _len,
+               "_alt%d",alternative);
+
+   if (  (entry = config_get_entry(config, config_key))
          && !string_is_empty(entry->value))
       strlcpy(autoconfig_handle->device_info.display_name,
             entry->value,
@@ -299,9 +312,9 @@ static bool input_autoconfigure_scan_config_files_external(
          config       = NULL;
          max_affinity = affinity;
 
-         /* An affinity of 5 is a 'perfect' match,
+         /* An affinity of 5x is a 'perfect' match,
           * and means we can return immediately */
-         if (affinity == 5)
+         if (affinity >= 50)
             break;
       }
       /* No match - just clean up config file */
@@ -318,7 +331,8 @@ static bool input_autoconfigure_scan_config_files_external(
    {
       if (autoconfig_handle && best_config)
          input_autoconfigure_set_config_file(
-               autoconfig_handle, best_config);
+               autoconfig_handle, best_config,
+               max_affinity % 10);
       match_found = true;
    }
 
@@ -372,7 +386,8 @@ static bool input_autoconfigure_scan_config_files_internal(
       {
          if (autoconfig_handle && config)
             input_autoconfigure_set_config_file(
-                  autoconfig_handle, config);
+                  autoconfig_handle, config,
+                  affinity % 10);
          return true;
       }
 
@@ -464,12 +479,12 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
             strlcpy(settings_value_device_name, settings_value,
                     sizeof(settings_value_device_name));
             device_has_reserved_slot =
-               string_is_equal(device_name, settings_value_device_name) ||
-               string_is_equal(device_display_name, settings_value_device_name);
+                  string_is_equal(device_name, settings_value_device_name)
+               || string_is_equal(device_display_name, settings_value_device_name);
          }
          else
-            device_has_reserved_slot = (vendor_id == settings_value_vendor_id &&
-                                       product_id == settings_value_product_id);
+            device_has_reserved_slot = (  vendor_id  == settings_value_vendor_id
+                                       && product_id == settings_value_product_id);
 
          if (device_has_reserved_slot)
          {

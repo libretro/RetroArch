@@ -124,7 +124,7 @@ static void adapter_thread(void *data)
 }
 
 static void libusb_hid_device_send_control(void *data,
-      uint8_t* data_buf, size_t size)
+      uint8_t* data_buf, size_t len)
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
 
@@ -133,10 +133,10 @@ static void libusb_hid_device_send_control(void *data,
 
    slock_lock(adapter->send_control_lock);
 
-   if (FIFO_WRITE_AVAIL(adapter->send_control_buffer) >= size + sizeof(size))
+   if (FIFO_WRITE_AVAIL(adapter->send_control_buffer) >= len + sizeof(len))
    {
-      fifo_write(adapter->send_control_buffer, &size, sizeof(size));
-      fifo_write(adapter->send_control_buffer, data_buf, size);
+      fifo_write(adapter->send_control_buffer, &len, sizeof(len));
+      fifo_write(adapter->send_control_buffer, data_buf, len);
    }
    else
    {

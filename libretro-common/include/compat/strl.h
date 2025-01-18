@@ -60,13 +60,13 @@ RETRO_BEGIN_DECLS
  * @brief Portable implementation of \c strlcpy(3).
  * @see https://linux.die.net/man/3/strlcpy
  */
-size_t strlcpy(char *dest, const char *source, size_t size);
+size_t strlcpy(char *s, const char *source, size_t len);
 
 /**
  * @brief Portable implementation of \c strlcat(3).
  * @see https://linux.die.net/man/3/strlcpy
  */
-size_t strlcat(char *dest, const char *source, size_t size);
+size_t strlcat(char *s, const char *source, size_t len);
 
 #endif
 

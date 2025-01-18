@@ -277,9 +277,9 @@ static void vulkan_debug_mark_object(VkDevice device,
 }
 
 static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
-      size_t size, struct vk_buffer_range *range)
+      size_t len, struct vk_buffer_range *range)
 {
-   VkDeviceSize next_offset = chain->offset + size;
+   VkDeviceSize next_offset = chain->offset + len;
    if (next_offset <= chain->current->buffer.size)
    {
       range->data   = (uint8_t*)chain->current->buffer.mapped + chain->offset;
@@ -287,24 +287,21 @@ static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
       range->offset = chain->offset;
       chain->offset = (next_offset + chain->alignment - 1)
          & ~(chain->alignment - 1);
-
       return true;
    }
-
    return false;
 }
 
 static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
       const struct vulkan_context *context,
-      size_t size, VkBufferUsageFlags usage)
+      size_t len, VkBufferUsageFlags usage)
 {
    struct vk_buffer_node *node = (struct vk_buffer_node*)
       malloc(sizeof(*node));
    if (!node)
       return NULL;
-
    node->buffer = vulkan_create_buffer(
-         context, size, usage);
+         context, len, usage);
    node->next   = NULL;
    return node;
 }
@@ -1355,7 +1352,7 @@ static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
 
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_chain *chain,
-      size_t size, struct vk_buffer_range *range)
+      size_t len, struct vk_buffer_range *range)
 {
    if (!chain->head)
    {
@@ -1367,7 +1364,7 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       chain->offset  = 0;
    }
 
-   if (!vulkan_buffer_chain_suballoc(chain, size, range))
+   if (!vulkan_buffer_chain_suballoc(chain, len, range))
    {
       /* We've exhausted the current chain, traverse list until we
        * can find a block we can use. Usually, we just step once. */
@@ -1375,24 +1372,24 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       {
          chain->current = chain->current->next;
          chain->offset  = 0;
-         if (vulkan_buffer_chain_suballoc(chain, size, range))
+         if (vulkan_buffer_chain_suballoc(chain, len, range))
             return true;
       }
 
       /* We have to allocate a new node, might allocate larger
        * buffer here than block_size in case we have
        * a very large allocation. */
-      if (size < chain->block_size)
-         size        = chain->block_size;
+      if (len < chain->block_size)
+         len = chain->block_size;
 
       if (!(chain->current->next = vulkan_buffer_chain_alloc_node(
-                  context, size, chain->usage)))
+                  context, len, chain->usage)))
          return false;
 
       chain->current = chain->current->next;
       chain->offset  = 0;
       /* This cannot possibly fail. */
-      retro_assert(vulkan_buffer_chain_suballoc(chain, size, range));
+      retro_assert(vulkan_buffer_chain_suballoc(chain, len, range));
    }
    return true;
 }
@@ -1418,7 +1415,7 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
 
 struct vk_buffer vulkan_create_buffer(
       const struct vulkan_context *context,
-      size_t size, VkBufferUsageFlags usage)
+      size_t len, VkBufferUsageFlags usage)
 {
    struct vk_buffer buffer;
    VkMemoryRequirements mem_reqs;
@@ -1428,7 +1425,7 @@ struct vk_buffer vulkan_create_buffer(
    info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    info.pNext                 = NULL;
    info.flags                 = 0;
-   info.size                  = size;
+   info.size                  = len;
    info.usage                 = usage;
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount = 0;
@@ -1450,7 +1447,7 @@ struct vk_buffer vulkan_create_buffer(
    vulkan_debug_mark_memory(context->device, buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
-   buffer.size                = size;
+   buffer.size                = len;
 
    vkMapMemory(context->device,
          buffer.memory, 0, buffer.size, 0, &buffer.mapped);

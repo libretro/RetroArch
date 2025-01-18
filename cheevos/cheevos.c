@@ -87,7 +87,6 @@ static rcheevos_locals_t rcheevos_locals =
    {{0}},/* memory */
 #ifdef HAVE_THREADS
    CMD_EVENT_NONE, /* queued_command */
-   false, /* game_placard_requested */
 #endif
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */
@@ -112,8 +111,8 @@ rcheevos_locals_t* get_rcheevos_locals(void)
 Supporting functions.
 *****************************************************************************/
 
-#define CMD_CHEEVOS_NON_COMMAND -1
-static void rcheevos_show_game_placard(void);
+#define CMD_CHEEVOS_FINALIZE_LOAD -1
+static void rcheevos_finalize_game_load_on_ui_thread(void);
 
 #ifndef CHEEVOS_VERBOSE
 void rcheevos_log(const char* fmt, ...)
@@ -686,7 +685,6 @@ bool rcheevos_unload(void)
 
 #ifdef HAVE_THREADS
    rcheevos_locals.queued_command = CMD_EVENT_NONE;
-   rcheevos_locals.game_placard_requested = false;
 #endif
 
    if (rcheevos_locals.memory.count > 0)
@@ -827,6 +825,11 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
             command_event(CMD_EVENT_REWIND_INIT, NULL);
       }
    }
+
+#ifdef HAVE_NETWORKING
+   /* force sending a savestate to clients so they'll drop out of hardcore too */
+   netplay_force_send_savestate();
+#endif
 }
 
 void rcheevos_toggle_hardcore_paused(void)
@@ -978,16 +981,12 @@ void rcheevos_test(void)
 #ifdef HAVE_THREADS
    if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
    {
-      if ((int)rcheevos_locals.queued_command != CMD_CHEEVOS_NON_COMMAND)
+      if ((int)rcheevos_locals.queued_command == CMD_CHEEVOS_FINALIZE_LOAD)
+         rcheevos_finalize_game_load_on_ui_thread();
+      else
          command_event(rcheevos_locals.queued_command, NULL);
 
       rcheevos_locals.queued_command = CMD_EVENT_NONE;
-
-      if (rcheevos_locals.game_placard_requested)
-      {
-         rcheevos_locals.game_placard_requested = false;
-         rcheevos_show_game_placard();
-      }
    }
 #endif
 
@@ -1382,6 +1381,25 @@ static void rcheevos_finalize_game_load(rc_client_t* client)
    }
 }
 
+static void rcheevos_finalize_game_load_on_ui_thread(void)
+{
+   rcheevos_show_game_placard();
+
+#if HAVE_REWIND
+   if (!rcheevos_hardcore_active())
+   {
+      const settings_t* settings = config_get_ptr();
+      /* Re-enable rewind. Additional space will be allocated for the achievement state data */
+      if (settings->bools.rewind_enable)
+         command_event(CMD_EVENT_REWIND_REINIT, NULL);
+   }
+#endif
+
+#ifdef HAVE_NETWORKING
+   netplay_reinit_serialization();
+#endif
+}
+
 static void rcheevos_client_load_game_callback(int result,
    const char* error_message, rc_client_t* client, void* userdata)
 {
@@ -1446,17 +1464,6 @@ static void rcheevos_client_load_game_callback(int result,
       rc_client_set_read_memory_function(client, rcheevos_client_read_memory);
    }
 
-#ifdef HAVE_THREADS
-   if (!video_driver_is_threaded() && !task_is_on_main_thread())
-   {
-      /* have to "schedule" this. game image should not be loaded on background thread */
-      rcheevos_locals.queued_command = CMD_CHEEVOS_NON_COMMAND;
-      rcheevos_locals.game_placard_requested = true;
-   }
-   else
-#endif
-      rcheevos_show_game_placard();
-
    rcheevos_finalize_game_load(client);
 
    if (rcheevos_hardcore_active())
@@ -1466,27 +1473,18 @@ static void rcheevos_client_load_game_callback(int result,
       rcheevos_validate_config_settings();
       rcheevos_enforce_hardcore_settings();
    }
-   else
-   {
-#if HAVE_REWIND
-      /* Re-enable rewind. Additional space will be allocated for the achievement state data */
-      if (settings->bools.rewind_enable)
-      {
-#ifdef HAVE_THREADS
-         if (!task_is_on_main_thread())
-         {
-            /* Have to "schedule" this. CMD_EVENT_REWIND_REINIT should
-             * only be called on the main thread */
-            rcheevos_locals.queued_command = CMD_EVENT_REWIND_REINIT;
-         }
-         else
-#endif
-            command_event(CMD_EVENT_REWIND_REINIT, NULL);
-      }
-#endif
-   }
 
    rcheevos_spectating_changed(); /* synchronize spectating state */
+
+#ifdef HAVE_THREADS
+   if (!task_is_on_main_thread())
+   {
+      /* have to "schedule" this. game image should not be loaded into memory on background thread */
+      rcheevos_locals.queued_command = CMD_CHEEVOS_FINALIZE_LOAD;
+   }
+   else
+#endif
+      rcheevos_finalize_game_load_on_ui_thread();
 }
 
 static rc_clock_t rcheevos_client_get_time_millisecs(const rc_client_t* client)
