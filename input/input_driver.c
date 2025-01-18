@@ -5958,9 +5958,9 @@ bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
    /* if movie is old, just read two bytes and hope for the best */
    if (movie->version == 0)
    {
-      int read = intfstream_read(movie->file, val, 2);
-      *val = swap_if_big16(*val);
-      return read == 2;
+      int64_t read = intfstream_read(movie->file, val, 2);
+      *val         = swap_if_big16(*val);
+      return (read == 2);
    }
    for (i = 0; i < movie->input_event_count; i++)
    {
@@ -5986,6 +5986,7 @@ void bsv_movie_finish_rewind(input_driver_state_t *input_st)
    handle->first_rewind = !handle->did_rewind;
    handle->did_rewind   = false;
 }
+
 void bsv_movie_read_next_events(bsv_movie_t *handle)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -6079,6 +6080,7 @@ void bsv_movie_read_next_events(bsv_movie_t *handle)
       }
    }
 }
+
 void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
    settings_t *settings           = config_get_ptr();
@@ -6144,9 +6146,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
    }
 
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
-   {
       bsv_movie_read_next_events(handle);
-   }
    handle->frame_pos[handle->frame_counter & handle->frame_mask] = intfstream_tell(handle->file);
 }
 
@@ -6165,8 +6165,8 @@ bool replay_get_serialized_data(void* buffer)
 
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
    {
-      long file_end           = intfstream_tell(handle->file);
-      long read_amt           = 0;
+      int64_t file_end        = intfstream_tell(handle->file);
+      int64_t read_amt        = 0;
       long file_end_lil       = swap_if_big32(file_end);
       uint8_t *file_end_bytes = (uint8_t *)(&file_end_lil);
       uint8_t *buf            = buffer;

@@ -135,8 +135,8 @@ int mprotect(void *addr, size_t len, int prot)
 
 int memsync(void *start, void *end)
 {
-   size_t _len = (char*)end - (char*)start;
 #if defined(__MACH__) && defined(__arm__)
+   size_t _len = (char*)end - (char*)start;
    sys_dcache_flush(start, _len);
    sys_icache_invalidate(start, _len);
    return 0;
@@ -144,6 +144,7 @@ int memsync(void *start, void *end)
    __clear_cache(start, end);
    return 0;
 #elif defined(HAVE_MMAN)
+   size_t _len = (char*)end - (char*)start;
    return msync(start, _len, MS_SYNC | MS_INVALIDATE
 #ifdef __QNX__
          MS_CACHE_ONLY
