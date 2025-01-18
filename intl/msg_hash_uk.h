@@ -14896,6 +14896,14 @@ MSG_HASH(
    "Читання було активовано. Досягнення Хардкорного режиму вимкнено для поточного сеансу."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Досягнення складного режиму змінено хостом."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "Netplay хост необхідно оновити. Досягнення в хардкорному режимі вимкнуто для поточної сесії."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Опанував %s"
    )
