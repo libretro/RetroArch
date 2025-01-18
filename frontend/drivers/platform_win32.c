@@ -568,6 +568,7 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    const char *libretro_directory = getenv("LIBRETRO_DIRECTORY");
    const char *libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
    const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
    const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
    const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
@@ -595,8 +596,13 @@ static void frontend_win32_env_get(int *argc, char *argv[],
            ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
       ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
-      ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   if (!string_is_empty(libretro_database_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+	       libretro_database_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+           ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
       ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],

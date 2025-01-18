@@ -6519,7 +6519,27 @@ static void retroarch_print_help(const char *arg0)
          "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n"
          , sizeof(buf) - _len);
 
+   /* Flush buffer here to avoid the error "error: string length ‘752’
+    * is greater than the length ‘509’ ISO C90 compilers are required
+    * to support" */
    fputs(buf, stdout);
+
+#if defined(__linux__) || defined(__GNU__) || (defined(BSD) && !defined(__MACH__))
+   buf[0] = '\0';
+   _len   = 0;
+   _len += strlcpy(buf + _len,
+         "\nThe following environment variables are supported:\n\n"
+         "  LIBRETRO_ASSETS_DIRECTORY\n"
+         "  LIBRETRO_AUTOCONFIG_DIRECTORY\n"
+         "  LIBRETRO_DATABASE_DIRECTORY\n"
+         "  LIBRETRO_DIRECTORY\n"
+         "  LIBRETRO_SYSTEM_DIRECTORY\n"
+         "  LIBRETRO_VIDEO_FILTER_DIRECTORY\n"
+         "  LIBRETRO_VIDEO_SHADER_DIRECTORY\n\n"
+         "Refer to `man 6 retroarch' for a description of what they do.\n"
+         , sizeof(buf) - _len);
+   fputs(buf, stdout);
+#endif
 }
 
 #ifdef HAVE_DYNAMIC
