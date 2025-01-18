@@ -1226,6 +1226,12 @@ bool playlist_content_path_is_valid(const char *path)
    if (string_is_empty(path))
       return false;
 
+#ifdef IOS
+   char expanded_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(expanded_path, path, sizeof(expanded_path));
+   path = expanded_path;
+#endif
+
    /* If content is inside an archive, special
     * handling is required... */
    if (path_contains_compressed_file(path))
