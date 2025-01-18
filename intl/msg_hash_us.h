@@ -6051,7 +6051,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Specify the font size in points."
+   "Specify the font size in points. When widgets are used, this size has effect only to on-screen statistics display."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
