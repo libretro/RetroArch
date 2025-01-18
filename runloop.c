@@ -6819,8 +6819,6 @@ static enum runloop_state_enum runloop_check_state(
  **/
 int runloop_iterate(void)
 {
-   int i;
-   enum analog_dpad_mode dpad_mode[MAX_USERS];
    input_driver_state_t               *input_st = input_state_get_ptr();
    audio_driver_state_t               *audio_st = audio_state_get_ptr();
    video_driver_state_t               *video_st = video_state_get_ptr();
@@ -7015,77 +7013,6 @@ int runloop_iterate(void)
       camera_st->driver->poll(camera_st->data,
             camera_st->cb.frame_raw_framebuffer,
             camera_st->cb.frame_opengl_texture);
-
-   /* Update binds for analog dpad modes. */
-   for (i = 0; i < (int)max_users; i++)
-   {
-      dpad_mode[i] = (enum analog_dpad_mode)
-            settings->uints.input_analog_dpad_mode[i];
-
-      switch (dpad_mode[i])
-      {
-         case ANALOG_DPAD_LSTICK:
-         case ANALOG_DPAD_RSTICK:
-            {
-               unsigned mapped_port = settings->uints.input_remap_ports[i];
-               if (input_st->analog_requested[mapped_port])
-                  dpad_mode[i] = ANALOG_DPAD_NONE;
-            }
-            break;
-         case ANALOG_DPAD_LSTICK_FORCED:
-            dpad_mode[i] = ANALOG_DPAD_LSTICK;
-            break;
-         case ANALOG_DPAD_RSTICK_FORCED:
-            dpad_mode[i] = ANALOG_DPAD_RSTICK;
-            break;
-         default:
-            break;
-      }
-
-      /* Push analog to D-Pad mappings to binds. */
-      if (dpad_mode[i] != ANALOG_DPAD_NONE)
-      {
-         unsigned k;
-         unsigned joy_idx                    = settings->uints.input_joypad_index[i];
-         struct retro_keybind *general_binds = input_config_binds[joy_idx];
-         struct retro_keybind *auto_binds    = input_autoconf_binds[joy_idx];
-         unsigned x_plus                     = RARCH_ANALOG_RIGHT_X_PLUS;
-         unsigned y_plus                     = RARCH_ANALOG_RIGHT_Y_PLUS;
-         unsigned x_minus                    = RARCH_ANALOG_RIGHT_X_MINUS;
-         unsigned y_minus                    = RARCH_ANALOG_RIGHT_Y_MINUS;
-
-         if (dpad_mode[i] == ANALOG_DPAD_LSTICK)
-         {
-            x_plus                           = RARCH_ANALOG_LEFT_X_PLUS;
-            y_plus                           = RARCH_ANALOG_LEFT_Y_PLUS;
-            x_minus                          = RARCH_ANALOG_LEFT_X_MINUS;
-            y_minus                          = RARCH_ANALOG_LEFT_Y_MINUS;
-         }
-
-         for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-         {
-            (auto_binds)[k].orig_joyaxis     = (auto_binds)[k].joyaxis;
-            (general_binds)[k].orig_joyaxis  = (general_binds)[k].joyaxis;
-         }
-
-         if (!INHERIT_JOYAXIS(auto_binds))
-         {
-            unsigned j = x_plus + 3;
-            /* Inherit joyaxis from analogs. */
-            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               (auto_binds)[k].joyaxis = (auto_binds)[j--].joyaxis;
-         }
-
-         if (!INHERIT_JOYAXIS(general_binds))
-         {
-            unsigned j = x_plus + 3;
-            /* Inherit joyaxis from analogs. */
-            for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               (general_binds)[k].joyaxis = (general_binds)[j--].joyaxis;
-         }
-      }
-   }
-
    /* Measure the time between core_run() and video_driver_frame() */
    runloop_st->core_run_time = cpu_features_get_time_usec();
 
@@ -7134,25 +7061,6 @@ int runloop_iterate(void)
 #ifdef HAVE_PRESENCE
    presence_update(PRESENCE_GAME);
 #endif
-
-   /* Restores analog D-pad binds temporarily overridden. */
-   for (i = 0; i < (int)max_users; i++)
-   {
-      if (dpad_mode[i] != ANALOG_DPAD_NONE)
-      {
-         int j;
-         unsigned joy_idx                    = settings->uints.input_joypad_index[i];
-         struct retro_keybind *general_binds = input_config_binds[joy_idx];
-         struct retro_keybind *auto_binds    = input_autoconf_binds[joy_idx];
-
-         for (j = RETRO_DEVICE_ID_JOYPAD_UP; j <= RETRO_DEVICE_ID_JOYPAD_RIGHT; j++)
-         {
-            (auto_binds)[j].joyaxis    = (auto_binds)[j].orig_joyaxis;
-            (general_binds)[j].joyaxis = (general_binds)[j].orig_joyaxis;
-         }
-      }
-   }
-
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_finish_rewind(input_st);
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
