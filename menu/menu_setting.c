@@ -10101,18 +10101,19 @@ static bool setting_append_list_input_player_options(
          char label[NAME_MAX_LENGTH];
          char name[NAME_MAX_LENGTH];
          strlcpy(label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_FIRST+j),NAME_MAX_LENGTH);
-         snprintf(name,NAME_MAX_LENGTH, "tmp name sensor bind %d", j);
+         snprintf(name,NAME_MAX_LENGTH,
+            "tmp name sensor bind %d", j);
          CONFIG_UINT_ALT(
-               list, list_info,
-               &settings->uints.input_sensor_ids[user][j],
-               strdup(name),
-               strdup(label),
-               user,
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
+            list, list_info,
+            &settings->uints.input_sensor_ids[user][j],
+            strdup(name),
+            strdup(label),
+            user,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
          (*list)[list_info->index - 1].index                     = user + 1;
          (*list)[list_info->index - 1].index_offset              = user;
          (*list)[list_info->index - 1].retropad_sensor_index     = j;

@@ -2299,7 +2299,7 @@ static struct config_float_setting *populate_settings_float(
    SETTING_FLOAT("input_axis_threshold",         &settings->floats.input_axis_threshold,     true, DEFAULT_AXIS_THRESHOLD, false);
    SETTING_FLOAT("input_analog_deadzone",        &settings->floats.input_analog_deadzone,    true, DEFAULT_ANALOG_DEADZONE, false);
    SETTING_FLOAT("input_analog_sensitivity",     &settings->floats.input_analog_sensitivity, true, DEFAULT_ANALOG_SENSITIVITY, false);
-   SETTING_FLOAT("input_sensor_accelerometer_sensitivity",     &settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
+   SETTING_FLOAT("input_sensor_accelerometer_sensitivity",&settings->floats.input_sensor_accelerometer_sensitivity, true, DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY, false);
    SETTING_FLOAT("input_sensor_gyroscope_sensitivity",         &settings->floats.input_sensor_gyroscope_sensitivity, true, DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY, false);
 #ifdef HAVE_OVERLAY
    SETTING_FLOAT("input_overlay_opacity",                 &settings->floats.input_overlay_opacity, true, DEFAULT_INPUT_OVERLAY_OPACITY, false);
@@ -4873,7 +4873,6 @@ static void save_keybind_axis(config_file_t *conf,
       config_set_string(conf, key, config);
    }
 }
-
 static void save_keybind_mbutton(config_file_t *conf,
       const char *prefix,
       const char *base,
@@ -4949,7 +4948,18 @@ const char *input_config_get_prefix(unsigned user, bool meta)
    }
    return bind_user_prefix[user];
 }
+static bool get_config_name_for_sensor(char * buf,size_t buf_len, unsigned sensor){
+   const char * sensor_str;
+   char direction;
 
+   if (sensor >= 6) return false;
+   sensor_str=sensor>=3?"gyroscope":"accelerometer";
+   direction="xyzxyz"[sensor];
+   snprintf(buf, buf_len,"input_sensor_%s_%c",
+      sensor_str, direction
+   );
+   return true;
+}
 /**
  * input_config_save_keybinds_user:
  * @conf               : pointer to config file object
@@ -4984,7 +4994,6 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
 
       config_set_string(conf, key, btn);
       save_keybind_joykey (conf, prefix, base, bind, true);
-      save_keybind_axis   (conf, prefix, base, bind, true);
       save_keybind_mbutton(conf, prefix, base, bind, true);
    }
 }
@@ -5034,7 +5043,6 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
          save_keybind_axis   (conf, prefix, base, override_bind, true);
       if (bind->mbutton != override_bind->mbutton)
          save_keybind_mbutton(conf, prefix, base, override_bind, true);
-
       RARCH_DBG("[Overrides]: %s = \"%s\"\n", key, btn);
    }
 }
@@ -5184,7 +5192,23 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
                bind, false);
       }
    }
+   for (i = 0; i<RETROPAD_RETRO_SENSOR_LAST; i++){
+      char new_bind_str[16];
+      char sensor_str[256];
+      unsigned new_bind;
 
+      new_bind=config_get_ptr()->uints.input_sensor_ids[user][i];
+      snprintf(new_bind_str,16,
+         "%u%s",
+         new_bind/2,
+         (new_bind%2)?"inv":""
+         );
+      get_config_name_for_sensor(sensor_str, sizeof(sensor_str),i);
+      config_set_string(conf,
+         sensor_str,
+         new_bind_str
+      );
+   }
    RARCH_LOG("[Autoconf]: Writing autoconf file for device \"%s\" to \"%s\".\n", device_name, autoconf_file);
    ret = config_file_write(conf, autoconf_file, false);
 
@@ -5903,7 +5927,7 @@ bool input_remapping_load_file(void *data, const char *path)
       "up", "down", "left", "right",
       "a", "x", "l", "r", "l2", "r2",
       "l3", "r3", "l_x+", "l_x-", "l_y+", "l_y-", "r_x+", "r_x-", "r_y+", "r_y-" };
-
+   
    if (    !conf
          || string_is_empty(path))
       return false;
@@ -6069,9 +6093,9 @@ bool input_remapping_save_file(const char *path)
    settings_t        *settings = config_st;
    unsigned          max_users = settings->uints.input_max_users;
 
+
    if (string_is_empty(path))
       return false;
-
    /* Create output directory, if required */
    fill_pathname_parent_dir(remap_file_dir, path,
          sizeof(remap_file_dir));
@@ -6211,7 +6235,6 @@ bool input_remapping_save_file(const char *path)
          
          fill_pathname_join_delim(sensor_ident, s1,
                sensor_strings[j], '_', sizeof(sensor_ident));
-         RARCH_DBG("sensor ident2: %s %d\n",sensor_ident,sensor_remap);
          if (sensor_remap == j)
             config_unset(conf, sensor_ident);
          else
@@ -6220,7 +6243,7 @@ bool input_remapping_save_file(const char *path)
                config_set_int(conf, sensor_ident, -1);
             else
                config_set_int(conf, sensor_ident,
-                     settings->uints.input_sensor_ids[i][j]);
+                  settings->uints.input_sensor_ids[i][j]);
          }
       }
    }
@@ -6418,13 +6441,11 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    unsigned i;
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds = NULL;
-
    if (    (port >= MAX_USERS)
          || !config)
       return;
 
    binds = input_autoconf_binds[port];
-
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
       const struct input_bind_map *keybind =
@@ -6438,6 +6459,16 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
          input_config_parse_joy_button(str, config, "input", base, &binds[i]);
          input_config_parse_joy_axis  (str, config, "input", base, &binds[i]);
       }
+   }
+   for (i = 0; i < RETROPAD_RETRO_SENSOR_LAST; i++){
+      /* I am the implementor I get to choose the implementation details */
+      char str[256];
+      unsigned bind;
+
+      get_config_name_for_sensor(str, sizeof(str), i);
+      bind=input_config_parse_sensor (i,str, config);
+      RARCH_DBG("binding %d->%d\n",i,bind);
+      config_get_ptr()->uints.input_sensor_ids[port][i]=bind;
    }
 }
 
@@ -6657,7 +6688,34 @@ void input_config_parse_joy_button(
       bind->joykey_label = strdup(tmp_a->value);
    }
 }
+unsigned input_config_parse_sensor(
+      unsigned id,
+      char *s,
+      void *conf_data)
+{
+   char          tmp[64];
+   char sensor_label[64];
+   config_file_t *conf                     = (config_file_t*)conf_data;
+   struct config_entry_list *tmp_a         = NULL;
 
+   tmp[0] = '\0';
+
+   fill_pathname_join_delim(sensor_label, s,
+         "label", '_', sizeof(sensor_label));
+   RARCH_DBG("%s %s\n",s,conf->path);
+   if (config_get_array(conf, s, tmp, sizeof(tmp)))
+   {
+      if (strcmp(tmp, "nul") != 0){
+         RARCH_DBG("tail=%s\n", tmp+1);
+         if (strcmp(tmp+1,"inv") == 0)
+            return (((*tmp)-0x30)*2)+1;
+         else if (tmp[1] == '\0')
+            return ((*tmp)-0x30)*2;
+         
+      }
+   }
+   return id*2;
+}
 void retroarch_config_deinit(void)
 {
    if (config_st)

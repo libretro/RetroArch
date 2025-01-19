@@ -92,7 +92,7 @@ struct retro_keybind
    /* Determines whether or not the binding is valid. */
    bool valid;
 };
-
+typedef uint8_t retro_sensor_bind;
 typedef struct retro_keybind retro_keybind_set[RARCH_BIND_LIST_END];
 
 typedef struct
