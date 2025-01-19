@@ -6467,7 +6467,6 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
 
       get_config_name_for_sensor(str, sizeof(str), i);
       bind=input_config_parse_sensor (i,str, config);
-      RARCH_DBG("binding %d->%d\n",i,bind);
       config_get_ptr()->uints.input_sensor_ids[port][i]=bind;
    }
 }

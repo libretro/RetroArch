@@ -588,10 +588,7 @@ typedef struct udev_input_device
       udev_input_touch_t _touch; /* State tracking for touch-type devices */
    #endif
       } _mouse;
-      struct {
-         udev_input_sensor_t _sensor;
-         struct udev_input_device * _wii_motion_plus;
-      } _sensor;
+      udev_input_sensor_t _sensor;
    } _u;
    enum udev_input_dev_type type; /* Type of this device */
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
@@ -600,8 +597,7 @@ typedef struct udev_input_device
 
 #define mouse_state _u._mouse._mouse
 #define touch_state _u._mouse._touch
-#define sensor_state _u._sensor._sensor
-#define wii_motion_plus_state _u._sensor._wii_motion_plus
+#define sensor_state _u._sensor
 
 typedef void (*device_handle_cb)(void *data,
       const struct input_event *event, udev_input_device_t *dev);
@@ -3227,7 +3223,6 @@ static void udev_init_sensor_dev(udev_input_device_t *dev)
    int ret,i;
    struct input_absinfo abs_info;
 
-   dev->wii_motion_plus_state=NULL;
    RARCH_DBG("[udev] Initializing sensor device \"%s\"\n", dev->ident);
    for (i=ABS_X ; i<=ABS_RZ; i++){
       ret = ioctl(dev->fd, EVIOCGABS(i), &abs_info);
