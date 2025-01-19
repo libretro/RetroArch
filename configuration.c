@@ -3571,6 +3571,7 @@ static bool config_load_file(global_t *global,
    char* libretro_directory                        = NULL;
    char* libretro_assets_directory                 = NULL;
    char* libretro_autoconfig_directory             = NULL;
+   char* libretro_database_directory               = NULL;
    char* libretro_system_directory                 = NULL;
    char* libretro_video_filter_directory           = NULL;
    char* libretro_video_shader_directory           = NULL;
@@ -3855,6 +3856,12 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
+#if !IOS
+   if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, tmp_str);
+#endif
+
 #ifdef RARCH_CONSOLE
    if (conf)
       video_driver_load_settings(global, conf);
@@ -3871,13 +3878,19 @@ static bool config_load_file(global_t *global,
    }
 
    libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
-   if (libretro_autoconfig_directory)
+   if (libretro_autoconfig_directory) /* override configuration value */
        configuration_set_string(settings,
 				settings->paths.directory_autoconfig,
 				libretro_autoconfig_directory);
 
+   libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
+   if (libretro_database_directory) /* override configuration value */
+       configuration_set_string(settings,
+				settings->paths.path_content_database,
+				libretro_database_directory);
+
    libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
-   if (libretro_system_directory)
+   if (libretro_system_directory) /* override configuration value */
        configuration_set_string(settings,
 				settings->paths.directory_system,
 				libretro_system_directory);

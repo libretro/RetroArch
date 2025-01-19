@@ -1325,6 +1325,7 @@ static void frontend_unix_get_env(int *argc,
    const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
    const char* libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
    const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
    const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
    const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
@@ -1889,8 +1890,13 @@ static void frontend_unix_get_env(int *argc,
          "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
          "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
-         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   if (!string_is_empty(libretro_database_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+	       libretro_database_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
+             "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    if (!string_is_empty(libretro_video_shader_directory))
        strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
 	       libretro_video_shader_directory,
