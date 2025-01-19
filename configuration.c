@@ -6702,16 +6702,13 @@ unsigned input_config_parse_sensor(
 
    fill_pathname_join_delim(sensor_label, s,
          "label", '_', sizeof(sensor_label));
-   RARCH_DBG("%s %s\n",s,conf->path);
    if (config_get_array(conf, s, tmp, sizeof(tmp)))
    {
       if (strcmp(tmp, "nul") != 0){
-         RARCH_DBG("tail=%s\n", tmp+1);
          if (strcmp(tmp+1,"inv") == 0)
             return (((*tmp)-0x30)*2)+1;
          else if (tmp[1] == '\0')
             return ((*tmp)-0x30)*2;
-         
       }
    }
    return id*2;
