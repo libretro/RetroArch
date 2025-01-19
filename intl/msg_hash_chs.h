@@ -5774,10 +5774,6 @@ MSG_HASH(
    "通知大小"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "设置字体大小磅数。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "通知位置 (水平)"
    )

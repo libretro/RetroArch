@@ -5250,10 +5250,6 @@ MSG_HASH(
    "Rozmiar powiadomienia"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Określ rozmiar czcionki w punktach."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Pozycja X powiadomienia"
    )

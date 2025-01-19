@@ -5146,10 +5146,6 @@ MSG_HASH(
    "Ilmoituksen koko"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Määritä fontin koko pisteinä."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Ilmoituksen sijainti (vaaka)"
    )

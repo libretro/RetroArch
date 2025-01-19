@@ -5946,10 +5946,6 @@ MSG_HASH(
    "Értesítések betűmérete"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "A betűtípus mérete pontokban."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Értesítések megjelenésének helye (vízszintesen)"
    )

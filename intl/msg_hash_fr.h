@@ -5918,10 +5918,6 @@ MSG_HASH(
    "Taille des notifications "
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Spécifier la taille de la police en points."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Position horizontale des notifications "
    )

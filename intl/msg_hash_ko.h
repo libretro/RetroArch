@@ -5998,10 +5998,6 @@ MSG_HASH(
    "OSD 알림 크기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "포인트 단위로 폰트 크기를 설정합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "OSD 알림 X 위치"
    )
@@ -14902,6 +14898,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "치트가 활성화 되었습니다. 현재 세션의 하드코어 모드 도전과제는 해제됩니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "호스트가 도전과제 하드코어 모드를 변경했습니다."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "넷플레이 호스트를 업데이트해야 합니다. 도전과제 하드코어 모드가 현재 세션에서 비활성화되었습니다."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,

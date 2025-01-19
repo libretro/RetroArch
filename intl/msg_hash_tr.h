@@ -5959,7 +5959,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Yazı tipi boyutunu nokta cinsinden belirtin."
+   "Yazı tipi boyutunu punto cinsinden belirtin. Gereçler kullanıldığında, bu boyut yalnızca ekrandaki istatistik gösterimine etki eder."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,

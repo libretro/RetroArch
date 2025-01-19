@@ -5494,10 +5494,6 @@ MSG_HASH(
    "Velikost oznámení"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Zadejte velikost písma v bodech."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Pozice oznámení (vodorovné)"
    )

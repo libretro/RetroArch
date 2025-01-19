@@ -5830,10 +5830,6 @@ MSG_HASH(
    "通知のサイズ"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "フォントサイズをポイントで指定します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "通知の表示位置 (水平)"
    )

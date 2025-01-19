@@ -2614,10 +2614,6 @@ MSG_HASH(
    "Størrelse på varsling"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Angi skriftstørrelsen i punkter."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    "Varslingsbakgrunn"
    )

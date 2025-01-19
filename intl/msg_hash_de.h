@@ -4701,7 +4701,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Beim Schließen des Inhalts automatisch einen Savestate erstellen. Dieser Savestate wird beim Start geladen, wenn \"Savestate automatisch laden\" aktiviert ist."
+   "Beim Schließen des Inhalts automatisch einen Savestate erstellen. Dieser Savestate wird beim Start geladen, wenn „Savestate automatisch laden“ aktiviert ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -5840,10 +5840,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
    "Benachrichtigungs-Schriftgröße"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Die Schriftgröße in Punkten wählen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
@@ -14462,6 +14458,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
    "Ein Cheat wurde aktiviert. Errungenschaften-Hardcore-Modus wurde für die aktuelle Sitzung deaktiviert."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "Hardcore-Modus für Errungenschaften von Host geändert."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "Netplay-Host muss aktualisiert werden. Hardcore-Modus für Errungenschaften wurde für aktuelle Sitzung deaktiviert."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,

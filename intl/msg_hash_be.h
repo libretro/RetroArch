@@ -5974,10 +5974,6 @@ MSG_HASH(
    "Памер апавяшчэнняў"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Ўстаноўка памеру шрыфта апавяшчэнняў."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Палажэнне апавяшчэння (па гарызанталі)"
    )

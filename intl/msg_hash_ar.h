@@ -3538,10 +3538,6 @@ MSG_HASH(
    "حجم الإشعارات"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "حدد حجم الخط في النقاط."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "موضع الإشعار (هوريزونتالي)"
    )

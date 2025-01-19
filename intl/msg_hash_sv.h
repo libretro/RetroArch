@@ -4702,10 +4702,6 @@ MSG_HASH(
    "Notis-storlek"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Ange typsnittsstorleken i punkter."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Notisposition (horisontellt)"
    )
