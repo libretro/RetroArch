@@ -59,9 +59,9 @@ void libretro_dummy_retro_run(void);
 
 size_t libretro_dummy_retro_serialize_size(void);
 
-bool libretro_dummy_retro_serialize(void *data, size_t len);
+bool libretro_dummy_retro_serialize(void *s, size_t len);
 
-bool libretro_dummy_retro_unserialize(const void *data, size_t len);
+bool libretro_dummy_retro_unserialize(const void *s, size_t len);
 
 void libretro_dummy_retro_cheat_reset(void);
 
@@ -113,9 +113,9 @@ void libretro_ffmpeg_retro_run(void);
 
 size_t libretro_ffmpeg_retro_serialize_size(void);
 
-bool libretro_ffmpeg_retro_serialize(void *data, size_t len);
+bool libretro_ffmpeg_retro_serialize(void *s, size_t len);
 
-bool libretro_ffmpeg_retro_unserialize(const void *data, size_t len);
+bool libretro_ffmpeg_retro_unserialize(const void *s, size_t len);
 
 void libretro_ffmpeg_retro_cheat_reset(void);
 

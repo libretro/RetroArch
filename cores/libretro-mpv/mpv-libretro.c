@@ -61,7 +61,7 @@ static char *filepath = NULL;
 
 static volatile int frame_queue = 0;
 
-void on_mpv_redraw(void *cb_ctx)
+static void on_mpv_redraw(void *cb_ctx)
 {
 	frame_queue++;
 }
@@ -395,10 +395,6 @@ void CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
 	CORE_PREFIX(video_cb) = cb;
 }
 
-void CORE_PREFIX(retro_reset)(void)
-{
-}
-
 static void audio_callback(double fps)
 {
 	/* Obtain len samples to reduce lag. */
@@ -587,20 +583,9 @@ void CORE_PREFIX(retro_run)(void)
 }
 
 /* No save-state support */
-size_t CORE_PREFIX(retro_serialize_size)(void)
-{
-	return 0;
-}
-
-bool CORE_PREFIX(retro_serialize)(void *data_, size_t size)
-{
-	return true;
-}
-
-bool CORE_PREFIX(retro_unserialize)(const void *data_, size_t size)
-{
-	return true;
-}
+size_t CORE_PREFIX(retro_serialize_size)(void) { return 0; }
+bool CORE_PREFIX(retro_serialize)(void *s, size_t len) { return true; }
+bool CORE_PREFIX(retro_unserialize)(const void *s, size_t len) { return true; }
 
 bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
@@ -654,39 +639,17 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 	return true;
 }
 
-bool CORE_PREFIX(retro_load_game_special)(unsigned type, const struct retro_game_info *info,
-		size_t num)
-{
-	return false;
-}
-
 void CORE_PREFIX(retro_unload_game)(void)
 {
 	free(filepath);
 	filepath = NULL;
 }
 
-unsigned CORE_PREFIX(retro_get_region)(void)
-{
-	return RETRO_REGION_NTSC;
-}
-
-void *CORE_PREFIX(retro_get_memory_data)(unsigned id)
-{
-	return NULL;
-}
-
-size_t CORE_PREFIX(retro_get_memory_size)(unsigned id)
-{
-	return 0;
-}
-
-void CORE_PREFIX(retro_cheat_reset)(void)
-{}
-
-void CORE_PREFIX(retro_cheat_set)(unsigned index, bool enabled, const char *code)
-{
-   (void)index;
-   (void)enabled;
-   (void)code;
-}
+bool CORE_PREFIX(retro_load_game_special)(unsigned type, const struct retro_game_info *info,
+		size_t num) { return false; }
+unsigned CORE_PREFIX(retro_get_region)(void) { return RETRO_REGION_NTSC; }
+void *CORE_PREFIX(retro_get_memory_data)(unsigned id) { return NULL; }
+size_t CORE_PREFIX(retro_get_memory_size)(unsigned id) { return 0; }
+void CORE_PREFIX(retro_cheat_reset)(void) { }
+void CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char *c) { }
+void CORE_PREFIX(retro_reset)(void) { }

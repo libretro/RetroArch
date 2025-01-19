@@ -232,13 +232,13 @@ static bool sl_start(void *data, bool is_shutdown)
    return sl->is_paused ? false : true;
 }
 
-static ssize_t sl_write(void *data, const void *buf_, size_t size)
+static ssize_t sl_write(void *data, const void *s, size_t len)
 {
    sl_t           *sl = (sl_t*)data;
    size_t     written = 0;
-   const uint8_t *buf = (const uint8_t*)buf_;
+   const uint8_t *buf = (const uint8_t*)s;
 
-   while (size)
+   while (len)
    {
       size_t avail_write;
 
@@ -255,14 +255,14 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
          slock_unlock(sl->lock);
       }
 
-      avail_write = MIN(sl->buf_size - sl->buffer_ptr, size);
+      avail_write = MIN(sl->buf_size - sl->buffer_ptr, len);
 
       if (avail_write)
       {
          memcpy(sl->buffer[sl->buffer_index] + sl->buffer_ptr, buf, avail_write);
          sl->buffer_ptr += avail_write;
          buf            += avail_write;
-         size           -= avail_write;
+         len            -= avail_write;
          written        += avail_write;
       }
 
@@ -287,8 +287,7 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
 static size_t sl_write_avail(void *data)
 {
    sl_t *sl = (sl_t*)data;
-   size_t avail = (sl->buf_count - (int)sl->buffered_blocks - 1) * sl->buf_size + (sl->buf_size - (int)sl->buffer_ptr);
-   return avail;
+   return ((sl->buf_count - (int)sl->buffered_blocks - 1) * sl->buf_size + (sl->buf_size - (int)sl->buffer_ptr));
 }
 
 static size_t sl_buffer_size(void *data)
@@ -297,11 +296,7 @@ static size_t sl_buffer_size(void *data)
    return sl->buf_size * sl->buf_count;
 }
 
-static bool sl_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
+static bool sl_use_float(void *data) { return false; }
 
 audio_driver_t audio_opensl = {
    sl_init,

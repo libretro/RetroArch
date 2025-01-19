@@ -21,7 +21,8 @@ struct MemBlock
 	static MemBlock* Create(u8* base, u32 size)
 	{
 		auto b = (MemBlock*)malloc(sizeof(MemBlock));
-		if (!b) return nullptr;
+		if (!b)
+         return nullptr;
 		b->prev = nullptr;
 		b->next = nullptr;
 		b->base = base;
@@ -159,7 +160,7 @@ static bool linearInit(void)
 	return false;
 }
 
-void* linearMemAlign(size_t size, size_t alignment)
+void* linearMemAlign(size_t len, size_t alignment)
 {
 	int shift;
 	/* Enforce minimum alignment */
@@ -181,7 +182,7 @@ void* linearMemAlign(size_t size, size_t alignment)
 
 	/* Allocate the chunk */
 	MemChunk chunk;
-	if (!sLinearPool.Allocate(chunk, size, shift))
+	if (!sLinearPool.Allocate(chunk, len, shift))
 		return nullptr;
 
 	auto node = newNode(chunk);
@@ -198,35 +199,31 @@ void* linearMemAlign(size_t size, size_t alignment)
 	return chunk.addr;
 }
 
-void* linearAlloc(size_t size)
+void* linearAlloc(size_t len)
 {
 #if 0
-   if(ctrConsole && ctrConsole->consoleInitialised)
+   if (ctrConsole && ctrConsole->consoleInitialised)
    {
-      printf("linearAlloc : 0x%08X\n", size);
+      printf("linearAlloc : 0x%08X\n", len);
       DEBUG_HOLD();
    }
 #endif
-	return linearMemAlign(size, 0x80);
+	return linearMemAlign(len, 0x80);
 }
 
-void* linearRealloc(void* mem, size_t size)
-{
-	/* TODO */
-	return NULL;
-}
+void* linearRealloc(void* mem, size_t len) { return NULL; }
 
 void linearFree(void* mem)
 {
-	auto node = getNode(mem);
-	if (!node)
+   auto node = getNode(mem);
+   if (!node)
       return;
 
-	/* Free the chunk */
-	sLinearPool.Deallocate(node->chunk);
+   /* Free the chunk */
+   sLinearPool.Deallocate(node->chunk);
 
-	/* Free the node */
-	delNode(node);
+   /* Free the node */
+   delNode(node);
 }
 
 u32 linearSpaceFree(void)
@@ -236,7 +233,7 @@ u32 linearSpaceFree(void)
 
 extern "C" u32 ctr_get_linear_free(void)
 {
-   if(sLinearPool.last->base + sLinearPool.last->size != (u8*)__linear_heap + __linear_heap_size)
+   if (sLinearPool.last->base + sLinearPool.last->size != (u8*)__linear_heap + __linear_heap_size)
       return 0;
    return sLinearPool.last->size;
 }
@@ -248,16 +245,16 @@ extern "C" u32 ctr_get_linear_unused(void)
 
 extern "C" void ctr_linear_free_pages(u32 pages)
 {
-   if(sLinearPool.last->base + sLinearPool.last->size != (u8*)__linear_heap + __linear_heap_size)
+   u32 tmp, size;
+   if (sLinearPool.last->base + sLinearPool.last->size != (u8*)__linear_heap + __linear_heap_size)
       return;
 
-   u32 size = pages << 12;
-   if(size > sLinearPool.last->size)
+   size = pages << 12;
+   if (size > sLinearPool.last->size)
       return;
 
    sLinearPool.last->size -= size;
    __linear_heap_size -= size;
-   u32 tmp;
    svcControlMemory(&tmp, __linear_heap + __linear_heap_size, 0x0, size,
          MEMOP_FREE, (MemPerm)(MEMPERM_READ | MEMPERM_WRITE));
 

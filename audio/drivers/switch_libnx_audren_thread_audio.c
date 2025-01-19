@@ -282,7 +282,7 @@ static size_t libnx_audren_thread_audio_buffer_size(void *data)
 }
 
 static ssize_t libnx_audren_thread_audio_write(void *data,
-      const void *buf, size_t len)
+      const void *s, size_t len)
 {
    libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
    size_t available, written, written_tmp;
@@ -299,7 +299,7 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
       available = FIFO_WRITE_AVAIL(aud->fifo);
       written = MIN(available, len);
       if (written > 0)
-         fifo_write(aud->fifo, buf, written);
+         fifo_write(aud->fifo, s, written);
       mutexUnlock(&aud->fifo_lock);
    }
    else
@@ -312,7 +312,7 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
          if (available)
          {
             written_tmp = MIN(len - written, available);
-            fifo_write(aud->fifo, (const char*)buf + written, written_tmp);
+            fifo_write(aud->fifo, (const char*)s + written, written_tmp);
             mutexUnlock(&aud->fifo_lock);
             written += written_tmp;
          }
