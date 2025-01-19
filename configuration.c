@@ -3855,6 +3855,12 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
+#if !IOS
+   if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
+      configuration_set_string(settings,
+            settings->paths.directory_libretro, tmp_str);
+#endif
+
 #ifdef RARCH_CONSOLE
    if (conf)
       video_driver_load_settings(global, conf);
