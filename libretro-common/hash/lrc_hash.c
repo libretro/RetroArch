@@ -123,7 +123,7 @@ static void sha256_block(struct sha256_ctx *p)
 }
 
 static void sha256_chunk(struct sha256_ctx *p,
-      const uint8_t *s, unsigned len)
+      const uint8_t *s, size_t len)
 {
    p->len += len;
 
@@ -191,7 +191,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t len)
    } shahash;
 
    sha256_init(&sha);
-   sha256_chunk(&sha, in, (unsigned)len);
+   sha256_chunk(&sha, in, len);
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 
