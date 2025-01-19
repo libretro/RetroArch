@@ -311,7 +311,7 @@ error:
    if (mic)
    {
       if (mic->info.pcm)
-         snd_pcm_close(microphone->info.pcm);
+         snd_pcm_close(mic->info.pcm);
 
       alsa_thread_microphone_close_mic(alsa, mic);
    }

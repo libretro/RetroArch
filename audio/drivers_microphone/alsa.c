@@ -268,7 +268,7 @@ static bool alsa_microphone_stop_mic(void *driver_context, void *mic_context)
 static bool alsa_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
    alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
-   return microphone->stream_info.has_float;
+   return mic->stream_info.has_float;
 }
 
 microphone_driver_t microphone_alsa = {
