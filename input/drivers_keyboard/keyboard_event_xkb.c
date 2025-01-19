@@ -58,21 +58,17 @@ void free_xkb(void)
 
 int init_xkb(int fd, size_t len)
 {
-   mod_map_idx          = (xkb_mod_index_t *)calloc(
+   mod_map_idx = (xkb_mod_index_t *)calloc(
          MOD_MAP_SIZE, sizeof(xkb_mod_index_t));
 
    if (!mod_map_idx)
       goto error;
 
-   mod_map_bit          = (uint16_t*)
-      calloc(MOD_MAP_SIZE, sizeof(uint16_t));
-
-   if (!mod_map_bit)
+   if (!(mod_map_bit = (uint16_t*)
+      calloc(MOD_MAP_SIZE, sizeof(uint16_t))))
       goto error;
 
-   xkb_ctx              = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-
-   if (xkb_ctx)
+   if ((xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS)))
    {
       if (fd >= 0)
       {

@@ -501,11 +501,11 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
 
 static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 {
+   char *auth_header;
+   size_t _len                  = 0;
    settings_t        *settings  = config_get_ptr();
    const char        *url       = settings->arrays.webdav_url;
    webdav_state_t    *webdav_st = webdav_state_get_ptr();
-   size_t             len       = 0;
-   char              *auth_header;
 
    if (string_is_empty(url))
       return false;
@@ -517,18 +517,18 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    /* TODO: LOCK? */
 
    if (!strstr(url, "://"))
-       len += strlcpy(webdav_st->url, "http://", STRLEN_CONST("http://"));
-   strlcpy(webdav_st->url + len, url, sizeof(webdav_st->url) - len);
+       _len += strlcpy(webdav_st->url, "http://", STRLEN_CONST("http://"));
+   strlcpy(webdav_st->url + _len, url, sizeof(webdav_st->url) - _len);
    fill_pathname_slash(webdav_st->url, sizeof(webdav_st->url));
 
    /* url/username/password may have changed, redo auth check */
    webdav_st->basic = true;
-   auth_header = webdav_get_auth_header(NULL, NULL);
+   auth_header      = webdav_get_auth_header(NULL, NULL);
 
    if (auth_header)
    {
       webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
-      webdav_cb_st->cb = cb;
+      webdav_cb_st->cb        = cb;
       webdav_cb_st->user_data = user_data;
       task_push_webdav_stat(webdav_st->url, true, auth_header, webdav_stat_cb, webdav_cb_st);
       free(auth_header);

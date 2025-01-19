@@ -4004,7 +4004,7 @@ void osk_update_last_codepoint(
 
 #ifdef HAVE_LANGEXTRA
 /* combine 3 korean elements. make utf8 character */
-static unsigned get_kr_utf8( int c1,int c2,int c3)
+static unsigned get_kr_utf8(int c1, int c2, int c3)
 {
    int  uv = c1 * (28 * 21) + c2 * 28 + c3 + 0xac00;
    int  tv = (uv >> 12) | ((uv & 0x0f00) << 2) | ((uv & 0xc0) << 2) | ((uv & 0x3f) << 16);
@@ -4012,7 +4012,7 @@ static unsigned get_kr_utf8( int c1,int c2,int c3)
 }
 
 /* utf8 korean composition */
-static unsigned get_kr_composition( char* pcur, char* padd)
+static unsigned get_kr_composition(char* pcur, char* padd)
 {
    size_t _len;
    static char cc1[] = {"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
@@ -4296,7 +4296,7 @@ void input_event_osk_append(
       int ptr,
       bool show_symbol_pages,
       const char *word,
-      size_t word_len)
+      size_t len)
 {
 #ifdef HAVE_LANGEXTRA
    if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
@@ -4327,7 +4327,7 @@ void input_event_osk_append(
       else
          *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
    }
-   else if (*osk_idx == OSK_KOREAN_PAGE1 && word && word_len == 3)
+   else if (*osk_idx == OSK_KOREAN_PAGE1 && word && len == 3)
    {
       unsigned character = *((unsigned*)word) | 0x01000000;
       input_keyboard_line_event(&input_driver_st,  keyboard_line, character);
@@ -4350,7 +4350,7 @@ void input_event_osk_append(
 #endif
    else
    {
-      input_keyboard_line_append(keyboard_line, word, word_len);
+      input_keyboard_line_append(keyboard_line, word, len);
       osk_update_last_codepoint(
             osk_last_codepoint,
             osk_last_codepoint_len,
@@ -6212,16 +6212,16 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       {
          retro_ctx_serialize_info_t serial_info;
          uint8_t frame_tok = REPLAY_TOKEN_CHECKPOINT_FRAME;
-         size_t info_size  = core_serialize_size();
-         uint64_t size     = swap_if_big64(info_size);
-         uint8_t *st       = (uint8_t*)malloc(info_size);
+         size_t _len       = core_serialize_size();
+         uint64_t size     = swap_if_big64(_len);
+         uint8_t *st       = (uint8_t*)malloc(_len);
          serial_info.data  = st;
-         serial_info.size  = info_size;
+         serial_info.size  = _len;
          core_serialize(&serial_info);
          /* "next frame is a checkpoint" */
          intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
          intfstream_write(handle->file, &size, sizeof(uint64_t));
-         intfstream_write(handle->file, st, info_size);
+         intfstream_write(handle->file, st, _len);
          free(st);
       }
       else

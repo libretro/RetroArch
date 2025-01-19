@@ -1904,14 +1904,14 @@ int generic_action_ok_displaylist_push(
  * selection needs to be made from a list, otherwise
  * returns true and fills in @s with path to core.
  **/
-static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info,
-      bool load_content_with_current_core,
-      char *new_core_path, size_t len)
+static bool menu_content_find_first_core(
+      menu_content_ctx_defer_info_t *def_info,
+      bool load_content_with_current_core, char *s, size_t len)
 {
-   const core_info_t *info                 = NULL;
-   size_t supported                        = 0;
-   core_info_list_t *core_info             = (core_info_list_t*)def_info->data;
-   const char *default_info_dir            = def_info->dir;
+   const core_info_t *info          = NULL;
+   size_t supported                 = 0;
+   core_info_list_t *core_info      = (core_info_list_t*)def_info->data;
+   const char *default_info_dir     = def_info->dir;
 
    if (!string_is_empty(default_info_dir))
    {
@@ -1954,7 +1954,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
       return false;
 
     if (info)
-      strlcpy(new_core_path, info->path, len);
+      strlcpy(s, info->path, len);
 
    return true;
 }

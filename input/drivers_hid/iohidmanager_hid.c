@@ -269,14 +269,14 @@ static bool iohidmanager_hid_joypad_rumble(void *data, unsigned pad,
 }
 
 static void iohidmanager_hid_device_send_control(void *data,
-      uint8_t* data_buf, size_t len)
+      uint8_t *s, size_t len)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)data;
 
    if (adapter)
       IOHIDDeviceSetReport(adapter->handle,
-            kIOHIDReportTypeOutput, 0x01, data_buf + 1, len - 1);
+            kIOHIDReportTypeOutput, 0x01, s + 1, len - 1);
 }
 
 static void iohidmanager_hid_device_report(void *data,
@@ -1088,19 +1088,19 @@ static void iohidmanager_hid_free(const void *data)
 
 static void iohidmanager_hid_poll(void *data) { }
 
-static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *data_buf, size_t len)
+static int32_t iohidmanager_set_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *s, size_t len)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)handle;
    if (adapter)
       return IOHIDDeviceSetReport(adapter->handle,
             translate_hid_report_type(report_type), report_id,
-            data_buf + 1, len - 1);
+            s + 1, len - 1);
    return -1;
 }
 
 static int32_t iohidmanager_get_report(void *handle, uint8_t report_type, uint8_t report_id,
-      uint8_t *data_buf, size_t len)
+      uint8_t *s, size_t len)
 {
    struct iohidmanager_hid_adapter *adapter =
       (struct iohidmanager_hid_adapter*)handle;
@@ -1110,7 +1110,7 @@ static int32_t iohidmanager_get_report(void *handle, uint8_t report_type, uint8_
       CFIndex length = len;
       return IOHIDDeviceGetReport(adapter->handle,
             translate_hid_report_type(report_type),
-            report_id, data_buf, &length);
+            report_id, s, &length);
    }
 
    return -1;

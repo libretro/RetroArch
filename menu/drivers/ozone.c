@@ -4242,12 +4242,13 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             core_label = menu_st->thumbnail_path_data->content_core_name;
       }
 
-      _len                               = strlcpy(ozone->selection_core_name,
+      _len  = strlcpy(ozone->selection_core_name,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
             sizeof(ozone->selection_core_name));
-      ozone->selection_core_name[  _len] = ' ';
-      ozone->selection_core_name[++_len] = '\0';
-      strlcpy(ozone->selection_core_name + _len, core_label, sizeof(ozone->selection_core_name) - _len);
+      _len += strlcpy(ozone->selection_core_name + _len, " ",
+            sizeof(ozone->selection_core_name)   - _len);
+      strlcpy(ozone->selection_core_name + _len, core_label,
+            sizeof(ozone->selection_core_name) - _len);
 
       if (!scroll_content_metadata)
          linebreak_after_colon(&ozone->selection_core_name);
@@ -4290,20 +4291,18 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       else
       {
          const char *disabled_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISABLED);
-         size_t _len                       =
-            strlcpy(ozone->selection_playtime,
+         size_t _len  = strlcpy(ozone->selection_playtime,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
                sizeof(ozone->selection_playtime));
-         ozone->selection_playtime[  _len] = ' ';
-         ozone->selection_playtime[++_len] = '\0';
+         _len        += strlcpy(ozone->selection_playtime  + _len, " ",
+                  sizeof(ozone->selection_playtime) - _len);
          strlcpy(ozone->selection_playtime + _len, disabled_str, sizeof(ozone->selection_playtime) - _len);
 
-         _len                                =
-            strlcpy(ozone->selection_lastplayed,
+         _len  = strlcpy(ozone->selection_lastplayed,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                sizeof(ozone->selection_lastplayed));
-         ozone->selection_lastplayed[  _len] = ' ';
-         ozone->selection_lastplayed[++_len] = '\0';
+         _len += strlcpy(ozone->selection_lastplayed  + _len, " ",
+                  sizeof(ozone->selection_lastplayed) - _len);
          strlcpy(ozone->selection_lastplayed + _len, disabled_str, sizeof(ozone->selection_lastplayed) - _len);
       }
 

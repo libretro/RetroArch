@@ -186,7 +186,7 @@ static ssize_t libnx_audren_audio_get_free_wavebuf_idx(libnx_audren_t* aud)
 }
 
 static size_t libnx_audren_audio_append(
-      libnx_audren_t* aud, const void *buf, size_t size)
+      libnx_audren_t* aud, const void *buf, size_t len)
 {
    void *dstbuf     = NULL;
    ssize_t free_idx = -1;
@@ -202,14 +202,14 @@ static size_t libnx_audren_audio_append(
       aud->current_size = 0;
    }
 
-   if (size > aud->buffer_size - aud->current_size)
-      size = aud->buffer_size - aud->current_size;
+   if (len > aud->buffer_size - aud->current_size)
+      len = aud->buffer_size - aud->current_size;
 
    dstbuf = aud->current_pool_ptr + aud->current_size;
-   memcpy(dstbuf, buf, size);
-   armDCacheFlush(dstbuf, size);
+   memcpy(dstbuf, buf, len);
+   armDCacheFlush(dstbuf, len);
 
-   aud->current_size += size;
+   aud->current_size += len;
 
    if (aud->current_size == aud->buffer_size)
    {
@@ -227,7 +227,7 @@ static size_t libnx_audren_audio_append(
       aud->current_wavebuf = NULL;
    }
 
-   return size;
+   return len;
 }
 
 static ssize_t libnx_audren_audio_write(void *data,

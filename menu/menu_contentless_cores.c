@@ -99,8 +99,8 @@ static void contentless_cores_free_info_entries(
 static void contentless_cores_init_info_entries(
       contentless_cores_state_t *state)
 {
-   core_info_list_t *core_info_list = NULL;
    size_t i;
+   core_info_list_t *core_info_list = NULL;
 
    if (!state)
       return;
@@ -207,8 +207,8 @@ void menu_contentless_cores_get_info(const char *core_id,
 
 void menu_contentless_cores_flush_runtime(void)
 {
-   contentless_cores_state_t *state = contentless_cores_state;
    size_t i, cap;
+   contentless_cores_state_t *state = contentless_cores_state;
 
    if (!state || !state->info_entries)
       return;

@@ -163,7 +163,7 @@ error:
    return NULL;
 }
 
-static ssize_t wasapi_write(void *wh, const void *data, size_t size)
+static ssize_t wasapi_write(void *wh, const void *data, size_t len)
 {
    size_t written = 0;
    wasapi_t *w    = (wasapi_t*)wh;
@@ -193,16 +193,16 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
                return -1;
             write_avail = w->engine_buffer_size;
          }
-         written = (size < write_avail) ? size : write_avail;
+         written = (len < write_avail) ? len : write_avail;
          fifo_write(w->buffer, data, written);
       }
       else
       {
          ssize_t ir;
-         for (ir = -1; written < size; written += ir)
+         for (ir = -1; written < len; written += ir)
          {
             const void *_data  = (char*)data + written;
-            size_t __size      = size - written;
+            size_t __len       = len - written;
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             if (!write_avail)
             {
@@ -222,7 +222,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
                   write_avail = w->engine_buffer_size;
                }
             }
-            ir = (__size < write_avail) ? __size : write_avail;
+            ir = (__len < write_avail) ? __len : write_avail;
             fifo_write(w->buffer, _data, ir);
          }
       }
@@ -257,7 +257,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
                }
             }
             write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            written     = size < write_avail ? size : write_avail;
+            written     = len < write_avail ? len : write_avail;
             if (written)
                fifo_write(w->buffer, data, written);
          }
@@ -267,7 +267,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
                return -1;
             if (!(write_avail = w->engine_buffer_size - padding * w->frame_size))
                return 0;
-            written = size < write_avail ? size : write_avail;
+            written = (len < write_avail) ? len : write_avail;
             if (written)
             {
                BYTE *dest         = NULL;
@@ -285,10 +285,10 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
       else if (w->buffer)
       {
          ssize_t ir;
-         for (ir = -1; written < size; written += ir)
+         for (ir = -1; written < len; written += ir)
          {
             const void *_data  = (char*)data + written;
-            size_t _size       = size - written;
+            size_t _len        = len - written;
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             UINT32 padding     = 0;
             if (!write_avail)
@@ -315,7 +315,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
                }
             }
             write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            ir          = (_size < write_avail) ? _size : write_avail;
+            ir          = (_len < write_avail) ? _len : write_avail;
             if (ir)
                fifo_write(w->buffer, _data, ir);
          }
@@ -323,10 +323,10 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
       else
       {
          ssize_t ir;
-         for (ir = -1; written < size; written += ir)
+         for (ir = -1; written < len; written += ir)
          {
             const void *_data  = (char*)data + written;
-            size_t _size       = size - written;
+            size_t _len        = len - written;
             size_t write_avail = 0;
             UINT32 padding     = 0;
             if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
@@ -337,7 +337,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t size)
                ir = 0;
             else
             {
-               ir = (_size < write_avail) ? _size : write_avail;
+               ir = (_len < write_avail) ? _len : write_avail;
                if (ir)
                {
                   BYTE *dest         = NULL;
@@ -427,8 +427,7 @@ static void wasapi_free(void *wh)
 static bool wasapi_use_float(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
-
-   return w->frame_size == 8;
+   return (w->frame_size == 8);
 }
 
 static void wasapi_device_list_free(void *u, void *slp)

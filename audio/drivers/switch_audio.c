@@ -73,9 +73,9 @@ static size_t switch_audio_buffer_size(void *data)
 #endif
 }
 
-static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
+static ssize_t switch_audio_write(void *data, const void *buf, size_t len)
 {
-   size_t to_write     = size;
+   size_t to_write     = len;
 	switch_audio_t *swa = (switch_audio_t*) data;
 
    if (!swa)

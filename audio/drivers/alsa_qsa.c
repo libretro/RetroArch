@@ -219,14 +219,14 @@ static int check_pcm_status(void *data, int channel_type)
    return ret;
 }
 
-static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
+static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
 {
-   alsa_qsa_t          *alsa = (alsa_qsa_t*)data;
-   snd_pcm_sframes_t written = 0;
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
+   ssize_t  written = 0;
 
    while (size)
    {
-      size_t avail_write = MIN(alsa->buf_size - alsa->buffer_ptr, size);
+      size_t avail_write = MIN(alsa->buf_size - alsa->buffer_ptr, len);
 
       if (avail_write)
       {
@@ -235,7 +235,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 
          alsa->buffer_ptr      += avail_write;
          buf                    = (void*)((uint8_t*)buf + avail_write);
-         size                  -= avail_write;
+         len                   -= avail_write;
          written               += avail_write;
       }
 
@@ -260,7 +260,6 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
                return -1;
          }
       }
-
    }
 
    return written;

@@ -314,7 +314,7 @@ static void explore_add_unique_string(
 
    for (p = str + 1;; p++)
    {
-      size_t _len              = 0;
+      size_t _len             = 0;
       uint32_t hash           = 0;
       explore_string_t* entry = NULL;
 

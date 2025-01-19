@@ -298,9 +298,9 @@ static INLINE void menu_screensaver_set_dimensions(
 
 static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
 {
+   size_t i;
    unsigned width;
    unsigned height;
-   size_t i;
 
    /* Create particle array, if required */
    if (!screensaver->particles)
@@ -311,7 +311,7 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
       if (!screensaver->particles)
          return false;
    }
-   
+
    width  = screensaver->last_width;
    height = screensaver->last_height;
 
@@ -518,12 +518,12 @@ void menu_screensaver_iterate(
       uint32_t particle_tint, unsigned width, unsigned height,
       const char *dir_assets)
 {
-   float base_particle_size;
+   size_t i;
    uint32_t tint_r;
    uint32_t tint_g;
    uint32_t tint_b;
+   float base_particle_size;
    float global_speed_factor;
-   size_t i;
 
    if (!screensaver)
       return;
@@ -532,9 +532,9 @@ void menu_screensaver_iterate(
    if (!menu_screensaver_update_state(
          screensaver, p_disp,
          effect, particle_tint,
-         width, height, dir_assets) ||
-       (screensaver->effect == MENU_SCREENSAVER_BLANK) ||
-       !screensaver->particles)
+         width, height, dir_assets)
+       || (screensaver->effect == MENU_SCREENSAVER_BLANK)
+       || !screensaver->particles)
       return;
 
    base_particle_size = screensaver->particle_scale * screensaver->font_size;
@@ -544,7 +544,7 @@ void menu_screensaver_iterate(
 
    /* Set global animation speed */
    global_speed_factor = p_anim->delta_time / MENU_SS_EFFECT_PERIOD;
-   if (effect_speed > 0.0001f) 
+   if (effect_speed > 0.0001f)
       global_speed_factor *= effect_speed;
 
    /* Update particle array */
@@ -784,9 +784,9 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
        && font
        && screensaver->particles)
    {
+      size_t i;
       float y_centre_offset = screensaver->font_data.y_centre_offset;
       float particle_scale  = screensaver->particle_scale;
-      size_t i;
 
       /* Bind font */
       font_driver_bind_block(font, &screensaver->font_data.raster_block);

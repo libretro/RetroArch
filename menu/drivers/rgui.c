@@ -1649,9 +1649,9 @@ static void rgui_fill_rect(
     * this function is frequently used to fill large areas.
     * We therefore gain significant performance benefits
     * from using memcpy() tricks... */
-   unsigned x_end  = (x_end_i <= fb_width)  ? x_end_i : fb_width;
-   unsigned y_end  = (y_end_i <= fb_height) ? y_end_i : fb_height;
-   size_t x_size   = (x_end - x_start) * sizeof(uint16_t);
+   unsigned x_end   = (x_end_i <= fb_width)  ? x_end_i : fb_width;
+   unsigned y_end   = (y_end_i <= fb_height) ? y_end_i : fb_height;
+   size_t x_size    = (x_end - x_start) * sizeof(uint16_t);
 
    /* Sanity check */
    if (x_size == 0)
@@ -4962,17 +4962,14 @@ static bool gfx_thumbnail_get_label(
    return true;
 }
 
-static void rgui_render(
-      void *data,
-      unsigned width,
-      unsigned height,
+static void rgui_render(void *data, unsigned width, unsigned height,
       bool is_idle)
 {
-   gfx_animation_ctx_ticker_t ticker;
-   gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    unsigned x, y;
-   size_t i, end, fb_pitch, old_start, new_start;
    unsigned fb_width, fb_height;
+   gfx_animation_ctx_ticker_t ticker;
+   size_t i, end, fb_pitch, old_start, new_start;
+   gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    static bool display_kb         = false;
    static const char* const
       ticker_spacer               = RGUI_TICKER_SPACER;
@@ -5288,11 +5285,11 @@ static void rgui_render(
    else
    {
       /* Render usual text */
-      size_t selection               = menu_st->selection_ptr;
-      size_t title_max_len;
-      size_t title_len;
       unsigned title_x;
+      size_t title_len;
+      size_t title_max_len;
       char title_buf[NAME_MAX_LENGTH];
+      size_t selection               = menu_st->selection_ptr;
       unsigned title_y               = rgui->term_layout.start_y - rgui->font_height_stride;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
       unsigned timedate_x            = term_end_x - (5 * rgui->font_width_stride);
@@ -7458,16 +7455,12 @@ static int rgui_environ(
 
 /* Forward declaration */
 static int rgui_menu_entry_action(
-      void *userdata,
-      menu_entry_t *entry,
-      size_t i,
-      enum menu_action action);
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action);
 
 static int rgui_pointer_up(
       void *data,
-      unsigned x,
-      unsigned y,
-      unsigned ptr,
+      unsigned x, unsigned y, unsigned ptr,
       enum menu_input_pointer_gesture gesture,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry,
@@ -8156,10 +8149,8 @@ static enum menu_action rgui_parse_menu_entry_action(
 
 /* Menu entry action callback */
 static int rgui_menu_entry_action(
-      void *userdata,
-      menu_entry_t *entry,
-      size_t i,
-      enum menu_action action)
+      void *userdata, menu_entry_t *entry,
+      size_t i, enum menu_action action)
 {
    rgui_t *rgui = (rgui_t*)userdata;
 

@@ -278,7 +278,7 @@ error:
    return NULL;
 }
 
-static ssize_t pipewire_write(void *data, const void *buf_, size_t size)
+static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
 {
    int32_t   filled, avail;
    uint32_t            idx;
@@ -288,7 +288,7 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t size)
    if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
       return 0;  /* wait for stream to become ready */
 
-   if (size > audio->highwater_mark)
+   if (len > audio->highwater_mark)
    {
       RARCH_ERR("[PipeWire]: Buffer too small! Please try increasing the latency.\n");
       return 0;
@@ -296,23 +296,23 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t size)
 
    pw_thread_loop_lock(audio->pw->thread_loop);
 
-   while (size)
+   while (len)
    {
       filled = spa_ringbuffer_get_write_index(&audio->ring, &idx);
       avail = audio->highwater_mark - filled;
 
 #if 0  /* Useful for tracing */
       RARCH_DBG("[PipeWire]: Ringbuffer utilization: filled %d, avail %d, index %d, size %d\n",
-                filled, avail, idx, size);
+                filled, avail, idx, len);
 #endif
 
       /* in non-blocking mode we play as much as we can
        * in blocking mode we expect a freed buffer of at least the given size */
-      if (size > (size_t)avail)
+      if (len > (size_t)avail)
       {
          if (audio->pw->nonblock)
          {
-            size = avail;
+            len = avail;
             break;
          }
 
@@ -326,21 +326,21 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t size)
       RARCH_ERR("[Pipewire]: %p: underrun write:%u filled:%d\n", audio, idx, filled);
    else
    {
-      if ((uint32_t) filled + size > RINGBUFFER_SIZE)
+      if ((uint32_t) filled + len > RINGBUFFER_SIZE)
       {
          RARCH_ERR("[PipeWire]: %p: overrun write:%u filled:%d + size:%zu > max:%u\n",
-         audio, idx, filled, size, RINGBUFFER_SIZE);
+         audio, idx, filled, len, RINGBUFFER_SIZE);
       }
    }
 
    spa_ringbuffer_write_data(&audio->ring,
                              audio->buffer, RINGBUFFER_SIZE,
-                             idx & RINGBUFFER_MASK, buf_, size);
-   idx += size;
+                             idx & RINGBUFFER_MASK, buf_, len);
+   idx += len;
    spa_ringbuffer_write_update(&audio->ring, idx);
 
    pw_thread_loop_unlock(audio->pw->thread_loop);
-   return size;
+   return len;
 }
 
 static bool pipewire_stop(void *data)
@@ -426,11 +426,7 @@ static void pipewire_free(void *data)
    pw_deinit();
 }
 
-static bool pipewire_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool pipewire_use_float(void *data) { return true; }
 
 static void *pipewire_device_list_new(void *data)
 {

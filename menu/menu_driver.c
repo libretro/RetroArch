@@ -542,13 +542,13 @@ static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
  * 'idx' to the matching list entry index. */
 bool menu_entries_list_search(const char *needle, size_t *idx)
 {
+   size_t i;
    struct menu_state *menu_st  = &menu_driver_state;
    menu_list_t *menu_list      = menu_st->entries.list;
    file_list_t *list           = MENU_LIST_GET_SELECTION(menu_list, (unsigned)0);
    bool match_found            = false;
    bool char_search            = false;
    char needle_char            = 0;
-   size_t i;
 
    if (   !list
        || string_is_empty(needle)
@@ -640,7 +640,8 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
-size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len)
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
+      char *s, size_t len)
 {
    /* Storage container for current menu datetime
     * representation string */
@@ -1014,7 +1015,8 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size
 }
 
 /* Display current (battery) power state */
-size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len)
+size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate,
+      char *s, size_t len)
 {
    int percent                    = 0;
    struct menu_state    *menu_st  = &menu_driver_state;
@@ -1254,12 +1256,9 @@ static void menu_list_free_list(
    file_list_free(list);
 }
 
-static void menu_list_pop_stack(
-      const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      menu_list_t *list,
-      size_t idx,
-      size_t *directory_ptr)
+static void menu_list_pop_stack(const menu_ctx_driver_t *menu_driver_ctx,
+      void *menu_userdata, menu_list_t *list,
+      size_t idx, size_t *directory_ptr)
 {
    file_list_t *menu_list = MENU_LIST_GET(list, (unsigned)idx);
 
@@ -1292,8 +1291,7 @@ static int menu_list_flush_stack_type(const char *needle, const char *label,
 
 static void menu_list_flush_stack(
       const menu_ctx_driver_t *menu_driver_ctx,
-      void *menu_userdata,
-      struct menu_state *menu_st,
+      void *menu_userdata, struct menu_state *menu_st,
       menu_list_t *list,
       size_t idx, const char *needle, unsigned final_type)
 {
@@ -1339,8 +1337,7 @@ static void menu_list_flush_stack(
    }
 }
 
-static void menu_list_free(
-      const menu_ctx_driver_t *menu_driver_ctx,
+static void menu_list_free(const menu_ctx_driver_t *menu_driver_ctx,
       menu_list_t *menu_list)
 {
    if (!menu_list)
@@ -1431,12 +1428,9 @@ error:
    return NULL;
 }
 
-static int menu_input_key_bind_set_mode_common(
-      struct menu_state *menu_st,
-      struct menu_bind_state *binds,
-      enum menu_input_binds_ctl_state state,
-      rarch_setting_t  *setting,
-      settings_t *settings)
+static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
+      struct menu_bind_state *binds, enum menu_input_binds_ctl_state state,
+      rarch_setting_t  *setting, settings_t *settings)
 {
    switch (state)
    {

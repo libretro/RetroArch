@@ -2326,7 +2326,7 @@ static void config_float(
 static void config_path(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
@@ -2338,7 +2338,7 @@ static void config_path(
    (*list)[list_info->index++]             = setting_string_setting(ST_PATH,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value, "",
+         s, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
          false);
@@ -2351,7 +2351,7 @@ static void config_path(
 static void config_dir(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
@@ -2364,7 +2364,7 @@ static void config_dir(
    (*list)[list_info->index++]             = setting_string_setting(ST_DIR,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value,
+         s, (unsigned)len, default_value,
          msg_hash_to_str(empty_enum_idx),
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler,
@@ -2382,7 +2382,7 @@ static void config_dir(
 static void config_string(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value,
@@ -2394,7 +2394,7 @@ static void config_string(
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value, "",
+         s, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, name_enum_idx);
@@ -2404,7 +2404,7 @@ static void config_string(
 static void config_string_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       char *label,
       char* shortname,
       const char *default_value,
@@ -2414,9 +2414,8 @@ static void config_string_alt(
       change_handler_t change_handler, change_handler_t read_handler)
 {
    (*list)[list_info->index++] = setting_string_setting(ST_STRING,
-         label,
-         shortname,
-         target, (unsigned)len, default_value, "",
+         label, shortname,
+         s, (unsigned)len, default_value, "",
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, true);
 }
@@ -2424,7 +2423,7 @@ static void config_string_alt(
 static void config_string_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      char *target, size_t len,
+      char *s, size_t len,
       enum msg_hash_enums name_enum_idx,
       enum msg_hash_enums SHORT_enum_idx,
       const char *default_value, const char *values,
@@ -2437,7 +2436,7 @@ static void config_string_options(
          ST_STRING_OPTIONS,
          msg_hash_to_str(name_enum_idx),
          msg_hash_to_str(SHORT_enum_idx),
-         target, (unsigned)len, default_value, "", values,
+         s, (unsigned)len, default_value, "", values,
          group_info->name, subgroup_info->name, parent_group,
          change_handler, read_handler, false);
    (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_COMBOBOX;
@@ -2452,7 +2451,7 @@ static void config_string_options(
 static void config_bind_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      struct retro_keybind *target,
+      struct retro_keybind *s,
       uint32_t player, uint32_t player_offset,
       const char *name, const char *SHORT,
       const struct retro_keybind *default_value,
@@ -2460,7 +2459,7 @@ static void config_bind_alt(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   (*list)[list_info->index++] = setting_bind_setting(name, SHORT, target,
+   (*list)[list_info->index++] = setting_bind_setting(name, SHORT, s,
          player, player_offset, default_value,
          group_info->name, subgroup_info->name, parent_group,
          true);
@@ -2600,12 +2599,12 @@ static int setting_action_ok_bind_defaults(
    if (!setting)
       return -1;
 
-   target                         =  &input_config_binds[setting->index_offset][0];
-   def_binds                      =  (setting->index_offset)
-                                    ? retro_keybinds_rest
-                                    : retro_keybinds_1;
-   binds->begin                   = MENU_SETTINGS_BIND_BEGIN;
-   binds->last                    = MENU_SETTINGS_BIND_LAST;
+   target             =  &input_config_binds[setting->index_offset][0];
+   def_binds          =  (setting->index_offset)
+                        ? retro_keybinds_rest
+                        : retro_keybinds_1;
+   binds->begin       = MENU_SETTINGS_BIND_BEGIN;
+   binds->last        = MENU_SETTINGS_BIND_LAST;
 
    for ( i  = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
@@ -3011,8 +3010,7 @@ static void setting_get_string_representation_max_users(rarch_setting_t *setting
 
 #if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC)
 static void setting_get_string_representation_password(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3091,8 +3089,7 @@ static void setting_get_string_representation_uint_ai_service_mode(
 }
 
 static void setting_get_string_representation_uint_ai_service_lang(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    if (!setting)
@@ -3311,8 +3308,7 @@ static void setting_get_string_representation_uint_ai_service_lang(
 #endif
 
 static void setting_get_string_representation_uint_menu_thumbnails(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3347,8 +3343,7 @@ static void setting_get_string_representation_uint_menu_thumbnails(
 }
 
 static void setting_get_string_representation_uint_menu_left_thumbnails(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3383,8 +3378,7 @@ static void setting_get_string_representation_uint_menu_left_thumbnails(
 }
 
 static void setting_get_string_representation_uint_menu_icon_thumbnails(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3406,9 +3400,9 @@ static void setting_get_string_representation_uint_menu_icon_thumbnails(
 static void setting_set_string_representation_timedate_date_separator(char *s)
 {
    settings_t *settings                  = config_get_ptr();
-   unsigned menu_timedate_date_separator = settings ?
-         settings->uints.menu_timedate_date_separator :
-         MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
+   unsigned menu_timedate_date_separator = settings
+         ? settings->uints.menu_timedate_date_separator
+         : MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN;
 
    switch (menu_timedate_date_separator)
    {
@@ -3425,8 +3419,7 @@ static void setting_set_string_representation_timedate_date_separator(char *s)
 }
 
 static void setting_get_string_representation_uint_menu_timedate_style(
-   rarch_setting_t *setting,
-   char *s, size_t len)
+   rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3566,8 +3559,7 @@ static void setting_get_string_representation_uint_menu_timedate_style(
 }
 
 static void setting_get_string_representation_uint_menu_timedate_date_separator(
-   rarch_setting_t *setting,
-   char *s, size_t len)
+   rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3587,8 +3579,7 @@ static void setting_get_string_representation_uint_menu_timedate_date_separator(
 }
 
 static void setting_get_string_representation_uint_menu_add_content_entry_display_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3617,8 +3608,7 @@ static void setting_get_string_representation_uint_menu_add_content_entry_displa
 }
 
 static void setting_get_string_representation_uint_menu_contentless_cores_display_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3653,8 +3643,7 @@ static void setting_get_string_representation_uint_menu_contentless_cores_displa
 }
 
 static void setting_get_string_representation_uint_rgui_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3887,8 +3876,7 @@ static void setting_get_string_representation_uint_rgui_menu_color_theme(
 }
 
 static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3917,8 +3905,7 @@ static void setting_get_string_representation_uint_rgui_thumbnail_scaler(
 }
 
 static void setting_get_string_representation_uint_rgui_internal_upscale_level(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3990,8 +3977,7 @@ static void setting_get_string_representation_uint_rgui_internal_upscale_level(
 
 #if !defined(DINGUX)
 static void setting_get_string_representation_uint_rgui_aspect_ratio(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4075,8 +4061,7 @@ static void setting_get_string_representation_uint_rgui_aspect_ratio(
 }
 
 static void setting_get_string_representation_uint_rgui_aspect_ratio_lock(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4112,8 +4097,7 @@ static void setting_get_string_representation_uint_rgui_aspect_ratio_lock(
 #endif
 
 static void setting_get_string_representation_uint_rgui_particle_effect(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4161,8 +4145,7 @@ static void setting_get_string_representation_uint_rgui_particle_effect(
 
 #ifdef HAVE_XMB
 static void setting_get_string_representation_uint_menu_xmb_animation_move_up_down(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4182,8 +4165,7 @@ static void setting_get_string_representation_uint_menu_xmb_animation_move_up_do
 }
 
 static void setting_get_string_representation_uint_menu_xmb_animation_opening_main_menu(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4206,8 +4188,7 @@ static void setting_get_string_representation_uint_menu_xmb_animation_opening_ma
 }
 
 static void setting_get_string_representation_uint_menu_xmb_animation_horizontal_highlight(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4228,8 +4209,7 @@ static void setting_get_string_representation_uint_menu_xmb_animation_horizontal
 #endif
 
 static void setting_get_string_representation_uint_menu_ticker_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4253,8 +4233,7 @@ static void setting_get_string_representation_uint_menu_ticker_type(
 
 #ifdef HAVE_XMB
 static void setting_get_string_representation_uint_xmb_icon_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4313,8 +4292,7 @@ static void setting_get_string_representation_uint_xmb_icon_theme(
 }
 
 static void setting_get_string_representation_uint_xmb_layout(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4334,8 +4312,7 @@ static void setting_get_string_representation_uint_xmb_layout(
 }
 
 static void setting_get_string_representation_uint_xmb_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4468,8 +4445,7 @@ static void setting_get_string_representation_uint_xmb_menu_color_theme(
 
 #ifdef HAVE_MATERIALUI
 static void setting_get_string_representation_uint_materialui_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4602,8 +4578,7 @@ static void setting_get_string_representation_uint_materialui_menu_color_theme(
 }
 
 static void setting_get_string_representation_uint_materialui_menu_transition_animation(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4636,8 +4611,7 @@ static void setting_get_string_representation_uint_materialui_menu_transition_an
 }
 
 static void setting_get_string_representation_uint_materialui_menu_thumbnail_view_portrait(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4670,8 +4644,7 @@ static void setting_get_string_representation_uint_materialui_menu_thumbnail_vie
 }
 
 static void setting_get_string_representation_uint_materialui_menu_thumbnail_view_landscape(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4709,8 +4682,7 @@ static void setting_get_string_representation_uint_materialui_menu_thumbnail_vie
 }
 
 static void setting_get_string_representation_uint_materialui_landscape_layout_optimization(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4740,8 +4712,7 @@ static void setting_get_string_representation_uint_materialui_landscape_layout_o
 
 #ifdef HAVE_OZONE
 static void setting_get_string_representation_uint_ozone_menu_color_theme(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4826,8 +4797,7 @@ static void setting_get_string_representation_uint_ozone_menu_color_theme(
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #if defined(HAVE_XMB) && defined(HAVE_SHADERPIPELINE)
 static void setting_get_string_representation_uint_xmb_shader_pipeline(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4875,8 +4845,7 @@ static void setting_get_string_representation_uint_xmb_shader_pipeline(
 #ifdef HAVE_SCREENSHOTS
 #ifdef HAVE_GFX_WIDGETS
 static void setting_get_string_representation_uint_notification_show_screenshot_duration(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4899,8 +4868,7 @@ static void setting_get_string_representation_uint_notification_show_screenshot_
 }
 
 static void setting_get_string_representation_uint_notification_show_screenshot_flash(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -4922,8 +4890,7 @@ static void setting_get_string_representation_uint_notification_show_screenshot_
 #endif
 
 static void setting_get_string_representation_uint_video_autoswitch_refresh_rate(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;

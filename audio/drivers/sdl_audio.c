@@ -82,30 +82,25 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
 {
    sdl_audio_t  *sdl = (sdl_audio_t*)data;
    size_t      avail = FIFO_READ_AVAIL(sdl->speaker_buffer);
-   size_t write_size = (len > (int)avail) ? avail : (size_t)len;
-
-   fifo_read(sdl->speaker_buffer, stream, write_size);
+   size_t       _len = (len > (int)avail) ? avail : (size_t)len;
+   fifo_read(sdl->speaker_buffer, stream, _len);
 #ifdef HAVE_THREADS
    scond_signal(sdl->cond);
 #endif
-
    /* If underrun, fill rest with silence. */
-   memset(stream + write_size, 0, len - write_size);
+   memset(stream + _len, 0, len - _len);
 }
 
 static INLINE int sdl_audio_find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
-
    /* SDL only likes 2^n sized buffers. */
-
    return next_pow2(frames);
 }
 
 static void *sdl_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
-      unsigned *new_rate)
+      unsigned block_frames, unsigned *new_rate)
 {
    int frames;
    size_t bufsize;
@@ -215,52 +210,52 @@ error:
    return NULL;
 }
 
-static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
+static ssize_t sdl_audio_write(void *data, const void *buf, size_t len)
 {
    ssize_t ret      = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;
 
+   /* If we shouldn't wait for space in a full outgoing sample queue... */
    if (sdl->nonblock)
-   { /* If we shouldn't wait for space in a full outgoing sample queue... */
+   {
       size_t avail, write_amt;
-
       SDL_LockAudioDevice(sdl->speaker_device); /* Stop the SDL speaker thread from running */
-      avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
-      write_amt = avail > size ? size : avail; /* Enqueue as much data as we can */
+      avail     = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
+      write_amt = (avail > len) ? len : avail; /* Enqueue as much data as we can */
       fifo_write(sdl->speaker_buffer, buf, write_amt);
       SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the speaker thread run again */
-      ret = write_amt; /* If the queue was full...well, too bad. */
+      ret       = write_amt; /* If the queue was full...well, too bad. */
    }
    else
    {
       size_t written = 0;
-
-      while (written < size)
-      { /* Until we've written all the sample data we have available... */
+      /* Until we've written all the sample data we have available... */
+      while (written < len)
+      {
          size_t avail;
 
-         SDL_LockAudioDevice(sdl->speaker_device); /* Stop the SDL speaker thread from running */
+         /* Stop the SDL speaker thread from running */
+         SDL_LockAudioDevice(sdl->speaker_device);
          avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
 
+         /* If the outgoing sample queue is full... */
          if (avail == 0)
-         { /* If the outgoing sample queue is full... */
+         {
             SDL_UnlockAudioDevice(sdl->speaker_device);
             /* Let the SDL speaker thread run so it can play the enqueued samples,
              * which will free up space for us to write new ones. */
 #ifdef HAVE_THREADS
             slock_lock(sdl->lock);
             /* Let *only* the SDL speaker thread touch the outgoing sample queue */
-
             scond_wait(sdl->cond, sdl->lock);
             /* Block until SDL tells us that it's made room for new samples */
-
             slock_unlock(sdl->lock);
             /* Now let this thread use the outgoing sample queue (which we'll do next iteration) */
 #endif
          }
          else
          {
-            size_t write_amt = size - written > avail ? avail : size - written;
+            size_t write_amt = len - written > avail ? avail : len - written;
             fifo_write(sdl->speaker_buffer, (const char*)buf + written, write_amt);
             /* Enqueue as many samples as we have available without overflowing the queue */
             SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the SDL speaker thread run again */
@@ -276,9 +271,8 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
 static bool sdl_audio_stop(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   sdl->is_paused = true;
+   sdl->is_paused   = true;
    SDL_PauseAudioDevice(sdl->speaker_device, true);
-
    return true;
 }
 
@@ -293,10 +287,8 @@ static bool sdl_audio_alive(void *data)
 static bool sdl_audio_start(void *data, bool is_shutdown)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   sdl->is_paused = false;
-
+   sdl->is_paused   = false;
    SDL_PauseAudioDevice(sdl->speaker_device, false);
-
    return true;
 }
 
@@ -319,9 +311,7 @@ static void sdl_audio_free(void *data)
       }
 
       if (sdl->speaker_buffer)
-      {
          fifo_free(sdl->speaker_buffer);
-      }
 
 #ifdef HAVE_THREADS
       slock_free(sdl->lock);
@@ -333,18 +323,9 @@ static void sdl_audio_free(void *data)
    free(sdl);
 }
 
-static bool sdl_audio_use_float(void *data)
-{
-   (void)data;
-   return false;
-}
-
-static size_t sdl_audio_write_avail(void *data)
-{
-   /* stub */
-   (void)data;
-   return 0;
-}
+/* TODO/FIXME - implement */
+static bool sdl_audio_use_float(void *data) { return false; }
+static size_t sdl_audio_write_avail(void *data) { return 0; }
 
 audio_driver_t audio_sdl = {
    sdl_audio_init,

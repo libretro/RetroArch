@@ -833,7 +833,9 @@ static int menu_displaylist_parse_core_info(
          /* Show the path that was checked */
 #ifdef IOS
          shortened_path[0] = '\0';
-         fill_pathname_abbreviate_special(shortened_path, firmware_info.directory.system, sizeof(shortened_path));
+         fill_pathname_abbreviate_special(shortened_path,
+               firmware_info.directory.system,
+               sizeof(shortened_path));
          snprintf(tmp, sizeof(tmp),
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
                shortened_path);
@@ -887,7 +889,9 @@ static int menu_displaylist_parse_core_info(
 
                   core_info_list_hide[j] = true;
                   __len = strlcpy(tmp, "- ", sizeof(tmp));
-                  strlcpy(tmp + __len, core_info->note_list->elems[j].data + pos, sizeof(tmp) - __len);
+                  strlcpy(      tmp + __len,
+                        core_info->note_list->elems[j].data + pos,
+                        sizeof(tmp) - __len);
 
                   if (menu_entries_append(list, tmp, "",
                         MENU_ENUM_LABEL_CORE_INFO_ENTRY,
@@ -925,7 +929,8 @@ static int menu_displaylist_parse_core_info(
       tmp[++_len] = '\0';
 #if IOS
       shortened_path[0] = '\0';
-      fill_pathname_abbreviate_special(shortened_path, core_path, sizeof(shortened_path));
+      fill_pathname_abbreviate_special(shortened_path,
+            core_path, sizeof(shortened_path));
       strlcpy(tmp + _len, shortened_path, sizeof(tmp) - _len);
 #else
       strlcpy(tmp + _len, core_path, sizeof(tmp) - _len);
@@ -2653,7 +2658,6 @@ static int create_string_list_rdb_entry_string(
       const char *label,
       const char *actual_string,
       const char *path,
-      size_t path_len,
       file_list_t *list)
 {
    char tmp[128];
@@ -2679,9 +2683,7 @@ static int create_string_list_rdb_entry_string(
 static int create_string_list_rdb_entry_int(
       enum msg_hash_enums enum_idx,
       const char *desc, const char *label,
-      int actual_int,
-      const char *path, size_t path_len,
-      file_list_t *list)
+      int actual_int, const char *path, file_list_t *list)
 {
    size_t _len;
    char str[16];
@@ -2733,7 +2735,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       menu_displaylist_info_t *info)
 {
    size_t _len;
-   size_t path_len;
    unsigned i, j, k;
    char query[256];
    char path_base[NAME_MAX_LENGTH];
@@ -2882,15 +2883,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                0, 0, 0, NULL);
       }
 
-      path_len = strlen(info->path);
-
       if (db_info_entry->publisher)
       {
          if (create_string_list_rdb_entry_string(
                   MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER),
-                  db_info_entry->publisher, info->path, path_len, info->list) == -1)
+                  db_info_entry->publisher, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2900,7 +2899,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY),
-                  db_info_entry->category, info->path, path_len, info->list) == -1)
+                  db_info_entry->category, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2910,7 +2909,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_LANGUAGE),
-                  db_info_entry->language, info->path, path_len, info->list) == -1)
+                  db_info_entry->language, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2920,7 +2919,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_REGION,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_REGION),
-                  db_info_entry->region, info->path, path_len, info->list) == -1)
+                  db_info_entry->region, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2930,7 +2929,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_SCORE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SCORE),
-                  db_info_entry->score, info->path, path_len, info->list) == -1)
+                  db_info_entry->score, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2940,7 +2939,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_MEDIA,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_MEDIA),
-                  db_info_entry->media, info->path, path_len, info->list) == -1)
+                  db_info_entry->media, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2950,7 +2949,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CONTROLS),
-                  db_info_entry->controls, info->path, path_len, info->list) == -1)
+                  db_info_entry->controls, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2960,7 +2959,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ARTSTYLE),
-                  db_info_entry->artstyle, info->path, path_len, info->list) == -1)
+                  db_info_entry->artstyle, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2970,7 +2969,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_GAMEPLAY),
-                  db_info_entry->gameplay, info->path, path_len, info->list) == -1)
+                  db_info_entry->gameplay, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2980,7 +2979,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_NARRATIVE),
-                  db_info_entry->narrative, info->path, path_len, info->list) == -1)
+                  db_info_entry->narrative, info->path, info->list) == -1)
             goto error;
       }
 
@@ -2990,7 +2989,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_PACING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PACING),
-                  db_info_entry->pacing, info->path, path_len, info->list) == -1)
+                  db_info_entry->pacing, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3000,7 +2999,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PERSPECTIVE),
-                  db_info_entry->perspective, info->path, path_len, info->list) == -1)
+                  db_info_entry->perspective, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3010,7 +3009,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_SETTING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SETTING),
-                  db_info_entry->setting, info->path, path_len, info->list) == -1)
+                  db_info_entry->setting, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3020,7 +3019,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_VISUAL,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_VISUAL),
-                  db_info_entry->visual, info->path, path_len, info->list) == -1)
+                  db_info_entry->visual, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3030,7 +3029,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR),
-                  db_info_entry->vehicular, info->path, path_len, info->list) == -1)
+                  db_info_entry->vehicular, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3048,7 +3047,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                         MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
                         val_rdb_entry_dev, rdb_entry_dev,
                         db_info_entry->developer->elems[k].data,
-                        info->path, path_len, info->list) == -1)
+                        info->path, info->list) == -1)
                   goto error;
             }
          }
@@ -3060,7 +3059,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ORIGIN),
-                  db_info_entry->origin, info->path, path_len, info->list) == -1)
+                  db_info_entry->origin, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3070,7 +3069,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_FRANCHISE),
-                  db_info_entry->franchise, info->path, path_len, info->list) == -1)
+                  db_info_entry->franchise, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3080,8 +3079,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_MAX_USERS),
-                  db_info_entry->max_users,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->max_users, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3091,8 +3089,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_TGDB_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_TGDB_RATING),
-                  db_info_entry->tgdb_rating,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->tgdb_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3102,8 +3099,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING),
-                  db_info_entry->famitsu_magazine_rating,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->famitsu_magazine_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3113,7 +3109,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW),
-                  db_info_entry->edge_magazine_review, info->path, path_len, info->list) == -1)
+                  db_info_entry->edge_magazine_review, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3123,8 +3119,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_RATING),
-                  db_info_entry->edge_magazine_rating,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->edge_magazine_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3134,8 +3129,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE),
-                  db_info_entry->edge_magazine_issue,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->edge_magazine_issue, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3145,8 +3139,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_MONTH),
-                  db_info_entry->releasemonth,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->releasemonth, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3156,8 +3149,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RELEASE_YEAR),
-                  db_info_entry->releaseyear,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->releaseyear, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3167,7 +3159,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING),
-                  db_info_entry->bbfc_rating, info->path, path_len, info->list) == -1)
+                  db_info_entry->bbfc_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3177,7 +3169,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING),
-                  db_info_entry->esrb_rating, info->path, path_len, info->list) == -1)
+                  db_info_entry->esrb_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3187,7 +3179,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING),
-                  db_info_entry->elspa_rating, info->path, path_len, info->list) == -1)
+                  db_info_entry->elspa_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3197,7 +3189,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING),
-                  db_info_entry->pegi_rating, info->path, path_len, info->list) == -1)
+                  db_info_entry->pegi_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3207,7 +3199,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW),
-                  db_info_entry->enhancement_hw, info->path, path_len, info->list) == -1)
+                  db_info_entry->enhancement_hw, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3217,7 +3209,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CERO_RATING),
-                  db_info_entry->cero_rating, info->path, path_len, info->list) == -1)
+                  db_info_entry->cero_rating, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3227,7 +3219,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_SERIAL,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SERIAL),
-                  db_info_entry->serial, info->path, path_len, info->list) == -1)
+                  db_info_entry->serial, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3237,7 +3229,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_ANALOG,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ANALOG),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, path_len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path,
                   info->list) == -1)
             goto error;
       }
@@ -3248,7 +3240,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_RUMBLE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_RUMBLE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, path_len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path,
                   info->list) == -1)
             goto error;
       }
@@ -3259,7 +3251,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_COOP,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_COOP),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, path_len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path,
                   info->list) == -1)
             goto error;
       }
@@ -3270,7 +3262,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_ACHIEVEMENTS),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, path_len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path,
                   info->list) == -1)
             goto error;
       }
@@ -3281,7 +3273,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CONSOLE_EXCLUSIVE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, path_len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path,
                   info->list) == -1)
             goto error;
       }
@@ -3292,7 +3284,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_PLATFORM_EXCLUSIVE),
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path, path_len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TRUE), info->path,
                   info->list) == -1)
             goto error;
       }
@@ -3306,8 +3298,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_CRC32,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CRC32),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_CRC32),
-                  crc_str,
-                  info->path, path_len, info->list) == -1)
+                  crc_str, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3317,8 +3308,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_SHA1,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SHA1),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_SHA1),
-                  db_info_entry->sha1,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->sha1, info->path, info->list) == -1)
             goto error;
       }
 
@@ -3328,8 +3318,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                   MENU_ENUM_LABEL_RDB_ENTRY_MD5,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MD5),
                   msg_hash_to_str(MENU_ENUM_LABEL_RDB_ENTRY_MD5),
-                  db_info_entry->md5,
-                  info->path, path_len, info->list) == -1)
+                  db_info_entry->md5, info->path, info->list) == -1)
             goto error;
       }
    }
@@ -6560,7 +6549,7 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
       unsigned type)
 {
    unsigned i;
-   unsigned           count     = 0;
+   unsigned count = 0;
    struct string_list *list     = cdrom_get_available_drives();
    const char *msg_drive_number = msg_hash_to_str(MSG_DRIVE_NUMBER);
 
@@ -6594,8 +6583,7 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
 
 static unsigned menu_displaylist_populate_subsystem(
       const struct retro_subsystem_info* subsystem,
-      settings_t *settings,
-      file_list_t *list)
+      settings_t *settings, file_list_t *list)
 {
    char star_char[16];
    unsigned count           = 0;

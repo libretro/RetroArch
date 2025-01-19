@@ -345,7 +345,7 @@ typedef struct xmb_handle
    video_font_raster_block_t raster_block2;
 
    size_t (*word_wrap)(
-         char *dst, size_t dst_size,
+         char *s, size_t len,
          const char *src, size_t src_len,
          int line_width, int wideglyph_width, unsigned max_lines);
 
@@ -1168,12 +1168,7 @@ static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
                dir_dynamic_wallpapers,
                xmb->title_name,
                sizeof(path));
-
-      path[  _len] = '.';
-      path[++_len] = 'p';
-      path[++_len] = 'n';
-      path[++_len] = 'g';
-      path[++_len] = '\0';
+      strlcpy(path + _len, ".png", sizeof(path) - _len);
    }
 
    if (!string_is_empty(path) && path_is_valid(path))
@@ -4458,9 +4453,13 @@ static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animat
       size_t bottom_fade_line_index = bottom_fade_line_offset % (lines.size + 1);
       /* Is line valid? */
       if (top_fade_line_index < lines.size)
-         strlcpy(line_ticker->top_fade_str, lines.elems[top_fade_line_index].data, line_ticker->top_fade_str_len);
+         strlcpy(line_ticker->top_fade_str,
+               lines.elems[top_fade_line_index].data,
+               line_ticker->top_fade_str_len);
       if (bottom_fade_line_index < lines.size)
-         strlcpy(line_ticker->bottom_fade_str, lines.elems[bottom_fade_line_index].data, line_ticker->bottom_fade_str_len);
+         strlcpy(line_ticker->bottom_fade_str,
+               lines.elems[bottom_fade_line_index].data,
+               line_ticker->bottom_fade_str_len);
    }
 
    success                  = true;
@@ -4596,7 +4595,8 @@ static int xmb_draw_item(
    {
       char entry_path[PATH_MAX_LENGTH];
       strlcpy(entry_path, entry.path, sizeof(entry_path));
-      fill_pathname(entry_path, path_basename(entry_path), "", sizeof(entry_path));
+      fill_pathname(entry_path, path_basename(entry_path), "",
+            sizeof(entry_path));
       if (!string_is_empty(entry_path))
          strlcpy(entry.path, entry_path, sizeof(entry.path));
    }
@@ -7258,7 +7258,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Use alternative title if available */
    strlcpy(title_truncated,
-         !string_is_empty(xmb->title_name_alt) ? xmb->title_name_alt : xmb->title_name,
+          !string_is_empty(xmb->title_name_alt)
+         ? xmb->title_name_alt
+         : xmb->title_name,
          sizeof(title_truncated));
 
    if (!vertical_fade_factor && selection > 1)
