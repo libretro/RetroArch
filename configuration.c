@@ -6705,7 +6705,7 @@ unsigned input_config_parse_sensor(
    if (config_get_array(conf, s, tmp, sizeof(tmp)))
    {
       if (strcmp(tmp, "nul") != 0){
-         if (*tmp>='0' && *tmp<='5'){
+         if ((*tmp>='0') && (*tmp<='5')){
             if (strcmp(tmp+1,"inv") == 0)
                return (((*tmp)-'0')*2)+1;
             else if (tmp[1] == '\0')
