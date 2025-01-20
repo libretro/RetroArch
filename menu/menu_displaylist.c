@@ -292,7 +292,7 @@ static int filebrowser_parse(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
                MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
-               FILE_TYPE_SCAN_DIRECTORY, 0 ,0);
+               FILE_TYPE_SCAN_DIRECTORY, 0, 0);
 #endif
          break;
       case FILEBROWSER_MANUAL_SCAN_DIR:
@@ -300,14 +300,14 @@ static int filebrowser_parse(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
                MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
-               FILE_TYPE_MANUAL_SCAN_DIRECTORY, 0 ,0);
+               FILE_TYPE_MANUAL_SCAN_DIRECTORY, 0, 0);
          break;
       case FILEBROWSER_SELECT_DIR:
          menu_entries_prepend(info_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
                msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
                MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
-               FILE_TYPE_USE_DIRECTORY, 0 ,0);
+               FILE_TYPE_USE_DIRECTORY, 0, 0);
          break;
       default:
          /* if a core has / in its list of supported extensions, the core
@@ -317,7 +317,7 @@ static int filebrowser_parse(
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
                   msg_hash_to_str(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
                   MSG_UNKNOWN,
-                  FILE_TYPE_PLAIN, 0, FILE_TYPE_USE_DIRECTORY);
+                  FILE_TYPE_USE_DIRECTORY, 0, FILE_TYPE_USE_DIRECTORY);
          break;
    }
 

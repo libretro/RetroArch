@@ -9429,7 +9429,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_menu_wallpaper_load);
             break;
          case FILE_TYPE_USE_DIRECTORY:
-            BIND_ACTION_OK(cbs, action_ok_path_use_directory);
+            if (     cbs->enum_idx == MSG_UNKNOWN
+                  && string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES)))
+               BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
+            else if (cbs->enum_idx == MSG_UNKNOWN
+                  && string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)))
+               BIND_ACTION_OK(cbs, action_ok_disk_image_append);
+            else
+               BIND_ACTION_OK(cbs, action_ok_path_use_directory);
             break;
 #ifdef HAVE_LIBRETRODB
          case FILE_TYPE_SCAN_DIRECTORY:
@@ -9572,17 +9579,17 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case FILE_TYPE_RDB:
             if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
+                  msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
             }
             else if (string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)))
+                  msg_hash_to_str(MENU_ENUM_LABEL_DATABASE_MANAGER_LIST)))
             {
                BIND_ACTION_OK(cbs, action_ok_database_manager_list);
             }
-            /* TODO/FIXME - refactor this */
-            else if (string_is_equal(menu_label, "Horizontal Menu"))
+            else if (string_is_equal(menu_label,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU)))
             {
                BIND_ACTION_OK(cbs, action_ok_database_manager_list);
             }
@@ -9642,9 +9649,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             {
                switch (cbs->enum_idx)
                {
+                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
                   case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
                   case MENU_ENUM_LABEL_FAVORITES:
-                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
                      if (type == FILE_TYPE_IN_CARCHIVE)
                      {
@@ -9669,10 +9676,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (
-                     string_is_equal(menu_label, "deferred_archive_open_detect_core") ||
-                     string_is_equal(menu_label, "downloaded_file_detect_core_list") ||
-                     string_is_equal(menu_label, "favorites")
+               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE))
+                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
+                     || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
                   )
                {
 #ifdef HAVE_COMPRESSION
@@ -9686,11 +9692,11 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                      BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                   }
                }
-               else if (string_is_equal(menu_label, "disk_image_append"))
+               else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DISK_IMAGE_APPEND)))
                {
                   BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                }
-               else if (string_is_equal(menu_label, "subsystem_add"))
+               else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_SUBSYSTEM_ADD)))
                {
                   BIND_ACTION_OK(cbs, action_ok_subsystem_add);
                }
