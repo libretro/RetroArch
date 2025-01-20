@@ -6531,6 +6531,7 @@ static void retroarch_print_help(const char *arg0)
          "\nThe following environment variables are supported:\n\n"
          "  LIBRETRO_ASSETS_DIRECTORY\n"
          "  LIBRETRO_AUTOCONFIG_DIRECTORY\n"
+         "  LIBRETRO_CHEATS_DIRECTORY\n"
          "  LIBRETRO_DATABASE_DIRECTORY\n"
          "  LIBRETRO_DIRECTORY\n"
          "  LIBRETRO_SYSTEM_DIRECTORY\n"
