@@ -2301,6 +2301,8 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_SWITCH_GPU_PROFILE:
          case MENU_ENUM_LABEL_REBOOT:
          case MENU_ENUM_LABEL_SHUTDOWN:
+         case MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG:
+         case MENU_ENUM_LABEL_SAVE_NEW_CONFIG:
          case MENU_ENUM_LABEL_RESET_TO_DEFAULT_CONFIG:
          case MENU_ENUM_LABEL_START_NET_RETROPAD:
          case MENU_ENUM_LABEL_START_VIDEO_PROCESSOR:
