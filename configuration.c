@@ -6705,10 +6705,12 @@ unsigned input_config_parse_sensor(
    if (config_get_array(conf, s, tmp, sizeof(tmp)))
    {
       if (strcmp(tmp, "nul") != 0){
-         if (strcmp(tmp+1,"inv") == 0)
-            return (((*tmp)-0x30)*2)+1;
-         else if (tmp[1] == '\0')
-            return ((*tmp)-0x30)*2;
+         if (*tmp>='0' && *tmp<='5'){
+            if (strcmp(tmp+1,"inv") == 0)
+               return (((*tmp)-'0')*2)+1;
+            else if (tmp[1] == '\0')
+               return ((*tmp)-'0')*2;
+         }
       }
    }
    return id*2;
