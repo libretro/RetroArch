@@ -4118,25 +4118,6 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
    return false;
 }
 
-static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
-{
-   udev_input_t *udev = (udev_input_t*)data;
-
-   if (!udev)
-      return 0.0f;
-
-   switch (id)
-   {
-      case RETRO_SENSOR_ILLUMINANCE:
-         if (udev->illuminance_sensor)
-            return linux_get_illuminance_reading(udev->illuminance_sensor);
-      default:
-         break;
-   }
-
-   return 0.0f;
-}
-
 static bool open_devices(udev_input_t *udev,
       enum udev_input_dev_type type, device_handle_cb cb)
 {

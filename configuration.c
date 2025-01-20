@@ -6464,11 +6464,10 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    for (i = 0; i < RETROPAD_RETRO_SENSOR_LAST; i++){
       /* I am the implementor I get to choose the implementation details */
       char str[256];
-      unsigned bind;
 
       get_config_name_for_sensor(str, sizeof(str), i);
-      bind=input_config_parse_sensor (i,str, config);
-      config_get_ptr()->uints.input_sensor_ids[port][i]=bind;
+      config_get_ptr()->uints.input_sensor_ids[port][i]=
+         input_config_parse_sensor (i,str, config);
    }
 }
 
@@ -6705,6 +6704,7 @@ unsigned input_config_parse_sensor(
    if (config_get_array(conf, s, tmp, sizeof(tmp)))
    {
       if (strcmp(tmp, "nul") != 0){
+         RARCH_DBG("tmp: %s\n", tmp);
          if ((*tmp>='0') && (*tmp<='5')){
             if (strcmp(tmp+1,"inv") == 0)
                return (((*tmp)-'0')*2)+1;
