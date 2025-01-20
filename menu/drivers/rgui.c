@@ -4931,6 +4931,8 @@ static enum rgui_entry_value_type rgui_get_entry_value_type(
                   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
             return RGUI_ENTRY_VALUE_SWITCH_ON;
       }
+      else if (string_is_equal(entry_value, "(RDB)"))
+         return RGUI_ENTRY_VALUE_NONE;
       return RGUI_ENTRY_VALUE_TEXT;
    }
    else if (entry_checked)
