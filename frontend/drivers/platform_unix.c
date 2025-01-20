@@ -1325,6 +1325,7 @@ static void frontend_unix_get_env(int *argc,
    const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
    const char* libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
    const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_cheats_directory = getenv("LIBRETRO_CHEATS_DIRECTORY");
    const char* libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
    const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
    const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
@@ -1904,8 +1905,13 @@ static void frontend_unix_get_env(int *argc,
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
              "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
-         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   if (!string_is_empty(libretro_cheats_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+	       libretro_cheats_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
+             "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
          "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], base_path,

@@ -3571,6 +3571,7 @@ static bool config_load_file(global_t *global,
    char* libretro_directory                        = NULL;
    char* libretro_assets_directory                 = NULL;
    char* libretro_autoconfig_directory             = NULL;
+   char* libretro_cheats_directory                 = NULL;
    char* libretro_database_directory               = NULL;
    char* libretro_system_directory                 = NULL;
    char* libretro_video_filter_directory           = NULL;
@@ -3882,6 +3883,12 @@ static bool config_load_file(global_t *global,
        configuration_set_string(settings,
 				settings->paths.directory_autoconfig,
 				libretro_autoconfig_directory);
+
+   libretro_cheats_directory = getenv("LIBRETRO_CHEATS_DIRECTORY");
+   if (libretro_cheats_directory) /* override configuration value */
+       configuration_set_string(settings,
+				settings->paths.path_cheat_database,
+				libretro_cheats_directory);
 
    libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
    if (libretro_database_directory) /* override configuration value */
