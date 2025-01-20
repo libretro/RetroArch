@@ -198,7 +198,7 @@ static INLINE void convert_yxy_to_rgb(const float* Yxy, float* rgb)
  */
 static INLINE unsigned random_range(unsigned min, unsigned max)
 {
-   return (min == max) ? min : (unsigned)((float)rand() / RAND_MAX * (max + 1 - min) + min);
+   return (min == max) ? min : (unsigned)((float)rand() / (float)RAND_MAX * (max + 1 - min) + min);
 }
 
 #endif
