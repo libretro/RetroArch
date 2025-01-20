@@ -31,6 +31,7 @@
 #include <lists/string_list.h>
 #include <encodings/utf.h>
 #include <retro_inline.h>
+#include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -46,15 +47,17 @@
 #include "../../gfx/gfx_thumbnail_path.h"
 #include "../../gfx/gfx_thumbnail.h"
 
-#include "../../input/input_osk.h"
-
 #include "../../core_info.h"
 #include "../../configuration.h"
-#include "../../audio/audio_driver.h"
-#include "../../tasks/tasks_internal.h"
 #include "../../runtime_file.h"
 #include "../../file_path_special.h"
+#include "../../input/input_osk.h"
 #include "../../list_special.h"
+#include "../../tasks/tasks_internal.h"
+
+#ifdef HAVE_AUDIOMIXER
+#include "../../audio/audio_driver.h"
+#endif
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos_menu.h"
@@ -543,28 +546,31 @@ enum materialui_handle_flags
    MUI_FLAG_NEED_COMPUTE                    = (1 << 1),
    MUI_FLAG_SHOW_MOUSE                      = (1 << 2),
    MUI_FLAG_SHOW_SCREENSAVER                = (1 << 3),
-   MUI_FLAG_IS_PLAYLIST_TAB                 = (1 << 4),
+   MUI_FLAG_IS_PLAYLISTS_TAB                = (1 << 4),
    MUI_FLAG_IS_PLAYLIST                     = (1 << 5),
-   MUI_FLAG_IS_FILE_LIST                    = (1 << 6),
-   MUI_FLAG_IS_DROPDOWN_LIST                = (1 << 7),
-   MUI_FLAG_IS_CORE_UPDATER_LIST            = (1 << 8),
-   MUI_FLAG_LAST_SHOW_NAVBAR                = (1 << 9),
-   MUI_FLAG_LAST_AUTO_ROTATE_NAVBAR         = (1 << 10),
-   MUI_FLAG_MENU_STACK_FLUSHED              = (1 << 11),
+   MUI_FLAG_IS_EXPLORE_LIST                 = (1 << 6),
+   MUI_FLAG_IS_FILE_LIST                    = (1 << 7),
+   MUI_FLAG_IS_DROPDOWN_LIST                = (1 << 8),
+   MUI_FLAG_IS_CORE_UPDATER_LIST            = (1 << 9),
+   MUI_FLAG_LAST_SHOW_NAVBAR                = (1 << 10),
+   MUI_FLAG_LAST_AUTO_ROTATE_NAVBAR         = (1 << 11),
+   MUI_FLAG_MENU_STACK_FLUSHED              = (1 << 12),
    /* Used to track scroll animations */
-   MUI_FLAG_SCROLL_ANIMATION_ACTIVE         = (1 << 12),
-   MUI_FLAG_USE_SMOOTH_TICKER               = (1 << 13),
-   MUI_FLAG_TOUCH_FEEDBACK_UPDATE_SELECTION = (1 << 14),
-   MUI_FLAG_PRIMARY_THUMBNAIL_AVAILABLE     = (1 << 15),
-   MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED     = (1 << 16),
-   MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS      = (1 << 17),
-   MUI_FLAG_SHOW_SELECTION_MARKER_SHADOW    = (1 << 18),
-   MUI_FLAG_STATUSBAR_ENABLED               = (1 << 19),
-   MUI_FLAG_STATUSBAR_CACHED                = (1 << 20),
-   MUI_FLAG_SCROLLBAR_ACTIVE                = (1 << 21),
-   MUI_FLAG_SCROLLBAR_DRAGGED               = (1 << 22),
-   MUI_FLAG_NAVBAR_MENU_NAVIGATION_WRAPPED  = (1 << 23),
-   MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 24)
+   MUI_FLAG_SCROLL_ANIMATION_ACTIVE         = (1 << 13),
+   MUI_FLAG_USE_SMOOTH_TICKER               = (1 << 14),
+   MUI_FLAG_TOUCH_FEEDBACK_UPDATE_SELECTION = (1 << 15),
+   MUI_FLAG_PRIMARY_THUMBNAIL_AVAILABLE     = (1 << 16),
+   MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED     = (1 << 17),
+   MUI_FLAG_PRIMARY_THUMBNAIL_BLOCKED       = (1 << 18),
+   MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED     = (1 << 19),
+   MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS      = (1 << 20),
+   MUI_FLAG_SHOW_SELECTION_MARKER_SHADOW    = (1 << 21),
+   MUI_FLAG_STATUSBAR_ENABLED               = (1 << 22),
+   MUI_FLAG_STATUSBAR_CACHED                = (1 << 23),
+   MUI_FLAG_SCROLLBAR_ACTIVE                = (1 << 24),
+   MUI_FLAG_SCROLLBAR_DRAGGED               = (1 << 25),
+   MUI_FLAG_NAVBAR_MENU_NAVIGATION_WRAPPED  = (1 << 26),
+   MUI_FLAG_COL_DIVIDER_IS_LIST_BG          = (1 << 27)
 };
 
 typedef struct materialui_handle
@@ -4688,6 +4694,8 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    const char *entry_label = NULL;
    float entry_x           = (float)x_offset + node->x;
    float entry_y           = (float)header_height - mui->scroll_y + node->y;
+   float entry_center      = (!(mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED))
+         ? (float)mui->thumbnail_width_max / 2 : 0.0f;
    int usable_width        = (int)node->entry_width - (int)(mui->margin * 2);
    float thumbnail_y       = entry_y + ((float)mui->dip_base_unit_size / 10.0f);
    float divider_y         = thumbnail_y + (float)mui->thumbnail_height_max +
@@ -4740,13 +4748,14 @@ static void materialui_render_menu_entry_playlist_dual_icon(
          userdata,
          video_width,
          video_height,
-         entry_x + (float)mui->margin,
+         entry_x + (float)mui->margin + entry_center,
          thumbnail_y,
          1.0f,
          &mymat);
 
    /* > Secondary thumbnail */
-   materialui_draw_thumbnail(
+   if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
+      materialui_draw_thumbnail(
          mui,
          &node->thumbnails.secondary,
          settings,
@@ -5090,7 +5099,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
             &mymat);
 
       /* Draw secondary */
-      materialui_draw_thumbnail(
+      if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
+         materialui_draw_thumbnail(
             mui,
             secondary_thumbnail,
             settings,
@@ -6576,7 +6586,8 @@ static void materialui_render_fullscreen_thumbnails(materialui_handle_t *mui,
       show_primary_thumbnail =
             (primary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
       show_secondary_thumbnail =
-               (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
+               !(mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED)
+            && (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
             && (secondary_thumbnail->status != GFX_THUMBNAIL_STATUS_MISSING);
 
       if (show_primary_thumbnail)
@@ -7310,8 +7321,8 @@ static void materialui_set_list_view_type(materialui_handle_t *mui,
       mui->list_view_type = MUI_LIST_VIEW_PLAYLIST;
 
       /* Check whether primary thumbnail is enabled */
-      if (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data,
-               GFX_THUMBNAIL_RIGHT))
+      if (     !(mui->flags & MUI_FLAG_PRIMARY_THUMBNAIL_BLOCKED)
+            && gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
       {
          mui->flags |= MUI_FLAG_PRIMARY_THUMBNAIL_AVAILABLE;
          /* Get thumbnail view mode based on current
@@ -7744,6 +7755,12 @@ static bool materialui_force_enable_secondary_thumbnail(
 static void materialui_set_secondary_thumbnail_enable(materialui_handle_t *mui,
       struct menu_state *menu_st, settings_t *settings)
 {
+   if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED)
+   {
+      mui->flags &= ~MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED;
+      return;
+   }
+
    switch (mui->list_view_type)
    {
       case MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_SMALL:
@@ -8616,17 +8633,17 @@ static void materialui_populate_entries(void *data, const char *path,
     * (this requires special handling when
     * scrolling via an alphabet search) */
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
-      mui->flags |=  MUI_FLAG_IS_PLAYLIST_TAB;
+      mui->flags |=  MUI_FLAG_IS_PLAYLISTS_TAB;
    else
-      mui->flags &= ~MUI_FLAG_IS_PLAYLIST_TAB;
+      mui->flags &= ~MUI_FLAG_IS_PLAYLISTS_TAB;
 
    /* Check whether this is the core updater menu
     * (this requires special handling when long
     * pressing an entry) */
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
-      mui->flags        |=   MUI_FLAG_IS_CORE_UPDATER_LIST;
+      mui->flags        |=  MUI_FLAG_IS_CORE_UPDATER_LIST;
    else
-      mui->flags        &= ~(MUI_FLAG_IS_CORE_UPDATER_LIST);
+      mui->flags        &= ~MUI_FLAG_IS_CORE_UPDATER_LIST;
 
    /* Check whether we are currently viewing a playlist,
     * file-browser-type list or dropdown list
@@ -8639,8 +8656,27 @@ static void materialui_populate_entries(void *data, const char *path,
 
    if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST)))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST))
+      )
+   {
       mui->flags |= MUI_FLAG_IS_PLAYLIST;
+      mui->flags &= ~(MUI_FLAG_PRIMARY_THUMBNAIL_BLOCKED
+                    | MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED);
+
+      /* Image playlist must block secondary thumbnail
+       * or the same image will be shown twice */
+      if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST)))
+         mui->flags |= MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED;
+
+      /* Music and video playlists must block both thumbnails
+       * since there is nothing to show */
+      if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
+            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST)))
+         mui->flags |= MUI_FLAG_PRIMARY_THUMBNAIL_BLOCKED | MUI_FLAG_SECONDARY_THUMBNAIL_BLOCKED;
+   }
    else
    {
       /* > All of the following count as a 'file list'
@@ -8703,6 +8739,30 @@ static void materialui_populate_entries(void *data, const char *path,
           && (list->list[0].type == FILE_TYPE_RPL_ENTRY))
          mui->playlist = playlist_get_cached();
    }
+
+#if defined(HAVE_LIBRETRODB)
+   /* Explore list */
+   if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST))
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+      mui->flags |=  MUI_FLAG_IS_EXPLORE_LIST;
+   else
+      mui->flags &= ~MUI_FLAG_IS_EXPLORE_LIST;
+
+   if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
+   {
+      menu_entry_t entry;
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
+      menu_entry_get(&entry, 0, 0, NULL, true);
+
+      /* Quick Menu under Explore list must also be Quick Menu */
+      if (     string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_RUN))
+            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_RESUME_CONTENT))
+            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+         )
+         mui->flags &= ~MUI_FLAG_IS_EXPLORE_LIST;
+   }
+#endif
 
    /* Update navigation bar tabs
     * > Note: We do this regardless of whether
@@ -8834,7 +8894,7 @@ static int materialui_environ(enum menu_environ_cb type, void *data,
             /* If we are currently viewing the playlists tab,
              * the menu must be refreshed (since icon indices
              * may have changed) */
-            if (mui->flags & MUI_FLAG_IS_PLAYLIST_TAB)
+            if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
                menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                                           |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
          }
@@ -9215,7 +9275,7 @@ static enum menu_action materialui_parse_menu_entry_action(
           * > If this is the playlists tab, an alphabet
           *   search is highly ineffective - instead,
           *   interpret this as a 'left' scroll action */
-         if (mui->flags & MUI_FLAG_IS_PLAYLIST_TAB)
+         if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
          {
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
             new_action = MENU_ACTION_LEFT;
@@ -9231,7 +9291,7 @@ static enum menu_action materialui_parse_menu_entry_action(
           * > If this is the playlists tab, an alphabet
           *   search is highly ineffective - instead,
           *   interpret this as a 'right' scroll action */
-         if (mui->flags & MUI_FLAG_IS_PLAYLIST_TAB)
+         if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
          {
             materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
             new_action = MENU_ACTION_RIGHT;
@@ -9244,7 +9304,7 @@ static enum menu_action materialui_parse_menu_entry_action(
          break;
       case MENU_ACTION_SCAN:
          /* - If this is a playlist, 'scan' command is used
-          *   to cycle current thumbnail view
+          *   to randomize current selection
           * - If this is not a playlist, perform default
           *   'scan' action *if* current selection is
           *   on screen */
@@ -9252,12 +9312,79 @@ static enum menu_action materialui_parse_menu_entry_action(
             struct menu_state *menu_st = menu_state_get_ptr();
             size_t selection           = menu_st->selection_ptr;
 
-            if (mui->flags & MUI_FLAG_IS_PLAYLIST)
+            if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
             {
-               settings_t *settings = config_get_ptr();
-               if (settings)
-                  materialui_switch_list_view(mui, menu_st, settings);
+               struct menu_state *menu_st = menu_state_get_ptr();
+               size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+               size_t selection           = menu_st->selection_ptr;
+               size_t new_selection       = random_range(0, selection_total - 1);
+               menu_entry_t entry_new;
+
+               MENU_ENTRY_INITIALIZE(entry_new);
+               menu_entry_get(&entry_new, 0, new_selection, NULL, false);
+               /* Keep randomizing until selection is a fresh playlist */
+               while (new_selection == selection || entry_new.type != FILE_TYPE_PLAYLIST_COLLECTION)
+               {
+                  new_selection = random_range(0, selection_total - 1);
+                  menu_entry_get(&entry_new, 0, new_selection, NULL, false);
+               }
+
+               if (new_selection != selection)
+               {
+                  menu_st->selection_ptr = new_selection;
+                  if (menu_st->driver_ctx->navigation_set)
+                     menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+               }
+
                new_action = MENU_ACTION_NOOP;
+
+#ifdef HAVE_AUDIOMIXER
+               if (new_selection != selection)
+                  audio_driver_mixer_play_scroll_sound(true);
+#endif
+               break;
+            }
+            else if ((mui->flags & MUI_FLAG_IS_PLAYLIST)
+                  || (mui->flags & MUI_FLAG_IS_EXPLORE_LIST))
+            {
+               struct menu_state *menu_st = menu_state_get_ptr();
+               size_t selection_start     = 0;
+               size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+               size_t selection           = menu_st->selection_ptr;
+               size_t new_selection       = selection;
+
+               /* Skip header items (Search Name + Add Additional Filter + Save as View) */
+               if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
+               {
+                  menu_entry_t entry;
+                  MENU_ENTRY_INITIALIZE(entry);
+                  menu_entry_get(&entry, 0, 0, NULL, true);
+
+                  if (entry.type == MENU_SETTINGS_LAST + 1)
+                     selection_start = 1;
+                  else if (entry.type == FILE_TYPE_RDB)
+                     selection_start = 2;
+               }
+
+               new_selection = random_range(selection_start, selection_total - 1);
+
+               while (new_selection == selection && selection_start != selection_total - 1)
+                  new_selection = random_range(selection_start, selection_total - 1);
+
+               if (new_selection != selection)
+               {
+                  menu_st->selection_ptr = new_selection;
+                  if (menu_st->driver_ctx->navigation_set)
+                     menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+                  materialui_auto_select_onscreen_entry(mui, MUI_ONSCREEN_ENTRY_CENTRE);
+               }
+
+               new_action = MENU_ACTION_NOOP;
+
+#ifdef HAVE_AUDIOMIXER
+               if (new_selection != selection)
+                  audio_driver_mixer_play_scroll_sound(true);
+#endif
             }
             else if (!materialui_entry_onscreen(mui, selection))
                new_action = MENU_ACTION_NOOP;
@@ -9313,8 +9440,20 @@ static enum menu_action materialui_parse_menu_entry_action(
             struct menu_state *menu_st = menu_state_get_ptr();
             size_t selection           = menu_st->selection_ptr;
 
-            if (   (mui->flags & MUI_FLAG_IS_PLAYLIST)
-                || !materialui_entry_onscreen(mui, selection))
+            /* - If this is a playlist, 'info' command is used
+             *   to cycle current thumbnail view
+             * - If this is not a playlist, perform default
+             *   'info' action *if* current selection is
+             *   on screen */
+
+            if (mui->flags & MUI_FLAG_IS_PLAYLIST)
+            {
+               settings_t *settings = config_get_ptr();
+               if (settings)
+                  materialui_switch_list_view(mui, menu_st, settings);
+               new_action = MENU_ACTION_NOOP;
+            }
+            else if (!materialui_entry_onscreen(mui, selection))
                new_action = MENU_ACTION_NOOP;
          }
          break;

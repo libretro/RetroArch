@@ -93,6 +93,9 @@ typedef struct menu_input_ctx_bind
 extern u32 __nx_applet_type;
 #endif
 
+/* Accelerated navigation buttons */
+#define NAVIGATION_BUTTONS 9
+
 struct key_desc key_descriptors[RARCH_MAX_KEYS] =
 {
    {RETROK_FIRST,         "Unmapped"},
@@ -5240,7 +5243,7 @@ unsigned menu_event(
    unsigned ok_trigger                             = ok_current & ~ok_old;
    static unsigned navigation_initial              = 0;
    unsigned navigation_current                     = 0;
-   unsigned navigation_buttons[8]                  =
+   unsigned navigation_buttons[NAVIGATION_BUTTONS] =
    {
       RETRO_DEVICE_ID_JOYPAD_UP,
       RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -5249,7 +5252,8 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_L,
       RETRO_DEVICE_ID_JOYPAD_R,
       RETRO_DEVICE_ID_JOYPAD_L2,
-      RETRO_DEVICE_ID_JOYPAD_R2
+      RETRO_DEVICE_ID_JOYPAD_R2,
+      RETRO_DEVICE_ID_JOYPAD_Y
    };
 
    ok_old                                          = ok_current;
@@ -5374,7 +5378,7 @@ unsigned menu_event(
    }
 
    /* Accelerate only navigation buttons */
-   for (i = 0; i < 6; i++)
+   for (i = 0; i < NAVIGATION_BUTTONS; i++)
    {
       if (BIT256_GET_PTR(p_input, navigation_buttons[i]))
          navigation_current        |= (1 << navigation_buttons[i]);
@@ -5406,7 +5410,7 @@ unsigned menu_event(
       if (delay_count >= delay_timer)
       {
          uint32_t input_repeat      = 0;
-         for (i = 0; i < 6; i++)
+         for (i = 0; i < NAVIGATION_BUTTONS; i++)
             BIT32_SET(input_repeat, navigation_buttons[i]);
 
          p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;

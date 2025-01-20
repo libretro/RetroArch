@@ -24,6 +24,7 @@
 #define _LIBRETRO_COMMON_MATH_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
@@ -185,6 +186,19 @@ static INLINE void convert_yxy_to_rgb(const float* Yxy, float* rgb)
    rgb[0]              = dot_product(xyz_rgb[0], xyz);
    rgb[1]              = dot_product(xyz_rgb[1], xyz);
    rgb[2]              = dot_product(xyz_rgb[2], xyz);
+}
+
+/**
+ * Picks a random value between a specified range.
+ *
+ * @param \c min unsigned minimum possible value.
+ * @param \c max unsigned maximum possible value.
+ *
+ * @return unsigned random value between \c min and \c max (inclusive).
+ */
+static INLINE unsigned random_range(unsigned min, unsigned max)
+{
+   return (min == max) ? min : (unsigned)((float)rand() / (float)RAND_MAX * (max + 1 - min) + min);
 }
 
 #endif
