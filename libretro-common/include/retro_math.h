@@ -187,4 +187,17 @@ static INLINE void convert_yxy_to_rgb(const float* Yxy, float* rgb)
    rgb[2]              = dot_product(xyz_rgb[2], xyz);
 }
 
+/**
+ * Picks a random value between a specified range.
+ *
+ * @param \c min unsigned minimum possible value.
+ * @param \c max unsigned maximum possible value.
+ *
+ * @return unsigned random value between \c min and \c max (inclusive).
+ */
+static INLINE unsigned random_range(unsigned min, unsigned max)
+{
+   return (min == max) ? min : (unsigned)((float)rand() / RAND_MAX * (max + 1 - min) + min);
+}
+
 #endif
