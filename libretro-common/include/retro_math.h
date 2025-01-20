@@ -127,7 +127,7 @@ static INLINE float saturate_value(float v)
  *
  * Returns: dot product value (derived from @a and @b).
  **/
-static INLINE float dot_product(const float* a, const float* b) 
+static INLINE float dot_product(const float* a, const float* b)
 {
    return (a[0] * b[0]) + (a[1] * b[1]) + (a[2] * b[2]);
 }
@@ -141,7 +141,7 @@ static INLINE float dot_product(const float* a, const float* b)
  *
  * Returns: Yxy colour space value (derived from @rgb).
  **/
-static INLINE void convert_rgb_to_yxy(const float* rgb, float* Yxy) 
+static INLINE void convert_rgb_to_yxy(const float* rgb, float* Yxy)
 {
    float inv;
    float xyz[3];
@@ -157,11 +157,11 @@ static INLINE void convert_rgb_to_yxy(const float* rgb, float* Yxy)
    xyz[2]              = dot_product(rgb_xyz[2], rgb);
 
    inv                 = 1.0f / dot_product(xyz, one);
-   Yxy[0]              = xyz[1]; 
+   Yxy[0]              = xyz[1];
    Yxy[1]              = xyz[0] * inv;
    Yxy[2]              = xyz[1] * inv;
 }
- 
+
 /**
  * convert_yxy_to_rgb:
  * @rgb         : in Yxy colour space value
@@ -196,9 +196,9 @@ static INLINE void convert_yxy_to_rgb(const float* Yxy, float* rgb)
  *
  * @return unsigned random value between \c min and \c max (inclusive).
  */
-static INLINE unsigned random_range(unsigned min, unsigned max)
+static INLINE size_t random_range(unsigned min, unsigned max)
 {
-   return (min == max) ? min : (unsigned)((float)rand() / (float)RAND_MAX * (max + 1 - min) + min);
+   return (min == max) ? min : (size_t)((float)rand() / (float)RAND_MAX * (max + 1 - min) + min);
 }
 
 #endif
