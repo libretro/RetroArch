@@ -24,6 +24,7 @@
 #define _LIBRETRO_COMMON_MATH_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
