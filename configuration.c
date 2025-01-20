@@ -4994,6 +4994,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
 
       config_set_string(conf, key, btn);
       save_keybind_joykey (conf, prefix, base, bind, true);
+      save_keybind_axis   (conf, prefix, base, bind, true);
       save_keybind_mbutton(conf, prefix, base, bind, true);
    }
 }
