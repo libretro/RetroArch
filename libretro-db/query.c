@@ -59,9 +59,7 @@ struct argument;
 
 typedef struct rmsgpack_dom_value (*rarch_query_func)(
       struct rmsgpack_dom_value input,
-      unsigned argc,
-      const struct argument *argv
-      );
+      unsigned argc, const struct argument *argv);
 
 struct invocation
 {
@@ -775,6 +773,7 @@ static struct buffer query_parse_table(
       *error = s;
       goto clean;
    }
+
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
 
@@ -900,7 +899,7 @@ void libretrodb_query_free(void *q)
 }
 
 void *libretrodb_query_compile(libretrodb_t *db,
-      const char *query, size_t buff_len, const char **error_string)
+      const char *query, size_t len, const char **error_string)
 {
    struct buffer buff;
    /* TODO/FIXME - static local variable */
@@ -917,7 +916,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
    q->root.argv          = NULL;
 
    buff.data             = query;
-   buff.len              = buff_len;
+   buff.len              = len;
    buff.offset           = 0;
    *error_string         = NULL;
 

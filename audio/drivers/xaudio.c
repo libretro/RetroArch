@@ -192,7 +192,7 @@ static void xaudio2_free(xaudio2_t *handle)
 }
 
 static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
-      size_t size, const char *device)
+      size_t len, const char *device)
 {
    int32_t idx_found        = -1;
    WAVEFORMATEX wfx         = {0};
@@ -292,7 +292,7 @@ static xaudio2_t *xaudio2_new(unsigned samplerate, unsigned channels,
    if (!handle->hEvent)
       goto error;
 
-   handle->bufsize = size / MAX_BUFFERS;
+   handle->bufsize = len / MAX_BUFFERS;
    handle->buf     = (uint8_t*)calloc(1, handle->bufsize * MAX_BUFFERS);
    if (!handle->buf)
       goto error;

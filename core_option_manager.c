@@ -754,8 +754,8 @@ static bool core_option_manager_parse_variable(
          const char *value   = option->vals->elems[i].data;
          uint32_t value_hash = *((uint32_t*)option->vals->elems[i].userdata);
 
-         if ((value_hash == entry_value_hash) &&
-             string_is_equal(value, entry->value))
+         if (   (value_hash == entry_value_hash)
+             && string_is_equal(value, entry->value))
          {
             option->index = i;
             break;
@@ -928,9 +928,9 @@ static bool core_option_manager_parse_option(
     *   match an entry in the categories array
     * > Category key cannot contain a map delimiter
     *   character */
-   if (opt->cats &&
-       !string_is_empty(category_key) &&
-       !strstr(category_key, ":"))
+   if (    opt->cats
+       && !string_is_empty(category_key)
+       && !strstr(category_key, ":"))
    {
       for (i = 0; i < opt->cats_size; i++)
       {
@@ -960,8 +960,8 @@ static bool core_option_manager_parse_option(
    {
       /* If option has a category, option key
        * cannot contain a map delimiter character */
-      if (!string_is_empty(option->category_key) &&
-          strstr(key, ":"))
+      if (  !string_is_empty(option->category_key)
+          && strstr(key, ":"))
          return false;
 
       option->key      = strdup(key);
