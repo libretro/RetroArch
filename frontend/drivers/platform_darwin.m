@@ -454,7 +454,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
              application_data
        );
        NSString *bundleVersionString = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
-       NSInteger bundleVersion = [bundleVersionString integerValue];
+       NSInteger bundleVersion = [bundleVersionString integerValue] || 1;
        configuration_set_uint(settings, settings->uints.bundle_assets_extract_version_current, (uint)bundleVersion);
     }
 
