@@ -200,10 +200,7 @@ void pipewire_core_deinit(pipewire_core_t *pw)
       return pw_deinit();
 
    if (pw->thread_loop)
-   {
-      pw_thread_loop_unlock(pw->thread_loop);
       pw_thread_loop_stop(pw->thread_loop);
-   }
 
    if (pw->registry)
       pw_proxy_destroy((struct pw_proxy*)pw->registry);
@@ -218,7 +215,8 @@ void pipewire_core_deinit(pipewire_core_t *pw)
    if (pw->ctx)
       pw_context_destroy(pw->ctx);
 
-   pw_thread_loop_destroy(pw->thread_loop);
+   if (pw->thread_loop)
+      pw_thread_loop_destroy(pw->thread_loop);
 
    if (pw->devicelist)
       string_list_free(pw->devicelist);
