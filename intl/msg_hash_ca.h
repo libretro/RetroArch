@@ -719,6 +719,26 @@ MSG_HASH(
    "Compatibilitat amb SDL 2"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Compatibilitat amb el Direct3D 8"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Compatibilitat amb el Direct3D 9"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Compatibilitat amb el Direct3D 10"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Compatibilitat amb el Direct3D 11"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Compatibilitat amb el Direct3D 12"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
    "Compatibilitat amb GDI"
    )
@@ -1742,6 +1762,10 @@ MSG_HASH(
    "Controlador PulseAudio. Si el sistema utilitza PulseAudio, assegura't de fer servir aquest controlador en compte de, p. ex., l'ALSA."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "Controlador PipeWire. Si el sistema utilitza PipeWire, assegura't de fer servir aquest controlador en compte de, p. ex., el PulseAudio."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Controlador del Jack Audio Connection Kit (JACK)."
    )
@@ -1925,6 +1949,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
    "Inserció de fotogrames en negre"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   "ATENCIÓ: El parpelleig ràpid podria causar una persistència de la imatge en algunes pantalles. Utilitza-ho sota el teu propi risc. // Insereix fotogrames en negre entre fotogrames. Pot reduir molt el desenfocament per moviment emulant l'escaneig d'un monitor CRT, en detriment de la brillantor."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,

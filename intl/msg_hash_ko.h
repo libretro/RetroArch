@@ -5998,6 +5998,10 @@ MSG_HASH(
    "OSD 알림 크기"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "폰트 크기(포인트)를 지정합니다. 위젯을 사용하는 경우, 이 크기 설정은 온스크린 통계 표시에만 적용됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "OSD 알림 X 위치"
    )
@@ -14893,11 +14897,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "상태저장을 불러왔습니다. 현재 세션의 하드코어 모드 도전과제는 해제됩니다."
+   "상태저장을 불러왔습니다. 도전과제 하드코어 모드가 현재 세션에서 비활성화되었습니다."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
-   "치트가 활성화 되었습니다. 현재 세션의 하드코어 모드 도전과제는 해제됩니다."
+   "치트가 활성화되었습니다. 도전과제 하드코어 모드가 현재 세션에서 비활성화되었습니다."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
@@ -14905,7 +14909,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
-   "넷플레이 호스트를 업데이트해야 합니다. 도전과제 하드코어 모드가 현재 세션에서 비활성화되었습니다."
+   "넷플레이 호스트가 오래된 버전을 사용 중입니다. 도전과제 하드코어 모드가 현재 세션에서 비활성화되었습니다."
    )
 MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
@@ -14917,7 +14921,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "하드코어 모드 사용 중에는 상태저장 및 뒤로 감기 기능을 이용할 수 없습니다."
+   "도전과제 하드코어 모드 사용 중에는 상태저장 및 뒤로 감기 기능을 이용할 수 없습니다."
    )
 MSG_HASH(
    MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,

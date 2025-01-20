@@ -5918,6 +5918,10 @@ MSG_HASH(
    "Taille des notifications "
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Spécifie la taille de la police en points. Lorsque des widgets sont utilisés, cette taille n'a d'effet que sur l'affichage des statistiques à l'écran."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Position horizontale des notifications "
    )

@@ -5954,6 +5954,10 @@ MSG_HASH(
    "Tamaño de notificaciones"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Especifica el tamaño de la fuente en puntos. Cuando se utilicen los widgets, el tamaño solo se aplicará a las estadísticas en pantalla."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Posición de notificaciones (horizontal)"
    )

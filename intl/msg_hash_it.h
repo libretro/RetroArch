@@ -5878,6 +5878,10 @@ MSG_HASH(
    "Dimensioni delle notifiche su schermo"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Specifica la dimensione del carattere in punti. Quando i widget sono usati, questa dimensione ha effetto solo sul display delle statistiche sullo schermo."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Posizione X delle notifiche su schermo"
    )
