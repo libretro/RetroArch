@@ -173,10 +173,12 @@ end
 
 private_lane :ra_upload_to_testflight do |options|
   if options[:upload].nil? or options[:upload]
+    info = last_git_commit
+    short_hash = info[:abbreviated_commit_hash]
     upload_to_testflight(
       distribute_external: (options[:public].nil? || options[:public]),
       groups: options[:public].nil? || options[:public] ? ['Invaders', 'Patreons'] : [],
-      changelog: "Rebuild frontend from latest master branch and take latest build of all cores."
+      changelog: "Rebuild frontend for commit #{short_hash}"
     )
   end
 end
