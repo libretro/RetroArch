@@ -614,6 +614,7 @@ static bool webdav_read(const char *path, const char *file, cloud_sync_complete_
    char               url[PATH_MAX_LENGTH];
    char               url_encoded[PATH_MAX_LENGTH];
    char              *auth_header;
+   void              *t;
 
    fill_pathname_join_special(url, webdav_st->url, path, sizeof(url));
    net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
@@ -625,9 +626,9 @@ static bool webdav_read(const char *path, const char *file, cloud_sync_complete_
 
    RARCH_DBG("[webdav] GET %s\n", url_encoded);
    auth_header = webdav_get_auth_header("GET", url_encoded);
-   task_push_http_transfer_with_headers(url_encoded, true, NULL, auth_header, webdav_read_cb, webdav_cb_st);
+   t = task_push_http_transfer_with_headers(url_encoded, true, NULL, auth_header, webdav_read_cb, webdav_cb_st);
    free(auth_header);
-   return true;
+   return (t != NULL);
 }
 
 static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
