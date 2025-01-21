@@ -57,7 +57,8 @@ cmake --build . --config Release
 ```
 
 ## Test the lib
-You can test the linux version of this dynamic lib with the prototype app in /app
 
-If you want to use it with RetroArch I added support of the lib in this fork:
-https://github.com/MatPoliquin/RetroArchML
+```
+export LD_LIBRARY_PATH=/path/to/game_ai.so
+./retroarch
+```
