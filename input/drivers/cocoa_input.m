@@ -78,6 +78,11 @@ static UISelectionFeedbackGenerator *feedbackGenerator;
 
 static bool apple_key_state[MAX_KEYS];
 
+void apple_input_keyboard_reset(void)
+{
+   memset(apple_key_state, 0, sizeof(apple_key_state));
+}
+
 /* Send keyboard inputs directly using RETROK_* codes
  * Used by the iOS custom keyboard implementation */
 void apple_direct_input_keyboard_event(bool down,
@@ -743,8 +748,7 @@ static void cocoa_input_free(void *data)
    if (!apple || !data)
       return;
 
-   for (i = 0; i < MAX_KEYS; i++)
-      apple_key_state[i] = 0;
+   memset(apple_key_state, 0, sizeof(apple_key_state));
 
    free(apple);
 }

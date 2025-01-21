@@ -824,7 +824,10 @@ static ui_application_t ui_application_cocoa = {
 }
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification  { }
-- (void)applicationWillResignActive:(NSNotification *)notification { }
+- (void)applicationWillResignActive:(NSNotification *)notification
+{
+   apple_input_keyboard_reset();
+}
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
