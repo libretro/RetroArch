@@ -7,38 +7,25 @@
 #include <stdarg.h>
 
 #ifdef _WIN32
-#include <windows.h> 
+#include <windows.h>
 #else
 #include <dlfcn.h>
 #endif
 
 #define GAME_AI_MAX_PLAYERS 2
 
-#include "GameAILibAPI.h"
+#include "../deps/game_ai_lib/GameAI.h"
 
-class GameAIManager {
-public:
-   GameAIManager();
 
-   signed short int  Input(unsigned int port, unsigned int device, unsigned int idx, unsigned int id, signed short int result);
-   void              Init();
-   void              Load(const char * name, void * ram_ptr, int ram_size, retro_log_printf_t log);
-   void              Think(bool override_p1, bool override_p2, bool show_debug, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format);
-
-private:
-   creategameai_t             CreateGameAI;
-   GameAI *                   ga;
-   volatile void *            g_ram_ptr;
-   volatile int               g_ram_size;
-   volatile signed short int  g_buttons_bits[GAME_AI_MAX_PLAYERS];
-   volatile int               g_frameCount;
-   volatile char              game_ai_lib_path[1024];
-   std::string                g_game_name;
-
-};
-
-GameAIManager        gameAIMgr;
-retro_log_printf_t   g_log;
+creategameai_t             CreateGameAI = nullptr;
+GameAI *                   ga = nullptr;
+volatile void *            g_ram_ptr = nullptr;
+volatile int               g_ram_size = 0;
+volatile signed short int  g_buttons_bits[GAME_AI_MAX_PLAYERS] = {0};
+volatile int               g_frameCount = 0;
+volatile char              game_ai_lib_path[1024] = {0};
+std::string                g_game_name;
+retro_log_printf_t         g_log = nullptr;
 
 //======================================================
 // Helper functions
@@ -65,25 +52,9 @@ void array_to_bits_16(volatile signed short & result, const bool b[16])
 }
 
 //======================================================
-// GameAIManager::GameAIManager
+// Interface to RA
 //======================================================
-GameAIManager::GameAIManager()
-{
-   CreateGameAI = nullptr;
-   ga = nullptr;
-   g_ram_ptr = nullptr;
-   g_ram_size = 0;
-   g_buttons_bits[0] = 0;
-   g_buttons_bits[1] = 0;
-   g_frameCount = 0;
-   game_ai_lib_path[0]='\0';
-   g_log = nullptr;
-}
-
-//======================================================
-// GameAIManager::Input
-//======================================================
-signed short int GameAIManager::Input(unsigned int port, unsigned int device, unsigned int idx, unsigned int id, signed short int result)
+extern "C" signed short int game_ai_input(unsigned int port, unsigned int device, unsigned int idx, unsigned int id, signed short int result)
 {
    if (ga == nullptr)
       return 0;
@@ -94,15 +65,14 @@ signed short int GameAIManager::Input(unsigned int port, unsigned int device, un
    return 0;
 }
 
-//======================================================
-// GameAIManager::Init
-//======================================================
-void GameAIManager::Init()
+extern "C" void game_ai_init()
 {
+   printf("GameAIManager::Init()\n");
+
    if (CreateGameAI == nullptr)
    {
 #ifdef _WIN32
-   HINSTANCE hinstLib; 
+   HINSTANCE hinstLib;
    BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
 
    hinstLib = LoadLibrary(TEXT("game_ai.dll"));
@@ -111,12 +81,12 @@ void GameAIManager::Init()
    char full_module_path[MAX_PATH];
    DWORD dwLen = GetModuleFileNameA(hinstLib, static_cast<char*>(&full_module_path), MAX_PATH);
 
-   if (hinstLib != NULL) 
-   { 
-      CreateGameAI = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI"); 
+   if (hinstLib != NULL)
+   {
+      CreateGameAI = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI");
 
       retro_assert(CreateGameAI);
-   } 
+   }
 #else
       void *myso = dlopen("libgame_ai.so", RTLD_NOW);
       retro_assert(myso);
@@ -132,11 +102,10 @@ void GameAIManager::Init()
    }
 }
 
-//======================================================
-// GameAIManager::Load
-//======================================================
-void GameAIManager::Load(const char *name, void *ram_ptr, int ram_size, retro_log_printf_t log)
+extern "C" void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_log_printf_t log)
 {
+   printf("GameAIManager::Load\n");
+
    g_game_name = name;
 
    g_ram_ptr = ram_ptr;
@@ -145,10 +114,7 @@ void GameAIManager::Load(const char *name, void *ram_ptr, int ram_size, retro_lo
    g_log = log;
 }
 
-//======================================================
-// GameAIManager::Think
-//======================================================
-void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format)
+extern "C" void game_ai_think(bool override_p1, bool override_p2, bool show_debug, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format)
 {
    if (ga)
       ga->SetShowDebug(show_debug);
@@ -198,27 +164,3 @@ void GameAIManager::Think(bool override_p1, bool override_p2, bool show_debug, c
       g_frameCount++;
    }
 }
-
-//======================================================
-// Interface to RA
-//======================================================
-extern "C" signed short int game_ai_input(unsigned int port, unsigned int device, unsigned int idx, unsigned int id, signed short int result)
-{
-   return gameAIMgr.Input(port,device, idx, id, result);
-}
-
-extern "C" void game_ai_init()
-{
-   gameAIMgr.Init();
-}
-
-extern "C" void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_log_printf_t log)
-{
-   gameAIMgr.Load(name, ram_ptr, ram_size, log);
-}
-
-extern "C" void game_ai_think(bool override_p1, bool override_p2, bool show_debug, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format) 
-{
-   gameAIMgr.Think(override_p1, override_p2, show_debug, frame_data, frame_width, frame_height, frame_pitch, pixel_format);
-}
-
