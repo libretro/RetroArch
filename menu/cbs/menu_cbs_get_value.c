@@ -1056,7 +1056,8 @@ static void menu_action_setting_disp_set_label_entry(
 {
    *s = '\0';
    *w = 8;
-   strlcpy(s2, path, len2);
+   if (!string_is_empty(path))
+      strlcpy(s2, path, len2);
 }
 
 #ifdef HAVE_BLUETOOTH
