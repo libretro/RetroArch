@@ -9,7 +9,7 @@
 #include "RetroModel.h"
 
 #ifdef _WIN32
-#include <windows.h> 
+#include <windows.h>
 #else
 #include <dlfcn.h>
 #endif
@@ -31,7 +31,7 @@ Ort::Session session(env, model_path, Ort::SessionOptions{ nullptr });
 ...
 // Run inference
 std::vector outputTensors =
-session.Run(Ort::RunOptions{nullptr}, inputNames.data(), &inputTensor, 
+session.Run(Ort::RunOptions{nullptr}, inputNames.data(), &inputTensor,
   inputNames.size(), outputNames.data(), outputNames.size());
 const float* outputDataPtr = outputTensors[0].GetTensorMutableData();
 std::cout << outputDataPtr[0] << std::endl;
@@ -80,7 +80,7 @@ void test_opencv(std::map<std::string, bool> & tests)
 
     cv::cvtColor(image, grey, cv::COLOR_RGB2GRAY);
     cv::resize(grey, result, cv::Size(84,84), cv::INTER_AREA);
-    
+
     if ( !image.data )
     {
         printf("No image data \n");
@@ -100,19 +100,19 @@ void test_opencv(std::map<std::string, bool> & tests)
 void test_loadlibrary(std::map<std::string, bool> & tests)
 {
     GameAI * ga = nullptr;
-    creategameai_t func = nullptr;
+    create_game_ai_t func = nullptr;
 
 #ifdef _WIN32
-    HINSTANCE hinstLib; 
+    HINSTANCE hinstLib;
     BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
 
     hinstLib = LoadLibrary(TEXT("game_ai.dll"));
 
-    if (hinstLib != NULL) 
-    { 
+    if (hinstLib != NULL)
+    {
         tests["LOAD LIBRARY"] = true;
-        func  = (creategameai_t) GetProcAddress(hinstLib, "CreateGameAI"); 
-    } 
+        func  = (create_game_ai_t) GetProcAddress(hinstLib, "create_game_ai");
+    }
 #else
     void *myso = dlopen("./libgame_ai.so", RTLD_NOW);
 
@@ -122,20 +122,20 @@ void test_loadlibrary(std::map<std::string, bool> & tests)
     {
         tests["LOAD LIBRARY"] = true;
 
-        func = reinterpret_cast<creategameai_t>(dlsym(myso, "CreateGameAI"));        
+        func = reinterpret_cast<create_game_ai_t>(dlsym(myso, "create_game_ai"));
     }
 #endif
         if(func)
         {
             tests["GET CREATEGAME FUNC"] = true;
-            ga = func("./data/NHL941on1-Genesis/NHL941on1.md");
+            ga = (GameAI *) func("./data/NHL941on1-Genesis/NHL941on1.md");
 
             if(ga)
                 tests["CREATEGAME FUNC"] = true;
         }
 
 #ifdef _WIN32
-    fFreeResult = FreeLibrary(hinstLib); 
+    fFreeResult = FreeLibrary(hinstLib);
 #endif
 }
 
@@ -197,6 +197,6 @@ int main()
         const char * result = i.second ? "PASS" : "FAIL";
         std::cout << i.first << "..." << result << std::endl;
     }
-    
+
     return 0;
 }

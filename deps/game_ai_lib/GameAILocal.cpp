@@ -14,13 +14,37 @@
 
 
 //=======================================================
-// CreateGameAI
+// C API
 //=======================================================
-extern "C"  DllExport GameAI * CreateGameAI(const char * name)
+extern "C" DllExport void game_ai_lib_init(void * obj_ptr, void * ram_ptr, int ram_size)
+{
+  if (obj_ptr)
+    static_cast<GameAI*>(obj_ptr)->Init(ram_ptr, ram_size);
+}
+
+extern "C" DllExport void game_ai_lib_think(void * obj_ptr,bool buttons[GAMEAI_MAX_BUTTONS], int player, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format)
+{
+  if (obj_ptr)
+    static_cast<GameAI*>(obj_ptr)->Think(buttons, player, frame_data, frame_width, frame_height, frame_pitch, pixel_format);
+}
+
+extern "C" DllExport void game_ai_lib_set_show_debug(void * obj_ptr,const bool show)
+{
+    if (obj_ptr)
+      static_cast<GameAI*>(obj_ptr)->SetShowDebug(show);
+}
+
+extern "C" DllExport void game_ai_lib_set_debug_log(void * obj_ptr,debug_log_t func)
+{
+    if (obj_ptr)
+      static_cast<GameAI*>(obj_ptr)->SetDebugLog(func);
+}
+
+extern "C"  DllExport void * create_game_ai(const char * name)
 {
     std::filesystem::path path = name;
     std::string game_name = path.parent_path().filename().string();
-    
+
     GameAILocal * ptr = nullptr;
 
     if(game_name == "NHL941on1-Genesis")
@@ -43,7 +67,7 @@ extern "C"  DllExport GameAI * CreateGameAI(const char * name)
       ptr->DebugPrint(game_name.c_str());
     }
 
-  return (GameAI *) ptr;
+  return (void *) ptr;
 }
 
 //=======================================================
@@ -57,7 +81,7 @@ void GameAILocal::InitRAM(void * ram_ptr, int ram_size)
     //retro_data.load()
     //std::cout << memDataPath << std::endl;
     retro_data.load(memDataPath.string());
-    
+
     Retro::AddressSpace* m_addressSpace = nullptr;
     m_addressSpace = &retro_data.addressSpace();
 	  m_addressSpace->reset();
@@ -90,7 +114,7 @@ void GameAILocal::LoadConfig_Player(const nlohmann::detail::iter_impl<const nloh
         if (models.count(model.key()) == 0)
         {
           models.insert(std::pair<std::string, RetroModel*>(model.key(), load_model));
-        }        
+        }
       }
     }
   }
