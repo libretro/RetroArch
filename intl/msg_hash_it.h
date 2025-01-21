@@ -10169,6 +10169,10 @@ MSG_HASH(
    "Ciclo miniature"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Selezione casuale"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Indietro"
    )

@@ -5942,6 +5942,10 @@ MSG_HASH(
    "Розмір сповіщень"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Вкажіть розмір шрифту в точках. Коли віджети використовуються, цей розмір впливає лише на екранний дисплеї статистики."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Позиція сповіщень (по горизонталі)"
    )
@@ -10239,6 +10243,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
    "Зациклити мініатюри"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Випадковий вибір"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,

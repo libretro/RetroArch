@@ -9073,6 +9073,10 @@ MSG_HASH(
    "Kierrä pienoiskuvia"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Satunnainen valinta"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Takaisin"
    )

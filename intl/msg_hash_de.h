@@ -5842,6 +5842,10 @@ MSG_HASH(
    "Benachrichtigungs-Schriftgröße"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Gibt die Schriftgröße in Punkten an. Wenn Widgets verwendet werden, wirkt sich diese Größe nur auf die Anzeige der Statistiken auf dem Bildschirm aus."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Benachrichtigungs-Position (horizontal)"
    )
@@ -10067,6 +10071,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
    "Miniaturansichten umlaufend"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Zufällig auswählen"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,

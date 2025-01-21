@@ -8989,6 +8989,10 @@ MSG_HASH(
    "Cykl miniatury"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Losowy wybór"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Cofnij"
    )

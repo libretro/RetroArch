@@ -10301,6 +10301,10 @@ MSG_HASH(
    "Пераключыць эскізы"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Выпадковы выбар"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Назад"
    )

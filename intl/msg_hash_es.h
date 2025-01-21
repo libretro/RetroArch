@@ -10273,6 +10273,10 @@ MSG_HASH(
    "Intercambiar miniaturas"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Selección aleatoria"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Volver"
    )
