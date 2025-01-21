@@ -77,12 +77,12 @@ static void capture_process_cb(void *data)
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
       RARCH_ERR("[Microphone] [PipeWire]: Out of buffers: %s\n", strerror(errno));
-      return;
+      return pw_thread_loop_signal(mic->pw->thread_loop, false);
    }
 
    buf = b->buffer;
    if ((p = buf->datas[0].data) == NULL)
-      goto done;
+      return pw_thread_loop_signal(mic->pw->thread_loop, false);
 
    offs    = MIN(buf->datas[0].chunk->offset, buf->datas[0].maxsize);
    n_bytes = MIN(buf->datas[0].chunk->size, buf->datas[0].maxsize - offs);
@@ -102,7 +102,6 @@ static void capture_process_cb(void *data)
    idx += n_bytes;
    spa_ringbuffer_write_update(&mic->ring, idx);
 
-done:
    pw_stream_queue_buffer(mic->stream, b);
    pw_thread_loop_signal(mic->pw->thread_loop, false);
 }
@@ -209,7 +208,7 @@ static int pipewire_microphone_read(void *driver_context, void *mic_context, voi
 
    pw_thread_loop_lock(pw->thread_loop);
 
-   while (len)
+   for (;;)
    {
       /* get no of available bytes to read data from buffer */
       readable = spa_ringbuffer_get_read_index(&mic->ring, &idx);
@@ -224,7 +223,10 @@ static int pipewire_microphone_read(void *driver_context, void *mic_context, voi
 
          pw_thread_loop_wait(pw->thread_loop);
          if (pw_stream_get_state(mic->stream, &error) != PW_STREAM_STATE_STREAMING)
+         {
+            pw_thread_loop_unlock(mic->pw->thread_loop);
             return -1;
+         }
       }
       else
          break;

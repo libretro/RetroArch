@@ -66,12 +66,12 @@ static void playback_process_cb(void *data)
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
    {
       RARCH_WARN("[Audio] [PipeWire]: Out of buffers: %s\n", strerror(errno));
-      return;
+      return pw_thread_loop_signal(audio->pw->thread_loop, false);
    }
 
    buf = b->buffer;
    if ((p = buf->datas[0].data) == NULL)
-      goto done;
+      return pw_thread_loop_signal(audio->pw->thread_loop, false);
 
    /* calculate the total no of bytes to read data from buffer */
    n_bytes = buf->datas[0].maxsize;
@@ -100,7 +100,6 @@ static void playback_process_cb(void *data)
    buf->datas[0].chunk->stride = audio->frame_size;
    buf->datas[0].chunk->size   = n_bytes;
 
-done:
    pw_stream_queue_buffer(audio->stream, b);
    pw_thread_loop_signal(audio->pw->thread_loop, false);
 }
@@ -263,7 +262,7 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
 
    pw_thread_loop_lock(audio->pw->thread_loop);
 
-   while (len)
+   for (;;)
    {
       filled = spa_ringbuffer_get_write_index(&audio->ring, &idx);
       avail = audio->highwater_mark - filled;
@@ -285,7 +284,10 @@ static ssize_t pipewire_write(void *data, const void *buf_, size_t len)
 
          pw_thread_loop_wait(audio->pw->thread_loop);
          if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
+         {
+            pw_thread_loop_unlock(audio->pw->thread_loop);
             return -1;
+         }
       }
       else
          break;
@@ -316,15 +318,21 @@ static bool pipewire_stop(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    const char       *error = NULL;
+   bool                res = false;
 
    if (!audio || !audio->pw)
       return false;
 
    if (pw_stream_get_state(audio->stream, &error) == PW_STREAM_STATE_STREAMING)
-      return  pipewire_stream_set_active(audio->pw->thread_loop, audio->stream, false);
+      res =  pipewire_stream_set_active(audio->pw->thread_loop, audio->stream, false);
+   else
+      /* For other states we assume that the stream is inactive */
+      res = true;
 
-   /* For other states we assume that the stream is inactive */
-   return true;
+   spa_ringbuffer_read_update(&audio->ring, 0);
+   spa_ringbuffer_write_update(&audio->ring, 0);
+
+   return res;
 }
 
 static bool pipewire_start(void *data, bool is_shutdown)
@@ -380,8 +388,10 @@ static void pipewire_free(void *data)
 
    if (audio->stream)
    {
+      pw_thread_loop_lock(audio->pw->thread_loop);
       pw_stream_destroy(audio->stream);
       audio->stream = NULL;
+      pw_thread_loop_unlock(audio->pw->thread_loop);
    }
    pipewire_core_deinit(audio->pw);
    free(audio);
