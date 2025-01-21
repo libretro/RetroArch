@@ -2227,6 +2227,10 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("gcdwebserver_alert",            &settings->bools.gcdwebserver_alert, true, true, false);
 #endif
 
+#ifdef HAVE_GAME_AI
+   SETTING_BOOL("quick_menu_show_game_ai",  &settings->bools.quick_menu_show_game_ai, true, 1, false);
+#endif
+
    *size = count;
 
    return tmp;

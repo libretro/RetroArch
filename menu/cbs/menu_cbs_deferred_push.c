@@ -294,6 +294,10 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_information_steam_list,    DISPLAYLIST_
 
 GENERIC_DEFERRED_PUSH(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
 
+#ifdef HAVE_GAME_AI
+GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIST_OPTIONS_GAME_AI)
+#endif
+
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
@@ -951,6 +955,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST, deferred_push_lakka_list},
 #endif
        {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST, deferred_push_add_to_playlist_list},
+
+#ifdef HAVE_GAME_AI
+      {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS, deferred_push_core_game_ai_options},
+#endif
    };
 
    if (!string_is_equal(label, "null"))
@@ -1415,6 +1423,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_list);
             break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_game_ai_options);
+            break;
+#endif
          default:
             return -1;
       }

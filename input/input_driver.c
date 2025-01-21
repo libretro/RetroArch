@@ -61,6 +61,8 @@
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
+#include "../ai/game_ai.h"
+
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Depends on ASCII character values */
@@ -6880,6 +6882,17 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
             idx,
             id,
             result);
+#endif
+
+#ifdef HAVE_GAME_AI
+   if(settings->bools.game_ai_override_p1 && port == 0)
+   {
+      result |= game_ai_input(port, device, idx, id, result);
+   }
+   if(settings->bools.game_ai_override_p2 && port == 1)
+   {
+      result |= game_ai_input(port, device, idx, id, result);
+   }
 #endif
 
    return result;

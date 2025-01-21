@@ -209,6 +209,10 @@
 
 #include "accessibility.h"
 
+#ifdef HAVE_GAME_AI
+#include "ai/game_ai.h"
+#endif
+
 #if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
 #include "SDL.h"
 #endif
@@ -7905,6 +7909,12 @@ bool retroarch_main_init(int argc, char *argv[])
       preempt_init(runloop_st);
 #endif
 
+#ifdef HAVE_GAME_AI
+   game_ai_init();
+#endif
+
+
+
    return true;
 
 error:
@@ -8443,6 +8453,10 @@ bool retroarch_main_quit(void)
    runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_MENU
    retroarch_menu_running_finished(true);
+#endif
+
+#ifdef HAVE_GAME_AI
+   game_ai_shutdown();
 #endif
 
    return true;
