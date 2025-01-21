@@ -56,19 +56,29 @@ enum bodytype
    T_CHUNK
 };
 
-struct http_socket_state_t
+struct conn_pool_entry
 {
-   void *ssl_ctx;
+   char *domain;
+   int port;
    int fd;
+   void *ssl_ctx;
    bool ssl;
    bool connected;
+   bool in_use;
+   struct conn_pool_entry *next;
 };
+
+static struct conn_pool_entry *conn_pool = NULL;
+#ifdef HAVE_THREADS
+static slock_t *conn_pool_lock = NULL;
+#endif
 
 struct http_t
 {
    bool error;
 
-   struct http_socket_state_t sock_state;
+   struct conn_pool_entry *conn;
+   bool ssl;
    bool request_sent;
 
    struct request
@@ -731,6 +741,192 @@ static struct dns_cache_entry *net_http_dns_cache_add(const char *domain, int po
    return entry;
 }
 
+static void net_http_conn_pool_free(struct conn_pool_entry *entry)
+{
+   if (entry->ssl && entry->ssl_ctx)
+   {
+      ssl_socket_close(entry->ssl_ctx);
+      ssl_socket_free(entry->ssl_ctx);
+   }
+   if (entry->fd >= 0)
+      socket_close(entry->fd);
+   free(entry->domain);
+   free(entry);
+}
+
+static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
+{
+   struct conn_pool_entry *prev = NULL;
+   struct conn_pool_entry *current;
+   if (!entry)
+      return;
+#ifdef HAVE_THREADS
+   slock_lock(conn_pool_lock);
+#endif
+   current = conn_pool;
+   while (current)
+   {
+      if (current == entry)
+      {
+         if (prev)
+            prev->next = current->next;
+         else
+            conn_pool = current->next;
+         net_http_conn_pool_free(current);
+#ifdef HAVE_THREADS
+         slock_unlock(conn_pool_lock);
+#endif
+         return;
+      }
+      prev = current;
+      current = current->next;
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(conn_pool_lock);
+#endif
+}
+
+/* *NOT* thread safe, caller must lock */
+static void net_http_conn_pool_remove_expired(void)
+{
+   struct conn_pool_entry *entry = conn_pool;
+   struct conn_pool_entry *prev = NULL;
+   struct timeval tv = { 0 };
+   int max = 0;
+   fd_set fds;
+   FD_ZERO(&fds);
+   entry = conn_pool;
+   while (entry)
+   {
+      if (!entry->in_use)
+      {
+         FD_SET(entry->fd, &fds);
+         if (entry->fd >= max)
+            max = entry->fd + 1;
+      }
+      entry = entry->next;
+   }
+   if (select(max, &fds, NULL, NULL, &tv) <= 0)
+      return;
+   entry = conn_pool;
+   while (entry)
+   {
+      if (!entry->in_use && FD_ISSET(entry->fd, &fds))
+      {
+         char buf[4096];
+         bool error = false;
+         ssize_t recv;
+#ifdef HAVE_SSL
+         if (entry->ssl && entry->ssl_ctx)
+            recv = ssl_socket_receive_all_nonblocking(entry->ssl_ctx, &error, buf, sizeof(buf));
+         else
+#endif
+            recv = socket_receive_all_nonblocking(entry->fd, &error, buf, sizeof(buf));
+
+         if (!error)
+            continue;
+
+         if (prev)
+            prev->next = entry->next;
+         else
+            conn_pool = entry->next;
+         /* if it's not in use and it's reaadable we assume that means it's closed without checking recv */
+         net_http_conn_pool_free(entry);
+         entry = prev ? prev->next : conn_pool;
+      }
+      else
+      {
+         prev = entry;
+         entry = entry->next;
+      }
+   }
+}
+
+/* if it's not already in the pool, will add to end.
+   *NOT* thread safe, caller must lock */
+static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
+{
+   struct conn_pool_entry *prev = NULL;
+   struct conn_pool_entry *current = conn_pool;
+   /* 0 items in pool */
+   if (!conn_pool)
+   {
+      conn_pool = entry;
+      entry->next = NULL;
+      return;
+   }
+   /* already only item in pool */
+   if (conn_pool == entry && !conn_pool->next)
+      return;
+   while (current)
+   {
+      if (current != entry)
+         prev = current;
+      else
+      {
+         /* need to remove current */
+         if (prev)
+            prev->next = current->next;
+         else
+            conn_pool = current->next;
+      }
+      current = current->next;
+   }
+   prev->next = entry;
+   entry->next = NULL;
+}
+
+static struct conn_pool_entry *net_http_conn_pool_find(const char *domain, int port)
+{
+   struct conn_pool_entry *entry;
+
+#ifdef HAVE_THREADS
+   slock_lock(conn_pool_lock);
+#endif
+
+   net_http_conn_pool_remove_expired();
+
+   entry = conn_pool;
+   while (entry)
+   {
+      if (!entry->in_use && port == entry->port && string_is_equal(entry->domain, domain))
+      {
+         entry->in_use = true;
+         net_http_conn_pool_move_to_end(entry);
+#ifdef HAVE_THREADS
+         slock_unlock(conn_pool_lock);
+#endif
+         return entry;
+      }
+      entry = entry->next;
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(conn_pool_lock);
+#endif
+   return NULL;
+}
+
+static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int port, int fd, bool ssl)
+{
+   struct conn_pool_entry *entry = (struct conn_pool_entry*)calloc(1, sizeof(*entry));
+   if (!entry)
+      return NULL;
+   entry->domain = strdup(domain);
+   entry->port = port;
+   entry->fd = fd;
+   entry->in_use = true;
+   entry->ssl = ssl;
+   entry->connected = false;
+#ifdef HAVE_THREADS
+   slock_lock(conn_pool_lock);
+#endif
+   net_http_conn_pool_move_to_end(entry);
+#ifdef HAVE_THREADS
+   slock_unlock(conn_pool_lock);
+#endif
+   return entry;
+}
+
 struct http_t *net_http_new(struct http_connection_t *conn)
 {
    struct http_t *state;
@@ -742,8 +938,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (!state)
       return NULL;
 
-   state->sock_state.ssl  = conn->ssl;
-   state->sock_state.fd   = -1;
+   state->ssl  = conn->ssl;
+   state->conn = NULL;
 
    state->request.domain        = strdup(conn->domain);
    state->request.path          = strdup(conn->path);
@@ -760,7 +956,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.port          = conn->port;
 
    state->response.status  = -1;
-   state->response.buflen  = 512; /* todo: this seems small */
+   state->response.buflen  = 512; /* this typically only needs to be big enough for headers */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
    string_list_initialize(state->response.headers);
@@ -842,19 +1038,21 @@ static bool net_http_new_socket(struct http_t *state)
    {
       if (entry->valid)
       {
+         int fd;
          if (!entry->addr)
          {
             slock_unlock(dns_cache_lock);
             return false;
          }
          addr = entry->addr;
-         state->sock_state.fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-         state->sock_state.connected = false;
+         fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+         if (fd >= 0)
+            state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
 #ifdef HAVE_THREADS
          /* still waiting on thread */
          slock_unlock(dns_cache_lock);
 #endif
-         return (state->sock_state.fd >= 0);
+         return (fd >= 0);
       }
       else
       {
@@ -887,20 +1085,22 @@ static bool net_http_new_socket(struct http_t *state)
 static bool net_http_connect(struct http_t *state)
 {
    struct addrinfo *addr = NULL, *next_addr = NULL;
-   struct dns_cache_entry *entry = net_http_dns_cache_find(state->request.domain, state->request.port);
+   struct conn_pool_entry *conn = state->conn;
+   struct dns_cache_entry *dns_entry = net_http_dns_cache_find(state->request.domain, state->request.port);
    /* we just used/added this in _new_socket above, if it's not there it's a big bug */
-   addr = entry->addr;
+   addr = dns_entry->addr;
 
 #ifdef HAVE_SSL
-   if (state->sock_state.ssl)
+   if (state->ssl)
    {
-      if (state->sock_state.fd < 0)
+      if (!conn || conn->fd < 0)
          return false;
 
-      if (!(state->sock_state.ssl_ctx = ssl_socket_init(state->sock_state.fd, state->request.domain)))
+      if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
       {
-         socket_close(state->sock_state.fd);
-         state->sock_state.fd = -1;
+         net_http_conn_pool_remove(conn);
+         state->conn = NULL;
+         state->error = true;
          return false;
       }
 
@@ -915,33 +1115,36 @@ static bool net_http_connect(struct http_t *state)
          timeout = false;
 #endif
 
-      if (ssl_socket_connect(state->sock_state.ssl_ctx, addr, timeout, true) < 0)
+      if (ssl_socket_connect(conn->ssl_ctx, addr, timeout, true) < 0)
       {
-         socket_close(state->sock_state.fd);
-         state->sock_state.fd = -1;
+         net_http_conn_pool_remove(conn);
+         state->conn = NULL;
+         state->error = true;
          return false;
       }
       else
       {
-         state->sock_state.connected = true;
+         conn->connected = true;
          return true;
       }
    }
    else
 #endif
    {
-      for (next_addr = addr; state->sock_state.fd >= 0; state->sock_state.fd = socket_next((void**)&next_addr))
+      for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
-         if (socket_connect_with_timeout(state->sock_state.fd, next_addr, 5000))
+         if (socket_connect_with_timeout(conn->fd, next_addr, 5000))
          {
-            state->sock_state.connected = true;
+            conn->connected = true;
             return true;
-            break;
          }
 
-         socket_close(state->sock_state.fd);
+         socket_close(conn->fd);
       }
-      state->sock_state.fd = -1;
+      conn->fd = -1; /* already closed */
+      net_http_conn_pool_remove(conn);
+      state->conn = NULL;
+      state->error = true;
       return false;
    }
 }
@@ -952,17 +1155,17 @@ static void net_http_send_str(
    if (state->error)
       return;
 #ifdef HAVE_SSL
-   if (state->sock_state.ssl)
+   if (state->ssl)
    {
       if (!ssl_socket_send_all_blocking(
-                  state->sock_state.ssl_ctx, text, text_size, true))
+                  state->conn->ssl_ctx, text, text_size, true))
          state->error = true;
    }
    else
 #endif
    {
       if (!socket_send_all_blocking(
-                  state->sock_state.fd, text, text_size, true))
+                  state->conn->fd, text, text_size, true))
          state->error = true;
    }
 }
@@ -1053,7 +1256,6 @@ static bool net_http_send_request(struct http_t *state)
       net_http_send_str(state, "libretro", STRLEN_CONST("libretro"));
    net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
 
-   net_http_send_str(state, "Connection: close\r\n", STRLEN_CONST("Connection: close\r\n"));
    net_http_send_str(state, "\r\n", STRLEN_CONST("\r\n"));
 
    if (request->postdata && request->contentlength)
@@ -1073,9 +1275,9 @@ static bool net_http_send_request(struct http_t *state)
  **/
 int net_http_fd(struct http_t *state)
 {
-   if (!state)
+   if (!state || !state->conn)
       return -1;
-   return state->sock_state.fd;
+   return state->conn->fd;
 }
 
 /**
@@ -1095,14 +1297,18 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (state->error)
       return true;
 
-   if (state->sock_state.fd < 0 && state->response.part < P_DONE)
+   if (!state->conn)
    {
-      if (!net_http_new_socket(state))
-         state->error = true;
-      return state->error;
+      state->conn = net_http_conn_pool_find(state->request.domain, state->request.port);
+      if (!state->conn)
+      {
+         if (!net_http_new_socket(state))
+            state->error = true;
+         return state->error;
+      }
    }
 
-   if (!state->sock_state.connected)
+   if (!state->conn->connected)
    {
       if (!net_http_connect(state))
          state->error = true;
@@ -1117,13 +1323,13 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (response->part < P_BODY)
    {
 #ifdef HAVE_SSL
-      if (state->sock_state.ssl && state->sock_state.ssl_ctx)
-         newlen = ssl_socket_receive_all_nonblocking(state->sock_state.ssl_ctx, &state->error,
+      if (state->ssl && state->conn->ssl_ctx)
+         newlen = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->error,
                (uint8_t*)response->data + response->pos,
                response->buflen - response->pos);
       else
 #endif
-         newlen = socket_receive_all_nonblocking(state->sock_state.fd, &state->error,
+         newlen = socket_receive_all_nonblocking(state->conn->fd, &state->error,
                (uint8_t*)response->data + response->pos,
                response->buflen - response->pos);
 
@@ -1213,16 +1419,16 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          else if (response->len)
          {
 #ifdef HAVE_SSL
-            if (state->sock_state.ssl && state->sock_state.ssl_ctx)
+            if (state->ssl && state->conn->ssl_ctx)
                newlen = ssl_socket_receive_all_nonblocking(
-                     state->sock_state.ssl_ctx,
+                     state->conn->ssl_ctx,
                      &state->error,
                      (uint8_t*)response->data + response->pos,
                      response->buflen - response->pos);
             else
 #endif
                newlen = socket_receive_all_nonblocking(
-                     state->sock_state.fd,
+                     state->conn->fd,
                      &state->error,
                      (uint8_t*)response->data + response->pos,
                      response->buflen - response->pos);
@@ -1332,9 +1538,22 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (response->part != P_DONE)
       return false;
 
+   for (newlen = 0; newlen < response->headers->size; newlen++)
+   {
+      if (string_is_equal_case_insensitive(response->headers->elems[newlen].data, "connection: close"))
+      {
+         net_http_conn_pool_remove(state->conn);
+         state->conn = NULL;
+         return true;
+      }
+   }
+
+   state->conn->in_use = false;
+   state->conn = NULL;
    return true;
 
 error:
+   net_http_conn_pool_remove(state->conn);
    state->error     = true;
    response->part   = P_DONE;
    response->status = -1;
@@ -1414,19 +1633,8 @@ void net_http_delete(struct http_t *state)
    if (!state)
       return;
 
-   if (state->sock_state.fd >= 0)
-   {
-#ifdef HAVE_SSL
-      if (state->sock_state.ssl && state->sock_state.ssl_ctx)
-      {
-         ssl_socket_close(state->sock_state.ssl_ctx);
-         ssl_socket_free(state->sock_state.ssl_ctx);
-         state->sock_state.ssl_ctx = NULL;
-      }
-      else
-#endif
-      socket_close(state->sock_state.fd);
-   }
+   if (state->conn)
+      net_http_conn_pool_remove(state->conn);
    if (state->request.domain)
       free(state->request.domain);
    if (state->request.path)
