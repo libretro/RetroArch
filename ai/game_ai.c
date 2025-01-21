@@ -46,9 +46,7 @@ void game_ai_debug_log(int level, const char *fmt, ...)
    va_start(vp, fmt);
 
    if (g_log)
-   {
       g_log((enum retro_log_level)level, fmt, vp);
-   }
 
    va_end(vp);
 }
@@ -142,7 +140,10 @@ extern void game_ai_shutdown()
    if (g_lib_handle)
    {
       if (ga)
+      {
          destroy_game_ai(ga);
+         ga = NULL;
+      }
 #ifdef _WIN32
       FreeLibrary(g_lib_handle);
 #else
@@ -161,7 +162,10 @@ extern void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_
    g_log = log;
 
    if (ga)
+   {
       destroy_game_ai(ga);
+      ga = NULL;
+   }
 }
 
 extern void game_ai_think(bool override_p1, bool override_p2, bool show_debug, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format)
