@@ -34,6 +34,7 @@ private:
 #endif
 
 typedef void * (*create_game_ai_t)(const char *);
+typedef void (*destroy_game_ai_t)(void * obj_ptr);
 typedef void (*game_ai_lib_init_t)(void * obj_ptr, void * ram_ptr, int ram_size);
 typedef void (*game_ai_lib_think_t)(void * obj_ptr, bool buttons[GAMEAI_MAX_BUTTONS], int player, const void *frame_data, unsigned int frame_width, unsigned int frame_height, unsigned int frame_pitch, unsigned int pixel_format);
 typedef void (*game_ai_lib_set_show_debug_t)(void * obj_ptr, const bool show);

@@ -8434,6 +8434,10 @@ bool retroarch_main_quit(void)
    retroarch_menu_running_finished(true);
 #endif
 
+#ifdef HAVE_GAME_AI
+   game_ai_shutdown();
+#endif
+
    return true;
 }
 

@@ -70,6 +70,16 @@ extern "C"  DllExport void * create_game_ai(const char * name)
   return (void *) ptr;
 }
 
+extern "C"  DllExport void destroy_game_ai(void * obj_ptr)
+{
+  if (obj_ptr)
+  {
+    GameAILocal * gaLocal = nullptr;
+    gaLocal = static_cast<GameAILocal*>(obj_ptr);
+    delete gaLocal;
+  }
+}
+
 //=======================================================
 // GameAILocal::InitRAM
 //=======================================================
