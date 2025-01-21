@@ -1682,3 +1682,10 @@ CLOUD SYNC
 #include "../network/cloud_sync_driver.c"
 #include "../network/cloud_sync/webdav.c"
 #endif
+
+/*============================================================
+GAME AI
+============================================================ */
+#if defined(HAVE_GAME_AI)
+#include "../ai/game_ai.c"
+#endif

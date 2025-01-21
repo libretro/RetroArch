@@ -1,15 +1,21 @@
 #pragma once
 
+#ifdef __cplusplus
+
 #include <bitset>
 #include <string>
 #include <filesystem>
 #include <vector>
 #include <queue>
 
+#endif
+
+
 typedef void (*debug_log_t)(int level, const char *fmt, ...);
 
 #define GAMEAI_MAX_BUTTONS 16
 #define GAMEAI_SKIPFRAMES 4
+
 
 #ifdef __cplusplus
 
