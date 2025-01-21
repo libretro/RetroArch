@@ -4142,42 +4142,44 @@ void video_driver_frame(const void *data, unsigned width,
                " Blocking:    %5.2f %%\n"
                " Samples:  %8d\n"
                ,
-            video_st->frame_cache_width,
-            video_st->frame_cache_height,
-            av_info->geometry.base_width,
-            av_info->geometry.base_height,
-            av_info->geometry.max_width,
-            av_info->geometry.max_height,
-            av_info->geometry.aspect_ratio,
-            av_info->timing.fps,
-            av_info->timing.sample_rate,
-            video_st->current_video->ident,
-            video_info.width,
-            video_info.height,
-            video_info.scale_width,
-            video_info.scale_height,
-            (float)video_info.scale_width  / ((rotation % 2) ? (float)video_st->frame_cache_height : (float)video_st->frame_cache_width),
-            (float)video_info.scale_height / ((rotation % 2) ? (float)video_st->frame_cache_width : (float)video_st->frame_cache_height),
-            video_info.refresh_rate,
-            last_fps,
-            frame_time / 1000.0f,
-            100.0f * stddev,
-            video_st->frame_count,
-            video_st->frame_drop_count,
-            audio_state_get_ptr()->current_audio->ident,
-            audio_stats.average_buffer_saturation,
-            audio_stats.std_deviation_percentage,
-            audio_stats.close_to_underrun,
-            audio_stats.close_to_blocking,
-            audio_stats.samples
+               video_st->frame_cache_width,
+               video_st->frame_cache_height,
+               av_info->geometry.base_width,
+               av_info->geometry.base_height,
+               av_info->geometry.max_width,
+               av_info->geometry.max_height,
+               av_info->geometry.aspect_ratio,
+               av_info->timing.fps,
+               av_info->timing.sample_rate,
+               video_st->current_video->ident,
+               video_info.width,
+               video_info.height,
+               video_info.scale_width,
+               video_info.scale_height,
+               (float)video_info.scale_width  / ((rotation % 2)
+                     ? (float)video_st->frame_cache_height : (float)video_st->frame_cache_width),
+               (float)video_info.scale_height / ((rotation % 2)
+                     ? (float)video_st->frame_cache_width : (float)video_st->frame_cache_height),
+               video_info.refresh_rate,
+               last_fps,
+               frame_time / 1000.0f,
+               100.0f * stddev,
+               video_st->frame_count,
+               video_st->frame_drop_count,
+               audio_state_get_ptr()->current_audio->ident,
+               audio_stats.average_buffer_saturation,
+               audio_stats.std_deviation_percentage,
+               audio_stats.close_to_underrun,
+               audio_stats.close_to_blocking,
+               audio_stats.samples
                );
 
-
          /* TODO/FIXME - localize */
-         if (  (video_st->frame_delay_target > 0)
-            || (video_info.runahead && !video_info.runahead_second_instance))
-         __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
-                   sizeof(video_info.stat_text) - __len);
+         if (     (video_st->frame_delay_target > 0)
+               || (video_info.runahead)
+               || (video_info.preemptive_frames))
+            __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
+                  sizeof(video_info.stat_text) - __len);
 
          /* TODO/FIXME - localize */
          if (video_st->frame_delay_target > 0)
