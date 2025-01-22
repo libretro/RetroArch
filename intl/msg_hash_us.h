@@ -15208,6 +15208,14 @@ MSG_HASH(
    "All possible thumbnail downloads were already tried for this playlist entry."
    )
 MSG_HASH(
+   MSG_FETCHING_THUMBNAIL_LIST,
+   "Fetching list of thumbnails on server..."
+   )
+MSG_HASH(
+   MSG_THUMBNAIL_LIST_FAILED,
+   "Failed to retrieve thumbnail list!"
+   )
+MSG_HASH(
    MSG_PRESS_AGAIN_TO_QUIT,
    "Press again to quit..."
    )

@@ -30,6 +30,7 @@
 #include "task_file_transfer.h"
 
 #include "../configuration.h"
+#include "../core_updater_list.h"
 #include "../file_path_special.h"
 #include "../playlist.h"
 #include "../verbosity.h"
@@ -44,9 +45,27 @@
 #endif
 #endif
 
+/* Set to 3 to avoid fetching Named_Logos always */
+#define MAX_THUMBNAIL_TYPE_INDEX 3
+
+typedef struct thumbnail_updater_list_handle
+{
+   thumbnail_updater_list_t* thumbnail_list;
+   retro_task_t *http_task;
+   http_transfer_data_t *http_data;
+   char *system;
+   enum updater_list_status status;
+   bool refresh_menu;
+   bool http_task_finished;
+   bool http_task_complete;
+   bool http_task_success;
+} thumbnail_updater_list_handle_t;
+
 enum pl_thumb_status
 {
    PL_THUMB_BEGIN = 0,
+   PL_THUMB_RETRIEVE_INDEX,
+   PL_THUMB_WAIT_INDEX,
    PL_THUMB_ITERATE_ENTRY,
    PL_THUMB_ITERATE_TYPE,
    PL_THUMB_END
@@ -91,8 +110,6 @@ typedef struct pl_entry_id
 /* Utility Functions */
 /*********************/
 
-/* TODO/FIXME - Disable fetching of Named_Logos so far */
-
 /* Fetches the thumbnail subdirectory (Named_Snaps,
  * Named_Titles, Named_Boxarts, Named_Logos) corresponding to the
  * specified 'type index' (1, 2, 3, 4).
@@ -114,11 +131,9 @@ static bool gfx_thumbnail_get_sub_directory(
       case 3:
          *sub_directory = "Named_Boxarts";
          return true;
-#if 0
       case 4:
          *sub_directory = "Named_Logos";
          return true;
-#endif
       case 0:
       default:
          break;
@@ -243,9 +258,34 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
    raw_url[0]     = '\0';
 
    /* Generate remote path */
-   snprintf(raw_url, raw_url_len, "%s/%s/%s/%s",
-         FILE_PATH_CORE_THUMBNAILS_URL,
-         system_name, sub_dir, img_name);
+   if (!thumbnail_updater_list_is_empty(system_name))
+   {
+      thumbnail_updater_list_t *thumbnail_list = thumbnail_updater_list_get_cached(system_name);
+      const thumbnail_updater_list_entry_t *entry;
+
+      snprintf(raw_url, raw_url_len, "%s/%s", sub_dir, img_name);
+      RARCH_LOG("[Thumbnail]: Trying to find %s thumbnail for %s\n",system_name,raw_url);
+
+      if (thumbnail_updater_list_get_matching_file(
+         thumbnail_list, raw_url, &entry))
+      {
+         RARCH_LOG("[Thumbnail]: Found as %s\n",entry->remote_filename);
+         snprintf(raw_url, raw_url_len, "%s/%s/%s",
+            FILE_PATH_CORE_THUMBNAILS_URL,
+            system_name, entry->remote_filename);
+      }
+      else
+      {
+         raw_url[0] = '\0';
+         RARCH_LOG("[Thumbnail]: Not found in %d entries.\n",thumbnail_updater_list_size(thumbnail_list));
+      }
+   }
+   else
+   {
+      snprintf(raw_url, raw_url_len, "%s/%s/%s/%s",
+            FILE_PATH_CORE_THUMBNAILS_URL,
+            system_name, sub_dir, img_name);
+   }
 
    if (string_is_empty(raw_url))
    {
@@ -407,6 +447,222 @@ static void free_pl_thumb_handle(pl_thumb_handle_t *pl_thumb)
 /* Playlist Thumbnail Download */
 /*******************************/
 
+static void cb_http_task_thumbnail_updater_get_list(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   http_transfer_data_t *data              = (http_transfer_data_t*)task_data;
+   file_transfer_t *transf                 = (file_transfer_t*)user_data;
+   thumbnail_updater_list_handle_t *list_handle = NULL;
+   bool success                            = data && string_is_empty(err);
+
+   if (!transf)
+      goto finish;
+
+   if (!(list_handle = (thumbnail_updater_list_handle_t*)transf->user_data))
+      goto finish;
+
+   task_set_data(task, NULL); /* going to pass ownership to list_handle */
+
+   list_handle->http_data          = data;
+   list_handle->http_task_complete = true;
+   list_handle->http_task_success  = success;
+
+
+finish:
+   /* Log any error messages */
+   if (!success)
+      RARCH_ERR("[thumbnail updater] Download of thumbnail list '%s' failed: %s\n",
+            (transf ? transf->path: "unknown"),
+            (err ? err : "unknown"));
+
+   if (transf)
+      free(transf);
+}
+
+static void free_thumbnail_updater_list_handle(
+      thumbnail_updater_list_handle_t *list_handle)
+{
+   if (list_handle->http_data)
+   {
+      /* since we took ownership, we have to destroy it ourself */
+      if (list_handle->http_data->data)
+         free(list_handle->http_data->data);
+
+      free(list_handle->http_data);
+   }
+   if (list_handle->system)
+      free(list_handle->system);
+
+   free(list_handle);
+   list_handle = NULL;
+}
+
+static void task_thumbnail_updater_get_list_handler(retro_task_t *task)
+{
+   uint8_t flg;
+   thumbnail_updater_list_handle_t *list_handle = NULL;
+
+   if (!task)
+      goto task_finished;
+
+   list_handle = (thumbnail_updater_list_handle_t*)task->state;
+   flg         = task_get_flags(task);
+
+   if (!list_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
+      goto task_finished;
+
+   switch (list_handle->status)
+   {
+      case UPDATER_LIST_BEGIN:
+         {
+            char buildbot_url[PATH_MAX_LENGTH];
+            file_transfer_t *transf      = NULL;
+            char *tmp_url                = NULL;
+            
+            /* Reset thumbnail updater list */
+            thumbnail_updater_list_reset(list_handle->thumbnail_list);
+
+            snprintf(buildbot_url, sizeof(buildbot_url), "%s/%s/%s",
+               FILE_PATH_CORE_THUMBNAILS_URL,
+               list_handle->system,
+               FILE_PATH_INDEX_EXTENDED_URL);
+
+            RARCH_DBG("[Thumbnail]: Thumbnail index url: %s\n",buildbot_url);
+            tmp_url = strdup(buildbot_url);
+            buildbot_url[0] = '\0';
+            net_http_urlencode_full(
+                  buildbot_url, tmp_url, sizeof(buildbot_url));
+            if (tmp_url)
+               free(tmp_url);
+
+            if (string_is_empty(buildbot_url))
+               goto task_finished;
+
+            /* Configure file transfer object */
+            if (!(transf = (file_transfer_t*)calloc(1,
+                        sizeof(file_transfer_t))))
+               goto task_finished;
+
+            /* > Seems to be required - not sure why the
+             *   underlying code is implemented like this... */
+            strlcpy(transf->path, buildbot_url, sizeof(transf->path));
+
+            transf->user_data = (void*)list_handle;
+
+            /* Push HTTP transfer task */
+            list_handle->http_task = (retro_task_t*)
+               task_push_http_transfer_file(
+                  buildbot_url, true, NULL,
+                  cb_http_task_thumbnail_updater_get_list, transf);
+
+            /* Start waiting for HTTP transfer to complete */
+            list_handle->status = UPDATER_LIST_WAIT;
+         }
+         break;
+      case UPDATER_LIST_WAIT:
+         {
+            /* If HTTP task is NULL, then it either finished
+             * or an error occurred - in either case,
+             * just move on to the next state */
+            if (!list_handle->http_task)
+               list_handle->http_task_complete = true;
+            /* Otherwise, check if HTTP task is still running */
+            else if (!list_handle->http_task_finished)
+            {
+               uint8_t _flg = task_get_flags(list_handle->http_task);
+
+               if ((_flg & (RETRO_TASK_FLG_FINISHED)) > 0)
+                  list_handle->http_task_finished = true;
+               else
+                  list_handle->http_task_finished = false;
+
+               /* If HTTP task is running, copy current
+                * progress value to *this* task */
+               if (!list_handle->http_task_finished)
+                  task_set_progress(
+                     task, task_get_progress(list_handle->http_task));
+            }
+
+            /* Wait for task_push_http_transfer_file()
+             * callback to trigger */
+            if (list_handle->http_task_complete)
+            {
+               list_handle->status = UPDATER_LIST_END;
+               task_set_progress(task, 50);
+            }
+         }
+         break;
+      case UPDATER_LIST_END:
+         {
+            settings_t *settings    = config_get_ptr();
+
+            /* Check whether HTTP task was successful */
+            if (list_handle->http_task_success &&
+                list_handle->http_data &&
+                thumbnail_updater_list_parse_network_data(
+                        list_handle->thumbnail_list,
+                        list_handle->http_data->data,
+                        list_handle->http_data->len))
+            {
+               RARCH_DBG("[Thumbnail]: Thumbnail index retrieved successfully\n");
+            }
+            else
+            {
+               /* Notify user of error via task title */
+               task_free_title(task);
+               task_set_title(task, strdup(msg_hash_to_str(MSG_THUMBNAIL_LIST_FAILED)));
+               task_set_error(task, strdup(msg_hash_to_str(MSG_THUMBNAIL_LIST_FAILED)));
+               RARCH_DBG("[Thumbnail]: Thumbnail index retrieval failed\n");
+            }
+
+            /* Enable menu refresh, if required */
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+            if (list_handle->refresh_menu)
+            {
+               struct menu_state *menu_st = menu_state_get_ptr();
+               if (list_handle->refresh_menu)
+                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
+               else
+                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            }
+#endif
+         }
+         /* fall-through */
+      default:
+         task_set_progress(task, 100);
+         goto task_finished;
+   }
+
+   return;
+
+task_finished:
+   if (task)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+
+   if (list_handle)
+      free_thumbnail_updater_list_handle(list_handle);
+}
+
+static bool task_thumbnail_updater_get_list_finder(retro_task_t *task, void *user_data)
+{
+   thumbnail_updater_list_handle_t *list_handle = NULL;
+
+   if (!task || !user_data)
+      return false;
+
+   if (task->handler != task_thumbnail_updater_get_list_handler)
+      return false;
+
+   if (!(list_handle = (thumbnail_updater_list_handle_t*)task->state))
+      return false;
+
+   return (string_is_equal(
+      (const char*)list_handle->system, 
+      (const char*)user_data));
+}
+
+
 static void task_pl_thumbnail_download_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -449,8 +705,36 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
             goto task_finished;
 
          /* All good - can start iterating */
-         pl_thumb->status = PL_THUMB_ITERATE_ENTRY;
+         pl_thumb->status = PL_THUMB_RETRIEVE_INDEX;
          break;
+      case PL_THUMB_RETRIEVE_INDEX:
+         {
+            thumbnail_updater_list_t *thumbnail_list = thumbnail_updater_list_get_cached(pl_thumb->system);
+            if (!thumbnail_list)
+            {
+               thumbnail_updater_list_init_cached(pl_thumb->system);
+               if (!(thumbnail_list = thumbnail_updater_list_get_cached(pl_thumb->system)))
+                  goto task_finished;
+               task_push_get_thumbnail_updater_list(thumbnail_list, pl_thumb->system, false, false);
+               pl_thumb->status = PL_THUMB_WAIT_INDEX;
+            }
+            else
+               /* Skip re-downloading index file */
+               pl_thumb->status = PL_THUMB_ITERATE_ENTRY;
+            break;
+         }
+      case PL_THUMB_WAIT_INDEX:
+         {
+            thumbnail_updater_list_t *thumbnail_list = thumbnail_updater_list_get_cached(pl_thumb->system);
+            task_finder_data_t find_data;
+
+            find_data.func     = task_thumbnail_updater_get_list_finder;
+            find_data.userdata = (void*)thumbnail_list;
+
+            if (!task_queue_find(&find_data))
+               pl_thumb->status = PL_THUMB_ITERATE_ENTRY;
+            break;
+         }
       case PL_THUMB_ITERATE_ENTRY:
          /* Set current thumbnail content */
          if (gfx_thumbnail_set_content_playlist(
@@ -496,8 +780,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
          pl_thumb->http_task = NULL;
 
          /* Check whether all thumbnail types have been processed */
-         /* TODO/FIXME - turn 3 into 4 when we re-enable Named_Logos for fetching */
-         if (pl_thumb->type_idx > 3)
+         if (pl_thumb->type_idx > MAX_THUMBNAIL_TYPE_INDEX)
          {
             next_flag = playlist_get_next_thumbnail_name_flag(pl_thumb->playlist,pl_thumb->list_index);
             if (next_flag == PLAYLIST_THUMBNAIL_FLAG_NONE)
@@ -790,9 +1073,38 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             task_set_title(task, strdup(""));
          task_set_progress(task, 0);
 
-         /* All good - can start iterating */
-         pl_thumb->status = PL_THUMB_ITERATE_TYPE;
+         /* All good - can start */
+         pl_thumb->status = PL_THUMB_RETRIEVE_INDEX;
+         RARCH_DBG("[Thumbnail]: Start individual tn download for %s\n",pl_thumb->system);
          break;
+      case PL_THUMB_RETRIEVE_INDEX:
+         {
+            thumbnail_updater_list_t *thumbnail_list = thumbnail_updater_list_get_cached(pl_thumb->system);
+            if (!thumbnail_list)
+            {
+               thumbnail_updater_list_init_cached(pl_thumb->system);
+               if (!(thumbnail_list = thumbnail_updater_list_get_cached(pl_thumb->system)))
+                  goto task_finished;
+               task_push_get_thumbnail_updater_list(thumbnail_list, pl_thumb->system, flg & RETRO_TASK_FLG_MUTE, false);
+               pl_thumb->status = PL_THUMB_WAIT_INDEX;
+            }
+            else
+               /* Skip re-downloading index file */
+               pl_thumb->status = PL_THUMB_ITERATE_TYPE;
+            break;
+         }
+      case PL_THUMB_WAIT_INDEX:
+         {
+            thumbnail_updater_list_t *thumbnail_list = thumbnail_updater_list_get_cached(pl_thumb->system);
+            task_finder_data_t find_data;
+
+            find_data.func     = task_thumbnail_updater_get_list_finder;
+            find_data.userdata = (void*)pl_thumb->system;
+
+            if (!task_queue_find(&find_data))
+               pl_thumb->status = PL_THUMB_ITERATE_TYPE;
+            break;
+         }
       case PL_THUMB_ITERATE_TYPE:
          {
             /* Ensure that we only enqueue one transfer
@@ -811,7 +1123,7 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
             pl_thumb->http_task = NULL;
 
             /* Check whether all thumbnail types have been processed */
-            if (pl_thumb->type_idx > 3)
+            if (pl_thumb->type_idx > MAX_THUMBNAIL_TYPE_INDEX)
             {
                pl_thumb->status = PL_THUMB_END;
                break;
@@ -890,10 +1202,11 @@ bool task_push_pl_entry_thumbnail_download(
       goto error;
 
    /* Only parse supported playlist types */
-   if (string_ends_with_size(system, "_history",
+   if ((string_ends_with_size(system, "_history",
             strlen(system),
-            STRLEN_CONST("_history")
-            ))
+            STRLEN_CONST("_history")))
+         || string_is_equal(system, "history")
+         || string_is_equal(system, "favorites"))
       goto error;
 
    /* Copy playlist path
@@ -950,7 +1263,7 @@ bool task_push_pl_entry_thumbnail_download(
 
    /* Configure handle
     * > Note: playlist_config is unused by this task */
-   pl_thumb->system              = NULL;
+   pl_thumb->system              = strdup(system);
    pl_thumb->playlist_path       = playlist_path;
    pl_thumb->dir_thumbnails      = strdup(dir_thumbnails);
    pl_thumb->playlist            = NULL;
@@ -1015,4 +1328,73 @@ error:
    }
 
    return false;
+}
+
+void *task_push_get_thumbnail_updater_list(
+      thumbnail_updater_list_t* thumbnail_list, const char* system, bool mute, bool refresh_menu)
+{
+   task_finder_data_t find_data;
+   retro_task_t *task                           = NULL;
+   thumbnail_updater_list_handle_t *list_handle = (thumbnail_updater_list_handle_t*)
+         calloc(1, sizeof(thumbnail_updater_list_handle_t));
+
+   /* Sanity check */
+   if (!thumbnail_list || !list_handle)
+      goto error;
+
+   /* Configure handle */
+   list_handle->thumbnail_list     = thumbnail_list;
+   list_handle->refresh_menu       = refresh_menu;
+   list_handle->system             = strdup(system);
+   list_handle->http_task          = NULL;
+   list_handle->http_task_finished = false;
+   list_handle->http_task_complete = false;
+   list_handle->http_task_success  = false;
+   list_handle->http_data          = NULL;
+   list_handle->status             = UPDATER_LIST_BEGIN;
+
+   /* Concurrent downloads of the buildbot thumbnail listing
+    * to the same thumbnail_updater_list_t object are not
+    * allowed */
+   find_data.func     = task_thumbnail_updater_get_list_finder;
+   find_data.userdata = (void*)system;
+
+   if (task_queue_find(&find_data))
+      goto error;
+
+   /* Create task */
+   if (!(task = task_init()))
+      goto error;
+
+   /* Configure task */
+   task->handler          = task_thumbnail_updater_get_list_handler;
+   task->state            = list_handle;
+   task->title            = strdup(msg_hash_to_str(MSG_FETCHING_THUMBNAIL_LIST));
+   task->progress         = 0;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
+
+   /* Push task */
+   RARCH_DBG("[Thumbnail]: Initiate thumbnail index file download for system \"%s\"\n",list_handle->system);
+   task_queue_push(task);
+
+   return task;
+
+error:
+
+   /* Clean up task */
+   if (task)
+   {
+      free(task);
+      task = NULL;
+   }
+
+   /* Clean up handle */
+   if (list_handle)
+      free_thumbnail_updater_list_handle(list_handle);
+
+   return NULL;
 }

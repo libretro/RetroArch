@@ -37,6 +37,7 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../core_updater_list.h"
+#include "../file_path_special.h"
 
 #if defined(ANDROID)
 #include "../file_path_special.h"
@@ -48,20 +49,12 @@
 #include "../menu/menu_driver.h"
 #endif
 
-/* Get core updater list */
-enum core_updater_list_status
-{
-   CORE_UPDATER_LIST_BEGIN = 0,
-   CORE_UPDATER_LIST_WAIT,
-   CORE_UPDATER_LIST_END
-};
-
 typedef struct core_updater_list_handle
 {
    core_updater_list_t* core_list;
    retro_task_t *http_task;
    http_transfer_data_t *http_data;
-   enum core_updater_list_status status;
+   enum updater_list_status status;
    bool refresh_menu;
    bool http_task_finished;
    bool http_task_complete;
@@ -299,7 +292,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
    switch (list_handle->status)
    {
-      case CORE_UPDATER_LIST_BEGIN:
+      case UPDATER_LIST_BEGIN:
          {
             char buildbot_url[PATH_MAX_LENGTH];
             settings_t *settings         = config_get_ptr();
@@ -320,7 +313,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             fill_pathname_join_special(
                   buildbot_url,
                   net_buildbot_url,
-                  ".index-extended",
+                  FILE_PATH_INDEX_EXTENDED_URL,
                   sizeof(buildbot_url));
 
             tmp_url = strdup(buildbot_url);
@@ -351,10 +344,10 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                   cb_http_task_core_updater_get_list, transf);
 
             /* Start waiting for HTTP transfer to complete */
-            list_handle->status = CORE_UPDATER_LIST_WAIT;
+            list_handle->status = UPDATER_LIST_WAIT;
          }
          break;
-      case CORE_UPDATER_LIST_WAIT:
+      case UPDATER_LIST_WAIT:
          {
             /* If HTTP task is NULL, then it either finished
              * or an error occurred - in either case,
@@ -381,10 +374,10 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             /* Wait for task_push_http_transfer_file()
              * callback to trigger */
             if (list_handle->http_task_complete)
-               list_handle->status = CORE_UPDATER_LIST_END;
+               list_handle->status = UPDATER_LIST_END;
          }
          break;
-      case CORE_UPDATER_LIST_END:
+      case UPDATER_LIST_END:
          {
             settings_t *settings    = config_get_ptr();
 
@@ -479,7 +472,7 @@ void *task_push_get_core_updater_list(
    list_handle->http_task_complete = false;
    list_handle->http_task_success  = false;
    list_handle->http_data          = NULL;
-   list_handle->status             = CORE_UPDATER_LIST_BEGIN;
+   list_handle->status             = UPDATER_LIST_BEGIN;
 
    /* Concurrent downloads of the buildbot core listing
     * to the same core_updater_list_t object are not
