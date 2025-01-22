@@ -10340,3 +10340,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "aturat."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

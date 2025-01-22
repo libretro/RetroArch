@@ -5424,3 +5424,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "stoppet."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

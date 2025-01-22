@@ -13628,3 +13628,10 @@ MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "Toque do mouse está desabilitado"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

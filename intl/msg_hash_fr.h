@@ -10209,6 +10209,10 @@ MSG_HASH(
    "Faire défiler les miniatures"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Sélection aléatoire"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Retour"
    )
@@ -15760,3 +15764,14 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "arrêté."
    )
+#ifdef HAVE_GAME_AI
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
+   "IA du jeu"
+   )
+
+
+
+
+#endif

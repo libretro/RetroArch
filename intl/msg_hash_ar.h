@@ -9704,3 +9704,10 @@ MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "الماوس الفأرة معطل"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

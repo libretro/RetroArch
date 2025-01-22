@@ -15616,3 +15616,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "parou."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

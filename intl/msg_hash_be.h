@@ -15892,3 +15892,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "спынены."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

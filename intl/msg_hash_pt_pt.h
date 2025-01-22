@@ -6248,3 +6248,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "parado."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

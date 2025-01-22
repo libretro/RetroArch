@@ -14344,3 +14344,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "pysäytetty."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

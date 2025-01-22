@@ -13968,3 +13968,26 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "zatrzymano."
    )
+#ifdef HAVE_GAME_AI
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
+   "Gra AI"
+   )
+
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
+   "Zastąp gracza 01"
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+   "Zastąp p2"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
+   "Zastąp gracza 02"
+   )
+
+
+#endif

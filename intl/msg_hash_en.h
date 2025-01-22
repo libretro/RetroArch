@@ -2304,3 +2304,10 @@ MSG_HASH(
    "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated with the Online Updater</li>\n<li>have \"Databases\" updated with the Online Updater</li>\n<li>restart RetroArch if any of the above was just done</li></ul>\nFinally, the content must match existing databases from <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If it is still not working, consider <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>."
    )
 #endif
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

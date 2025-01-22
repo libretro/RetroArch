@@ -15552,3 +15552,10 @@ MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "觸控滑鼠已關閉"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

@@ -15904,3 +15904,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "durduruldu."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

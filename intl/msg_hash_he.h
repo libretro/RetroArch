@@ -1888,3 +1888,10 @@ MSG_HASH(
 #endif
 #ifdef HAVE_QT
 #endif
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

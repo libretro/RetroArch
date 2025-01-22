@@ -15604,3 +15604,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "已停止."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

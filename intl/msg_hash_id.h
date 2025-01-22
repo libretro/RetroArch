@@ -4432,3 +4432,10 @@ MSG_HASH(
    MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
    "Mikrofon sdl2 perlu pengandar audio sdl2"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

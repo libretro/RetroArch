@@ -5986,6 +5986,10 @@ MSG_HASH(
    "Размер уведомлений"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "Устанавливает размер шрифта в пунктах. При включении виджетов значение размера применяется только для отображаемой на экране статистики."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Положение уведомления (по горизонтали)"
    )
@@ -15860,3 +15864,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "остановлен."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

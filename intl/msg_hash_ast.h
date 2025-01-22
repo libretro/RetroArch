@@ -4204,3 +4204,10 @@ MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "El mur táctil ta desactiváu"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

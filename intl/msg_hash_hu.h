@@ -5946,6 +5946,10 @@ MSG_HASH(
    "Értesítések betűmérete"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   "A betűtípus mérete pontokban. Widgetek használatakor ez a méret csak a képernyőn megjelenő statisztikára van hatással."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "Értesítések megjelenésének helye (vízszintesen)"
    )
@@ -10265,6 +10269,10 @@ MSG_HASH(
    "Bélyegképek váltogatása"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Véletlen választás"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
    "Vissza"
    )
@@ -14552,6 +14560,14 @@ MSG_HASH(
    "Csalás aktiválva. A Hardcore trófea mód letiltva a mostani játékmenet idejére."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "A kiszolgáló megváltoztatta a trófeák Hardcore módját."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "A Netplay kiszolgálót frissíteni kell. A Hardcore trófea mód letiltva a mostani játékmenet idejére."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Mester szint: %s"
    )
@@ -15556,3 +15572,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "leállítva."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif
