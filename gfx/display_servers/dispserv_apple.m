@@ -140,7 +140,7 @@ static void *apple_display_server_get_resolution_list(
 
    UIScreen *mainScreen = [UIScreen mainScreen];
 #if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-   if (@available(iOS 15, *))
+   if (@available(iOS 15, tvOS 15, *))
       currentRate = [CocoaView get].displayLink.preferredFrameRateRange.preferred;
    else
 #endif
