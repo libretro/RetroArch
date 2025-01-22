@@ -956,7 +956,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.port          = conn->port;
 
    state->response.status  = -1;
-   state->response.buflen  = 512; /* this typically only needs to be big enough for headers */
+   state->response.buflen  = 16 * 1024;
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
    string_list_initialize(state->response.headers);
@@ -1280,6 +1280,195 @@ int net_http_fd(struct http_t *state)
    return state->conn->fd;
 }
 
+static ssize_t net_http_receive_header(struct http_t *state, ssize_t newlen)
+{
+   struct response *response = &state->response;
+
+   response->pos       += newlen;
+
+   while (response->part < P_BODY)
+   {
+      char *dataend  = response->data + response->pos;
+      char *lineend  = (char*)memchr(response->data, '\n', response->pos);
+
+      if (!lineend)
+         break;
+
+      *lineend       = '\0';
+
+      if (lineend != response->data && lineend[-1]=='\r')
+         lineend[-1] = '\0';
+
+      if (response->part == P_HEADER_TOP)
+      {
+         if (strncmp(response->data, "HTTP/1.", STRLEN_CONST("HTTP/1."))!=0)
+         {
+            response->part = P_DONE;
+            state->error = true;
+            return -1;
+         }
+         response->status = (int)strtoul(response->data
+               + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
+         response->part   = P_HEADER;
+      }
+      else
+      {
+         if (string_starts_with_case_insensitive(response->data, "Content-Length:"))
+         {
+            char* ptr = response->data + STRLEN_CONST("Content-Length:");
+            while (ISSPACE(*ptr))
+               ++ptr;
+
+            response->bodytype = T_LEN;
+            response->len      = strtol(ptr, NULL, 10);
+         }
+         else if (string_is_equal_case_insensitive(response->data, "Transfer-Encoding: chunked"))
+            response->bodytype = T_CHUNK;
+
+         if (response->data[0]=='\0')
+         {
+            if (response->status == 100)
+            {
+               response->part = P_HEADER_TOP;
+            }
+            else
+            {
+               response->part = P_BODY;
+               if (response->bodytype == T_CHUNK)
+                  response->part = P_BODY_CHUNKLEN;
+            }
+         }
+         else
+         {
+            union string_list_elem_attr attr;
+            attr.i = 0;
+            string_list_append(response->headers, response->data, attr);
+         }
+      }
+
+      memmove(response->data, lineend + 1, dataend-(lineend+1));
+      response->pos = (dataend-(lineend + 1));
+   }
+
+   if (response->part >= P_BODY)
+   {
+      newlen        = response->pos;
+      response->pos = 0;
+      if (response->bodytype == T_LEN)
+      {
+         response->buflen = response->len;
+         response->data   = (char*)realloc(response->data, response->buflen);
+      }
+   }
+   else
+   {
+      if (response->pos >= response->buflen - 64)
+      {
+         response->buflen *= 2;
+         response->data    = (char*)realloc(response->data, response->buflen);
+      }
+   }
+   return newlen;
+}
+
+static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
+{
+   struct response *response = &state->response;
+
+   if (newlen < 0 || state->error)
+   {
+      if (response->bodytype != T_FULL)
+         return false;
+      response->part      = P_DONE;
+      if (response->buflen != response->len)
+         response->data      = (char*)realloc(response->data, response->len);
+      return true;
+   }
+
+parse_again:
+   if (response->bodytype == T_CHUNK)
+   {
+      if (response->part == P_BODY_CHUNKLEN)
+      {
+         response->pos      += newlen;
+
+         if (response->pos - response->len >= 2)
+         {
+            /*
+             * len=start of chunk including \r\n
+             * pos=end of data
+             */
+
+            char *fullend = response->data + response->pos;
+            char *end     = (char*)memchr(response->data + response->len + 2, '\n',
+                  response->pos - response->len - 2);
+
+            if (end)
+            {
+               size_t chunklen = strtoul(response->data + response->len, NULL, 16);
+               response->pos   = response->len;
+               end++;
+
+               memmove(response->data + response->len, end, fullend-end);
+
+               response->len   = chunklen;
+               newlen          = (fullend - end);
+
+               /*
+                 len=num bytes
+                 newlen=unparsed bytes after \n
+                 pos=start of chunk including \r\n
+               */
+
+               response->part = P_BODY;
+               if (response->len == 0)
+               {
+                  response->part = P_DONE;
+                  response->len  = response->pos;
+                  response->data = (char*)realloc(response->data, response->len);
+                  return true;
+               }
+               goto parse_again;
+            }
+         }
+      }
+      else if (response->part == P_BODY)
+      {
+         if ((size_t)newlen >= response->len)
+         {
+            response->pos += response->len;
+            newlen        -= response->len;
+            response->len  = response->pos;
+            response->part = P_BODY_CHUNKLEN;
+            goto parse_again;
+         }
+         response->pos += newlen;
+         response->len -= newlen;
+      }
+   }
+   else
+   {
+      response->pos += newlen;
+
+      if (response->pos > response->len)
+         return false;
+      else if (response->pos == response->len)
+      {
+         response->part = P_DONE;
+         if (response->buflen != response->len)
+            response->data = (char*)realloc(response->data, response->len);
+         return true;
+      }
+   }
+
+   if (response->pos >= response->buflen)
+   {
+      response->buflen *= 2;
+      response->data    = (char*)realloc(response->data, response->buflen);
+   }
+   return true;
+}
+
 /**
  * net_http_update:
  *
@@ -1320,208 +1509,28 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    response = &state->response;
 
+#ifdef HAVE_SSL
+   if (state->ssl && state->conn->ssl_ctx)
+      newlen = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->error,
+            (uint8_t*)response->data + response->pos,
+            response->buflen - response->pos);
+   else
+#endif
+      newlen = socket_receive_all_nonblocking(state->conn->fd, &state->error,
+            (uint8_t*)response->data + response->pos,
+            response->buflen - response->pos);
+
    if (response->part < P_BODY)
    {
-#ifdef HAVE_SSL
-      if (state->ssl && state->conn->ssl_ctx)
-         newlen = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->error,
-               (uint8_t*)response->data + response->pos,
-               response->buflen - response->pos);
-      else
-#endif
-         newlen = socket_receive_all_nonblocking(state->conn->fd, &state->error,
-               (uint8_t*)response->data + response->pos,
-               response->buflen - response->pos);
-
-      if (newlen < 0)
+      if (newlen < 0 || state->error)
          goto error;
-
-      if (response->pos + newlen >= response->buflen - 64)
-      {
-         response->buflen *= 2;
-         response->data    = (char*)realloc(response->data, response->buflen);
-      }
-      response->pos       += newlen;
-
-      while (response->part < P_BODY)
-      {
-         char *dataend  = response->data + response->pos;
-         char *lineend  = (char*)memchr(response->data, '\n', response->pos);
-
-         if (!lineend)
-            break;
-
-         *lineend       = '\0';
-
-         if (lineend != response->data && lineend[-1]=='\r')
-            lineend[-1] = '\0';
-
-         if (response->part == P_HEADER_TOP)
-         {
-            if (strncmp(response->data, "HTTP/1.", STRLEN_CONST("HTTP/1."))!=0)
-               goto error;
-            response->status = (int)strtoul(response->data
-                  + STRLEN_CONST("HTTP/1.1 "), NULL, 10);
-            response->part   = P_HEADER;
-         }
-         else
-         {
-            if (string_starts_with_case_insensitive(response->data, "Content-Length:"))
-            {
-               char* ptr = response->data + STRLEN_CONST("Content-Length:");
-               while (ISSPACE(*ptr))
-                  ++ptr;
-
-               response->bodytype = T_LEN;
-               response->len      = strtol(ptr, NULL, 10);
-            }
-            if (string_is_equal_case_insensitive(response->data, "Transfer-Encoding: chunked"))
-               response->bodytype = T_CHUNK;
-
-            if (response->data[0]=='\0')
-            {
-               if (response->status == 100)
-               {
-                  response->part = P_HEADER_TOP;
-               }
-               else
-               {
-                  response->part = P_BODY;
-                  if (response->bodytype == T_CHUNK)
-                     response->part = P_BODY_CHUNKLEN;
-               }
-            }
-            else
-            {
-               union string_list_elem_attr attr;
-               attr.i = 0;
-               string_list_append(response->headers, response->data, attr);
-            }
-         }
-
-         memmove(response->data, lineend + 1, dataend-(lineend+1));
-         response->pos = (dataend-(lineend + 1));
-      }
-
-      if (response->part >= P_BODY)
-      {
-         newlen        = response->pos;
-         response->pos = 0;
-      }
+      newlen = net_http_receive_header(state, newlen);
    }
 
    if (response->part >= P_BODY && response->part < P_DONE)
    {
-      if (!newlen)
-      {
-         if (state->error)
-            newlen = -1;
-         else if (response->len)
-         {
-#ifdef HAVE_SSL
-            if (state->ssl && state->conn->ssl_ctx)
-               newlen = ssl_socket_receive_all_nonblocking(
-                     state->conn->ssl_ctx,
-                     &state->error,
-                     (uint8_t*)response->data + response->pos,
-                     response->buflen - response->pos);
-            else
-#endif
-               newlen = socket_receive_all_nonblocking(
-                     state->conn->fd,
-                     &state->error,
-                     (uint8_t*)response->data + response->pos,
-                     response->buflen - response->pos);
-         }
-
-         if (newlen < 0)
-         {
-            if (response->bodytype != T_FULL)
-               goto error;
-            response->part      = P_DONE;
-            response->data      = (char*)realloc(response->data, response->len);
-            newlen              = 0;
-         }
-
-         if (response->pos + newlen >= response->buflen - 64)
-         {
-            response->buflen   *= 2;
-            response->data      = (char*)realloc(response->data, response->buflen);
-         }
-      }
-
-  parse_again:
-      if (response->bodytype == T_CHUNK)
-      {
-         if (response->part == P_BODY_CHUNKLEN)
-         {
-            response->pos      += newlen;
-
-            if (response->pos - response->len >= 2)
-            {
-               /*
-                * len=start of chunk including \r\n
-                * pos=end of data
-                */
-
-               char *fullend = response->data + response->pos;
-               char *end     = (char*)memchr(response->data + response->len + 2, '\n',
-                     response->pos - response->len - 2);
-
-               if (end)
-               {
-                  size_t chunklen = strtoul(response->data + response->len, NULL, 16);
-                  response->pos   = response->len;
-                  end++;
-
-                  memmove(response->data + response->len, end, fullend-end);
-
-                  response->len   = chunklen;
-                  newlen          = (fullend - end);
-
-                  /*
-                    len=num bytes
-                    newlen=unparsed bytes after \n
-                    pos=start of chunk including \r\n
-                  */
-
-                  response->part = P_BODY;
-                  if (response->len == 0)
-                  {
-                     response->part = P_DONE;
-                     response->len  = response->pos;
-                     response->data = (char*)realloc(response->data, response->len);
-                  }
-                  goto parse_again;
-               }
-            }
-         }
-         else if (response->part == P_BODY)
-         {
-            if ((size_t)newlen >= response->len)
-            {
-               response->pos += response->len;
-               newlen        -= response->len;
-               response->len  = response->pos;
-               response->part = P_BODY_CHUNKLEN;
-               goto parse_again;
-            }
-            response->pos += newlen;
-            response->len -= newlen;
-         }
-      }
-      else
-      {
-         response->pos += newlen;
-
-         if (response->pos > response->len)
-            goto error;
-         else if (response->pos == response->len)
-         {
-            response->part = P_DONE;
-            response->data = (char*)realloc(response->data, response->len);
-         }
-      }
+      if (!net_http_receive_body(state, newlen))
+         goto error;
    }
 
    if (progress)
