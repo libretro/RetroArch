@@ -31,6 +31,7 @@
 #include <net/net_socket_ssl.h>
 #endif
 #include <compat/strl.h>
+#include <features/features_cpu.h>
 #include <string/stdstring.h>
 #include <string.h>
 #include <lists/string_list.h>
@@ -817,13 +818,12 @@ static void net_http_conn_pool_remove_expired(void)
       {
          char buf[4096];
          bool error = false;
-         ssize_t recv;
 #ifdef HAVE_SSL
          if (entry->ssl && entry->ssl_ctx)
-            recv = ssl_socket_receive_all_nonblocking(entry->ssl_ctx, &error, buf, sizeof(buf));
+            ssl_socket_receive_all_nonblocking(entry->ssl_ctx, &error, buf, sizeof(buf));
          else
 #endif
-            recv = socket_receive_all_nonblocking(entry->fd, &error, buf, sizeof(buf));
+            socket_receive_all_nonblocking(entry->fd, &error, buf, sizeof(buf));
 
          if (!error)
             continue;
@@ -1549,7 +1549,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (response->part != P_DONE)
       return false;
 
-   for (newlen = 0; newlen < response->headers->size; newlen++)
+   for (newlen = 0; (size_t)newlen < response->headers->size; newlen++)
    {
       if (string_is_equal_case_insensitive(response->headers->elems[newlen].data, "connection: close"))
       {
