@@ -106,7 +106,7 @@ extern void game_ai_init()
       retro_assert(game_ai_lib_set_debug_log);
    }
 #else
-      g_lib_handle = dlopen("libgame_ai.so", RTLD_NOW);
+      g_lib_handle = dlopen("./libgame_ai.so", RTLD_NOW);
       retro_assert(g_lib_handle);
 
       if(g_lib_handle != NULL)
