@@ -1043,7 +1043,9 @@ static bool net_http_new_socket(struct http_t *state)
          int fd;
          if (!entry->addr)
          {
+#ifdef HAVE_THREADS
             slock_unlock(dns_cache_lock);
+#endif
             return false;
          }
          addr = entry->addr;
