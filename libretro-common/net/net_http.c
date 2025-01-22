@@ -743,11 +743,13 @@ static struct dns_cache_entry *net_http_dns_cache_add(const char *domain, int po
 
 static void net_http_conn_pool_free(struct conn_pool_entry *entry)
 {
+#ifdef HAVE_SSL
    if (entry->ssl && entry->ssl_ctx)
    {
       ssl_socket_close(entry->ssl_ctx);
       ssl_socket_free(entry->ssl_ctx);
    }
+#endif
    if (entry->fd >= 0)
       socket_close(entry->fd);
    free(entry->domain);
