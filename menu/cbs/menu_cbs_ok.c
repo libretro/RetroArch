@@ -9676,7 +9676,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             else
             {
-               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE))
+               if (     string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE))
                      || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST))
                      || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES))
                   )
