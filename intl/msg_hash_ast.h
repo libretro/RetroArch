@@ -110,6 +110,18 @@ MSG_HASH(
    "Crea y anueva llistes pente la busca de conteníu."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   "Amosar el menú pa escritorios"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   "Abre'l menú tradicional pa escritorios."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   "Amuesa toles opciones de configuración rellacionaes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
    "Anovador"
    )
@@ -1480,8 +1492,20 @@ MSG_HASH(
 /* Settings > Core */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+   "Permitir que los nucleos cambien el controlador de videu"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
    "Dalgunos nucleos tienen una función d'apagáu, la carga d'un nucleu maniquín impide que RetroArch cole."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHECK_FOR_MISSING_FIRMWARE,
+   "Comprobar el firmware que falte enantes de cargar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   "Atroxar na cache los ficheros d'información de los núcleos"
    )
 #ifndef HAVE_DYNAMIC
 #endif
@@ -1511,6 +1535,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    "Guardar la configuración al colar"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+   "Cargar automáticamente los ficheros d'anulación"
    )
 
 /* Settings > Saving */
@@ -1964,6 +1992,14 @@ MSG_HASH(
 
 /* Settings > AI Service */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+   "Salida del serviciu d'IA"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   "URL del serviciu d'IA"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
    "Llingua d'orixe"
@@ -2888,6 +2924,10 @@ MSG_HASH(
    "Emulador"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   "Carátula"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ON,
    "Sí"
    )
@@ -3410,6 +3450,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
    "Restolador de conteníu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+   "Carátula"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
