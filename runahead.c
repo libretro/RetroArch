@@ -150,7 +150,7 @@ static void strcat_alloc(char **dst, const char *s)
       {
          size_t __len = strlen(s);
          if (__len != 0)
-            src       = strldup(s, __len);
+            src       = strldup(s, __len + 1);
          else
             src       = NULL;
       }
@@ -239,7 +239,7 @@ static char *get_tmpdir_alloc(const char *override_dir)
    {
       size_t _len     = strlen(src);
       if (_len != 0)
-         path         = strldup(src, _len);
+         path         = strldup(src, _len + 1);
    }
    else
       path            = (char*)calloc(1,1);
@@ -264,7 +264,7 @@ static bool write_file_with_random_name(char **temp_dll_path,
    {
       size_t _len           = strlen(src);
       if (_len != 0)
-         ext                = strldup(src, _len);
+         ext                = strldup(src, _len + 1);
    }
    else
       ext                   = (char*)calloc(1,1);
