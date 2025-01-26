@@ -303,7 +303,7 @@ void rcheevos_menu_populate(void* data)
    rcheevos_menu_reset_badges();
    rcheevos_locals->menuitem_count = 0;
 
-   if (rcheevos_locals->client->state.disconnect)
+   if (rcheevos_locals->client && rcheevos_locals->client->state.disconnect)
    {
       menu_entries_append(info->list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE),
