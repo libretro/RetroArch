@@ -137,6 +137,8 @@ struct dns_cache_entry
 static struct dns_cache_entry *dns_cache = NULL;
 /* 5 min timeout, in usec */
 static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 60 /* s/min */ * 5 /* min */;
+/* only cache failures for 30 seconds */
+static const retro_time_t dns_cache_fail_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 30 /* s */;
 #ifdef HAVE_THREADS
 static slock_t *dns_cache_lock = NULL;
 #endif
@@ -689,13 +691,15 @@ static void net_http_dns_cache_remove_expired(void)
    struct dns_cache_entry *prev = NULL;
    while (entry)
    {
-      if (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec())
+      if (     (entry->addr && (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec()))
+            || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec())))
       {
          if (prev)
             prev->next = entry->next;
          else
             dns_cache = entry->next;
-         freeaddrinfo_retro(entry->addr);
+         if (entry->addr)
+            freeaddrinfo_retro(entry->addr);
          free(entry->domain);
          free(entry);
          entry = prev ? prev->next : dns_cache;
@@ -719,7 +723,9 @@ static struct dns_cache_entry *net_http_dns_cache_find(const char *domain, int p
    {
       if (port == entry->port && string_is_equal(entry->domain, domain))
       {
-         entry->timestamp = cpu_features_get_time_usec();
+         /* don't bump timeestamp for failures */
+         if (entry->addr)
+            entry->timestamp = cpu_features_get_time_usec();
          return entry;
       }
       entry = entry->next;
