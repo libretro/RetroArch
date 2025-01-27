@@ -260,6 +260,7 @@ enum event_command
    CMD_EVENT_PRESENCE_UPDATE,
    CMD_EVENT_OVERLAY_NEXT,
    CMD_EVENT_OSK_TOGGLE,
+   CMD_EVENT_RELOAD_CONFIG,
 #ifdef HAVE_MICROPHONE
    /* Stops all enabled microphones. */
    CMD_EVENT_MICROPHONE_STOP,

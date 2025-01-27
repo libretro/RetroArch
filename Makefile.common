@@ -1570,10 +1570,11 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEF_FLAGS += $(OPENGLES_CFLAGS)
       ifeq ($(HAVE_OPENGLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es3.o
       else
          DEFINES += -DHAVE_OPENGLES2
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
       endif
-      OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
       OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.o

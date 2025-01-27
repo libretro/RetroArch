@@ -122,11 +122,13 @@ void cheat_manager_apply_cheats(void)
 void cheat_manager_set_code(unsigned i, const char *str)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
-   if (!cheat_st->cheats)
+   if (!cheat_st->cheats || string_is_empty(str))
       return;
 
-   if (!string_is_empty(str))
-      strcpy(cheat_st->cheats[i].code, str);
+   if (cheat_st->cheats[i].code)
+      free(cheat_st->cheats[i].code);
+
+   cheat_st->cheats[i].code = strdup(str);
 
    cheat_st->cheats[i].state = true;
 }

@@ -764,6 +764,9 @@
 #define DEFAULT_MENU_TICKER_SPEED 2.0f
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
+/* Don't skip rendering assets based on the absence of other assets */
+#define DEFAULT_MENU_IGNORE_MISSING_ASSETS false
+
 #if defined(HAVE_THREADS)
 #define DEFAULT_MENU_SAVESTATE_RESUME true
 #else

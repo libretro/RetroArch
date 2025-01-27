@@ -3945,6 +3945,9 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
+      case CMD_EVENT_RELOAD_CONFIG:
+         config_load(global_get_ptr());
+         break;
       case CMD_EVENT_DSP_FILTER_INIT:
 #ifdef HAVE_DSP_FILTER
          {

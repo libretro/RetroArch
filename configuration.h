@@ -832,6 +832,7 @@ typedef struct settings
       bool menu_disable_left_analog;
       bool menu_disable_right_analog;
       bool menu_ticker_smooth;
+      bool menu_ignore_missing_assets;
       bool settings_show_drivers;
       bool settings_show_video;
       bool settings_show_audio;
