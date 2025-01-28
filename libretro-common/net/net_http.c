@@ -32,6 +32,7 @@
 #endif
 #include <compat/strl.h>
 #include <features/features_cpu.h>
+#include <file/file_path.h>
 #include <string/stdstring.h>
 #include <string.h>
 #include <lists/string_list.h>
@@ -1094,7 +1095,10 @@ static bool net_http_connect(struct http_t *state)
    /* we just used/added this in _new_socket above, if it's not there it's a big bug */
    addr = dns_entry->addr;
 
-#ifdef HAVE_SSL
+#ifndef HAVE_SSL
+   if (state->ssl)
+      return false;
+#else
    if (state->ssl)
    {
       if (!conn || conn->fd < 0)
@@ -1473,6 +1477,64 @@ parse_again:
    return true;
 }
 
+static bool net_http_redirect(struct http_t *state, const char *location)
+{
+   /* this reinitializes state based on the new location */
+
+   /* url may be absolute or relative to the current url */
+   bool absolute = (strstr(location, "://") != NULL);
+
+   if (absolute)
+   {
+      /* this block is a little wasteful, memory-wise */
+      struct http_connection_t *new_url = net_http_connection_new(location, NULL, NULL);
+      net_http_connection_iterate(new_url);
+      if (!net_http_connection_done(new_url))
+      {
+         net_http_connection_free(new_url);
+         return true;
+      }
+      state->ssl = new_url->ssl;
+      if (state->request.domain)
+         free(state->request.domain);
+      state->request.domain = strdup(new_url->domain);
+      state->request.port = new_url->port;
+      if (state->request.path)
+         free(state->request.path);
+      state->request.path = strdup(new_url->path);
+      net_http_connection_free(new_url);
+   }
+   else
+   {
+      if (*location == '/')
+      {
+         if (state->request.path)
+            free(state->request.path);
+         state->request.path = strdup(location);
+      }
+      else
+      {
+         char *path = malloc(PATH_MAX_LENGTH);
+         fill_pathname_resolve_relative(path, state->request.path, location, PATH_MAX_LENGTH);
+         free(state->request.path);
+         state->request.path = path;
+      }
+   }
+   state->request_sent = false;
+   state->response.part = P_HEADER_TOP;
+   state->response.status = -1;
+   state->response.buflen = 16 * 1024;
+   state->response.data = realloc(state->response.data, state->response.buflen);
+   state->response.pos = 0;
+   state->response.len = 0;
+   state->response.bodytype = T_FULL;
+   /* after this, assume location is invalid */
+   string_list_deinitialize(state->response.headers);
+   string_list_initialize(state->response.headers);
+   /* keep going */
+   return false;
+}
+
 /**
  * net_http_update:
  *
@@ -1557,12 +1619,25 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       {
          net_http_conn_pool_remove(state->conn);
          state->conn = NULL;
-         return true;
+         break;
       }
    }
 
-   state->conn->in_use = false;
+   if (state->conn)
+      state->conn->in_use = false;
    state->conn = NULL;
+
+   if (response->status >= 300 && response->status < 400)
+   {
+      for (newlen = 0; (size_t)newlen < response->headers->size; newlen++)
+      {
+         if (string_starts_with_case_insensitive(response->headers->elems[newlen].data, "Location: "))
+         {
+            return net_http_redirect(state, response->headers->elems[newlen].data + STRLEN_CONST("Location: "));
+         }
+      }
+   }
+
    return true;
 
 error:
