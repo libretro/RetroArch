@@ -2052,7 +2052,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   "Introduce uno o varios fotogramas adicionales para cualquier efecto de shaders pensado para una velocidad de actualización superior a la del contenido. Utiliza únicamente la opción designada para la frecuencia de actualización actual de tu monitor. No se debe utilizar con frecuencias que no sean múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. No combinar con un intervalo de intercambio de VSync superior a 1, con inserción de fotogramas negros, con el retraso de fotogramas o con Sincroniza[...]"
+   "Inserta fotogramas adicionales entre fotogramas para cualquier efecto shader que esté diseñado para ejecutarse más rápido que la velocidad del contenido. Solo use la opción designada para la frecuencia de actualización de la pantalla actual. No debe usarse en frecuencias de actualización que no sean múltiplos de 60 Hz, como 144 Hz, 165 Hz, etc. No combine con Intervalo de intercambio superior a 1, BFI, Retraso de fotogramas o Sincronizar con la velocidad de fotogramas exacta del contenid[...]"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES_VALUE_120,
