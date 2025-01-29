@@ -3,8 +3,9 @@
  *
  * This provides the basic JavaScript for the RetroArch web player.
  */
-var retroarch_ready = false;
-var setImmediate;
+var BrowserFS = BrowserFS;
+var afs;
+var initializationCount = 0;
 
 var Module = {
    noInitialRun: true,
@@ -69,7 +70,6 @@ var Module = {
    ],
    postRun: [],
    onRuntimeInitialized: function() {
-      retroarch_ready = true;
       appInitialized();
    },
    print: function(text) {
@@ -86,22 +86,70 @@ var Module = {
 };
 
 
-async function cleanupStorage()
-{
-  localStorage.clear();
-  let storage = await navigator.storage.getDirectory();
-  await storage.remove({recursive: true});
-  document.getElementById("btnClean").disabled = true;
+function cleanupStorage() {
+   localStorage.clear();
+   if (BrowserFS.FileSystem.IndexedDB.isAvailable()) {
+      var req = indexedDB.deleteDatabase("RetroArch");
+      req.onsuccess = function() {
+         console.log("Deleted database successfully");
+      };
+      req.onerror = function() {
+         console.error("Couldn't delete database");
+      };
+      req.onblocked = function() {
+         console.error("Couldn't delete database due to the operation being blocked");
+      };
+   }
+
+   document.getElementById("btnClean").disabled = true;
 }
 
-function appInitialized()
-{
-  /* Need to wait for the wasm runtime to load before enabling the Run button. */
-  if (retroarch_ready)
-  {
-    setupFileSystem().then(() => { preLoadingComplete(); });
-  }
- }
+function idbfsInit() {
+   $('#icnLocal').removeClass('fa-globe');
+   $('#icnLocal').addClass('fa-spinner fa-spin');
+   var imfs = new BrowserFS.FileSystem.InMemory();
+   if (BrowserFS.FileSystem.IndexedDB.isAvailable()) {
+      afs = new BrowserFS.FileSystem.AsyncMirror(imfs,
+         new BrowserFS.FileSystem.IndexedDB(function(e, fs) {
+               if (e) {
+                  // fallback to imfs
+                  afs = new BrowserFS.FileSystem.InMemory();
+                  console.error("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
+                  appInitialized();
+               } else {
+                  // initialize afs by copying files from async storage to sync storage.
+                  afs.initialize(function(e) {
+                     if (e) {
+                        afs = new BrowserFS.FileSystem.InMemory();
+                        console.error("WEBPLAYER: error: " + e + " falling back to in-memory filesystem");
+                        appInitialized();
+                     } else {
+                        idbfsSyncComplete();
+                     }
+                  });
+               }
+            },
+            "RetroArch"));
+   }
+}
+
+function idbfsSyncComplete() {
+   $('#icnLocal').removeClass('fa-spinner').removeClass('fa-spin');
+   $('#icnLocal').addClass('fa-check');
+   console.log("WEBPLAYER: idbfs setup successful");
+
+   appInitialized();
+}
+
+function appInitialized() {
+   /* Need to wait for the file system, the wasm runtime, and the zip download
+      to complete before enabling the Run button. */
+   initializationCount++;
+   if (initializationCount == 3) {
+      setupFileSystem("browser");
+      preLoadingComplete();
+   }
+}
 
 function preLoadingComplete() {
    // Make the Preview image clickable to start RetroArch.
@@ -115,62 +163,56 @@ function preLoadingComplete() {
    });
 }
 
-async function setupZipFS(mount) {
-  let buffers = await Promise.all([
-    fetch("assets/frontend/bundle.zip.aa").then((r) => r.arrayBuffer()),
-    fetch("assets/frontend/bundle.zip.ab").then((r) => r.arrayBuffer()),
-    fetch("assets/frontend/bundle.zip.ac").then((r) => r.arrayBuffer()),
-    fetch("assets/frontend/bundle.zip.ad").then((r) => r.arrayBuffer())
-  ]);
-  let buffer = new ArrayBuffer(256*1024*1024);
-  let bufferView = new Uint8Array(buffer);
-  let idx = 0;
-  for (let buf of buffers) {
-    if (idx+buf.byteLength > buffer.maxByteLength) {
-      console.log("WEBPLAYER: error: bundle.zip is too large");
-    }
-    bufferView.set(new Uint8Array(buf), idx, buf.byteLength);
-    idx += buf.byteLength;
-  }
-  const zipBuf = new Uint8Array(buffer, 0, idx);
-  const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(zipBuf), {useWebWorkers:false});
-  const entries = await zipReader.getEntries();
-  for(const file of entries) {
-    if (file.getData && !file.directory) {
-      const writer = new zip.Uint8ArrayWriter();
-      const data = await file.getData(writer);
-      Module.FS.createPreloadedFile(mount+"/"+file.filename, undefined, data, true, true);
-    } else if (file.directory) {
-      Module.FS.mkdirTree(mount+"/"+file.filename);
-    }
-  }
-  await zipReader.close();
+var zipTOC;
+
+function zipfsInit() {
+   // 256 MB max bundle size
+   let buffer = new ArrayBuffer(256 * 1024 * 1024);
+   let bufferView = new Uint8Array(buffer);
+   let idx = 0;
+   // bundle should be in five parts (this can be changed later)
+   Promise.all([fetch("assets/frontend/bundle.zip.aa"),
+      fetch("assets/frontend/bundle.zip.ab"),
+      fetch("assets/frontend/bundle.zip.ac"),
+      fetch("assets/frontend/bundle.zip.ad"),
+      fetch("assets/frontend/bundle.zip.ae")
+   ]).then(function(resps) {
+      Promise.all(resps.map((r) => r.arrayBuffer())).then(function(buffers) {
+         for (let buf of buffers) {
+            if (idx + buf.byteLength > buffer.maxByteLength) {
+               console.error("WEBPLAYER: error: bundle.zip is too large");
+            }
+            bufferView.set(new Uint8Array(buf), idx, buf.byteLength);
+            idx += buf.byteLength;
+         }
+         BrowserFS.FileSystem.ZipFS.computeIndex(BrowserFS.BFSRequire('buffer').Buffer(new Uint8Array(buffer, 0, idx)), function(toc) {
+            zipTOC = toc;
+            appInitialized();
+         });
+      })
+   });
 }
 
-function indexToManifest(index, manifest, path, base_url) {
-  for (const key of Object.keys(index)) {
-    if (index[key]) {
-      indexToManifest(index[key], manifest, path+key+"/", base_url);
-    } else {
-      manifest[path+key] = base_url + path + key;
-    }
-  }
-}
+function setupFileSystem(backend) {
+   // create a mountable filesystem that will server as a root mountpoint for browserfs
+   var mfs = new BrowserFS.FileSystem.MountableFileSystem();
 
-async function setupFileSystem()
-{
-  Module.FS.mkdirTree("/home/web_user/retroarch/userdata");
+   // create an XmlHttpRequest filesystem for the bundled data
+   var xfs1 = new BrowserFS.FileSystem.ZipFS(zipTOC);
+   // create an XmlHttpRequest filesystem for core assets
+   var xfs2 = new BrowserFS.FileSystem.XmlHttpRequest(".index-xhr", "assets/cores/");
 
-  Module.FS.mount(Module.OPFS, {}, "/home/web_user/retroarch/userdata");
-  
-  Module.FS.mkdir("/home/web_user/retroarch/downloads",700);
-  let index = await (await fetch("assets/cores/.index-xhr")).json();
-  let manifest = {};
-  indexToManifest(index, manifest, "/", "");
-  Module.FS.mount(Module.FETCHFS, {"manifest":manifest,"base_url":"assets/cores"}, "/home/web_user/retroarch/downloads");
+   console.log("WEBPLAYER: initializing filesystem: " + backend);
+   mfs.mount('/home/web_user/retroarch/userdata', afs);
 
-  setupZipFS("/home/web_user/retroarch");
-  console.log("WEBPLAYER: filesystem initialization successful");
+   mfs.mount('/home/web_user/retroarch/', xfs1);
+   mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs2);
+   BrowserFS.initialize(mfs);
+   var BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
+   Module.FS.mount(BFS, {
+      root: '/home'
+   }, '/home');
+   console.log("WEBPLAYER: " + backend + " filesystem initialization successful");
 }
 
 // Retrieve the value of the given GET parameter.
@@ -200,6 +242,7 @@ function startRetroArch() {
       Module.requestFullscreen(false);
       Module.canvas.focus();
    });
+
    Module.canvas.focus();
    Module.canvas.addEventListener("pointerdown", function() {
       Module.canvas.focus();
@@ -321,26 +364,26 @@ $(function() {
    loadCore(core);
 });
 
-async function downloadScript(src) {
-  let resp = await fetch(src);
-  let blob = await resp.blob();
-  return blob;
-}
-
 function loadCore(core) {
    // Make the core the selected core in the UI.
    var coreTitle = $('#core-selector a[data-core="' + core + '"]').addClass('active').text();
    $('#dropdownMenu1').text(coreTitle);
-   downloadScript("./"+core+"_libretro.js").then(scriptBlob => {
-      Module.mainScriptUrlOrBlob = scriptBlob;
-      import(URL.createObjectURL(scriptBlob)).then(script => {
-         script.default(Module).then(mod => {
-            Module = mod;
-            $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
-            $('#icnRun').addClass('fa-play');
-            $('#lblDrop').removeClass('active');
-            $('#lblLocal').addClass('active');
-         }).catch(err => { console.error("Couldn't instantiate module",err); throw err; });
-      }).catch(err => { console.error("Couldn't load script",err); throw err; });
+   // Load the Core's related JavaScript.
+   import("./" + core + "_libretro.js").then(script => {
+      script.default(Module).then(mod => {
+         Module = mod;
+         $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
+         $('#icnRun').addClass('fa-play');
+         $('#lblDrop').removeClass('active');
+         $('#lblLocal').addClass('active');
+         idbfsInit();
+         zipfsInit();
+      }).catch(err => {
+         console.error("Couldn't instantiate module", err);
+         throw err;
+      });
+   }).catch(err => {
+      console.error("Couldn't load script", err);
+      throw err;
    });
 }

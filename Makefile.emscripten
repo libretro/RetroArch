@@ -95,10 +95,13 @@ _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focu
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
 _cmd_cheat_get_size,_cmd_cheat_apply_cheats
 
+EXPORTS = callMain,FS,PATH,ERRNO_CODES,stringToNewUTF8,UTF8ToString
+
 LIBS    := -s USE_ZLIB=1
 
 ifeq ($(HAVE_WASMFS), 1)
-   LIBS += -s WASMFS -s FORCE_FILESYSTEM=1
+   LIBS += -s WASMFS -s FORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
+   EXPORTS += ,FETCHFS,OPFS
 endif
 
 ifeq ($(HAVE_WORKER), 1)
@@ -132,7 +135,7 @@ endif
 
 
 LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
-           -s EXPORTED_RUNTIME_METHODS=callMain,FS,PATH,ERRNO_CODES,stringToNewUTF8,UTF8ToString \
+           -s EXPORTED_RUNTIME_METHODS=$(EXPORTS) \
            -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
            -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
            -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
