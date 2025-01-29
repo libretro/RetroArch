@@ -308,7 +308,10 @@ int main(int argc, char *argv[])
       specialHTMLTargets["!canvas"] = Module.canvas;
    });
 
+   emscripten_set_canvas_element_size("!canvas", 800, 600);
+   emscripten_set_element_css_size("!canvas", 800.0, 600.0);
    emscripten_set_main_loop(emscripten_mainloop, 0, 0);
+   emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
    rarch_main(argc, argv, NULL);
 
    return 0;
