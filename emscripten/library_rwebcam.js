@@ -17,18 +17,13 @@ var LibraryRWebCam = {
    RWebCamInit__deps: ['malloc'],
    RWebCamInit: function(caps1, caps2, width, height) {
       if (!navigator) return 0;
-
-      navigator.getMedia = navigator.getUserMedia ||
-                           navigator.webkitGetUserMedia ||
-                           navigator.mozGetUserMedia ||
-                           navigator.msGetUserMedia;
-
-      if (!navigator.getMedia) return 0;
+      if (!navigator.mediaDevices.getUserMedia) return 0;
 
       var c = ++RWC.counter;
 
       RWC.contexts[c] = [];
       RWC.contexts[c].videoElement = document.createElement("video");
+      RWC.contexts[c].videoElement.classList.add("retroarchWebcamVideo");
       if (width !== 0 && height !== 0) {
          RWC.contexts[c].videoElement.width = width;
          RWC.contexts[c].videoElement.height = height;
@@ -37,11 +32,11 @@ var LibraryRWebCam = {
       RWC.contexts[c].glTex = caps1 & (1 << RWC.RETRO_CAMERA_BUFFER_OPENGL_TEXTURE);
       RWC.contexts[c].rawFb = caps1 & (1 << RWC.RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER);
 
-      navigator.getMedia({video: true, audio: false}, function(stream) {
+      navigator.mediaDevices.getUserMedia({video: true, audio: false}).then(function(stream) {
          RWC.contexts[c].videoElement.autoplay = true;
-         RWC.contexts[c].videoElement.src = URL.createObjectURL(stream);
+         RWC.contexts[c].videoElement.srcObject = stream;
          RWC.contexts[c].runMode = 2;
-      }, function (err) {
+      }).catch(function (err) {
          console.log("webcam request failed", err);
          RWC.runMode = 0;
       });
@@ -53,7 +48,6 @@ var LibraryRWebCam = {
 
    RWebCamFree: function(data) {
       RWC.contexts[data].videoElement.pause();
-      URL.revokeObjectURL(RWC.contexts[data].videoElement.src);
       RWC.contexts[data].videoElement = null;
       RWC.contexts[data] = null;
    },
@@ -81,6 +75,7 @@ var LibraryRWebCam = {
       }
       if (RWC.contexts[data].rawFb) {
          RWC.contexts[data].rawFbCanvas = document.createElement("canvas");
+         RWC.contexts[data].rawFbCanvas.classList.add("retroarchWebcamCanvas");
          ret = 1;
       }
 

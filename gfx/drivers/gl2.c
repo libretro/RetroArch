@@ -185,9 +185,8 @@ enum gl2_renderchain_flags
 {
    GL2_CHAIN_FLAG_EGL_IMAGES           = (1 << 0),
    GL2_CHAIN_FLAG_HAS_FP_FBO           = (1 << 1),
-   GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3   = (1 << 2),
-   GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 3),
-   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 4)
+   GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 2),
+   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 3)
 };
 
 typedef struct video_shader_ctx_scale
@@ -1616,9 +1615,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
    if (video_ctx_scaling)
        video_smooth = false;
 #endif
-#ifndef HAVE_OPENGLES
    bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
-#endif
    GLuint base_filt              = video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt          = video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
@@ -1650,19 +1647,21 @@ static void gl2_create_fbo_texture(gl2_t *gl,
          RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
 
-#if !defined(HAVE_OPENGLES2)
    if (     fp_fbo
          && (chain->flags & GL2_CHAIN_FLAG_HAS_FP_FBO))
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
-      gl2_load_texture_image(GL_TEXTURE_2D, 0, GL_RGBA32F,
+      gl2_load_texture_image(GL_TEXTURE_2D, 0,
+#ifdef HAVE_OPENGLES2
+         GL_RGBA,
+#else
+         GL_RGBA32F,
+#endif
          gl->fbo_rect[i].width, gl->fbo_rect[i].height,
          0, GL_RGBA, GL_FLOAT, NULL);
    }
    else
-#endif
    {
-#ifndef HAVE_OPENGLES
       bool srgb_fbo = (chain->fbo_scale[i].flags & FBO_SCALE_FLAG_SRGB_FBO) ? true : false;
 
       if (!fp_fbo && srgb_fbo)
@@ -1678,27 +1677,23 @@ static void gl2_create_fbo_texture(gl2_t *gl,
             && (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO))
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
+         gl2_load_texture_image(GL_TEXTURE_2D, 0,
 #ifdef HAVE_OPENGLES2
-         /* EXT defines are same as core GLES3 defines,
-          * but GLES3 variant requires different arguments. */
-         glTexImage2D(GL_TEXTURE_2D,
-               0, GL_SRGB_ALPHA_EXT,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3)
-               ? GL_RGBA
-               : GL_SRGB_ALPHA_EXT,
-               GL_UNSIGNED_BYTE, NULL);
+            GL_SRGB_ALPHA_EXT,
 #else
-         gl2_load_texture_image(GL_TEXTURE_2D,
-            0, GL_SRGB8_ALPHA8,
-            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            GL_SRGB8_ALPHA8,
 #endif
+            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+#ifdef HAVE_OPENGLES2
+            GL_SRGB_ALPHA_EXT,
+#else
+            GL_RGBA,
+#endif
+            GL_UNSIGNED_BYTE, NULL);
       }
       else
-#endif
       {
-#if defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGLES)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
@@ -2479,11 +2474,6 @@ static void gl2_renderchain_resolve_extensions(gl2_t *gl,
       chain->flags |=  GL2_CHAIN_FLAG_HAS_FP_FBO;
    else
       chain->flags &= ~GL2_CHAIN_FLAG_HAS_FP_FBO;
-   /* GLES3 has unpack_subimage and sRGB in core. */
-   if (gl_check_capability(GL_CAPS_SRGB_FBO_ES3))
-      chain->flags |=  GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3;
-   else
-      chain->flags &= ~GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3;
 
    if (!force_srgb_disable)
    {
@@ -3892,7 +3882,6 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "[GL]: 32-bit path will require conversion.\n");
    }
-   /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
 
 #ifdef GL_DEBUG

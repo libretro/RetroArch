@@ -196,6 +196,8 @@ retroarch.js
 retroarch.js.mem
 *.bc
 *.wasm
+*.wasm.map
+obj-emscripten/
 
 # only ignore .js files in the repo root
 /*.js

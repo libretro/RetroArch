@@ -452,7 +452,8 @@ enum ozone_handle_flags2
    OZONE_FLAG2_RESET_DEPTH                           = (1 <<  8),
    OZONE_FLAG2_PENDING_CURSOR_IN_SIDEBAR             = (1 <<  9),
    OZONE_FLAG2_IS_QUICK_MENU                         = (1 << 10),
-   OZONE_FLAG2_IS_PLAYLISTS_TAB                      = (1 << 11)
+   OZONE_FLAG2_IS_PLAYLISTS_TAB                      = (1 << 11),
+   OZONE_FLAG2_IGNORE_MISSING_ASSETS                 = (1 << 12)
 };
 
 struct ozone_handle
@@ -1732,7 +1733,7 @@ static void ozone_set_color_theme(
          ozone->theme->message_background,
          sizeof(ozone->theme_dynamic.message_background));
 
-   if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS)
+   if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
       ozone_restart_cursor_animation(ozone);
 
    ozone_last_color_theme = color_theme;
@@ -3215,7 +3216,7 @@ static void ozone_draw_cursor(
 
    /* Draw the cursor */
    if (     (ozone->theme->name)
-         && (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS))
+         && (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS))
       ozone_draw_cursor_slice(ozone,
             p_disp,
             userdata,
@@ -7024,7 +7025,7 @@ static void ozone_draw_messagebox(
       dispctx->blend_begin(userdata);
 
    /* Avoid drawing a black box if there's no assets */
-   if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS)
+   if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
    {
       /* Note: The fact that we use a texture slice here
        * makes things very messy
@@ -9432,9 +9433,14 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
    if (ozone)
    {
+      settings_t *settings = config_get_ptr();
+
       ozone->flags |= OZONE_FLAG_HAS_ALL_ASSETS;
 
-      ozone_set_layout(ozone, config_get_ptr()->bools.ozone_collapse_sidebar, is_threaded);
+      if (settings->bools.menu_ignore_missing_assets)
+         ozone->flags2 |= OZONE_FLAG2_IGNORE_MISSING_ASSETS;
+
+      ozone_set_layout(ozone, settings->bools.ozone_collapse_sidebar, is_threaded);
 
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
@@ -9527,7 +9533,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone_update_thumbnail_image(ozone);
       ozone_update_savestate_thumbnail_image(ozone);
 
-      if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS)
+      if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
          ozone_restart_cursor_animation(ozone);
 
       /* Screensaver */

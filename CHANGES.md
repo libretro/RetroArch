@@ -7,6 +7,9 @@
 - CHEEVOS: Include achievement state in netplay states
 - CLOUDSYNC: Fix Windows path issues
 - CLOUDSYNC: Workaround for duplicated requests bug
+- EMSCRIPTEN: Scale window to correct size
+- EMSCRIPTEN: Additional platform functions
+- EMSCRIPTEN/RWEBINPUT: Add touch input support
 - GENERAL: Fix save state auto increment
 - GENERAL: Fix softpatching with periods/dots in the file name
 - GENERAL: Fix compilation with --enable-videocore
@@ -34,6 +37,7 @@
 - SAVESTATES: Reset state index when loading new content
 - UWP: Fix slang shader compilation
 - VIDEO: Enable BFI setting for mobile platforms (mind the warnings)
+- VIDEO/OpenGLES: Fix FP/sRGB FBO support
 - VIDEO/SHADERS: Allow exact refresh rate sync with shader subframes
 - WEBPLAYER: Update core list for 1.20.0
 

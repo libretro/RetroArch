@@ -25,7 +25,6 @@ HAVE_REWIND = 1
 HAVE_AUDIOMIXER = 1
 HAVE_CC_RESAMPLER = 1
 HAVE_EGL    = 1
-HAVE_OPENGLES = 1
 HAVE_RJPEG  = 0
 HAVE_RPNG   = 1
 HAVE_EMSCRIPTEN = 1
@@ -58,34 +57,49 @@ HAVE_CHD ?= 0
 #  You have been warned.
 HAVE_RWEBAUDIO = 0
 
+# help diagnose GL problems (can cause issues in normal operation)
+GL_DEBUG ?= 0
+
+# enable javascript filesystem tracking
+FS_DEBUG = 1
+
+HAVE_OPENGLES ?= 1
+HAVE_OPENGLES3 ?= 0
+
 ASYNC ?= 0
-ifeq ($(LIBRETRO), mupen64plus)
-   ASYNC = 1
-endif
-
 LTO ?= 0
-ifeq ($(LIBRETRO), tyrquake)
-   LTO = 0
-endif
-
 PTHREAD ?= 0
 
-MEMORY ?= 134217728
+STACK_SIZE ?= 4194304
+INITIAL_HEAP ?= 134217728
 
-PRECISE_F32 = 1
+# 4194304 ----- 4 MiB (Stack: recommended)
+# 8388608 ----- 8 MiB
+# 16777216 ---- 16 MiB
+# 33554432 ---- 32 MiB
+# 67108864 ---- 64 MiB
+# 134217728 --- 128 MiB (Heap: recommended) (Stack: recommended for some cores [mupen64plus_next])
+# 268435456 --- 256 MiB (Heap: recommended for some cores [mupen64plus_next])
+# 536870912 --- 512 MiB (Heap: needed for some cores [mednafen_psx(_hw)])
+# 1073741824 -- 1 GiB
+# 1610612736 -- 1.5 GiB
+# 2147483648 -- 2 GiB
 
 OBJDIR := obj-emscripten
 
-#if you compile with SDL2 flag add this Emscripten flag "-s USE_SDL=2" to LDFLAGS:
+EXPORTED_FUNCTIONS = _main,_malloc,_free,_cmd_savefiles,_cmd_save_state,_cmd_load_state,_cmd_undo_save_state,_cmd_undo_load_state,_cmd_take_screenshot,\
+_cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focus,_cmd_reset,_cmd_toggle_pause,_cmd_pause,_cmd_unpause,\
+_cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
+_cmd_cheat_get_size,_cmd_cheat_apply_cheats
 
 LIBS    := -s USE_ZLIB=1
-LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s TOTAL_MEMORY=$(MEMORY) -s NO_EXIT_RUNTIME=0 -s FULL_ES2=1 \
-           -s "EXPORTED_RUNTIME_METHODS=['callMain', 'FS', 'PATH', 'ERRNO_CODES']" \
-           -s ALLOW_MEMORY_GROWTH=1 -s "EXPORTED_FUNCTIONS=['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_load_state', '_cmd_take_screenshot']" \
+LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
+           -s EXPORTED_RUNTIME_METHODS=callMain,FS,PATH,ERRNO_CODES,stringToNewUTF8,UTF8ToString \
+           -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
            -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
-           -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=1 \
-           --js-library emscripten/library_errno_codes.js \
-           --js-library emscripten/library_rwebcam.js
+           --extern-pre-js emscripten/pre.js \
+           --js-library emscripten/library_rwebcam.js \
+           --js-library emscripten/library_platform_emscripten.js
 
 ifeq ($(HAVE_RWEBAUDIO), 1)
    LDFLAGS += --js-library emscripten/library_rwebaudio.js
@@ -94,11 +108,11 @@ endif
 ifeq ($(HAVE_AL), 1)
    LDFLAGS += -lopenal
    DEFINES += -DHAVE_AL
-   ASYNC = 1
+   override ASYNC = 1
 endif
 
 ifneq ($(PTHREAD), 0)
-   LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
+   LDFLAGS += -s MAXIMUM_MEMORY=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
    CFLAGS += -pthread
    HAVE_THREADS=1
 else
@@ -108,8 +122,24 @@ endif
 ifeq ($(ASYNC), 1)
    LDFLAGS += -s ASYNCIFY=$(ASYNC) -s ASYNCIFY_STACK_SIZE=8192 
    ifeq ($(DEBUG), 1)
-     LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
+      LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
    endif
+endif
+
+ifeq ($(HAVE_OPENGLES), 1)
+   ifeq ($(HAVE_OPENGLES3), 1)
+      LDFLAGS += -s FULL_ES3=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2
+   else
+      LDFLAGS += -s FULL_ES2=1
+   endif
+endif
+
+ifeq ($(GL_DEBUG), 1)
+   LDFLAGS += -s GL_ASSERTIONS=1 -s GL_DEBUG=1
+endif
+
+ifeq ($(FS_DEBUG), 1)
+   LDFLAGS += -s FS_DEBUG=1
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -121,12 +151,14 @@ include Makefile.common
 
 CFLAGS += $(DEF_FLAGS) -Ideps -Ideps/stb
 
-libretro :=
+libretro     =
+libretro_new =
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
   DEFINES += -DHAVE_STATIC_DUMMY
 else
-  libretro += libretro_emscripten.bc
+  libretro     = libretro_emscripten.bc
+  libretro_new = libretro_emscripten.a
 endif
 
 ifneq ($(V), 1)
@@ -135,21 +167,15 @@ endif
 
 ifeq ($(DEBUG), 1)
    LDFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
-   CFLAGS += -O0 -g -gsource-map -s SAFE_HEAP=1 -s SAFE_HEAP_LOG=1 -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=1
+   CFLAGS += -O0 -g -gsource-map
 else
-   LDFLAGS += -O3 -s WASM=1
+   LDFLAGS += -O3
    # WARNING: some optimizations can break some cores (ex: LTO breaks tyrquake)
-   LDFLAGS += -s PRECISE_F32=$(PRECISE_F32)
    ifeq ($(LTO), 1)
-      LDFLAGS += --llvm-lto 3
+      LDFLAGS += -flto
    endif
    CFLAGS += -O3
 endif
-
-# 128 * 1024, double the usual emscripten stack size
-LDFLAGS += -s STACK_SIZE=131072
-
-LDFLAGS += --extern-pre-js emscripten/pre.js
 
 CFLAGS += -Wall -I. -Ilibretro-common/include -Ideps/7zip -std=gnu99
 
@@ -158,8 +184,9 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 all: $(TARGET)
 
 $(TARGET): $(RARCH_OBJ) $(libretro)
-	@$(if $(Q), $(shell echo echo LD $@),)
-	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro) $(LIBS) $(LDFLAGS)
+	@$(if $(libretro), mv -f $(libretro) $(libretro_new),)
+	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
+	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
 
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
