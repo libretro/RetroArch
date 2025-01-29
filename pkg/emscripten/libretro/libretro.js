@@ -147,12 +147,13 @@ async function setupZipFS(mount) {
   await zipReader.close();
 }
 
-function indexToManifest(index, manifest, path, base_url) {
+function loadIndex(index, path) {
   for (const key of Object.keys(index)) {
     if (index[key]) {
-      indexToManifest(index[key], manifest, path+key+"/", base_url);
+      Module.FS.mkdirTree(path+key+"/");
+      loadIndex(index[key], path+key+"/");
     } else {
-      manifest[path+key] = base_url + path + key;
+      Module.FS.open(path+key, "w+");
     }
   }
 }
@@ -166,8 +167,8 @@ async function setupFileSystem()
   Module.FS.mkdir("/home/web_user/retroarch/downloads",700);
   let index = await (await fetch("assets/cores/.index-xhr")).json();
   let manifest = {};
-  indexToManifest(index, manifest, "/", "");
-  Module.FS.mount(Module.FETCHFS, {"manifest":manifest,"base_url":"assets/cores"}, "/home/web_user/retroarch/downloads");
+  Module.FS.mount(Module.FETCHFS, {"base_url":"assets/cores"}, "/home/web_user/retroarch/downloads");
+  loadIndex(index, "/home/web_user/retroarch/downloads/");
 
   setupZipFS("/home/web_user/retroarch");
   console.log("WEBPLAYER: filesystem initialization successful");
