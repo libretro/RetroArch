@@ -279,14 +279,19 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    #define DISC_DATA_SIZE_PS2 0x84000
    int pos;
    char raw_game_id[50];
-   char disc_data[DISC_DATA_SIZE_PS2];
+   char *disc_data;
 
    /* Load data into buffer and use pointers */
    if (intfstream_seek(fd, 0, SEEK_SET) < 0)
       return false;
 
+   disc_data = malloc(DISC_DATA_SIZE_PS2);
+
    if (intfstream_read(fd, disc_data, DISC_DATA_SIZE_PS2) <= 0)
+   {
+      free(disc_data);
       return false;
+   }
 
    disc_data[DISC_DATA_SIZE_PS2 - 1] = '\0';
 
@@ -373,6 +378,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
 
             string_remove_all_whitespace(s, raw_game_id);
             cue_append_multi_disc_suffix(s, filename);
+            free(disc_data);
             return true;
          }
       }
@@ -390,6 +396,7 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len, const char *filename)
    s[9 ] = 'X';
    s[10] = '\0';
    cue_append_multi_disc_suffix(s, filename);
+   free(disc_data);
    return false;
 }
 
