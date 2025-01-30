@@ -122,6 +122,7 @@ struct audio_mixer_sound
       } mod;
 #endif
    } types;
+   void* user_data;
 };
 
 struct audio_mixer_voice
