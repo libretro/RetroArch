@@ -24,8 +24,7 @@ HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
 HAVE_AUDIOMIXER = 1
 HAVE_CC_RESAMPLER = 1
-HAVE_EGL    ?= 0
-HAVE_OPENGLES = 1
+HAVE_EGL    = 1
 HAVE_RJPEG  = 0
 HAVE_RPNG   = 1
 HAVE_EMSCRIPTEN = 1
@@ -49,8 +48,6 @@ HAVE_7ZIP = 1
 HAVE_BSV_MOVIE = 1
 HAVE_AL = 1
 HAVE_CHD ?= 0
-HAVE_WASMFS ?= 1
-HAVE_WORKER ?= 1
 
 # WARNING -- READ BEFORE ENABLING
 # The rwebaudio driver is known to have several audio bugs, such as
@@ -71,7 +68,7 @@ HAVE_OPENGLES3 ?= 0
 
 ASYNC ?= 0
 LTO ?= 0
-PTHREAD ?= 4
+PTHREAD ?= 0
 
 STACK_SIZE ?= 4194304
 INITIAL_HEAP ?= 134217728
@@ -95,20 +92,37 @@ _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focu
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
 _cmd_cheat_get_size,_cmd_cheat_apply_cheats
 
-EXPORTS := callMain,FS,PATH,ERRNO_CODES,stringToNewUTF8,UTF8ToString
-
 LIBS    := -s USE_ZLIB=1
+LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
+           -s EXPORTED_RUNTIME_METHODS=callMain,FS,PATH,ERRNO_CODES,stringToNewUTF8,UTF8ToString \
+           -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
+           -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
+           --extern-pre-js emscripten/pre.js \
+           --js-library emscripten/library_rwebcam.js \
+           --js-library emscripten/library_platform_emscripten.js
 
-ifeq ($(HAVE_WASMFS), 1)
-   LIBS += -s WASMFS -s FORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
-   EXPORTS := $(EXPORTS),FETCHFS,OPFS
+ifeq ($(HAVE_RWEBAUDIO), 1)
+   LDFLAGS += --js-library emscripten/library_rwebaudio.js
+   DEFINES += -DHAVE_RWEBAUDIO
+endif
+ifeq ($(HAVE_AL), 1)
+   LDFLAGS += -lopenal
+   DEFINES += -DHAVE_AL
+   override ASYNC = 1
 endif
 
-ifeq ($(HAVE_WORKER), 1)
-   LIBS += -s PROXY_TO_PTHREAD -s USE_ES6_IMPORT_META=0 -sENVIRONMENT=worker,web
-else 
-   ifeq ($(HAVE_AL), 1)
-     override ASYNC = 1
+ifneq ($(PTHREAD), 0)
+   LDFLAGS += -s MAXIMUM_MEMORY=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
+   CFLAGS += -pthread
+   HAVE_THREADS=1
+else
+   HAVE_THREADS=0
+endif
+
+ifeq ($(ASYNC), 1)
+   LDFLAGS += -s ASYNCIFY=$(ASYNC) -s ASYNCIFY_STACK_SIZE=8192 
+   ifeq ($(DEBUG), 1)
+      LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
    endif
 endif
 
@@ -131,45 +145,6 @@ endif
 ifeq ($(HAVE_SDL2), 1)
    LIBS += -s USE_SDL=2
    DEFINES += -DHAVE_SDL2
-endif
-
-
-LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
-           -s EXPORTED_RUNTIME_METHODS=$(EXPORTS) \
-           -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
-           -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
-           -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
-           -s OFFSCREENCANVAS_SUPPORT \
-           -s OFFSCREEN_FRAMEBUFFER \
-           --extern-pre-js emscripten/pre.js \
-           --js-library emscripten/library_rwebcam.js \
-           --js-library emscripten/library_platform_emscripten.js
-
-ifeq ($(HAVE_RWEBAUDIO), 1)
-   LDFLAGS += --js-library emscripten/library_rwebaudio.js
-   DEFINES += -DHAVE_RWEBAUDIO
-endif
-
-ifeq ($(HAVE_AL), 1)
-   LDFLAGS += -lopenal
-   DEFINES += -DHAVE_AL
-endif
-
-ifneq ($(PTHREAD), 0)
-   LDFLAGS += -s WASM_MEM_MAX=1073741824 -pthread -s PTHREAD_POOL_SIZE=$(PTHREAD)
-   CFLAGS += -pthread -s SHARED_MEMORY
-   HAVE_THREADS=1
-else
-   HAVE_THREADS=0
-endif
-
-
-ifeq ($(ASYNC), 1)
-   DEFINES += -DEMSCRIPTEN_ASYNCIFY
-   LDFLAGS += -s ASYNCIFY=$(ASYNC) -s ASYNCIFY_STACK_SIZE=8192 
-   ifeq ($(DEBUG), 1)
-      LDFLAGS += -s ASYNCIFY_DEBUG=1 # -s ASYNCIFY_ADVISE
-   endif
 endif
 
 include Makefile.common
@@ -208,10 +183,8 @@ RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 
 all: $(TARGET)
 
-$(libretro_new) : $(libretro)
-	mv -f $(libretro) $(libretro_new)
-
-$(TARGET): $(RARCH_OBJ) $(libretro_new)
+$(TARGET): $(RARCH_OBJ) $(libretro)
+	@$(if $(libretro), mv -f $(libretro) $(libretro_new),)
 	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)
 	$(Q)$(LD) -o $@ $(RARCH_OBJ) $(libretro_new) $(LIBS) $(LDFLAGS)
 
