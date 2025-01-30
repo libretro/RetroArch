@@ -2789,7 +2789,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Establece el tiempo de espera en milisegundos entre la ejecución del núcleo y la presentación de la imagen. Puede reducir la latencia a costa de aumentar la probabilidad de sufrir tirones de imagen.\nUn valor igual o superior a 20 se considerará como un porcentaje de la duración de fotogramas."
+   "Establece el tiempo de espera en milisegundos entre la ejecución del núcleo y la presentación de la imagen. Reduce la latencia a costa de aumentar la probabilidad de sufrir tirones en la imagen.\nUn valor igual o superior a 20 se considerará como un porcentaje de la duración de fotogramas."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
@@ -2797,7 +2797,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Ajusta el retraso de fotogramas real de forma dinámica."
+   "Ajusta el 'Retraso de fotogramas' efectivo de forma dinámica."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
