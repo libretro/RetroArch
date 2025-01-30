@@ -124,11 +124,9 @@ static void gfx_ctx_emscripten_destroy(void *data)
 
    if (!emscripten)
       return;
-
 #ifdef HAVE_EGL
    egl_destroy(&emscripten->egl);
 #endif
-
    free(data);
 }
 
@@ -191,7 +189,6 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 #endif
 
    return emscripten;
-
 error:
    gfx_ctx_emscripten_destroy(video_driver);
    return NULL;

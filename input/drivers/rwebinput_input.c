@@ -417,7 +417,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    rwebinput_generate_lut();
 
    r = emscripten_set_keydown_callback(
-         "!canvas", rwebinput, false,
+         "#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -426,7 +426,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    }
 
    r = emscripten_set_keyup_callback(
-         "!canvas", rwebinput, false,
+         "#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -435,7 +435,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    }
 
    r = emscripten_set_keypress_callback(
-         "!canvas", rwebinput, false,
+         "#canvas", rwebinput, false,
          rwebinput_keyboard_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -443,7 +443,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create keypress callback: %d\n", r);
    }
 
-   r = emscripten_set_mousedown_callback("!canvas", rwebinput, false,
+   r = emscripten_set_mousedown_callback("#canvas", rwebinput, false,
          rwebinput_mouse_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -451,7 +451,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create mousedown callback: %d\n", r);
    }
 
-   r = emscripten_set_mouseup_callback("!canvas", rwebinput, false,
+   r = emscripten_set_mouseup_callback("#canvas", rwebinput, false,
          rwebinput_mouse_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -459,7 +459,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create mouseup callback: %d\n", r);
    }
 
-   r = emscripten_set_mousemove_callback("!canvas", rwebinput, false,
+   r = emscripten_set_mousemove_callback("#canvas", rwebinput, false,
          rwebinput_mouse_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -468,7 +468,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
    }
 
    r = emscripten_set_wheel_callback(
-         "!canvas", rwebinput, false,
+         "#canvas", rwebinput, false,
          rwebinput_wheel_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -819,7 +819,7 @@ static void rwebinput_input_poll(void *data)
 static void rwebinput_grab_mouse(void *data, bool state)
 {
    if (state)
-      emscripten_request_pointerlock("!canvas", EM_TRUE);
+      emscripten_request_pointerlock("#canvas", EM_TRUE);
    else
       emscripten_exit_pointerlock();
 }

@@ -1,0 +1,120 @@
+/**
+ * RetroArch Web Player
+ *
+ * This provides the basic styling for the RetroArch web player.
+ */
+
+/**
+ * Make sure the background of the player is black.
+ * Also make sure line height is 0 so there's no extra space on the bottom.
+ */
+.webplayer-container {
+  background-color: black;
+  line-height: 0;
+}
+
+/**
+ * Webplayer Preview when not loaded.
+ */
+.webplayer-preview {
+  margin: 0 auto;
+  cursor: wait;
+  opacity: 0.2;
+  transition: all 0.8s;
+  -webkit-animation: loading 0.8s ease-in-out infinite alternate;
+  -moz-animation: loading 0.8s ease-in-out infinite alternate;
+  animation: loading 0.8s ease-in-out infinite alternate;
+}
+.webplayer-preview.loaded {
+  cursor: pointer;
+  opacity: 1;
+  -webkit-animation: loaded 0.8s ease-in-out;
+  -moz-animation: loaded 0.8s ease-in-out;
+  animation: loaded 0.8s ease-in-out;
+}
+@keyframes loaded {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@-moz-keyframes loaded {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@-webkit-keyframes loaded {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes loading{
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@-moz-keyframes loading{
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@-webkit-keyframes loading {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+
+/**
+ * Disable the border around the player.
+ */
+canvas.webplayer {
+  border: none;
+  outline: none;
+}
+
+textarea {
+    font-family: monospace;
+    font-size: 0.7em;
+    height: 95%;
+    width:  95%;
+    border-style: none;
+    border-color: transparent;
+    overflow: auto;
+    resize: none;
+}
+
+/**
+ * Toggle Top Navigation
+ */
+.toggleMenu {
+   float: right;
+}
+.showMenu {
+   position: absolute;
+   right: 0;
+   cursor: pointer;
+}
+#icnShowMenu {
+   color: #565656 !important;
+}
+
+.navbar {
+  box-shadow: none;
+}
