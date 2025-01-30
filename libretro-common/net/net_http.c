@@ -968,7 +968,6 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->response.buflen  = 16 * 1024;
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
-   string_list_initialize(state->response.headers);
 
    return state;
 }
