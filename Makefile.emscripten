@@ -95,9 +95,9 @@ _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focu
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
 _cmd_cheat_get_size,_cmd_cheat_apply_cheats
 
-EXPORTS := callMain,FS,PATH,ERRNO_CODES,stringToNewUTF8,UTF8ToString
+EXPORTS := callMain,FS,PATH,ERRNO_CODES,stringToNewUTF8,UTF8ToString,Browser,GL
 
-LIBS    := -s USE_ZLIB=1
+LIBS    := -s USE_ZLIB=1 -lbrowser.js
 
 ifeq ($(HAVE_WASMFS), 1)
    LIBS += -s WASMFS -s FORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
@@ -112,38 +112,37 @@ else
    endif
 endif
 
-ifeq ($(HAVE_OPENGLES), 1)
-   ifeq ($(HAVE_OPENGLES3), 1)
-      LDFLAGS += -s FULL_ES3=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2
-   else
-      LDFLAGS += -s FULL_ES2=1
-   endif
-endif
-
-ifeq ($(GL_DEBUG), 1)
-   LDFLAGS += -s GL_ASSERTIONS=1 -s GL_DEBUG=1
-endif
-
-ifeq ($(FS_DEBUG), 1)
-   LDFLAGS += -s FS_DEBUG=1
-endif
-
 ifeq ($(HAVE_SDL2), 1)
    LIBS += -s USE_SDL=2
    DEFINES += -DHAVE_SDL2
 endif
 
 
-LDFLAGS := -L. --no-heap-copy -s $(LIBS) -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
+LDFLAGS := -L. --no-heap-copy -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(INITIAL_HEAP) \
            -s EXPORTED_RUNTIME_METHODS=$(EXPORTS) \
            -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
            -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
            -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
            -s OFFSCREENCANVAS_SUPPORT \
-           -s OFFSCREEN_FRAMEBUFFER \
            --extern-pre-js emscripten/pre.js \
            --js-library emscripten/library_rwebcam.js \
            --js-library emscripten/library_platform_emscripten.js
+
+ifeq ($(HAVE_OPENGLES), 1)
+   ifeq ($(HAVE_OPENGLES3), 1)
+      LDFLAGS += -s FULL_ES3=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -lGL
+   else
+      LDFLAGS += -s FULL_ES2=1 -s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2 -lGL
+   endif
+endif
+
+ifeq ($(GL_DEBUG), 1)
+   LDFLAGS += -s GL_ASSERTIONS=1 -s GL_DEBUG=1 -DHAVE_GL_DEBUG_ES=1
+endif
+
+ifeq ($(FS_DEBUG), 1)
+   LDFLAGS += -s FS_DEBUG=1
+endif
 
 ifeq ($(HAVE_RWEBAUDIO), 1)
    LDFLAGS += --js-library emscripten/library_rwebaudio.js

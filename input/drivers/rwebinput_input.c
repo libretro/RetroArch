@@ -476,7 +476,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create wheel callback: %d\n", r);
    }
 
-   r = emscripten_set_touchstart_callback("!canvas", rwebinput, false,
+   r = emscripten_set_touchstart_callback("#canvas", rwebinput, false,
          rwebinput_touch_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -484,7 +484,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create touchstart callback: %d\n", r);
    }
 
-   r = emscripten_set_touchend_callback("!canvas", rwebinput, false,
+   r = emscripten_set_touchend_callback("#canvas", rwebinput, false,
          rwebinput_touch_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -492,7 +492,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create touchend callback: %d\n", r);
    }
 
-   r = emscripten_set_touchmove_callback("!canvas", rwebinput, false,
+   r = emscripten_set_touchmove_callback("#canvas", rwebinput, false,
          rwebinput_touch_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {
@@ -500,7 +500,7 @@ static void *rwebinput_input_init(const char *joypad_driver)
          "[EMSCRIPTEN/INPUT] failed to create touchmove callback: %d\n", r);
    }
 
-   r = emscripten_set_touchcancel_callback("!canvas", rwebinput, false,
+   r = emscripten_set_touchcancel_callback("#canvas", rwebinput, false,
          rwebinput_touch_cb);
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {

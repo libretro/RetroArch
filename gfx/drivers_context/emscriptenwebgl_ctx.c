@@ -82,15 +82,12 @@ static void gfx_ctx_emscripten_webgl_check_window(void *data, bool *quit,
    int input_height=0;
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
-   *resize                           = false;
    gfx_ctx_emscripten_webgl_get_canvas_size(&input_width, &input_height);
    *width = (unsigned)input_width;
    *height = (unsigned)input_height;
-   if(*width != emscripten->fb_width || *height != emscripten->fb_height) {
-      *resize = true;
-   }
-   emscripten->fb_width  = (unsigned)*width;
-   emscripten->fb_height = (unsigned)*height;
+   *resize               = (*width != emscripten->fb_width || *height != emscripten->fb_height);
+   emscripten->fb_width  = *width;
+   emscripten->fb_height = *height;
    *quit                 = false;
 }
 
@@ -137,10 +134,10 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
    attrs.antialias = false;
    attrs.powerPreference = EM_WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE;
    attrs.majorVersion = 2;
-   attrs.minorVersion = 2;
+   attrs.minorVersion = 0;
    attrs.enableExtensionsByDefault = true;
    attrs.explicitSwapControl = true;
-   attrs.renderViaOffscreenBackBuffer = true;
+   attrs.renderViaOffscreenBackBuffer = false;
    attrs.proxyContextToMainThread = EMSCRIPTEN_WEBGL_CONTEXT_PROXY_DISALLOW;
 
    if (!emscripten)
@@ -148,14 +145,13 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
 
    emscripten->ctx = emscripten_webgl_create_context("#canvas", &attrs);
    if(!emscripten->ctx) {
-      RARCH_LOG("[EMSCRIPTEN/WEBGL]: Failed to initialize webgl\n");
+      RARCH_ERR("[EMSCRIPTEN/WEBGL]: Failed to initialize webgl\n");
       goto error;
    }
    emscripten_webgl_get_drawing_buffer_size(emscripten->ctx, &width, &height);
    emscripten_webgl_make_context_current(emscripten->ctx);
    emscripten->fb_width = (unsigned)width;
    emscripten->fb_height = (unsigned)height;
-   RARCH_LOG("[EMSCRIPTEN/WEBGL]: Dimensions: %ux%u\n", emscripten->fb_width, emscripten->fb_height);
 
    return emscripten;
 
@@ -173,7 +169,6 @@ static bool gfx_ctx_emscripten_webgl_set_video_mode(void *data,
    if(!emscripten || !emscripten->ctx) return false;
 
    if (width != 0 && height != 0) { 
-      RARCH_LOG("[EMSCRIPTEN/WebGL]: set canvas size to %d, %d\n", width, height);
       r = emscripten_set_canvas_element_size("#canvas",
                                              (int)width, (int)height);
 
@@ -192,7 +187,6 @@ bool gfx_ctx_emscripten_webgl_set_resize(void *data, unsigned width, unsigned he
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
    EMSCRIPTEN_RESULT r;
    if(!emscripten || !emscripten->ctx) return false;
-   RARCH_LOG("[EMSCRIPTEN/WebGL]: set canvas size to %d, %d\n", width, height);
    r = emscripten_set_canvas_element_size("#canvas",
                                           (int)width, (int)height);
    if (r != EMSCRIPTEN_RESULT_SUCCESS) {
@@ -217,6 +211,25 @@ static void gfx_ctx_emscripten_webgl_input_driver(void *data,
    void *rwebinput = input_driver_init_wrap(&input_rwebinput, name);
    *input          = rwebinput ? &input_rwebinput : NULL;
    *input_data     = rwebinput;
+}
+
+static bool gfx_ctx_emscripten_webgl_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   switch (type)
+   {
+      // there is no way to get the actual DPI in emscripten, so return a standard value instead.
+      // this is needed for menu touch/pointer swipe scrolling to work.
+      case DISPLAY_METRIC_DPI:
+         *value = 150.0f;
+         break;
+
+      default:
+         *value = 0.0f;
+         return false;
+   }
+
+   return true;
 }
 
 static bool gfx_ctx_emscripten_webgl_has_focus(void *data) {
@@ -256,7 +269,7 @@ const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   gfx_ctx_emscripten_webgl_get_metrics,
    gfx_ctx_emscripten_webgl_translate_aspect,
    NULL, /* update_title */
    gfx_ctx_emscripten_webgl_check_window,
@@ -274,6 +287,6 @@ const gfx_ctx_driver_t gfx_ctx_emscripten_webgl = {
    gfx_ctx_emscripten_webgl_get_flags,
    gfx_ctx_emscripten_webgl_set_flags,
    gfx_ctx_emscripten_webgl_bind_hw_render,
-   NULL,
-   NULL
+   NULL, /* get_context_data */
+   NULL /* make_current */
 };

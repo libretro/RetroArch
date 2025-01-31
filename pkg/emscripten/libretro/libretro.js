@@ -9,6 +9,8 @@ var setImmediate;
 var Module = {
    noInitialRun: true,
    arguments: ["-v", "--menu"],
+   noImageDecoding: true,
+   noAudioDecoding: true,
 
    encoder: new TextEncoder(),
    message_queue: [],
@@ -104,6 +106,8 @@ function appInitialized()
  }
 
 function preLoadingComplete() {
+   $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
+   $('#icnRun').addClass('fa-play');
    // Make the Preview image clickable to start RetroArch.
    $('.webplayer-preview').addClass('loaded').click(function() {
       startRetroArch();
@@ -113,38 +117,6 @@ function preLoadingComplete() {
       startRetroArch();
       return false;
    });
-}
-
-async function setupZipFS(mount) {
-  let buffers = await Promise.all([
-    fetch("assets/frontend/bundle.zip.aa").then((r) => r.arrayBuffer()),
-    fetch("assets/frontend/bundle.zip.ab").then((r) => r.arrayBuffer()),
-    fetch("assets/frontend/bundle.zip.ac").then((r) => r.arrayBuffer()),
-    fetch("assets/frontend/bundle.zip.ad").then((r) => r.arrayBuffer())
-  ]);
-  let buffer = new ArrayBuffer(256*1024*1024);
-  let bufferView = new Uint8Array(buffer);
-  let idx = 0;
-  for (let buf of buffers) {
-    if (idx+buf.byteLength > buffer.maxByteLength) {
-      console.log("WEBPLAYER: error: bundle.zip is too large");
-    }
-    bufferView.set(new Uint8Array(buf), idx, buf.byteLength);
-    idx += buf.byteLength;
-  }
-  const zipBuf = new Uint8Array(buffer, 0, idx);
-  const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(zipBuf), {useWebWorkers:false});
-  const entries = await zipReader.getEntries();
-  for(const file of entries) {
-    if (file.getData && !file.directory) {
-      const writer = new zip.Uint8ArrayWriter();
-      const data = await file.getData(writer);
-      Module.FS.createPreloadedFile(mount+"/"+file.filename, undefined, data, true, true);
-    } else if (file.directory) {
-      Module.FS.mkdirTree(mount+"/"+file.filename);
-    }
-  }
-  await zipReader.close();
 }
 
 function loadIndex(index, path) {
@@ -170,7 +142,6 @@ async function setupFileSystem()
   Module.FS.mount(Module.FETCHFS, {"base_url":"assets/cores"}, "/home/web_user/retroarch/downloads");
   loadIndex(index, "/home/web_user/retroarch/downloads/");
 
-  setupZipFS("/home/web_user/retroarch");
   console.log("WEBPLAYER: filesystem initialization successful");
 }
 
@@ -337,10 +308,6 @@ function loadCore(core) {
       import(URL.createObjectURL(scriptBlob)).then(script => {
          script.default(Module).then(mod => {
             Module = mod;
-            $('#icnRun').removeClass('fa-spinner').removeClass('fa-spin');
-            $('#icnRun').addClass('fa-play');
-            $('#lblDrop').removeClass('active');
-            $('#lblLocal').addClass('active');
          }).catch(err => { console.error("Couldn't instantiate module",err); throw err; });
       }).catch(err => { console.error("Couldn't load script",err); throw err; });
    });

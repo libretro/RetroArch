@@ -50,7 +50,34 @@
 #include "../../audio/audio_driver.h"
 
 void emscripten_mainloop(void);
-void PlatformEmscriptenWatchCanvasSize(void);
+void PlatformEmscriptenWatchCanvasSize(void) {
+   MAIN_THREAD_ASYNC_EM_ASM(
+      RPE.observer = new ResizeObserver(function(_e) {
+         var container = Module.canvas.parentElement;
+         var width = container.offsetWidth;
+         var height = container.offsetHeight;
+         var w = Module.canvas.width;
+         var h = Module.canvas.height;
+         if (w == 0 || h == 0 || width == 0 || height == 0) { return; }
+         /* Module.print("Setting real canvas size: " + width + " x " + height); */
+         if (Module.canvas.controlTransferredOffscreen) {
+            var new_w = `${width}px`;
+            var new_h = `${height}px`;
+            if (Module.canvas.style.width != new_w || Module.canvas.style.height != new_h) {
+               Module.canvas.style.width = new_w;
+               Module.canvas.style.height = new_h;
+            }
+         } else {
+            Module.Browser.setCanvasSize(width, height);
+         }
+      });
+      RPE.observer.observe(Module.canvas.parentElement);
+      window.addEventListener("resize", function(e) {
+         RPE.observer.unobserve(Module.canvas.parentElement);
+         RPE.observer.observe(Module.canvas.parentElement);
+      }, false);
+   );
+}
 void PlatformEmscriptenPowerStateInit(void);
 bool PlatformEmscriptenPowerStateGetSupported(void);
 int PlatformEmscriptenPowerStateGetDischargeTime(void);
@@ -304,12 +331,8 @@ int main(int argc, char *argv[])
    PlatformEmscriptenWatchCanvasSize();
    PlatformEmscriptenPowerStateInit();
 
-   EM_ASM({
-      specialHTMLTargets["!canvas"] = Module.canvas;
-   });
-
-   emscripten_set_canvas_element_size("!canvas", 800, 600);
-   emscripten_set_element_css_size("!canvas", 800.0, 600.0);
+   emscripten_set_canvas_element_size("#canvas", 800, 600);
+   emscripten_set_element_css_size("#canvas", 800.0, 600.0);
    emscripten_set_main_loop(emscripten_mainloop, 0, 0);
    emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
    rarch_main(argc, argv, NULL);

@@ -52,7 +52,7 @@ static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 
 static void gfx_ctx_emscripten_get_canvas_size(int *width, int *height)
 {
-   EMSCRIPTEN_RESULT r = emscripten_get_canvas_element_size("!canvas", width, height);
+   EMSCRIPTEN_RESULT r = emscripten_get_canvas_element_size("#canvas", width, height);
 
    if (r != EMSCRIPTEN_RESULT_SUCCESS)
    {

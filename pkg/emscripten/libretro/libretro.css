@@ -88,6 +88,12 @@ canvas.webplayer {
   height: 600px;
 }
 
+#canvas_div {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+}
+
 /**
  * Hack to make emscripten stop messing with the canvas size while in fullscreen.
  * Foiled again!
