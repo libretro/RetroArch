@@ -43,7 +43,7 @@
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__APPLE__)
 #define VULKAN_EMULATE_MAILBOX
 #endif
 
@@ -698,12 +698,16 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          &vk->context.memory_properties);
 
 #ifdef VULKAN_EMULATE_MAILBOX
+#if defined(_WIN32)
    /* Win32 windowed mode seems to deal just fine with toggling VSync.
     * Fullscreen however ... */
    if (vk->flags & VK_DATA_FLAG_FULLSCREEN)
       vk->flags |=  VK_DATA_FLAG_EMULATE_MAILBOX;
    else
       vk->flags &= ~VK_DATA_FLAG_EMULATE_MAILBOX;
+#else
+   vk->flags |=  VK_DATA_FLAG_EMULATE_MAILBOX;
+#endif
 #endif
 
    /* If we're emulating mailbox, stick to using fences rather than semaphores.
