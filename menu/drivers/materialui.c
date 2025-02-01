@@ -2744,6 +2744,12 @@ static uint8_t materialui_count_lines(const char *str)
    return lines;
 }
 
+static bool materialui_show_sublabel_for_entry(menu_entry_t *entry)
+{
+   settings_t *settings = config_get_ptr();
+   return (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel));
+}
+
 /* > Returns number of lines required to display
  *   the sublabel of entry 'entry_idx' */
 static uint8_t materialui_count_sublabel_lines(
@@ -2753,7 +2759,6 @@ static uint8_t materialui_count_sublabel_lines(
    menu_entry_t entry;
    char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
    int sublabel_width_max   = 0;
-   settings_t *settings     = config_get_ptr();
 
    wrapped_sublabel_str[0] = '\0';
 
@@ -2764,7 +2769,7 @@ static uint8_t materialui_count_sublabel_lines(
    menu_entry_get(&entry, 0, entry_idx, NULL, true);
 
    /* If sublabel is empty, return immediately */
-   if (!settings->bools.menu_show_sublabels || string_is_empty(entry.sublabel))
+   if (!materialui_show_sublabel_for_entry(&entry))
       return 0;
 
    /* Wrap sublabel string to fit available width */
@@ -4192,7 +4197,7 @@ static void materialui_render_menu_entry_default(
    /* Draw entry sublabel
     * > Must be done before label + value, since it
     *   affects y offset positions */
-   if (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel))
+   if (materialui_show_sublabel_for_entry(entry))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -4552,7 +4557,7 @@ static void materialui_render_menu_entry_playlist_list(
    /* Draw entry sublabel
     * > Must be done before label, since it
     *   affects y offset positions */
-   if (settings->bools.menu_show_sublabels && !string_is_empty(entry->sublabel))
+   if (materialui_show_sublabel_for_entry(entry))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
