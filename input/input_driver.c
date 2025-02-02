@@ -2371,27 +2371,31 @@ static void input_overlay_get_analog_state(
 
    if (first_touch)
    {
-      unsigned recenter_zone =
+      unsigned recenter_zone =  /* [0,100] */
             config_get_ptr()->uints.input_overlay_analog_recenter_zone;
-
-      /* Reset analog center */
-      x_center[b] = desc->x_shift;
-      y_center[b] = desc->y_shift;
 
       if (recenter_zone != 0)
       {
-         /* Get analog state without adjusting center or saturation */
-         x_val = (x - desc->x_shift) / desc->range_x;
-         y_val = (y - desc->y_shift) / desc->range_y;
+         float touch_dist, w;
 
-         /* Recenter if within zone */
-         if (  (x_val * x_val + y_val * y_val) * 1e4
-                  < (recenter_zone * recenter_zone)
-               || recenter_zone >= 100)
-         {
-            x_center[b] = x;
-            y_center[b] = y;
-         }
+         x_val      = (x - desc->x_shift) / desc->range_x;
+         y_val      = (y - desc->y_shift) / desc->range_y;
+         touch_dist = sqrt((x_val * x_val + y_val * y_val) * 1e4);
+
+         /* Inside zone, recenter to first touch.
+          * Outside zone, recenter to zone perimeter. */
+         if (touch_dist <= recenter_zone || recenter_zone >= 100)
+            w = 0.0f;
+         else
+            w = (touch_dist - recenter_zone) / touch_dist;
+
+         x_center[b] = x * (1.0f - w) + desc->x_shift * w;
+         y_center[b] = y * (1.0f - w) + desc->y_shift * w;
+      }
+      else
+      {
+         x_center[b] = desc->x_shift;
+         y_center[b] = desc->y_shift;
       }
    }
 
