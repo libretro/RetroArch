@@ -923,7 +923,8 @@ endif
 
 ifeq ($(HAVE_PIPEWIRE), 1)
    OBJ += audio/drivers/pipewire.o \
-          audio/common/pipewire.o
+          audio/common/pipewire.o \
+          camera/drivers/pipewire.o
 
    ifeq ($(HAVE_MICROPHONE), 1)
       OBJ += audio/drivers_microphone/pipewire.o

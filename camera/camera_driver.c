@@ -49,6 +49,9 @@ const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
 #endif
+#ifdef HAVE_PIPEWIRE
+   &camera_pipewire,
+#endif
 #ifdef EMSCRIPTEN
    &camera_rwebcam,
 #endif
