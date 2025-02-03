@@ -4020,7 +4020,6 @@ static void materialui_render_menu_entry_default(
    bool draw_text_outside                            = (x_offset != 0);
    gfx_display_t *p_disp                             = disp_get_ptr();
    uico_driver_state_t *uico_st                      = uico_state_get_ptr();
-   settings_t *settings                              = config_get_ptr();
 
    static float color_white[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
