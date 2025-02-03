@@ -72,7 +72,8 @@ static void capture_process_cb(void *data)
    uint32_t idx, offs, n_bytes;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
 
-   assert(mic->stream);
+   retro_assert(mic);
+   retro_assert(mic->stream);
 
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
@@ -120,28 +121,25 @@ static void registry_event_global(void *data, uint32_t id,
    union string_list_elem_attr attr;
    const struct spa_dict_item *item;
    pipewire_core_t              *pw = (pipewire_core_t*)data;
-   const char                *media = NULL;
    const char                 *sink = NULL;
 
    if (!pw)
       return;
 
-   if (spa_streq(type, PW_TYPE_INTERFACE_Node))
+   if (   spa_streq(type, PW_TYPE_INTERFACE_Node)
+       && spa_streq("Audio/Source", spa_dict_lookup(props, PW_KEY_MEDIA_CLASS)))
    {
-      media = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
-      if (media && spa_streq(media, "Audio/Source"))
+      sink = spa_dict_lookup(props, PW_KEY_NODE_NAME);
+      if (sink && pw->devicelist)
       {
-         if ((sink = spa_dict_lookup(props, PW_KEY_NODE_NAME)) != NULL)
-         {
-            attr.i = id;
-            string_list_append(pw->devicelist, sink, attr);
-            RARCH_LOG("[Microphone] [PipeWire]: Found Source Node: %s\n", sink);
-         }
-
-         RARCH_DBG("[Microphone] [PipeWire]: Object: id:%u Type:%s/%d\n", id, type, version);
-         spa_dict_for_each(item, props)
-            RARCH_DBG("[Microphone] [PipeWire]: \t\t%s: \"%s\"\n", item->key, item->value);
+         attr.i = id;
+         string_list_append(pw->devicelist, sink, attr);
+         RARCH_LOG("[Microphone] [PipeWire]: Found Source Node: %s\n", sink);
       }
+
+      RARCH_DBG("[Microphone] [PipeWire]: Object: id:%u Type:%s/%d\n", id, type, version);
+      spa_dict_for_each(item, props)
+         RARCH_DBG("[Microphone] [PipeWire]: \t\t%s: \"%s\"\n", item->key, item->value);
    }
 }
 
@@ -285,14 +283,12 @@ static void *pipewire_microphone_open_mic(void *driver_context,
    struct pw_properties *props = NULL;
    const char           *error = NULL;
    struct spa_pod_builder    b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
-   pipewire_microphone_t   *mic = calloc(1, sizeof(pipewire_microphone_t));
+   pipewire_microphone_t   *mic = NULL;
 
-   retro_assert(driver_context);
-
-   if (!mic)
+   if (!driver_context || (mic = calloc(1, sizeof(pipewire_microphone_t))) == NULL)
       goto error;
 
-   mic->pw       = (pipewire_core_t*)driver_context;
+   mic->pw = (pipewire_core_t*)driver_context;
 
    pw_thread_loop_lock(mic->pw->thread_loop);
 
@@ -393,7 +389,7 @@ static bool pipewire_microphone_stop_mic(void *driver_context, void *mic_context
       return false;
 
    if (pw_stream_get_state(mic->stream, &error) == PW_STREAM_STATE_STREAMING)
-     res =  pipewire_stream_set_active(pw->thread_loop, mic->stream, false);
+      res = pipewire_stream_set_active(pw->thread_loop, mic->stream, false);
    else
       /* For other states we assume that the stream is inactive */
       res = true;

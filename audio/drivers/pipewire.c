@@ -61,6 +61,7 @@ static void playback_process_cb(void *data)
    uint32_t req, idx, n_bytes;
    int32_t avail;
 
+   retro_assert(audio);
    retro_assert(audio->stream);
 
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
@@ -132,26 +133,22 @@ static void registry_event_global(void *data, uint32_t id,
    union string_list_elem_attr attr;
    const struct spa_dict_item *item;
    pipewire_core_t              *pw = (pipewire_core_t*)data;
-   const char                *media = NULL;
    const char                 *sink = NULL;
 
-   if (spa_streq(type, PW_TYPE_INTERFACE_Node))
+   if (spa_streq(type, PW_TYPE_INTERFACE_Node)
+      && spa_streq("Audio/Sink", spa_dict_lookup(props, PW_KEY_MEDIA_CLASS)))
    {
-      media = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
-      if (media && spa_streq(media, "Audio/Sink"))
+      sink = spa_dict_lookup(props, PW_KEY_NODE_NAME);
+      if (sink && pw->devicelist)
       {
-         sink = spa_dict_lookup(props, PW_KEY_NODE_NAME);
-         if (sink && pw->devicelist)
-         {
-            attr.i = id;
-            string_list_append(pw->devicelist, sink, attr);
-            RARCH_LOG("[Audio] [PipeWire]: Found Sink Node: %s\n", sink);
-         }
-
-         RARCH_DBG("[Audio] [PipeWire]: Object: id:%u Type:%s/%d\n", id, type, version);
-         spa_dict_for_each(item, props)
-            RARCH_DBG("[Audio] [PipeWire]: \t\t%s: \"%s\"\n", item->key, item->value);
+         attr.i = id;
+         string_list_append(pw->devicelist, sink, attr);
+         RARCH_LOG("[Audio] [PipeWire]: Found Sink Node: %s\n", sink);
       }
+
+      RARCH_DBG("[Audio] [PipeWire]: Object: id:%u Type:%s/%d\n", id, type, version);
+      spa_dict_for_each(item, props)
+         RARCH_DBG("[Audio] [PipeWire]: \t\t%s: \"%s\"\n", item->key, item->value);
    }
 }
 
@@ -225,14 +222,16 @@ static void *pipewire_init(const char *device, unsigned rate,
                            PW_STREAM_FLAG_MAP_BUFFERS |
                            PW_STREAM_FLAG_RT_PROCESS,
                            params, 1);
-
    if (res < 0)
       goto unlock_error;
 
    audio->highwater_mark = MIN(RINGBUFFER_SIZE,
                                latency * (uint64_t)rate / 1000 * audio->frame_size);
 
+   pw_thread_loop_wait(audio->pw->thread_loop);
    pw_thread_loop_unlock(audio->pw->thread_loop);
+
+   *new_rate = audio->info.rate;
 
    return audio;
 
@@ -384,7 +383,7 @@ static void pipewire_free(void *data)
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
    if (!audio)
-      return pw_deinit();
+      return;
 
    if (audio->stream)
    {

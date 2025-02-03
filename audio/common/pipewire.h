@@ -33,7 +33,7 @@
 #define PW_RARCH_MEDIA_TYPE_VIDEO          "Video"
 #define PW_RARCH_MEDIA_TYPE_MIDI           "Midi"
 #define PW_RARCH_MEDIA_CATEGORY_PLAYBACK   "Playback"
-#define PW_RARCH_MEDIA_CATEGORY_RECORD	    "Capture"
+#define PW_RARCH_MEDIA_CATEGORY_RECORD     "Capture"
 #define PW_RARCH_MEDIA_ROLE                "Game"
 
 typedef struct pipewire_core
