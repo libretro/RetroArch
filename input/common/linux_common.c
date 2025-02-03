@@ -266,7 +266,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
 
    if (sensor->thread)
    {
-      pthread_t thread = sthread_get_thread_id(sensor->thread);
+      pthread_t thread = (pthread_t)sthread_get_thread_id(sensor->thread);
       sensor->done = true;
 
       if (pthread_cancel(thread) != 0)
