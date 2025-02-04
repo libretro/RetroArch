@@ -5591,28 +5591,8 @@ static enum menu_action xmb_parse_menu_entry_action(
          else if ((xmb->is_playlist)
                || (xmb->is_explore_list))
          {
-            size_t selection_start = 0;
-            size_t selection_total = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-            size_t selection       = menu_st->selection_ptr;
-            size_t new_selection   = selection;
-
-            /* Skip header items (Search Name + Add Additional Filter + Save as View) */
-            if (xmb->is_explore_list)
-            {
-               menu_entry_t entry;
-               MENU_ENTRY_INITIALIZE(entry);
-               menu_entry_get(&entry, 0, 0, NULL, true);
-
-               if (entry.type == MENU_SETTINGS_LAST + 1)
-                  selection_start = 1;
-               else if (entry.type == FILE_TYPE_RDB)
-                  selection_start = 2;
-            }
-
-            new_selection = random_range(selection_start, selection_total - 1);
-
-            while (new_selection == selection && selection_start != selection_total - 1)
-               new_selection = random_range(selection_start, selection_total - 1);
+            size_t selection     = menu_st->selection_ptr;
+            size_t new_selection = menu_playlist_random_selection(selection, xmb->is_explore_list);
 
             if (new_selection != selection)
             {

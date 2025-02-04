@@ -9352,29 +9352,7 @@ static enum menu_action materialui_parse_menu_entry_action(
             else if ((mui->flags & MUI_FLAG_IS_PLAYLIST)
                   || (mui->flags & MUI_FLAG_IS_EXPLORE_LIST))
             {
-               struct menu_state *menu_st = menu_state_get_ptr();
-               size_t selection_start     = 0;
-               size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
-               size_t selection           = menu_st->selection_ptr;
-               size_t new_selection       = selection;
-
-               /* Skip header items (Search Name + Add Additional Filter + Save as View) */
-               if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
-               {
-                  menu_entry_t entry;
-                  MENU_ENTRY_INITIALIZE(entry);
-                  menu_entry_get(&entry, 0, 0, NULL, true);
-
-                  if (entry.type == MENU_SETTINGS_LAST + 1)
-                     selection_start = 1;
-                  else if (entry.type == FILE_TYPE_RDB)
-                     selection_start = 2;
-               }
-
-               new_selection = random_range(selection_start, selection_total - 1);
-
-               while (new_selection == selection && selection_start != selection_total - 1)
-                  new_selection = random_range(selection_start, selection_total - 1);
+               size_t new_selection = menu_playlist_random_selection(selection, mui->flags & MUI_FLAG_IS_EXPLORE_LIST);
 
                if (new_selection != selection)
                {

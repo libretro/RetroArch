@@ -8218,27 +8218,9 @@ static enum menu_action ozone_parse_menu_entry_action(
          else if ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
                || (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST))
          {
-            size_t selection_start = 0;
+            size_t new_selection = menu_playlist_random_selection(selection, ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST);
 
-            /* Skip header items (Search Name + Add Additional Filter + Save as View) */
-            if (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST)
-            {
-               menu_entry_t entry;
-               MENU_ENTRY_INITIALIZE(entry);
-               menu_entry_get(&entry, 0, 0, NULL, true);
-
-               if (entry.type == MENU_SETTINGS_LAST + 1)
-                  selection_start = 1;
-               else if (entry.type == FILE_TYPE_RDB)
-                  selection_start = 2;
-            }
-
-            new_selection = random_range(selection_start, selection_total - 1);
-
-            while (new_selection == (int)selection && selection_start != selection_total - 1)
-               new_selection = random_range(selection_start, selection_total - 1);
-
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
             {
                menu_st->selection_ptr = new_selection;
                ozone_selection_changed(ozone, false);
@@ -8248,7 +8230,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             new_action    = MENU_ACTION_NOOP;
 
 #ifdef HAVE_AUDIOMIXER
-            if (new_selection != (int)selection)
+            if (new_selection != selection)
                audio_driver_mixer_play_scroll_sound(true);
 #endif
             break;
