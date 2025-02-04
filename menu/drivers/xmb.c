@@ -128,6 +128,7 @@ enum
 #endif
 #ifdef HAVE_NETWORKING
    XMB_TEXTURE_NETPLAY,
+   XMB_TEXTURE_NETPLAY_ALT,
    XMB_TEXTURE_ROOM,
    XMB_TEXTURE_ROOM_LAN,
    XMB_TEXTURE_ROOM_RELAY,
@@ -1150,8 +1151,8 @@ static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 
    path[0]                            = '\0';
 
-   /* Do not update wallpaper in "Load Content" playlists and inside playlist items */
-   if (    (xmb->categories_selection_ptr == XMB_SYSTEM_TAB_MAIN && depth > 4)
+   /* Do not update wallpaper in "Main Menu" playlists and inside playlist items */
+   if (    (xmb->categories_selection_ptr == XMB_SYSTEM_TAB_MAIN && depth > 3)
         || (xmb->categories_selection_ptr > xmb->system_tab_end && depth > 1))
    {
       if (string_is_empty(xmb->bg_file_path))
@@ -2082,7 +2083,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
    {
       if (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_explore_list)
       {
-         if (     !(xmb->is_db_manager_list && xmb->depth > 4)
+         if (     !(xmb->is_db_manager_list && xmb->depth > 3)
                && !xmb->skip_thumbnail_reset)
             xmb_unload_thumbnail_textures(xmb);
 
@@ -2987,6 +2988,7 @@ static void xmb_populate_entries(void *data,
 #endif
             )
          )
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
          || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
@@ -3297,28 +3299,35 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS:
          return xmb->textures.list[XMB_TEXTURE_FOLDER];
       case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
-         return xmb->textures.list[XMB_TEXTURE_ADD];
+         return xmb->textures.list[XMB_TEXTURE_MENU_ADD];
       case MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR:
       case MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB:
          return xmb->textures.list[XMB_TEXTURE_RDB];
 
       /* Menu collection submenus */
       case MENU_ENUM_LABEL_PLAYLISTS_TAB:
-         return xmb->textures.list[XMB_TEXTURE_ZIP];
+         return xmb->textures.list[XMB_TEXTURE_PLAYLIST];
+      case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+         return xmb->textures.list[XMB_TEXTURE_HISTORY];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
-         return xmb->textures.list[XMB_TEXTURE_FAVORITE];
+         return xmb->textures.list[XMB_TEXTURE_FAVORITES];
+#ifdef HAVE_IMAGEVIEWER
       case MENU_ENUM_LABEL_GOTO_IMAGES:
-         return xmb->textures.list[XMB_TEXTURE_IMAGE];
+         return xmb->textures.list[XMB_TEXTURE_IMAGES];
+#endif
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case MENU_ENUM_LABEL_GOTO_VIDEO:
-         return xmb->textures.list[XMB_TEXTURE_MOVIE];
+         return xmb->textures.list[XMB_TEXTURE_MOVIES];
+#endif
       case MENU_ENUM_LABEL_GOTO_MUSIC:
-         return xmb->textures.list[XMB_TEXTURE_MUSIC];
+         return xmb->textures.list[XMB_TEXTURE_MUSICS];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
          if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE)))
             return xmb->textures.list[XMB_TEXTURE_CURSOR];
          return xmb->textures.list[XMB_TEXTURE_RDB];
       case MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES:
          return xmb->textures.list[XMB_TEXTURE_CORE];
+
       case MENU_ENUM_LABEL_LOAD_DISC:
       case MENU_ENUM_LABEL_DUMP_DISC:
 #ifdef HAVE_LAKKA
@@ -3561,6 +3570,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_NOTIFICATIONS];
 #ifdef HAVE_NETWORKING
+      case MENU_ENUM_LABEL_NETPLAY:
+         return xmb->textures.list[XMB_TEXTURE_NETPLAY];
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
          return xmb->textures.list[XMB_TEXTURE_RUN];
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
@@ -3665,10 +3676,17 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
                            break;
                      }
                   }
+                  else
+                  {
+                     if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+                        return xmb->textures.list[XMB_TEXTURE_MUSIC];
+                     else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+                        return xmb->textures.list[XMB_TEXTURE_IMAGE];
+                     else if (string_is_equal(xmb->title_name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
+                        return xmb->textures.list[XMB_TEXTURE_MOVIE];
+                  }
                }
                break;
-            case XMB_SYSTEM_TAB_FAVORITES:
-               return xmb->textures.list[XMB_TEXTURE_FAVORITE];
             case XMB_SYSTEM_TAB_MUSIC:
                return xmb->textures.list[XMB_TEXTURE_MUSIC];
 #ifdef HAVE_IMAGEVIEWER
@@ -4981,9 +4999,15 @@ static int xmb_draw_item(
          node->zoom  = xmb->items_active_zoom;
       }
 
-      /* Differentiate the basic setting icon from the rest */
-      if (texture == xmb->textures.list[XMB_TEXTURE_SUBSETTING])
-         gfx_display_set_alpha(color, MIN(node->alpha / 3, xmb->alpha));
+      if (i != current && list != &xmb->selection_buf_old)
+      {
+         /* Differentiate the basic setting icon from the rest */
+         if (texture == xmb->textures.list[XMB_TEXTURE_SUBSETTING])
+            gfx_display_set_alpha(color, MIN(node->alpha / 2.4f, xmb->alpha));
+         /* Highlight active icon more by dimming all passives */
+         else
+            gfx_display_set_alpha(color, MIN(node->alpha / 1.2f, xmb->alpha));
+      }
 
       /* Explore list correction hack for not showing wrong icons as "previous" icon */
       if (xmb->is_explore_list && !xmb->is_quick_menu && texture)
@@ -5018,8 +5042,8 @@ static int xmb_draw_item(
                texture = sidebar_node->icon;
          }
       }
-      /* "Load Content" playlists */
-      else if (xmb->depth == 3 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
+      /* "Main Menu" playlists */
+      else if (xmb->depth == 2 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
       {
          xmb_node_t *sidebar_node = (xmb_node_t*) file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx);
          if (sidebar_node && sidebar_node->icon)
@@ -5033,12 +5057,16 @@ static int xmb_draw_item(
          {
             case XMB_SYSTEM_TAB_MAIN:
                {
-                  /* Special fall-through for "Load Content" > Playlists > Favorites */
+                  /* Special fall-through for "Main Menu" > Playlists > History/Favorites */
                   char title[NAME_MAX_LENGTH];
                   menu_entries_get_title(title, sizeof(title));
-                  if (string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)))
+                  if (     string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY))
+                        || string_is_equal(title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES)))
                      ; /* no-op */
-                  else if (xmb->depth == 5)
+                  /* Force "Main Menu" playlists to use content icon while
+                   * inside the playlist content regardless of the option,
+                   * since playlists themselves use the main icon */
+                  else if (xmb->depth == 4)
                      show_history_icons = PLAYLIST_SHOW_HISTORY_ICONS_CONTENT;
                   else
                      break;
@@ -5049,8 +5077,7 @@ static int xmb_draw_item(
                   const struct playlist_entry *pl_entry = NULL;
                   xmb_node_t *db_node                   = NULL;
 
-                  playlist_get_index(playlist_get_cached(),
-                        entry.entry_idx, &pl_entry);
+                  playlist_get_index(playlist_get_cached(), entry.entry_idx, &pl_entry);
 
                   if (    pl_entry
                       && !string_is_empty(pl_entry->db_name)
@@ -5143,11 +5170,13 @@ static int xmb_draw_item(
 
    if (texture_switch != 0 && color[3] != 0 && !xmb->assets_missing)
    {
-      if (texture_switch == xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
-         gfx_display_set_alpha(color, MIN(node->alpha / 2, xmb->alpha));
-      else
-         gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
-
+      if (list != &xmb->selection_buf_old)
+      {
+         if (texture_switch == xmb->textures.list[XMB_TEXTURE_SWITCH_OFF])
+            gfx_display_set_alpha(color, MIN(node->alpha / 2, xmb->alpha));
+         else
+            gfx_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
+      }
       xmb_draw_icon(
             userdata,
             p_disp,
@@ -7522,9 +7551,9 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->items_passive_zoom       = 0.5;
 
    xmb->categories_active_alpha  = 1.0;
-   xmb->categories_passive_alpha = 0.85;
+   xmb->categories_passive_alpha = 0.75;
    xmb->items_active_alpha       = 1.0;
-   xmb->items_passive_alpha      = 0.85;
+   xmb->items_passive_alpha      = 0.75;
 
    xmb->shadow_offset            = 3.0            * scale_factor;
    if (xmb->shadow_offset < 1.0)
@@ -7577,9 +7606,9 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->items_passive_zoom       = 0.5;
 
    xmb->categories_active_alpha  = 1.0;
-   xmb->categories_passive_alpha = 0.85;
+   xmb->categories_passive_alpha = 0.75;
    xmb->items_active_alpha       = 1.0;
-   xmb->items_passive_alpha      = 0.85;
+   xmb->items_passive_alpha      = 0.75;
 
    xmb->shadow_offset            = 3.0            * scale_factor;
    if (xmb->shadow_offset < 1.0)
@@ -7815,10 +7844,10 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (      settings->bools.menu_content_show_settings
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_SETTINGS;
-   if (settings->bools.menu_content_show_favorites)
-      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
    if (settings->bools.menu_content_show_history)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_HISTORY;
+   if (settings->bools.menu_content_show_favorites)
+      xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_FAVORITES;
 #ifdef HAVE_IMAGEVIEWER
    if (settings->bools.menu_content_show_images)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_IMAGES;
@@ -7829,15 +7858,15 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_content_show_video)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_VIDEO;
 #endif
+#if 0 /* Move Netplay and Import Content to Main Menu */
 #ifdef HAVE_NETWORKING
    if (settings->bools.menu_content_show_netplay)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_NETPLAY;
 #endif
-
    if (      settings->bools.menu_content_show_add
          && !settings->bools.kiosk_mode_enable)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_ADD;
-
+#endif /* 0 */
 #if defined(HAVE_DYNAMIC)
    if (settings->uints.menu_content_show_contentless_cores != MENU_CONTENTLESS_CORES_DISPLAY_NONE)
       xmb->tabs[++xmb->system_tab_end] = XMB_SYSTEM_TAB_CONTENTLESS_CORES;
@@ -8094,6 +8123,8 @@ static const char *xmb_texture_path(unsigned id)
 #ifdef HAVE_NETWORKING
       case XMB_TEXTURE_NETPLAY:
          return "netplay.png";
+      case XMB_TEXTURE_NETPLAY_ALT:
+         return "../../../ozone/png/sidebar/netplay.png";
       case XMB_TEXTURE_ROOM:
          return "menu_room.png";
       case XMB_TEXTURE_ROOM_LAN:
@@ -8244,7 +8275,20 @@ static bool xmb_context_reset_textures(
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
-      if (!gfx_display_reset_textures_list(xmb_texture_path(i), iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+      /* Use Ozone sidebar icon for netplay icon instead if it exists */
+      const char *texture_path = xmb_texture_path(i);
+#ifdef HAVE_NETWORKING
+      if (i == XMB_TEXTURE_NETPLAY && menu_xmb_theme == XMB_ICON_THEME_MONOCHROME)
+      {
+         char texpath[PATH_MAX_LENGTH];
+         fill_pathname_join_special(texpath,
+               iconpath, xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT), sizeof(texpath));
+         if (path_is_valid(texpath))
+            texture_path = xmb_texture_path(XMB_TEXTURE_NETPLAY_ALT);
+      }
+#endif
+
+      if (!gfx_display_reset_textures_list(texture_path, iconpath, &xmb->textures.list[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
       {
          /* New extra battery icons could be missing */
          if (     i == XMB_TEXTURE_BATTERY_80
@@ -8258,6 +8302,7 @@ static bool xmb_context_reset_textures(
                return false;
             continue;
          }
+
          /* If the icon is missing return the subsetting (because some themes are incomplete) */
          if ( !(  i == XMB_TEXTURE_DIALOG_SLICE
                || i == XMB_TEXTURE_KEY_HOVER
@@ -8270,7 +8315,7 @@ static bool xmb_context_reset_textures(
                /* Do not draw icons if subsetting is missing */
                return false;
             }
-            /* Do not draw icons if this ones are is missing */
+            /* Do not draw icons if these are missing */
             switch (i)
             {
                case XMB_TEXTURE_POINTER:
@@ -8921,15 +8966,26 @@ static int xmb_list_push(void *data, void *userdata,
                                    = settings->paths.menu_content_show_settings_password;
    const char *kiosk_mode_password = settings->paths.kiosk_mode_password;
 
+   /* Use common lists for all drivers */
+   return -1;
+
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_entries_clear(info->list);
+
          menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
                MENU_ENUM_LABEL_FAVORITES,
                MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0, NULL);
+
+         if (menu_content_show_pl)
+            menu_entries_append(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
+                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
+                  MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                  MENU_SETTING_ACTION, 0, 0, NULL);
 
          core_info_get_list(&list);
          if (list->info_count > 0)
@@ -8937,13 +8993,6 @@ static int xmb_list_push(void *data, void *userdata,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-                  MENU_SETTING_ACTION, 0, 0, NULL);
-
-         if (menu_content_show_pl)
-            menu_entries_append(info->list,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
-                  msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
-                  MENU_ENUM_LABEL_PLAYLISTS_TAB,
                   MENU_SETTING_ACTION, 0, 0, NULL);
 
          if (frontend_driver_parse_drive_list(info->list, true) != 0)
