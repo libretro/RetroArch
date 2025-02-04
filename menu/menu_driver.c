@@ -21,6 +21,7 @@
 #endif
 
 #include <retro_timers.h>
+#include <retro_math.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
@@ -8106,3 +8107,32 @@ void menu_update_runahead_mode(void)
       menu_st->runahead_mode = MENU_RUNAHEAD_MODE_OFF;
 }
 #endif
+
+/* Common method for ignoring specifics while picking random playlist items. */
+size_t menu_playlist_random_selection(size_t selection, bool is_explore_list)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection_start     = 0;
+   size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
+   size_t new_selection       = selection;
+
+   /* Skip header items (Search Name + Add Additional Filter + Save as View + Delete this View) */
+   if (is_explore_list)
+   {
+      menu_entry_t entry;
+      MENU_ENTRY_INITIALIZE(entry);
+      menu_entry_get(&entry, 0, 0, NULL, true);
+
+      if (entry.type == MENU_SETTINGS_LAST + 1 || entry.type == FILE_TYPE_PLAIN)
+         selection_start = 1;
+      else if (entry.type == FILE_TYPE_RDB)
+         selection_start = 2;
+   }
+
+   new_selection = random_range(selection_start, selection_total - 1);
+
+   while (new_selection == selection && selection_start != selection_total - 1)
+      new_selection = random_range(selection_start, selection_total - 1);
+
+   return new_selection;
+}

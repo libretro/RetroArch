@@ -745,6 +745,9 @@ bool menu_input_key_bind_set_mode(
 void menu_update_runahead_mode(void);
 #endif
 
+size_t menu_playlist_random_selection(
+      size_t selection, bool is_explore_list);
+
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 
 extern menu_ctx_driver_t menu_ctx_ozone;
