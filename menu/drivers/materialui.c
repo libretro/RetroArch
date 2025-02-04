@@ -9594,28 +9594,31 @@ static int materialui_list_push(void *data, void *userdata,
    core_info_list_t *list   = NULL;
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
 
+   /* Use common lists for all drivers */
+   return ret;
+
    if (!mui)
       return ret;
 
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
+         core_info_get_list(&list);
+
          menu_entries_clear(info->list);
+
          menu_entries_append(info->list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
                MENU_ENUM_LABEL_FAVORITES,
                MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0, NULL);
 
-         core_info_get_list(&list);
          if (list->info_count > 0)
-         {
             menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0, NULL);
-         }
 
          if (frontend_driver_parse_drive_list(info->list, true) != 0)
             menu_entries_append(info->list, "/",
@@ -9623,11 +9626,12 @@ static int materialui_list_push(void *data, void *userdata,
                   MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR,
                   MENU_SETTING_ACTION, 0, 0, NULL);
 
-         menu_entries_append(info->list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
-               msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
-               MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0, NULL);
+         if (!config_get_ptr()->bools.kiosk_mode_enable)
+            menu_entries_append(info->list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
+                  msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
+                  MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
+                  MENU_SETTING_ACTION, 0, 0, NULL);
 
          info->flags |= MD_FLAG_NEED_PUSH | MD_FLAG_NEED_REFRESH;
          ret          = 0;
@@ -9707,6 +9711,15 @@ static int materialui_list_push(void *data, void *userdata,
                      MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY,
                      PARSE_ACTION,
                      false);
+            }
+
+            if (settings->bools.menu_content_show_favorites)
+            {
+               menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES),
+                     msg_hash_to_str(MENU_ENUM_LABEL_GOTO_FAVORITES),
+                     MENU_ENUM_LABEL_GOTO_FAVORITES,
+                     MENU_SETTING_ACTION, 0, 0, NULL);
             }
 
             if (settings->bools.menu_show_load_disc)

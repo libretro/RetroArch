@@ -808,12 +808,7 @@
 #endif
 #endif
 
-/* Specifies 'add content' visibility when using
- * menus WITH a dedicated 'Import Content' tab */
-#define DEFAULT_MENU_CONTENT_SHOW_ADD true
-/* Specifies 'add content' visibility when using
- * menus WITHOUT a dedicated 'Import Content' tab */
-#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB
 
 #define DEFAULT_CONTENT_SHOW_PLAYLISTS true
 

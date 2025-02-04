@@ -1549,7 +1549,6 @@ static ozone_theme_t ozone_theme_purple_rain = {
 
    {0},                                                  /* textures */
 
-   /* No theme assets */
    "purple_rain"                                         /* name */
 };
 
@@ -1914,15 +1913,21 @@ static uintptr_t ozone_entries_icon_get_texture(
 
       /* Menu collection submenus */
       case MENU_ENUM_LABEL_PLAYLISTS_TAB:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_ZIP];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_PLAYLIST];
+      case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
       case MENU_ENUM_LABEL_GOTO_FAVORITES:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
+#ifdef HAVE_IMAGEVIEWER
       case MENU_ENUM_LABEL_GOTO_IMAGES:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGES];
+#endif
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
       case MENU_ENUM_LABEL_GOTO_VIDEO:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIES];
+#endif
       case MENU_ENUM_LABEL_GOTO_MUSIC:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSICS];
       case MENU_ENUM_LABEL_GOTO_EXPLORE:
          if (!string_is_equal(enum_path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE)))
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
@@ -2178,9 +2183,10 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_USER_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_USER:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_USER];
+      case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
+            return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MENU_ADD];
       case MENU_ENUM_LABEL_DIRECTORY_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_DIRECTORY:
-      case MENU_ENUM_LABEL_ADD_CONTENT_LIST:
       case MENU_ENUM_LABEL_SCAN_DIRECTORY:
       case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST:
       case MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_PARENT:
@@ -2199,6 +2205,8 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_NOTIFICATIONS];
 #ifdef HAVE_NETWORKING
+      case MENU_ENUM_LABEL_NETPLAY:
+            return ozone->tab_textures[OZONE_TAB_TEXTURE_NETWORK];
       case MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST:
             return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RUN];
       case MENU_ENUM_LABEL_NETPLAY_DISCONNECT:
@@ -2301,7 +2309,32 @@ static uintptr_t ozone_entries_icon_get_texture(
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FOLDER];
       case FILE_TYPE_PLAIN:
       case FILE_TYPE_IN_CARCHIVE:
+         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case FILE_TYPE_RPL_ENTRY:
+      case FILE_TYPE_PLAYLIST_COLLECTION:
+         switch (ozone->tabs[ozone->categories_selection_ptr])
+         {
+            case OZONE_SYSTEM_TAB_MAIN:
+               if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+                  return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
+               else if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+                  return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
+               else if (string_is_equal(ozone->title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
+                  return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
+               break;
+            case OZONE_SYSTEM_TAB_MUSIC:
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MUSIC];
+#ifdef HAVE_IMAGEVIEWER
+            case OZONE_SYSTEM_TAB_IMAGES:
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE];
+#endif
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+            case OZONE_SYSTEM_TAB_VIDEO:
+               return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_MOVIE];
+#endif
+            default:
+               break;
+         }
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case FILE_TYPE_SHADER:
       case FILE_TYPE_SHADER_PRESET:
@@ -2318,8 +2351,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case FILE_TYPE_CORE:
       case FILE_TYPE_DIRECT_LOAD:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
-      case FILE_TYPE_PLAYLIST_COLLECTION:
-         return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
       case FILE_TYPE_RDB:
          return ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_RDB];
       case FILE_TYPE_RDB_ENTRY:
@@ -3665,21 +3696,18 @@ static void ozone_thumbnail_bar_hide_end(void *userdata)
       ozone->flags           |= OZONE_FLAG_NEED_COMPUTE;
 }
 
-static bool ozone_is_load_content_playlist(void *userdata)
+static bool ozone_is_main_menu_playlist(void *userdata)
 {
    ozone_handle_t *ozone      = (ozone_handle_t*)userdata;
    menu_entry_t entry;
 
-   if (     (ozone->depth != 4)
+   if (     (ozone->depth != 3)
          || (ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST)
          || (ozone->flags & OZONE_FLAG_IS_FILE_LIST))
       return false;
 
    MENU_ENTRY_INITIALIZE(entry);
-   entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
-                | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
-
    return entry.type == FILE_TYPE_RPL_ENTRY;
 }
 
@@ -3927,7 +3955,7 @@ static bool ozone_is_playlist(ozone_handle_t *ozone, bool depth)
       switch (ozone->tabs[ozone->categories_selection_ptr])
       {
          case OZONE_SYSTEM_TAB_MAIN:
-            if (ozone_is_load_content_playlist(ozone))
+            if (ozone_is_main_menu_playlist(ozone))
                return true;
          case OZONE_SYSTEM_TAB_SETTINGS:
          case OZONE_SYSTEM_TAB_ADD:
@@ -3991,8 +4019,8 @@ static void ozone_sidebar_update_collapse(
    if (ozone_get_horizontal_selection_type(ozone) == MENU_EXPLORE_TAB)
       is_playlist = true;
 
-   /* Playlists under 'Load Content' don't need sidebar animations */
-   if (is_playlist && ozone->depth > 3)
+   /* Playlists under "Main Menu" don't need sidebar animations */
+   if (is_playlist && ozone->depth > 2)
       goto end;
 
    /* To collapse or not to collapse */
@@ -5893,9 +5921,9 @@ border_iterate:
          else if (ozone->depth == 3 && entry.enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
          {
             if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
-               texture = ozone->tab_textures[OZONE_TAB_TEXTURE_HISTORY];
+               texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
             else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
-               texture = ozone->tab_textures[OZONE_TAB_TEXTURE_FAVORITES];
+               texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
             else if (i < ozone->horizontal_list.size)
             {
                ozone_node_t *sidebar_node = NULL;
@@ -5915,10 +5943,10 @@ border_iterate:
                   texture = sidebar_node->icon;
             }
          }
-         /* "Load Content" playlists */
+         /* "Main Menu" playlists */
          else if (ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_MAIN)
          {
-            if (ozone_is_load_content_playlist(ozone))
+            if (ozone_is_main_menu_playlist(ozone))
             {
                const struct playlist_entry *pl_entry = NULL;
                ozone_node_t *db_node                 = NULL;
@@ -5931,7 +5959,7 @@ border_iterate:
                      && (db_node = RHMAP_GET_STR(ozone->playlist_db_node_map, pl_entry->db_name)))
                   texture = db_node->content_icon;
             }
-            else if (ozone->depth == 3 && entry.type == FILE_TYPE_PLAYLIST_COLLECTION)
+            else if (ozone->depth == 2 && entry.type == FILE_TYPE_PLAYLIST_COLLECTION)
             {
                ozone_node_t *sidebar_node = (ozone_node_t*)
                      file_list_get_userdata_at_offset(&ozone->horizontal_list,
@@ -5947,6 +5975,7 @@ border_iterate:
          {
             switch (ozone->tabs[ozone->categories_selection_ptr])
             {
+               case OZONE_SYSTEM_TAB_MAIN:
                case OZONE_SYSTEM_TAB_HISTORY:
                case OZONE_SYSTEM_TAB_FAVORITES:
                   {
@@ -8872,10 +8901,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    if (      settings->bools.menu_content_show_settings
          && !settings->bools.kiosk_mode_enable)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_SETTINGS;
-   if (settings->bools.menu_content_show_favorites)
-      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_FAVORITES;
    if (settings->bools.menu_content_show_history)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_HISTORY;
+   if (settings->bools.menu_content_show_favorites)
+      ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_FAVORITES;
 #ifdef HAVE_IMAGEVIEWER
    if (settings->bools.menu_content_show_images)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_IMAGES;
@@ -8886,15 +8915,15 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_content_show_video)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_VIDEO;
 #endif
+#if 0 /* Move Netplay and Import Content to Main Menu */
 #ifdef HAVE_NETWORKING
    if (settings->bools.menu_content_show_netplay)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_NETPLAY;
 #endif
-
    if (      settings->bools.menu_content_show_add
          && !settings->bools.kiosk_mode_enable)
       ozone->tabs[++ozone->system_tab_end]      = OZONE_SYSTEM_TAB_ADD;
-
+#endif /* 0 */
 #if defined(HAVE_DYNAMIC)
    if (settings->uints.menu_content_show_contentless_cores !=
          MENU_CONTENTLESS_CORES_DISPLAY_NONE)
@@ -9659,7 +9688,9 @@ static int ozone_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
    int ret                = -1;
-   core_info_list_t *list = NULL;
+
+   /* Use common lists for all drivers */
+   return ret;
 
    switch (type)
    {
@@ -9668,29 +9699,30 @@ static int ozone_list_push(void *data, void *userdata,
             settings_t             *settings = config_get_ptr();
             bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
             bool kiosk_mode_enable           = settings->bools.kiosk_mode_enable;
+            core_info_list_t *list           = NULL;
+
+            core_info_get_list(&list);
 
             menu_entries_clear(info->list);
+
             menu_entries_append(info->list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
                   msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
                   MENU_ENUM_LABEL_FAVORITES,
                   MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0, NULL);
 
-            core_info_get_list(&list);
-            if (list && list->info_count > 0)
-            {
-               menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
-                     MENU_SETTING_ACTION, 0, 0, NULL);
-            }
-
             if (menu_content_show_playlists)
                menu_entries_append(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB),
                      msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB),
                      MENU_ENUM_LABEL_PLAYLISTS_TAB,
+                     MENU_SETTING_ACTION, 0, 0, NULL);
+
+            if (list && list->info_count > 0)
+               menu_entries_append(info->list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                     MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
                      MENU_SETTING_ACTION, 0, 0, NULL);
 
             if (frontend_driver_parse_drive_list(info->list, true) != 0)
@@ -9700,13 +9732,11 @@ static int ozone_list_push(void *data, void *userdata,
                      MENU_SETTING_ACTION, 0, 0, NULL);
 
             if (!kiosk_mode_enable)
-            {
                menu_entries_append(info->list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS),
                      msg_hash_to_str(MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS),
                      MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,
                      MENU_SETTING_ACTION, 0, 0, NULL);
-            }
 
             info->flags |= MD_FLAG_NEED_PUSH | MD_FLAG_NEED_REFRESH;
             ret          = 0;
@@ -10300,7 +10330,7 @@ static void ozone_render(void *data,
                      menu_st->selection_ptr = i;
 
                      /* If this is a playlist, must update thumbnails */
-                     if (    ((ozone->flags & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 4))
+                     if (    ((ozone->flags & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 3))
                            || (ozone->flags & OZONE_FLAG_IS_EXPLORE_LIST))
                      {
                         ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
@@ -10336,7 +10366,7 @@ static void ozone_render(void *data,
                   }
                   /* If this is a playlist, must update thumbnails */
                   else if ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
-                        && (ozone->depth == 1 || ozone->depth == 4))
+                        && (ozone->depth == 1 || ozone->depth == 3))
                   {
                      ozone_set_thumbnail_content(ozone, "");
                      ozone_update_thumbnail_image(ozone);
@@ -11552,7 +11582,7 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
          /* Playlist updates */
          if (     (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
-               && (ozone->depth == 1 || ozone->depth == 4))
+               && (ozone->depth == 1 || ozone->depth == 3))
          {
             ozone_set_thumbnail_content(ozone, "");
             update_thumbnails           = true;
@@ -12438,7 +12468,7 @@ static void ozone_populate_entries(
     * and savestate slots */
    if (
             (   (ozone->flags  & OZONE_FLAG_WANT_THUMBNAIL_BAR))
-         && (  ((ozone->flags  & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 4))
+         && (  ((ozone->flags  & OZONE_FLAG_IS_PLAYLIST) && (ozone->depth == 1 || ozone->depth == 3))
             || ((ozone->flags  & OZONE_FLAG_IS_DB_MANAGER_LIST) && (ozone->depth >= 4))
             ||  (ozone->flags  & OZONE_FLAG_IS_EXPLORE_LIST)
             ||  (ozone->flags  & OZONE_FLAG_IS_FILE_LIST)
