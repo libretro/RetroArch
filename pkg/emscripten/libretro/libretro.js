@@ -132,15 +132,9 @@ function loadIndex(index, path) {
 
 async function setupFileSystem()
 {
-  Module.FS.mkdirTree("/home/web_user/retroarch/userdata");
+  Module.FS.mkdirTree("/home/web_user/retroarch/");
 
-  Module.FS.mount(Module.OPFS, {}, "/home/web_user/retroarch/userdata");
-  
-  Module.FS.mkdir("/home/web_user/retroarch/downloads",700);
-  let index = await (await fetch("assets/cores/.index-xhr")).json();
-  let manifest = {};
-  Module.FS.mount(Module.FETCHFS, {"base_url":"assets/cores"}, "/home/web_user/retroarch/downloads");
-  loadIndex(index, "/home/web_user/retroarch/downloads/");
+  Module.FS.mount(Module.OPFS, {}, "/home/web_user/retroarch");
 
   console.log("WEBPLAYER: filesystem initialization successful");
 }
