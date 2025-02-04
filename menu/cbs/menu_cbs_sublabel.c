@@ -846,6 +846,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_driver,              MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wifi_driver,                   MENU_ENUM_SUBLABEL_WIFI_DRIVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_filter_supported_extensions,   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_filter_by_current_core,        MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_wallpaper,                     MENU_ENUM_SUBLABEL_MENU_WALLPAPER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_dynamic_wallpaper,             MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_device,                  MENU_ENUM_SUBLABEL_AUDIO_DEVICE)
@@ -3898,6 +3899,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_filter_supported_extensions);
+            break;
+         case MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_filter_by_current_core);
             break;
          case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:
 #ifdef HAVE_BLUETOOTH

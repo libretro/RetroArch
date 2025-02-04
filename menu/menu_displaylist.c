@@ -10099,12 +10099,14 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,                                PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_CACHE_DIRECTORY,                                       PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,                                     PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE, PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,                                    PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER,                              PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,                                PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_USE_LAST_START_DIRECTORY,                              PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_USE_BUILTIN_PLAYER,                                    PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_USE_BUILTIN_IMAGE_VIEWER,                              PARSE_ONLY_BOOL},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11290,19 +11292,22 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_DIRECTORY_SETTINGS_LIST:
          {
             menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_SYSTEM_DIRECTORY,                PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,           PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_ASSETS_DIRECTORY,                PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,    PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,            PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,          PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,           PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_CACHE_DIRECTORY,                 PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_SYSTEM_DIRECTORY,                PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,              PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,             PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_LIBRETRO_DIR_PATH,               PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_LIBRETRO_INFO_PATH,              PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,      PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_RGUI_CONFIG_DIRECTORY,           PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_CORE_ASSETS_DIRECTORY,           PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_ASSETS_DIRECTORY,                PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY,            PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,    PARSE_ONLY_DIR},
 #ifdef HAVE_CHEATS
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,             PARSE_ONLY_DIR},
 #endif
+               {MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,      PARSE_ONLY_DIR},
 #ifdef HAVE_VIDEO_FILTER
                {MENU_ENUM_LABEL_VIDEO_FILTER_DIR,                PARSE_ONLY_DIR},
 #endif
@@ -11326,9 +11331,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CONTENT_MUSIC_HISTORY_DIRECTORY, PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CONTENT_VIDEO_HISTORY_DIRECTORY, PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_RUNTIME_LOG_DIRECTORY,           PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,              PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,             PARSE_ONLY_DIR},
-               {MENU_ENUM_LABEL_CACHE_DIRECTORY,                 PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_LOG_DIR,                         PARSE_ONLY_DIR},
             };
 
