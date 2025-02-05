@@ -132,11 +132,33 @@ function loadIndex(index, path) {
 
 async function setupFileSystem()
 {
+  let finished = false;
+  const waiting = () => new Promise((resolve) => {
+    let interval;
+    const wait_cb = () => {
+      finished = Module.FS.analyzePath("/home/web_user/retroarch/assets/ozone").exists;
+      if (finished) {
+        clearInterval(interval);
+        resolve();
+      }
+    };
+    interval = setInterval(wait_cb, 100);
+  });
   Module.FS.mkdirTree("/home/web_user/retroarch/");
-
   Module.FS.mount(Module.OPFS, {}, "/home/web_user/retroarch");
-
-  console.log("WEBPLAYER: filesystem initialization successful");
+  const has_base_assets = Module.FS.analyzePath("/home/web_user/retroarch/assets/ozone").exists;
+  if (!has_base_assets) {
+    console.info("First run; downloading minimal asset package");
+    const blob = await downloadScript("libretro_minimal.js");
+    const u = URL.createObjectURL(blob);
+    const s = document.createElement('script');
+    s.src = u;
+    s.onload = () => {
+      finished = true;
+    };
+    document.body.appendChild(s);
+    await waiting;
+  }
 }
 
 // Retrieve the value of the given GET parameter.
