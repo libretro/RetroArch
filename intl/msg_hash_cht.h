@@ -4830,10 +4830,6 @@ MSG_HASH(
    "在檔案瀏覽器中只顯示支援的檔案。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "使用內建的媒體播放器"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "只顯示目前核心支援格式"
    )
@@ -4844,6 +4840,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "記住本次執行「開始資料夾」最後載入的檔案位置。 注意: 重新啟動後會還原為預設位置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "使用內建的媒體播放器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "使用內建的圖像瀏覽器"
    )
 
 /* Settings > Frame Throttle */
@@ -12601,10 +12605,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_KEYBOARD,
    "鍵盤"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "使用內建的圖像瀏覽器"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,

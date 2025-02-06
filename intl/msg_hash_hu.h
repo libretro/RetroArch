@@ -4978,10 +4978,6 @@ MSG_HASH(
    "A nem támogatott kiterjesztésű fájlok nem jelennek meg a Fájlböngészőben."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "A beépített médialejátszó használata"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Szűrés az aktuális mag szerint"
    )
@@ -4992,6 +4988,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "A Fájlböngésző az utoljára használt helyen nyílik meg a kezdő könyvtárból töltésnél. A RetroArch újraindításakor visszaáll az alapállapotra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "A beépített médialejátszó használata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "A beépített képnézegető használata"
    )
 
 /* Settings > Frame Throttle */
@@ -8176,7 +8180,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Fájlkezelő"
+   "Kezdő könyvtár"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -12417,10 +12421,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_KEYBOARD,
    "Bill"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "A beépített képnézegető használata"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
