@@ -33,14 +33,13 @@ cp fceumm_libretro.{js,wasm} pkg/emscripten/libretro
 
 ## Dependencies
 
-The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  You'll need the asset package from the latest emscripten nightly build ( https://buildbot.libretro.com/nightly/emscripten/ ); take its `assets/` folder and put it into `pkg/emscripten/libretro`.  This `assets/` folder should contain a `frontend/` directory and a `cores/` directory.
+The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  While it supports the regular desktop asset and content downloaders, we also provide a small bundle of UI assets for first launch (the files `libretro_minimal.js` and `libretro_minimal.data`).  You can obtain these files from the nightly Emscripten build on the buildbot, or make them yourself using emscripten's `file_packager.py` tool:
 
-If you're building your own frontend asset bundle (i.e. modifying `frontend/bundle/`), you'll need to turn the bundle into zipped partfiles.  Open a terminal in `assets/frontend` and `zip -r9 bundle.zip bundle && split -b 30M bundle.zip bundle.zip.` (this should work on Mac and Linux, please file a PR with instructions for Windows).
+```
+$ $EMSDK/upstream/emscripten/tools/file_packager.py libretro_minimal.dat --js-output=libretro_minimal.js --preload "assets-minimal@/home/web_user/retroarch/assets"
+```
 
-If you want to add more built-in core content files to `assets/cores`, you need to re-run the indexer script:
-
-1. `chmod +x indexer`
-2. run the indexer script (you need coffeescript installed) from a terminal opened at `assets/cores`: `../../indexer > .index-xhr`
+Due to a bug in Emscripten, you currently need to modify the generated `libretro_minimal.js` to change the calls to `Module['createPath']` into calls to `Module.FS.mkdirTree`.
 
 ## Usage
 
