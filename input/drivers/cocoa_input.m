@@ -700,13 +700,13 @@ static int16_t cocoa_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                {
                   unsigned new_id                = input_driver_lightgun_id_convert(id);
-                  const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
-                  const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
-                  const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
-                  const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
+                  const uint32_t bind_joykey     = input_config_binds[port][new_id].joykey;
+                  const uint32_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
+                  const uint32_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
+                  const uint32_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
                   uint16_t joyport               = joypad_info->joy_idx;
                   float axis_threshold           = joypad_info->axis_threshold;
-                  const uint64_t joykey          = (bind_joykey != NO_BTN) ? bind_joykey  : autobind_joykey;
+                  const uint32_t joykey          = (bind_joykey != NO_BTN) ? bind_joykey  : autobind_joykey;
                   const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE) ? bind_joyaxis : autobind_joyaxis;
                   
                   if (binds[port][new_id].valid)
