@@ -9466,8 +9466,7 @@ static enum menu_action materialui_parse_menu_entry_action(
           *   user instigates a cancel action from any top
           *   level menu other than main *if* the navigation
           *   bar is hidden */
-         if (   (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_HIDDEN)
-             && (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1))
+         if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
          {
             size_t i;
             size_t main_menu_tab_index                   = 0;
@@ -9489,6 +9488,9 @@ static enum menu_action materialui_parse_menu_entry_action(
             {
                materialui_switch_tabs(mui, main_menu_tab, MENU_ACTION_NOOP);
                new_action = MENU_ACTION_NOOP;
+#ifdef HAVE_AUDIOMIXER
+               audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_CANCEL);
+#endif
             }
             else if (main_menu_tab_index == mui->nav_bar.active_menu_tab_index)
             {
@@ -9496,12 +9498,6 @@ static enum menu_action materialui_parse_menu_entry_action(
                menu_st->selection_ptr = 0;
                materialui_navigation_set(mui, true);
             }
-         }
-         else if (materialui_list_get_size(mui, MENU_LIST_PLAIN) == 1)
-         {
-            /* Jump to first item on current menu */
-            menu_st->selection_ptr = 0;
-            materialui_navigation_set(mui, true);
          }
          break;
       default:
