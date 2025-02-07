@@ -4434,6 +4434,10 @@ MSG_HASH(
    "Filtruj według bieżącego rdzenia"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "Filtruj pliki wyświetlane w przeglądarce plików według aktualnego rdzenia."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "Zapamiętaj ostatnio używany katalog startowy"
    )
