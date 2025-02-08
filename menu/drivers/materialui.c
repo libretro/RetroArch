@@ -661,6 +661,11 @@ typedef struct materialui_handle
    materialui_colors_t colors;   /* uint32_t alignment */
    uint32_t flags;
 
+   size_t playlist_selection[NAME_MAX_LENGTH];
+   size_t playlist_selection_ptr;
+   uint8_t mainmenu_selection_ptr;
+   uint8_t settings_selection_ptr;
+
    /* Scrollbar parameters */
    materialui_scrollbar_t scrollbar;   /* int alignment */
    int cursor_size;
@@ -8184,6 +8189,11 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    /* Ensure message box string is empty */
    mui->msgbox[0]                         = '\0';
 
+   mui->mainmenu_selection_ptr            = 0;
+   mui->settings_selection_ptr            = 0;
+   mui->playlist_selection_ptr            = 0;
+   memset(mui->playlist_selection, 0, sizeof(mui->playlist_selection));
+
    /* Initialise navigation bar */
    materialui_init_nav_bar(mui);
 
@@ -8394,11 +8404,22 @@ static void materialui_animate_scroll(materialui_handle_t *mui,
    on the keyboard) */
 static void materialui_navigation_set(void *data, bool scroll)
 {
-   materialui_handle_t *mui = (materialui_handle_t*)data;
-   gfx_display_t *p_disp    = disp_get_ptr();
+   materialui_handle_t *mui   = (materialui_handle_t*)data;
+   gfx_display_t *p_disp      = disp_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t selection           = menu_st->selection_ptr;
 
    if (!mui || !scroll)
       return;
+
+   if (mui->flags & MUI_FLAG_IS_PLAYLIST)
+      mui->playlist_selection[mui->playlist_selection_ptr] = selection;
+   else if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
+      mui->playlist_selection_ptr = selection;
+   else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)))
+      mui->mainmenu_selection_ptr = selection;
+   else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
+      mui->settings_selection_ptr = selection;
 
    materialui_animate_scroll(
          mui,
@@ -8623,9 +8644,10 @@ static void materialui_init_transition_animation(materialui_handle_t *mui,
 static void materialui_populate_entries(void *data, const char *path,
       const char *label, unsigned i)
 {
-   materialui_handle_t *mui    = (materialui_handle_t*)data;
-   struct menu_state *menu_st  = menu_state_get_ptr();
-   settings_t *settings        = config_get_ptr();
+   materialui_handle_t *mui   = (materialui_handle_t*)data;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   uint8_t remember_selection = settings->uints.menu_remember_selection;
 
    if (!mui || !settings)
       return;
@@ -8767,6 +8789,32 @@ static void materialui_populate_entries(void *data, const char *path,
          mui->flags &= ~MUI_FLAG_IS_EXPLORE_LIST;
    }
 #endif
+
+   if (     mui->flags & MUI_FLAG_IS_PLAYLIST
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+   {
+      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+            || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
+         menu_state_get_ptr()->selection_ptr = mui->playlist_selection[mui->playlist_selection_ptr];
+   }
+   else if (mui->flags & MUI_FLAG_IS_PLAYLISTS_TAB)
+   {
+      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+            || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
+         menu_state_get_ptr()->selection_ptr = mui->playlist_selection_ptr;
+   }
+   else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAIN_MENU)))
+   {
+      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+            || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
+         menu_state_get_ptr()->selection_ptr = mui->mainmenu_selection_ptr;
+   }
+   else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
+   {
+      if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
+            || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
+         menu_state_get_ptr()->selection_ptr = mui->settings_selection_ptr;
+   }
 
    /* Update navigation bar tabs
     * > Note: We do this regardless of whether
