@@ -8409,7 +8409,7 @@ static void materialui_navigation_set(void *data, bool scroll)
    struct menu_state *menu_st = menu_state_get_ptr();
    size_t selection           = menu_st->selection_ptr;
 
-   if (!mui || !scroll)
+   if (!mui)
       return;
 
    if (mui->flags & MUI_FLAG_IS_PLAYLIST)
@@ -8420,6 +8420,9 @@ static void materialui_navigation_set(void *data, bool scroll)
       mui->mainmenu_selection_ptr = selection;
    else if (string_is_equal(mui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
       mui->settings_selection_ptr = selection;
+
+   if (!scroll)
+      return;
 
    materialui_animate_scroll(
          mui,
@@ -10249,8 +10252,8 @@ static int materialui_pointer_up(void *userdata,
                }
                /* If this is not a playlist or file list, a tap/press
                 * anywhere on the header triggers a MENU_ACTION_CANCEL
-                * action */
-               else
+                * action unless already at root depth */
+               else if (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1)
                   return materialui_menu_entry_action(mui, entry, selection, MENU_ACTION_CANCEL);
             }
             /* Tap/press menu item: Activate and/or select item */
@@ -10306,6 +10309,9 @@ static int materialui_pointer_up(void *userdata,
                    * activate it immediately */
                   if (ptr != selection)
                      menu_st->selection_ptr = ptr;
+
+                  /* Set navigation for selection remembering */
+                  materialui_navigation_set(mui, false);
 
                   /* Perform a MENU_ACTION_SELECT on currently
                    * active item
