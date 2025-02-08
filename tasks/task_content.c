@@ -2129,12 +2129,6 @@ bool task_push_load_content_from_playlist_from_menu(
          fullpath, &content_ctx, false)))
       goto end;
 
-#ifdef HAVE_COCOATOUCH
-   /* This seems to be needed for iOS for some reason
-    * to show the quick menu after the menu is shown */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
-
 #ifndef HAVE_DYNAMIC
    /* No dynamic core loading support: if we reach
     * this point then a new instance has been

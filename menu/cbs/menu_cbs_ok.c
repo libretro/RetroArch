@@ -1048,7 +1048,7 @@ int generic_action_ok_displaylist_push(
          p_dialog->pending_push = true;
          break;
       case ACTION_OK_DL_RPL_ENTRY:
-         strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
+         fill_pathname_expand_special(menu->deferred_path, label, sizeof(menu->deferred_path));
          info_label = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
          info.enum_idx                 = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS;
          info.directory_ptr            = idx;
