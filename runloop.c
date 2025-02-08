@@ -3650,6 +3650,70 @@ bool libretro_get_system_info(
    return true;
 }
 
+static bool auto_load_core(const char* content_path)
+{
+   core_info_list_t* core_info_list = NULL;
+
+   /* TODO: error printing */
+   /* TODO: what happens if the string is valid but no file exists? */
+   if (string_is_empty(content_path)) return false;
+   
+   /* poll list of current cores */
+   
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   /*This isn't needed, is it?*/
+   /*command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);*/
+   core_info_get_list(&core_info_list);
+
+   
+   if (core_info_list)
+   {
+      size_t list_size;
+      content_ctx_info_t content_info = { 0 };
+      const core_info_t* core_info = NULL;
+      core_info_list_get_supported_cores(core_info_list,
+         (const char*)content_path, &core_info, &list_size);
+
+      if (list_size)
+      {
+         unsigned i;
+         core_info_t* current_core = NULL;
+         core_info_get_current_core(&current_core);
+
+         /* Iterate through each supported core. */
+         for (i = 0; i < list_size; i++)
+         {
+            const core_info_t* info = (const core_info_t*)&core_info[i];
+
+            if (string_is_equal(path_get(RARCH_PATH_CORE), info->path))
+            {
+               /* The core supports the loaded content. */
+               task_push_load_content_with_current_core_from_companion_ui(
+                  NULL,
+                  &content_info,
+                  CORE_TYPE_PLAIN,
+                  NULL, NULL);
+               return true;
+            }
+         }
+
+         /* Poll for cores for current rom since none exist. */
+         if (list_size == 1)
+         {
+            /* If there is only one core available, use it. */
+            const core_info_t* info = (const core_info_t*)&core_info[0];
+
+            if (info)
+            {
+               path_set(RARCH_PATH_CORE, info->path);
+               return true;
+            }
+         }
+      }
+   }
+   return false;
+}
+
 bool runloop_init_libretro_symbols(
       void *data,
       enum rarch_core_type type,
@@ -3677,9 +3741,50 @@ bool runloop_init_libretro_symbols(
 
                if (string_is_empty(path))
                {
-                  RARCH_ERR("[Core]: Frontend is built for dynamic libretro cores, but "
+                  const char* content_path = path_get(RARCH_PATH_CONTENT);
+                  if (!string_is_empty(content_path))
+                  {
+                     /* Attempt to automatically load a supported core. */
+                     if (!auto_load_core(content_path)) {
+                        struct menu_state* menu_state = menu_state_get_ptr();
+
+                        CORE_SYMBOLS(SYMBOL_DUMMY);
+                        runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
+#ifdef HAVE_MENU
+                        /* this is a hack, we should be deferring the core list until after we have loaded menu */
+                        /* TODO: ask how to unhackify it */
+                        /* Init the menu driver early to add to the menu stack - the video threading argument will be set to the proper value on the regular init */
+                        menu_driver_init(false);
+
+                        strlcpy(menu_state->driver_data->deferred_path, content_path, sizeof(menu_state->driver_data->deferred_path));
+                        /*
+                        detect_content_path is filled only in the case there's menu stack to read from
+                        because we aren't using a file tree browser, fill it ourselves
+                        */
+                        strlcpy(menu_state->driver_data->detect_content_path, content_path, sizeof(menu_state->driver_data->detect_content_path));
+
+                        /*
+                        for now - it's very important that this not be called if there's only one valid core, or else we init video twice
+                        it would be nice to unconditionally call this, as it also checks the core count
+
+                        NOTE: this doesn't currently handle starting _after_ the core has been downloaded,
+                        but neither does browsing using content browser and friends.
+                        */
+                        file_load_with_detect_core_wrapper(
+                           MSG_UNKNOWN, 0, 0,
+                           content_path, NULL, 0, false);
+                        break;
+#endif
+                     }
+                  }
+                  path = path_get(RARCH_PATH_CORE);
+
+                  if (string_is_empty(path))
+                  {
+                     RARCH_ERR("[Core]: Frontend is built for dynamic libretro cores, but "
                         "path is not set. Cannot continue.\n");
-                  retroarch_fail(1, "init_libretro_symbols()");
+                     retroarch_fail(1, "init_libretro_symbols()");
+                  }
                }
 
                RARCH_LOG("[Core]: Loading dynamic libretro core from: \"%s\"\n",

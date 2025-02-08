@@ -1805,10 +1805,11 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
                MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
                0, 0, 0, NULL))
             count++;
-
-         info->flags |= MD_FLAG_DOWNLOAD_CORE;
       }
+
    }
+
+   info->flags |= MD_FLAG_DOWNLOAD_CORE;
 
    return count;
 }
@@ -13381,7 +13382,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                menu_search_terms_t *search_terms= menu_entries_search_get_terms();
                bool show_experimental_cores     = settings->bools.network_buildbot_show_experimental_cores;
                size_t selection                 = menu_st->selection_ptr;
-
+ 
                if (core_list)
                {
                   size_t menu_index = 0;
@@ -13423,6 +13424,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            }
 
                            if (!entry_valid)
+                              continue;
+                        }
+
+                        if (!string_is_empty(menu_st->driver_data->detect_content_path))
+                        {
+                           char const * const ext = path_get_extension(menu_st->driver_data->detect_content_path);
+
+                           if (string_list_find_elem(entry->supported_extensions, ext) == 0)
                               continue;
                         }
 

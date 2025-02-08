@@ -1966,7 +1966,7 @@ void handle_dbscan_finished(retro_task_t *task,
 
 
 
-static int file_load_with_detect_core_wrapper(
+int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       size_t idx, size_t entry_idx,
       const char *path, const char *label,

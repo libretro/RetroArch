@@ -329,9 +329,7 @@ enum menu_dl_flags
    MD_FLAG_NEED_CLEAR                    = (1 << 5), /* Should we clear the displaylist before we push
 						      * entries onto it? */
    MD_FLAG_PUSH_BUILTIN_CORES            = (1 << 6),
-   MD_FLAG_DOWNLOAD_CORE                 = (1 << 7), /* Should a 'download core' entry be pushed onto the list?
-						      * This will be set to true in case there are no currently
-						      * installed cores. */
+   MD_FLAG_DOWNLOAD_CORE                 = (1 << 7), /* Should a 'download core' entry be pushed onto the list? */
    MD_FLAG_NEED_NAVIGATION_CLEAR         = (1 << 8)  /* Does the navigation index need to be cleared 
                                                       * to 0 (first entry) ? */
 };

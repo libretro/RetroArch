@@ -2634,10 +2634,11 @@ core_updater_info_t *core_info_get_core_updater_info(
    if (!(info = (core_updater_info_t*)malloc(sizeof(*info))))
       return NULL;
 
-   info->is_experimental     = false;
-   info->display_name        = NULL;
-   info->description         = NULL;
-   info->licenses            = NULL;
+   info->is_experimental      = false;
+   info->display_name         = NULL;
+   info->description          = NULL;
+   info->licenses             = NULL;
+   info->supported_extensions = NULL;
 
    /* Fetch required parameters */
 
@@ -2672,6 +2673,15 @@ core_updater_info_t *core_info_get_core_updater_info(
       entry->value           = NULL;
    }
 
+   /* > licenses */
+   entry                     = config_get_entry(conf, "supported_extensions");
+
+   if (entry && !string_is_empty(entry->value))
+   {
+      info->supported_extensions = entry->value;
+      entry->value               = NULL;
+   }
+
    /* Clean up */
    config_file_free(conf);
 
@@ -2691,6 +2701,9 @@ void core_info_free_core_updater_info(core_updater_info_t *info)
 
    if (info->licenses)
       free(info->licenses);
+
+   if(info->supported_extensions)
+      free(info->supported_extensions);
 
    free(info);
    info = NULL;
