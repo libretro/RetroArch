@@ -4998,6 +4998,10 @@ MSG_HASH(
    "Фільтрувати за поточним ядром"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "Фільтр файлів, що відображаються в браузері файлу по поточному ядру."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "Запам’ятайте Останній Використаний Стартовий Каталог"
    )
