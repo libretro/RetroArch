@@ -10692,6 +10692,8 @@ static void materialui_list_insert(void *userdata,
              * switch */
             break;
          default:
+            if (string_is_equal(label, "null"))
+               break;
 #ifdef HAVE_CHEEVOS
             if (type >= MENU_SETTINGS_CHEEVOS_START &&
                type < MENU_SETTINGS_NETPLAY_ROOMS_START)

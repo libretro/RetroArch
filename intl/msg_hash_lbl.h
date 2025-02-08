@@ -1551,6 +1551,10 @@ MSG_HASH(
    "core_disk_options"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DISK_INDEX,
+   "core_disk_index"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
    "downloaded_file_detect_core_list"
    )
