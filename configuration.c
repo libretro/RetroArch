@@ -3735,6 +3735,14 @@ static bool config_load_file(global_t *global,
    }
 #endif
 
+   /* Special case for perfcnt_enable */
+   {
+      bool tmp = false;
+      config_get_bool(conf, "perfcnt_enable", &tmp);
+      if (tmp)
+         retroarch_ctl(RARCH_CTL_SET_PERFCNT_ENABLE, NULL);
+   }
+
    /* Overrides */
 
    if (rarch_flags & RARCH_FLAGS_HAS_SET_USERNAME)
