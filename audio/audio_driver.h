@@ -350,10 +350,8 @@ bool audio_driver_init_internal(
 
 bool audio_driver_deinit(void);
 
-bool audio_driver_find_driver(
-      void *settings_data,
-      const char *prefix,
-      bool verbosity_enabled);
+bool audio_driver_find_driver(const char *audio_drv,
+      const char *prefix, bool verbosity_enabled);
 
 /**
  * audio_driver_sample:

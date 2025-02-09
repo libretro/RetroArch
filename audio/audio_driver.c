@@ -343,12 +343,10 @@ bool audio_driver_deinit(void)
    return audio_driver_deinit_internal(config_get_ptr()->bools.audio_enable);
 }
 
-bool audio_driver_find_driver(void *settings_data,
+bool audio_driver_find_driver(const char *audio_drv,
       const char *prefix, bool verbosity_enabled)
 {
-   settings_t *settings    = (settings_t*)settings_data;
-   const char *audio_drv   = settings->arrays.audio_driver;
-   int i                   = (int)driver_find_index("audio_driver", audio_drv);
+   int i = (int)driver_find_index("audio_driver", audio_drv);
 
    if (i >= 0)
       audio_driver_st.current_audio = (const audio_driver_t*)
@@ -594,8 +592,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    float slowmotion_ratio         = settings->floats.slowmotion_ratio;
    unsigned setting_audio_latency = settings->uints.audio_latency;
    unsigned runloop_audio_latency = runloop_state_get_ptr()->audio_latency;
-   unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency) ?
-         runloop_audio_latency : setting_audio_latency;
+   unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency)
+         ? runloop_audio_latency : setting_audio_latency;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf            = NULL;
 #endif
@@ -640,7 +638,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    else
       audio_driver_st.flags     |= AUDIO_FLAG_ACTIVE;
 
-   if (!(audio_driver_find_driver(settings,
+   if (!(audio_driver_find_driver(settings->arrays.audio_driver,
          "audio driver", verbosity_enabled)))
    {
       RARCH_ERR("Failed to initialize audio driver.\n");

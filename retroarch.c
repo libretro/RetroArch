@@ -378,14 +378,12 @@ const char *config_get_location_driver_options(void)
 }
 
 static void location_driver_find_driver(
-      settings_t *settings,
+      const char *loc_drv,
       location_driver_state_t *location_st,
       const char *prefix,
       bool verbosity_enabled)
 {
-   int i                        = (int)driver_find_index(
-         "location_driver",
-         settings->arrays.location_driver);
+   int i                        = (int)driver_find_index("location_driver", loc_drv);
 
    if (i >= 0)
       location_st->driver       = (const location_driver_t*)
@@ -395,8 +393,7 @@ static void location_driver_find_driver(
       if (verbosity_enabled)
       {
          unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.location_driver);
+         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix, loc_drv);
          RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
          for (d = 0; location_drivers[d]; d++)
             RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
@@ -478,7 +475,7 @@ bool driver_location_get_position(double *lat, double *lon,
 static bool init_location(
       void *data,
       location_driver_state_t *location_st,
-      settings_t *settings,
+      const char *loc_drv,
       bool verbosity_enabled)
 {
    /* Resource leaks will follow if location
@@ -486,8 +483,7 @@ static bool init_location(
    if (!location_st->data)
    {
       rarch_system_info_t *sys_info = (rarch_system_info_t*)data;
-      location_driver_find_driver(settings,
-            &location_driver_st,
+      location_driver_find_driver(loc_drv, &location_driver_st,
             "location driver", verbosity_enabled);
 
       if (!(location_st->data = location_st->driver->init()))
@@ -1649,13 +1645,13 @@ void drivers_init(
             if (camera_st->driver)
             {
                camera_st->data = camera_st->driver->init(
-                     *settings->arrays.camera_device ?
-                     settings->arrays.camera_device : NULL,
+                     *settings->arrays.camera_device
+                     ? settings->arrays.camera_device : NULL,
                      camera_st->cb.caps,
-                     settings->uints.camera_width ?
-                     settings->uints.camera_width  : camera_st->cb.width,
-                     settings->uints.camera_height ?
-                     settings->uints.camera_height : camera_st->cb.height);
+                     settings->uints.camera_width
+                     ? settings->uints.camera_width  : camera_st->cb.width,
+                     settings->uints.camera_height
+                     ? settings->uints.camera_height : camera_st->cb.height);
 
                if (!camera_st->data)
                {
@@ -1684,8 +1680,8 @@ void drivers_init(
       /* Only initialize location driver if we're ever going to use it. */
       if (location_st->active)
          if (!init_location(&runloop_state_get_ptr()->system,
-                  &location_driver_st,
-                  settings, verbosity_is_enabled()))
+                  &location_driver_st, settings->arrays.location_driver,
+                  verbosity_is_enabled()))
             location_st->active = false;
    }
 
@@ -7734,7 +7730,7 @@ bool retroarch_main_init(int argc, char *argv[])
     * Attempts to find a default driver for
     * all driver types.
     */
-   if (!(audio_driver_find_driver(settings,
+   if (!(audio_driver_find_driver(settings->arrays.audio_driver,
          "audio driver", verbosity_enabled)))
       retroarch_fail(1, "audio_driver_find()");
    if (!video_driver_find_driver(settings,
@@ -7757,7 +7753,7 @@ bool retroarch_main_init(int argc, char *argv[])
    cloud_sync_find_driver(settings,
          "cloud sync driver", verbosity_enabled);
 #endif
-   location_driver_find_driver(settings,
+   location_driver_find_driver(settings->arrays.location_driver,
          &location_driver_st,
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
