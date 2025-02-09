@@ -4281,11 +4281,11 @@ static bool event_init_content(
      if (!(input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK))
 #endif
       {
-         if (      runloop_st->entry_state_slot
+         if (      runloop_st->entry_state_slot > -1
                && !command_event_load_entry_state(settings))
          {
            /* loading the state failed, reset entry slot */
-            runloop_st->entry_state_slot = 0;
+            runloop_st->entry_state_slot = -1;
          }
       }
 #ifdef HAVE_BSV_MOVIE
@@ -4293,7 +4293,7 @@ static bool event_init_content(
      if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_START_RECORDING | BSV_FLAG_MOVIE_START_PLAYBACK)))
 #endif
       {
-        if (!runloop_st->entry_state_slot && settings->bools.savestate_auto_load)
+        if (runloop_st->entry_state_slot < 0 && settings->bools.savestate_auto_load)
           command_event_load_auto_state();
       }
    }
@@ -7323,13 +7323,13 @@ bool runloop_get_replay_path(char *s, size_t len, unsigned slot)
 }
 
 
-bool runloop_get_entry_state_path(char *s, size_t len, unsigned slot)
+bool runloop_get_entry_state_path(char *s, size_t len, int slot)
 {
    size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
    const char *name_savestate  = NULL;
 
-   if (!s || !slot)
+   if (!s)
       return false;
 
    name_savestate              = runloop_st->name.savestate;
