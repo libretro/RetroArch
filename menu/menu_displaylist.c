@@ -10015,6 +10015,7 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_CONTENT_SHOW_ADD_ENTRY,                                PARSE_ONLY_UINT, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLISTS,                                PARSE_ONLY_BOOL, true  },
+               {MENU_ENUM_LABEL_CONTENT_SHOW_PLAYLIST_TABS,                            PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_HISTORY,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_FAVORITES,                                PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CONTENT_SHOW_IMAGES,                                   PARSE_ONLY_BOOL, true  },
@@ -14913,7 +14914,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      &&    !settings->bools.menu_materialui_show_nav_bar));
 
                if (     string_is_equal(menu_ident, "glui")
-                     && settings->bools.menu_materialui_show_nav_bar)
+                     && settings->bools.menu_materialui_show_nav_bar
+                     && settings->bools.menu_content_show_playlist_tabs)
                   show_playlists = false;
 
                if (flags & RUNLOOP_FLAG_CORE_RUNNING)

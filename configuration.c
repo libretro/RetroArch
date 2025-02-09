@@ -2011,6 +2011,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("content_show_history",          &settings->bools.menu_content_show_history, true, DEFAULT_CONTENT_SHOW_HISTORY, false);
    SETTING_BOOL("content_show_playlists",        &settings->bools.menu_content_show_playlists, true, DEFAULT_CONTENT_SHOW_PLAYLISTS, false);
+   SETTING_BOOL("content_show_playlist_tabs",    &settings->bools.menu_content_show_playlist_tabs, true, DEFAULT_CONTENT_SHOW_PLAYLIST_TABS, false);
 #if defined(HAVE_LIBRETRODB)
    SETTING_BOOL("content_show_explore",          &settings->bools.menu_content_show_explore, true, DEFAULT_MENU_CONTENT_SHOW_EXPLORE, false);
 #endif

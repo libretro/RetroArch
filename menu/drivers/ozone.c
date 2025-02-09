@@ -4864,7 +4864,7 @@ static void ozone_init_horizontal_list(ozone_handle_t *ozone, settings_t *settin
    size_t i, list_size;
    menu_displaylist_info_t info;
    const char *dir_playlist          = settings->paths.directory_playlist;
-   bool menu_content_show_playlists  = settings->bools.menu_content_show_playlists;
+   bool menu_content_show_playlists  = settings->bools.menu_content_show_playlist_tabs;
    bool ozone_truncate_playlist_name = settings->bools.ozone_truncate_playlist_name;
    bool ozone_sort_after_truncate    = settings->bools.ozone_sort_after_truncate_playlist_name;
 
@@ -5943,8 +5943,9 @@ border_iterate:
             else if (ozone->depth == 2 && entry.type == FILE_TYPE_PLAYLIST_COLLECTION)
             {
                ozone_node_t *sidebar_node = (ozone_node_t*)
-                     file_list_get_userdata_at_offset(&ozone->horizontal_list,
-                           selection_buf->list[i].entry_idx);
+                     (ozone->horizontal_list.size)
+                        ? file_list_get_userdata_at_offset(&ozone->horizontal_list, selection_buf->list[i].entry_idx)
+                        : NULL;
 
                if (sidebar_node && sidebar_node->icon)
                   texture = sidebar_node->icon;

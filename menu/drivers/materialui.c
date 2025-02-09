@@ -8466,7 +8466,7 @@ static void materialui_populate_nav_bar(materialui_handle_t *mui,
 {
    size_t menu_tab_index                   = 0;
    bool menu_content_show_playlists        =
-      settings->bools.menu_content_show_playlists;
+      settings->bools.menu_content_show_playlist_tabs;
    /* Cache last active menu tab index */
    mui->nav_bar.last_active_menu_tab_index = mui->nav_bar.active_menu_tab_index;
 
