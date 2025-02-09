@@ -352,7 +352,7 @@ static int task_database_gdi_get_serial(const char *name, char *s, size_t len)
 {
    char track_path[PATH_MAX_LENGTH];
 
-   track_path[0]                    = '\0';
+   track_path[0] = '\0';
 
    if (gdi_find_track(name, true,
                track_path, sizeof(track_path)) < 0)
@@ -703,19 +703,19 @@ static int database_info_list_iterate_end_no_match(
       if (archive_list && archive_list->size > 0)
       {
          unsigned i;
-         size_t path_len  = strlen(path);
+         size_t _len  = strlen(path);
 
          for (i = 0; i < archive_list->size; i++)
          {
-            if (path_len + strlen(archive_list->elems[i].data)
+            if (_len + strlen(archive_list->elems[i].data)
                      + 1 < PATH_MAX_LENGTH)
             {
                char new_path[PATH_MAX_LENGTH];
                strlcpy(new_path, path, sizeof(new_path));
-               new_path[path_len] = '#';
-               strlcpy(new_path + path_len + 1,
+               new_path[_len] = '#';
+               strlcpy(new_path + _len + 1,
                      archive_list->elems[i].data,
-                     sizeof(new_path) - path_len);
+                     sizeof(new_path) - _len);
                string_list_append(db->list, new_path,
                      archive_list->elems[i].attr);
             }
@@ -773,7 +773,7 @@ static int database_info_list_iterate_found_match(
     * We should use less fullsize paths in the future so that we don't
     * need to have all these big char arrays here */
    size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
-   char* db_crc                   = (char*)malloc(str_len);
+   char* db_crc                   = (char*)malloc(256 * sizeof(char));
    char* db_playlist_path         = (char*)malloc(str_len);
    char* entry_path_str           = (char*)malloc(str_len);
    char *hash                     = NULL;

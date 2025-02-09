@@ -178,7 +178,7 @@ static ssize_t alsa_thread_write(void *data, const void *buf, size_t len)
    }
    else
    {
-      while (written < len && !alsa->info.thread_dead)
+      while (written < (ssize_t)len && !alsa->info.thread_dead)
       {
          size_t avail;
          slock_lock(alsa->info.fifo_lock);
