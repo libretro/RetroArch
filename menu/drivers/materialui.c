@@ -10341,6 +10341,9 @@ static int materialui_pointer_up(void *userdata,
       case MENU_INPUT_GESTURE_LONG_PRESS:
          if ((ptr < entries_end) && (ptr == selection))
          {
+            /* Also set navigation */
+            materialui_navigation_set(mui, false);
+
             /* If this is the core updater list, show info
              * message box for current entry.
              * In all other cases, perform 'reset to default'
