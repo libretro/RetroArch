@@ -8408,7 +8408,7 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
          }
-               
+
          break;
 #endif
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
@@ -15270,8 +15270,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             menu_entries_clear(info->list);
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
             {
-               gfx_ctx_flags_t flags;
                char new_exts[128];
+               gfx_ctx_flags_t flags;
                size_t _len     = 0;
 
                flags.flags     = 0;

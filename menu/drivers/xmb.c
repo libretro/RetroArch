@@ -4653,18 +4653,18 @@ static int xmb_draw_item(
                && string_ends_with(entry.value, ")"))
          {
             if (
-                  string_is_equal(entry.value, "(PRESET)") ||
-                  string_is_equal(entry.value, "(SHADER)") ||
-                  string_is_equal(entry.value, "(COMP)")   ||
-                  string_is_equal(entry.value, "(CORE)")   ||
-                  string_is_equal(entry.value, "(MOVIE)")  ||
-                  string_is_equal(entry.value, "(MUSIC)")  ||
-                  string_is_equal(entry.value, "(DIR)")    ||
-                  string_is_equal(entry.value, "(RDB)")    ||
-                  string_is_equal(entry.value, "(CURSOR)") ||
-                  string_is_equal(entry.value, "(CFILE)")  ||
-                  string_is_equal(entry.value, "(FILE)")   ||
-                  string_is_equal(entry.value, "(IMAGE)")
+                     string_is_equal(entry.value, "(PRESET)")
+                  || string_is_equal(entry.value, "(SHADER)")
+                  || string_is_equal(entry.value, "(COMP)")
+                  || string_is_equal(entry.value, "(CORE)")
+                  || string_is_equal(entry.value, "(MOVIE)")
+                  || string_is_equal(entry.value, "(MUSIC)")
+                  || string_is_equal(entry.value, "(DIR)")
+                  || string_is_equal(entry.value, "(RDB)")
+                  || string_is_equal(entry.value, "(CURSOR)")
+                  || string_is_equal(entry.value, "(CFILE)")
+                  || string_is_equal(entry.value, "(FILE)")
+                  || string_is_equal(entry.value, "(IMAGE)")
                )
                found = true;
          }
@@ -6410,8 +6410,8 @@ static void xmb_draw_fullscreen_thumbnails(
          right_thumbnail_draw_height_prev = right_thumbnail_draw_height;
 
          /* Sanity check */
-         if ((right_thumbnail_draw_width <= 0.0f) ||
-             (right_thumbnail_draw_height <= 0.0f))
+         if (   (right_thumbnail_draw_width  <= 0.0f)
+             || (right_thumbnail_draw_height <= 0.0f))
             goto error;
       }
       else if (right_thumbnail->status == GFX_THUMBNAIL_STATUS_PENDING)
@@ -6432,8 +6432,8 @@ static void xmb_draw_fullscreen_thumbnails(
          left_thumbnail_draw_height_prev = left_thumbnail_draw_height;
 
          /* Sanity check */
-         if ((left_thumbnail_draw_width <= 0.0f) ||
-             (left_thumbnail_draw_height <= 0.0f))
+         if (   (left_thumbnail_draw_width  <= 0.0f)
+             || (left_thumbnail_draw_height <= 0.0f))
             goto error;
       }
       else if (left_thumbnail->status == GFX_THUMBNAIL_STATUS_PENDING)

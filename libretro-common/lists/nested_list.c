@@ -234,8 +234,8 @@ bool nested_list_add_item(nested_list_t *list,
    else
    {
       string_list_initialize(&id_list);
-      if (!string_split_noalloc(&id_list, address, delim) ||
-          (id_list.size < 1))
+      if (  !string_split_noalloc(&id_list, address, delim)
+          || (id_list.size < 1))
          goto end;
 
       if (id_list.size == 1)
@@ -357,8 +357,8 @@ nested_list_item_t *nested_list_get_item(nested_list_t *list,
    else
    {
       string_list_initialize(&id_list);
-      if (!string_split_noalloc(&id_list, address, delim) ||
-          (id_list.size < 1))
+      if (  !string_split_noalloc(&id_list, address, delim)
+          || (id_list.size < 1))
          goto end;
 
       if (id_list.size == 1)
@@ -536,10 +536,10 @@ bool nested_list_item_get_address(nested_list_item_t *list_item,
    union string_list_elem_attr attr;
    size_t i;
 
-   if (!list_item ||
-       string_is_empty(delim) ||
-       !address ||
-       (len < 1))
+   if (  !list_item
+       || string_is_empty(delim)
+       || !address
+       || (len < 1))
       goto end;
 
    address[0] = '\0';
@@ -562,9 +562,8 @@ bool nested_list_item_get_address(nested_list_item_t *list_item,
    do
    {
       const char *id = current_item->id;
-
-      if (string_is_empty(id) ||
-          !string_list_append(&id_list, id, attr))
+      if (    string_is_empty(id)
+          || !string_list_append(&id_list, id, attr))
          goto end;
 
       current_item = current_item->parent_item;

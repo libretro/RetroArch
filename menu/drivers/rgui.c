@@ -1375,13 +1375,13 @@ static bool rgui_set_pixel_format_function(void)
       argb32_to_pixel_platform_format = argb32_to_abgr4444;
    else if (string_is_equal(driver_ident, "rsx"))             /* PS3 */
       argb32_to_pixel_platform_format = argb32_to_argb4444;
-   else if (string_is_equal(driver_ident, "d3d10") ||         /* D3D10/11/12 */
-            string_is_equal(driver_ident, "d3d11") ||
-            string_is_equal(driver_ident, "d3d12"))
+   else if (   string_is_equal(driver_ident, "d3d10")         /* D3D10/11/12 */
+            || string_is_equal(driver_ident, "d3d11")
+            || string_is_equal(driver_ident, "d3d12"))
       argb32_to_pixel_platform_format = argb32_to_bgra4444;
-   else if (string_is_equal(driver_ident, "sdl_dingux") ||    /* DINGUX SDL */
-            string_is_equal(driver_ident, "sdl_rs90") ||
-            string_is_equal(driver_ident, "xvideo"))
+   else if (   string_is_equal(driver_ident, "sdl_dingux")    /* DINGUX SDL */
+            || string_is_equal(driver_ident, "sdl_rs90")
+            || string_is_equal(driver_ident, "xvideo"))
    {
       argb32_to_pixel_platform_format = argb32_to_rgb565;
       return false; /* Transparency not supported */
@@ -4923,12 +4923,12 @@ static enum rgui_entry_value_type rgui_get_entry_value_type(
       if (switch_icons_enabled && entry_setting_type == ST_BOOL)
       {
          /* Toggle switch off */
-         if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED)) ||
-             string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
+         if (   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
+             || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
             return RGUI_ENTRY_VALUE_SWITCH_OFF;
          /* Toggle switch on */
-         else if (string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED)) ||
-                  string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
+         else if (   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
+                  || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
             return RGUI_ENTRY_VALUE_SWITCH_ON;
       }
       else if (string_is_equal(entry_value, "(RDB)"))
@@ -5068,8 +5068,8 @@ static void rgui_render(void *data, unsigned width, unsigned height,
 
    /* If the framebuffer changed size, or the background config has
     * changed, recache the background buffer */
-   fb_size_changed = (rgui->last_width  != fb_width) ||
-                     (rgui->last_height != fb_height);
+   fb_size_changed =    (rgui->last_width  != fb_width)
+                     || (rgui->last_height != fb_height);
 
 #if defined(GEKKO)
    /* Wii gfx driver changes menu framebuffer size at
@@ -5510,16 +5510,16 @@ static void rgui_render(void *data, unsigned width, unsigned height,
             if ((rgui->term_layout.height & 1) == 0)
             {
                /* Even number of entries */
-               if ((show_thumbnail      && (term_offset <= term_mid_point)) ||
-                   (show_left_thumbnail && (term_offset >  term_mid_point)))
+               if (   (show_thumbnail      && (term_offset <= term_mid_point))
+                   || (show_left_thumbnail && (term_offset >  term_mid_point)))
                   thumbnail_width = thumbnail_panel_width;
             }
             else
             {
                /* Odd number of entries (will always be the case) */
-               if ((show_thumbnail      && (term_offset < term_mid_point)) ||
-                   (show_left_thumbnail && (term_offset > term_mid_point)) ||
-                   ((show_thumbnail || show_left_thumbnail) && (term_offset == term_mid_point)))
+               if (   (show_thumbnail      && (term_offset < term_mid_point))
+                   || (show_left_thumbnail && (term_offset > term_mid_point))
+                   || ((show_thumbnail || show_left_thumbnail) && (term_offset == term_mid_point)))
                   thumbnail_width = thumbnail_panel_width;
             }
 

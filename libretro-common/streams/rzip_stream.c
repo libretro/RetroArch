@@ -97,15 +97,15 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
    /* Check 'magic numbers' - first 8 bytes
     * of header */
    if (
-       (length       < RZIP_HEADER_SIZE) || 
-       (header_bytes[0] !=           35) || /* # */
-       (header_bytes[1] !=           82) || /* R */
-       (header_bytes[2] !=           90) || /* Z */
-       (header_bytes[3] !=           73) || /* I */
-       (header_bytes[4] !=           80) || /* P */
-       (header_bytes[5] !=          118) || /* v */
-       (header_bytes[6] != RZIP_VERSION) || /* file format version number */
-       (header_bytes[7] !=           35))   /* # */
+          (length       < RZIP_HEADER_SIZE)
+       || (header_bytes[0] !=           35)  /* # */
+       || (header_bytes[1] !=           82)  /* R */
+       || (header_bytes[2] !=           90)  /* Z */
+       || (header_bytes[3] !=           73)  /* I */
+       || (header_bytes[4] !=           80)  /* P */
+       || (header_bytes[5] !=          118)  /* v */
+       || (header_bytes[6] != RZIP_VERSION)  /* file format version number */
+       || (header_bytes[7] !=           35)) /* # */
    {
       /* Reset file to start */
       filestream_seek(stream->file, 0, SEEK_SET);
@@ -270,7 +270,7 @@ static bool rzipstream_init_stream(
       stream->in_buf_size  = stream->chunk_size;
       stream->out_buf_size = stream->chunk_size * 2;
       /* > Account for minimum zlib overhead
-       *   of 11 bytes... */ 
+       *   of 11 bytes... */
       stream->out_buf_size =
             (stream->out_buf_size < (stream->in_buf_size + 11)) ?
                   stream->out_buf_size + 11 :
@@ -385,9 +385,9 @@ rzipstream_t* rzipstream_open(const char *path, unsigned mode)
    /* Sanity check
     * > Only RETRO_VFS_FILE_ACCESS_READ and
     *   RETRO_VFS_FILE_ACCESS_WRITE are supported */
-   if (string_is_empty(path) ||
-       ((mode != RETRO_VFS_FILE_ACCESS_READ) &&
-        (mode != RETRO_VFS_FILE_ACCESS_WRITE)))
+   if (string_is_empty(path)
+       || (   (mode != RETRO_VFS_FILE_ACCESS_READ)
+           && (mode != RETRO_VFS_FILE_ACCESS_WRITE)))
       return NULL;
 
    /* If opening in read mode, ensure file exists */
@@ -506,8 +506,8 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
    if (inflate_read != compressed_chunk_size)
       return false;
 
-   if ((inflate_written == 0) ||
-       (inflate_written > stream->out_buf_size))
+   if (   (inflate_written == 0)
+       || (inflate_written > stream->out_buf_size))
       return false;
 
    /* Record current output buffer occupancy
@@ -753,8 +753,8 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
    if (deflate_read != stream->in_buf_ptr)
       return false;
 
-   if ((deflate_written == 0) ||
-       (deflate_written > stream->out_buf_size))
+   if (   (deflate_written == 0)
+       || (deflate_written > stream->out_buf_size))
       return false;
 
    /* Write compressed chunk size to file */
