@@ -3287,7 +3287,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Inflúe na forma en que se realiza a votación de entrada dentro de RetroArch.\nA principios: a enquisa de entrada realízase antes de que se procese o fotograma.\nNormal: a enquisa de entrada realízase cando se solicita o sondeo.\nTarde: a votación de entrada realízase na primeira solicitude de estado de entrada por fotograma.\\ nSeleccionándoo como \"cedo\" ou \"Tardía\" pode producir menos latencia, dependendo da túa configuración. Ignorarase ao usar xogo en rede."
+   "Inflúe na forma en que se realiza a votación de entrada dentro de RetroArch.\nA principios: a enquisa de entrada realízase antes de que se procese o fotograma.\nNormal: a enquisa de entrada realízase cando se solicita o sondeo.\nTarde: a votación de entrada realízase na primeira solicitude de estado de entrada por fotograma.\\\\ nSeleccionándoo como \"cedo\" ou \"Tardía\" pode producir menos latencia, dependendo da túa configuración. Ignorarase ao usar xogo en rede."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
