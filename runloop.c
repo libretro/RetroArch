@@ -5875,7 +5875,7 @@ static enum runloop_state_enum runloop_check_state(bool error_on_init,
             settings,
             &current_bits, &trigger_input, display_kb);
 #ifdef HAVE_NETWORKING
-      if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+      if (!netplay_allow_pause)
          focused = true;
       else
 #endif
