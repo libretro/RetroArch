@@ -2373,11 +2373,11 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
       if (max_latency == 0)
       {
-         d3d12->flags                |=  D3D12_ST_FLAG_WAIT_FOR_VBLANK;
-         max_latency                  = 1;
+         d3d12->flags     |=  D3D12_ST_FLAG_WAIT_FOR_VBLANK;
+         max_latency       = 1;
       }
       else
-         d3d12->flags                &= ~D3D12_ST_FLAG_WAIT_FOR_VBLANK;
+         d3d12->flags     &= ~D3D12_ST_FLAG_WAIT_FOR_VBLANK;
 
       DXGISetMaximumFrameLatency(d3d12->chain.handle, max_latency);
       DXGIGetMaximumFrameLatency(d3d12->chain.handle, &cur_latency);
@@ -2911,7 +2911,8 @@ static void *d3d12_gfx_init(const video_info_t* video,
    else
       d3d12->flags &= ~D3D12_ST_FLAG_WAITABLE_SWAPCHAINS;
 
-   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
+   d3d_input_driver(settings->arrays.input_driver,
+         settings->arrays.input_joypad_driver, input, input_data);
 
    d3d12_init_base(d3d12);
    d3d12_init_descriptors(d3d12);
