@@ -216,14 +216,6 @@ bool audio_driver_is_ai_service_speech_running(void)
 }
 #endif
 
-static enum resampler_quality audio_driver_get_resampler_quality(
-      settings_t *settings)
-{
-   if (settings)
-      return (enum resampler_quality)settings->uints.audio_resampler_quality;
-   return RESAMPLER_QUALITY_DONTCARE;
-}
-
 static bool audio_driver_free_devices_list(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -344,24 +336,19 @@ static void audio_driver_mixer_deinit(void)
 
 bool audio_driver_deinit(void)
 {
-   settings_t *settings = config_get_ptr();
 #ifdef HAVE_AUDIOMIXER
    audio_driver_mixer_deinit();
 #endif
    audio_driver_free_devices_list();
-   return audio_driver_deinit_internal(
-         settings->bools.audio_enable);
+   return audio_driver_deinit_internal(config_get_ptr()->bools.audio_enable);
 }
 
-bool audio_driver_find_driver(
-      void *settings_data,
-      const char *prefix,
-      bool verbosity_enabled)
+bool audio_driver_find_driver(void *settings_data,
+      const char *prefix, bool verbosity_enabled)
 {
    settings_t *settings    = (settings_t*)settings_data;
-   int i                   = (int)driver_find_index(
-         "audio_driver",
-         settings->arrays.audio_driver);
+   const char *audio_drv   = settings->arrays.audio_driver;
+   int i                   = (int)driver_find_index("audio_driver", audio_drv);
 
    if (i >= 0)
       audio_driver_st.current_audio = (const audio_driver_t*)
@@ -372,8 +359,7 @@ bool audio_driver_find_driver(
       if (verbosity_enabled)
       {
          unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.audio_driver);
+         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix, audio_drv);
          RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
          for (d = 0; audio_drivers[d]; d++)
          {
@@ -596,9 +582,7 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
 
 #endif
 
-bool audio_driver_init_internal(
-      void *settings_data,
-      bool audio_cb_inited)
+bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 {
    unsigned new_rate              = 0;
    float  *out_samples_buf        = NULL;
@@ -677,7 +661,7 @@ bool audio_driver_init_internal(
       if (!audio_init_thread(
                &audio_driver_st.current_audio,
                &audio_driver_st.context_audio_data,
-               *settings->arrays.audio_device
+                *settings->arrays.audio_device
                ? settings->arrays.audio_device : NULL,
                settings->uints.audio_output_sample_rate, &new_rate,
                audio_latency,
@@ -692,8 +676,8 @@ bool audio_driver_init_internal(
 #endif
    {
       audio_driver_st.context_audio_data =
-         audio_driver_st.current_audio->init(*settings->arrays.audio_device ?
-               settings->arrays.audio_device : NULL,
+         audio_driver_st.current_audio->init(*settings->arrays.audio_device
+               ? settings->arrays.audio_device : NULL,
                settings->uints.audio_output_sample_rate,
                audio_latency,
                settings->uints.audio_block_frames,
@@ -749,8 +733,7 @@ bool audio_driver_init_internal(
    else
       audio_driver_st.resampler_ident[0] = '\0';
 
-   audio_driver_st.resampler_quality =
-         audio_driver_get_resampler_quality(settings);
+   audio_driver_st.resampler_quality = (enum resampler_quality)settings->uints.audio_resampler_quality;
 
    if (!retro_resampler_realloc(
             &audio_driver_st.resampler_data,
@@ -1483,7 +1466,8 @@ void audio_driver_mixer_play_scroll_sound(bool direction_up)
    bool        audio_enable_menu = settings->bools.audio_enable_menu;
    bool audio_enable_menu_scroll = settings->bools.audio_enable_menu_scroll;
    if (audio_enable_menu && audio_enable_menu_scroll)
-      audio_driver_mixer_play_menu_sound(direction_up ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);
+      audio_driver_mixer_play_menu_sound(direction_up
+            ? AUDIO_MIXER_SYSTEM_SLOT_UP : AUDIO_MIXER_SYSTEM_SLOT_DOWN);
 }
 
 void audio_driver_mixer_play_stream_looped(unsigned i)
@@ -1912,9 +1896,9 @@ void audio_driver_menu_sample(void)
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
       sample_count -= 1024;
    }
-   if (  recording_st->data   &&
-         recording_st->driver &&
-         recording_st->driver->push_audio)
+   if (     recording_st->data
+         && recording_st->driver
+         && recording_st->driver->push_audio)
    {
       struct record_audio_data ffemu_data;
 

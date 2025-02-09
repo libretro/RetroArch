@@ -1071,16 +1071,14 @@ static size_t core_backup_list_get_entry_timestamp_str(
 
 static unsigned menu_displaylist_parse_core_backup_list(
       file_list_t *list, const char *core_path,
-      settings_t *settings, bool restore)
+      const char *dir_core_assets,
+      enum core_backup_date_separator_type date_separator,
+      bool restore)
 {
    enum msg_hash_enums enum_idx;
    enum menu_settings_type settings_type;
    unsigned count                  = 0;
    core_backup_list_t *backup_list = NULL;
-   const char *dir_core_assets     = settings->paths.directory_core_assets;
-   enum core_backup_date_separator_type
-         date_separator            = (enum core_backup_date_separator_type)
-               settings->uints.menu_timedate_date_separator;
 
    if (restore)
    {
@@ -1160,7 +1158,7 @@ static unsigned menu_displaylist_parse_core_backup_list(
 }
 
 static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
-      settings_t *settings)
+      bool kiosk_mode_enable)
 {
    unsigned count                   = 0;
    core_info_list_t *core_info_list = NULL;
@@ -1225,7 +1223,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
 
 #ifndef IOS
    /* Add 'sideload core' entry */
-   if (!settings->bools.kiosk_mode_enable)
+   if (!kiosk_mode_enable)
       if (menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
             msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST),
@@ -1238,8 +1236,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
 }
 
 #ifdef HAVE_MIST
-static unsigned menu_displaylist_parse_core_manager_steam_list(
-      file_list_t *list, settings_t *settings)
+static unsigned menu_displaylist_parse_core_manager_steam_list(file_list_t *list)
 {
    size_t i;
    steam_core_dlc_list_t *dlc_list;
@@ -1268,8 +1265,7 @@ static unsigned menu_displaylist_parse_core_manager_steam_list(
 }
 
 static unsigned menu_displaylist_parse_core_information_steam(
-      file_list_t *info_list, const char *info_path,
-      settings_t *settings)
+      file_list_t *info_list, const char *info_path)
 {
    steam_core_dlc_list_t *dlc_list;
    unsigned count             = 0;
@@ -1409,7 +1405,7 @@ static unsigned menu_displaylist_parse_core_option_dropdown_list(
 }
 
 static unsigned menu_displaylist_parse_core_option_override_list(file_list_t *list,
-      settings_t *settings)
+      bool show_core_options_flush)
 {
    unsigned count               = 0;
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
@@ -1418,8 +1414,6 @@ static unsigned menu_displaylist_parse_core_option_override_list(file_list_t *li
                                && (runloop_st->core_options);
    bool game_options_active     = (flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE)   ? true : false;
    bool folder_options_active   = (flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE) ? true : false;
-   bool show_core_options_flush = settings ?
-         settings->bools.quick_menu_show_core_options_flush : false;
 
    /* Sanity check - cannot handle core option
     * overrides if:
@@ -1504,7 +1498,7 @@ end:
 }
 
 static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list,
-      settings_t *settings)
+      bool remap_save_on_exit)
 {
    unsigned count                = 0;
    uint32_t flags                = runloop_get_flags();
@@ -1512,7 +1506,6 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list
    bool core_remap_active        = (flags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE) ? true : false;
    bool content_dir_remap_active = (flags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE) ? true : false;
    bool game_remap_active        = (flags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE) ? true : false;
-   bool remap_save_on_exit       = settings->bools.remap_save_on_exit;
 
    /* Sanity check - cannot handle remap files
     * unless a valid core is running */
@@ -1617,8 +1610,8 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list
    if (   !remap_save_on_exit
        && (core_remap_active
        ||  content_dir_remap_active
-       ||  game_remap_active) &&
-       menu_entries_append(list,
+       ||  game_remap_active)
+       && menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH),
          msg_hash_to_str(MENU_ENUM_LABEL_REMAP_FILE_FLUSH),
          MENU_ENUM_LABEL_REMAP_FILE_FLUSH,
@@ -1645,8 +1638,8 @@ static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *
 #endif
 
    /* Get core list */
-   if (core_info_get_list(&core_info_list) &&
-       core_info_list)
+   if (   core_info_get_list(&core_info_list)
+       && core_info_list)
    {
       const char *detect_core_str   = NULL;
       const core_info_t *core_infos = NULL;
@@ -4364,7 +4357,8 @@ static unsigned menu_displaylist_parse_playlists(
       bool show_add_content  = (settings->uints.menu_content_show_add_entry ==
             MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB);
       bool show_history      = !string_is_equal(menu_ident, "rgui")
-            && !(string_is_equal(menu_ident, "glui") && !settings->bools.menu_materialui_show_nav_bar);
+            && !(string_is_equal(menu_ident, "glui")
+            && !settings->bools.menu_materialui_show_nav_bar);
 
       if (show_history)
       {
@@ -6549,8 +6543,8 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
       count++;
 
    /* Validate existing entries */
-   if (!(*manual_content_scan_get_overwrite_playlist_ptr()) &&
-       MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
+   if (!(*manual_content_scan_get_overwrite_playlist_ptr())
+       && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info_list,
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES, PARSE_ONLY_BOOL,
          false) == 0)
       count++;
@@ -11606,8 +11600,8 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY:
-                     if ((menu_rgui_color_theme != RGUI_THEME_CUSTOM) &&
-                         (menu_rgui_color_theme != RGUI_THEME_DYNAMIC))
+                     if (   (menu_rgui_color_theme != RGUI_THEME_CUSTOM)
+                         && (menu_rgui_color_theme != RGUI_THEME_DYNAMIC))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED:
@@ -11615,8 +11609,8 @@ unsigned menu_displaylist_build_list(
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER:
-                     if ((menu_screensaver_timeout != 0) &&
-                         (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE))
+                     if (   (menu_screensaver_timeout  != 0)
+                         && (menu_rgui_particle_effect != RGUI_PARTICLE_EFFECT_NONE))
                         build_list[i].checked = true;
                      break;
                   case MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE:
@@ -12317,8 +12311,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                         /* Add user index when display driver == rgui and sublabels
                          * are disabled, but only if there is more than one user */
                         if (
-                                 (is_rgui) &&
-                                 (max_users > 1)
+                                    (is_rgui)
+                                 && (max_users > 1)
                               && !settings->bools.menu_show_sublabels)
                         {
                            desc_len += strlcpy(descriptor + desc_len,
@@ -13798,14 +13792,22 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORE_RESTORE_BACKUP_LIST:
             menu_entries_clear(info->list);
             count                = menu_displaylist_parse_core_backup_list(
-                  info->list, info->path, settings, true);
+                  info->list, info->path,
+                  settings->paths.directory_core_assets,
+                  (enum core_backup_date_separator_type)
+                  settings->uints.menu_timedate_date_separator,
+                  true);
             info->flags         |= MD_FLAG_NEED_REFRESH
                                  | MD_FLAG_NEED_PUSH;
             break;
          case DISPLAYLIST_CORE_DELETE_BACKUP_LIST:
             menu_entries_clear(info->list);
             count                = menu_displaylist_parse_core_backup_list(
-                  info->list, info->path, settings, false);
+                  info->list, info->path,
+                  settings->paths.directory_core_assets,
+                  (enum core_backup_date_separator_type)
+                  settings->uints.menu_timedate_date_separator,
+                  false);
             info->flags         |= MD_FLAG_NEED_REFRESH
                                  | MD_FLAG_NEED_PUSH
                                  | MD_FLAG_NEED_NAVIGATION_CLEAR;
@@ -13821,7 +13823,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                size_t selection           = menu_st->selection_ptr;
                menu_entries_clear(info->list);
                count                    = menu_displaylist_parse_core_manager_list
-                  (info->list, settings);
+                  (info->list, settings->bools.kiosk_mode_enable);
 
                if (count == 0)
                   menu_entries_append(info->list,
@@ -13844,7 +13846,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_MIST
          case DISPLAYLIST_CORE_MANAGER_STEAM_LIST:
             menu_entries_clear(info->list);
-            count = menu_displaylist_parse_core_manager_steam_list(info->list, settings);
+            count = menu_displaylist_parse_core_manager_steam_list(info->list);
             info->flags       &= ~MD_FLAG_NEED_REFRESH;
             info->flags       |=  MD_FLAG_NEED_PUSH
                                |  MD_FLAG_NEED_NAVIGATION_CLEAR;
@@ -13866,7 +13868,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags                |=  MD_FLAG_NEED_PUSH
                                         |  MD_FLAG_NEED_NAVIGATION_CLEAR;
             count                       =
-               menu_displaylist_parse_core_information_steam(info->list, info->path, settings);
+               menu_displaylist_parse_core_information_steam(info->list, info->path);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14120,7 +14122,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                size_t selection             = menu_st->selection_ptr;
 
                menu_entries_clear(info->list);
-               count = menu_displaylist_parse_core_option_override_list(info->list, settings);
+               count = menu_displaylist_parse_core_option_override_list(info->list,
+                     settings->bools.quick_menu_show_core_options_flush);
 
                /* Fallback, in case we open this menu while running
                 * a core without options */
@@ -14151,7 +14154,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                size_t selection             = menu_st->selection_ptr;
 
                menu_entries_clear(info->list);
-               count = menu_displaylist_parse_remap_file_manager_list(info->list, settings);
+               count = menu_displaylist_parse_remap_file_manager_list(info->list,
+                     settings->bools.remap_save_on_exit);
 
                /* Fallback */
                if (count == 0)
@@ -14907,7 +14911,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB) && !settings->bools.kiosk_mode_enable;
                bool show_settings            = settings->bools.menu_content_show_settings
                      && (  (string_is_equal(menu_ident, "rgui"))
-                        || (string_is_equal(menu_ident, "glui") && !settings->bools.menu_materialui_show_nav_bar));
+                        || (string_is_equal(menu_ident, "glui")
+                     &&    !settings->bools.menu_materialui_show_nav_bar));
 
                if (     string_is_equal(menu_ident, "glui")
                      && settings->bools.menu_materialui_show_nav_bar)
@@ -14962,7 +14967,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                /* Show History and Favorites in menus without sidebar/tabs */
                if (     (string_is_equal(menu_ident, "rgui"))
-                     || (string_is_equal(menu_ident, "glui") && !settings->bools.menu_materialui_show_nav_bar))
+                     || (string_is_equal(menu_ident, "glui")
+                     && !settings->bools.menu_materialui_show_nav_bar))
                {
                   if (settings->bools.menu_content_show_history)
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
