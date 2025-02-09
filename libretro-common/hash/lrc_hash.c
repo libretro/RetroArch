@@ -129,7 +129,7 @@ static void sha256_chunk(struct sha256_ctx *p,
 
    while (len)
    {
-      unsigned l = 64 - p->inlen;
+      size_t l   = 64 - p->inlen;
 
       if (len < l)
          l       = len;

@@ -915,7 +915,7 @@ void video_driver_unset_stub_frame(void);
 
 float video_driver_get_core_aspect(void);
 
-uint32_t video_driver_get_frame_time_delta_usec(void);
+retro_time_t video_driver_get_frame_time_delta_usec(void);
 
 float video_driver_get_original_fps(void);
 

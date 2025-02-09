@@ -1924,7 +1924,7 @@ void video_driver_unset_stub_frame(void)
 }
 
 /* Get time diff between frames in usec (microseconds) */
-uint32_t video_driver_get_frame_time_delta_usec(void)
+retro_time_t video_driver_get_frame_time_delta_usec(void)
 {
    static retro_time_t last_time;
    retro_time_t now_time   = cpu_features_get_time_usec();
