@@ -824,6 +824,7 @@ typedef struct settings
       bool menu_content_show_history;
       bool menu_content_show_add;
       bool menu_content_show_playlists;
+      bool menu_content_show_playlist_tabs;
       bool menu_content_show_explore;
       bool menu_use_preferred_system_color_theme;
       bool menu_preferred_system_color_theme_set;

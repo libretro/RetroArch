@@ -2591,7 +2591,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    menu_displaylist_info_t info;
    settings_t *settings             = config_get_ptr();
    const char *dir_playlist         = settings->paths.directory_playlist;
-   bool menu_content_show_playlists = settings->bools.menu_content_show_playlists;
+   bool menu_content_show_playlists = settings->bools.menu_content_show_playlist_tabs;
    bool truncate_playlist_name      = settings->bools.ozone_truncate_playlist_name;
    bool sort_after_truncate         = settings->bools.ozone_sort_after_truncate_playlist_name;
 
@@ -5045,7 +5045,11 @@ static int xmb_draw_item(
       /* "Main Menu" playlists */
       else if (xmb->depth == 2 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
       {
-         xmb_node_t *sidebar_node = (xmb_node_t*) file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx);
+         xmb_node_t *sidebar_node = (xmb_node_t*)
+               (xmb->horizontal_list.size)
+                  ? file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx)
+                  : NULL;
+
          if (sidebar_node && sidebar_node->icon)
             texture = sidebar_node->icon;
       }
