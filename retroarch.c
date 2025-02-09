@@ -2155,8 +2155,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
 }
 
 static struct string_list *string_list_new_special(
-      enum string_list_type type,
-      void *data, unsigned *len, size_t *list_size)
+      enum string_list_type type, unsigned *len)
 {
    union string_list_elem_attr attr;
    unsigned i;
@@ -2382,17 +2381,13 @@ error:
 const char *char_list_new_special(enum string_list_type type, void *data)
 {
    unsigned len = 0;
-   size_t list_size;
-   struct string_list *s = string_list_new_special(type, data, &len, &list_size);
-   char         *options = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;
-
-   if (options && s)
-      string_list_join_concat(options, len, s, "|");
-
+   struct string_list *s = string_list_new_special(type, &len);
+   char         *opt     = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;
+   if (opt && s)
+      string_list_join_concat(opt, len, s, "|");
    string_list_free(s);
    s = NULL;
-
-   return options;
+   return opt;
 }
 
 char *path_get_ptr(enum rarch_path_type type)
