@@ -8154,9 +8154,9 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection = random_range(ozone->system_tab_end + 1, (unsigned)(ozone->system_tab_end + horizontal_list_size));
+            new_selection = random_range((unsigned)(ozone->system_tab_end + 1), (unsigned)(ozone->system_tab_end + horizontal_list_size));
             while (new_selection == (int)tab_selection)
-               new_selection = random_range(ozone->system_tab_end + 1, (unsigned)(ozone->system_tab_end + horizontal_list_size));
+               new_selection = random_range((unsigned)(ozone->system_tab_end + 1), (unsigned)(ozone->system_tab_end + horizontal_list_size));
 
             if (new_selection != (int)tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
