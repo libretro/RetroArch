@@ -2348,11 +2348,11 @@ static struct string_list *string_list_new_special(
                char zone_desc[TIMEZONE_LENGTH];
                while (fgets(zone_desc, TIMEZONE_LENGTH, zones_file))
                {
-                  size_t zone_desc_len = strlen(zone_desc);
+                  size_t _len = strlen(zone_desc);
 
-                  if (zone_desc_len > 0)
-                     if (zone_desc[--zone_desc_len] == '\n')
-                        zone_desc[zone_desc_len] = '\0';
+                  if (_len > 0)
+                     if (zone_desc[--_len] == '\n')
+                        zone_desc[_len] = '\0';
 
                   if (zone_desc && zone_desc[0] != '\0')
                   {

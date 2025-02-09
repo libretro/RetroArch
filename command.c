@@ -183,13 +183,12 @@ typedef struct
    socklen_t cmd_source_len;
 } command_network_t;
 
-static void network_command_reply(
-      command_t *cmd,
-      const char * data, size_t len)
+static void network_command_reply(command_t *cmd,
+   const char *s, size_t len)
 {
    command_network_t *netcmd = (command_network_t*)cmd->userptr;
    /* Respond (fire and forget since it's UDP) */
-   sendto(netcmd->net_fd, data, len, 0,
+   sendto(netcmd->net_fd, s, len, 0,
       (struct sockaddr*)&netcmd->cmd_source, netcmd->cmd_source_len);
 }
 
@@ -280,12 +279,11 @@ typedef struct
    char stdin_buf[CMD_BUF_SIZE];
 } command_stdin_t;
 
-static void stdin_command_reply(
-      command_t *cmd,
-      const char * data, size_t len)
+static void stdin_command_reply(command_t *cmd,
+   const char *s, size_t len)
 {
    /* Just write to stdout! */
-   fwrite(data, 1, len, stdout);
+   fwrite(s, 1, len, stdout);
    fflush(stdout);
 }
 
@@ -445,12 +443,11 @@ typedef struct
    int last_fd;
 } command_uds_t;
 
-static void uds_command_reply(
-      command_t *cmd,
-      const char * data, size_t len)
+static void uds_command_reply(command_t *cmd,
+      const char *s, size_t len)
 {
    command_uds_t *subcmd = (command_uds_t*)cmd->userptr;
-   write(subcmd->last_fd, data, len);
+   write(subcmd->last_fd, s, len);
 }
 
 static void uds_command_free(command_t *handle)
@@ -1165,8 +1162,8 @@ void command_event_init_controllers(rarch_system_info_t *sys_info,
 }
 
 #ifdef HAVE_CONFIGFILE
-static size_t command_event_save_config(
-      const char *config_path, char *s, size_t len)
+static size_t command_event_save_config(const char *config_path,
+   char *s, size_t len)
 {
    size_t _len      = 0;
    bool path_exists = !string_is_empty(config_path);
@@ -1238,8 +1235,8 @@ static size_t command_event_undo_load_state(char *s, size_t len)
 bool command_event_resize_windowed_scale(settings_t *settings,
       unsigned window_scale)
 {
-   unsigned                idx = 0;
-   bool      video_fullscreen  = settings->bools.video_fullscreen;
+   unsigned              idx = 0;
+   bool     video_fullscreen = settings->bools.video_fullscreen;
 
    if (window_scale == 0)
       return false;

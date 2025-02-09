@@ -561,7 +561,7 @@ void libretro_get_environment_info(
    runloop_st->flags &= ~RUNLOOP_FLAG_IGNORE_ENVIRONMENT_CB;
 }
 
-static dylib_t load_dynamic_core(const char *path, char *buf,
+static dylib_t load_dynamic_core(const char *path, char *s,
       size_t len)
 {
 #if defined(ANDROID)
@@ -593,7 +593,7 @@ static dylib_t load_dynamic_core(const char *path, char *buf,
    /* Need to use absolute path for this setting. It can be
     * saved to content history, and a relative path would
     * break in that scenario. */
-   path_resolve_realpath(buf, len, resolve_symlinks);
+   path_resolve_realpath(s, len, resolve_symlinks);
    return dylib_load(path);
 }
 
@@ -1116,8 +1116,7 @@ static bool validate_per_core_options(char *s,
    return true;
 }
 
-static bool validate_game_options(
-      const char *core_name,
+static bool validate_game_options(const char *core_name,
       char *s, size_t len, bool mkdir)
 {
    const char *game_name = path_basename_nocompression(path_get(RARCH_PATH_BASENAME));
@@ -1466,9 +1465,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_VARIABLE:
          {
+            size_t opt_idx, val_idx;
             const struct retro_variable *var = (const struct retro_variable*)data;
-            size_t opt_idx;
-            size_t val_idx;
 
             /* If core passes NULL to the callback, return
              * value indicates whether callback is supported */
@@ -7743,7 +7741,7 @@ void core_run(void)
 
    current_core->retro_run();
 
-   
+
 
 #ifdef HAVE_GAME_AI
    settings_t *settings        = config_get_ptr();

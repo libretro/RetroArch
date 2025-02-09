@@ -1069,7 +1069,9 @@ static void setting_get_string_representation_int_gpu_index(rarch_setting_t *set
    {
       struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
       size_t _len = snprintf(s, len, "%d", *setting->value.target.integer);
-      if (list && (*setting->value.target.integer < (int)list->size) && !string_is_empty(list->elems[*setting->value.target.integer].data))
+      if (      list
+            && (*setting->value.target.integer < (int)list->size)
+            && !string_is_empty(list->elems[*setting->value.target.integer].data))
       {
          s[  _len] = ' ';
          s[++_len] = '-';
@@ -1081,8 +1083,7 @@ static void setting_get_string_representation_int_gpu_index(rarch_setting_t *set
 }
 
 static void setting_get_string_representation_int(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
       snprintf(s, len, "%d", *setting->value.target.integer);
@@ -1259,13 +1260,12 @@ static void setting_get_string_representation_st_dir(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-#if IOS
    {
+#if IOS
       if (*setting->value.target.string)
          fill_pathname_abbreviate_special(s, setting->value.target.string, len);
       else
          strlcpy(s, setting->dir.empty_path, len);
-   }
 #else
       strlcpy(s,
              *setting->value.target.string
@@ -1273,18 +1273,21 @@ static void setting_get_string_representation_st_dir(rarch_setting_t *setting,
             : setting->dir.empty_path,
             len);
 #endif
+   }
 }
 
 static void setting_get_string_representation_st_path(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
+   {
 #if IOS
       fill_pathname_abbreviate_special(s, path_basename(setting->value.target.string), len);
 #else
       fill_pathname(s, path_basename(setting->value.target.string),
             "", len);
 #endif
+   }
 }
 
 static void setting_get_string_representation_st_string(rarch_setting_t *setting,
@@ -2541,8 +2544,8 @@ static void end_sub_group(
 
 /* MENU SETTINGS */
 
-static int setting_action_ok_bind_all(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
+static int setting_action_ok_bind_all(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
 {
    if (!menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL, setting))
       return -1;
@@ -2572,7 +2575,8 @@ static int setting_action_ok_bind_all_save_autoconfig(
       char buf[128];
       char msg[NAME_MAX_LENGTH];
       config_get_autoconf_profile_filename(name, index_offset, buf, sizeof(buf));
-      _len = snprintf(msg, sizeof(msg),msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED), buf);
       runloop_msg_queue_push(msg, _len, 1, 180, true,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -2849,8 +2853,7 @@ static int setting_string_action_ok_microphone_device(
 #endif
 
 static void setting_get_string_representation_streaming_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -2881,8 +2884,7 @@ static void setting_get_string_representation_streaming_mode(
 }
 
 static void setting_get_string_representation_video_stream_quality(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3036,8 +3038,7 @@ static void setting_get_string_representation_password(
 
 #if TARGET_OS_IPHONE
 static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -3062,8 +3063,7 @@ static void setting_get_string_representation_uint_keyboard_gamepad_mapping_type
 
 #ifdef HAVE_TRANSLATE
 static void setting_get_string_representation_uint_ai_service_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    enum msg_hash_enums enum_idx = MSG_UNKNOWN;
    if (!setting)
@@ -5057,8 +5057,7 @@ static void setting_get_string_representation_crt_switch_resolution_super(
 }
 
 static void setting_get_string_representation_uint_playlist_sublabel_runtime_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5081,8 +5080,7 @@ static void setting_get_string_representation_uint_playlist_sublabel_runtime_typ
 }
 
 static void setting_get_string_representation_uint_playlist_sublabel_last_played_style(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5234,8 +5232,7 @@ static void setting_get_string_representation_uint_playlist_sublabel_last_played
 }
 
 static void setting_get_string_representation_uint_playlist_inline_core_display_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5264,8 +5261,7 @@ static void setting_get_string_representation_uint_playlist_inline_core_display_
 }
 
 static void setting_get_string_representation_uint_playlist_entry_remove_enable(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5295,8 +5291,7 @@ static void setting_get_string_representation_uint_playlist_entry_remove_enable(
 
 #ifdef _3DS
 static void setting_get_string_representation_uint_video_3ds_display_mode(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5333,8 +5328,7 @@ static void setting_get_string_representation_uint_video_3ds_display_mode(
 
 #if defined(DINGUX)
 static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5364,8 +5358,7 @@ static void setting_get_string_representation_uint_video_dingux_ipu_filter_type(
 
 #if defined(DINGUX_BETA)
 static void setting_get_string_representation_uint_video_dingux_refresh_rate(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5390,8 +5383,7 @@ static void setting_get_string_representation_uint_video_dingux_refresh_rate(
 
 #if defined(RS90) || defined(MIYOO)
 static void setting_get_string_representation_uint_video_dingux_rs90_softfilter_type(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5416,8 +5408,7 @@ static void setting_get_string_representation_uint_video_dingux_rs90_softfilter_
 #endif
 
 static void setting_get_string_representation_uint_input_auto_game_focus(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5447,8 +5438,7 @@ static void setting_get_string_representation_uint_input_auto_game_focus(
 
 #if defined(HAVE_OVERLAY)
 static void setting_get_string_representation_uint_input_overlay_show_inputs(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -5477,8 +5467,7 @@ static void setting_get_string_representation_uint_input_overlay_show_inputs(
 }
 
 static void setting_get_string_representation_uint_input_overlay_show_inputs_port(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
       snprintf(s, len, "%u",
@@ -5499,8 +5488,7 @@ static void setting_get_string_representation_overlay_lightgun_port(
 }
 
 static void setting_get_string_representation_overlay_lightgun_action(
-      rarch_setting_t *setting,
-      char *s, size_t len)
+      rarch_setting_t *setting, char *s, size_t len)
 {
    if (!setting)
       return;
@@ -23614,7 +23602,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler,
-                  SD_FLAG_CMD_APPLY_AUTO);                
+                  SD_FLAG_CMD_APPLY_AUTO);
 #endif
 
 
