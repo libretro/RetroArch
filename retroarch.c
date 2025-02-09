@@ -7381,12 +7381,13 @@ static bool retroarch_parse_input_and_config(
                break;
             case 'e':
                {
-                  unsigned entry_state_slot = (unsigned)strtoul(optarg, NULL, 0);
+                  char *endptr;
+                  int16_t entry_state_slot = (unsigned)strtoul(optarg, &endptr, 0);
 
-                  if (entry_state_slot)
+                  if (entry_state_slot > -1 && string_is_empty(endptr))
                      runloop_st->entry_state_slot = entry_state_slot;
                   else
-                     RARCH_WARN("--entryslot argument \"%s\" is not a valid "
+                     RARCH_WARN("[State]: --entryslot argument \"%s\" is not a valid "
                         "entry state slot index. Ignoring.\n", optarg);
                }
                break;
@@ -7477,18 +7478,18 @@ static bool retroarch_parse_input_and_config(
        * command line interface */
       cli_content_set = true;
    }
-   else if (runloop_st->entry_state_slot)
+   else if (runloop_st->entry_state_slot > -1)
    {
-      runloop_st->entry_state_slot = 0;
+      runloop_st->entry_state_slot = -1;
       RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
    }
    #ifdef HAVE_BSV_MOVIE
-   if (runloop_st->entry_state_slot)
+   if (runloop_st->entry_state_slot > -1)
    {
      input_driver_state_t *input_st = input_state_get_ptr();
      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
      {
-        runloop_st->entry_state_slot = 0;
+        runloop_st->entry_state_slot = -1;
         RARCH_WARN("Trying to load entry state while replay playback is active. Ignoring entry state.\n");
      }
    }
@@ -7585,6 +7586,7 @@ bool retroarch_main_init(int argc, char *argv[])
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
    video_st->flags              |= VIDEO_FLAG_ACTIVE;
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
+   runloop_st->entry_state_slot  = -1;
 
    if (setjmp(global->error_sjlj_context) > 0)
    {

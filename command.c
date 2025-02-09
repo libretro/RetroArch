@@ -1259,7 +1259,7 @@ size_t command_event_save_auto_state(void)
    size_t _len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    char savestate_name_auto[PATH_MAX_LENGTH];
-   if (runloop_st->entry_state_slot)
+   if (runloop_st->entry_state_slot > -1)
       return 0;
    if (!core_info_current_supports_savestate())
       return 0;
@@ -1330,9 +1330,17 @@ bool command_event_load_entry_state(settings_t *settings)
    entry_state_path[0] = '\0';
 
    if (!runloop_get_entry_state_path(
+         entry_state_path, sizeof(entry_state_path),
+         runloop_st->entry_state_slot))
+      return false;
+
+   if (!path_is_valid(entry_state_path))
+   {
+      if (!runloop_get_savestate_path(
             entry_state_path, sizeof(entry_state_path),
             runloop_st->entry_state_slot))
-      return false;
+         return false;
+   }
 
    entry_path_stats = path_stat(entry_state_path);
 
