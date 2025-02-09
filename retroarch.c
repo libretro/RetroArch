@@ -5289,17 +5289,14 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_VOLUME_UP:
-         {
-            audio_driver_state_t
-               *audio_st              = audio_state_get_ptr();
-            command_event_set_volume(settings, 0.5f,
+         command_event_set_volume(settings, 0.5f,
 #if defined(HAVE_GFX_WIDGETS)
-                  dispwidget_get_ptr()->active,
+               dispwidget_get_ptr()->active,
 #else
-                  false,
+               false,
 #endif
-                  audio_st->mute_enable);
-         }
+               audio_state_get_ptr()->mute_enable
+         );
          break;
       case CMD_EVENT_VOLUME_DOWN:
          command_event_set_volume(settings, -0.5f,
@@ -5309,7 +5306,7 @@ bool command_event(enum event_command cmd, void *data)
                false,
 #endif
                audio_state_get_ptr()->mute_enable
-               );
+         );
          break;
       case CMD_EVENT_MIXER_VOLUME_UP:
          command_event_set_mixer_volume(settings, 0.5f);

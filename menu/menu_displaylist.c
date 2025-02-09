@@ -7731,51 +7731,30 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       {
-         bool audio_mute_enable       = *audio_get_bool_ptr(AUDIO_ACTION_MUTE_ENABLE);
-#if defined(HAVE_AUDIOMIXER)
-         bool audio_mixer_mute_enable = *audio_get_bool_ptr(AUDIO_ACTION_MIXER_MUTE_ENABLE);
-#else
-         bool audio_mixer_mute_enable = true;
-#endif
          menu_displaylist_build_info_selective_t build_list[] = {
-            {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true },
 #ifdef HAVE_MICROPHONE
-            {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true  },
+            {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true },
 #endif
-            {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true  },
-            {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true  },
-            {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,            PARSE_ACTION,     false },
-            {MENU_ENUM_LABEL_MENU_SOUNDS,                     PARSE_ACTION,     true  },
-            {MENU_ENUM_LABEL_AUDIO_MUTE,                      PARSE_ONLY_BOOL,  true  },
-            {MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,                PARSE_ONLY_BOOL,  true  },
-            {MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,       PARSE_ONLY_BOOL,  true  },
-            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,          PARSE_ONLY_BOOL,  true  },
-            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,       PARSE_ONLY_BOOL,  true  },
-            {MENU_ENUM_LABEL_AUDIO_VOLUME,                    PARSE_ONLY_FLOAT, false },
-            {MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,              PARSE_ONLY_FLOAT, false },
-            {MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,               PARSE_ONLY_BOOL,  true  },
+            {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true },
+            {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true },
+#if defined(HAVE_AUDIOMIXER)
+            {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,            PARSE_ACTION,     true },
+#endif
+            {MENU_ENUM_LABEL_MENU_SOUNDS,                     PARSE_ACTION,     true },
+            {MENU_ENUM_LABEL_AUDIO_VOLUME,                    PARSE_ONLY_FLOAT, true },
+            {MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,              PARSE_ONLY_FLOAT, true },
+            {MENU_ENUM_LABEL_AUDIO_MUTE,                      PARSE_ONLY_BOOL,  true },
+            {MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,                PARSE_ONLY_BOOL,  true },
+            {MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,       PARSE_ONLY_BOOL,  true },
+            {MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,               PARSE_ONLY_BOOL,  true },
+            {MENU_ENUM_LABEL_AUDIO_REWIND_MUTE,               PARSE_ONLY_BOOL,  true },
+            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,          PARSE_ONLY_BOOL,  true },
+            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,       PARSE_ONLY_BOOL,  true },
 #if defined(HAVE_DSP_FILTER)
-            {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                PARSE_ONLY_PATH,  true  },
+            {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                PARSE_ONLY_PATH,  true },
 #endif
          };
-
-         for (i = 0; i < ARRAY_SIZE(build_list); i++)
-         {
-            switch (build_list[i].enum_idx)
-            {
-               case MENU_ENUM_LABEL_AUDIO_VOLUME:
-                  if (!audio_mute_enable)
-                     build_list[i].checked = true;
-                  break;
-               case MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME:
-               case MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS:
-                  if (!audio_mixer_mute_enable)
-                     build_list[i].checked = true;
-                  break;
-               default:
-                  break;
-            }
-         }
 
          for (i = 0; i < ARRAY_SIZE(build_list); i++)
          {
@@ -11441,28 +11420,13 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_REWIND_SETTINGS_LIST:
          {
-            bool rewind_enable            = settings->bools.rewind_enable;
             menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_REWIND_ENABLE,           PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_REWIND_GRANULARITY,      PARSE_ONLY_UINT, false},
-               {MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,      PARSE_ONLY_SIZE, false},
-               {MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP, PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_REWIND_ENABLE,           PARSE_ONLY_BOOL, true },
+               {MENU_ENUM_LABEL_REWIND_GRANULARITY,      PARSE_ONLY_UINT, true },
+               {MENU_ENUM_LABEL_REWIND_BUFFER_SIZE,      PARSE_ONLY_SIZE, true },
+               {MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP, PARSE_ONLY_UINT, true },
+               {MENU_ENUM_LABEL_AUDIO_REWIND_MUTE,       PARSE_ONLY_BOOL, true },
             };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               switch (build_list[i].enum_idx)
-               {
-                  case MENU_ENUM_LABEL_REWIND_GRANULARITY:
-                  case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE:
-                  case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
-                     if (rewind_enable)
-                        build_list[i].checked = true;
-                     break;
-                  default:
-                     break;
-               }
-            }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -11485,11 +11449,13 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_REWIND
                {MENU_ENUM_LABEL_REWIND_SETTINGS,             PARSE_ACTION,     false},
 #endif
-               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS, PARSE_ACTION,     true},
-               {MENU_ENUM_LABEL_FASTFORWARD_RATIO,           PARSE_ONLY_FLOAT, true},
-               {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,       PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_SLOWMOTION_RATIO,            PARSE_ONLY_FLOAT, true},
-               {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,          PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS, PARSE_ACTION,     true },
+               {MENU_ENUM_LABEL_FASTFORWARD_RATIO,           PARSE_ONLY_FLOAT, true },
+               {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,       PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,      PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,   PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_SLOWMOTION_RATIO,            PARSE_ONLY_FLOAT, true },
+               {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,          PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,     PARSE_ONLY_BOOL,  false},
             };
 
