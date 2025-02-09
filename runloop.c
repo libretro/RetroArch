@@ -6860,6 +6860,7 @@ int runloop_iterate(void)
    bool netplay_allow_pause               = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
    bool menu_pause_libretro               = settings->bools.menu_pause_libretro && netplay_allow_pause;
 #else
+   bool netplay_allow_pause               = false;
    bool menu_pause_libretro               = settings->bools.menu_pause_libretro;
 #endif
    bool core_paused                       =
