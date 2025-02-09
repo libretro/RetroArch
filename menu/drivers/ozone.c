@@ -8154,9 +8154,9 @@ static enum menu_action ozone_parse_menu_entry_action(
                   ? ozone_get_onscreen_category_selection(ozone)
                   : ozone->categories_selection_ptr;
 
-            new_selection = random_range(ozone->system_tab_end + 1, ozone->system_tab_end + horizontal_list_size);
+            new_selection = random_range(ozone->system_tab_end + 1, (unsigned)(ozone->system_tab_end + horizontal_list_size));
             while (new_selection == (int)tab_selection)
-               new_selection = random_range(ozone->system_tab_end + 1, ozone->system_tab_end + horizontal_list_size);
+               new_selection = random_range(ozone->system_tab_end + 1, (unsigned)(ozone->system_tab_end + horizontal_list_size));
 
             if (new_selection != (int)tab_selection)
                ozone_sidebar_goto(ozone, new_selection);
@@ -8175,7 +8175,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             struct menu_state *menu_st = menu_state_get_ptr();
             size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
             size_t selection           = menu_st->selection_ptr;
-            size_t new_selection       = random_range(0, selection_total - 1);
+            size_t new_selection       = random_range(0, (unsigned)(selection_total - 1));
             menu_entry_t entry_new;
 
             MENU_ENTRY_INITIALIZE(entry_new);
@@ -8183,7 +8183,7 @@ static enum menu_action ozone_parse_menu_entry_action(
             /* Keep randomizing until selection is a fresh playlist */
             while (new_selection == selection || entry_new.type != FILE_TYPE_PLAYLIST_COLLECTION)
             {
-               new_selection = random_range(0, selection_total - 1);
+               new_selection = random_range(0, (unsigned)(selection_total - 1));
                menu_entry_get(&entry_new, 0, new_selection, NULL, false);
             }
 
@@ -11654,7 +11654,6 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool video_fullscreen                  = video_info->fullscreen;
    bool mouse_grabbed                     = video_info->input_driver_grab_mouse_state;
    bool menu_mouse_enable                 = video_info->menu_mouse_enable;
-   bool input_menu_swap_ok_cancel_buttons = video_info->input_menu_swap_ok_cancel_buttons;
    bool battery_level_enable              = video_info->battery_level_enable;
    bool timedate_enable                   = video_info->timedate_enable;
    gfx_display_t            *p_disp       = (gfx_display_t*)video_info->disp_userdata;

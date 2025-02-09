@@ -8129,10 +8129,10 @@ size_t menu_playlist_random_selection(size_t selection, bool is_explore_list)
          selection_start = 2;
    }
 
-   new_selection = random_range(selection_start, selection_total - 1);
+   new_selection = random_range(selection_start, (unsigned)(selection_total - 1));
 
    while (new_selection == selection && selection_start != selection_total - 1)
-      new_selection = random_range(selection_start, selection_total - 1);
+      new_selection = random_range(selection_start, (unsigned)(selection_total - 1));
 
    return new_selection;
 }

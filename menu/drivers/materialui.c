@@ -9372,7 +9372,7 @@ static enum menu_action materialui_parse_menu_entry_action(
                struct menu_state *menu_st = menu_state_get_ptr();
                size_t selection_total     = menu_st->entries.list ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0)->size : 0;
                size_t selection           = menu_st->selection_ptr;
-               size_t new_selection       = random_range(0, selection_total - 1);
+               size_t new_selection       = random_range(0, (unsigned)(selection_total - 1));
                menu_entry_t entry_new;
 
                MENU_ENTRY_INITIALIZE(entry_new);
@@ -9380,7 +9380,7 @@ static enum menu_action materialui_parse_menu_entry_action(
                /* Keep randomizing until selection is a fresh playlist */
                while (new_selection == selection || entry_new.type != FILE_TYPE_PLAYLIST_COLLECTION)
                {
-                  new_selection = random_range(0, selection_total - 1);
+                  new_selection = random_range(0, (unsigned)(selection_total - 1));
                   menu_entry_get(&entry_new, 0, new_selection, NULL, false);
                }
 

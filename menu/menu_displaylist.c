@@ -7914,9 +7914,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
       {
-         const char *menu_ident      = menu_driver_ident();
          core_info_list_t *info_list = NULL;
-
          core_info_get_list(&info_list);
 
          if (!string_is_empty(settings->paths.directory_menu_content))
