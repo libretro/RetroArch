@@ -662,6 +662,7 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+      bool audio_rewind_mute;
 #ifdef IOS
       bool audio_respect_silent_mode;
 #endif

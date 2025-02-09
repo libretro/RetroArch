@@ -3965,6 +3965,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
 {
    float fastforward_ratio_current;
    video_driver_state_t *video_st                     = video_state_get_ptr();
+   audio_driver_state_t *audio_st                     = audio_state_get_ptr();
    bool frame_time_counter_reset_after_fastforwarding = settings ?
          settings->bools.frame_time_counter_reset_after_fastforwarding : false;
    float fastforward_ratio_default                    = settings ?
@@ -3991,6 +3992,11 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st, setti
          runloop_st->flags |=  RUNLOOP_FLAG_FASTMOTION;
       else
          runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
+
+      if (settings->bools.audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+         audio_st->flags |=  AUDIO_FLAG_MUTED;
+      else
+         audio_st->flags &= ~AUDIO_FLAG_MUTED;
 
       if (input_st)
       {
@@ -5458,6 +5464,7 @@ static enum runloop_state_enum runloop_check_state(
    uico_driver_state_t  *uico_st       = uico_state_get_ptr();
    input_driver_state_t *input_st      = input_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
+   audio_driver_state_t *audio_st      = audio_state_get_ptr();
    gfx_display_t            *p_disp    = disp_get_ptr();
    runloop_state_t *runloop_st         = &runloop_state;
    static bool old_focus               = true;
@@ -6165,6 +6172,14 @@ static enum runloop_state_enum runloop_check_state(
                ,
                s, sizeof(s), &t);
 
+         if (rewind_pressed != old_rewind_pressed)
+         {
+            if (settings->bools.audio_rewind_mute && rewind_pressed)
+               audio_st->flags |=  AUDIO_FLAG_MUTED;
+            else
+               audio_st->flags &= ~AUDIO_FLAG_MUTED;
+         }
+
          old_rewind_pressed = rewind_pressed;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -6437,6 +6452,11 @@ static enum runloop_state_enum runloop_check_state(
             runloop_st->flags                   |=  RUNLOOP_FLAG_FASTMOTION;
             command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
          }
+
+         if (settings->bools.audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+            audio_st->flags |=  AUDIO_FLAG_MUTED;
+         else
+            audio_st->flags &= ~AUDIO_FLAG_MUTED;
 
          driver_set_nonblock_state();
 

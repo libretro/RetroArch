@@ -1838,6 +1838,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
    SETTING_BOOL("audio_fastforward_mute",        &settings->bools.audio_fastforward_mute, true, DEFAULT_AUDIO_FASTFORWARD_MUTE, false);
    SETTING_BOOL("audio_fastforward_speedup",     &settings->bools.audio_fastforward_speedup, true, DEFAULT_AUDIO_FASTFORWARD_SPEEDUP, false);
+   SETTING_BOOL("audio_rewind_mute",             &settings->bools.audio_rewind_mute, true, DEFAULT_AUDIO_REWIND_MUTE, false);
 
 #ifdef HAVE_WASAPI
    SETTING_BOOL("audio_wasapi_exclusive_mode",   &settings->bools.audio_wasapi_exclusive_mode, true, DEFAULT_WASAPI_EXCLUSIVE_MODE, false);

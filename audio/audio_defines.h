@@ -161,7 +161,13 @@ enum audio_driver_state_flags
     * @see audio_driver_t::write_avail
     * @see audio_driver_t::buffer_size
     */
-   AUDIO_FLAG_CONTROL      = (1 << 5)
+   AUDIO_FLAG_CONTROL      = (1 << 5),
+
+   /**
+    * Indicates that the audio driver is forcing gain to 0.
+    * Used for temporary rewind and fast-forward muting.
+    */
+   AUDIO_FLAG_MUTED        = (1 << 6)
 };
 
 typedef struct audio_statistics
