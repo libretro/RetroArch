@@ -30,7 +30,7 @@
 asm(
     DECL_ARMMODE("convert_float_s16_asm")
     DECL_ARMMODE("_convert_float_s16_asm")
-    "# convert_float_s16_asm(int16_t *out, const float *in, size_t samples)\n"
+    "# convert_float_s16_asm(int16_t *s, const float *in, size_t len)\n"
     "   # Hacky way to get a constant of 2^15.\n"
     "   # ((2^4)^2)^2 * 0.5 = 2^15\n"
     "   vmov.f32 q8, #16.0\n"

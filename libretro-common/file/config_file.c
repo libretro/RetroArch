@@ -1168,24 +1168,24 @@ size_t config_get_config_path(config_file_t *conf, char *s, size_t len)
 }
 
 bool config_get_array(config_file_t *conf, const char *key,
-      char *buf, size_t len)
+      char *s, size_t len)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
-      return strlcpy(buf, entry->value, len) < len;
+      return strlcpy(s, entry->value, len) < len;
    return false;
 }
 
 bool config_get_path(config_file_t *conf, const char *key,
-      char *buf, size_t len)
+      char *s, size_t len)
 {
 #if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
-   return config_get_array(conf, key, buf, len);
+   return config_get_array(conf, key, s, len);
 #else
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
    {
-      fill_pathname_expand_special(buf, entry->value, len);
+      fill_pathname_expand_special(s, entry->value, len);
       return true;
    }
    return false;
