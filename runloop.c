@@ -5442,17 +5442,20 @@ static INLINE bool runloop_is_libretro_running(runloop_state_t* runloop_st, bool
       &&    runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
 }
 
-static enum runloop_state_enum runloop_check_state(bool error_on_init,
-      settings_t *settings, retro_time_t current_time, bool netplay_allow_pause)
+static enum runloop_state_enum runloop_check_state(
+      input_driver_state_t *input_st,
+      audio_driver_state_t *audio_st,
+      video_driver_state_t *video_st,
+      uico_driver_state_t   *uico_st,
+      bool error_on_init,
+      settings_t *settings,
+      retro_time_t current_time,
+      bool netplay_allow_pause)
 {
    input_bits_t current_bits;
 #ifdef HAVE_MENU
    static input_bits_t last_input      = {{0}};
 #endif
-   uico_driver_state_t  *uico_st       = uico_state_get_ptr();
-   input_driver_state_t *input_st      = input_state_get_ptr();
-   video_driver_state_t *video_st      = video_state_get_ptr();
-   audio_driver_state_t *audio_st      = audio_state_get_ptr();
    gfx_display_t            *p_disp    = disp_get_ptr();
    runloop_state_t *runloop_st         = &runloop_state;
    static bool old_focus               = true;
@@ -6189,7 +6192,8 @@ static enum runloop_state_enum runloop_check_state(bool error_on_init,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
 
-         if (rewinding && runloop_paused
+         if (     rewinding
+               && runloop_paused
 #ifdef HAVE_MENU
                && !(menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
@@ -6846,9 +6850,7 @@ int runloop_iterate(void)
    video_driver_state_t         *video_st = video_state_get_ptr();
    recording_state_t              *rec_st = recording_state_get_ptr();
    camera_driver_state_t       *camera_st = camera_state_get_ptr();
-#if defined(HAVE_COCOATOUCH)
    uico_driver_state_t           *uico_st = uico_state_get_ptr();
-#endif
    settings_t *settings                   = config_get_ptr();
    runloop_state_t *runloop_st            = &runloop_state;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
@@ -6952,6 +6954,8 @@ int runloop_iterate(void)
    }
 
    switch ((enum runloop_state_enum)runloop_check_state(
+            input_st, audio_st, video_st,
+            uico_st,
             ((global_get_ptr()->flags & GLOB_FLG_ERR_ON_INIT) > 0),
             settings, current_time, netplay_allow_pause))
    {
@@ -7006,7 +7010,7 @@ int runloop_iterate(void)
          /* Otherwise run menu in video refresh rate speed. */
          if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
             runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
-                  ((video_st->video_refresh_rate_original)
+                     ((video_st->video_refresh_rate_original)
                      ? video_st->video_refresh_rate_original
                      : settings->floats.video_refresh_rate));
          else
@@ -7068,9 +7072,7 @@ int runloop_iterate(void)
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
    runloop_st->core_runtime_usec += runloop_core_runtime_tick(
-         runloop_st,
-         slowmotion_ratio,
-         current_time);
+         runloop_st, slowmotion_ratio, current_time);
 
 #ifdef HAVE_CHEEVOS
    if (cheevos_enable)
@@ -7223,10 +7225,8 @@ void runloop_msg_queue_init(void)
 #endif
 }
 
-void runloop_task_msg_queue_push(
-      retro_task_t *task, const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush)
+void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration, bool flush)
 {
 #if defined(HAVE_GFX_WIDGETS)
 #ifdef HAVE_MENU
@@ -7279,7 +7279,6 @@ void runloop_task_msg_queue_push(
       runloop_msg_queue_push(msg, strlen(msg), prio, duration, flush, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
-
 
 bool runloop_get_current_savestate_path(char *s, size_t len)
 {
