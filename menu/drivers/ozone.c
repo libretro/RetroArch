@@ -3276,7 +3276,8 @@ static void ozone_draw_sidebar(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
-      settings_t *settings,
+      bool use_smooth_ticker,
+      enum gfx_animation_ticker_type menu_ticker_type,
       void *userdata,
       unsigned video_width,
       unsigned video_height,
@@ -3336,11 +3337,7 @@ static void ozone_draw_sidebar(
          ticker_spacer               = OZONE_TICKER_SPACER;
    unsigned ticker_x_offset          = 0;
    uint32_t text_alpha               = ozone->animations.sidebar_text_alpha * 255.0f;
-   bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
    float scale_factor                = ozone->last_scale_factor;
-   enum gfx_animation_ticker_type
-         menu_ticker_type            =
-         (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    unsigned selection_y              = 0;
    unsigned selection_old_y          = 0;
    unsigned horizontal_list_size     = 0;
@@ -3847,15 +3844,12 @@ static void ozone_update_savestate_thumbnail_image(void *data)
    ozone->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT;
 }
 
-static void ozone_entries_update_thumbnail_bar(
-      ozone_handle_t *ozone,
-      bool is_playlist,
-      bool allow_animation)
+static void ozone_entries_update_thumbnail_bar(ozone_handle_t *ozone,
+      bool savestate_thumbnail,
+      bool is_playlist, bool allow_animation)
 {
    struct gfx_animation_ctx_entry entry;
    uintptr_t tag            = (uintptr_t)&ozone->show_thumbnail_bar;
-   settings_t *settings     = config_get_ptr();
-   bool savestate_thumbnail = settings ? settings->bools.savestate_thumbnail_enable : false;
 
    if (!savestate_thumbnail)
       ozone->flags &= ~OZONE_FLAG_IS_STATE_SLOT;
@@ -3998,10 +3992,8 @@ static bool ozone_want_collapse(ozone_handle_t *ozone,
          || (is_playlist && (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)));
 }
 
-static void ozone_sidebar_update_collapse(
-      ozone_handle_t *ozone,
-      bool ozone_collapse_sidebar,
-      bool allow_animation)
+static void ozone_sidebar_update_collapse(ozone_handle_t *ozone,
+      bool ozone_collapse_sidebar, bool allow_animation)
 {
    /* Collapse sidebar if needed */
    struct gfx_animation_ctx_entry entry;
@@ -4088,13 +4080,12 @@ static void ozone_sidebar_update_collapse(
    }
 
 end:
-   ozone_entries_update_thumbnail_bar(ozone, is_playlist, allow_animation);
+   ozone_entries_update_thumbnail_bar(ozone, config_get_ptr()->bools.savestate_thumbnail_enable,
+         is_playlist, allow_animation);
 }
 
-static void ozone_go_to_sidebar(
-      ozone_handle_t *ozone,
-      bool ozone_collapse_sidebar,
-      uintptr_t tag)
+static void ozone_go_to_sidebar(ozone_handle_t *ozone,
+      bool ozone_collapse_sidebar, uintptr_t tag)
 {
    struct gfx_animation_ctx_entry entry;
 
@@ -4385,14 +4376,11 @@ static void ozone_tab_set_selection(void *data)
    }
 }
 
-static void ozone_leave_sidebar(
-      ozone_handle_t *ozone,
-      bool ozone_collapse_sidebar,
-      uintptr_t tag)
+static void ozone_leave_sidebar(ozone_handle_t *ozone,
+      bool ozone_collapse_sidebar, uintptr_t tag,
+      unsigned remember_selection_type)
 {
    struct gfx_animation_ctx_entry entry;
-   settings_t *settings             = config_get_ptr();
-   unsigned remember_selection_type = settings->uints.menu_remember_selection;
    bool ozone_main_tab_selected     = false;
 
    ozone_update_content_metadata(ozone);
@@ -4400,10 +4388,10 @@ static void ozone_leave_sidebar(
    ozone->categories_active_idx_old = ozone->categories_selection_ptr;
 
    if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
-      ozone->flags               |=  OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
+      ozone->flags                 |=  OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    else
-      ozone->flags               &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
-   ozone->flags                  &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
+      ozone->flags                 &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
+   ozone->flags                    &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
 
    if    ((ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_MAIN)
       || (ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_SETTINGS))
@@ -5448,6 +5436,7 @@ static int ozone_get_sublabel_max_width(ozone_handle_t *ozone,
 }
 
 static void ozone_compute_entries_position(ozone_handle_t *ozone,
+      bool savestate_thumbnail_enable,
       bool menu_show_sublabels, size_t entries_end)
 {
    size_t i;
@@ -5467,7 +5456,8 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    {
       if (!(   (ozone->flags & OZONE_FLAG_PENDING_HIDE_THUMBNAIL_BAR)
             && (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)))
-         ozone_entries_update_thumbnail_bar(ozone, false, false);
+         ozone_entries_update_thumbnail_bar(ozone, savestate_thumbnail_enable,
+               false, false);
    }
 
    if (ozone->show_thumbnail_bar)
@@ -7732,7 +7722,8 @@ static void ozone_auto_select_onscreen_entry(
    }
 }
 
-static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone, settings_t *settings)
+static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone,
+      unsigned menu_left_thumbnails)
 {
    /* Ugly construct...
     * Content metadata display override may be
@@ -7749,7 +7740,7 @@ static bool INLINE ozone_metadata_override_available(ozone_handle_t *ozone, sett
             || (ozone->flags   & OZONE_FLAG_IS_EXPLORE_LIST)
          )
          && (ozone->show_thumbnail_bar)
-         && (settings->uints.menu_left_thumbnails)
+         && (menu_left_thumbnails)
          && (!(ozone->flags2 & OZONE_FLAG2_SELECTION_CORE_IS_VIEWER))
          && (   ozone->thumbnails.left.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
                (ozone->thumbnails.left.status       < GFX_THUMBNAIL_STATUS_AVAILABLE &&
@@ -8118,7 +8109,8 @@ static enum menu_action ozone_parse_menu_entry_action(
 
             ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
             if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
-               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
+               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag,
+                     settings->uints.menu_remember_selection);
 
             menu_st->selection_ptr = 0;
             ozone_selection_changed(ozone, false);
@@ -8411,7 +8403,8 @@ static enum menu_action ozone_parse_menu_entry_action(
          }
 
          if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
-            ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
+            ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag,
+                  settings->uints.menu_remember_selection);
 
          new_action    = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
          break;
@@ -8468,7 +8461,8 @@ static enum menu_action ozone_parse_menu_entry_action(
          {
             ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
             if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
-               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag);
+               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag,
+                     settings->uints.menu_remember_selection);
             new_action = MENU_ACTION_ACCESSIBILITY_SPEAK_LABEL;
             break;
          }
@@ -8709,7 +8703,8 @@ static enum menu_action ozone_parse_menu_entry_action(
          /* If we currently viewing a playlist with
           * dual thumbnails, toggle the content metadata
           * override */
-         if (ozone_metadata_override_available(ozone, settings))
+         if (ozone_metadata_override_available(ozone,
+                  settings->uints.menu_left_thumbnails))
          {
             ozone_toggle_metadata_override(ozone);
             new_action = MENU_ACTION_NOOP;
@@ -9252,12 +9247,12 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
 /* Determines the size of all menu elements */
 static void ozone_set_layout(
       ozone_handle_t *ozone,
+      const char *path_directory_assets,
       bool ozone_collapse_sidebar,
       bool is_threaded)
 {
    char tmp_dir[DIR_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
-   settings_t *settings                             = config_get_ptr();
    bool font_inited                                 = false;
    float scale_factor                               = ozone->last_scale_factor;
 
@@ -9318,16 +9313,16 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
@@ -9344,16 +9339,16 @@ static void ozone_set_layout(
    {
       case RETRO_LANGUAGE_ARABIC:
       case RETRO_LANGUAGE_PERSIAN:
-         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
       case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
          break;
       case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(tmp_dir, settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
+         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
          break;
       default:
@@ -9438,7 +9433,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
       if (settings->bools.menu_ignore_missing_assets)
          ozone->flags2 |= OZONE_FLAG2_IGNORE_MISSING_ASSETS;
 
-      ozone_set_layout(ozone, settings->bools.ozone_collapse_sidebar, is_threaded);
+      ozone_set_layout(ozone, settings->paths.directory_assets,
+            settings->bools.ozone_collapse_sidebar, is_threaded);
 
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
@@ -10000,13 +9996,17 @@ static void ozone_render(void *data,
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
-      ozone_set_layout(ozone, ozone_collapse_sidebar, video_driver_is_threaded());
+      ozone_set_layout(ozone, settings->paths.directory_assets,
+            ozone_collapse_sidebar,
+            video_driver_is_threaded());
       video_driver_monitor_reset();
    }
 
    if (ozone->flags & OZONE_FLAG_NEED_COMPUTE)
    {
-      ozone_compute_entries_position(ozone, settings->bools.menu_show_sublabels, entries_end);
+      ozone_compute_entries_position(ozone,
+            settings->bools.savestate_thumbnail_enable,
+            settings->bools.menu_show_sublabels, entries_end);
       ozone->flags &= ~OZONE_FLAG_NEED_COMPUTE;
    }
 
@@ -10167,7 +10167,8 @@ static void ozone_render(void *data,
                   && (last_pointer_in_sidebar)
                   && (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR))
             if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
-               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
+               ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag,
+                     settings->uints.menu_remember_selection);
       }
       else if (ozone->pointer.type == MENU_POINTER_TOUCHSCREEN)
       {
@@ -10331,7 +10332,8 @@ static void ozone_render(void *data,
                   if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
                   {
                      if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
-                        ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
+                        ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag,
+                              settings->uints.menu_remember_selection);
                   }
                   /* If this is a playlist, must update thumbnails */
                   else if ((ozone->flags & OZONE_FLAG_IS_PLAYLIST)
@@ -10787,7 +10789,8 @@ static void ozone_draw_footer(
 
    ozone->footer_labels.metadata_override.show     =
             ozone->footer_labels.fullscreen_thumbnails.show
-         && ozone_metadata_override_available(ozone, settings);
+         && ozone_metadata_override_available(ozone,
+                  settings->uints.menu_left_thumbnails);
 
    ozone->footer_labels.random_select.show         =
             (ozone->flags  & OZONE_FLAG_IS_PLAYLIST)
@@ -11833,7 +11836,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       ozone_draw_sidebar(ozone,
             p_disp,
             p_anim,
-            settings,
+            settings->bools.menu_ticker_smooth,
+            (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type,
             userdata,
             video_width,
             video_height,
@@ -12802,7 +12806,8 @@ static int ozone_pointer_up(void *userdata,
                /* If we currently in the sidebar, leave it */
                if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
                {
-                  ozone_leave_sidebar(ozone, ozone_collapse_sidebar, sidebar_tag);
+                  ozone_leave_sidebar(ozone, ozone_collapse_sidebar, sidebar_tag,
+                        settings->uints.menu_remember_selection);
                   ozone_set_thumbnail_content(ozone, "");
                   ozone_update_thumbnail_image(ozone);
                }
@@ -12821,7 +12826,8 @@ static int ozone_pointer_up(void *userdata,
                if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
                {
                   if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
-                     ozone_leave_sidebar(ozone, ozone_collapse_sidebar, sidebar_tag);
+                     ozone_leave_sidebar(ozone, ozone_collapse_sidebar, sidebar_tag,
+                           settings->uints.menu_remember_selection);
                }
                /* If this is a playlist and the selection
                 * has changed, must update thumbnails */
@@ -12842,7 +12848,8 @@ static int ozone_pointer_up(void *userdata,
              * upon it if the content metadata toggle is
              * available (i.e. viewing a playlist with dual
              * thumbnails) */
-            if (ozone_metadata_override_available(ozone, settings))
+            if (ozone_metadata_override_available(ozone,
+                     settings->uints.menu_left_thumbnails))
                return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_INFO);
          }
          /* Tap/press sidebar: return to sidebar or select
