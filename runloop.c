@@ -5450,7 +5450,8 @@ static enum runloop_state_enum runloop_check_state(
       bool error_on_init,
       settings_t *settings,
       retro_time_t current_time,
-      bool netplay_allow_pause)
+      bool netplay_allow_pause,
+      bool netplay_allow_timeskip)
 {
    input_bits_t current_bits;
 #ifdef HAVE_MENU
@@ -6432,8 +6433,7 @@ static enum runloop_state_enum runloop_check_state(
       }
 
 #ifdef HAVE_NETWORKING
-      if (check2
-            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
+      if (check2 && !netplay_allow_timeskip)
          check2 = false;
 #endif
 
@@ -6547,7 +6547,7 @@ static enum runloop_state_enum runloop_check_state(
 
 #ifdef HAVE_NETWORKING
          if ((runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-               && !netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
+               && !netplay_allow_timeskip)
             runloop_st->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
 #endif
 
@@ -6856,9 +6856,12 @@ int runloop_iterate(void)
    retro_time_t current_time              = cpu_features_get_time_usec();
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
+   bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
+   bool netplay_allow_timeskip            = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL);
    bool netplay_allow_pause               = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
    bool menu_pause_libretro               = settings->bools.menu_pause_libretro && netplay_allow_pause;
 #else
+   bool netplay_allow_timeskip            = false;
    bool netplay_allow_pause               = false;
    bool menu_pause_libretro               = settings->bools.menu_pause_libretro;
 #endif
@@ -6957,7 +6960,8 @@ int runloop_iterate(void)
             input_st, audio_st, video_st,
             uico_st,
             ((global_get_ptr()->flags & GLOB_FLG_ERR_ON_INIT) > 0),
-            settings, current_time, netplay_allow_pause))
+            settings, current_time, netplay_allow_pause,
+            netplay_allow_timeskip))
    {
       case RUNLOOP_STATE_QUIT:
          runloop_st->frame_limit_last_time = 0.0;
@@ -6982,15 +6986,12 @@ int runloop_iterate(void)
          video_driver_cached_frame();
          goto end;
       case RUNLOOP_STATE_MENU:
-#ifdef HAVE_NETWORKING
-#ifdef HAVE_MENU
+#if defined(HAVE_MENU) && defined(HAVE_NETWORKING)
          /* FIXME: This is an ugly way to tell Netplay this... */
-         if (     menu_pause_libretro
-               && netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-            )
+         if (menu_pause_libretro && netplay_is_enabled)
             netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-#endif
+
 #ifdef HAVE_CHEEVOS
          if (cheevos_enable)
          {
@@ -7000,6 +7001,7 @@ int runloop_iterate(void)
                rcheevos_idle();
          }
 #endif
+
 #ifdef HAVE_MENU
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
@@ -7038,6 +7040,7 @@ int runloop_iterate(void)
       camera_st->driver->poll(camera_st->data,
             camera_st->cb.frame_raw_framebuffer,
             camera_st->cb.frame_opengl_texture);
+
    /* Measure the time between core_run() and video_driver_frame() */
    runloop_st->core_run_time = cpu_features_get_time_usec();
 
@@ -7052,8 +7055,7 @@ int runloop_iterate(void)
             && (run_ahead_num_frames > 0)
             && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE);
 #ifdef HAVE_NETWORKING
-      want_runahead                     = want_runahead
-            && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
+      want_runahead                     = want_runahead && !netplay_is_enabled;
 #endif
 
       if (want_runahead)
