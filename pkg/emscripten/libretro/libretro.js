@@ -3,6 +3,7 @@
  *
  * This provides the basic JavaScript for the RetroArch web player.
  */
+
 var retroarch_ready = false;
 var setImmediate;
 
@@ -130,35 +131,60 @@ function loadIndex(index, path) {
   }
 }
 
+async function setupZipFS(zipBuf) {
+  async function writeFile(path, data) {
+    const dir_end = path.lastIndexOf("/");
+    const parent = path.substr(0, dir_end);
+    const child = path.substr(dir_end+1);
+    const parent_dir = await mkdirTree(parent);
+    //console.log("about to create", parent, "/", child);
+    const file = await parent_dir.getFileHandle(child,{create:true});
+    const stream = await file.createWritable();
+    await stream.write(data);
+    await stream.close();
+  }
+  async function mkdirTree(path) {
+    const parts = path.split("/");
+    let here = root;
+    for (const part of parts) {
+      if (part == "") { continue; }
+      here = await here.getDirectoryHandle(part, {create:true});
+    }
+    return here;
+  }
+  const root = await navigator.storage.getDirectory();
+  const mount = "assets";
+  const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(zipBuf), {useWebWorkers:false});
+  const entries = await zipReader.getEntries();
+  for(const file of entries) {
+    if (file.getData && !file.directory) {
+      const writer = new zip.Uint8ArrayWriter();
+      const data = await file.getData(writer);
+      await writeFile(mount+"/"+file.filename, data);
+    } else if (file.directory) {
+      await mkdirTree(mount+"/"+file.filename);
+    }
+  }
+  await zipReader.close();
+}
+
+
 async function setupFileSystem()
 {
-  let finished = false;
-  const waiting = () => new Promise((resolve) => {
-    let interval;
-    const wait_cb = () => {
-      finished = Module.FS.analyzePath("/home/web_user/retroarch/assets/ozone").exists;
-      if (finished) {
-        clearInterval(interval);
-        resolve();
-      }
-    };
-    interval = setInterval(wait_cb, 100);
+  let old_timestamp = localStorage.getItem("asset_time") ?? "";
+  let resp = await fetch("assets-minimal.zip", {
+    headers: {
+      "If-Modified-Since": old_timestamp
+    }
   });
+  if (resp.status == 200) {
+    await setupZipFS(await resp.bytes());
+    localStorage.setItem("asset_time", resp.headers.get("last-modified"));
+  } else {
+    await resp.text();
+  }
   Module.FS.mkdirTree("/home/web_user/retroarch/");
   Module.FS.mount(Module.OPFS, {}, "/home/web_user/retroarch");
-  const has_base_assets = Module.FS.analyzePath("/home/web_user/retroarch/assets/ozone").exists;
-  if (!has_base_assets) {
-    console.info("First run; downloading minimal asset package");
-    const blob = await downloadScript("libretro_minimal.js");
-    const u = URL.createObjectURL(blob);
-    const s = document.createElement('script');
-    s.src = u;
-    s.onload = () => {
-      finished = true;
-    };
-    document.body.appendChild(s);
-    await waiting;
-  }
 }
 
 // Retrieve the value of the given GET parameter.
@@ -221,15 +247,8 @@ function selectFiles(files) {
 
 function uploadData(data, name) {
    var dataView = new Uint8Array(data);
-   Module.FS.createDataFile('/', name, dataView, true, false);
-
-   var data = Module.FS.readFile(name, {
-      encoding: 'binary'
-   });
-   Module.FS.writeFile('/home/web_user/retroarch/userdata/content/' + name, data, {
-      encoding: 'binary'
-   });
-   Module.FS.unlink(name);
+   Module.FS.mkdirTree("/home/web_user/retroarch/userdata/content");
+   Module.FS.createDataFile('/home/web_user/retroarch/userdata', name, dataView, true, false);
 }
 
 function switchCore(corename) {

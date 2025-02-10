@@ -33,13 +33,7 @@ cp fceumm_libretro.{js,wasm} pkg/emscripten/libretro
 
 ## Dependencies
 
-The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  While it supports the regular desktop asset and content downloaders, we also provide a small bundle of UI assets for first launch (the files `libretro_minimal.js` and `libretro_minimal.data`).  You can obtain these files from the nightly Emscripten build on the buildbot, or make them yourself using emscripten's `file_packager.py` tool:
-
-```
-$ $EMSDK/upstream/emscripten/tools/file_packager.py libretro_minimal.dat --js-output=libretro_minimal.js --preload "assets-minimal@/home/web_user/retroarch/assets"
-```
-
-Due to a bug in Emscripten, you currently need to modify the generated `libretro_minimal.js` to change the calls to `Module['createPath']` into calls to `Module.FS.mkdirTree`.
+The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  While it supports the regular desktop asset and content downloaders, we also provide a small bundle of UI assets for first launch.  You can obtain these files from the nightly Emscripten build on the buildbot, or make them yourself by `cd assets-minimal; zip -r ../assets-minimal.zip *` (essentially, just the `ozone`, `pkg`, and `sounds` folders from the regular asset package).
 
 ## Usage
 
@@ -99,7 +93,7 @@ Your resulting output will be located in:
 
 ## Setting up your webserver (Threaded)
 
-Unless loading from `localhost` you will need to server the content from an HTTPS endpoint with a valid SSL certificate. This is a security limitation imposed by the browser. Along with that you will need to set content control policies with special headers in your server: 
+To support multithreaded builds, you will need to serve the content from an HTTPS endpoint with a valid SSL certificate. This is a security limitation imposed by the browser. Along with that you will need to set content control policies with special headers in your server: 
 
 In Nodejs with express:
 
@@ -116,4 +110,10 @@ In NGINX: (site config under `server {`)
 ```
   add_header Cross-Origin-Opener-Policy same-origin;
   add_header Cross-Origin-Embedder-Policy require-corp;
+```
+
+Node http-server:
+
+```
+http-server . -S --header "Cross-Origin-Opener-Policy: same-origin" --header "Cross-Origin-Embedder-Policy: require-corp" --header "Cross-Origin-Resource-Policy: same-origin"
 ```
