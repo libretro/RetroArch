@@ -200,6 +200,8 @@ struct rarch_setting
    int16_t              offset_by;
    uint8_t              free_flags;
    uint8_t              index;
+   uint8_t              retropad_sensor_index;
+
 };
 
 RETRO_END_DECLS
