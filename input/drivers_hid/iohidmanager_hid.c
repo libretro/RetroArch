@@ -585,13 +585,12 @@ static uint32_t iohidmanager_hid_device_get_location_id(IOHIDDeviceRef device)
 }
 
 static void iohidmanager_hid_device_get_product_string(
-      IOHIDDeviceRef device, char *buf, size_t len)
+      IOHIDDeviceRef device, char *s, size_t len)
 {
    CFStringRef ref = (CFStringRef)
       IOHIDDeviceGetProperty(device, CFSTR(kIOHIDProductKey));
-
    if (ref)
-      CFStringGetCString(ref, buf, len, kCFStringEncodingUTF8);
+      CFStringGetCString(ref, s, len, kCFStringEncodingUTF8);
 }
 
 static void iohidmanager_hid_device_add_autodetect(unsigned idx,

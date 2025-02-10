@@ -99,7 +99,7 @@ void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame)
 }
 
 #ifdef CDROM_DEBUG
-static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
+static void cdrom_print_sense_data(const unsigned char *s, size_t len)
 {
    unsigned i;
    const char *sense_key_text = NULL;
@@ -114,20 +114,20 @@ static void cdrom_print_sense_data(const unsigned char *sense, size_t len)
       return;
    }
 
-   key  = sense[2] & 0xF;
-   asc  = sense[12];
-   ascq = sense[13];
+   key  = s[2] & 0xF;
+   asc  = s[12];
+   ascq = s[13];
 
    printf("[CDROM] Sense Data: ");
 
    for (i = 0; i < MIN(len, 16); i++)
-      printf("%02X ", sense[i]);
+      printf("%02X ", s[i]);
 
    printf("\n");
 
-   if (sense[0] == 0x70)
+   if (s[0] == 0x70)
       printf("[CDROM] CURRENT ERROR:\n");
-   if (sense[0] == 0x71)
+   if (s[0] == 0x71)
       printf("[CDROM] DEFERRED ERROR:\n");
 
    switch (key)
@@ -371,17 +371,17 @@ static int cdrom_send_command_linux(const libretro_vfs_implementation_file *stre
 #endif
 
 static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CMD_Direction dir,
-      void *buf, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
+      void *s, size_t len, unsigned char *cmd, size_t cmd_len, size_t skip)
 {
-   unsigned char *xfer_buf = NULL;
-   unsigned char *xfer_buf_pos = xfer_buf;
-   unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
-   unsigned char retries_left = CDROM_MAX_RETRIES;
    int i, rv = 0;
    int frames = 1;
+   unsigned char *xfer_buf     = NULL;
+   unsigned char *xfer_buf_pos = xfer_buf;
+   unsigned char sense[CDROM_MAX_SENSE_BYTES] = {0};
+   unsigned char retries_left  = CDROM_MAX_RETRIES;
    size_t padded_req_bytes;
-   size_t copied_bytes = 0;
-   bool read_cd = false;
+   size_t copied_bytes         = 0;
+   bool read_cd                = false;
 
    if (!cmd || cmd_len == 0 || cmd_len < CDROM_MIN_BUFSIZE)
       return 1;
@@ -491,13 +491,13 @@ retry:
       {
          rv = 0;
 
-         if (buf)
+         if (s)
          {
 #if 0
             printf("offsetting %" PRId64 " from buf, copying at xfer_buf offset %" PRId64 ", copying %" PRId64 " bytes\n", copied_bytes, (xfer_buf_pos + skip) - xfer_buf, copy_len);
             fflush(stdout);
 #endif
-            memcpy((char*)buf + copied_bytes, xfer_buf_pos + skip, copy_len);
+            memcpy((char*)s + copied_bytes, xfer_buf_pos + skip, copy_len);
             copied_bytes += copy_len;
 
             if (read_cd && !cached_read && request_len >= 2352)
@@ -570,7 +570,6 @@ retry:
 
    if (xfer_buf)
       memalign_free(xfer_buf);
-
    return rv;
 }
 
@@ -1168,7 +1167,10 @@ int cdrom_get_inquiry(libretro_vfs_implementation_file *stream, char *s, size_t 
    return 0;
 }
 
-int cdrom_read(libretro_vfs_implementation_file *stream, cdrom_group_timeouts_t *timeouts, unsigned char min, unsigned char sec, unsigned char frame, void *s, size_t len, size_t skip)
+int cdrom_read(libretro_vfs_implementation_file *stream,
+      cdrom_group_timeouts_t *timeouts, unsigned char min,
+      unsigned char sec, unsigned char frame, void *s,
+      size_t len, size_t skip)
 {
    /* MMC Command: READ CD MSF */
    unsigned char cdb[] = {0xB9, 0, 0, 0, 0, 0, 0, 0, 0, 0xF8, 0, 0};

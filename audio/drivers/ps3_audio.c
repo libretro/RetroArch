@@ -142,7 +142,7 @@ static void *ps3_audio_init(const char *device,
    return data;
 }
 
-static ssize_t ps3_audio_write(void *data, const void *buf, size_t len)
+static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
 {
    ps3_audio_t *aud = data;
 
@@ -156,9 +156,8 @@ static ssize_t ps3_audio_write(void *data, const void *buf, size_t len)
       sysLwCondWait(&aud->cond, 0);
 
    sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
-   fifo_write(aud->buffer, buf, len);
+   fifo_write(aud->buffer, s, len);
    sysLwMutexUnlock(&aud->lock);
-
    return len;
 }
 

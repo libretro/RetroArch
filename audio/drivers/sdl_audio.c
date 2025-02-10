@@ -110,8 +110,6 @@ static void *sdl_audio_init(const char *device,
    sdl_audio_t *sdl             = NULL;
    uint32_t sdl_subsystem_flags = SDL_WasInit(0);
 
-   (void)device;
-
    /* Initialise audio subsystem, if required */
    if (sdl_subsystem_flags == 0)
    {
@@ -210,7 +208,7 @@ error:
    return NULL;
 }
 
-static ssize_t sdl_audio_write(void *data, const void *buf, size_t len)
+static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
 {
    ssize_t ret      = 0;
    sdl_audio_t *sdl = (sdl_audio_t*)data;
@@ -222,7 +220,7 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t len)
       SDL_LockAudioDevice(sdl->speaker_device); /* Stop the SDL speaker thread from running */
       avail     = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
       write_amt = (avail > len) ? len : avail; /* Enqueue as much data as we can */
-      fifo_write(sdl->speaker_buffer, buf, write_amt);
+      fifo_write(sdl->speaker_buffer, s, write_amt);
       SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the speaker thread run again */
       ret       = write_amt; /* If the queue was full...well, too bad. */
    }
@@ -256,7 +254,7 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t len)
          else
          {
             size_t write_amt = len - written > avail ? avail : len - written;
-            fifo_write(sdl->speaker_buffer, (const char*)buf + written, write_amt);
+            fifo_write(sdl->speaker_buffer, (const char*)s + written, write_amt);
             /* Enqueue as many samples as we have available without overflowing the queue */
             SDL_UnlockAudioDevice(sdl->speaker_device); /* Let the SDL speaker thread run again */
             written += write_amt;

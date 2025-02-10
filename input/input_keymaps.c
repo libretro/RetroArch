@@ -2091,12 +2091,6 @@ enum retro_key rarch_keysym_lut[RETROK_LAST];
 static unsigned *rarch_keysym_rlut           = NULL;
 static unsigned rarch_keysym_rlut_size       = 0;
 
-/**
- * input_keymaps_init_keyboard_lut:
- * @map                   : Keyboard map.
- *
- * Initializes and sets the keyboard layout to a keyboard map (@map).
- **/
 void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map)
 {
    const struct rarch_key_map *map_start = map;
@@ -2124,15 +2118,6 @@ void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map)
       rarch_keysym_rlut_size = 0;
 }
 
-/**
- * input_keymaps_translate_keysym_to_rk:
- * @sym                   : Key symbol.
- *
- * Translates a key symbol from the keyboard layout table
- * to an associated retro key identifier.
- *
- * Returns: Retro key identifier.
- **/
 enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
 {
    unsigned i;
@@ -2153,25 +2138,16 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
    return RETROK_UNKNOWN;
 }
 
-/**
- * input_keymaps_translate_rk_to_str:
- * @key                   : Retro key identifier.
- * @buf                   : Buffer.
- * @size                  : Size of @buf.
- *
- * Translates a retro key identifier to a human-readable
- * identifier string.
- **/
-void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t len)
+void input_keymaps_translate_rk_to_str(enum retro_key key, char *s, size_t len)
 {
    unsigned i;
 
-   *buf = '\0';
+   *s = '\0';
 
    if (key >= RETROK_a && key <= RETROK_z)
    {
-      buf[0] = (key - RETROK_a) + 'a';
-      buf[1] = '\0';
+      s[0] = (key - RETROK_a) + 'a';
+      s[1] = '\0';
       return;
    }
 
@@ -2180,7 +2156,7 @@ void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t len
       if (input_config_key_map[i].key != key)
          continue;
 
-      strlcpy(buf, input_config_key_map[i].str, len);
+      strlcpy(s, input_config_key_map[i].str, len);
       break;
    }
 }

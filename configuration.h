@@ -1272,8 +1272,7 @@ bool config_load_remap(const char *directory_input_remapping,
  **/
 
 void config_get_autoconf_profile_filename(
-      const char *device_name, unsigned user,
-      char *buf, size_t len_buf);
+      const char *device_name, unsigned user, char *s, size_t len);
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name

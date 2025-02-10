@@ -153,7 +153,7 @@ typedef struct menu_file_list_cbs
          unsigned *w, unsigned type, unsigned i,
          const char *label, char *s, size_t len,
          const char *path,
-         char *path_buf, size_t path_buf_size);
+         char *s2, size_t len2);
    menu_search_terms_t search;
    enum msg_hash_enums enum_idx;
    char action_sublabel_cache[MENU_LABEL_MAX_LENGTH];

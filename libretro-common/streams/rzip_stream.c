@@ -647,20 +647,20 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len)
  * - 'buf' will be allocated and must be free()'d manually.
  * - Allocated 'buf' size is equal to 'len'.
  * Returns false in the event of an error */
-bool rzipstream_read_file(const char *path, void **buf, int64_t *len)
+bool rzipstream_read_file(const char *path, void **s, int64_t *len)
 {
    int64_t bytes_read       = 0;
    void *content_buf        = NULL;
    int64_t content_buf_size = 0;
    rzipstream_t *stream     = NULL;
 
-   if (!buf)
+   if (!s)
       return false;
 
    /* Attempt to open file */
    if (!(stream = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_READ)))
    {
-      *buf = NULL;
+      *s = NULL;
       return false;
    }
 
@@ -689,7 +689,7 @@ bool rzipstream_read_file(const char *path, void **buf, int64_t *len)
    ((char*)content_buf)[bytes_read] = '\0';
 
    /* Assign buffer */
-   *buf = content_buf;
+   *s = content_buf;
 
    /* Assign length value, if required */
    if (len)
@@ -709,7 +709,7 @@ error:
    if (len)
       *len = -1;
 
-   *buf = NULL;
+   *s = NULL;
 
    return false;
 }

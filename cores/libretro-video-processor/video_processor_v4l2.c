@@ -146,17 +146,14 @@ static void audio_callback(void)
 static void audio_set_state(bool enable) { }
 #endif
 
-static void
-appendstr(char *dst, const char *src, size_t dstsize)
+static void appendstr(char *s, const char *in, size_t len)
 {
-   size_t resid = dstsize - (strlen(dst) + 1);
-   if (resid == 0)
-      return;
-   strncat(dst, src, resid);
+   size_t resid = len - (strlen(s) + 1);
+   if (resid != 0)
+      strncat(s, in, resid);
 }
 
-static void
-enumerate_video_devices(char *buf, size_t buflen)
+static void enumerate_video_devices(char *s, size_t len)
 {
 #ifdef HAVE_UDEV
    int ndevs;
@@ -167,9 +164,8 @@ enumerate_video_devices(char *buf, size_t buflen)
    struct udev *udev = NULL;
 #endif
 
-   memset(buf, 0, buflen);
-
-   appendstr(buf, "Video capture device; ", buflen);
+   memset(s, 0, len);
+   appendstr(s, "Video capture device; ", len);
 
 #ifdef HAVE_UDEV
    /* Get a list of devices matching the "video4linux" subsystem from udev */
@@ -211,8 +207,8 @@ enumerate_video_devices(char *buf, size_t buflen)
       if (strncmp(name, "/dev/video", strlen("/dev/video")) == 0)
       {
          if (ndevs > 0)
-            appendstr(buf, "|", buflen);
-         appendstr(buf, name, buflen);
+            appendstr(s, "|", len);
+         appendstr(s, name, len);
          ndevs++;
       }
 
@@ -223,23 +219,22 @@ enumerate_video_devices(char *buf, size_t buflen)
    udev_unref(udev);
 #else
    /* Just return a few options. We'll fail later if the device is not found. */
-   appendstr(buf, "/dev/video0|/dev/video1|/dev/video2|/dev/video3", buflen);
+   appendstr(s, "/dev/video0|/dev/video1|/dev/video2|/dev/video3", len);
 #endif
-
 }
 
-static void
-enumerate_audio_devices(char *buf, size_t buflen)
+static void enumerate_audio_devices(char *s, size_t len)
 {
-   memset(buf, 0, buflen);
-
-   appendstr(buf, "Audio capture device; ", buflen);
-
 #ifdef HAVE_ALSA
+   int ndevs;
    void **hints, **n;
    char *ioid, *name;
-   int ndevs;
+#endif
 
+   memset(s, 0, len);
+   appendstr(s, "Audio capture device; ", len);
+
+#ifdef HAVE_ALSA
    if (snd_device_name_hint(-1, "pcm", &hints) < 0)
       return;
 
@@ -248,13 +243,14 @@ enumerate_audio_devices(char *buf, size_t buflen)
    {
       name = snd_device_name_get_hint(*n, "NAME");
       ioid = snd_device_name_get_hint(*n, "IOID");
-      if ((ioid == NULL || string_is_equal(ioid, "Input")) &&
-          (!strncmp(name, "hw:", strlen("hw:")) ||
-           !strncmp(name, "default:", strlen("default:"))))
+      if (   (ioid == NULL
+           || string_is_equal(ioid, "Input"))
+           && (   !strncmp(name, "hw:", strlen("hw:"))
+           ||     !strncmp(name, "default:", strlen("default:"))))
       {
          if (ndevs > 0)
-            appendstr(buf, "|", buflen);
-         appendstr(buf, name, buflen);
+            appendstr(s, "|", len);
+         appendstr(s, name, len);
          ++ndevs;
       }
       free(name);

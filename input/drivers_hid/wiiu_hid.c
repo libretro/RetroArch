@@ -147,8 +147,7 @@ static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
    return 0;
 }
 
-static int16_t wiiu_hid_joypad_state(
-      void *data,
+static int16_t wiiu_hid_joypad_state(void *data,
       rarch_joypad_info_t *joypad_info,
       const void *binds_data,
       unsigned port)
@@ -748,7 +747,7 @@ static void wiiu_hid_poll(void *data)
    synchronized_process_adapters(hid);
 }
 
-static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t len)
+static void wiiu_hid_send_control(void *data, uint8_t *s, size_t len)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)data;
    int32_t result;
@@ -760,7 +759,7 @@ static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t len)
    }
 
    memset(adapter->tx_buffer, 0, adapter->tx_size);
-   memcpy(adapter->tx_buffer, buf, len);
+   memcpy(adapter->tx_buffer, s, len);
 
    /* From testing, HIDWrite returns an error that looks like it's two
     * int16_t's bitmasked together. For example, one error I saw when trying
@@ -775,12 +774,12 @@ static void wiiu_hid_send_control(void *data, uint8_t *buf, size_t len)
    }
 }
 
-static void _fixup_report_buffer(uint8_t **buffer, uint8_t report_id, size_t *length)
+static void _fixup_report_buffer(uint8_t **s, uint8_t report_id, size_t *len)
 {
-   if ((*buffer)[0] == report_id)
+   if ((*s)[0] == report_id)
    {
-      *buffer = (*buffer)+ 1;
-      *length = *length - 1;
+      *s   = (*s)+ 1;
+      *len = *len - 1;
    }
 }
 
@@ -804,7 +803,8 @@ static int32_t wiiu_hid_set_report(void *data, uint8_t report_type,
          NULL, NULL);
 }
 
-static int32_t wiiu_hid_get_report(void *handle, uint8_t report_type, uint8_t report_id, uint8_t *report_data, size_t report_length)
+static int32_t wiiu_hid_get_report(void *handle, uint8_t report_type, uint8_t report_id,
+      uint8_t *report_data, size_t report_length)
 {
    wiiu_adapter_t *adapter = (wiiu_adapter_t *)handle;
    if (!adapter || report_length > adapter->tx_size)
@@ -860,7 +860,8 @@ static int32_t wiiu_hid_read(void *data, void *buffer, size_t len)
    return result;
 }
 
-static void wiiu_hid_init_cachealigned_buffer(int32_t min_size, uint8_t **out_buf_ptr, int32_t *actual_size)
+static void wiiu_hid_init_cachealigned_buffer(int32_t min_size,
+      uint8_t **out_buf_ptr, int32_t *actual_size)
 {
    *actual_size = (min_size + 0x3f) & ~0x3f;
    *out_buf_ptr = wiiu_hid_alloc_zeroed(64, *actual_size);
