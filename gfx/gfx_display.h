@@ -32,7 +32,7 @@
 #include "../retroarch.h"
 #include "../gfx/font_driver.h"
 
-#define GFX_SHADOW_ALPHA 0.75f
+#define GFX_SHADOW_ALPHA 1.00f
 
 /* Number of pixels corner-to-corner on a 1080p
  * display:

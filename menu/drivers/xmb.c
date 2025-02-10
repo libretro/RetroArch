@@ -779,10 +779,10 @@ static float *xmb_gradient_ident(unsigned xmb_color_theme)
            0.05,      0.05,      0.05, 1.0,
    };
    static float gradient_light[16]           = {
-            0.5,       0.5,       0.5, 1.0,
-            0.5,       0.5,       0.5, 1.0,
-            0.5,       0.5,       0.5, 1.0,
-            0.5,       0.5,       0.5, 1.0,
+           0.25,      0.25,      0.25, 1.0,
+           0.25,      0.25,      0.25, 1.0,
+           0.25,      0.25,      0.25, 1.0,
+           0.25,      0.25,      0.25, 1.0,
    };
 
    switch (xmb_color_theme)
@@ -7539,7 +7539,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
    xmb->items_active_alpha       = 1.0;
    xmb->items_passive_alpha      = 0.75;
 
-   xmb->shadow_offset            = 3.0            * scale_factor;
+   xmb->shadow_offset            = 4.0            * scale_factor;
    if (xmb->shadow_offset < 1.0)
       xmb->shadow_offset         = 1.0;
    if (xmb->shadow_offset > 2.0)
@@ -7594,7 +7594,7 @@ static void xmb_layout_psp(xmb_handle_t *xmb, int width)
    xmb->items_active_alpha       = 1.0;
    xmb->items_passive_alpha      = 0.75;
 
-   xmb->shadow_offset            = 3.0            * scale_factor;
+   xmb->shadow_offset            = 4.0            * scale_factor;
    if (xmb->shadow_offset < 1.0)
       xmb->shadow_offset         = 1.0;
    if (xmb->shadow_offset > 2.0)
@@ -8372,23 +8372,7 @@ static bool xmb_context_reset_textures(
          || menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC_INVERTED)
       memcpy(xmb_item_color, xmb_coord_black, sizeof(xmb_item_color));
    else
-   {
-      if (     menu_xmb_theme == XMB_ICON_THEME_MONOCHROME
-            || menu_xmb_theme == XMB_ICON_THEME_AUTOMATIC)
-      {
-         for (i = 0; i < 16; i++)
-         {
-            if ((i == 3) || (i == 7) || (i == 11) || (i == 15))
-            {
-               xmb_item_color[i] = 1;
-               continue;
-            }
-            xmb_item_color[i] = 0.95;
-         }
-      }
-      else
-         memcpy(xmb_item_color, xmb_coord_white, sizeof(xmb_item_color));
-   }
+      memcpy(xmb_item_color, xmb_coord_white, sizeof(xmb_item_color));
 
    return true;
 }
