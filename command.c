@@ -84,11 +84,10 @@ static void command_post_state_loaded(void)
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, NULL);
 #endif
    {
-     settings_t *settings        = config_get_ptr();
      video_driver_state_t *video_st                 =
        video_state_get_ptr();
      bool frame_time_counter_reset_after_load_state =
-       settings->bools.frame_time_counter_reset_after_load_state;
+       config_get_ptr()->bools.frame_time_counter_reset_after_load_state;
      if (frame_time_counter_reset_after_load_state)
         video_st->frame_time_count = 0;
    }
@@ -1255,6 +1254,7 @@ size_t command_event_save_auto_state(void)
 {
    size_t _len;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *name_savestate  = runloop_st->name.savestate;
    char savestate_name_auto[PATH_MAX_LENGTH];
    if (runloop_st->entry_state_slot > -1)
       return 0;
@@ -1262,8 +1262,7 @@ size_t command_event_save_auto_state(void)
       return 0;
    if (string_is_empty(path_basename(path_get(RARCH_PATH_BASENAME))))
       return 0;
-   _len = strlcpy(savestate_name_auto,
-         runloop_st->name.savestate,
+   _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
    _len += strlcpy(savestate_name_auto + _len, ".auto",
            sizeof(savestate_name_auto) - _len);
@@ -1367,6 +1366,7 @@ void command_event_load_auto_state(void)
    size_t _len;
    char savestate_name_auto[PATH_MAX_LENGTH];
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
+   const char *name_savestate      = runloop_st->name.savestate;
 
    if (!core_info_current_supports_savestate())
       return;
@@ -1380,8 +1380,7 @@ void command_event_load_auto_state(void)
       return;
 #endif
 
-   _len = strlcpy(savestate_name_auto,
-         runloop_st->name.savestate,
+   _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
    strlcpy(savestate_name_auto + _len, ".auto",
          sizeof(savestate_name_auto) - _len);
@@ -1412,7 +1411,10 @@ void command_event_load_auto_state(void)
  * @param last_index Return value for load slot.
  * @param @s Return value for file name that should be removed.
  */
-static void scan_states(settings_t *settings,
+static void command_scan_states(
+      bool show_hidden_files,
+      unsigned savestate_max_keep,
+      int curr_state_slot,
       unsigned *last_index, char *s)
 {
    /* Base name of 128 may be too short for some (<<1%) of the
@@ -1421,9 +1423,7 @@ static void scan_states(settings_t *settings,
    char state_base[128];
    char state_dir[DIR_MAX_LENGTH];
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
-   bool show_hidden_files             = settings->bools.show_hidden_files;
-   unsigned savestate_max_keep        = settings->uints.savestate_max_keep;
-   int curr_state_slot                = settings->ints.state_slot;
+   const char *name_savestate         = runloop_st->name.savestate;
 
    unsigned max_idx                   = 0;
    unsigned loa_idx                   = 0;
@@ -1439,15 +1439,14 @@ static void scan_states(settings_t *settings,
    size_t i, cnt                      = 0;
    size_t cnt_in_range                = 0;
 
-   fill_pathname_basedir(state_dir, runloop_st->name.savestate,
+   fill_pathname_basedir(state_dir, name_savestate,
          sizeof(state_dir));
 
    if (!(dir_list = dir_list_new_special(state_dir,
                DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
-   fill_pathname_base(state_base, runloop_st->name.savestate,
-         sizeof(state_base));
+   fill_pathname_base(state_base, name_savestate, sizeof(state_base));
 
    for (i = 0; i < dir_list->size; i++)
    {
@@ -1639,7 +1638,10 @@ void command_event_set_savestate_auto_index(settings_t *settings)
       configuration_set_int(settings, settings->ints.state_slot, 0);
       return;
    }
-   scan_states(settings, &max_idx, NULL);
+   command_scan_states(
+         settings->bools.show_hidden_files,
+         settings->uints.savestate_max_keep,
+         settings->ints.state_slot, &max_idx, NULL);
    configuration_set_int(settings, settings->ints.state_slot, max_idx);
    RARCH_LOG("[State]: %s: #%d.\n",
          msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
@@ -1655,7 +1657,10 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
 {
    size_t i;
    char state_to_delete[PATH_MAX_LENGTH] = {0};
-   scan_states(settings, NULL, state_to_delete);
+   command_scan_states(
+         settings->bools.show_hidden_files,
+         settings->uints.savestate_max_keep,
+         settings->ints.state_slot, NULL, state_to_delete);
    /* Only delete one save state per save action
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
@@ -1676,37 +1681,37 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
 void command_event_set_replay_auto_index(settings_t *settings)
 {
    size_t i;
+   char elem_base[128];
    char state_base[128];
    char state_dir[DIR_MAX_LENGTH];
 
    struct string_list *dir_list      = NULL;
    unsigned max_idx                  = 0;
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
+   const char *name_replay           = runloop_st->name.replay;
    bool replay_auto_index            = settings->bools.replay_auto_index;
    bool show_hidden_files            = settings->bools.show_hidden_files;
 
    if (!replay_auto_index)
       return;
-   /* Find the file in the same directory as runloop_st->names.replay
+   /* Find the file in the same directory as runloop_st->name.replay
     * with the largest numeral suffix.
     *
     * E.g. /foo/path/content.replay will try to find
     * /foo/path/content.replay%d, where %d is the largest number available.
     */
-   fill_pathname_basedir(state_dir, runloop_st->name.replay,
+   fill_pathname_basedir(state_dir, name_replay,
          sizeof(state_dir));
 
    if (!(dir_list = dir_list_new_special(state_dir,
                DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
-   fill_pathname_base(state_base, runloop_st->name.replay,
-         sizeof(state_base));
+   fill_pathname_base(state_base, name_replay, sizeof(state_base));
 
    for (i = 0; i < dir_list->size; i++)
    {
       unsigned idx;
-      char elem_base[128]             = {0};
       const char *end                 = NULL;
       const char *dir_elem            = dir_list->elems[i].data;
       size_t _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
@@ -1743,21 +1748,20 @@ void command_event_set_replay_garbage_collect(
    size_t i, cnt = 0;
    char tmp[DIR_MAX_LENGTH];
    runloop_state_t *runloop_st       = runloop_state_get_ptr();
+   const char *name_replay           = runloop_st->name.replay;
    struct string_list *dir_list      = NULL;
    unsigned min_idx                  = UINT_MAX;
    const char *oldest_save           = NULL;
 
    /* Similar to command_event_set_replay_auto_index(),
     * this will find the lowest numbered replay */
-   fill_pathname_basedir(tmp, runloop_st->name.replay,
-         sizeof(tmp));
+   fill_pathname_basedir(tmp, name_replay, sizeof(tmp));
 
    if (!(dir_list = dir_list_new_special(tmp,
                DIR_LIST_PLAIN, NULL, show_hidden_files)))
       return;
 
-   fill_pathname_base(tmp, runloop_st->name.replay,
-         sizeof(tmp));
+   fill_pathname_base(tmp, name_replay, sizeof(tmp));
 
    for (i = 0; i < dir_list->size; i++)
    {

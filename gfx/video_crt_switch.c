@@ -78,15 +78,15 @@ static void crt_store_temp_changes(videocrt_switch_t *p_switch)
 static void crt_aspect_ratio_switch(
       videocrt_switch_t *p_switch,
       unsigned width, unsigned height,
-      float srm_width, float srm_height)
+      float srm_width, float srm_height,
+      unsigned video_aspect_ratio_idx)
 {
-   settings_t *settings           = config_get_ptr();
    float fly_aspect               = (float)width / (float)height;
    p_switch->fly_aspect           = fly_aspect;
    video_driver_state_t *video_st = video_state_get_ptr();
 
    /* We only force aspect ratio for the core provided setting */
-   if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_CORE)
+   if (video_aspect_ratio_idx != ASPECT_RATIO_CORE)
    {
       RARCH_LOG("[CRT]: Aspect ratio forced by user: %f\n", video_st->aspect_ratio);
       return;
@@ -145,7 +145,9 @@ static void crt_switch_set_aspect(
    scaled_width  = roundf(patched_width  * srm_xscale);
    scaled_height = roundf(patched_height * srm_yscale);
 
-   crt_aspect_ratio_switch(p_switch, scaled_width, scaled_height, srm_width, srm_height);
+   crt_aspect_ratio_switch(p_switch, scaled_width, scaled_height,
+         srm_width, srm_height,
+         config_get_ptr()->uints.video_aspect_ratio_idx);
 }
 
 #if !defined(HAVE_VIDEOCORE)
@@ -558,7 +560,8 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
 
    width = w;
 
-   crt_aspect_ratio_switch(p_switch, width,height,width,height);
+   crt_aspect_ratio_switch(p_switch, width, height, width, height,
+         config_get_ptr()->uints.video_aspect_ratio_idx);
 
    /* following code is the mode line generator */
    hfp      = ((width * 0.044f) + (width / 112));

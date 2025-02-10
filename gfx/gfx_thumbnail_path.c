@@ -39,15 +39,14 @@
  * Named_Titles, Named_Boxarts, Named_Logos) for specified thumbnail
  * identifier (right, left) */
 static const char *gfx_thumbnail_get_type(
-      settings_t *settings,
+      unsigned menu_left_thumbnails,
+      unsigned gfx_thumbnails,
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id)
 {
    if (path_data)
    {
       unsigned type                 = 0;
-      unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
-      unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
       switch (thumbnail_id)
       {
          case GFX_THUMBNAIL_RIGHT:
@@ -166,7 +165,8 @@ gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
-bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id)
+bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id)
 {
    if (path_data)
    {
@@ -559,10 +559,11 @@ bool gfx_thumbnail_update_path(
       enum gfx_thumbnail_id thumbnail_id)
 {
    char content_dir[DIR_MAX_LENGTH];
-   settings_t *settings       = config_get_ptr();
-   const char *system_name    = NULL;
-   char *thumbnail_path       = NULL;
-   const char *dir_thumbnails = NULL;
+   settings_t *settings        = config_get_ptr();
+   const char *system_name     = NULL;
+   char *thumbnail_path        = NULL;
+   const char *dir_thumbnails  = settings->paths.directory_thumbnails;
+   bool playlist_allow_non_png = settings->bools.playlist_allow_non_png;
    /* Thumbnail extension order. The default (i.e. png) is always the first. */
    #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 5
    const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", 0 };
@@ -587,9 +588,6 @@ bool gfx_thumbnail_update_path(
    }
 
    content_dir[0]    = '\0';
-
-   if (settings)
-      dir_thumbnails = settings->paths.directory_thumbnails;
 
    /* Sundry error checking */
    if (string_is_empty(dir_thumbnails))
@@ -642,7 +640,9 @@ bool gfx_thumbnail_update_path(
    else
    {
       char tmp_buf[DIR_MAX_LENGTH];
-      const char *type           = gfx_thumbnail_get_type(settings,
+      const char *type           = gfx_thumbnail_get_type(
+            settings->uints.menu_left_thumbnails,
+            settings->uints.gfx_thumbnails,
             path_data, thumbnail_id);
       int  i;
       bool thumbnail_found = false;
@@ -664,7 +664,7 @@ bool gfx_thumbnail_update_path(
 
       /* Try alternative file extensions in turn, if wanted */
       for (i = 1;
-               settings->bools.playlist_allow_non_png
+               playlist_allow_non_png
            && !thumbnail_found
            && thumbnail_path[0]!='\0'
            && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS; i++ )
@@ -683,7 +683,7 @@ bool gfx_thumbnail_update_path(
       }
 
       for (i = 1;
-               settings->bools.playlist_allow_non_png
+               playlist_allow_non_png
            && !thumbnail_found
            && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
@@ -701,7 +701,7 @@ bool gfx_thumbnail_update_path(
       }
 
       for( i = 1 ;
-               settings->bools.playlist_allow_non_png
+               playlist_allow_non_png
            && !thumbnail_found
            && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
@@ -720,11 +720,11 @@ bool gfx_thumbnail_update_path(
 
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
-size_t gfx_thumbnail_get_content_dir(
-      gfx_thumbnail_path_data_t *path_data, char *s, size_t len)
+size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data,
+      char *s, size_t len)
 {
-   char *last_slash;
    size_t _len;
+   char *last_slash;
    char tmp_buf[NAME_MAX_LENGTH];
    if (!path_data || string_is_empty(path_data->content_path))
       return 0;

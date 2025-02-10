@@ -2533,14 +2533,13 @@ static bool video_shader_dir_init_shader_internal(
 
 static void video_shader_dir_init_shader(
       void *menu_driver_data_,
-      settings_t *settings,
+      const char *directory_video_shader,
+      const char *directory_menu_config,
+      bool show_hidden_files,
+      bool shader_remember_last_dir,
+      bool video_shader_remember_last_dir,
       struct rarch_dir_shader_list *dir_list)
 {
-   bool show_hidden_files                         = settings->bools.show_hidden_files;
-   bool shader_remember_last_dir                  = settings->bools.video_shader_remember_last_dir;
-   const char *directory_video_shader             = settings->paths.directory_video_shader;
-   const char *directory_menu_config              = settings->paths.directory_menu_config;
-   bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
    video_driver_state_t *video_st                 = video_state_get_ptr();
@@ -2645,7 +2644,18 @@ void video_shader_dir_check_shader(
        && (last_shader_preset_type != RARCH_SHADER_NONE)
        && !string_is_equal(dir_list->directory, last_shader_preset_dir)))
    {
-      video_shader_dir_init_shader(menu_ptr, settings, dir_list);
+      const char *directory_video_shader          = settings->paths.directory_video_shader;
+      const char *directory_menu_config           = settings->paths.directory_menu_config;
+      bool show_hidden_files                      = settings->bools.show_hidden_files;
+      bool shader_remember_last_dir               = settings->bools.video_shader_remember_last_dir;
+      bool video_shader_remember_last_dir         = settings->bools.video_shader_remember_last_dir;
+      video_shader_dir_init_shader(menu_ptr,
+            directory_video_shader,
+            directory_menu_config,
+            show_hidden_files,
+            shader_remember_last_dir,
+            video_shader_remember_last_dir,
+            dir_list);
       dir_list_initialised = true;
    }
 
