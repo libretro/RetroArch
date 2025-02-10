@@ -2953,16 +2953,8 @@ MSG_HASH(
    "무음 모드에서는 모든 오디오를 음소거합니다."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "빨리 감기 중 음소거"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "빨리 감기를 사용할 때 오디오를 음소거합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "빨리 감기 중 오디오도 빨리 감기"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -5026,6 +5018,10 @@ MSG_HASH(
    "현재 코어에 따라 필터"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "현재 코어에서 사용 가능한 파일만 표시합니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    "최근 사용한 시작 디렉토리 기억"
    )
@@ -6518,10 +6514,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "'실행목록' 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "실행목록을 표시합니다. (Ozone/XMB 사용시 재시작 필요)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,

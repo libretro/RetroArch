@@ -2838,7 +2838,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Beim Vorspulen stummschalten"
+   "Auto-stumm bei schnellem Vorspulen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
@@ -2846,11 +2846,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Beim Vorspulen beschleunigen"
+   "Audiobeschleunigung bei schnellem Vorspulen"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "Audio beim schnellen Vorlauf beschleunigen. Verhindert Knackgeräusche, verändert aber die Tonhöhe."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Auto-stumm bei Rückspulen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Audio beim Zurückspulen automatisch stumm stellen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -6362,10 +6370,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "\"Wiedergabelisten\" anzeigen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Die Wiedergabelisten anzeigen. (Neustart erforderlich bei Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,

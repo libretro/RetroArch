@@ -2741,16 +2741,8 @@ MSG_HASH(
    "Ztlumení veškerého zvuku v tichém režimu."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Ztlumení při rychlém převíjení"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Automatické ztlumení zvuku při použití rychlého převíjení vpřed."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Zrychlení při rychlém přeposílání"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,

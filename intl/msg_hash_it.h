@@ -2877,16 +2877,8 @@ MSG_HASH(
    "Silenziare tutto l'audio in modalità silenziosa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Disattiva quando avanzi rapidamente"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Disattiva automaticamente l'audio quando si utilizza l'avanzamento rapido."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Accelerazione In Rapida Inoltro"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -6402,10 +6394,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Mostra 'Playlists'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Mostra le playlist. (Riavvio richiesto su Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,

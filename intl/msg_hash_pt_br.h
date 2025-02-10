@@ -2641,10 +2641,6 @@ MSG_HASH(
    "Silenciar todo o áudio no Modo Silencioso."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Silenciar no avanço rápido"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Silenciar automaticamente o áudio ao usar o avanço rápido."
    )

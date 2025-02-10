@@ -2085,10 +2085,6 @@ MSG_HASH(
    "Senyapkan suara Mixer."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Senyapkan saat dipercepat"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Otomatis senyapkan audio saat menggunakan percepat."
    )

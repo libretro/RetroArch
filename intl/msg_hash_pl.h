@@ -2805,16 +2805,8 @@ MSG_HASH(
    "Wycisz wszystkie dźwięki w trybie cichym."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Wycisz podczas przyspieszania"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Automatycznie wycisz dźwięk podczas używania przyspieszenia."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Przyspiesz podczas przewijania do przodu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -5718,10 +5710,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Pokaż 'Playlisty'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Pokaż listy odtwarzania. (Wymagane estart na Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,

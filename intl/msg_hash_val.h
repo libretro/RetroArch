@@ -1989,16 +1989,8 @@ MSG_HASH(
    "Silencia el mesclador d'àudio."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Silenciar el so quan s'use l'avançament ràpid"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Automàticament silencia l'àudio quan s'usa l'avançament ràpid."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Accelerar a l'usar l'avançament ràpid"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,

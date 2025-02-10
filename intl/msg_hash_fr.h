@@ -2893,16 +2893,8 @@ MSG_HASH(
    "Couper tout le son en mode silencieux."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Couper le son lors de l'avance rapide"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Couper automatiquement le son lors de l'avance rapide."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Accélération lors de l'avance rapide"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -6438,10 +6430,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Afficher 'Listes de lecture'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Afficher les listes de lecture. (Redémarrage requis sur Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,

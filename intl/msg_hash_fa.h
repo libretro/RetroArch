@@ -2093,10 +2093,6 @@ MSG_HASH(
    "صدای ترکیب‌کننده را ساکت کنید."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "ساکت کردن در زمان جلو کشیدن تصویر"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    "افزونهٔ DSP"
    )

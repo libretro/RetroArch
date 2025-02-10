@@ -2926,7 +2926,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Silenciar sonido al usar el avance rápido"
+   "Silenciar audio durante el avance rápido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
@@ -2934,11 +2934,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Acelerar al usar el avance rápido"
+   "Acelerar audio durante el avance rápido"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "Acelera el audio al usar el avance rápido. Evitará los chasquidos en el audio, pero cambiará su tono."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Silenciar audio durante el rebobinado"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Silencia automáticamente el audio al utilizar la función de rebobinado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
@@ -6478,10 +6486,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Mostrar Listas de reproducción"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Muestra las listas de reproducción (es necesario reiniciar en Ozone/XMB)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,

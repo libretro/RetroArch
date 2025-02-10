@@ -2812,10 +2812,6 @@ MSG_HASH(
    "Vis 'Spillelister'"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Vis spillelistene. (Omstart kreves på Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Vis \"Utforsk\""
    )

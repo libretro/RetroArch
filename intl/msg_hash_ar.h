@@ -2005,10 +2005,6 @@ MSG_HASH(
    "كتم صوت المزيج."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "كتم الصوت عند إعادة التوجيه السريع"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "كتم الصوت تلقائياً عند استخدام السرعة إلى الأمام."
    )

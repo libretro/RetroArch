@@ -2657,16 +2657,8 @@ MSG_HASH(
    "Mykistä kaikki äänet äänettömässä tilassa."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Mykistä pikakelattaessa"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Mykistä ääni automaattisesti, kun pikakelaus on käytössä."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Nopeuta pikakelattaessa"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,

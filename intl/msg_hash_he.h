@@ -807,7 +807,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "הצגת\\\\הסתרת תפריט"
+   "הצגת\\הסתרת תפריט"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
@@ -1846,7 +1846,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_ENUM_CONTROLS_TOGGLE_MENU,
-   "הצגת\\\\הסתרת תפריט"
+   "הצגת\\הסתרת תפריט"
    )
 
 /* Discord Status */

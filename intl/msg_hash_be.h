@@ -2929,16 +2929,8 @@ MSG_HASH(
    "Адключыць увесь гук у бясшумным рэжыме."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Сцішванне пры перамотцы наперад"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Аўтаматычна адключаць гук пры выкарыстанні перамотцы наперад."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Паскарэнне пры перамотцы наперад"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -3175,7 +3167,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Ўстаноўка на 0 адключае кіраванне частатой. Іншыя значэнні ўплываюць на адхіленне частаты гуку.\nВызначае межы змены зыходнай частаты пры дынамічнай падладцы. Разлічваецца наступным чынам:\\\\зыходная частата * (1.0 +/- (адхіленне кіравання частатой))"
+   "Ўстаноўка на 0 адключае кіраванне частатой. Іншыя значэнні ўплываюць на адхіленне частаты гуку.\nВызначае межы змены зыходнай частаты пры дынамічнай падладцы. Разлічваецца наступным чынам:\\зыходная частата * (1.0 +/- (адхіленне кіравання частатой))"
    )
 
 /* Settings > Audio > MIDI */
@@ -6494,10 +6486,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "Паказ 'Плэй-лісты'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Паказваць плэй-лісты (патрабуецца перазапуск на Ozone/XMB)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,

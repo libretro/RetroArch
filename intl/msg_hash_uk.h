@@ -2941,16 +2941,8 @@ MSG_HASH(
    "Вимкнути звук всього аудіо в беззвучному режимі."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Вимкнути звук при перемотуванні"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Автоматично вимикати звук, коли використовується швидка перемотка."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Прискорити Під Час Перемотування Вперед"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -6464,10 +6456,6 @@ MSG_HASH(
    "Показати \"Плейлісти\""
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Показати список відтворення. (Потрібно перезапустити в Ozone/XMB)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Показати 'Explore'"
    )
@@ -9891,7 +9879,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
-   "Фільтр апаратних засобів для цього проходження. Якщо встановлено значення \\\\\"За замовчуванням', то фільтр буде встановлено або «Лінійн» або «Голковий», що залежить від параметра 'Bilinear'."
+   "Фільтр апаратних засобів для цього проходження. Якщо встановлено значення \\\"За замовчуванням', то фільтр буде встановлено або «Лінійн» або «Голковий», що залежить від параметра 'Bilinear'."
   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCALE,

@@ -2921,16 +2921,8 @@ MSG_HASH(
    "Sessiz modda tüm sesleri kapatın."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Hızlı İleri Sararken Sesi Kapat"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Hızlı ileri sarma kullanırken sesi otomatik olarak sessize alır."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Hızlı İleri Sarmada Sesi Hızlandır"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -3167,7 +3159,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Bunu 0 olarak ayarlamak hız kontrolünü devre dışı bırakır. Diğer tüm değerler, ses hızı kontrol deltasını kontrol eder.\nGiriş hızının dinamik olarak ne kadar ayarlanabileceğini tanımlar. Giriş hızı şu şekilde tanımlanır:\\\\giriş hızı * (1,0 +/- (oran kontrol deltası))"
+   "Bunu 0 olarak ayarlamak hız kontrolünü devre dışı bırakır. Diğer tüm değerler, ses hızı kontrol deltasını kontrol eder.\nGiriş hızının dinamik olarak ne kadar ayarlanabileceğini tanımlar. Giriş hızı şu şekilde tanımlanır:\\giriş hızı * (1,0 +/- (oran kontrol deltası))"
    )
 
 /* Settings > Audio > MIDI */
@@ -3331,7 +3323,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "RetroArch içinde girdi yoklamanın nasıl yapıldığını etkiler.\nErken - Kare işlenmeden önce girdi yoklama yapılır.\nNormal - Yoklama istendiğinde girdi yoklaması yapılır.\nGeç - Kare başına ilk girdi durumu isteğinde girdi yoklama gerçekleştirilir.\\\\ n'Erken' veya 'Geç' olarak ayarlamak, yapılandırmanıza bağlı olarak daha az gecikmeyle sonuçlanabilir. Netplay kullanılırken yok sayılır."
+   "RetroArch içinde girdi yoklamanın nasıl yapıldığını etkiler.\nErken - Kare işlenmeden önce girdi yoklama yapılır.\nNormal - Yoklama istendiğinde girdi yoklaması yapılır.\nGeç - Kare başına ilk girdi durumu isteğinde girdi yoklama gerçekleştirilir.\\ n'Erken' veya 'Geç' olarak ayarlamak, yapılandırmanıza bağlı olarak daha az gecikmeyle sonuçlanabilir. Netplay kullanılırken yok sayılır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
@@ -6482,10 +6474,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "'Oynatma Listelerini' Göster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Oynatma listesini gösterin. (Ozon/XMB'de Yeniden Başlatılmalı)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
