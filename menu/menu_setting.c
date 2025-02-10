@@ -19136,6 +19136,7 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_xmb_icon_theme;
             menu_settings_list_current_add_range(list, list_info, 0, XMB_ICON_THEME_LAST - 1, 1, true, true);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(list, list_info, CMD_EVENT_REINIT);
+            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_COMBOBOX;
 
             CONFIG_BOOL(
@@ -20121,7 +20122,10 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_menu_left_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LOGOS - 1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
+         }
 
+         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
+         {
              CONFIG_UINT(
                   list, list_info,
                   &settings->uints.menu_icon_thumbnails,
@@ -20138,10 +20142,7 @@ static bool setting_append_list(
                &setting_get_string_representation_uint_menu_icon_thumbnails;
             menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, true);
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
-         }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb"))
-         {
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.menu_xmb_vertical_thumbnails,
