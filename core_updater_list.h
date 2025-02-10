@@ -32,6 +32,14 @@
 
 RETRO_BEGIN_DECLS
 
+/* Get core updater list */
+enum updater_list_status
+{
+   UPDATER_LIST_BEGIN = 0,
+   UPDATER_LIST_WAIT,
+   UPDATER_LIST_END
+};
+
 /* Defines all possible 'types' of core
  * updater list - corresponds to core
  * delivery method:
@@ -51,7 +59,7 @@ typedef struct
    unsigned year;
    unsigned month;
    unsigned day;
-} core_updater_list_date_t;
+} updater_list_date_t;
 
 /* Holds all info related to a core
  * file on the buildbot */
@@ -64,7 +72,7 @@ typedef struct
    char *display_name;
    char *description;
    struct string_list *licenses_list;
-   core_updater_list_date_t date;   /* unsigned alignment */
+   updater_list_date_t date;   /* unsigned alignment */
    uint32_t crc;
    bool is_experimental;
 } core_updater_list_entry_t;
@@ -72,6 +80,17 @@ typedef struct
 /* Prevent direct access to core_updater_list_t
  * members */
 typedef struct core_updater_list core_updater_list_t;
+
+
+typedef struct
+{
+   char *remote_filename;
+   char *local_filename;
+   updater_list_date_t date;   /* unsigned alignment */
+   uint32_t crc;
+} thumbnail_updater_list_entry_t;
+
+typedef struct thumbnail_updater_list thumbnail_updater_list_t;
 
 /**************************************/
 /* Initialisation / De-Initialisation */
@@ -89,6 +108,11 @@ void core_updater_list_reset(core_updater_list_t *core_list);
 /* Frees specified core updater list */
 void core_updater_list_free(core_updater_list_t *core_list);
 
+/* Thumbnail counterparts */
+thumbnail_updater_list_t *thumbnail_updater_list_init(const char *system);
+void thumbnail_updater_list_reset(thumbnail_updater_list_t *thumbnail_list);
+void thumbnail_updater_list_free(thumbnail_updater_list_t *thumbnail_list);
+
 /***************/
 /* Cached List */
 /***************/
@@ -103,6 +127,11 @@ core_updater_list_t *core_updater_list_get_cached(void);
 
 /* Frees cached core updater list */
 void core_updater_list_free_cached(void);
+
+/* Thumbnail counterparts */
+bool thumbnail_updater_list_init_cached(const char *system);
+thumbnail_updater_list_t *thumbnail_updater_list_get_cached(const char *system);
+bool thumbnail_updater_list_is_empty(const char* system);
 
 /***********/
 /* Getters */
@@ -140,6 +169,24 @@ bool core_updater_list_get_core(
       const char *local_core_path,
       const core_updater_list_entry_t **entry);
 
+/* Thumbnail equivalents */
+size_t thumbnail_updater_list_size(thumbnail_updater_list_t *thumbnail_list);
+
+bool thumbnail_updater_list_get_index(
+      thumbnail_updater_list_t *thumbnail_list,
+      size_t idx,
+      const thumbnail_updater_list_entry_t **entry);
+
+bool thumbnail_updater_list_get_filename(
+      thumbnail_updater_list_t *thumbnail_list,
+      const char *remote_filename,
+      const thumbnail_updater_list_entry_t **entry);
+
+bool thumbnail_updater_list_get_matching_file(
+      thumbnail_updater_list_t *thumbnail_list,
+      const char *local_thumbnail_path,
+      const thumbnail_updater_list_entry_t **entry);
+
 /***********/
 /* Setters */
 /***********/
@@ -164,6 +211,10 @@ bool core_updater_list_parse_pfd_data(
       const char *path_dir_libretro,
       const char *path_libretro_info,
       const struct string_list *pfd_cores);
+
+bool thumbnail_updater_list_parse_network_data(
+      thumbnail_updater_list_t *thumbnail_list,
+      const char *data, size_t len);
 
 RETRO_END_DECLS
 

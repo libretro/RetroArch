@@ -332,6 +332,7 @@ void gfx_thumbnail_request(
             {
                enum playlist_thumbnail_name_flags curr_flag;
                static char last_img_name[PATH_MAX_LENGTH] = {0};
+               const char *db_name = NULL;
                settings_t *settings                       = config_get_ptr();
                if (!playlist)
                   goto end;
@@ -372,7 +373,12 @@ void gfx_thumbnail_request(
                /* Trigger thumbnail download *
                 * Note: download will grab all 3 possible thumbnails, no matter
                 * what left/right thumbnails are set at the moment */
-               task_push_pl_entry_thumbnail_download(path_data->system, playlist,
+                if (!string_is_empty(path_data->content_db_name))
+                  db_name = path_data->content_db_name;
+               else
+                  db_name = path_data->system;
+
+               task_push_pl_entry_thumbnail_download(db_name, playlist,
                      (unsigned)idx, false, true);
             }
 #endif

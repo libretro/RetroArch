@@ -112,6 +112,9 @@ bool task_push_netplay_nat_close(void *data);
 void *task_push_get_core_updater_list(
       core_updater_list_t* core_list, bool mute, bool refresh_menu);
 
+void *task_push_get_thumbnail_updater_list(
+      thumbnail_updater_list_t* thumbnail_list, const char* system, bool mute, bool refresh_menu);
+
 /* NOTE: If CRC is set to 0, CRC of local core file
  * will be calculated automatically */
 void *task_push_core_updater_download(

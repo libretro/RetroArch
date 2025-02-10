@@ -29,8 +29,12 @@
 
 #include "file_path_special.h"
 #include "core_info.h"
+#include "verbosity.h"
 
 #include "core_updater_list.h"
+
+/* Libretro-thumbnail organization on Github currently contains 130 repos. */
+#define MAX_THUMBNAIL_LISTS 130
 
 /* Holds all entries in a core updater list */
 struct core_updater_list
@@ -41,6 +45,13 @@ struct core_updater_list
 
 /* Cached ('global') core updater list */
 static core_updater_list_t *core_list_cached = NULL;
+
+struct thumbnail_updater_list
+{
+   thumbnail_updater_list_entry_t *entries;
+   char *system;
+};
+static thumbnail_updater_list_t *thumbnail_lists_cached[MAX_THUMBNAIL_LISTS] = {0};
 
 /**************************************/
 /* Initialisation / De-Initialisation */
@@ -145,6 +156,70 @@ void core_updater_list_free(core_updater_list_t *core_list)
    free(core_list);
 }
 
+static void thumbnail_updater_list_free_entry(thumbnail_updater_list_entry_t *entry)
+{
+   if (!entry)
+      return;
+
+   if (entry->remote_filename)
+   {
+      free(entry->remote_filename);
+      entry->remote_filename = NULL;
+   }
+
+   if (entry->local_filename)
+   {
+      free(entry->local_filename);
+      entry->local_filename = NULL;
+   }
+}
+
+thumbnail_updater_list_t *thumbnail_updater_list_init(const char *system)
+{
+   /* Create thumbnail updater list */
+   thumbnail_updater_list_t *thumbnail_list = (thumbnail_updater_list_t*)
+         malloc(sizeof(*thumbnail_list));
+
+   if (!thumbnail_list)
+      return NULL;
+
+   /* Initialise members */
+   thumbnail_list->entries = NULL;
+   thumbnail_list->system  = strdup(system);
+
+   return thumbnail_list;
+}
+
+/* Resets (removes all entries of) specified core
+ * updater list */
+void thumbnail_updater_list_reset(thumbnail_updater_list_t *thumbnail_list)
+{
+   if (!thumbnail_list)
+      return;
+
+   if (thumbnail_list->entries)
+   {
+      size_t i;
+
+      for (i = 0; i < RBUF_LEN(thumbnail_list->entries); i++)
+         thumbnail_updater_list_free_entry(&thumbnail_list->entries[i]);
+
+      RBUF_FREE(thumbnail_list->entries);
+   }
+}
+
+/* Frees specified core updater list */
+void thumbnail_updater_list_free(thumbnail_updater_list_t *thumbnail_list)
+{
+   if (!thumbnail_list)
+      return;
+
+   thumbnail_updater_list_reset(thumbnail_list);
+   if (thumbnail_list->system)
+      free(thumbnail_list->system);
+   free(thumbnail_list);
+}
+
 /***************/
 /* Cached List */
 /***************/
@@ -183,6 +258,73 @@ void core_updater_list_free_cached(void)
 {
    core_updater_list_free(core_list_cached);
    core_list_cached = NULL;
+}
+
+/* Thumbnail list handling */
+static thumbnail_updater_list_t *thumbnail_updater_list_find_for_system(const char* system)
+{
+   size_t i;
+     
+   for(i=0; i<MAX_THUMBNAIL_LISTS; i++)
+   {
+      if(thumbnail_lists_cached[i])
+      {
+         if(strcmp(system, thumbnail_lists_cached[i]->system) == 0)
+            return thumbnail_lists_cached[i];
+      }
+   }
+   return NULL;
+}
+
+static size_t thumbnail_updater_list_find_first_free_index(void)
+{
+   size_t i;
+   
+   for(i=0; i<MAX_THUMBNAIL_LISTS; i++)
+   {
+      if(!thumbnail_lists_cached[i])
+         return i;
+   }
+   
+   return MAX_THUMBNAIL_LISTS-1;
+}
+
+bool thumbnail_updater_list_init_cached(const char* system)
+{
+   size_t free_index;
+   thumbnail_updater_list_t *new_list = thumbnail_updater_list_find_for_system(system);
+
+   if (new_list)
+      thumbnail_updater_list_free(new_list);
+
+   free_index = thumbnail_updater_list_find_first_free_index();
+   new_list = thumbnail_updater_list_init(system);
+   thumbnail_lists_cached[free_index] = new_list;
+
+   if (!new_list)
+      return false;
+
+   return true;
+}
+
+thumbnail_updater_list_t *thumbnail_updater_list_get_cached(const char* system)
+{
+   thumbnail_updater_list_t *new_list = thumbnail_updater_list_find_for_system(system);
+   
+   if (new_list)
+      return new_list;
+
+   return NULL;
+}
+
+bool thumbnail_updater_list_is_empty(const char* system)
+{
+   thumbnail_updater_list_t *new_list = thumbnail_updater_list_find_for_system(system);
+   
+   if (new_list && new_list->entries)
+      return false;
+   return true;
+
 }
 
 /***********/
@@ -321,14 +463,113 @@ bool core_updater_list_get_core(
    return false;
 }
 
+/* Returns number of entries in thumbnail updater list */
+size_t thumbnail_updater_list_size(thumbnail_updater_list_t *thumbnail_list)
+{
+   if (!thumbnail_list)
+      return 0;
+
+   return RBUF_LEN(thumbnail_list->entries);
+}
+
+/* Fetches thumbnail updater list entry corresponding
+ * to the specified entry index.
+ * Returns false if index is invalid. */
+bool thumbnail_updater_list_get_index(
+      thumbnail_updater_list_t *thumbnail_list,
+      size_t idx,
+      const thumbnail_updater_list_entry_t **entry)
+{
+   if (!thumbnail_list || !entry)
+      return false;
+
+   if (idx >= RBUF_LEN(thumbnail_list->entries))
+      return false;
+
+   *entry = &thumbnail_list->entries[idx];
+
+   return true;
+}
+
+/* Fetches thumbnail updater list entry corresponding
+ * to the specified remote thumbnail filename.
+ * Returns false if thumbnail is not found. */
+bool thumbnail_updater_list_get_filename(
+      thumbnail_updater_list_t *thumbnail_list,
+      const char *remote_filename,
+      const thumbnail_updater_list_entry_t **entry)
+{
+   size_t num_entries;
+   size_t i;
+
+   if (!thumbnail_list || !entry || string_is_empty(remote_filename))
+      return false;
+
+   num_entries = RBUF_LEN(thumbnail_list->entries);
+
+   if (num_entries < 1)
+      return false;
+
+   /* Search for specified filename */
+   for (i = 0; i < num_entries; i++)
+   {
+      thumbnail_updater_list_entry_t *current_entry = &thumbnail_list->entries[i];
+
+      if (string_is_empty(current_entry->remote_filename))
+         continue;
+
+      if (string_is_equal(remote_filename, current_entry->remote_filename))
+      {
+         *entry = current_entry;
+         return true;
+      }
+   }
+
+   return false;
+}
+
+/* Fetches thumbnail updater list entry corresponding
+ * to the specified thumbnail.
+ * Returns false if thumbnail is not found. */
+bool thumbnail_updater_list_get_matching_file(
+      thumbnail_updater_list_t *thumbnail_list,
+      const char *local_thumbnail_path,
+      const thumbnail_updater_list_entry_t **entry)
+{
+   size_t num_entries;
+   size_t i;
+
+   if (!thumbnail_list || string_is_empty(local_thumbnail_path))
+      return false;
+   if ((num_entries = RBUF_LEN(thumbnail_list->entries)) < 1)
+      return false;
+
+   /* Search for specified thumbnail */
+   for (i = 0; i < num_entries; i++)
+   {
+      thumbnail_updater_list_entry_t *current_entry = &thumbnail_list->entries[i];
+
+      if (string_is_empty(current_entry->remote_filename))
+         continue;
+
+      if (string_is_equal(local_thumbnail_path, current_entry->remote_filename))
+      {
+         *entry = current_entry;
+         return true;
+      }
+   }
+
+   return false;
+}
+
 /***********/
 /* Setters */
 /***********/
 
 /* Parses date string and adds contents to
- * specified core updater list entry */
-static bool core_updater_list_set_date(
-      core_updater_list_entry_t *entry, const char *date_str)
+ * specified updater list entry */
+static bool updater_list_set_date(
+      updater_list_date_t *entry, const char *date_str)
 {
    char *tok, *save   = NULL;
    char *elem0        = NULL;
@@ -375,9 +616,9 @@ static bool core_updater_list_set_date(
    }
 
    /* Convert date string values */
-   entry->date.year  = string_to_unsigned(elem0);
-   entry->date.month = string_to_unsigned(elem1);
-   entry->date.day   = string_to_unsigned(elem2);
+   entry->year  = string_to_unsigned(elem0);
+   entry->month = string_to_unsigned(elem1);
+   entry->day   = string_to_unsigned(elem2);
 
    /* Clean up */
    free(elem0);
@@ -385,6 +626,22 @@ static bool core_updater_list_set_date(
    free(elem2);
 
    return true;
+}
+
+static bool core_updater_list_set_date(
+      core_updater_list_entry_t *entry, const char *date_str)
+{
+   if (entry)
+      return updater_list_set_date(&entry->date, date_str);
+   return false;
+}
+
+static bool thumbnail_updater_list_set_date(
+      thumbnail_updater_list_entry_t *entry, const char *date_str)
+{
+   if (entry)
+      return updater_list_set_date(&entry->date, date_str);
+   return false;
 }
 
 /* Parses crc string and adds value to
@@ -401,6 +658,34 @@ static bool core_updater_list_set_crc(
       return false;
 
    entry->crc = crc;
+
+   return true;
+}
+
+static bool thumbnail_updater_list_set_crc(
+      thumbnail_updater_list_entry_t *entry, const char *crc_str)
+{
+   uint32_t crc;
+
+   if (!entry || string_is_empty(crc_str))
+      return false;
+
+   if ((crc = (uint32_t)string_hex_to_unsigned(crc_str)) == 0)
+      return false;
+
+   entry->crc = crc;
+
+   return true;
+}
+
+static bool thumbnail_updater_list_set_remote_file(
+      thumbnail_updater_list_entry_t *entry, const char *file_str)
+{
+
+   if (!entry || string_is_empty(file_str))
+      return false;
+
+   entry->remote_filename = strdup(file_str);
 
    return true;
 }
@@ -669,7 +954,7 @@ static bool core_updater_list_push_entry(
    list_entry->crc              = entry->crc;
 
    /* Copy date */
-   memcpy(&list_entry->date, &entry->date, sizeof(core_updater_list_date_t));
+   memcpy(&list_entry->date, &entry->date, sizeof(updater_list_date_t));
 
    return true;
 }
@@ -983,6 +1268,177 @@ bool core_updater_list_parse_pfd_data(
 
    /* Set list type */
    core_list->type = CORE_UPDATER_LIST_TYPE_PFD;
+
+   return true;
+}
+
+static bool thumbnail_updater_list_push_entry(
+      thumbnail_updater_list_t *thumbnail_list, thumbnail_updater_list_entry_t *entry)
+{
+   thumbnail_updater_list_entry_t *list_entry = NULL;
+   size_t num_entries;
+
+   if (!thumbnail_list || !entry)
+      return false;
+
+   /* Get current number of list entries */
+   num_entries = RBUF_LEN(thumbnail_list->entries);
+
+   /* Attempt to allocate memory for new entry */
+   if (!RBUF_TRYFIT(thumbnail_list->entries, num_entries + 1))
+      return false;
+
+   /* Allocation successful - increment array size */
+   RBUF_RESIZE(thumbnail_list->entries, num_entries + 1);
+
+   /* Get handle of new entry at end of list, and
+    * zero-initialise members */
+   list_entry = &thumbnail_list->entries[num_entries];
+   memset(list_entry, 0, sizeof(*list_entry));
+
+   /* Assign paths */
+   list_entry->remote_filename  = entry->remote_filename;
+   list_entry->local_filename   = entry->local_filename;
+
+   /* Copy crc */
+   list_entry->crc              = entry->crc;
+
+   /* Copy date */
+   memcpy(&list_entry->date, &entry->date, sizeof(updater_list_date_t));
+
+   /* TODO: disable this log before merge */
+   RARCH_DBG("[Thumbnail]: Remote file exists: \"%s\"\n", list_entry->remote_filename);
+
+   return true;
+}
+
+
+/* Parses the contents of a single buildbot
+ * thumbnail listing and adds it to the specified
+ * thumbnail updater list */
+static void thumbnail_updater_list_add_entry(
+      thumbnail_updater_list_t *thumbnail_list,
+      const char *date_str,
+      const char *crc_str,
+      const char *filename_str)
+{
+   const thumbnail_updater_list_entry_t *search_entry = NULL;
+   thumbnail_updater_list_entry_t entry               = {0};
+
+   /* Check whether thumbnail file is already included
+    * in the list (this is *not* an error condition,
+    * it just means we can skip the current listing) */
+   if (thumbnail_updater_list_get_filename(thumbnail_list,
+         filename_str, &search_entry))
+      goto error;
+
+   /* Parse individual listing strings */
+   if (!thumbnail_updater_list_set_date(&entry, date_str))
+      goto error;
+
+   if (!thumbnail_updater_list_set_crc(&entry, crc_str))
+      goto error;
+
+   if (!thumbnail_updater_list_set_remote_file(&entry, filename_str))
+      goto error;
+
+   /* Add entry to list */
+   if (!thumbnail_updater_list_push_entry(thumbnail_list, &entry))
+      goto error;
+
+   return;
+
+error:
+   thumbnail_updater_list_free_entry(&entry);
+}
+
+
+bool thumbnail_updater_list_parse_network_data(
+      thumbnail_updater_list_t *thumbnail_list,
+      const char *data, size_t len)
+{
+   char *tok, *save   = NULL;
+   unsigned list_size = 0;
+   char *data_buf     = NULL;
+
+   /* Sanity check */
+   if (!thumbnail_list || string_is_empty(data) || (len < 1))
+      return false;
+
+   /* We're populating a list 'from scratch' - remove
+    * any existing entries */
+   thumbnail_updater_list_reset(thumbnail_list);
+
+   /* Input data string is not terminated - have
+    * to copy it to a temporary buffer... */
+   if (!(data_buf = (char*)malloc((len + 1) * sizeof(char))))
+      return false;
+
+   memcpy(data_buf, data, len * sizeof(char));
+   data_buf[len] = '\0';
+
+   list_size     = string_count_occurrences_single_character(data_buf, '\n');
+
+   if (list_size < 1)
+   {
+      free(data_buf);
+      return false;
+   }
+
+   /* Split network listing request into lines */
+   /* Loop over lines */
+   for (tok = strtok_r(data_buf, "\n", &save); tok;
+        tok = strtok_r(NULL, "\n", &save))
+   {
+      char *tok2, *save2 = NULL;
+      char *elem0        = NULL;
+      char *elem1        = NULL;
+      char *elem2        = NULL;
+      char *line_cpy     = NULL;
+      const char *line   = tok;
+
+      if (string_is_empty(line))
+         continue;
+
+      line_cpy = strdup(line);
+
+      /* Split line into listings info components */
+      if ((tok2 = strtok_r(line_cpy, " ", &save2)))
+         elem0 = strdup(tok2); /* date */
+      if ((tok2 = strtok_r(NULL, " ", &save2)))
+         elem1 = strdup(tok2); /* crc  */
+      if ((tok2 = strtok_r(NULL, "", &save2)))
+         elem2 = strdup(tok2); /* filename - up to the end of line */
+
+      free(line_cpy);
+
+      /* Parse listings info and add to thumbnail updater
+       * list */
+      /* > Listings must have 3 entries:
+       *   [date] [crc] [filename] */
+      if (     !string_is_empty(elem0)
+            && !string_is_empty(elem1)
+            && !string_is_empty(elem2))
+         thumbnail_updater_list_add_entry(
+               thumbnail_list,
+               elem0, elem1, elem2);
+
+      /* Clean up */
+      free(elem0);
+      free(elem1);
+      free(elem2);
+   }
+
+   /* Temporary data buffer is no longer required */
+   free(data_buf);
+   data_buf = NULL;
+
+   /* Sanity check */
+   if (RBUF_LEN(thumbnail_list->entries) < 1)
+      return false;
+
+   /* Sort completed list */
+   /*thumbnail_updater_list_qsort(thumbnail_list);*/
 
    return true;
 }

@@ -75,7 +75,6 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_RETROACHIEVEMENTS_URL "http://i.retroachievements.org"
 #define FILE_PATH_LOBBY_LIBRETRO_URL "http://lobby.libretro.com/"
 #define FILE_PATH_CORE_THUMBNAILS_URL "http://thumbnails.libretro.com"
-#define FILE_PATH_CORE_THUMBNAILPACKS_URL "http://thumbnailpacks.libretro.com"
 #define FILE_PATH_SHADERS_GLSL_ZIP "shaders_glsl.zip"
 #define FILE_PATH_SHADERS_SLANG_ZIP "shaders_slang.zip"
 #define FILE_PATH_SHADERS_CG_ZIP "shaders_cg.zip"
