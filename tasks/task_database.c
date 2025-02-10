@@ -773,7 +773,7 @@ static int database_info_list_iterate_found_match(
     * We should use less fullsize paths in the future so that we don't
     * need to have all these big char arrays here */
    size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
-   char* db_crc                   = (char*)malloc(256 * sizeof(char));
+   char* db_crc                   = (char*)malloc(str_len);
    char* db_playlist_path         = (char*)malloc(str_len);
    char* entry_path_str           = (char*)malloc(str_len);
    char *hash                     = NULL;
