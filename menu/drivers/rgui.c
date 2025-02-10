@@ -5001,7 +5001,6 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    bool menu_mouse_enable         = settings->bools.menu_mouse_enable;
    bool menu_core_enable          = settings->bools.menu_core_enable;
    bool menu_timedate_enable      = settings->bools.menu_timedate_enable;
-   bool menu_rgui_swap_thumbnails = settings->bools.menu_rgui_swap_thumbnails;
    float menu_rgui_particle_effect_speed
                                   = settings->floats.menu_rgui_particle_effect_speed;
    bool menu_rgui_particle_effect_screensaver
@@ -5321,6 +5320,15 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                && (rgui->mini_thumbnail.is_valid || (rgui->thumbnail_queue_size > 0));
          show_left_thumbnail = (rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL)
                && (rgui->mini_left_thumbnail.is_valid || (rgui->left_thumbnail_queue_size > 0));
+
+         /* Images playlist needs to show only the bottom thumbnail */
+         if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+         {
+            if (rgui_swap_thumbnails)
+               show_left_thumbnail = false;
+            else
+               show_thumbnail = false;
+         }
 
          /* Get maximum width of thumbnail 'panel' on right side
           * of screen */
@@ -5700,9 +5708,9 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          if (show_savestate_thumbnail && thumbnail_savestate)
             rgui_render_mini_thumbnail(rgui, thumbnail_savestate,
                   rgui->frame_buf.data,
-                  GFX_THUMBNAIL_LEFT,
+                  (rgui_swap_thumbnails) ? GFX_THUMBNAIL_RIGHT : GFX_THUMBNAIL_LEFT,
                   fb_width, fb_height, fb_pitch,
-                  menu_rgui_swap_thumbnails);
+                  rgui_swap_thumbnails);
       }
       else if (show_mini_thumbnails)
       {
@@ -5713,13 +5721,13 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_RIGHT,
                   fb_width, fb_height, fb_pitch,
-                  menu_rgui_swap_thumbnails);
+                  rgui_swap_thumbnails);
          if (show_left_thumbnail && thumbnail2)
             rgui_render_mini_thumbnail(rgui, thumbnail2,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_LEFT,
                   fb_width, fb_height, fb_pitch,
-                  menu_rgui_swap_thumbnails);
+                  rgui_swap_thumbnails);
       }
 
       /* Print menu sublabel/core name (if required) */
