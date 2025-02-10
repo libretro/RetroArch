@@ -1081,19 +1081,12 @@ static bool task_database_check_serial_and_crc(
       database_state_handle_t *db_state)
 {
 #ifdef RARCH_INTERNAL
-   settings_t *settings                    = config_get_ptr();
-#endif
-   const char         *db_path    =
-      database_info_get_current_name(db_state);
-
-#ifdef RARCH_INTERNAL
-   if (!settings->bools.scan_serial_and_crc)
+   if (!config_get_ptr()->bools.scan_serial_and_crc)
        return false;
 #endif
-
    /* the PSP shares serials for disc/download content */
    return string_starts_with(
-         path_basename_nocompression(db_path),
+         path_basename_nocompression(database_info_get_current_name(db_state)),
          "Sony - PlayStation Portable");
 }
 

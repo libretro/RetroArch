@@ -727,9 +727,6 @@ static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func, void *patch_data, int64_t patch_size)
 {
-   settings_t *settings     = config_get_ptr();
-   bool show_notification   = settings ?
-         settings->bools.notification_show_patch_applied : false;
    enum patch_error err     = PATCH_UNKNOWN;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
@@ -747,7 +744,7 @@ static bool apply_patch_content(uint8_t **buf,
       *size = target_size;
 
       /* Show an OSD message */
-      if (show_notification)
+      if (config_get_ptr()->bools.notification_show_patch_applied)
       {
          char msg[128];
          const char *patch_filename = path_basename_nocompression(patch_path);

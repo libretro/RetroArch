@@ -181,9 +181,9 @@ bool content_undo_load_state(void)
     * the backing up of it and
     * its flushing could all be in their
     * own functions... */
-   if (     config_get_ptr()->bools.block_sram_overwrite
-         && savefile_list
-         && savefile_list->size)
+   if (     savefile_list
+         && savefile_list->size
+         && config_get_ptr()->bools.block_sram_overwrite)
    {
       RARCH_LOG("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
@@ -994,8 +994,6 @@ static void content_load_state_cb(retro_task_t *task,
    unsigned num_blocks         = 0;
    void *buf                   = load_data->data;
    struct sram_block *blocks   = NULL;
-   settings_t *settings        = config_get_ptr();
-   bool block_sram_overwrite   = settings->bools.block_sram_overwrite;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 
 #ifdef HAVE_CHEEVOS
@@ -1036,7 +1034,10 @@ static void content_load_state_cb(retro_task_t *task,
       return;
    }
 
-   if (block_sram_overwrite && savefile_list && savefile_list->size)
+   if (     savefile_list
+         && savefile_list->size
+         && config_get_ptr()->bools.block_sram_overwrite
+      )
    {
       RARCH_LOG("[SRAM]: %s.\n",
             msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
@@ -1136,11 +1137,8 @@ static void save_state_cb(retro_task_t *task,
    save_task_state_t *state   = (save_task_state_t*)task_data;
 #ifdef HAVE_SCREENSHOTS
    char               *path   = strdup(state->path);
-   settings_t     *settings   = config_get_ptr();
-   const char *dir_screenshot = settings->paths.directory_screenshot;
-
    if (state->flags & SAVE_TASK_FLAG_THUMBNAIL_ENABLE)
-      take_screenshot(dir_screenshot,
+      take_screenshot(config_get_ptr()->paths.directory_screenshot,
             path, true,
             state->flags & SAVE_TASK_FLAG_HAS_VALID_FB, false, true);
    free(path);
