@@ -27,9 +27,9 @@
 #include "../msg_hash.h"
 #include "../setting_list.h"
 
-#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
+#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true, settings->bools.menu_show_advanced_settings)
 
-#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
+#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false, settings->bools.menu_show_advanced_settings)
 
 RETRO_BEGIN_DECLS
 
@@ -389,7 +389,7 @@ int menu_displaylist_parse_settings_enum(
       bool add_empty_entry,
       rarch_setting_t *setting,
       unsigned entry_type,
-      bool is_enum
+      bool is_enum, bool menu_show_advanced_settings
       );
 
 RETRO_END_DECLS

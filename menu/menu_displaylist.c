@@ -2720,8 +2720,15 @@ static enum msg_file_type extension_to_file_hash_type(const char *ext)
 }
 
 static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
-      settings_t *settings,
-      menu_displaylist_info_t *info)
+      menu_displaylist_info_t *info,
+      bool show_advanced_settings,
+      bool playlist_use_old_format,
+      bool playlist_compression,
+      bool playlist_fuzzy_archive_match,
+      bool playlist_portable_paths,
+      const char *dir_playlist,
+      const char *directory_menu_content
+      )
 {
    size_t _len;
    unsigned i, j, k;
@@ -2731,17 +2738,15 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
    struct menu_state *menu_st          = menu_state_get_ptr();
-   bool show_advanced_settings         = settings->bools.menu_show_advanced_settings;
-   const char *dir_playlist            = settings->paths.directory_playlist;
 
    playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   playlist_config.old_format          = playlist_use_old_format;
+   playlist_config.compress            = playlist_compression;
+   playlist_config.fuzzy_archive_match = playlist_fuzzy_archive_match;
 
    playlist_config_set_base_content_directory(&playlist_config,
-           settings->bools.playlist_portable_paths
-         ? settings->paths.directory_menu_content
+           playlist_portable_paths
+         ? directory_menu_content
          : NULL);
 
    database_info_build_query_enum(query, sizeof(query),
@@ -3339,7 +3344,8 @@ int menu_displaylist_parse_settings_enum(
       bool add_empty_entry,
       rarch_setting_t *setting,
       unsigned entry_type,
-      bool is_enum
+      bool is_enum,
+      bool menu_show_advanced_settings
       )
 {
    static enum setting_type precond_lut[] =
@@ -3375,9 +3381,7 @@ int menu_displaylist_parse_settings_enum(
    if (flags & (SD_FLAG_ADVANCED))
 #endif
    {
-      settings_t *settings        = config_get_ptr();
-      bool show_advanced_settings = settings->bools.menu_show_advanced_settings;
-      if (!show_advanced_settings)
+      if (!menu_show_advanced_settings)
          goto end;
    }
 
@@ -3528,7 +3532,9 @@ static void menu_displaylist_set_new_playlist(
    playlist_config.old_format          = settings->bools.playlist_use_old_format;
    playlist_config.compress            = settings->bools.playlist_compression;
    playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
+   playlist_config_set_base_content_directory(&playlist_config,
+           settings->bools.playlist_portable_paths
+         ? settings->paths.directory_menu_content : NULL);
 
    menu->db_playlist_file[0]           = '\0';
 
@@ -4024,7 +4030,6 @@ static int menu_displaylist_parse_load_content_settings(
 #endif
    }
 
-
    return count;
 }
 
@@ -4119,7 +4124,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
                    * This breaks the above 'remove_entry_enabled' check for the
                    * history and favorites playlists. We therefore have to check
                    * the playlist file name as well... */
-                  if (  !remove_entry_enabled
+                  if (   !remove_entry_enabled
                       && settings->bools.quick_menu_show_information
                       && !string_is_empty(playlist_file))
                      remove_entry_enabled = string_is_equal(playlist_file, FILE_PATH_CONTENT_HISTORY)
@@ -4528,10 +4533,8 @@ static unsigned menu_displaylist_parse_playlists(
    return count;
 }
 
-static unsigned menu_displaylist_parse_cores(
-      menu_handle_t       *menu,
-      settings_t *settings,
-      menu_displaylist_info_t *info)
+static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
+      bool show_hidden_files, menu_displaylist_info_t *info)
 {
    size_t i, list_size;
    char out_dir[DIR_MAX_LENGTH];
@@ -4539,7 +4542,6 @@ static unsigned menu_displaylist_parse_cores(
    unsigned count               = 0;
    const char *path             = info->path;
    bool ok                      = false;
-   bool show_hidden_files       = settings->bools.show_hidden_files;
 
    if (string_is_empty(path))
    {
@@ -4711,13 +4713,11 @@ static unsigned menu_displaylist_parse_cores(
    return count;
 }
 
-static unsigned menu_displaylist_parse_add_to_playlist_list(
-      file_list_t *list, settings_t *settings)
+static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
+      const char *dir_playlist, bool show_hidden_files)
 {
    char playlist_display_name[NAME_MAX_LENGTH];
    unsigned count               = 0;
-   const char *dir_playlist     = settings->paths.directory_playlist;
-   bool show_hidden_files       = settings->bools.show_hidden_files;
    struct string_list *str_list = dir_list_new_special(
          dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
 
@@ -4989,11 +4989,11 @@ static bool menu_displaylist_parse_playlist_manager_settings(
 
 #ifdef HAVE_NETWORKING
 static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
-      file_list_t *list, settings_t *settings)
+      file_list_t *list,
+      const char *dir_playlist,
+      bool show_hidden_files)
 {
    unsigned count               = 0;
-   const char *dir_playlist     = settings->paths.directory_playlist;
-   bool show_hidden_files       = settings->bools.show_hidden_files;
    struct string_list *str_list = dir_list_new_special(
          dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
 
@@ -5383,9 +5383,8 @@ static unsigned menu_displaylist_parse_disk_options(file_list_t *list)
    return count;
 }
 
-static int menu_displaylist_parse_audio_device_list(
-      file_list_t *info_list, const char *info_path,
-      settings_t *settings)
+static int menu_displaylist_parse_audio_device_list(file_list_t *info_list,
+      const char *info_path)
 {
    struct menu_state *menu_st   = menu_state_get_ptr();
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
@@ -5396,7 +5395,7 @@ static int menu_displaylist_parse_audio_device_list(
    int audio_device_index       = -1;
    struct string_list *ptr      = NULL;
 
-   if (!settings || !setting)
+   if (!setting)
       return 0;
 
    if (!audio_driver_get_devices_list((void**)&ptr))
@@ -5473,8 +5472,7 @@ static int menu_displaylist_parse_audio_device_list(
 
 #ifdef HAVE_MICROPHONE
 static int menu_displaylist_parse_microphone_device_list(
-      file_list_t *info_list, const char *info_path,
-      settings_t *settings)
+      file_list_t *info_list, const char *info_path)
 {
    struct menu_state *menu_st   = menu_state_get_ptr();
    enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
@@ -5485,7 +5483,7 @@ static int menu_displaylist_parse_microphone_device_list(
    int mic_device_index         = -1;
    struct string_list *ptr      = NULL;
 
-   if (!settings || !setting)
+   if (!setting)
       return 0;
 
    if (!microphone_driver_get_devices_list((void**)&ptr))
@@ -5562,7 +5560,7 @@ static int menu_displaylist_parse_microphone_device_list(
 #endif
 
 static int menu_displaylist_parse_input_device_type_list(
-      file_list_t *info_list, const char *info_path, settings_t *settings)
+      file_list_t *info_list, const char *info_path)
 {
    char device_id[10];
    const struct retro_controller_description *desc = NULL;
@@ -5586,7 +5584,7 @@ static int menu_displaylist_parse_input_device_type_list(
 
    device_id[0]                  = '\0';
 
-   if (!sys_info || !settings || !setting)
+   if (!sys_info || !setting)
       return 0;
 
    port = setting->index_offset;
@@ -6019,12 +6017,11 @@ static int menu_displaylist_parse_input_description_list(
 
 #ifdef HAVE_NETWORKING
 static unsigned menu_displaylist_parse_netplay_mitm_server_list(
-      file_list_t *info_list, settings_t *settings)
+      file_list_t *info_list, const char *netplay_mitm_server)
 {
    size_t i;
    unsigned count                  = 0;
    struct menu_state *menu_st      = menu_state_get_ptr();
-   const char *netplay_mitm_server = settings->arrays.netplay_mitm_server;
 
    for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
    {
@@ -6471,6 +6468,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
       file_list_t *info_list)
 {
    unsigned count = 0;
+   settings_t *settings = config_get_ptr();
 
    /* Content directory */
    if (menu_entries_append(info_list,
@@ -6595,7 +6593,7 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
 
 static unsigned menu_displaylist_populate_subsystem(
       const struct retro_subsystem_info* subsystem,
-      settings_t *settings, file_list_t *list)
+      file_list_t *list, bool menu_show_sublabels)
 {
    char star_char[16];
    unsigned count           = 0;
@@ -6612,7 +6610,6 @@ static unsigned menu_displaylist_populate_subsystem(
 #endif
    int  i       = 0;
 #if defined(HAVE_RGUI)
-   bool menu_show_sublabels = settings->bools.menu_show_sublabels;
    const char *menu_driver  = menu_driver_ident();
    bool is_rgui             = string_is_equal(menu_driver, "rgui");
 
@@ -7109,9 +7106,12 @@ unsigned menu_displaylist_build_list(
             /* Core fully loaded, use the subsystem data */
             if (sys_info && sys_info->subsystem.data)
                subsystem = sys_info->subsystem.data;
-
-            count = menu_displaylist_populate_subsystem(subsystem, settings,
-                  list);
+#ifdef HAVE_MENU
+            count = menu_displaylist_populate_subsystem(subsystem, list,
+                  settings->bools.menu_show_sublabels);
+#else
+            count = menu_displaylist_populate_subsystem(subsystem, list, false);
+#endif
          }
          break;
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
@@ -12832,9 +12832,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_MUSIC_LIST:
             {
 #if defined(HAVE_AUDIOMIXER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-               bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
                char combined_path[PATH_MAX_LENGTH];
                const char *ext  = NULL;
+               bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
 
                fill_pathname_join_special(combined_path, menu->scratch2_buf,
                      menu->scratch_buf, sizeof(combined_path));
@@ -13033,8 +13033,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
 #ifdef HAVE_LIBRETRODB
                if (parse_database)
-                  ret = menu_displaylist_parse_database_entry(menu, settings,
-                        info);
+                  ret = menu_displaylist_parse_database_entry(menu, info,
+                        settings->bools.menu_show_advanced_settings,
+                        settings->bools.playlist_use_old_format,
+                        settings->bools.playlist_compression,
+                        settings->bools.playlist_fuzzy_archive_match,
+                        settings->bools.playlist_portable_paths,
+                        settings->paths.directory_playlist,
+                        settings->paths.directory_menu_content
+                        );
                else
                   info->flags       |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 #else
@@ -13436,8 +13443,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_PL_THUMBNAILS_UPDATER:
             menu_entries_clear(info->list);
 #ifdef HAVE_NETWORKING
-            count = menu_displaylist_parse_pl_thumbnail_download_list(info->list,
-                  settings);
+            count = menu_displaylist_parse_pl_thumbnail_download_list(
+                  info->list,
+                  settings->paths.directory_playlist,
+                  settings->bools.show_hidden_files);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -14250,7 +14259,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
                      MENU_SETTING_ACTION, 0, 0, NULL);
 
-            count = menu_displaylist_parse_add_to_playlist_list(info->list, settings);
+            count = menu_displaylist_parse_add_to_playlist_list(info->list,
+                  settings->paths.directory_playlist,
+                  settings->bools.show_hidden_files);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -14297,7 +14308,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_DROPDOWN_LIST_INPUT_DEVICE_TYPE:
             menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_input_device_type_list(info->list, info->path, settings);
+            count              = menu_displaylist_parse_input_device_type_list(info->list, info->path);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14311,7 +14322,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_RESERVED_DEVICE:
             menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_input_select_reserved_device_list(info->list, info->path, settings);
+            count              = menu_displaylist_parse_input_select_reserved_device_list(
+                  info->list, info->path, settings);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14326,7 +14338,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef ANDROID
          case DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD:
             menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_input_select_physical_keyboard_list(info->list, info->path, settings);
+            count              = menu_displaylist_parse_input_select_physical_keyboard_list(
+                  info->list, info->path, settings);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14341,7 +14354,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          case DISPLAYLIST_DROPDOWN_LIST_INPUT_DESCRIPTION:
             menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_input_description_list(info, settings);
+            count              = menu_displaylist_parse_input_description_list(
+                  info, settings);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14369,7 +14383,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE:
             menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_audio_device_list(info->list, info->path, settings);
+            count              = menu_displaylist_parse_audio_device_list(info->list, info->path);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14384,7 +14398,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_MICROPHONE
          case DISPLAYLIST_DROPDOWN_LIST_MICROPHONE_DEVICE:
             menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_microphone_device_list(info->list, info->path, settings);
+            count              = menu_displaylist_parse_microphone_device_list(info->list,
+                  info->path);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14400,7 +14415,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #ifdef HAVE_NETWORKING
          case DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER:
             menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_netplay_mitm_server_list(info->list, settings);
+            count              = menu_displaylist_parse_netplay_mitm_server_list(
+                  info->list,
+                  settings->arrays.netplay_mitm_server);
 
             if (count == 0)
                if (menu_entries_append(info->list,
@@ -14538,7 +14555,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 #endif
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);
-            count = menu_displaylist_build_list(info->list, settings, type, false);
+            count = menu_displaylist_build_list(info->list,
+                  settings, type, false);
 
             if (count == 0)
             {
@@ -14631,7 +14649,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_HORIZONTAL:
             menu_entries_clear(info->list);
-            ret = menu_displaylist_parse_horizontal_list(menu, menu_st, settings, info);
+            ret = menu_displaylist_parse_horizontal_list(menu,
+                  menu_st, settings, info);
 
             /* Playlists themselves are sorted
              * > Display lists generated from playlists
@@ -14642,7 +14661,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS:
             menu_entries_clear(info->list);
-            ret = menu_displaylist_parse_horizontal_content_actions(menu, settings, info->list);
+            ret = menu_displaylist_parse_horizontal_content_actions(menu,
+                  settings, info->list);
             info->flags       |=  MD_FLAG_NEED_REFRESH
                                |  MD_FLAG_NEED_PUSH;
             break;
@@ -14925,7 +14945,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                uint32_t flags                = runloop_get_flags();
                bool show_playlists           = settings->bools.menu_content_show_playlists;
                bool show_add_content         = (settings->uints.menu_content_show_add_entry ==
-                     MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB) && !settings->bools.kiosk_mode_enable;
+                     MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
+                  && !settings->bools.kiosk_mode_enable;
                bool show_settings            = settings->bools.menu_content_show_settings
                      && (  (string_is_equal(menu_ident, "rgui"))
                         || (string_is_equal(menu_ident, "glui")
@@ -15571,7 +15592,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                }
             }
 
-            count = menu_displaylist_parse_cores(menu, settings, info);
+            count = menu_displaylist_parse_cores(menu,
+                  settings->bools.show_hidden_files, info);
 
             if (count == 0)
                menu_entries_append(info->list,
