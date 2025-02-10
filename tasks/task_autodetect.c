@@ -435,7 +435,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
             (   detected_port == settings->uints.input_joypad_index[player]
             || !input_config_get_device_name(settings->uints.input_joypad_index[player]))
             && settings->uints.input_device_reservation_type[player]
-            != INPUT_DEVICE_RESERVATION_RESERVED )
+            != INPUT_DEVICE_RESERVATION_RESERVED)
       {
          first_free_player_slot = player;
          RARCH_DBG("[Autoconf]: First unconfigured / unreserved player is %d\n",

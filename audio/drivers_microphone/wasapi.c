@@ -90,18 +90,14 @@ static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
 
 static void *wasapi_microphone_init(void)
 {
-   settings_t *settings        = config_get_ptr();
    wasapi_microphone_t *wasapi = (wasapi_microphone_t*)calloc(1, sizeof(wasapi_microphone_t));
-
    if (!wasapi)
    {
       RARCH_ERR("[WASAPI mic]: Failed to allocate microphone driver context\n");
       return NULL;
    }
-
-   wasapi->nonblock = !settings->bools.audio_sync;
+   wasapi->nonblock = !config_get_ptr()->bools.audio_sync;
    RARCH_DBG("[WASAPI mic]: Initialized microphone driver context.\n");
-
    return wasapi;
 }
 

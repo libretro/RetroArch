@@ -775,8 +775,8 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
 
    if (netplay->is_server)
    {
-      if (!string_is_empty(settings->paths.netplay_password) ||
-            !string_is_empty(settings->paths.netplay_spectate_password))
+      if (     !string_is_empty(settings->paths.netplay_password)
+            || !string_is_empty(settings->paths.netplay_spectate_password))
       {
          /* Demand a password */
          if (netplay->simple_rand_next == 1)
@@ -1435,17 +1435,17 @@ static bool netplay_handshake_sync(netplay_t *netplay,
 static bool netplay_handshake_pre_nick(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
-   struct nick_buf_s nick_buf;
    ssize_t recvd;
+   struct nick_buf_s nick_buf;
    int32_t ping         = 0;
    settings_t *settings = config_get_ptr();
 
    RECV(&nick_buf, sizeof(nick_buf)) {}
 
    /* Expecting only a nick command */
-   if (recvd < 0 ||
-         ntohl(nick_buf.cmd[0]) != NETPLAY_CMD_NICK ||
-         ntohl(nick_buf.cmd[1]) != sizeof(nick_buf.nick))
+   if (     recvd < 0
+         || ntohl(nick_buf.cmd[0]) != NETPLAY_CMD_NICK
+         || ntohl(nick_buf.cmd[1]) != sizeof(nick_buf.nick))
    {
       const char *_msg = NULL;
 
@@ -1474,8 +1474,8 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
          return false;
 
       /* There's a password, so just put them in PRE_PASSWORD mode */
-      if (!string_is_empty(settings->paths.netplay_password) ||
-            !string_is_empty(settings->paths.netplay_spectate_password))
+      if (     !string_is_empty(settings->paths.netplay_password)
+            || !string_is_empty(settings->paths.netplay_spectate_password))
          connection->mode = NETPLAY_CONNECTION_PRE_PASSWORD;
       else
       {
@@ -1505,19 +1505,19 @@ static bool netplay_handshake_pre_nick(netplay_t *netplay,
 static bool netplay_handshake_pre_password(netplay_t *netplay,
    struct netplay_connection *connection, bool *had_input)
 {
+   ssize_t recvd;
    struct password_buf_s password_buf;
    char password[8+NETPLAY_PASS_LEN]; /* 8 for salt */
    char hash[NETPLAY_PASS_HASH_LEN+1]; /* + NULL terminator */
-   ssize_t recvd;
    bool correct         = false;
    settings_t *settings = config_get_ptr();
 
    RECV(&password_buf, sizeof(password_buf)) {}
 
    /* Expecting only a password command */
-   if (recvd < 0 ||
-         ntohl(password_buf.cmd[0]) != NETPLAY_CMD_PASSWORD ||
-         ntohl(password_buf.cmd[1]) != sizeof(password_buf.password))
+   if (     recvd < 0
+         || ntohl(password_buf.cmd[0]) != NETPLAY_CMD_PASSWORD
+         || ntohl(password_buf.cmd[1]) != sizeof(password_buf.password))
    {
       RARCH_ERR("[Netplay] Failed to receive netplay password.\n");
       return false;
@@ -1538,7 +1538,8 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
          connection->flags   |= NETPLAY_CONN_FLAG_CAN_PLAY;
       }
    }
-   if (!correct && !string_is_empty(settings->paths.netplay_spectate_password))
+   if (     !correct
+         && !string_is_empty(settings->paths.netplay_spectate_password))
    {
       strlcpy(password + 8, settings->paths.netplay_spectate_password,
          sizeof(password) - 8);

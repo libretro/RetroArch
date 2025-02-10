@@ -59,6 +59,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    settings_t *settings      = config_get_ptr();
    bool float_format         = settings->bools.audio_wasapi_float_format;
    bool exclusive_mode       = settings->bools.audio_wasapi_exclusive_mode;
+   bool audio_sync           = settings->bools.audio_sync;
    unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
 
@@ -140,7 +141,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
 
    w->flags    |=   WASAPI_FLG_RUNNING;
-   if (settings->bools.audio_sync)
+   if (audio_sync)
       w->flags &= ~(WASAPI_FLG_NONBLOCK);
    else
       w->flags |=  (WASAPI_FLG_NONBLOCK);

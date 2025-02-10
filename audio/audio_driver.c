@@ -684,7 +684,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    }
 
    if (new_rate != 0)
-      configuration_set_int(settings, settings->uints.audio_output_sample_rate, new_rate);
+      configuration_set_int(settings,
+            settings->uints.audio_output_sample_rate, new_rate);
 
    if (!audio_driver_st.context_audio_data)
    {
@@ -715,7 +716,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       /* Should never happen. */
       RARCH_WARN("[Audio]: Input rate is invalid (%.3f Hz)."
             " Using output rate (%u Hz).\n",
-            audio_driver_st.input, settings->uints.audio_output_sample_rate);
+            audio_driver_st.input,
+            settings->uints.audio_output_sample_rate);
 
       audio_driver_st.input = settings->uints.audio_output_sample_rate;
    }
@@ -1593,18 +1595,18 @@ bool audio_driver_disable_callback(void)
 
 bool audio_driver_callback(void)
 {
-   settings_t *settings        = config_get_ptr();
+   bool menu_pause_libretro    = config_get_ptr()->bools.menu_pause_libretro;
    uint32_t runloop_flags      = runloop_get_flags();
    bool runloop_paused         = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
 #ifdef HAVE_MENU
 #ifdef HAVE_NETWORKING
    bool core_paused            = runloop_paused
-       || (settings->bools.menu_pause_libretro
+       || (menu_pause_libretro
        && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
        &&  netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL));
 #else
    bool core_paused            = runloop_paused
-      || (settings->bools.menu_pause_libretro
+      || (menu_pause_libretro
       && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
 #endif
 #else
@@ -1715,17 +1717,14 @@ void audio_driver_frame_is_reverse(void)
          || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
          || !(audio_st->output_samples_buf)))
       if (!(audio_st->flags & AUDIO_FLAG_SUSPENDED))
-      {
-         settings_t *settings = config_get_ptr();
          audio_driver_flush(audio_st,
-               settings->floats.slowmotion_ratio,
+               config_get_ptr()->floats.slowmotion_ratio,
                audio_st->rewind_buf  +
                audio_st->rewind_ptr,
                audio_st->rewind_size -
                audio_st->rewind_ptr,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
-      }
 }
 #endif
 
@@ -1857,6 +1856,7 @@ void audio_driver_menu_sample(void)
 {
    static int16_t samples_buf[1024]       = {0};
    settings_t *settings                   = config_get_ptr();
+   float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
    video_driver_state_t *video_st         = video_state_get_ptr();
    uint32_t runloop_flags                 = runloop_get_flags();
    recording_state_t *recording_st        = recording_state_get_ptr();
@@ -1887,7 +1887,7 @@ void audio_driver_menu_sample(void)
       }
       if (check_flush)
          audio_driver_flush(audio_st,
-               settings->floats.slowmotion_ratio,
+               slowmotion_ratio,
                samples_buf,
                1024,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
@@ -1908,9 +1908,7 @@ void audio_driver_menu_sample(void)
    }
    if (check_flush)
       audio_driver_flush(audio_st,
-            settings->floats.slowmotion_ratio,
-            samples_buf,
-            sample_count,
+            slowmotion_ratio, samples_buf, sample_count,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 }

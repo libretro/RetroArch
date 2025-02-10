@@ -3638,7 +3638,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          /* If we need to quit, skip unloading the core to avoid performing
           * cleanup actions (like writing autosave state) twice. */
-         if (should_quit_on_close()) {
+         if (should_quit_on_close())
+         {
             command_event(CMD_EVENT_QUIT, NULL);
             break;
          }
