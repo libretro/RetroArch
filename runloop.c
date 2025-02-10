@@ -3801,12 +3801,11 @@ static void runloop_audio_buffer_status_free(runloop_state_t *runloop_st)
    runloop_st->audio_latency = 0;
 }
 
-static void runloop_fastmotion_override_free(runloop_state_t *runloop_st)
+static void runloop_fastmotion_override_free(runloop_state_t *runloop_st,
+      float fastforward_ratio)
 {
    video_driver_state_t
       *video_st            = video_state_get_ptr();
-   settings_t *settings    = config_get_ptr();
-   float fastforward_ratio = settings->floats.fastforward_ratio;
    bool reset_frame_limit  = runloop_st->fastmotion_override.current.fastforward
          && (runloop_st->fastmotion_override.current.ratio >= 0.0f)
          && (runloop_st->fastmotion_override.current.ratio != fastforward_ratio);
@@ -3832,7 +3831,7 @@ void runloop_state_free(runloop_state_t *runloop_st)
    runloop_frame_time_free(runloop_st);
    runloop_audio_buffer_status_free(runloop_st);
    input_game_focus_free();
-   runloop_fastmotion_override_free(runloop_st);
+   runloop_fastmotion_override_free(runloop_st, config_get_ptr()->floats.fastforward_ratio);
 
    /* Only a single core options callback is used at present */
    runloop_st->core_options_callback.update_display = NULL;

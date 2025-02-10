@@ -6956,8 +6956,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
       const char* preset_path, const bool prepend)
 {
    bool ret                      = false;
-   settings_t* settings          = config_get_ptr();
-   const char *dir_video_shader  = settings->paths.directory_video_shader;
+   const char *dir_video_shader  = config_get_ptr()->paths.directory_video_shader;
    enum rarch_shader_type type   = menu_shader_manager_get_type(shader);
    struct menu_state *menu_st    = &menu_driver_state;
 
@@ -6967,7 +6966,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
       goto clear;
    }
 
-   if (!video_shader_combine_preset_and_apply(settings,
+   if (!video_shader_combine_preset_and_apply(
             type, shader, preset_path, dir_video_shader, prepend, true))
       goto clear;
 
@@ -7079,9 +7078,7 @@ static int generic_menu_iterate(
             bind.s              = menu->menu_state_msg;
             bind.len            = sizeof(menu->menu_state_msg);
 
-            if (menu_input_key_bind_iterate(
-                     settings,
-                     &bind, current_time))
+            if (menu_input_key_bind_iterate(settings, &bind, current_time))
             {
                size_t selection = menu_st->selection_ptr;
                menu_entries_pop_stack(&selection, 0, 0);

@@ -766,7 +766,8 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 
 #ifdef HAVE_CHEATS
       /* If one or more emulator managed cheats is active, abort */
-      cheat_manager_apply_cheats();
+      cheat_manager_apply_cheats(
+            settings->bools.notification_show_cheats_applied);
       if (!locals->hardcore_allowed)
       {
          locals->hardcore_being_enabled = false;

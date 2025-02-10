@@ -59,9 +59,9 @@ bool PlatformEmscriptenPowerStateGetCharging(void);
 uint64_t PlatformEmscriptenGetTotalMem(void);
 uint64_t PlatformEmscriptenGetFreeMem(void);
 
-//// begin exported functions
+/* begin exported functions */
 
-// saves and states
+/* saves and states */
 
 void cmd_savefiles(void)
 {
@@ -88,7 +88,7 @@ void cmd_undo_load_state(void)
    command_event(CMD_EVENT_UNDO_LOAD_STATE, NULL);
 }
 
-// misc
+/* misc */
 
 void cmd_take_screenshot(void)
 {
@@ -135,7 +135,8 @@ void cmd_unpause(void)
    command_event(CMD_EVENT_UNPAUSE, NULL);
 }
 
-void cmd_set_volume(float volume) {
+void cmd_set_volume(float volume)
+{
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, volume);
 }
 
@@ -146,7 +147,7 @@ bool cmd_set_shader(const char *path)
 }
 #endif
 
-// cheats
+/* cheats */
 
 void cmd_cheat_set_code(unsigned index, const char *str)
 {
@@ -180,10 +181,11 @@ unsigned cmd_cheat_get_size(void)
 
 void cmd_cheat_apply_cheats(void)
 {
-   cheat_manager_apply_cheats();
+   cheat_manager_apply_cheats(
+         config_get_ptr()->bools.notification_show_cheats_applied);
 }
 
-//// end exported functions
+/* end exported functions */
 
 static void frontend_emscripten_get_env(int *argc, char *argv[],
       void *args, void *params_data)

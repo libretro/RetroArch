@@ -1433,7 +1433,8 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME),
                EXPLORE_TYPE_SEARCH, explore_action_ok_find);
          if (list->size)
-            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel = explore_action_sublabel_spacer;
+            ((menu_file_list_cbs_t*)list->list[list->size-1].actiondata)->action_sublabel =
+               explore_action_sublabel_spacer;
       }
 
       for (cat = 0; cat < EXPLORE_CAT_COUNT; cat++)

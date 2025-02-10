@@ -217,7 +217,7 @@ void cheat_manager_index_prev(void);
 
 void cheat_manager_toggle(void);
 
-void cheat_manager_apply_cheats(void);
+void cheat_manager_apply_cheats(bool notification_show_cheats_applied);
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx);
 

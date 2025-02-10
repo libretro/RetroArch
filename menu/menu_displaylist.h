@@ -332,7 +332,7 @@ enum menu_dl_flags
    MD_FLAG_DOWNLOAD_CORE                 = (1 << 7), /* Should a 'download core' entry be pushed onto the list?
 						      * This will be set to true in case there are no currently
 						      * installed cores. */
-   MD_FLAG_NEED_NAVIGATION_CLEAR         = (1 << 8)  /* Does the navigation index need to be cleared 
+   MD_FLAG_NEED_NAVIGATION_CLEAR         = (1 << 8)  /* Does the navigation index need to be cleared
                                                       * to 0 (first entry) ? */
 };
 
@@ -374,7 +374,8 @@ bool menu_displaylist_has_subsystems(void);
 #if defined(HAVE_LIBRETRODB)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
 #endif
-unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *settings);
+unsigned menu_displaylist_contentless_cores(file_list_t *list,
+      enum menu_contentless_cores_display_type core_display_type);
 
 enum filebrowser_enums filebrowser_get_type(void);
 

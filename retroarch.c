@@ -860,8 +860,6 @@ bool midi_driver_set_input(const char *input)
 
 bool midi_driver_set_output(void *settings_data, const char *output)
 {
-   settings_t        *settings = (settings_t*)settings_data;
-
    if (!rarch_midi_drv_data)
    {
 #ifdef DEBUG
@@ -884,10 +882,12 @@ bool midi_driver_set_output(void *settings_data, const char *output)
 
    if (output)
    {
+      settings_t *settings = (settings_t*)settings_data;
+      unsigned midi_volume = settings->uints.midi_volume;
       rarch_midi_drv_output_enabled = true;
       RARCH_LOG("[MIDI]: Output device changed to \"%s\".\n", output);
 
-      midi_driver_set_volume(settings->uints.midi_volume);
+      midi_driver_set_volume(midi_volume);
    }
    else
    {
@@ -3684,7 +3684,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEATS_APPLY:
 #ifdef HAVE_CHEATS
-         cheat_manager_apply_cheats();
+         cheat_manager_apply_cheats(settings->bools.notification_show_cheats_applied);
 #endif
          break;
       case CMD_EVENT_REWIND_DEINIT:

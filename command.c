@@ -1301,7 +1301,8 @@ void command_event_init_cheats(
    cheat_manager_load_game_specific_cheats(path_cheat_db);
 
    if (apply_cheats_after_load)
-      cheat_manager_apply_cheats();
+      cheat_manager_apply_cheats(
+            config_get_ptr()->bools.notification_show_cheats_applied);
 }
 #endif
 

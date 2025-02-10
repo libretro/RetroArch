@@ -1621,21 +1621,17 @@ static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list
    return count;
 }
 
-static unsigned menu_displaylist_parse_supported_cores(menu_displaylist_info_t *info,
-      settings_t *settings, const char *content_path,
+static unsigned menu_displaylist_parse_supported_cores(
+      menu_displaylist_info_t *info,
+      bool enable_load_with_current,
+      const char *core_path_current,
+      const char *content_path,
       enum msg_hash_enums core_enum_label,
       enum msg_hash_enums current_core_enum_label)
 {
    unsigned count                   = 0;
    core_info_list_t *core_info_list = NULL;
    bool core_available              = false;
-   const char *core_path_current    = path_get(RARCH_PATH_CORE);
-#if defined(HAVE_DYNAMIC)
-   bool enable_load_with_current    = !string_is_empty(core_path_current);
-#else
-   bool enable_load_with_current    = !string_is_empty(core_path_current)
-         && !settings->bools.always_reload_core_on_run_content;
-#endif
 
    /* Get core list */
    if (   core_info_get_list(&core_info_list)
@@ -13710,10 +13706,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORES_SUPPORTED:
             menu_entries_clear(info->list);
 
-            count = menu_displaylist_parse_supported_cores(info,
-                  settings, menu->deferred_path,
-                  MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
-                  MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE);
+            {
+               const char *core_path_current = path_get(RARCH_PATH_CORE);
+#if defined(HAVE_DYNAMIC)
+               bool enable_load_with_current = !string_is_empty(core_path_current);
+#else
+               bool enable_load_with_current = !string_is_empty(core_path_current)
+                  && !settings->bools.always_reload_core_on_run_content;
+#endif
+               count = menu_displaylist_parse_supported_cores(info,
+                     enable_load_with_current, core_path_current,
+                     menu->deferred_path,
+                     MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
+                     MENU_ENUM_LABEL_DETECT_CORE_LIST_OK_CURRENT_CORE);
+            }
 
             info->flags &= ~MD_FLAG_NEED_SORT;
             info->flags |=  MD_FLAG_NEED_REFRESH
@@ -13722,10 +13728,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
             menu_entries_clear(info->list);
 
-            count = menu_displaylist_parse_supported_cores(info,
-                  settings, menu->deferred_path,
-                  MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-                  MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE);
+            {
+               const char *core_path_current = path_get(RARCH_PATH_CORE);
+#if defined(HAVE_DYNAMIC)
+               bool enable_load_with_current = !string_is_empty(core_path_current);
+#else
+               bool enable_load_with_current = !string_is_empty(core_path_current)
+                  && !settings->bools.always_reload_core_on_run_content;
+#endif
+               count = menu_displaylist_parse_supported_cores(info,
+                     enable_load_with_current, core_path_current,
+                     menu->deferred_path,
+                     MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+                     MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE);
+            }
 
             info->flags       &= ~MD_FLAG_NEED_SORT;
             info->flags       |=  MD_FLAG_NEED_REFRESH
@@ -13884,7 +13900,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                size_t contentless_core_ptr = menu_st->contentless_core_ptr;
 
                menu_entries_clear(info->list);
-               count = menu_displaylist_contentless_cores(info->list, settings);
+               count = menu_displaylist_contentless_cores(info->list,
+                     (enum menu_contentless_cores_display_type)
+                     settings->uints.menu_content_show_contentless_cores);
 
                /* TODO/FIXME: Selecting an entry in the
                 * contentless cores list will cause the
