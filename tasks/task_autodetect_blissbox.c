@@ -496,8 +496,8 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int 
 #endif
 }
 
-void input_autoconfigure_blissbox_override_handler(
-      int vid, int pid, char *device_name, size_t len)
+void input_autoconfigure_blissbox_override_handler(int vid, int pid,
+      char *s, size_t len)
 {
    if (pid == BLISSBOX_UPDATE_MODE_PID)
       RARCH_LOG("[Autoconf]: Bliss-Box in update mode detected. Ignoring.\n");
@@ -522,10 +522,8 @@ void input_autoconfigure_blissbox_override_handler(
          /* override name given to autoconfig so it knows what kind of pad this is */
          if (len > 0)
          {
-            size_t _len = strlcpy(device_name, "Bliss-Box 4-Play ", len);
-            strlcpy(device_name + _len,
-                  pad->name,
-                  len           - _len);
+            size_t _len = strlcpy(s, "Bliss-Box 4-Play ", len);
+            strlcpy(s + _len, pad->name, len - _len);
          }
 
          blissbox_pads[index] = pad;
