@@ -3019,7 +3019,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEAT_TOGGLE:
 #ifdef HAVE_CHEATS
-         cheat_manager_toggle();
+         cheat_manager_toggle(settings->bools.notification_show_cheats_applied);
 #endif
          break;
       case CMD_EVENT_SHADER_NEXT:

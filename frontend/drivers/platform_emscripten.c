@@ -161,7 +161,9 @@ const char *cmd_cheat_get_code(unsigned index)
 
 void cmd_cheat_toggle_index(bool apply_cheats_after_toggle, unsigned index)
 {
-   cheat_manager_toggle_index(apply_cheats_after_toggle, index);
+   cheat_manager_toggle_index(apply_cheats_after_toggle,
+         config_get_ptr()->bools.notification_show_cheats_applied,
+         index);
 }
 
 bool cmd_cheat_get_code_state(unsigned index)

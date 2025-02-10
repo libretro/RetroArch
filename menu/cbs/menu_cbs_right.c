@@ -112,8 +112,8 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
    settings_t           *settings = config_get_ptr();
    bool apply_cheats_after_toggle = settings->bools.apply_cheats_after_toggle;
 
-   cheat_manager_toggle_index(
-         apply_cheats_after_toggle,
+   cheat_manager_toggle_index(apply_cheats_after_toggle,
+         settings->bools.notification_show_cheats_applied,
          (unsigned)idx);
 
    return 0;

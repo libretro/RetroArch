@@ -43,7 +43,6 @@
 #include "cheat_manager.h"
 
 #include "msg_hash.h"
-#include "configuration.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "dynamic.h"
@@ -632,6 +631,7 @@ void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx)
 }
 
 void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
+      bool notification_show_cheats_applied,
       unsigned i)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
@@ -642,17 +642,17 @@ void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
    cheat_manager_update(cheat_st, i);
 
    if (apply_cheats_after_toggle)
-      cheat_manager_apply_cheats(config_get_ptr()->bools.notification_show_cheats_applied);
+      cheat_manager_apply_cheats(notification_show_cheats_applied);
 }
 
-void cheat_manager_toggle(void)
+void cheat_manager_toggle(bool notification_show_cheats_applied)
 {
    cheat_manager_t *cheat_st = &cheat_manager_state;
    if (!cheat_st->cheats || cheat_st->size == 0)
       return;
 
    cheat_st->cheats[cheat_st->ptr].state ^= true;
-   cheat_manager_apply_cheats(config_get_ptr()->bools.notification_show_cheats_applied);
+   cheat_manager_apply_cheats(notification_show_cheats_applied);
    cheat_manager_update(cheat_st, cheat_st->ptr);
 }
 
