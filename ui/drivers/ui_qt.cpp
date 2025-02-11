@@ -2103,13 +2103,12 @@ void MainWindow::onLaunchWithComboBoxIndexChanged(int)
 
 MainWindow::Theme MainWindow::getThemeFromString(QString themeString)
 {
-   if (themeString == "default")
+   if (themeString == QLatin1String("default"))
       return THEME_SYSTEM_DEFAULT;
-   else if (themeString == "dark")
+   else if (themeString == QLatin1String("dark"))
       return THEME_DARK;
-   else if (themeString == "custom")
+   else if (themeString == QLatin1String("custom"))
       return THEME_CUSTOM;
-
    return THEME_SYSTEM_DEFAULT;
 }
 
@@ -3048,7 +3047,8 @@ void MainWindow::setCoreActions()
                   {
                      QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
 
-                     if (map.value("core_path").toString() == hash["core_path"] || map.value("core_name").toString() == coreName)
+                     if (  map.value("core_path").toString() == hash["core_path"]
+			|| map.value("core_name").toString() == coreName)
                      {
                         found_existing = true;
                         break;
@@ -3877,13 +3877,13 @@ QString MainWindow::getCurrentThumbnailTypeString()
 
 ThumbnailType MainWindow::getThumbnailTypeFromString(QString thumbnailType)
 {
-   if (thumbnailType == "boxart")
+   if (thumbnailType == QLatin1String("boxart"))
       return THUMBNAIL_TYPE_BOXART;
-   else if (thumbnailType == "screenshot")
+   else if (thumbnailType == QLatin1String("screenshot"))
       return THUMBNAIL_TYPE_SCREENSHOT;
-   else if (thumbnailType == "title")
+   else if (thumbnailType == QLatin1String("title"))
       return THUMBNAIL_TYPE_TITLE_SCREEN;
-   else if (thumbnailType == "logo")
+   else if (thumbnailType == QLatin1String("logo"))
       return THUMBNAIL_TYPE_LOGO;
 
    return THUMBNAIL_TYPE_BOXART;
@@ -3925,7 +3925,7 @@ void MainWindow::onContributorsClicked()
    dialog->layout()->addWidget(buttonBox);
 
    textEdit->setReadOnly(true);
-   textEdit->setHtml(QString("<pre>") + retroarch_contributors_list + "</pre>");
+   textEdit->setHtml(QStringLiteral("<pre>") + retroarch_contributors_list + "</pre>");
 
    dialog->resize(480, 640);
    dialog->exec();
@@ -3935,7 +3935,7 @@ void MainWindow::showAbout()
 {
    QScopedPointer<QDialog> dialog(new QDialog());
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-   QString text = QString("RetroArch ") + PACKAGE_VERSION +
+   QString text = QStringLiteral("RetroArch ") + PACKAGE_VERSION +
          "<br><br>" + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
          "<br><br>" + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
 #ifdef HAVE_GIT_VERSION
@@ -4870,9 +4870,9 @@ static void* ui_companion_qt_init(void)
    {
       QString viewType = qsettings->value("view_type", "list").toString();
 
-      if (viewType == "list")
+      if (viewType == QLatin1String("list"))
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
-      else if (viewType == "icons")
+      else if (viewType == QLatin1String("icons"))
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
       else
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
@@ -4884,13 +4884,13 @@ static void* ui_companion_qt_init(void)
    {
       QString thumbnailType = qsettings->value("icon_view_thumbnail_type", "boxart").toString();
 
-      if (thumbnailType == "boxart")
+      if (thumbnailType == QLatin1String("boxart"))
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
-      else if (thumbnailType == "screenshot")
+      else if (thumbnailType == QLatin1String("screenshot"))
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);
-      else if (thumbnailType == "title")
+      else if (thumbnailType == QLatin1String("title"))
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
-      else if (thumbnailType == "logo")
+      else if (thumbnailType == QLatin1String("logo"))
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
       else
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
@@ -5113,7 +5113,7 @@ void LoadCoreTableWidget::keyPressEvent(QKeyEvent *event)
 {
    int key = event->key();
    if (   key == Qt::Key_Return
-	    || key == Qt::Key_Enter)
+       || key == Qt::Key_Enter)
    {
       event->accept();
       emit enterPressed();

@@ -97,7 +97,7 @@ void MainWindow::onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> 
    {
       const QSslError &error = errors.at(i);
       QString string         =
-           QString("Ignoring SSL error code ")
+           QStringLiteral("Ignoring SSL error code ")
          + QString::number(error.error())
          + ": "
          + error.errorString();
@@ -389,7 +389,7 @@ void MainWindow::onThumbnailDownloadNetworkSslErrors(
    {
       const QSslError &error = errors.at(i);
       QString         string =
-           QString("Ignoring SSL error code ")
+           QStringLiteral("Ignoring SSL error code ")
          + QString::number(error.error())
          + ": "
          + error.errorString();
@@ -675,7 +675,7 @@ void MainWindow::onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslErr
    {
       const QSslError &error = errors.at(i);
       QString string         =
-           QString("Ignoring SSL error code ")
+           QStringLiteral("Ignoring SSL error code ")
          + QString::number(error.error())
          + ": "
          + error.errorString();
@@ -923,7 +923,8 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
       QHash<QString, QString> hash2;
       QHash<QString, QString> hash3;
       QHash<QString, QString> hash4;
-      const QHash<QString, QString> &itemHash = m_playlistModel->index(i, 0).data(PlaylistModel::HASH).value< QHash<QString, QString> >();
+      const QHash<QString, QString> &itemHash =
+	      m_playlistModel->index(i, 0).data(PlaylistModel::HASH).value< QHash<QString, QString> >();
 
       hash["db_name"]     = itemHash.value("db_name");
       hash["label_noext"] = itemHash.value("label_noext");

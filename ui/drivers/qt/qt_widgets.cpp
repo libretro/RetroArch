@@ -1127,12 +1127,14 @@ void FileDropWidget::paintEvent(QPaintEvent *event)
 
 void FileDropWidget::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+   int key = event->key();
+   if (   key == Qt::Key_Return
+       || key == Qt::Key_Enter)
    {
       event->accept();
       emit enterPressed();
    }
-   else if (event->key() == Qt::Key_Delete)
+   else if (key == Qt::Key_Delete)
    {
       event->accept();
       emit deletePressed();
@@ -1149,7 +1151,8 @@ void FileDropWidget::dragEnterEvent(QDragEnterEvent *event)
       event->acceptProposedAction();
 }
 
-/* Workaround for QTBUG-72844. Without it, you can't drop on this if you first drag over another widget that doesn't accept drops. */
+/* Workaround for QTBUG-72844. Without it, you can't drop on this if you
+ * first drag over another widget that doesn't accept drops. */
 void FileDropWidget::dragMoveEvent(QDragMoveEvent *event)
 {
    event->acceptProposedAction();
@@ -1161,9 +1164,9 @@ void FileDropWidget::dropEvent(QDropEvent *event)
 
    if (data->hasUrls())
    {
-      QList<QUrl> urls = data->urls();
-      QStringList files;
       int i;
+      QStringList files;
+      QList<QUrl> urls = data->urls();
 
       for (i = 0; i < urls.count(); i++)
       {
@@ -1196,7 +1199,9 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
    if (!specialPlaylist)
    {
-      downloadThumbnailAction.reset(new QAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
+      downloadThumbnailAction.reset(new QAction(
+               QString(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL)), this));
       menu->addAction(downloadThumbnailAction.data());
    }
 
@@ -1270,8 +1275,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
          addFilesToPlaylist(QStringList());
       else if (selectedAction == addFolderAction.data())
       {
-         QString dirPath = QFileDialog::getExistingDirectory(
-               this,
+         QString dirPath = QFileDialog::getExistingDirectory(this,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER),
                QString(), QFileDialog::ShowDirsOnly);
 
@@ -1312,7 +1316,9 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
 
          if (!updateCurrentPlaylistEntry(contentHash))
          {
-            showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+            showMessageBox(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY),
+                  MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
             return;
          }
       }

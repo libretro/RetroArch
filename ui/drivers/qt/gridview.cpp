@@ -279,12 +279,14 @@ QModelIndex GridView::moveCursor(QAbstractItemView::CursorAction cursorAction, Q
    QModelIndex index = currentIndex();
    if (index.isValid())
    {
-      if ((cursorAction == MoveLeft && index.row() > 0) || (cursorAction == MoveRight && index.row() + 1 < model()->rowCount()))
+      if (     (cursorAction == MoveLeft  && index.row() > 0)
+            || (cursorAction == MoveRight && index.row() + 1 < model()->rowCount()))
       {
          const int offset = (cursorAction == MoveLeft ? -1 : 1);
          index = model()->index(index.row() + offset, index.column(), index.parent());
       }
-      else if ((cursorAction == MoveUp && index.row() > 0) || (cursorAction == MoveDown && index.row() + 1 < model()->rowCount()))
+      else if ((cursorAction == MoveUp   && index.row() > 0)
+            || (cursorAction == MoveDown && index.row() + 1 < model()->rowCount()))
       {
          const int offset = ((m_size + m_spacing) * (cursorAction == MoveUp ? -1 : 1));
          QRect rect = viewportRectForRow(index.row()).toRect();
@@ -435,24 +437,24 @@ QString GridView::getLayout() const
    switch (m_viewMode)
    {
       case Simple:
-         return "simple";
+         return QStringLiteral("simple");
       case Anchored:
-         return "anchored";
+         return QStringLiteral("anchored");
       case Centered:
       default:
          break;
    }
 
-   return "centered";
+   return QStringLiteral("centered");
 }
 
 void GridView::setLayout(QString layout)
 {
-   if (layout == "anchored")
+   if (layout == QLatin1String("anchored"))
       m_viewMode = Anchored;
-   else if (layout == "centered")
+   else if (layout == QLatin1String("centered"))
       m_viewMode = Centered;
-   else if (layout == "fixed")
+   else if (layout == QLatin1String("fixed"))
       m_viewMode = Simple;
 }
 
@@ -487,23 +489,23 @@ QString GridItem::getThumbnailVerticalAlign() const
    switch (thumbnailVerticalAlignmentFlag)
    {
       case Qt::AlignTop:
-         return "top";
+         return QStringLiteral("top");
       case Qt::AlignVCenter:
-         return "center";
+         return QStringLiteral("center");
       case Qt::AlignBottom:
       default:
          break;
    }
 
-   return "bottom";
+   return QStringLiteral("bottom");
 }
 
 void GridItem::setThumbnailVerticalAlign(const QString valign)
 {
-   if (valign == "top")
+   if (valign == QLatin1String("top"))
       thumbnailVerticalAlignmentFlag = Qt::AlignTop;
-   else if (valign == "center")
+   else if (valign == QLatin1String("center"))
       thumbnailVerticalAlignmentFlag = Qt::AlignVCenter;
-   else if (valign == "bottom")
+   else if (valign == QLatin1String("bottom"))
       thumbnailVerticalAlignmentFlag = Qt::AlignBottom;
 }
