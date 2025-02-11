@@ -3039,11 +3039,8 @@ static void rgui_update_dynamic_theme_path(
    {
       size_t _len = fill_pathname_join_special(rgui->theme_dynamic_path, theme_dir,
             rgui->menu_title, sizeof(rgui->theme_dynamic_path));
-      rgui->theme_dynamic_path[  _len] = '.';
-      rgui->theme_dynamic_path[++_len] = 'c';
-      rgui->theme_dynamic_path[++_len] = 'f';
-      rgui->theme_dynamic_path[++_len] = 'g';
-      rgui->theme_dynamic_path[++_len] = '\0';
+      _len       += strlcpy(rgui->theme_dynamic_path + _len, ".cfg",
+            sizeof(rgui->theme_dynamic_path)   - _len);
       use_playlist_theme              = path_is_valid(rgui->theme_dynamic_path);
    }
 

@@ -866,11 +866,9 @@ static void content_file_get_path(
          {
             char info_path[PATH_MAX_LENGTH];
             /* Build 'complete' archive file path */
-            size_t _len       = strlcpy(info_path,
-                  content_path, sizeof(info_path));
-            info_path[_len  ] = '#';
-            info_path[_len+1] = '\0';
-            _len             += 1;
+            size_t _len  = strlcpy(info_path, content_path, sizeof(info_path));
+            _len        += strlcpy(info_path  + _len, "#",
+                            sizeof(info_path) - _len);
             strlcpy(info_path + _len, archive_file, sizeof(info_path) - _len);
 
             /* Update 'content' string_list */

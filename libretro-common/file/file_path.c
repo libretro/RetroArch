@@ -1006,10 +1006,7 @@ size_t fill_pathname_join_special(char *s,
       {
          /* Try to preserve slash type. */
          if (last_slash != (s + _len - 1))
-         {
-            s[  _len] = last_slash[0];
-            s[++_len] = '\0';
-         }
+            _len += strlcpy(s + _len, &last_slash[0], len - _len);
       }
       else
       {
@@ -1388,8 +1385,7 @@ size_t fill_pathname_application_path(char *s, size_t len)
             if (realpath(s, resolved_bundle_dir_buf))
             {
                size_t _len = strlcpy(s, resolved_bundle_dir_buf, len - 1);
-               s[  _len]   = '/';
-               s[++_len]   = '\0';
+               _len       += strlcpy(s + _len, "/", len - _len);
                rv          = _len;
             }
          }

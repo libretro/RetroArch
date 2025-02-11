@@ -5888,12 +5888,14 @@ static int menu_displaylist_parse_input_description_list(
                sizeof(input_description));
          if (i >= RARCH_FIRST_CUSTOM_BIND)
          {
-            input_description   [  _len] = ' ';
+            _len    += strlcpy(input_description  + _len, " ",
+                     sizeof(input_description) - _len);
             if ((i % 2) == 0)
-               input_description[++_len] = '+';
+               _len += strlcpy(input_description  + _len, "+",
+                        sizeof(input_description) - _len);
             else
-               input_description[++_len] = '-';
-            input_description   [++_len] = '\0';
+               _len += strlcpy(input_description  + _len, "-",
+                        sizeof(input_description) - _len);
          }
 
          if (string_is_empty(input_description))
@@ -8152,14 +8154,11 @@ unsigned menu_displaylist_build_list(
             {
                /* On/off key strings may be required,
                 * so populate them... */
-               on_string [  _len] = '.';
-               on_string [++_len] = '\0';
+               _len               = strlcpy(on_string, ".", sizeof(on_string));
                strlcpy(on_string        + _len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON),
                      sizeof(on_string)  - _len);
-               _len               = 0;
-               off_string[  _len] = '.';
-               off_string[++_len] = '\0';
+               _len               = strlcpy(off_string, ".", sizeof(off_string));
                strlcpy(off_string       + _len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
                      sizeof(off_string) - _len);
