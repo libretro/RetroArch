@@ -3416,7 +3416,7 @@ bool command_event(enum event_command cmd, void *data)
             res = false;
          else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
             res = movie_stop(input_st);
-         if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
+         if (!runloop_get_replay_path(replay_path, sizeof(replay_path), settings->ints.replay_slot))
             res = false;
          if (res)
             res = movie_start_playback(input_st, replay_path);

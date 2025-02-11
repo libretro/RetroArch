@@ -431,8 +431,6 @@ bool runloop_get_current_savestate_path(char *path, size_t len);
 
 bool runloop_get_savestate_path(char *path, size_t len, int slot);
 
-bool runloop_get_current_replay_path(char *path, size_t len);
-
 bool runloop_get_replay_path(char *path, size_t len, unsigned slot);
 
 void runloop_state_free(runloop_state_t *runloop_st);

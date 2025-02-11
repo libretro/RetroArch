@@ -1114,34 +1114,6 @@ static bool validate_per_core_options(char *s,
    return true;
 }
 
-static bool validate_game_options(const char *core_name,
-      char *s, size_t len, bool mkdir)
-{
-   const char *game_name = path_basename_nocompression(path_get(RARCH_PATH_BASENAME));
-   return validate_per_core_options(s, len, mkdir,
-         core_name, game_name);
-}
-
-/**
- * game_specific_options:
- *
- * @return true if a game specific core
- * options path has been found, otherwise false.
- **/
-static bool validate_game_specific_options(char *s, size_t len)
-{
-   runloop_state_t *runloop_st = &runloop_state;
-   if (!validate_game_options(
-            runloop_st->system.info.library_name,
-            s, len, false)
-       || !path_is_valid(s))
-      return false;
-   RARCH_LOG("[Core]: %s \"%s\".\n",
-         msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         s);
-   return true;
-}
-
 static bool validate_folder_options(char *s, size_t len, bool mkdir)
 {
    const char *game_path       = path_get(RARCH_PATH_BASENAME);
@@ -1159,24 +1131,6 @@ static bool validate_folder_options(char *s, size_t len, bool mkdir)
    return false;
 }
 
-
-/**
- * validate_folder_specific_options:
- *
- * @return true if a folder specific core
- * options path has been found, otherwise false.
- **/
-static bool validate_folder_specific_options(char *s, size_t len)
-{
-   if (!validate_folder_options(s, len, false)
-       || !path_is_valid(s))
-      return false;
-   RARCH_LOG("[Core]: %s \"%s\".\n",
-         msg_hash_to_str(MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT),
-         s);
-   return true;
-}
-
 /**
  * runloop_init_core_options_path:
  *
@@ -1192,17 +1146,24 @@ static bool validate_folder_specific_options(char *s, size_t len)
  *
  **/
 static void runloop_init_core_options_path(
-      settings_t *settings,
+      bool game_specific_options,
+      bool per_core_options,
+      const char *path_core_options,
       char *s,  size_t len,
       char *s2, size_t len2)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   bool game_specific_options     = settings->bools.game_specific_options;
 
    /* Check whether game-specific options exist */
    if (   game_specific_options
-       && validate_game_specific_options(s, len))
+       && validate_per_core_options(s, len, false,
+         runloop_st->system.info.library_name,
+         path_basename_nocompression(path_get(RARCH_PATH_BASENAME)))
+       && path_is_valid(s))
    {
+      RARCH_LOG("[Core]: %s \"%s\".\n",
+            msg_hash_to_str(MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT),
+            s);
       /* Notify system that we have a valid core options
        * override */
       path_set(RARCH_PATH_CORE_OPTIONS, s);
@@ -1211,8 +1172,12 @@ static void runloop_init_core_options_path(
    }
    /* Check whether folder-specific options exist */
    else if (   game_specific_options
-            && validate_folder_specific_options(s, len))
+            && validate_folder_options(s, len, false)
+            && path_is_valid(s))
    {
+      RARCH_LOG("[Core]: %s \"%s\".\n",
+            msg_hash_to_str(MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT),
+            s);
       /* Notify system that we have a valid core options
        * override */
       path_set(RARCH_PATH_CORE_OPTIONS, s);
@@ -1224,8 +1189,6 @@ static void runloop_init_core_options_path(
       char global_options_path[PATH_MAX_LENGTH];
       char per_core_options_path[PATH_MAX_LENGTH];
       bool per_core_options_exist   = false;
-      bool per_core_options         = !settings->bools.global_core_options;
-      const char *path_core_options = settings->paths.path_core_options;
 
       per_core_options_path[0]      = '\0';
 
@@ -1278,22 +1241,24 @@ static void runloop_init_core_options_path(
 }
 
 static core_option_manager_t *runloop_init_core_options(
-      settings_t *settings,
+      bool categories_enabled,
+      bool game_specific_options,
+      bool global_core_options,
+      const char *path_core_options,
       const struct retro_core_options_v2 *options_v2)
 {
-   bool categories_enabled = settings->bools.core_option_category_enable;
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
-
    /* Ensure these are NULL-terminated */
    options_path[0]     = '\0';
    src_options_path[0] = '\0';
-
    /* Get core options file path */
-   runloop_init_core_options_path(settings,
+   runloop_init_core_options_path(
+         game_specific_options,
+         global_core_options,
+         path_core_options,
          options_path, sizeof(options_path),
          src_options_path, sizeof(src_options_path));
-
    if (!string_is_empty(options_path))
       return core_option_manager_new(options_path,
             src_options_path, options_v2,
@@ -1302,7 +1267,10 @@ static core_option_manager_t *runloop_init_core_options(
 }
 
 static core_option_manager_t *runloop_init_core_variables(
-      settings_t *settings, const struct retro_variable *vars)
+      bool game_specific_options,
+      bool global_core_options,
+      const char *path_core_options,
+      const struct retro_variable *vars)
 {
    char options_path[PATH_MAX_LENGTH];
    char src_options_path[PATH_MAX_LENGTH];
@@ -1312,7 +1280,10 @@ static core_option_manager_t *runloop_init_core_variables(
    src_options_path[0] = '\0';
 
    /* Get core options file path */
-   runloop_init_core_options_path(settings,
+   runloop_init_core_options_path(
+         game_specific_options,
+         global_core_options,
+         path_core_options,
          options_path, sizeof(options_path),
          src_options_path, sizeof(src_options_path));
 
@@ -1528,8 +1499,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                runloop_st->core_options     = NULL;
             }
 
-            if ((new_vars = runloop_init_core_variables(settings,
-                  (const struct retro_variable *)data)))
+            if ((new_vars = runloop_init_core_variables(
+                        settings->bools.game_specific_options,
+                        !settings->bools.global_core_options,
+                        settings->paths.path_core_options,
+                        (const struct retro_variable *)data)))
                runloop_st->core_options     = new_vars;
          }
          break;
@@ -1560,7 +1534,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             {
                /* Initialise core options */
                core_option_manager_t *new_vars = runloop_init_core_options(
-                     settings, options_v2);
+                     settings->bools.core_option_category_enable,
+                     settings->bools.game_specific_options,
+                     !settings->bools.global_core_options,
+                     settings->paths.path_core_options,
+                     options_v2);
 
                if (new_vars)
                   runloop_st->core_options   = new_vars;
@@ -1597,7 +1575,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             {
                /* Initialise core options */
                core_option_manager_t *new_vars = runloop_init_core_options(
-                     settings, options_v2);
+                     settings->bools.core_option_category_enable,
+                     settings->bools.game_specific_options,
+                     !settings->bools.global_core_options,
+                     settings->paths.path_core_options,
+                     options_v2);
 
                if (new_vars)
                   runloop_st->core_options = new_vars;
@@ -1632,7 +1614,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             if (options_v2)
             {
-               new_vars = runloop_init_core_options(settings, options_v2);
+               new_vars = runloop_init_core_options(
+                     settings->bools.core_option_category_enable,
+                     settings->bools.game_specific_options,
+                     !settings->bools.global_core_options,
+                     settings->paths.path_core_options,
+                     options_v2);
 
                if (new_vars)
                   runloop_st->core_options = new_vars;
@@ -1675,7 +1662,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             if (options_v2)
             {
                /* Initialise core options */
-               new_vars = runloop_init_core_options(settings, options_v2);
+               new_vars = runloop_init_core_options(
+                     categories_enabled,
+                     settings->bools.game_specific_options,
+                     !settings->bools.global_core_options,
+                     settings->paths.path_core_options,
+                     options_v2);
 
                if (new_vars)
                   runloop_st->core_options = new_vars;
@@ -2639,6 +2631,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             float refresh_rate                    = (*info)->timing.fps;
             unsigned crt_switch_resolution        = settings->uints.crt_switch_resolution;
             bool video_fullscreen                 = settings->bools.video_fullscreen;
+            bool video_frame_delay_auto           = settings->bools.video_frame_delay_auto;
             bool video_switch_refresh_rate        = false;
             bool no_video_reinit                  = true;
 
@@ -2648,7 +2641,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* Recalibrate frame delay target when video reinits
              * and pause frame delay when video does not reinit */
-            if (settings->bools.video_frame_delay_auto)
+            if (video_frame_delay_auto)
             {
                if (no_video_reinit && !video_switch_refresh_rate)
                   video_st->frame_delay_pause  = true;
@@ -2930,9 +2923,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                || (geom->base_height  != in_geom->base_height)
                || (geom->aspect_ratio != in_geom->aspect_ratio))
          {
-            geom->base_width   = in_geom->base_width;
-            geom->base_height  = in_geom->base_height;
-            geom->aspect_ratio = in_geom->aspect_ratio;
+            bool video_frame_delay_auto = settings->bools.video_frame_delay_auto;
+
+            geom->base_width            = in_geom->base_width;
+            geom->base_height           = in_geom->base_height;
+            geom->aspect_ratio          = in_geom->aspect_ratio;
 
             RARCH_LOG("[Environ]: SET_GEOMETRY: %ux%u, Aspect: %.3f.\n",
                   geom->base_width, geom->base_height, geom->aspect_ratio);
@@ -2942,7 +2937,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             video_driver_set_aspect_ratio();
 
             /* Ignore frame delay target temporarily */
-            if (settings->bools.video_frame_delay_auto)
+            if (video_frame_delay_auto)
                video_st->frame_delay_pause = true;
 
             /* TODO: Figure out what to do, if anything, with
@@ -3143,7 +3138,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #ifdef HAVE_RUNAHEAD
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
                settings_t *settings = config_get_ptr();
-
                if (      settings->bools.run_ahead_secondary_instance
                      && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
                      &&  secondary_core_ensure_exists(runloop_st, settings))
@@ -3426,13 +3420,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* Initialize the interface... */
             memset(microphone, 0, sizeof(*microphone));
 
-            if (driver == &microphone_null) /* If the null driver is active... */
+            /* If the null driver is active... */
+            if (driver == &microphone_null)
             {
                RARCH_ERR("[Environ]: Cannot initialize microphone interface, active driver is null\n");
                return false;
             }
 
-            if (!settings->bools.microphone_enable) /* If mic support is off... */
+            /* If microphone support is off... */
+            if (!settings->bools.microphone_enable)
             {
                RARCH_WARN("[Environ]: Will not initialize microphone interface, support is turned off\n");
                return false;
@@ -4762,6 +4758,8 @@ void runloop_pause_checks(void)
 #endif
    video_driver_state_t *video_st = video_state_get_ptr();
    settings_t *settings           = config_get_ptr();
+   float video_refresh_rate       = settings->floats.video_refresh_rate;
+   float fastforward_ratio        = settings->floats.fastforward_ratio;
    runloop_state_t *runloop_st    = &runloop_state;
    bool is_paused                 = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
    bool is_idle                   = (runloop_st->flags & RUNLOOP_FLAG_IDLE)   ? true : false;
@@ -4806,7 +4804,7 @@ void runloop_pause_checks(void)
       runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
             ((video_st->video_refresh_rate_original)
                ? video_st->video_refresh_rate_original
-               : settings->floats.video_refresh_rate));
+               : video_refresh_rate));
    }
    else
    {
@@ -4815,7 +4813,7 @@ void runloop_pause_checks(void)
 #endif
 
       /* Restore frame limit. */
-      runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
+      runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -4909,10 +4907,11 @@ bool core_options_create_override(bool game_specific)
    if (game_specific)
    {
       /* Get options file path (game-specific) */
-      if (!validate_game_options(
+      if (!validate_per_core_options(options_path,
+               sizeof(options_path),
+               true,
                runloop_st->system.info.library_name,
-               options_path,
-               sizeof(options_path), true))
+               path_basename_nocompression(path_get(RARCH_PATH_BASENAME))))
          goto error;
    }
    else
@@ -6400,8 +6399,7 @@ static enum runloop_state_enum runloop_check_state(
       runloop_apply_fastmotion_override(runloop_st,
             settings->bools.frame_time_counter_reset_after_fastforwarding,
             settings->floats.fastforward_ratio,
-            settings->bools.audio_fastforward_mute
-            );
+            settings->bools.audio_fastforward_mute);
       runloop_st->fastmotion_override.pending = false;
    }
 
@@ -7150,7 +7148,8 @@ end:
           && (   (vrr_runloop_enable)
               || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
 #ifdef HAVE_MENU
-              || (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE && !(settings->bools.video_vsync))
+              || (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE
+                  && !(settings->bools.video_vsync))
 #endif
               || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
    {
@@ -7312,19 +7311,11 @@ bool runloop_get_savestate_path(char *s, size_t len, int state_slot)
    return true;
 }
 
-
-bool runloop_get_current_replay_path(char *s, size_t len)
-{
-   settings_t *settings = config_get_ptr();
-   int slot = settings ? settings->ints.replay_slot : 0;
-   return runloop_get_replay_path(s, len, slot);
-}
-
 bool runloop_get_replay_path(char *s, size_t len, unsigned slot)
 {
    size_t _len;
    runloop_state_t *runloop_st = &runloop_state;
-   const char *name_replay  = NULL;
+   const char *name_replay     = NULL;
 
    if (!s)
       return false;
@@ -7401,17 +7392,17 @@ bool core_set_netplay_callbacks(void)
 {
    runloop_state_t *runloop_st        = &runloop_state;
 
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
-      return true;
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+   {
+      /* Force normal poll type for netplay. */
+      runloop_st->current_core.poll_type = POLL_TYPE_NORMAL;
 
-   /* Force normal poll type for netplay. */
-   runloop_st->current_core.poll_type = POLL_TYPE_NORMAL;
-
-   /* And use netplay's interceding callbacks */
-   runloop_st->current_core.retro_set_video_refresh(video_frame_net);
-   runloop_st->current_core.retro_set_audio_sample(audio_sample_net);
-   runloop_st->current_core.retro_set_audio_sample_batch(audio_sample_batch_net);
-   runloop_st->current_core.retro_set_input_state(input_state_net);
+      /* And use netplay's interceding callbacks */
+      runloop_st->current_core.retro_set_video_refresh(video_frame_net);
+      runloop_st->current_core.retro_set_audio_sample(audio_sample_net);
+      runloop_st->current_core.retro_set_audio_sample_batch(audio_sample_batch_net);
+      runloop_st->current_core.retro_set_input_state(input_state_net);
+   }
 
    return true;
 }
@@ -7741,14 +7732,20 @@ void core_run(void)
 
    current_core->retro_run();
 
-
-
 #ifdef HAVE_GAME_AI
-   settings_t *settings        = config_get_ptr();
-   video_driver_state_t *video_st= video_state_get_ptr();
-
-   game_ai_think(settings->bools.game_ai_override_p1, settings->bools.game_ai_override_p2, settings->bools.game_ai_show_debug,
-    video_st->frame_cache_data, video_st->frame_cache_width, video_st->frame_cache_height, video_st->frame_cache_pitch, video_st->pix_fmt);
+   {
+      settings_t *settings           = config_get_ptr();
+      video_driver_state_t *video_st = video_state_get_ptr();
+      game_ai_think(
+            settings->bools.game_ai_override_p1,
+            settings->bools.game_ai_override_p2,
+            settings->bools.game_ai_show_debug,
+            video_st->frame_cache_data,
+            video_st->frame_cache_width,
+            video_st->frame_cache_height,
+            video_st->frame_cache_pitch,
+            video_st->pix_fmt);
+   }
 #endif
 
    if (      late_polling
@@ -7874,8 +7871,8 @@ void runloop_path_set_redirect(settings_t *settings,
         || sort_savestates_by_content_enable)
        && !string_is_empty(runloop_st->runtime_content_path_basename))
       fill_pathname_parent_dir_name(content_dir_name,
-                                    runloop_st->runtime_content_path_basename,
-                                    sizeof(content_dir_name));
+            runloop_st->runtime_content_path_basename,
+            sizeof(content_dir_name));
 
    /* Set savefile directory if empty to content directory */
    if (     string_is_empty(intermediate_savefile_dir)
@@ -7902,14 +7899,16 @@ void runloop_path_set_redirect(settings_t *settings,
          RARCH_LOG("Cannot resolve save state file path.\n");
    }
 
-   strlcpy(new_savefile_dir, intermediate_savefile_dir, sizeof(new_savefile_dir));
-   strlcpy(new_savestate_dir, intermediate_savestate_dir, sizeof(new_savestate_dir));
+   strlcpy(new_savefile_dir, intermediate_savefile_dir,
+         sizeof(new_savefile_dir));
+   strlcpy(new_savestate_dir, intermediate_savestate_dir,
+         sizeof(new_savestate_dir));
 
    if (sysinfo && !string_is_empty(sysinfo->library_name))
    {
 #ifdef HAVE_MENU
       if (!string_is_equal(sysinfo->library_name,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)))
 #endif
       {
          /* Per-core and/or per-content-directory saves */
@@ -7919,16 +7918,14 @@ void runloop_path_set_redirect(settings_t *settings,
          {
             /* Append content directory name to save location */
             if (sort_savefiles_by_content_enable)
-               fill_pathname_join_special(
-                  new_savefile_dir,
+               fill_pathname_join_special(new_savefile_dir,
                   intermediate_savefile_dir,
                   content_dir_name,
                   sizeof(new_savefile_dir));
 
             /* Append library_name to the save location */
             if (sort_savefiles_enable)
-               fill_pathname_join(
-                  new_savefile_dir,
+               fill_pathname_join(new_savefile_dir,
                   new_savefile_dir,
                   sysinfo->library_name,
                   sizeof(new_savefile_dir));
