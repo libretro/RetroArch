@@ -3507,6 +3507,22 @@ MSG_HASH(
    "playlist_create"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU,
+   "playlist_add_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU,
+   "deferred_add_to_playlist_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST_QUICKMENU,
+   "add_entry_to_playlist_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_QUICKMENU,
+   "playlist_create_quickmenu"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,
    "set_core_association"
    )
