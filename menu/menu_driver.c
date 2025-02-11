@@ -2257,26 +2257,14 @@ static bool menu_driver_displaylist_push_internal(
       settings_t *settings)
 {
    if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_HISTORY, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_FAVORITES, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info, settings);
 #ifdef HAVE_CHEATS
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info, settings);
 #endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
    {
@@ -2293,8 +2281,7 @@ static bool menu_driver_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_clear(info->list);
-      menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info, settings);
-      return true;
+      return menu_displaylist_ctl(DISPLAYLIST_MUSIC_HISTORY, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
    {
@@ -2311,8 +2298,7 @@ static bool menu_driver_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_clear(info->list);
-      menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info, settings);
-      return true;
+      return menu_displaylist_ctl(DISPLAYLIST_VIDEO_HISTORY, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
    {
@@ -2329,8 +2315,7 @@ static bool menu_driver_displaylist_push_internal(
             msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB));
 
       menu_entries_clear(info->list);
-      menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
-      return true;
+      return menu_displaylist_ctl(DISPLAYLIST_IMAGES_HISTORY, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
@@ -2362,38 +2347,21 @@ static bool menu_driver_displaylist_push_internal(
 
       info->path = strdup(dir_playlist);
 
-      if (menu_displaylist_ctl(
-               DISPLAYLIST_DATABASE_PLAYLISTS, info, settings))
-         return true;
+      return menu_displaylist_ctl(
+               DISPLAYLIST_DATABASE_PLAYLISTS, info, settings);
    }
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info, settings);
 #if defined(HAVE_LIBRETRODB)
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_EXPLORE, info, settings);
 #endif
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_CONTENTLESS_CORES, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_CONTENTLESS_CORES, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info, settings))
-         return true;
-   }
+      return menu_displaylist_ctl(DISPLAYLIST_NETPLAY_ROOM_LIST, info, settings);
    else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
-   {
-      if (menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info, settings))
-         return true;
-   }
-
+      return menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info, settings);
    return false;
 }
 
