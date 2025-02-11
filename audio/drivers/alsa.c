@@ -73,14 +73,36 @@ error:
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
-static bool alsa_start(void *data, bool is_shutdown);
-static ssize_t alsa_write(void *data, const void *buf_, size_t size_)
+static bool alsa_start(void *data, bool is_shutdown)
 {
-   alsa_t *alsa              = (alsa_t*)data;
-   const uint8_t *buf        = (const uint8_t*)buf_;
-   snd_pcm_sframes_t written = 0;
-   snd_pcm_sframes_t size    = BYTES_TO_FRAMES(size_, alsa->stream_info.frame_bits);
-   size_t frames_size        = alsa->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
+   alsa_t *alsa = (alsa_t*)data;
+   if (!alsa->is_paused)
+      return true;
+
+   if (     alsa->stream_info.can_pause
+         && alsa->is_paused)
+   {
+      int ret = snd_pcm_pause(alsa->pcm, 0);
+
+      if (ret < 0)
+      {
+         RARCH_ERR("[ALSA]: Failed to unpause: %s.\n",
+               snd_strerror(ret));
+         return false;
+      }
+
+      alsa->is_paused = false;
+   }
+   return true;
+}
+
+static ssize_t alsa_write(void *data, const void *buf_, size_t len)
+{
+   ssize_t written        = 0;
+   alsa_t *alsa           = (alsa_t*)data;
+   const uint8_t *buf     = (const uint8_t*)buf_;
+   snd_pcm_sframes_t size = BYTES_TO_FRAMES(len, alsa->stream_info.frame_bits);
+   size_t frames_size     = alsa->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
 
    /* Workaround buggy menu code.
     * If a write happens while we're paused, we might never progress. */
@@ -192,29 +214,6 @@ static void alsa_set_nonblock_state(void *data, bool state)
    alsa->nonblock = state;
 }
 
-static bool alsa_start(void *data, bool is_shutdown)
-{
-   alsa_t *alsa = (alsa_t*)data;
-   if (!alsa->is_paused)
-      return true;
-
-   if (alsa->stream_info.can_pause
-         && alsa->is_paused)
-   {
-      int ret = snd_pcm_pause(alsa->pcm, 0);
-
-      if (ret < 0)
-      {
-         RARCH_ERR("[ALSA]: Failed to unpause: %s.\n",
-               snd_strerror(ret));
-         return false;
-      }
-
-      alsa->is_paused = false;
-   }
-   return true;
-}
-
 static void alsa_free(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
@@ -254,10 +253,8 @@ void alsa_device_list_free(void *data, void *array_list_data)
 {
    struct string_list *s = (struct string_list*)array_list_data;
 
-   if (!s)
-      return;
-
-   string_list_free(s);
+   if (s)
+      string_list_free(s);
 }
 
 audio_driver_t audio_alsa = {

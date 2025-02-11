@@ -70,26 +70,24 @@ webdav_state_t *webdav_state_get_ptr(void)
 
 static char *webdav_create_basic_auth(void)
 {
-   settings_t *settings  = config_get_ptr();
-   size_t      len       = 0;
-   char        userpass[512];
-   char       *base64auth;
    int         flen;
-
+   char       *base64auth;
+   char        userpass[512];
+   settings_t *settings  = config_get_ptr();
+   size_t      _len      = 0;
    if (!string_is_empty(settings->arrays.webdav_username))
-      len += strlcpy(userpass + len, settings->arrays.webdav_username, sizeof(userpass) - len);
-   userpass[len++] = ':';
+      _len += strlcpy(userpass + _len, settings->arrays.webdav_username, sizeof(userpass) - _len);
+   userpass[_len++] = ':';
    if (!string_is_empty(settings->arrays.webdav_password))
-      len += strlcpy(userpass + len, settings->arrays.webdav_password, sizeof(userpass) - len);
-   userpass[len] = '\0';
-   base64auth = base64(userpass, (int)len, &flen);
-   len = strlcpy(userpass, "Authorization: Basic ", sizeof(userpass));
-   len += strlcpy(userpass + len, base64auth, sizeof(userpass) - len);
+      _len += strlcpy(userpass + _len, settings->arrays.webdav_password, sizeof(userpass) - _len);
+   userpass[_len]   = '\0';
+   base64auth = base64(userpass, (int)_len, &flen);
+   _len  = strlcpy(userpass, "Authorization: Basic ", sizeof(userpass));
+   _len += strlcpy(userpass + _len, base64auth, sizeof(userpass) - _len);
    free(base64auth);
-   userpass[len++] = '\r';
-   userpass[len++] = '\n';
-   userpass[len  ] = '\0';
-
+   userpass[_len++] = '\r';
+   userpass[_len++] = '\n';
+   userpass[_len  ] = '\0';
    return strdup(userpass);
 }
 
@@ -357,13 +355,13 @@ static char *webdav_create_digest_response(const char *method, const char *path)
 
 static char *webdav_create_digest_auth_header(const char *method, const char *url)
 {
+   size_t _len;
+   char nonceCount[10];
    webdav_state_t *webdav_st = webdav_state_get_ptr();
-   char           *header;
-   char           *response;
-   char            nonceCount[10];
+   char           *header    = NULL;
+   char           *response  = NULL;
    const char     *path      = url;
    int             count     = 0;
-   size_t          len       = 0;
    size_t          total     = 0;
 
    do
@@ -376,48 +374,46 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    response = webdav_create_digest_response(method, path);
    snprintf(nonceCount, sizeof(nonceCount), "%08x", webdav_st->nc++);
 
-   len  = STRLEN_CONST("Authorization: Digest ");
-   len += STRLEN_CONST("username=\"") + strlen(webdav_st->username) + STRLEN_CONST("\", ");
-   len += STRLEN_CONST("realm=\"") + strlen(webdav_st->realm) + STRLEN_CONST("\", ");
-   len += STRLEN_CONST("nonce=\"") + strlen(webdav_st->nonce) + STRLEN_CONST("\", ");
-   len += STRLEN_CONST("uri=\"") + strlen(path) + STRLEN_CONST("\", ");
-   len += STRLEN_CONST("nc=\"") + strlen(nonceCount) + STRLEN_CONST("\", ");
-   len += STRLEN_CONST("cnonce=\"") + strlen(webdav_st->cnonce) + STRLEN_CONST("\", ");
+   _len  = STRLEN_CONST("Authorization: Digest ");
+   _len += STRLEN_CONST("username=\"") + strlen(webdav_st->username) + STRLEN_CONST("\", ");
+   _len += STRLEN_CONST("realm=\"")    + strlen(webdav_st->realm) + STRLEN_CONST("\", ");
+   _len += STRLEN_CONST("nonce=\"")    + strlen(webdav_st->nonce) + STRLEN_CONST("\", ");
+   _len += STRLEN_CONST("uri=\"")      + strlen(path) + STRLEN_CONST("\", ");
+   _len += STRLEN_CONST("nc=\"")       + strlen(nonceCount) + STRLEN_CONST("\", ");
+   _len += STRLEN_CONST("cnonce=\"")   + strlen(webdav_st->cnonce) + STRLEN_CONST("\", ");
    if (webdav_st->qop_auth)
-      len += STRLEN_CONST("qop=\"auth\", ");
+      _len += STRLEN_CONST("qop=\"auth\", ");
    if (webdav_st->opaque)
-      len += STRLEN_CONST("opaque=\"") + strlen(webdav_st->opaque) + STRLEN_CONST("\", ");
-   len += STRLEN_CONST("response=\"") + strlen(response) + STRLEN_CONST("\"\r\n");
-   len += 1;
+      _len += STRLEN_CONST("opaque=\"") + strlen(webdav_st->opaque) + STRLEN_CONST("\", ");
+   _len += STRLEN_CONST("response=\"")  + strlen(response) + STRLEN_CONST("\"\r\n");
+   _len += 1;
 
-   total = len;
-   len = 0;
-   header = malloc(total);
-   len  = strlcpy(header, "Authorization: Digest username=\"", total - len);
-   len += strlcpy(header + len, webdav_st->username, total - len);
-   len += strlcpy(header + len, "\", realm=\"", total - len);
-   len += strlcpy(header + len, webdav_st->realm, total - len);
-   len += strlcpy(header + len, "\", nonce=\"", total - len);
-   len += strlcpy(header + len, webdav_st->nonce, total - len);
-   len += strlcpy(header + len, "\", uri=\"", total - len);
-   len += strlcpy(header + len, path, total - len);
-   len += strlcpy(header + len, "\", nc=\"", total - len);
-   len += strlcpy(header + len, nonceCount, total - len);
-   len += strlcpy(header + len, "\", cnonce=\"", total - len);
-   len += strlcpy(header + len, webdav_st->cnonce, total - len);
+   total  = _len;
+   _len   = 0;
+   header = (char*)malloc(total);
+   _len   = strlcpy(header, "Authorization: Digest username=\"", total - _len);
+   _len  += strlcpy(header + _len, webdav_st->username, total - _len);
+   _len  += strlcpy(header + _len, "\", realm=\"", total - _len);
+   _len  += strlcpy(header + _len, webdav_st->realm, total - _len);
+   _len  += strlcpy(header + _len, "\", nonce=\"", total - _len);
+   _len  += strlcpy(header + _len, webdav_st->nonce, total - _len);
+   _len  += strlcpy(header + _len, "\", uri=\"", total - _len);
+   _len  += strlcpy(header + _len, path, total - _len);
+   _len  += strlcpy(header + _len, "\", nc=\"", total - _len);
+   _len  += strlcpy(header + _len, nonceCount, total - _len);
+   _len  += strlcpy(header + _len, "\", cnonce=\"", total - _len);
+   _len  += strlcpy(header + _len, webdav_st->cnonce, total - _len);
    if (webdav_st->qop_auth)
-      len += strlcpy(header + len, "\", qop=\"auth", total - len);
+      _len += strlcpy(header + _len, "\", qop=\"auth", total - _len);
    if (webdav_st->opaque)
    {
-      len += strlcpy(header + len, "\", opaque=\"", total - len);
-      len += strlcpy(header + len, webdav_st->opaque, total - len);
+      _len += strlcpy(header + _len, "\", opaque=\"", total - _len);
+      _len += strlcpy(header + _len, webdav_st->opaque, total - _len);
    }
-   len += strlcpy(header + len, "\", response=\"", total - len);
-   len += strlcpy(header + len, response, total - len);
-          strlcpy(header + len, "\"\r\n", total - len);
-
+   _len += strlcpy(header + _len, "\", response=\"", total - _len);
+   _len += strlcpy(header + _len, response, total - _len);
+   strlcpy(header + _len, "\"\r\n", total - _len);
    free(response);
-
    return header;
 }
 
@@ -505,11 +501,11 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
 
 static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 {
+   char *auth_header;
+   size_t _len                  = 0;
    settings_t        *settings  = config_get_ptr();
    const char        *url       = settings->arrays.webdav_url;
    webdav_state_t    *webdav_st = webdav_state_get_ptr();
-   size_t             len       = 0;
-   char              *auth_header;
 
    if (string_is_empty(url))
       return false;
@@ -521,18 +517,18 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    /* TODO: LOCK? */
 
    if (!strstr(url, "://"))
-       len += strlcpy(webdav_st->url, "http://", STRLEN_CONST("http://"));
-   strlcpy(webdav_st->url + len, url, sizeof(webdav_st->url) - len);
+       _len += strlcpy(webdav_st->url, "http://", STRLEN_CONST("http://"));
+   strlcpy(webdav_st->url + _len, url, sizeof(webdav_st->url) - _len);
    fill_pathname_slash(webdav_st->url, sizeof(webdav_st->url));
 
    /* url/username/password may have changed, redo auth check */
    webdav_st->basic = true;
-   auth_header = webdav_get_auth_header(NULL, NULL);
+   auth_header      = webdav_get_auth_header(NULL, NULL);
 
    if (auth_header)
    {
       webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
-      webdav_cb_st->cb = cb;
+      webdav_cb_st->cb        = cb;
       webdav_cb_st->user_data = user_data;
       task_push_webdav_stat(webdav_st->url, true, auth_header, webdav_stat_cb, webdav_cb_st);
       free(auth_header);
@@ -618,6 +614,7 @@ static bool webdav_read(const char *path, const char *file, cloud_sync_complete_
    char               url[PATH_MAX_LENGTH];
    char               url_encoded[PATH_MAX_LENGTH];
    char              *auth_header;
+   void              *t;
 
    fill_pathname_join_special(url, webdav_st->url, path, sizeof(url));
    net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
@@ -629,9 +626,9 @@ static bool webdav_read(const char *path, const char *file, cloud_sync_complete_
 
    RARCH_DBG("[webdav] GET %s\n", url_encoded);
    auth_header = webdav_get_auth_header("GET", url_encoded);
-   task_push_http_transfer_with_headers(url_encoded, true, NULL, auth_header, webdav_read_cb, webdav_cb_st);
+   t = task_push_http_transfer_with_headers(url_encoded, true, NULL, auth_header, webdav_read_cb, webdav_cb_st);
    free(auth_header);
-   return true;
+   return (t != NULL);
 }
 
 static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)

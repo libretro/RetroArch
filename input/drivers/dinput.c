@@ -172,10 +172,10 @@ static void *dinput_init(const char *joypad_driver)
 
    if (di->keyboard)
    {
-      settings_t *settings = config_get_ptr();
-      DWORD flags          = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
-      if (settings->bools.input_nowinkey_enable)
-         flags            |= DISCL_NOWINKEY;
+      bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
+      DWORD flags                = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
+      if (input_nowinkey_enable)
+         flags                  |= DISCL_NOWINKEY;
 
       IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
@@ -432,8 +432,7 @@ static bool dinput_mouse_button_pressed(
 static int16_t dinput_lightgun_aiming_state(
       struct dinput_input *di, unsigned idx, unsigned id)
 {
-   struct video_viewport vp;
-   const int edge_detect       = 32700;
+   struct video_viewport vp    = {0};
    int16_t res_x               = 0;
    int16_t res_y               = 0;
    int16_t res_screen_x        = 0;
@@ -445,13 +444,6 @@ static int16_t dinput_lightgun_aiming_state(
 
    struct dinput_pointer_status
       *check_pos               = di->pointer_head.next;
-
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
 
    while (check_pos && num < idx)
    {
@@ -475,62 +467,17 @@ static int16_t dinput_lightgun_aiming_state(
                &vp, x, y,
                &res_x, &res_y, &res_screen_x, &res_screen_y))
    {
-      bool inside =
-            (res_x >= -edge_detect)
-         && (res_y >= -edge_detect)
-         && (res_x <=  edge_detect)
-         && (res_y <=  edge_detect);
-
       switch (id)
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            if (inside)
-               return res_x;
-            break;
+            return res_x;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            if (inside)
-               return res_y;
-            break;
+            return res_y;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return !inside;
+            return input_driver_pointer_is_offscreen(res_x, res_y);
          default:
             break;
       }
-   }
-
-   return 0;
-}
-
-static unsigned dinput_retro_id_to_rarch(unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-         return RARCH_LIGHTGUN_DPAD_RIGHT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-         return RARCH_LIGHTGUN_DPAD_LEFT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-         return RARCH_LIGHTGUN_DPAD_UP;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-         return RARCH_LIGHTGUN_DPAD_DOWN;
-      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         return RARCH_LIGHTGUN_SELECT;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return RARCH_LIGHTGUN_START;
-      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-         return RARCH_LIGHTGUN_RELOAD;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return RARCH_LIGHTGUN_TRIGGER;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         return RARCH_LIGHTGUN_AUX_A;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         return RARCH_LIGHTGUN_AUX_B;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         return RARCH_LIGHTGUN_AUX_C;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return RARCH_LIGHTGUN_START;
-      default:
-         break;
    }
 
    return 0;
@@ -717,8 +664,7 @@ static int16_t dinput_input_state(
          case RETRO_DEVICE_POINTER:
          case RARCH_DEVICE_POINTER_SCREEN:
             {
-               struct video_viewport vp;
-               bool inside                 = false;
+               struct video_viewport vp    = {0};
                int x                       = 0;
                int y                       = 0;
                int16_t res_x               = 0;
@@ -728,13 +674,6 @@ static int16_t dinput_input_state(
                unsigned num                = 0;
                struct dinput_pointer_status *
                   check_pos                = di->pointer_head.next;
-
-               vp.x                        = 0;
-               vp.y                        = 0;
-               vp.width                    = 0;
-               vp.height                   = 0;
-               vp.full_width               = 0;
-               vp.full_height              = 0;
 
                while (check_pos && num < idx)
                {
@@ -753,7 +692,7 @@ static int16_t dinput_input_state(
                   y            = check_pos->pointer_y;
                }
 
-               if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
+               if (video_driver_translate_coord_viewport_confined_wrap(&vp, x, y,
                            &res_x, &res_y, &res_screen_x, &res_screen_y))
                {
                   if (device == RARCH_DEVICE_POINTER_SCREEN)
@@ -762,19 +701,18 @@ static int16_t dinput_input_state(
                      res_y        = res_screen_y;
                   }
 
-                  if ((inside = (res_x >= -0x7fff) && (res_y >= -0x7fff)))
+                  switch (id)
                   {
-                     switch (id)
-                     {
-                        case RETRO_DEVICE_ID_POINTER_X:
-                           return res_x;
-                        case RETRO_DEVICE_ID_POINTER_Y:
-                           return res_y;
-                        case RETRO_DEVICE_ID_POINTER_PRESSED:
-                           return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
-                        default:
-                           break;
-                     }
+                     case RETRO_DEVICE_ID_POINTER_X:
+                        return res_x;
+                     case RETRO_DEVICE_ID_POINTER_Y:
+                        return res_y;
+                     case RETRO_DEVICE_ID_POINTER_PRESSED:
+                        return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
+                     case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                        return input_driver_pointer_is_offscreen(res_x, res_y);
+                     default:
+                        break;
                   }
                }
             }
@@ -802,7 +740,7 @@ static int16_t dinput_input_state(
                case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
                case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
                   {
-                     unsigned new_id                = dinput_retro_id_to_rarch(id);
+                     unsigned new_id                = input_driver_lightgun_id_convert(id);
                      const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
                      const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
                      const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;

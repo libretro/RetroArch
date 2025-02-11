@@ -273,38 +273,31 @@ static void frontend_darwin_get_name(char *s, size_t len)
    if (uname(&buffer) == 0)
       strlcpy(s, buffer.machine, len);
 #elif defined(OSX)
-   size_t length = 0;
-   sysctlbyname("hw.model", NULL, &length, NULL, 0);
-    if (length)
-        sysctlbyname("hw.model", s, &length, NULL, 0);
+   size_t _len = 0;
+   sysctlbyname("hw.model", NULL, &_len, NULL, 0);
+    if (_len)
+        sysctlbyname("hw.model", s, &_len, NULL, 0);
 #endif
 }
 
-static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
+static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
+   size_t _len;
 #if defined(IOS)
    get_ios_version(major, minor);
 #if TARGET_OS_TV
-   s[0] = 't';
-   s[1] = 'v';
-   s[2] = 'O';
-   s[3] = 'S';
-   s[4] = '\0';
+   _len = strlcpy(s, "tvOS", len);
 #else
-   s[0] = 'i';
-   s[1] = 'O';
-   s[2] = 'S';
-   s[3] = '\0';
+   _len = strlcpy(s, "iOS", len);
 #endif
 #elif defined(OSX)
-
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
    NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
    *major = (int)version.majorVersion;
    *minor = (int)version.minorVersion;
 #else
-    /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
-    /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
+   /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
+   /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
    if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
    {
       typedef struct
@@ -313,12 +306,12 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
          NSInteger minorVersion;
          NSInteger patchVersion;
       } NSMyOSVersion;
-       NSMyOSVersion version;
-       NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
-       NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
-       invoke.selector = @selector(operatingSystemVersion);
-       [invoke invokeWithTarget:[NSProcessInfo processInfo]];
-       [invoke getReturnValue:&version];
+      NSMyOSVersion version;
+      NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
+      NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
+      invoke.selector = @selector(operatingSystemVersion);
+      [invoke invokeWithTarget:[NSProcessInfo processInfo]];
+      [invoke getReturnValue:&version];
       *major = (int)version.majorVersion;
       *minor = (int)version.minorVersion;
    }
@@ -328,11 +321,9 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
       Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
    }
 #endif
-   s[0] = 'O';
-   s[1] = 'S';
-   s[2] = 'X';
-   s[3] = '\0';
+   _len = strlcpy(s, "OSX", len);
 #endif
+   return _len;
 }
 
 static void frontend_darwin_get_env(int *argc, char *argv[],
@@ -419,17 +410,15 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    NSURL *url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
-   if (url) {
+   if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   } else {
+   else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   }
    url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
-   if (url) {
+   if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   } else {
+   else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   }
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], application_data, "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], application_data, "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
@@ -464,8 +453,9 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
              settings->paths.bundle_assets_dst,
              application_data
        );
-       /* TODO/FIXME: Just hardcode this for now */
-       configuration_set_uint(settings, settings->uints.bundle_assets_extract_version_current, 1);
+       NSString *bundleVersionString = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
+       NSInteger bundleVersion = [bundleVersionString integerValue] || 1;
+       configuration_set_uint(settings, settings->uints.bundle_assets_extract_version_current, (uint)bundleVersion);
     }
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
@@ -695,10 +685,8 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
       return FRONTEND_ARCH_ARMV8;
 #else
    cpu_type_t type;
-   size_t size = sizeof(type);
-
-   sysctlbyname("hw.cputype", &type, &size, NULL, 0);
-
+   size_t _len = sizeof(type);
+   sysctlbyname("hw.cputype", &type, &_len, NULL, 0);
    if (type == CPU_TYPE_X86_64)
       return FRONTEND_ARCH_X86_64;
    else if (type == CPU_TYPE_X86)
@@ -714,7 +702,7 @@ static enum frontend_architecture frontend_darwin_get_arch(void)
 static int frontend_darwin_parse_drive_list(void *data, bool load_content)
 {
    int ret = -1;
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE || defined(HAVE_APPLE_STORE)
 #ifdef HAVE_MENU
    struct string_list *str_list          = NULL;
    file_list_t *list                     = (file_list_t*)data;
@@ -743,7 +731,7 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    string_list_free(str_list);
 
-#if TARGET_OS_IOS
+#if !TARGET_OS_TV
    if (   filebrowser_get_type() == FILEBROWSER_NONE ||
           filebrowser_get_type() == FILEBROWSER_SCAN_FILE ||
           filebrowser_get_type() == FILEBROWSER_SELECT_FILE)
@@ -766,14 +754,14 @@ static uint64_t frontend_darwin_get_total_mem(void)
     uint64_t size;
     int mib[2]     = { CTL_HW, HW_MEMSIZE };
     u_int namelen  = ARRAY_SIZE(mib);
-    size_t len     = sizeof(size);
-    if (sysctl(mib, namelen, &size, &len, NULL, 0) >= 0)
+    size_t _len    = sizeof(size);
+    if (sysctl(mib, namelen, &size, &_len, NULL, 0) >= 0)
        return size;
 #elif defined(IOS)
-    task_vm_info_data_t vmInfo;
+    task_vm_info_data_t vm_info;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-       return vmInfo.phys_footprint + vmInfo.limit_bytes_remaining;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
+       return vm_info.phys_footprint + vm_info.limit_bytes_remaining;
 #endif
     return 0;
 }
@@ -786,8 +774,8 @@ static uint64_t frontend_darwin_get_free_mem(void)
     mach_port_t mach_port        = mach_host_self();
     mach_msg_type_number_t count = sizeof(vm_stats) / sizeof(natural_t);
 
-    if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
-        KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
+    if (   KERN_SUCCESS == host_page_size(mach_port, &page_size)
+        && KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
            (host_info64_t)&vm_stats, &count))
     {
         long long used_memory = (
@@ -797,10 +785,10 @@ static uint64_t frontend_darwin_get_free_mem(void)
         return used_memory;
     }
 #elif defined(IOS)
-    task_vm_info_data_t vmInfo;
+    task_vm_info_data_t vm_info;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vmInfo, &count) == KERN_SUCCESS)
-        return vmInfo.limit_bytes_remaining;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
+        return vm_info.limit_bytes_remaining;
 #endif
     return 0;
 }
@@ -818,7 +806,8 @@ static enum retro_language frontend_darwin_get_user_language(void)
    CFArrayRef langs = CFLocaleCopyPreferredLanguages();
    CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
    CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
-   /* iOS and OS X only support the language ID syntax consisting of a language designator and optional region or script designator. */
+   /* iOS and OS X only support the language ID syntax consisting
+    * of a language designator and optional region or script designator. */
    string_replace_all_chars(s, '-', '_');
    return retroarch_get_language_from_iso(s);
 }

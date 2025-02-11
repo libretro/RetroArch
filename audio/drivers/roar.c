@@ -56,19 +56,19 @@ static void *ra_init(const char *device, unsigned rate, unsigned latency,
    return roar;
 }
 
-static ssize_t ra_write(void *data, const void *buf, size_t size)
+static ssize_t ra_write(void *data, const void *buf, size_t len)
 {
    int err;
    size_t written = 0;
    roar_t   *roar = (roar_t*)data;
 
-   if (size == 0)
+   if (len == 0)
       return 0;
 
-   while (written < size)
+   while (written < len)
    {
       ssize_t rc;
-      size_t write_amt = size - written;
+      size_t write_amt = len - written;
 
       if ((rc = roar_vs_write(roar->vss,
                   (const char*)buf + written, write_amt, &err)) < (ssize_t)write_amt)
@@ -81,7 +81,7 @@ static ssize_t ra_write(void *data, const void *buf, size_t size)
       written += rc;
    }
 
-   return size;
+   return len;
 }
 
 static bool ra_stop(void *data)

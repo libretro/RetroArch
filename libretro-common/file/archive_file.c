@@ -50,13 +50,13 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
-   attr.i = 0;
+   attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
 
    if (valid_exts)
    {
-      size_t path_len              = strlen(path);
+      size_t _len                  = strlen(path);
       /* Checks if this entry is a directory or a file. */
-      char last_char               = path[path_len - 1];
+      char last_char               = path[_len - 1];
       struct string_list ext_list  = {0};
 
       /* Skip if directory. */
@@ -80,8 +80,6 @@ static int file_archive_get_file_list_cb(
             string_list_deinitialize(&ext_list);
             return -1;
          }
-
-         attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
       }
 
       string_list_deinitialize(&ext_list);
@@ -159,7 +157,8 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
       state->archive_mmap_fd = open(path, O_RDONLY);
       if (state->archive_mmap_fd)
       {
-         state->archive_mmap_data = (uint8_t*)mmap(NULL, (size_t)state->archive_size,
+         state->archive_mmap_data = (uint8_t*)mmap(NULL,
+               (size_t)state->archive_size,
                PROT_READ, MAP_SHARED, state->archive_mmap_fd, 0);
 
          if (state->archive_mmap_data == (uint8_t*)MAP_FAILED)
@@ -336,7 +335,7 @@ bool file_archive_extract_file(
       const char *archive_path,
       const char *valid_exts,
       const char *extraction_directory,
-      char *out_path, size_t len)
+      char *s, size_t len)
 {
    struct archive_extract_userdata userdata;
    bool ret                                 = true;
@@ -377,7 +376,7 @@ bool file_archive_extract_file(
    }
 
    if (!string_is_empty(userdata.first_extracted_file_path))
-      strlcpy(out_path, userdata.first_extracted_file_path, len);
+      strlcpy(s, userdata.first_extracted_file_path, len);
 
 end:
    if (userdata.first_extracted_file_path)
@@ -455,8 +454,8 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   file_archive_file_handle_t handle;
    int ret;
+   file_archive_file_handle_t handle;
 
    if (!userdata->transfer || !userdata->transfer->backend)
       return false;
@@ -528,7 +527,7 @@ error:
  */
 int file_archive_compressed_read(
       const char * path, void **buf,
-      const char* optional_filename, int64_t *length)
+      const char* optional_filename, int64_t *len)
 {
    const struct
       file_archive_file_backend *backend = NULL;
@@ -542,7 +541,7 @@ int file_archive_compressed_read(
     */
    if (optional_filename && path_is_valid(optional_filename))
    {
-      *length = 0;
+      *len = 0;
       return 1;
    }
 
@@ -557,17 +556,17 @@ int file_archive_compressed_read(
    {
       /* could not extract string and substring. */
       string_list_free(str_list);
-      *length = 0;
+      *len = 0;
       return 0;
    }
 
    backend = file_archive_get_file_backend(str_list->elems[0].data);
-   *length = backend->compressed_file_read(str_list->elems[0].data,
+   *len    = backend->compressed_file_read(str_list->elems[0].data,
          str_list->elems[1].data, buf, optional_filename);
 
    string_list_free(str_list);
 
-   if (*length != -1)
+   if (*len != -1)
       return 1;
 
    return 0;

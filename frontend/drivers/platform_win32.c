@@ -267,7 +267,7 @@ static void gfx_set_dwm(void)
       g_plat_win32_flags |= PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED;
 }
 
-static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
+static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len            = 0;
    char build_str[11]     = {0};
@@ -424,6 +424,7 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       _len += strlcpy(s + _len, " ", len - _len);
       strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
+   return _len;
 }
 
 static void frontend_win32_init(void *data)
@@ -565,24 +566,51 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 {
    const char *tmp_dir = getenv("TMP");
    const char *libretro_directory = getenv("LIBRETRO_DIRECTORY");
+   const char *libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
+   const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_cheats_directory = getenv("LIBRETRO_CHEATS_DIRECTORY");
+   const char* libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
+   const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
+   const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
    if (!string_is_empty(tmp_dir))
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
          tmp_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
    gfx_set_dwm();
 
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
-      ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   if (!string_is_empty(libretro_assets_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], libretro_assets_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   else
+       fill_pathname_expand_special(
+	   g_defaults.dirs[DEFAULT_DIR_ASSETS],
+	   ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
       ":\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-      ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-      ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
-      ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   if (!string_is_empty(libretro_video_filter_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+	       libretro_video_filter_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+           ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   if (!string_is_empty(libretro_cheats_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+	       libretro_cheats_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+           ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   if (!string_is_empty(libretro_database_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+	       libretro_database_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+           ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
       ":\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
@@ -605,12 +633,26 @@ static void frontend_win32_env_get(int *argc, char *argv[],
    else
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
             ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-      ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-      ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
-      ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+           ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   if (!string_is_empty(libretro_autoconfig_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+	      libretro_autoconfig_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+             ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   if (!string_is_empty(libretro_video_filter_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
+	      libretro_video_shader_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
+             ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
       ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
@@ -619,8 +661,13 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       ":\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
       ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-      ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   if (!string_is_empty(libretro_system_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+	       libretro_system_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+             ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 

@@ -155,7 +155,7 @@ typedef struct core_info_state core_info_state_t;
 void core_info_list_get_supported_cores(core_info_list_t *list,
       const char *path, const core_info_t **infos, size_t *num_infos);
 
-bool core_info_list_get_display_name(core_info_list_t *list,
+size_t core_info_list_get_display_name(core_info_list_t *list,
       const char *core_path, char *s, size_t len);
 
 /* Returns core_info parameters required for

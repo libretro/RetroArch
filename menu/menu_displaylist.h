@@ -27,9 +27,9 @@
 #include "../msg_hash.h"
 #include "../setting_list.h"
 
-#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true)
+#define MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, label, parse_type, add_empty_entry) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find_enum(label), label, true, settings->bools.menu_show_advanced_settings)
 
-#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false)
+#define MENU_DISPLAYLIST_PARSE_SETTINGS(list, label, parse_type, add_empty_entry, entry_type) menu_displaylist_parse_settings_enum(list, parse_type, add_empty_entry, menu_setting_find(label), entry_type, false, settings->bools.menu_show_advanced_settings)
 
 RETRO_BEGIN_DECLS
 
@@ -253,6 +253,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_PLAYLIST_SETTINGS_LIST,
    DISPLAYLIST_PLAYLIST_MANAGER_LIST,
    DISPLAYLIST_ADD_TO_PLAYLIST_LIST,
+   DISPLAYLIST_ADD_TO_PLAYLIST_QUICKMENU,
    DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS,
    DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST,
    DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST,
@@ -296,6 +297,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CPU_PERFPOWER_LIST,
    DISPLAYLIST_CPU_POLICY_LIST,
 #endif
+#ifdef HAVE_GAME_AI
+   DISPLAYLIST_OPTIONS_GAME_AI,
+#endif
    DISPLAYLIST_PENDING_CLEAR,
    DISPLAYLIST_SHADER_PRESET_PREPEND,
    DISPLAYLIST_SHADER_PRESET_APPEND
@@ -329,7 +333,7 @@ enum menu_dl_flags
    MD_FLAG_DOWNLOAD_CORE                 = (1 << 7), /* Should a 'download core' entry be pushed onto the list?
 						      * This will be set to true in case there are no currently
 						      * installed cores. */
-   MD_FLAG_NEED_NAVIGATION_CLEAR         = (1 << 8)  /* Does the navigation index need to be cleared 
+   MD_FLAG_NEED_NAVIGATION_CLEAR         = (1 << 8)  /* Does the navigation index need to be cleared
                                                       * to 0 (first entry) ? */
 };
 
@@ -371,7 +375,8 @@ bool menu_displaylist_has_subsystems(void);
 #if defined(HAVE_LIBRETRODB)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
 #endif
-unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *settings);
+unsigned menu_displaylist_contentless_cores(file_list_t *list,
+      enum menu_contentless_cores_display_type core_display_type);
 
 enum filebrowser_enums filebrowser_get_type(void);
 
@@ -385,7 +390,7 @@ int menu_displaylist_parse_settings_enum(
       bool add_empty_entry,
       rarch_setting_t *setting,
       unsigned entry_type,
-      bool is_enum
+      bool is_enum, bool menu_show_advanced_settings
       );
 
 RETRO_END_DECLS

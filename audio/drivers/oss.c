@@ -103,15 +103,15 @@ error:
    return NULL;
 }
 
-static ssize_t oss_write(void *data, const void *buf, size_t size)
+static ssize_t oss_write(void *data, const void *s, size_t len)
 {
    ssize_t ret;
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
-   if (size == 0)
+   if (len == 0)
       return 0;
 
-   if ((ret = write(ossaudio->fd, buf, size)) < 0)
+   if ((ret = write(ossaudio->fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(ossaudio->fd, F_GETFL) & O_NONBLOCK))
          return 0;
@@ -169,7 +169,7 @@ static void oss_free(void *data)
 {
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
-/*RETROFW IOCTL always returns EINVAL*/ 
+/*RETROFW IOCTL always returns EINVAL*/
 #if !defined(RETROFW)
    if (ioctl(ossaudio->fd, SNDCTL_DSP_RESET, 0) < 0)
       return;
@@ -209,7 +209,6 @@ static size_t oss_buffer_size(void *data)
 
 static bool oss_use_float(void *data)
 {
-   (void)data;
    return false;
 }
 

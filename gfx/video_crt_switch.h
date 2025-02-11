@@ -84,7 +84,8 @@ void crt_switch_res_core(
       int monitor_index,
       bool dynamic,
       int super_width,
-      bool hires_menu);
+      bool hires_menu,
+      unsigned video_aspect_ratio_idx);
 
 void crt_destroy_modes(videocrt_switch_t *p_switch);
 

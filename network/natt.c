@@ -184,7 +184,8 @@ bool natt_device_next(struct natt_discovery *discovery,
       *lnbreak++ = '\0';
 
       /* This also gets rid of any trailing carriage return. */
-      string_trim_whitespace(data);
+      string_trim_whitespace_right(data);
+      string_trim_whitespace_left(data);
 
       if (string_starts_with_case_insensitive(data, "Location:"))
       {

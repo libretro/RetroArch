@@ -145,7 +145,8 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
             strlcpy(
                   entry_label, line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL),
                   sizeof(entry_label));
-            string_trim_whitespace(entry_label);
+            string_trim_whitespace_right(entry_label);
+            string_trim_whitespace_left(entry_label);
          }
       }
       /* > '#EXTINF:' */
@@ -164,7 +165,8 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
             if (!string_is_empty(label_ptr))
             {
                strlcpy(entry_label, label_ptr, sizeof(entry_label));
-               string_trim_whitespace(entry_label);
+               string_trim_whitespace_right(entry_label);
+               string_trim_whitespace_left(entry_label);
             }
          }
       }
@@ -180,17 +182,18 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
 
          if (token_ptr)
          {
-            size_t len = (size_t)(1 + token_ptr - line);
+            size_t _len = (size_t)(1 + token_ptr - line);
 
             /* Get entry_path segment */
-            if (len > 0)
+            if (_len > 0)
             {
                memset(entry_path, 0, sizeof(entry_path));
                strlcpy(
                      entry_path, line,
-                     ((len < PATH_MAX_LENGTH ?
-                           len : PATH_MAX_LENGTH) * sizeof(char)));
-               string_trim_whitespace(entry_path);
+                     ((_len < PATH_MAX_LENGTH ?
+                       _len : PATH_MAX_LENGTH) * sizeof(char)));
+               string_trim_whitespace_right(entry_path);
+               string_trim_whitespace_left(entry_path);
             }
 
             /* Get entry_label segment */
@@ -198,14 +201,16 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
             if (*token_ptr != '\0')
             {
                strlcpy(entry_label, token_ptr, sizeof(entry_label));
-               string_trim_whitespace(entry_label);
+               string_trim_whitespace_right(entry_label);
+               string_trim_whitespace_left(entry_label);
             }
          }
          else
          {
             /* Just a normal file name/path */
             strlcpy(entry_path, line, sizeof(entry_path));
-            string_trim_whitespace(entry_path);
+            string_trim_whitespace_right(entry_path);
+            string_trim_whitespace_left(entry_path);
          }
 
          /* Add entry to file
@@ -255,8 +260,6 @@ m3u_file_t *m3u_file_init(const char *path)
    m3u_file_t *m3u_file = NULL;
    char m3u_path[PATH_MAX_LENGTH];
 
-   m3u_path[0] = '\0';
-
    /* Sanity check */
    if (string_is_empty(path))
       return NULL;
@@ -269,9 +272,7 @@ m3u_file_t *m3u_file_init(const char *path)
       return NULL;
 
    /* Create m3u_file_t object */
-   m3u_file = (m3u_file_t*)malloc(sizeof(*m3u_file));
-
-   if (!m3u_file)
+   if (!(m3u_file = (m3u_file_t*)malloc(sizeof(*m3u_file))))
       return NULL;
 
    /* Initialise members */
@@ -472,8 +473,6 @@ bool m3u_file_save(
       m3u_file_t *m3u_file, enum m3u_file_label_type label_type)
 {
    size_t i;
-   const char *slash;
-   const char *backslash;
    char base_dir[DIR_MAX_LENGTH];
    char *last_slash = NULL;
    RFILE *file      = NULL;
@@ -485,16 +484,9 @@ bool m3u_file_save(
    if (string_is_empty(m3u_file->path))
       return false;
 
-   slash            = strrchr(m3u_file->path, '/');
-   backslash        = strrchr(m3u_file->path, '\\');
-   last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
-
    /* Get M3U file base directory */
-   if (last_slash)
-   {
-      strlcpy(base_dir, m3u_file->path, sizeof(base_dir));
-      path_basedir(base_dir);
-   }
+   if ((last_slash = find_last_slash(m3u_file->path)))
+      fill_pathname_basedir(base_dir, m3u_file->path, sizeof(base_dir));
    else
       base_dir[0]   = '\0';
 

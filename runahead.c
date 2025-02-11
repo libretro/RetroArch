@@ -27,6 +27,7 @@
 #include <streams/file_stream.h>
 #include <time/rtime.h>
 
+#include "configuration.h"
 #include "content.h"
 #include "core.h"
 #include "dynamic.h"
@@ -141,20 +142,16 @@ void runahead_set_load_content_info(void *data,
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 static void strcat_alloc(char **dst, const char *s)
 {
-   size_t len1;
+   size_t _len;
    char *src          = *dst;
 
    if (!src)
    {
       if (s)
       {
-         size_t   len = strlen(s);
-         if (len != 0)
-         {
-            char *_dst= (char*)malloc(len + 1);
-            strcpy_literal(_dst, s);
-            src       = _dst;
-         }
+         size_t __len = strlen(s);
+         if (__len != 0)
+            src       = strldup(s, __len + 1);
          else
             src       = NULL;
       }
@@ -168,13 +165,13 @@ static void strcat_alloc(char **dst, const char *s)
    if (!s)
       return;
 
-   len1               = strlen(src);
+   _len               = strlen(src);
 
-   if (!(src = (char*)realloc(src, len1 + strlen(s) + 1)))
+   if (!(src = (char*)realloc(src, _len + strlen(s) + 1)))
       return;
 
    *dst               = src;
-   strcpy_literal(src + len1, s);
+   strcpy_literal(src + _len, s);
 }
 
 void runahead_secondary_core_destroy(void *data)
@@ -241,13 +238,9 @@ static char *get_tmpdir_alloc(const char *override_dir)
 #endif
    if (src)
    {
-      size_t   len    = strlen(src);
-      if (len != 0)
-      {
-         char *dst    = (char*)malloc(len + 1);
-         strcpy_literal(dst, src);
-         path         = dst;
-      }
+      size_t _len     = strlen(src);
+      if (_len != 0)
+         path         = strldup(src, _len + 1);
    }
    else
       path            = (char*)calloc(1,1);
@@ -270,13 +263,9 @@ static bool write_file_with_random_name(char **temp_dll_path,
 
    if (src)
    {
-      size_t   len          = strlen(src);
-      if (len != 0)
-      {
-         char *dst          = (char*)malloc(len + 1);
-         strcpy_literal(dst, src);
-         ext                = dst;
-      }
+      size_t _len           = strlen(src);
+      if (_len != 0)
+         ext                = strldup(src, _len + 1);
    }
    else
       ext                   = (char*)calloc(1,1);
@@ -419,12 +408,11 @@ void runahead_clear_controller_port_map(void *data)
 }
 
 static bool secondary_core_create(runloop_state_t *runloop_st,
-      settings_t *settings)
+      const char *path_directory_libretro, unsigned num_active_users)
 {
    const enum rarch_core_type
       last_core_type             = runloop_st->last_core_type;
    rarch_system_info_t *sys_info = &runloop_st->system;
-   unsigned num_active_users     = settings->uints.input_max_users;
    uint8_t flags                 = content_get_flags();
 
    if (     (last_core_type != CORE_TYPE_PLAIN)
@@ -436,8 +424,7 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
       free(runloop_st->secondary_library_path);
    runloop_st->secondary_library_path = NULL;
    runloop_st->secondary_library_path = copy_core_to_temp_file(
-		   path_get(RARCH_PATH_CORE),
-		   settings->paths.directory_libretro);
+		   path_get(RARCH_PATH_CORE), path_directory_libretro);
 
    if (!runloop_st->secondary_library_path)
       return false;
@@ -535,9 +522,12 @@ error:
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 bool secondary_core_ensure_exists(void *data, settings_t *settings)
 {
-   runloop_state_t *runloop_st   = (runloop_state_t*)data;
+   runloop_state_t *runloop_st         = (runloop_state_t*)data;
+   const char *path_directory_libretro = settings->paths.directory_libretro;
+   unsigned input_max_users            = settings->uints.input_max_users;
    if (!runloop_st->secondary_lib_handle)
-      if (!secondary_core_create(runloop_st, settings))
+      if (!secondary_core_create(runloop_st, path_directory_libretro,
+               input_max_users))
          return false;
    return true;
 }
@@ -545,15 +535,14 @@ bool secondary_core_ensure_exists(void *data, settings_t *settings)
 
 #if defined(HAVE_DYNAMIC)
 static bool secondary_core_deserialize(runloop_state_t *runloop_st,
-      settings_t *settings,
-      const void *data, size_t size)
+      settings_t *settings, const void *data, size_t len)
 {
    bool ret = false;
 
    if (secondary_core_ensure_exists(runloop_st, settings))
    {
       runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
-      ret                = runloop_st->secondary_core.retro_unserialize(data, size);
+      ret                = runloop_st->secondary_core.retro_unserialize(data, len);
       runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    }
    else
@@ -698,12 +687,12 @@ static void mylist_destroy(my_list **list_p)
 static void mylist_create(my_list **list_p, int initial_capacity,
       constructor_t constructor, destructor_t destructor)
 {
-   my_list *list        = NULL;
+   my_list *list      = NULL;
 
    if (!list_p)
       return;
 
-   list                = *list_p;
+   list               = *list_p;
    if (list)
       mylist_destroy(list_p);
 
@@ -731,8 +720,7 @@ static void *input_list_element_constructor(void)
    return ptr;
 }
 
-static void input_list_element_realloc(
-      input_list_element *element,
+static void input_list_element_realloc(input_list_element *element,
       unsigned int new_size)
 {
    if (new_size > element->state_size)
@@ -745,8 +733,8 @@ static void input_list_element_realloc(
    }
 }
 
-static void input_list_element_expand(
-      input_list_element *element, unsigned int new_index)
+static void input_list_element_expand(input_list_element *element,
+      unsigned int new_index)
 {
    unsigned int new_size = element->state_size;
    if (new_size == 0)
@@ -783,9 +771,9 @@ static void runahead_input_state_set_last(
    for (i = 0; i < (unsigned)runloop_st->input_state_list->size; i++)
    {
       element = (input_list_element*)runloop_st->input_state_list->data[i];
-      if (  (element->port   == port)   &&
-            (element->device == device) &&
-            (element->index  == index)
+      if (     (element->port   == port)
+            && (element->device == device)
+            && (element->index  == index)
          )
       {
          if (id >= element->state_size)
@@ -813,17 +801,17 @@ static void runahead_input_state_set_last(
 static int16_t runahead_input_state_with_logging(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
-   runloop_state_t     *runloop_st  = runloop_state_get_ptr();
+   runloop_state_t *runloop_st  = runloop_state_get_ptr();
 
    if (runloop_st->input_state_callback_original)
    {
-      int16_t result                =
+      int16_t result            =
          runloop_st->input_state_callback_original(
             port, device, index, id);
-      int16_t last_input            =
+      int16_t last_input        =
          input_state_get_last(port, device, index, id);
       if (result != last_input)
-         runloop_st->flags         |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
+         runloop_st->flags     |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
       /*arbitrary limit of up to 65536 elements in state array*/
       if (id < 65536)
          runahead_input_state_set_last(runloop_st, port, device, index, id, result);
@@ -840,12 +828,12 @@ static void runahead_reset_hook(void)
       runloop_st->retro_reset_callback_original();
 }
 
-static bool runahead_unserialize_hook(const void *buf, size_t size)
+static bool runahead_unserialize_hook(const void *buf, size_t len)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    runloop_st->flags          |= RUNLOOP_FLAG_INPUT_IS_DIRTY;
    if (runloop_st->retro_unserialize_callback_original)
-      return runloop_st->retro_unserialize_callback_original(buf, size);
+      return runloop_st->retro_unserialize_callback_original(buf, len);
    return false;
 }
 
@@ -1090,9 +1078,8 @@ static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_
    retro_ctx_serialize_info_t *serialize_info =
       (retro_ctx_serialize_info_t*)runloop_st->runahead_save_state_list->data[0];
 
-   if (!secondary_core_deserialize(runloop_st,
-            settings, serialize_info->data_const,
-            serialize_info->size))
+   if (!secondary_core_deserialize(runloop_st, settings,
+            serialize_info->data_const, serialize_info->size))
    {
       runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
       runahead_error(runloop_st);
@@ -1174,11 +1161,12 @@ void runahead_run(void *data,
 
       if (!runahead_create(runloop_st))
       {
-         const char *runahead_failed_str =
+         const char *_msg =
             msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES);
          if (!runahead_hide_warnings)
-            runloop_msg_queue_push(runahead_failed_str, 0, 2 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", _msg);
          goto force_input_dirty;
       }
    }
@@ -1226,10 +1214,11 @@ void runahead_run(void *data,
          {
             if (!runahead_save_state(runloop_st))
             {
-               const char *runahead_failed_str =
+               const char *_msg =
                   msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", _msg);
                return;
             }
          }
@@ -1238,10 +1227,10 @@ void runahead_run(void *data,
          {
             if (!runahead_load_state(runloop_st))
             {
-               const char *runahead_failed_str =
-                  msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-               runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               RARCH_WARN("[Run-Ahead]: %s\n", _msg);
                return;
             }
          }
@@ -1252,12 +1241,13 @@ void runahead_run(void *data,
 #if HAVE_DYNAMIC
       if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
       {
-         const char *runahead_failed_str =
+         const char *_msg =
             msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
          runahead_secondary_core_destroy(runloop_st);
          runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-         runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+         runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead]: %s\n", _msg);
          goto force_input_dirty;
       }
 
@@ -1276,19 +1266,19 @@ void runahead_run(void *data,
 
          if (!runahead_save_state(runloop_st))
          {
-            const char *runahead_failed_str =
-               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
-            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_SAVE_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", _msg);
             return;
          }
 
          if (!runahead_load_state_secondary(runloop_st, settings))
          {
-            const char *runahead_failed_str =
-               msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
-            runloop_msg_queue_push(runahead_failed_str, 0, 3 * 60, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_WARN("[Run-Ahead]: %s\n", runahead_failed_str);
+            const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_LOAD_STATE);
+            runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_WARN("[Run-Ahead]: %s\n", _msg);
             return;
          }
 
@@ -1397,10 +1387,10 @@ static const char* preempt_allocate(runloop_state_t *runloop_st,
  **/
 void preempt_deinit(void *data)
 {
+   size_t i;
    runloop_state_t *runloop_st       = (runloop_state_t*)data;
    preempt_t *preempt                = runloop_st->preempt_data;
    struct retro_core_t *current_core = &runloop_st->current_core;
-   size_t i;
 
    if (!preempt)
       return;
@@ -1422,7 +1412,6 @@ void preempt_deinit(void *data)
       current_core->retro_set_input_state(runloop_st->retro_ctx.state_cb);
 }
 
-
 /**
  * preempt_init:
  *
@@ -1432,20 +1421,23 @@ void preempt_deinit(void *data)
  **/
 bool preempt_init(void *data)
 {
-   runloop_state_t *runloop_st = (runloop_state_t*)data;
-   settings_t *settings        = config_get_ptr();
-   const char *failed_str      = NULL;
+   runloop_state_t *runloop_st   = (runloop_state_t*)data;
+   settings_t *settings          = config_get_ptr();
+   const char *_msg              = NULL;
+   bool preemptive_frames_enable = settings->bools.preemptive_frames_enable;
+   unsigned run_ahead_frames     = settings->uints.run_ahead_frames;
+   bool run_ahead_hide_warnings  = settings->bools.run_ahead_hide_warnings;
 
    if (     runloop_st->preempt_data
-         || !settings->bools.preemptive_frames_enable
-         || !settings->uints.run_ahead_frames
+         || !preemptive_frames_enable
+         || !run_ahead_frames
          || !(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
       return false;
 
    /* Check if supported - same requirements as runahead */
    if (!core_info_current_supports_runahead())
    {
-      failed_str = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
+      _msg = msg_hash_to_str(MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT);
       goto error;
    }
 
@@ -1459,8 +1451,7 @@ bool preempt_init(void *data)
       runloop_st->current_core.retro_run();
 
    /* Allocate - same 'frames' setting as runahead */
-   if ((failed_str = preempt_allocate(runloop_st,
-               settings->uints.run_ahead_frames)))
+   if ((_msg = preempt_allocate(runloop_st, run_ahead_frames)))
       goto error;
 
    /* Only poll in preempt_run() */
@@ -1473,11 +1464,10 @@ bool preempt_init(void *data)
 error:
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.run_ahead_hide_warnings)
-      runloop_msg_queue_push(
-            failed_str, 0, 2 * 60, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_WARN("[Preemptive Frames]: %s\n", failed_str);
+   if (!run_ahead_hide_warnings)
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_WARN("[Preemptive Frames]: %s\n", _msg);
 
    return false;
 }
@@ -1561,12 +1551,11 @@ static INLINE bool preempt_ptr_input_dirty(preempt_t *preempt,
 }
 
 static INLINE void preempt_input_poll(preempt_t *preempt,
-      runloop_state_t *runloop_st, settings_t *settings)
+      runloop_state_t *runloop_st, unsigned max_users)
 {
-   size_t p;
+   unsigned p;
    int16_t joypad_state;
    retro_input_state_t state_cb = input_driver_state_wrapper;
-   unsigned max_users           = settings->uints.input_max_users;
 
    input_driver_poll();
 
@@ -1574,8 +1563,8 @@ static INLINE void preempt_input_poll(preempt_t *preempt,
    for (p = 0; p < max_users; p++)
    {
       /* Check full digital joypad */
-      joypad_state = state_cb(p, RETRO_DEVICE_JOYPAD,
-            0, RETRO_DEVICE_ID_JOYPAD_MASK);
+      joypad_state = (int16_t)(state_cb(p, RETRO_DEVICE_JOYPAD,
+            0, RETRO_DEVICE_ID_JOYPAD_MASK));
       if (joypad_state != preempt->joypad_state[p])
       {
          preempt->joypad_state[p] = joypad_state;
@@ -1616,13 +1605,15 @@ void preempt_run(preempt_t *preempt, void *data)
 {
    runloop_state_t     *runloop_st   = (runloop_state_t*)data;
    struct retro_core_t *current_core = &runloop_st->current_core;
-   const char *failed_str            = NULL;
-   settings_t *settings              = config_get_ptr();
+   const char *_msg                  = NULL;
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
+   settings_t *settings              = config_get_ptr();
+   unsigned input_max_users          = settings->uints.input_max_users;
+   bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
 
    /* Poll and check for dirty input */
-   preempt_input_poll(preempt, runloop_st, settings);
+   preempt_input_poll(preempt, runloop_st, input_max_users);
 
    runloop_st->flags                |= RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
 
@@ -1636,7 +1627,7 @@ void preempt_run(preempt_t *preempt, void *data)
       if (!current_core->retro_unserialize(
             preempt->buffer[preempt->start_ptr], preempt->state_size))
       {
-         failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
+         _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_LOAD_STATE);
          goto error;
       }
 
@@ -1648,7 +1639,7 @@ void preempt_run(preempt_t *preempt, void *data)
          if (!current_core->retro_serialize(
                preempt->buffer[preempt->replay_ptr], preempt->state_size))
          {
-            failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+            _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
             goto error;
          }
 
@@ -1664,7 +1655,7 @@ void preempt_run(preempt_t *preempt, void *data)
    if (!current_core->retro_serialize(
          preempt->buffer[preempt->start_ptr], preempt->state_size))
    {
-      failed_str = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
+      _msg = msg_hash_to_str(MSG_PREEMPT_FAILED_TO_SAVE_STATE);
       goto error;
    }
    preempt->start_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
@@ -1683,11 +1674,10 @@ error:
    video_st->flags   |=  VIDEO_FLAG_ACTIVE;
    preempt_deinit(runloop_st);
 
-   if (!settings->bools.run_ahead_hide_warnings)
-      runloop_msg_queue_push(
-            failed_str, 0, 2 * 60, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   RARCH_ERR("[Preemptive Frames]: %s\n", failed_str);
+   if (!run_ahead_hide_warnings)
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 2 * 60, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   RARCH_ERR("[Preemptive Frames]: %s\n", _msg);
 }
 
 void runahead_clear_variables(void *data)

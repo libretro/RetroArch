@@ -197,7 +197,6 @@ ACHIEVEMENTS
 #define RC_CLIENT_SUPPORTS_HASH 1
 
 #include "../libretro-common/formats/cdfs/cdfs.c"
-#include "../network/net_http_special.c"
 
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"
@@ -269,7 +268,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/w_vk_ctx.c"
 #endif
 
-#if !defined(__WINRT__) 
+#if !defined(__WINRT__)
 #include "../gfx/display_servers/dispserv_win32.c"
 #endif
 
@@ -812,6 +811,9 @@ CAMERA
 #ifdef HAVE_V4L2
 #include "../camera/drivers/video4linux2.c"
 #endif
+#ifdef HAVE_PIPEWIRE
+#include "../camera/drivers/pipewire.c"
+#endif
 
 #ifdef HAVE_VIDEOPROCESSOR
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
@@ -907,6 +909,15 @@ AUDIO
 #include "../audio/drivers/opensl.c"
 #endif
 
+#ifdef HAVE_PIPEWIRE
+#include "../audio/drivers/pipewire.c"
+#include "../audio/common/pipewire.c"
+
+#ifdef HAVE_MICROPHONE
+#include "../audio/drivers_microphone/pipewire.c"
+#endif
+#endif
+
 #ifdef HAVE_ALSA
 #ifdef __QNX__
 #include "../audio/drivers/alsa_qsa.c"
@@ -999,6 +1010,7 @@ FILTERS
 #include "../gfx/video_filters/dot_matrix_3x.c"
 #include "../gfx/video_filters/dot_matrix_4x.c"
 #include "../gfx/video_filters/upscale_1_5x.c"
+#include "../gfx/video_filters/upscale_1_66x_fast.c"
 #include "../gfx/video_filters/upscale_256x_320x240.c"
 #include "../gfx/video_filters/picoscale_256x_320x240.c"
 #include "../gfx/video_filters/upscale_240x160_320x240.c"
@@ -1672,4 +1684,11 @@ CLOUD SYNC
 #include "../tasks/task_cloudsync.c"
 #include "../network/cloud_sync_driver.c"
 #include "../network/cloud_sync/webdav.c"
+#endif
+
+/*============================================================
+GAME AI
+============================================================ */
+#if defined(HAVE_GAME_AI)
+#include "../ai/game_ai.c"
 #endif

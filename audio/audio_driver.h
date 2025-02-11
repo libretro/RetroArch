@@ -110,7 +110,7 @@ typedef struct audio_driver
     * Unless said otherwise with set_nonblock_state(), all writes
     * are blocking, and it should block till it has written all frames.
     */
-   ssize_t (*write)(void *data, const void *buf, size_t size);
+   ssize_t (*write)(void *data, const void *s, size_t len);
 
    /**
     * Temporarily pauses the audio driver.
@@ -350,10 +350,8 @@ bool audio_driver_init_internal(
 
 bool audio_driver_deinit(void);
 
-bool audio_driver_find_driver(
-      void *settings_data,
-      const char *prefix,
-      bool verbosity_enabled);
+bool audio_driver_find_driver(const char *audio_drv,
+      const char *prefix, bool verbosity_enabled);
 
 /**
  * audio_driver_sample:
@@ -420,6 +418,7 @@ extern audio_driver_t audio_jack;
 extern audio_driver_t audio_sdl;
 extern audio_driver_t audio_xa;
 extern audio_driver_t audio_pulse;
+extern audio_driver_t audio_pipewire;
 extern audio_driver_t audio_dsound;
 extern audio_driver_t audio_wasapi;
 extern audio_driver_t audio_coreaudio;

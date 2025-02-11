@@ -4,12 +4,12 @@
  * @file libretro.h
  * @version 1
  * @author libretro
- * @copyright Copyright (C) 2010-2023 The RetroArch team
+ * @copyright Copyright (C) 2010-2024 The RetroArch team
  *
  * @paragraph LICENSE
  * The following license statement only applies to this libretro API header (libretro.h).
  *
- * Copyright (C) 2010-2023 The RetroArch team
+ * Copyright (C) 2010-2024 The RetroArch team
  *
  * Permission is hereby granted, free of charge,
  * to any person obtaining a copy of this software and associated documentation files (the "Software"),
@@ -272,7 +272,10 @@ extern "C" {
  * [-0x7fff, 0x7fff]: -0x7fff corresponds to the far left/top of the screen,
  * and 0x7fff corresponds to the far right/bottom of the screen.
  * The "screen" is here defined as area that is passed to the frontend and
- * later displayed on the monitor.
+ * later displayed on the monitor. If the pointer is outside this screen,
+ * such as in the black surrounding areas when actual display is larger,
+ * edge position is reported. An explicit edge detection is also provided,
+ * that will return 1 if the pointer is near the screen edge or actually outside it.
  *
  * The frontend is free to scale/resize this screen as it sees fit, however,
  * (X, Y) = (-0x7fff, -0x7fff) will correspond to the top-left pixel of the
@@ -406,7 +409,8 @@ extern "C" {
 
 /* Id values for LIGHTGUN. */
 #define RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X        13 /*Absolute Position*/
-#define RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y        14 /*Absolute*/
+#define RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y        14 /*Absolute Position*/
+/** Indicates if lightgun points off the screen or near the edge */
 #define RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN    15 /*Status Check*/
 #define RETRO_DEVICE_ID_LIGHTGUN_TRIGGER          2
 #define RETRO_DEVICE_ID_LIGHTGUN_RELOAD          16 /*Forced off-screen shot*/
@@ -421,17 +425,18 @@ extern "C" {
 #define RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT      12
 /* deprecated */
 #define RETRO_DEVICE_ID_LIGHTGUN_X                0 /*Relative Position*/
-#define RETRO_DEVICE_ID_LIGHTGUN_Y                1 /*Relative*/
-#define RETRO_DEVICE_ID_LIGHTGUN_CURSOR           3 /*Use Aux:A*/
-#define RETRO_DEVICE_ID_LIGHTGUN_TURBO            4 /*Use Aux:B*/
-#define RETRO_DEVICE_ID_LIGHTGUN_PAUSE            5 /*Use Start*/
+#define RETRO_DEVICE_ID_LIGHTGUN_Y                1 /*Relative Position*/
+#define RETRO_DEVICE_ID_LIGHTGUN_CURSOR           3 /*Use Aux:A instead*/
+#define RETRO_DEVICE_ID_LIGHTGUN_TURBO            4 /*Use Aux:B instead*/
+#define RETRO_DEVICE_ID_LIGHTGUN_PAUSE            5 /*Use Start instead*/
 
 /* Id values for POINTER. */
-#define RETRO_DEVICE_ID_POINTER_X         0
-#define RETRO_DEVICE_ID_POINTER_Y         1
-#define RETRO_DEVICE_ID_POINTER_PRESSED   2
-#define RETRO_DEVICE_ID_POINTER_COUNT     3
-
+#define RETRO_DEVICE_ID_POINTER_X             0
+#define RETRO_DEVICE_ID_POINTER_Y             1
+#define RETRO_DEVICE_ID_POINTER_PRESSED       2
+#define RETRO_DEVICE_ID_POINTER_COUNT         3
+/** Indicates if pointer is off the screen or near the edge */
+#define RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN 15
 /** @} */
 
 /* Returned from retro_get_region(). */
@@ -5360,14 +5365,14 @@ typedef bool (RETRO_CALLCONV *retro_set_initial_image_t)(unsigned index, const c
  * on the host's file system.
  *
  * @param index The index of the disk image to get the path of.
- * @param path A buffer to store the path in.
- * @param len The size of \c path, in bytes.
+ * @param s A buffer to store the path in.
+ * @param len The size of \c s, in bytes.
  * @return \c true if the disk image's location was successfully
- * queried and copied into \c path,
+ * queried and copied into \c s,
  * \c false if the index is invalid
  * or the core couldn't locate the disk image.
  */
-typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path, size_t len);
+typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *s, size_t len);
 
 /**
  * Returns a friendly label for the given disk image.
@@ -5383,12 +5388,12 @@ typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path
  * so that the frontend can provide better guidance to the player.
  *
  * @param index The index of the disk image to return a label for.
- * @param label A buffer to store the resulting label in.
- * @param len The length of \c label, in bytes.
+ * @param s A buffer to store the resulting label in.
+ * @param len The length of \c s, in bytes.
  * @return \c true if the disk image at \c index is valid
- * and a label was copied into \c label.
+ * and a label was copied into \c s.
  */
-typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *label, size_t len);
+typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *s, size_t len);
 
 /**
  * An interface that the frontend can use to exchange disks
@@ -7700,7 +7705,7 @@ RETRO_API size_t retro_serialize_size(void);
  * @see retro_serialize_size()
  * @see retro_unserialize()
  */
-RETRO_API bool retro_serialize(void *data, size_t size);
+RETRO_API bool retro_serialize(void *data, size_t len);
 
 /**
  * Unserialize the given state data, and load it into the internal state.
@@ -7709,7 +7714,7 @@ RETRO_API bool retro_serialize(void *data, size_t size);
  *
  * @see retro_serialize()
  */
-RETRO_API bool retro_unserialize(const void *data, size_t size);
+RETRO_API bool retro_unserialize(const void *data, size_t len);
 
 /**
  * Reset all the active cheats to their default disabled state.

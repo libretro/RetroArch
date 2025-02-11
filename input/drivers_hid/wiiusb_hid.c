@@ -120,21 +120,21 @@ static int32_t wiiusb_hid_read_cb(int32_t size, void *data)
 }
 
 static void wiiusb_hid_device_send_control(void *data,
-      uint8_t* data_buf, size_t size)
+      uint8_t *s, size_t len)
 {
    uint8_t control_type;
    struct wiiusb_adapter *adapter = (struct wiiusb_adapter*)data;
-   if (!adapter || !data_buf || !adapter->send_control_buffer)
+   if (!adapter || !s || !adapter->send_control_buffer)
       return;
 
    /* first byte contains the type of control to use
     * which can be NONE, INT_MSG, CTRL_MSG, CTRL_MSG2 */
-   control_type = data_buf[0];
+   control_type               = s[0];
    /* decrement size by one as we are getting rid of first byte */
-   adapter->send_control_size = size - 1;
+   adapter->send_control_size = len - 1;
    /* increase the buffer address so we access the actual data */
-   data_buf++;
-   memcpy(adapter->send_control_buffer, data_buf,  adapter->send_control_size);
+   s++;
+   memcpy(adapter->send_control_buffer, s, adapter->send_control_size);
    /* Activate it so it can be processed in the adapter thread */
    adapter->send_control_type = control_type;
 }
@@ -143,20 +143,15 @@ static void wiiusb_hid_device_add_autodetect(unsigned idx,
       const char *device_name, const char *driver_name,
       uint16_t dev_vid, uint16_t dev_pid)
 {
-   input_autoconfigure_connect(
-         device_name,
-         NULL,
-         "hid",
-         idx,
-         dev_vid,
-         dev_pid);
+   input_autoconfigure_connect(device_name, NULL, "hid",
+         idx, dev_vid, dev_pid);
 }
 
 static void wiiusb_get_description(usb_device_entry *device,
       struct wiiusb_adapter *adapter, usb_devdesc *devdesc)
 {
-   unsigned char c;
    unsigned i, k;
+   unsigned char c;
 
    for (c = 0; c < devdesc->bNumConfigurations; c++)
    {

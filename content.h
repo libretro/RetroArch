@@ -135,7 +135,7 @@ char* content_get_subsystem_rom(unsigned index);
 bool content_set_subsystem_by_name(const char* subsystem_name);
 
 /* Get the current subsystem "friendly name" */
-void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len);
+size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len);
 
 /* Sets overrides which modify frontend handling of
  * specific content file types */

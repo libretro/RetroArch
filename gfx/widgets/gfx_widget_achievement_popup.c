@@ -155,18 +155,14 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       gfx_display_ctx_driver_t* dispctx    = p_disp->dispctx;
       dispgfx_widget_t* p_dispwidget       = (dispgfx_widget_t*)userdata;
 
-      unsigned text_unfold_offset = 0;
-      bool is_folding = false;
-      unsigned screen_padding_x = 0;
-      unsigned screen_padding_y = 0;
-      int screen_pos_x = 0;
-      int screen_pos_y = 0;
-
+      unsigned screen_padding_x   = 0;
+      unsigned screen_padding_y   = 0;
+      int screen_pos_x            = 0;
+      int screen_pos_y            = 0;
       /* Slight additional offset for title/subtitle while unfolding */
-      text_unfold_offset = ((1.0f - state->unfold) * state->width) * 0.5;
-
+      unsigned text_unfold_offset = ((1.0f - state->unfold) * state->width) * 0.5;
       /* Whether gfx scissoring should occur, partially hiding popup */
-      is_folding = fabs(state->unfold - 1.0f) > 0.01;
+      bool is_folding             = fabs(state->unfold - 1.0f) > 0.01;
 
       /* Calculate padding in screen space */
       if (state->padding_auto)
@@ -200,11 +196,11 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       switch (state->anchor_v)
       {
          case ANCHOR_TOP:
-            screen_pos_y = -(state->height);
+            screen_pos_y  = -(state->height);
             screen_pos_y += (screen_padding_y + state->height) * state->slide_v;
             break;
          case ANCHOR_BOTTOM:
-            screen_pos_y = video_height;
+            screen_pos_y  = video_height;
             screen_pos_y -= (screen_padding_y + state->height) * state->slide_v;
             break;
       }
@@ -217,7 +213,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          state->queue[state->queue_read_index].badge_name)
       {
          const retro_time_t next_try = state->queue[state->queue_read_index].badge_retry;
-         const retro_time_t now = cpu_features_get_time_usec();
+         const retro_time_t now      = cpu_features_get_time_usec();
          if (next_try == 0 || now > next_try)
          {
             /* try again in 250ms */

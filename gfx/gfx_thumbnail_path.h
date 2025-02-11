@@ -35,7 +35,7 @@ RETRO_BEGIN_DECLS
 
 /* Note: This implementation reflects the current
  * setup of:
- * - menu_driver_set_thumbnail_system()
+ * - gfx_thumbnail_set_system()
  * - menu_driver_set_thumbnail_content()
  * - menu_driver_update_thumbnail_path()
  * This is absolutely not the best way to handle things,
@@ -61,6 +61,8 @@ struct gfx_thumbnail_path_data
    enum playlist_thumbnail_mode playlist_left_mode;
    enum playlist_thumbnail_mode playlist_icon_mode;
    size_t playlist_index;
+   size_t system_len;
+   size_t content_label_len;
    char content_label[NAME_MAX_LENGTH];
    char content_core_name[NAME_MAX_LENGTH];
    char system[NAME_MAX_LENGTH];
@@ -94,6 +96,10 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thu
 
 /* Setters */
 
+/* Fills content_img field of path_data using existing
+ * content_label field (for internal use only) */
+void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src, bool shorten);
+
 /* Sets current 'system' (default database name).
  * Returns true if 'system' is valid.
  * If playlist is provided, extracts system-specific
@@ -120,8 +126,6 @@ bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *path_data, const
  *   core name). 'Real' labels should be extracted from source */
 bool gfx_thumbnail_set_content_playlist(gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 
-bool gfx_thumbnail_set_icon_playlist(
-      gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
 /* Updaters */
 
 /* Updates path for specified thumbnail identifier (right, left).
@@ -135,31 +139,9 @@ bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *path_data, enum gfx_th
 
 /* Getters */
 
-/* Fetches the current thumbnail file path of the
- * specified thumbnail 'type'.
- * Returns true if path is valid. */
-bool gfx_thumbnail_get_path(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id, const char **path);
-
-/* Fetches current 'system' (default database name).
- * Returns true if 'system' is valid. */
-bool gfx_thumbnail_get_system(gfx_thumbnail_path_data_t *path_data, const char **system);
-
-/* Fetches current thumbnail label.
- * Returns true if label is valid. */
-bool gfx_thumbnail_get_label(gfx_thumbnail_path_data_t *path_data, const char **label);
-
-/* Fetches current thumbnail core name.
- * Returns true if core name is valid. */
-bool gfx_thumbnail_get_core_name(gfx_thumbnail_path_data_t *path_data, const char **core_name);
-
-/* Fetches current thumbnail image name
- * (name is the same for all thumbnail types).
- * Returns true if image name is valid. */
-bool gfx_thumbnail_get_img_name(gfx_thumbnail_path_data_t *path_data, const char **img_name, enum playlist_thumbnail_name_flags name_flags);
-
 /* Fetches current content directory.
  * Returns true if content directory is valid. */
-bool gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *content_dir, size_t len);
+size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *s, size_t len);
 
 RETRO_END_DECLS
 

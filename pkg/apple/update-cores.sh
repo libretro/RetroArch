@@ -147,9 +147,11 @@ else
                 anarch
                 ardens
                 atari800
+                b2
                 #blastem
                 bluemsx
                 bsnes
+                bsnes-jg
                 bsnes_hd_beta
                 cap32
                 crocods
@@ -158,6 +160,7 @@ else
                 dirksimple
                 dosbox_pure
                 DoubleCherryGB
+                doukutsu_rs
                 easyrpg
                 ep128emu_core
                 fbneo
@@ -245,6 +248,7 @@ else
                 virtualxt
                 wasm4
                 xrick
+                yabause
             )
             if [ "$PLATFORM" = "osx" ] ; then
                 exports+=(

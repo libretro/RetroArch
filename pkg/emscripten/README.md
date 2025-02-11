@@ -1,10 +1,10 @@
 # RetroArch Web Player
 
-The RetroArch Web Player is RetroArch compiled through [Emscripten](http://kripken.github.io/emscripten-site/). The following outlines how to compile RetroArch using Emscripten, and running it in your browser.
+The RetroArch Web Player is RetroArch compiled through [Emscripten](https://emscripten.org/). The following outlines how to compile RetroArch using Emscripten, and running it in your browser.
 
 ## Compiling
 
-To compile RetroArch with Emscripten, you'll first have to [download and install the Emscripten SDK](http://kripken.github.io/emscripten-site/docs/getting_started/downloads.html) at 3.1.46:
+To compile RetroArch with Emscripten, you'll first have to [download and install the Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) at 3.1.46:
 
 ```
 git clone https://github.com/emscripten-core/emsdk.git

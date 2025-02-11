@@ -43,7 +43,7 @@ RETRO_BEGIN_DECLS
  * but this function can read binary data as well.
  * @see https://man7.org/linux/man-pages/man3/stdout.3.html
  */
-size_t read_stdin(char *buf, size_t size);
+size_t read_stdin(char *s, size_t len);
 
 RETRO_END_DECLS
 

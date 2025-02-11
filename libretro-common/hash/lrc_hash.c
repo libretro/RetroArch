@@ -123,13 +123,13 @@ static void sha256_block(struct sha256_ctx *p)
 }
 
 static void sha256_chunk(struct sha256_ctx *p,
-      const uint8_t *s, unsigned len)
+      const uint8_t *s, size_t len)
 {
    p->len += len;
 
    while (len)
    {
-      unsigned l = 64 - p->inlen;
+      size_t l   = 64 - p->inlen;
 
       if (len < l)
          l       = len;
@@ -179,7 +179,7 @@ static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
-void sha256_hash(char *s, const uint8_t *in, size_t size)
+void sha256_hash(char *s, const uint8_t *in, size_t len)
 {
    unsigned i;
    struct sha256_ctx sha;
@@ -191,7 +191,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
    } shahash;
 
    sha256_init(&sha);
-   sha256_chunk(&sha, in, (unsigned)size);
+   sha256_chunk(&sha, in, len);
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 
@@ -252,11 +252,11 @@ uint32_t crc32_adjust(uint32_t checksum, uint8_t input)
    return ((checksum >> 8) & 0x00ffffff) ^ crc32_hash_table[(checksum ^ input) & 0xff];
 }
 
-uint32_t crc32_calculate(const uint8_t *data, size_t length)
+uint32_t crc32_calculate(const uint8_t *data, size_t len)
 {
    size_t i;
    uint32_t checksum = ~0;
-   for (i = 0; i < length; i++)
+   for (i = 0; i < len; i++)
       checksum = crc32_adjust(checksum, data[i]);
    return ~checksum;
 }
@@ -486,9 +486,9 @@ static int SHA1Result(struct sha1_context *context)
 
 static void SHA1Input(struct sha1_context *context,
       const unsigned char *message_array,
-      unsigned length)
+      unsigned len)
 {
-   if (!length)
+   if (!len)
       return;
 
    if (context->Computed || context->Corrupted)
@@ -497,7 +497,7 @@ static void SHA1Input(struct sha1_context *context,
       return;
    }
 
-   while (length-- && !context->Corrupted)
+   while (len-- && !context->Corrupted)
    {
       context->Message_Block[context->Message_Block_Index++] =
          (*message_array & 0xFF);

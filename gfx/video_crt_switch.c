@@ -23,7 +23,6 @@
 #include <libretro.h>
 #include <math.h>
 
-#include "../retroarch.h"
 #include <retro_common_api.h>
 #include "video_crt_switch.h"
 #include "video_display_server.h"
@@ -78,15 +77,15 @@ static void crt_store_temp_changes(videocrt_switch_t *p_switch)
 static void crt_aspect_ratio_switch(
       videocrt_switch_t *p_switch,
       unsigned width, unsigned height,
-      float srm_width, float srm_height)
+      float srm_width, float srm_height,
+      unsigned video_aspect_ratio_idx)
 {
-   settings_t *settings           = config_get_ptr();
    float fly_aspect               = (float)width / (float)height;
    p_switch->fly_aspect           = fly_aspect;
    video_driver_state_t *video_st = video_state_get_ptr();
 
    /* We only force aspect ratio for the core provided setting */
-   if (settings->uints.video_aspect_ratio_idx != ASPECT_RATIO_CORE)
+   if (video_aspect_ratio_idx != ASPECT_RATIO_CORE)
    {
       RARCH_LOG("[CRT]: Aspect ratio forced by user: %f\n", video_st->aspect_ratio);
       return;
@@ -145,7 +144,9 @@ static void crt_switch_set_aspect(
    scaled_width  = roundf(patched_width  * srm_xscale);
    scaled_height = roundf(patched_height * srm_yscale);
 
-   crt_aspect_ratio_switch(p_switch, scaled_width, scaled_height, srm_width, srm_height);
+   crt_aspect_ratio_switch(p_switch, scaled_width, scaled_height,
+         srm_width, srm_height,
+         config_get_ptr()->uints.video_aspect_ratio_idx);
 }
 
 #if !defined(HAVE_VIDEOCORE)
@@ -291,17 +292,17 @@ static void switch_res_crt(
       unsigned crt_mode, unsigned native_width,
       int monitor_index, int super_width)
 {
-   char current_core_name[NAME_MAX_LENGTH];
-   char current_content_dir[DIR_MAX_LENGTH];
-   int flags = 0,   ret;
-   const char *err_msg     = NULL;
    int w                   = native_width;
    int h                   = height;
-   double rr               = p_switch->ra_core_hz;
 
    /* Check if SR2 is loaded, if not, load it */
    if (crt_sr2_init(p_switch, monitor_index, crt_mode, super_width))
    {
+      int ret;
+      int flags = 0;
+      char current_core_name[NAME_MAX_LENGTH];
+      char current_content_dir[DIR_MAX_LENGTH];
+      double rr              = p_switch->ra_core_hz;
       const char *_core_name = (const char*)runloop_state_get_ptr()->system.info.library_name;
       /* Check for core and content changes in case we need
          to make any adjustments */
@@ -384,9 +385,9 @@ void crt_switch_res_core(
       int crt_switch_center_adjust,
       int crt_switch_porch_adjust,
       int monitor_index, bool dynamic,
-      int super_width, bool hires_menu)
+      int super_width, bool hires_menu,
+      unsigned video_aspect_ratio_idx)
 {
-   settings_t *settings  = config_get_ptr();
    if (height <= 4)
    {
       hz              = 60;
@@ -444,8 +445,8 @@ void crt_switch_res_core(
          crt_store_temp_changes(p_switch);
       }
 
-      if (  (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CORE)
-         && video_driver_get_aspect_ratio() != p_switch->fly_aspect)
+      if (  (video_aspect_ratio_idx == ASPECT_RATIO_CORE)
+         &&  video_driver_get_aspect_ratio() != p_switch->fly_aspect)
       {
          video_driver_state_t *video_st = video_state_get_ptr();
          float fly_aspect               = (float)p_switch->fly_aspect;
@@ -558,7 +559,8 @@ static void crt_rpi_switch(videocrt_switch_t *p_switch,
 
    width = w;
 
-   crt_aspect_ratio_switch(p_switch, width,height,width,height);
+   crt_aspect_ratio_switch(p_switch, width, height, width, height,
+         config_get_ptr()->uints.video_aspect_ratio_idx);
 
    /* following code is the mode line generator */
    hfp      = ((width * 0.044f) + (width / 112));

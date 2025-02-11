@@ -527,8 +527,12 @@ struct netplay
    size_t zbuffer_size;
    /* The size of our packet buffers */
    size_t packet_buffer_size;
-   /* Size of savestates */
+   /* Size of savestates (coremem_size + cheevos_size + headers) */
    size_t state_size;
+   size_t coremem_size; /* core_serialize_special_size() */
+#ifdef HAVE_CHEEVOS
+   size_t cheevos_size; /* rcheevos_get_serialize_size() */
+#endif
 
    /* The frame we're currently inputting */
    size_t self_ptr;
@@ -807,7 +811,7 @@ bool netplay_send_cur_input(netplay_t *netplay,
  */
 bool netplay_send_raw_cmd(netplay_t *netplay,
    struct netplay_connection *connection, uint32_t cmd, const void *data,
-   size_t size);
+   size_t len);
 
 /**
  * netplay_send_raw_cmd_all
@@ -818,7 +822,7 @@ bool netplay_send_raw_cmd(netplay_t *netplay,
  */
 void netplay_send_raw_cmd_all(netplay_t *netplay,
    struct netplay_connection *except, uint32_t cmd, const void *data,
-   size_t size);
+   size_t len);
 
 /**
  * netplay_cmd_mode

@@ -102,8 +102,8 @@ static void task_overlay_load_desc_image(
 static void task_overlay_redefine_eightway_direction(
       char *str, input_bits_t *data)
 {
-   char *tok, *save;
    unsigned bit;
+   char *tok, *save = NULL;
 
    BIT256_CLEAR_ALL(*data);
 
@@ -124,7 +124,6 @@ static void task_overlay_desc_populate_eightway_config(
    size_t _len;
    input_driver_state_t *input_st = input_state_get_ptr();
    overlay_eightway_config_t *eightway;
-   char conf_key_base[20];
    char conf_key[64];
    char *str;
 
@@ -162,11 +161,10 @@ static void task_overlay_desc_populate_eightway_config(
          return;
    }
 
-   snprintf(conf_key_base, sizeof(conf_key_base), "overlay%u_desc%u", ol_idx, desc_idx);
+   _len = snprintf(conf_key, sizeof(conf_key), "overlay%u_desc%u", ol_idx, desc_idx);
 
    /* Redefine eightway vals if specified in conf
     */
-   _len = strlcpy(conf_key, conf_key_base, sizeof(conf_key));
    strlcpy(conf_key + _len, "_up", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
@@ -232,7 +230,7 @@ static bool task_overlay_load_desc(
    char overlay_desc_key[32];
    char overlay_key[64];
    char overlay[256];
-   char *tok, *save;
+   char *tok, *save                     = NULL;
    unsigned list_size                   = 0;
    char *elem0                          = NULL;
    char *elem1                          = NULL;
@@ -519,24 +517,21 @@ end:
 }
 
 static ssize_t task_overlay_find_index(const struct overlay *ol,
-      const char *name, size_t size)
+      const char *name, size_t len)
 {
    size_t i;
-
    if (!ol)
       return -1;
-
-   for (i = 0; i < size; i++)
+   for (i = 0; i < len; i++)
    {
       if (string_is_equal(ol[i].name, name))
          return i;
    }
-
    return -1;
 }
 
 static bool task_overlay_resolve_targets(struct overlay *ol,
-      size_t idx, size_t size)
+      size_t idx, size_t len)
 {
    unsigned i;
    struct overlay *current = (struct overlay*)&ol[idx];
@@ -545,11 +540,11 @@ static bool task_overlay_resolve_targets(struct overlay *ol,
    {
       struct overlay_desc *desc = (struct overlay_desc*)&current->descs[i];
       const char *next          = desc->next_index_name;
-      ssize_t         next_idx  = (idx + 1) % size;
+      ssize_t         next_idx  = (idx + 1) % len;
 
       if (!string_is_empty(next))
       {
-         next_idx = task_overlay_find_index(ol, next, size);
+         next_idx = task_overlay_find_index(ol, next, len);
 
          if (next_idx < 0)
          {
@@ -683,7 +678,6 @@ static void task_overlay_deferred_load(retro_task_t *task)
    for (i = 0; i < loader->pos_increment; i++, loader->pos++)
    {
       size_t _len;
-      char conf_key_base[10];
       char conf_key[32];
       char tmp_str[PATH_MAX_LENGTH];
       float tmp_float                   = 0.0;
@@ -704,8 +698,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       overlay = &loader->overlays[loader->pos];
 
-      snprintf(conf_key_base, sizeof(conf_key_base), "overlay%u", loader->pos);
-      _len = strlcpy(conf_key, conf_key_base,  sizeof(conf_key));
+      _len = snprintf(conf_key, sizeof(conf_key), "overlay%u", loader->pos);
 
       strlcpy(conf_key + _len, "_rect", sizeof(conf_key) - _len);
       strlcpy(overlay->config.rect.key, conf_key,
@@ -842,7 +835,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
       if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
-         char *tok, *save;
+         char *tok, *save         = NULL;
          char *elem0              = NULL;
          char *elem1              = NULL;
          char *elem2              = NULL;

@@ -1293,8 +1293,8 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    float input_size[2], output_size[2], texture_size[2], final_vp_size[2];
    video_shader_ctx_params_t          *params = (video_shader_ctx_params_t*)dat;
    gl2_t                             *gl_data = (gl2_t*)params->data;
-   unsigned vp_width                          = gl_data->vp_out_width;
-   unsigned vp_height                         = gl_data->vp_out_height;
+   unsigned vp_width                          = gl_data->out_vp_width;
+   unsigned vp_height                         = gl_data->out_vp_height;
    unsigned width                             = params->width;
    unsigned height                            = params->height;
    unsigned tex_width                         = params->tex_width;
@@ -1368,7 +1368,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    }
 
   if (uni->frame_time_delta >= 0)
-      glUniform1i(uni->frame_time_delta, video_driver_get_frame_time_delta_usec());
+      glUniform1i(uni->frame_time_delta, (GLint)video_driver_get_frame_time_delta_usec());
 
   if (uni->original_fps >= 0)
       glUniform1f(uni->original_fps, video_driver_get_original_fps());

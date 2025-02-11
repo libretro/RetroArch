@@ -252,13 +252,13 @@ error:
    return NULL;
 }
 
-static ssize_t ja_write(void *data, const void *buf_, size_t size)
+static ssize_t ja_write(void *data, const void *buf_, size_t len)
 {
    jack_t      *jd = (jack_t*)data;
    const char *buf = (const char *)buf_;
    size_t  written = 0;
 
-   while (size > 0)
+   while (len > 0)
    {
       size_t avail, to_write;
 
@@ -267,7 +267,7 @@ static ssize_t ja_write(void *data, const void *buf_, size_t size)
 
       avail = jack_ringbuffer_write_space(jd->buffer);
 
-      to_write = size < avail ? size : avail;
+      to_write = (len < avail) ? len : avail;
       /* make sure to only write multiples of the sample size */
       to_write = (to_write / sizeof(float)) * sizeof(float);
 
@@ -275,7 +275,7 @@ static ssize_t ja_write(void *data, const void *buf_, size_t size)
       {
          jack_ringbuffer_write(jd->buffer, buf, to_write);
          buf     += to_write;
-         size    -= to_write;
+         len     -= to_write;
          written += to_write;
       }
       else if (!jd->nonblock)
@@ -350,11 +350,7 @@ static void ja_free(void *data)
    free(jd);
 }
 
-static bool ja_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool ja_use_float(void *data) { return true; }
 
 static size_t ja_write_avail(void *data)
 {

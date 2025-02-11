@@ -46,9 +46,22 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../cheat_manager.h"
+#include "../../audio/audio_driver.h"
 
-void dummyErrnoCodes(void);
 void emscripten_mainloop(void);
+void PlatformEmscriptenWatchCanvasSize(void);
+void PlatformEmscriptenPowerStateInit(void);
+bool PlatformEmscriptenPowerStateGetSupported(void);
+int PlatformEmscriptenPowerStateGetDischargeTime(void);
+float PlatformEmscriptenPowerStateGetLevel(void);
+bool PlatformEmscriptenPowerStateGetCharging(void);
+uint64_t PlatformEmscriptenGetTotalMem(void);
+uint64_t PlatformEmscriptenGetFreeMem(void);
+
+/* begin exported functions */
+
+/* saves and states */
 
 void cmd_savefiles(void)
 {
@@ -65,10 +78,116 @@ void cmd_load_state(void)
    command_event(CMD_EVENT_LOAD_STATE, NULL);
 }
 
+void cmd_undo_save_state(void)
+{
+   command_event(CMD_EVENT_UNDO_SAVE_STATE, NULL);
+}
+
+void cmd_undo_load_state(void)
+{
+   command_event(CMD_EVENT_UNDO_LOAD_STATE, NULL);
+}
+
+/* misc */
+
 void cmd_take_screenshot(void)
 {
    command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
 }
+
+void cmd_toggle_menu(void)
+{
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+}
+
+void cmd_reload_config(void)
+{
+   command_event(CMD_EVENT_RELOAD_CONFIG, NULL);
+}
+
+void cmd_toggle_grab_mouse(void)
+{
+   command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+}
+
+void cmd_toggle_game_focus(void)
+{
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
+}
+
+void cmd_reset(void)
+{
+   command_event(CMD_EVENT_RESET, NULL);
+}
+
+void cmd_toggle_pause(void)
+{
+   command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
+}
+
+void cmd_pause(void)
+{
+   command_event(CMD_EVENT_PAUSE, NULL);
+}
+
+void cmd_unpause(void)
+{
+   command_event(CMD_EVENT_UNPAUSE, NULL);
+}
+
+void cmd_set_volume(float volume)
+{
+   audio_set_float(AUDIO_ACTION_VOLUME_GAIN, volume);
+}
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+bool cmd_set_shader(const char *path)
+{
+   return command_set_shader(NULL, path);
+}
+#endif
+
+/* cheats */
+
+void cmd_cheat_set_code(unsigned index, const char *str)
+{
+   cheat_manager_set_code(index, str);
+}
+
+const char *cmd_cheat_get_code(unsigned index)
+{
+   return cheat_manager_get_code(index);
+}
+
+void cmd_cheat_toggle_index(bool apply_cheats_after_toggle, unsigned index)
+{
+   cheat_manager_toggle_index(apply_cheats_after_toggle,
+         config_get_ptr()->bools.notification_show_cheats_applied,
+         index);
+}
+
+bool cmd_cheat_get_code_state(unsigned index)
+{
+   return cheat_manager_get_code_state(index);
+}
+
+bool cmd_cheat_realloc(unsigned new_size)
+{
+   return cheat_manager_realloc(new_size, CHEAT_HANDLER_TYPE_EMU);
+}
+
+unsigned cmd_cheat_get_size(void)
+{
+   return cheat_manager_get_size();
+}
+
+void cmd_cheat_apply_cheats(void)
+{
+   cheat_manager_apply_cheats(
+         config_get_ptr()->bools.notification_show_cheats_applied);
+}
+
+/* end exported functions */
 
 static void frontend_emscripten_get_env(int *argc, char *argv[],
       void *args, void *params_data)
@@ -154,16 +273,45 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 #endif
 }
 
+static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds, int *percent)
+{
+   enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
+
+   if (!PlatformEmscriptenPowerStateGetSupported())
+      return ret;
+
+   if (!PlatformEmscriptenPowerStateGetCharging())
+      ret = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
+   else if (PlatformEmscriptenPowerStateGetLevel() == 1)
+      ret = FRONTEND_POWERSTATE_CHARGED;
+   else
+      ret = FRONTEND_POWERSTATE_CHARGING;
+
+   *seconds = PlatformEmscriptenPowerStateGetDischargeTime();
+   *percent = (int)(PlatformEmscriptenPowerStateGetLevel() * 100);
+
+   return ret;
+}
+
+static uint64_t frontend_emscripten_get_total_mem(void)
+{
+   return PlatformEmscriptenGetTotalMem();
+}
+
+static uint64_t frontend_emscripten_get_free_mem(void)
+{
+   return PlatformEmscriptenGetFreeMem();
+}
+
 int main(int argc, char *argv[])
 {
-   dummyErrnoCodes();
+   PlatformEmscriptenWatchCanvasSize();
+   PlatformEmscriptenPowerStateInit();
 
    EM_ASM({
       specialHTMLTargets["!canvas"] = Module.canvas;
    });
 
-   emscripten_set_canvas_element_size("!canvas", 800, 600);
-   emscripten_set_element_css_size("!canvas", 800.0, 600.0);
    emscripten_set_main_loop(emscripten_mainloop, 0, 0);
    rarch_main(argc, argv, NULL);
 
@@ -171,39 +319,39 @@ int main(int argc, char *argv[])
 }
 
 frontend_ctx_driver_t frontend_ctx_emscripten = {
-   frontend_emscripten_get_env,  /* environment_get */
-   NULL,                         /* init */
-   NULL,                         /* deinit */
-   NULL,                         /* exitspawn */
-   NULL,                         /* process_args */
-   NULL,                         /* exec */
-   NULL,                         /* set_fork */
-   NULL,                         /* shutdown */
-   NULL,                         /* get_name */
-   NULL,                         /* get_os */
-   NULL,                         /* get_rating */
-   NULL,                         /* load_content */
-   NULL,                         /* get_architecture */
-   NULL,                         /* get_powerstate */
-   NULL,                         /* parse_drive_list */
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem  */
-   NULL,                         /* install_sighandlers */
-   NULL,                         /* get_signal_handler_state */
-   NULL,                         /* set_signal_handler_state */
-   NULL,                         /* destroy_signal_handler_state */
-   NULL,                         /* attach_console */
-   NULL,                         /* detach_console */
-   NULL,                         /* get_lakka_version */
-   NULL,                         /* set_screen_brightness */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
-   NULL,                         /* set_sustained_performance_mode */
-   NULL,                         /* get_cpu_model_name */
-   NULL,                         /* get_user_language */
-   NULL,                         /* is_narrator_running */
-   NULL,                         /* accessibility_speak */
-   NULL,                         /* set_gamemode        */
-   "emscripten",                 /* ident               */
-   NULL                          /* get_video_driver    */
+   frontend_emscripten_get_env,         /* environment_get */
+   NULL,                                /* init */
+   NULL,                                /* deinit */
+   NULL,                                /* exitspawn */
+   NULL,                                /* process_args */
+   NULL,                                /* exec */
+   NULL,                                /* set_fork */
+   NULL,                                /* shutdown */
+   NULL,                                /* get_name */
+   NULL,                                /* get_os */
+   NULL,                                /* get_rating */
+   NULL,                                /* load_content */
+   NULL,                                /* get_architecture */
+   frontend_emscripten_get_powerstate,  /* get_powerstate */
+   NULL,                                /* parse_drive_list */
+   frontend_emscripten_get_total_mem,   /* get_total_mem */
+   frontend_emscripten_get_free_mem,    /* get_free_mem  */
+   NULL,                                /* install_sighandlers */
+   NULL,                                /* get_signal_handler_state */
+   NULL,                                /* set_signal_handler_state */
+   NULL,                                /* destroy_signal_handler_state */
+   NULL,                                /* attach_console */
+   NULL,                                /* detach_console */
+   NULL,                                /* get_lakka_version */
+   NULL,                                /* set_screen_brightness */
+   NULL,                                /* watch_path_for_changes */
+   NULL,                                /* check_for_path_changes */
+   NULL,                                /* set_sustained_performance_mode */
+   NULL,                                /* get_cpu_model_name */
+   NULL,                                /* get_user_language */
+   NULL,                                /* is_narrator_running */
+   NULL,                                /* accessibility_speak */
+   NULL,                                /* set_gamemode        */
+   "emscripten",                        /* ident               */
+   NULL                                 /* get_video_driver    */
 };

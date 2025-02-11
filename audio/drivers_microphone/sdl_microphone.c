@@ -45,9 +45,7 @@ typedef struct sdl_microphone
 static INLINE int sdl_microphone_find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
-
    /* SDL only likes 2^n sized buffers. */
-
    return next_pow2(frames);
 }
 
@@ -55,7 +53,6 @@ static void *sdl_microphone_init(void)
 {
    sdl_microphone_t *sdl        = NULL;
    uint32_t sdl_subsystem_flags = SDL_WasInit(0);
-
    /* Initialise audio subsystem, if required */
    if (sdl_subsystem_flags == 0)
    {
@@ -67,32 +64,30 @@ static void *sdl_microphone_init(void)
       if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
          return NULL;
    }
-
    if (!(sdl = (sdl_microphone_t*)calloc(1, sizeof(*sdl))))
       return NULL;
-
    return sdl;
 }
 
-static void sdl_microphone_close_mic(void *driver_context, void *microphone_context)
+static void sdl_microphone_close_mic(void *driver_context, void *mic_context)
 {
-   sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t *)microphone_context;
+   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t *)mic_context;
 
-   if (microphone)
+   if (mic)
    {
       /* If the microphone was originally initialized successfully... */
-      if (microphone->device_id > 0)
-         SDL_CloseAudioDevice(microphone->device_id);
+      if (mic->device_id > 0)
+         SDL_CloseAudioDevice(mic->device_id);
 
-      fifo_free(microphone->sample_buffer);
+      fifo_free(mic->sample_buffer);
 
 #ifdef HAVE_THREADS
-      slock_free(microphone->lock);
-      scond_free(microphone->cond);
+      slock_free(mic->lock);
+      scond_free(mic->cond);
 #endif
 
-      RARCH_LOG("[SDL audio]: Freed microphone with former device ID %u\n", microphone->device_id);
-      free(microphone);
+      RARCH_LOG("[SDL audio]: Freed microphone with former device ID %u\n", mic->device_id);
+      free(mic);
    }
 }
 
@@ -109,34 +104,31 @@ static void sdl_microphone_free(void *data)
 
 static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
 {
-   sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t*)data;
-   size_t      avail                   = FIFO_WRITE_AVAIL(microphone->sample_buffer);
-   size_t read_size                    = MIN(len, (int)avail);
+   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)data;
+   size_t                 avail = FIFO_WRITE_AVAIL(mic->sample_buffer);
+   size_t             read_size = MIN(len, (int)avail);
    /* If the sample buffer is almost full, just write as much as we can into it*/
-
-   fifo_write(microphone->sample_buffer, stream, read_size);
+   fifo_write(mic->sample_buffer, stream, read_size);
 #ifdef HAVE_THREADS
-   scond_signal(microphone->cond);
+   scond_signal(mic->cond);
 #endif
 }
 
-static void *sdl_microphone_open_mic(void *driver_context,
-      const char *device,
-      unsigned rate,
-      unsigned latency,
-      unsigned *new_rate)
+static void *sdl_microphone_open_mic(void *driver_context, const char *device,
+      unsigned rate, unsigned latency, unsigned *new_rate)
 {
    int frames;
    size_t bufsize;
-   sdl_microphone_handle_t *microphone = NULL;
-   SDL_AudioSpec desired_spec          = {0};
-   void *tmp                           = NULL;
+   void *tmp                    = NULL;
+   sdl_microphone_handle_t *mic = NULL;
+   SDL_AudioSpec desired_spec   = {0};
 
 #if __APPLE__
    if (!string_is_equal(audio_driver_get_ident(), "sdl2"))
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO), 1, 100, true, NULL,
+      const char *msg = msg_hash_to_str(MSG_SDL2_MIC_NEEDS_SDL2_AUDIO);
+      runloop_msg_queue_push(msg, strlen(msg),
+            1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       return NULL;
    }
@@ -149,13 +141,13 @@ static void *sdl_microphone_open_mic(void *driver_context,
       return NULL;
    }
 
-   if (!(microphone = (sdl_microphone_handle_t *)
+   if (!(mic = (sdl_microphone_handle_t *)
             calloc(1, sizeof(sdl_microphone_handle_t))))
       return NULL;
 
    /* Only print SDL audio devices if verbose logging is enabled */
    if (verbosity_is_enabled())
-   { 
+   {
       int i;
       int num_available_microphones = SDL_GetNumAudioDevices(true);
       RARCH_DBG("[SDL mic]: %d audio capture devices found:\n", num_available_microphones);
@@ -173,30 +165,31 @@ static void *sdl_microphone_open_mic(void *driver_context,
    desired_spec.format   = AUDIO_F32SYS;
    desired_spec.channels = 1; /* Microphones only usually provide input in mono */
    desired_spec.samples  = frames;
-   desired_spec.userdata = microphone;
+   desired_spec.userdata = mic;
    desired_spec.callback = sdl_audio_record_cb;
 
-   microphone->device_id = SDL_OpenAudioDevice(
+   mic->device_id = SDL_OpenAudioDevice(
          NULL,
          true,
          &desired_spec,
-         &microphone->device_spec,
-         SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+         &mic->device_spec,
+           SDL_AUDIO_ALLOW_FREQUENCY_CHANGE
+         | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
-   if (microphone->device_id == 0)
+   if (mic->device_id == 0)
    {
       RARCH_ERR("[SDL mic]: Failed to open SDL audio input device: %s\n", SDL_GetError());
       goto error;
    }
    RARCH_DBG("[SDL mic]: Opened SDL audio input device with ID %u\n",
-             microphone->device_id);
+             mic->device_id);
    RARCH_DBG("[SDL mic]: Requested a microphone frequency of %u Hz, got %u Hz\n",
-             desired_spec.freq, microphone->device_spec.freq);
+             desired_spec.freq, mic->device_spec.freq);
    RARCH_DBG("[SDL mic]: Requested %u channels for microphone, got %u\n",
-             desired_spec.channels, microphone->device_spec.channels);
+             desired_spec.channels, mic->device_spec.channels);
    RARCH_DBG("[SDL mic]: Requested a %u-sample microphone buffer, got %u samples (%u bytes)\n",
-             frames, microphone->device_spec.samples, microphone->device_spec.size);
-   RARCH_DBG("[SDL mic]: Got a microphone silence value of %u\n", microphone->device_spec.silence);
+             frames, mic->device_spec.samples, mic->device_spec.size);
+   RARCH_DBG("[SDL mic]: Got a microphone silence value of %u\n", mic->device_spec.silence);
    RARCH_DBG("[SDL mic]: Requested microphone audio format: %u-bit %s %s %s endian\n",
              SDL_AUDIO_BITSIZE(desired_spec.format),
              SDL_AUDIO_ISSIGNED(desired_spec.format) ? "signed" : "unsigned",
@@ -210,87 +203,85 @@ static void *sdl_microphone_open_mic(void *driver_context,
              SDL_AUDIO_ISBIGENDIAN(desired_spec.format) ? "big" : "little");
 
    if (new_rate)
-      *new_rate = microphone->device_spec.freq;
+      *new_rate = mic->device_spec.freq;
 
 #ifdef HAVE_THREADS
-   microphone->lock = slock_new();
-   microphone->cond = scond_new();
+   mic->lock = slock_new();
+   mic->cond = scond_new();
 #endif
 
    RARCH_LOG("[SDL audio]: Requested %u ms latency for input device, got %d ms\n",
-             latency, (int)(microphone->device_spec.samples * 4 * 1000 / microphone->device_spec.freq));
+             latency, (int)(mic->device_spec.samples * 4 * 1000 / mic->device_spec.freq));
 
    /* Create a buffer twice as big as needed and prefill the buffer. */
-   bufsize                   = microphone->device_spec.samples * 2 * (SDL_AUDIO_BITSIZE(microphone->device_spec.format) / 8);
-   tmp                       = calloc(1, bufsize);
-   microphone->sample_buffer = fifo_new(bufsize);
+   bufsize            = mic->device_spec.samples * 2 * (SDL_AUDIO_BITSIZE(mic->device_spec.format) / 8);
+   tmp                = calloc(1, bufsize);
+   mic->sample_buffer = fifo_new(bufsize);
 
    RARCH_DBG("[SDL audio]: Initialized microphone sample queue with %u bytes\n", bufsize);
 
    if (tmp)
    {
-      fifo_write(microphone->sample_buffer, tmp, bufsize);
+      fifo_write(mic->sample_buffer, tmp, bufsize);
       free(tmp);
    }
 
-   RARCH_LOG("[SDL audio]: Initialized microphone with device ID %u\n", microphone->device_id);
-   return microphone;
+   RARCH_LOG("[SDL audio]: Initialized microphone with device ID %u\n", mic->device_id);
+   return mic;
 
 error:
-   free(microphone);
+   free(mic);
    return NULL;
 }
 
-static bool sdl_microphone_mic_alive(const void *data, const void *microphone_context)
+static bool sdl_microphone_mic_alive(const void *data, const void *mic_context)
 {
-   const sdl_microphone_handle_t *microphone = (const sdl_microphone_handle_t*)microphone_context;
-   if (!microphone)
+   const sdl_microphone_handle_t *mic = (const sdl_microphone_handle_t*)mic_context;
+   if (!mic)
       return false;
    /* Both params must be non-null */
-   return SDL_GetAudioDeviceStatus(microphone->device_id) == SDL_AUDIO_PLAYING;
+   return SDL_GetAudioDeviceStatus(mic->device_id) == SDL_AUDIO_PLAYING;
 }
 
-static bool sdl_microphone_start_mic(void *driver_context, void *microphone_context)
+static bool sdl_microphone_start_mic(void *driver_context, void *mic_context)
 {
-   sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t*)microphone_context;
-
-   if (!microphone)
+   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   if (!mic)
       return false;
-
-   SDL_PauseAudioDevice(microphone->device_id, false);
-
-   if (SDL_GetAudioDeviceStatus(microphone->device_id) != SDL_AUDIO_PLAYING)
+   SDL_PauseAudioDevice(mic->device_id, false);
+   if (SDL_GetAudioDeviceStatus(mic->device_id) != SDL_AUDIO_PLAYING)
    {
-      RARCH_ERR("[SDL mic]: Failed to start microphone %u: %s\n", microphone->device_id, SDL_GetError());
+      RARCH_ERR("[SDL mic]: Failed to start microphone %u: %s\n", mic->device_id, SDL_GetError());
       return false;
    }
-
-   RARCH_DBG("[SDL mic]: Started microphone %u\n", microphone->device_id);
+   RARCH_DBG("[SDL mic]: Started microphone %u\n", mic->device_id);
    return true;
 }
 
-static bool sdl_microphone_stop_mic(void *driver_context, void *microphone_context)
+static bool sdl_microphone_stop_mic(void *driver_context, void *mic_context)
 {
-   sdl_microphone_t *sdl               = (sdl_microphone_t*)driver_context;
-   sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t*)microphone_context;
+   sdl_microphone_t        *sdl = (sdl_microphone_t*)driver_context;
+   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
 
-   if (!sdl || !microphone)
+   if (!sdl || !mic)
       return false;
 
-   SDL_PauseAudioDevice(microphone->device_id, true);
+   SDL_PauseAudioDevice(mic->device_id, true);
 
-   switch (SDL_GetAudioDeviceStatus(microphone->device_id))
+   switch (SDL_GetAudioDeviceStatus(mic->device_id))
    {
       case SDL_AUDIO_PLAYING:
-         RARCH_ERR("[SDL mic]: Microphone %u failed to pause\n", microphone->device_id);
+         RARCH_ERR("[SDL mic]: Microphone %u failed to pause\n", mic->device_id);
          return false;
       case SDL_AUDIO_STOPPED:
-         RARCH_WARN("[SDL mic]: Microphone %u is in state STOPPED; it may not start again\n", microphone->device_id);
+         RARCH_WARN("[SDL mic]: Microphone %u is in state STOPPED; it may not start again\n",
+               mic->device_id);
          /* fall-through */
       case SDL_AUDIO_PAUSED:
          break;
       default:
-         RARCH_ERR("[SDL mic]: Microphone %u is in unknown state\n", microphone->device_id);
+         RARCH_ERR("[SDL mic]: Microphone %u is in unknown state\n",
+               mic->device_id);
          return false;
    }
 
@@ -304,64 +295,68 @@ static void sdl_microphone_set_nonblock_state(void *driver_context, bool state)
       sdl->nonblock = state;
 }
 
-static int sdl_microphone_read(void *driver_context, void *microphone_context, void *buf, size_t size)
+static int sdl_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
-   int ret                             = 0;
-   sdl_microphone_t *sdl               = (sdl_microphone_t*)driver_context;
-   sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t*)microphone_context;
+   int ret = 0;
+   sdl_microphone_t        *sdl = (sdl_microphone_t*)driver_context;
+   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
 
-   if (!sdl || !microphone || !buf)
+   if (!sdl || !mic || !s)
       return -1;
 
+   /* If we shouldn't block on an empty queue... */
    if (sdl->nonblock)
-   { /* If we shouldn't block on an empty queue... */
+   {
       size_t avail, read_amt;
 
-      SDL_LockAudioDevice(microphone->device_id); /* Stop the SDL mic thread */
-      avail = FIFO_READ_AVAIL(microphone->sample_buffer);
-      read_amt = avail > size ? size : avail;
+      SDL_LockAudioDevice(mic->device_id); /* Stop the SDL mic thread */
+      avail = FIFO_READ_AVAIL(mic->sample_buffer);
+      read_amt = avail > len ? len : avail;
       if (read_amt > 0)
       {  /* If the incoming queue isn't empty... */
-         fifo_read(microphone->sample_buffer, buf, read_amt);
+         fifo_read(mic->sample_buffer, s, read_amt);
          /* ...then read as much data as will fit in buf */
       }
-      SDL_UnlockAudioDevice(microphone->device_id); /* Let the mic thread run again */
+      SDL_UnlockAudioDevice(mic->device_id); /* Let the mic thread run again */
       ret = (int)read_amt;
    }
    else
    {
       size_t read = 0;
 
-      while (read < size)
-      { /* Until we've given the caller as much data as they've asked for... */
+      /* Until we've given the caller as much data as they've asked for... */
+      while (read < len)
+      {
          size_t avail;
 
-         SDL_LockAudioDevice(microphone->device_id);
+         SDL_LockAudioDevice(mic->device_id);
          /* Stop the SDL microphone thread from running */
-         avail = FIFO_READ_AVAIL(microphone->sample_buffer);
+         avail = FIFO_READ_AVAIL(mic->sample_buffer);
 
          if (avail == 0)
          { /* If the incoming sample queue is empty... */
-            SDL_UnlockAudioDevice(microphone->device_id);
-            /* Let the SDL microphone thread run so it can push some incoming samples */
+            SDL_UnlockAudioDevice(mic->device_id);
+            /* Let the SDL microphone thread run so it can
+             * push some incoming samples */
 #ifdef HAVE_THREADS
-            slock_lock(microphone->lock);
-            /* Let *only* the SDL microphone thread access the incoming sample queue. */
-
-            scond_wait(microphone->cond, microphone->lock);
-            /* Wait until the SDL microphone thread tells us it's added some samples. */
-
-            slock_unlock(microphone->lock);
-            /* Allow this thread to access the incoming sample queue, which we'll do next iteration */
+            slock_lock(mic->lock);
+            /* Let *only* the SDL microphone thread access
+             * the incoming sample queue. */
+            scond_wait(mic->cond, mic->lock);
+            /* Wait until the SDL microphone thread tells us
+             * it's added some samples. */
+            slock_unlock(mic->lock);
+            /* Allow this thread to access the incoming sample queue,
+             * which we'll do next iteration */
 #endif
          }
          else
          {
-            size_t read_amt = MIN(size - read, avail);
-            fifo_read(microphone->sample_buffer, buf + read, read_amt);
-            /* Read as many samples as we have available without underflowing the queue */
-
-            SDL_UnlockAudioDevice(microphone->device_id);
+            size_t read_amt = MIN(len - read, avail);
+            fifo_read(mic->sample_buffer, s + read, read_amt);
+            /* Read as many samples as we have available without
+             * underflowing the queue */
+            SDL_UnlockAudioDevice(mic->device_id);
             /* Let the SDL microphone thread run again */
             read += read_amt;
          }
@@ -372,10 +367,10 @@ static int sdl_microphone_read(void *driver_context, void *microphone_context, v
    return ret;
 }
 
-static bool sdl_microphone_mic_use_float(const void *driver_context, const void *microphone_context)
+static bool sdl_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
-   sdl_microphone_handle_t *microphone = (sdl_microphone_handle_t*)microphone_context;
-   return SDL_AUDIO_ISFLOAT(microphone->device_spec.format);
+   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   return SDL_AUDIO_ISFLOAT(mic->device_spec.format);
 }
 
 microphone_driver_t microphone_sdl = {

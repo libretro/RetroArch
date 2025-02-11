@@ -57,7 +57,7 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 
 /* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
-static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
+static int16_t analog_state[DEFAULT_MAX_PADS][3][2];
 
 /* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
@@ -136,7 +136,7 @@ static void psp_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   if (AXIS_NEG_GET(joyaxis) < 6)
    {
       int16_t val  = 0;
       int16_t axis = AXIS_NEG_GET(joyaxis);
@@ -150,11 +150,15 @@ static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
          case 3:
             val = analog_state[port][1][axis - 2];
             break;
+         case 4:
+         case 5:
+            val = analog_state[port][2][axis - 4];
+            break;
       }
       if (val < 0)
          return val;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 6)
    {
       int16_t val  = 0;
       int16_t axis = AXIS_POS_GET(joyaxis);
@@ -167,6 +171,10 @@ static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
          case 2:
          case 3:
             val = analog_state[port][1][axis - 2];
+            break;
+         case 4:
+         case 5:
+            val = analog_state[port][2][axis - 4];
             break;
       }
       if (val > 0)
@@ -290,7 +298,8 @@ static void psp_joypad_poll(void)
 
       pad_state[i] = 0;
       analog_state[i][0][0] = analog_state[i][0][1] =
-         analog_state[i][1][0] = analog_state[i][1][1] = 0;
+         analog_state[i][1][0] = analog_state[i][1][1] = 
+         analog_state[i][2][0] = analog_state[i][2][1] = 0;
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
       if (ret < 0)
@@ -342,6 +351,8 @@ static void psp_joypad_poll(void)
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_BUTTON] [0] = (int16_t)(STATE_ANALOGL2(state_tmp)-128) * 256;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_BUTTON] [1] = (int16_t)(STATE_ANALOGR2(state_tmp)-128) * 256;
 #endif
 
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGLX(state_tmp)-128) * 256;

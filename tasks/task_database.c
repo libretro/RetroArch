@@ -124,9 +124,9 @@ static void task_database_scan_console_output(const char *label, const char *db_
       unsigned reset  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
       size_t _len     = strlcpy(string, " ", sizeof(string));
       _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
-      strlcpy(string + _len, " ", sizeof(string) - _len);
+      _len += strlcpy(string + _len, " ",    sizeof(string) - _len);
       SetConsoleTextAttribute(con, (add) ? green : (db_name) ? yellow : red);
-      WriteConsole(con, string, strlen(string), NULL, NULL);
+      WriteConsole(con, string, _len, NULL, NULL);
       SetConsoleTextAttribute(con, reset);
    }
 #else
@@ -201,7 +201,7 @@ static int task_database_iterate_start(retro_task_t *task,
    return 0;
 }
 
-static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_len, const char *filename)
+static int intfstream_get_serial(intfstream_t *fd, char *s, size_t len, const char *filename)
 {
    const char *system_name = NULL;
    if (detect_system(fd, &system_name, filename) >= 1)
@@ -212,19 +212,19 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
          if (STRLEN_CONST("Sony - PlayStation Portable") == system_len &&
              string_is_equal_fast(system_name, "Sony - PlayStation Portable", system_len))
          {
-            if (detect_psp_game(fd, serial, serial_len, filename) != 0)
+            if (detect_psp_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sony - PlayStation") == system_len &&
                   string_is_equal_fast(system_name, "Sony - PlayStation", system_len))
          {
-            if (detect_ps1_game(fd, serial, serial_len, filename) != 0)
+            if (detect_ps1_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sony - PlayStation 2") == system_len &&
                   string_is_equal_fast(system_name, "Sony - PlayStation 2", system_len))
          {
-            if (detect_ps2_game(fd, serial, serial_len, filename) != 0)
+            if (detect_ps2_game(fd, s, len, filename) != 0)
                return 1;
          }
       }
@@ -233,13 +233,13 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
          if (STRLEN_CONST("Nintendo - GameCube") == system_len &&
              string_is_equal_fast(system_name, "Nintendo - GameCube", system_len))
          {
-            if (detect_gc_game(fd, serial, serial_len, filename) != 0)
+            if (detect_gc_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Nintendo - Wii") == system_len &&
                   string_is_equal_fast(system_name, "Nintendo - Wii", system_len))
          {
-            if (detect_wii_game(fd, serial, serial_len, filename) != 0)
+            if (detect_wii_game(fd, s, len, filename) != 0)
                return 1;
          }
       }
@@ -248,19 +248,19 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
          if (STRLEN_CONST("Sega - Mega-CD - Sega CD") == system_len &&
              string_is_equal_fast(system_name, "Sega - Mega-CD - Sega CD", system_len))
          {
-            if (detect_scd_game(fd, serial, serial_len, filename) != 0)
+            if (detect_scd_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sega - Saturn") == system_len &&
                   string_is_equal_fast(system_name, "Sega - Saturn", system_len))
          {
-            if (detect_sat_game(fd, serial, serial_len, filename) != 0)
+            if (detect_sat_game(fd, s, len, filename) != 0)
                return 1;
          }
          else if (STRLEN_CONST("Sega - Dreamcast") == system_len &&
                   string_is_equal_fast(system_name, "Sega - Dreamcast", system_len))
          {
-            if (detect_dc_game(fd, serial, serial_len, filename) != 0)
+            if (detect_dc_game(fd, s, len, filename) != 0)
                return 1;
          }
       }
@@ -269,7 +269,7 @@ static int intfstream_get_serial(intfstream_t *fd, char *serial, size_t serial_l
 }
 
 static bool intfstream_file_get_serial(const char *name,
-      uint64_t offset, size_t size, char *serial, size_t serial_len)
+      uint64_t offset, size_t size, char *s, size_t len)
 {
    int rv;
    uint8_t *data     = NULL;
@@ -315,7 +315,7 @@ static bool intfstream_file_get_serial(const char *name,
       }
    }
 
-   rv = intfstream_get_serial(fd, serial, serial_len, name);
+   rv = intfstream_get_serial(fd, s, len, name);
    intfstream_close(fd);
    free(fd);
    free(data);
@@ -327,16 +327,16 @@ error:
    return 0;
 }
 
-static int task_database_cue_get_serial(const char *name, char* serial, size_t serial_len)
+static int task_database_cue_get_serial(const char *name, char *s, size_t len)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
-   size_t size      = 0;
+   size_t _len      = 0;
 
    track_path[0]    = '\0';
 
-   if (cue_find_track(name, true, &offset, &size, track_path,
-            sizeof(track_path)) < 0)
+   if (cue_find_track(name, true, &offset, &_len,
+         track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("%s\n",
@@ -345,14 +345,14 @@ static int task_database_cue_get_serial(const char *name, char* serial, size_t s
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, offset, size, serial, serial_len);
+   return intfstream_file_get_serial(track_path, offset, _len, s, len);
 }
 
-static int task_database_gdi_get_serial(const char *name, char* serial, size_t serial_len)
+static int task_database_gdi_get_serial(const char *name, char *s, size_t len)
 {
    char track_path[PATH_MAX_LENGTH];
 
-   track_path[0]                    = '\0';
+   track_path[0] = '\0';
 
    if (gdi_find_track(name, true,
                track_path, sizeof(track_path)) < 0)
@@ -364,10 +364,10 @@ static int task_database_gdi_get_serial(const char *name, char* serial, size_t s
       return 0;
    }
 
-   return intfstream_file_get_serial(track_path, 0, SIZE_MAX, serial, serial_len);
+   return intfstream_file_get_serial(track_path, 0, SIZE_MAX, s, len);
 }
 
-static int task_database_chd_get_serial(const char *name, char* serial, size_t serial_len)
+static int task_database_chd_get_serial(const char *name, char *serial, size_t len)
 {
    int result;
    intfstream_t *fd = intfstream_open_chd_track(
@@ -378,14 +378,14 @@ static int task_database_chd_get_serial(const char *name, char* serial, size_t s
    if (!fd)
       return 0;
 
-   result = intfstream_get_serial(fd, serial, serial_len, name);
+   result = intfstream_get_serial(fd, serial, len, name);
    intfstream_close(fd);
    free(fd);
    return result;
 }
 
 static bool intfstream_file_get_crc(const char *name,
-      uint64_t offset, size_t size, uint32_t *crc)
+      uint64_t offset, size_t len, uint32_t *crc)
 {
    bool rv;
    intfstream_t *fd  = intfstream_open_file(name,
@@ -407,20 +407,20 @@ static bool intfstream_file_get_crc(const char *name,
    if (file_size < 0)
       goto error;
 
-   if (offset != 0 || size < (uint64_t) file_size)
+   if (offset != 0 || len < (uint64_t) file_size)
    {
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
-      data = (uint8_t*)malloc(size);
+      data = (uint8_t*)malloc(len);
 
-      if (intfstream_read(fd, data, size) != (int64_t) size)
+      if (intfstream_read(fd, data, len) != (int64_t)len)
          goto error;
 
       intfstream_close(fd);
       free(fd);
       fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE, size);
+            RETRO_VFS_FILE_ACCESS_HINT_NONE, len);
 
       if (!fd)
          goto error;
@@ -447,11 +447,11 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
 {
    char track_path[PATH_MAX_LENGTH];
    uint64_t offset  = 0;
-   size_t size      = 0;
+   size_t _len      = 0;
 
    track_path[0]    = '\0';
 
-   if (cue_find_track(name, false, &offset, &size,
+   if (cue_find_track(name, false, &offset, &_len,
          track_path, sizeof(track_path)) < 0)
    {
 #ifdef DEBUG
@@ -461,7 +461,7 @@ static int task_database_cue_get_crc(const char *name, uint32_t *crc)
       return 0;
    }
 
-   return intfstream_file_get_crc(track_path, offset, size, crc);
+   return intfstream_file_get_crc(track_path, offset, _len, crc);
 }
 
 static int task_database_gdi_get_crc(const char *name, uint32_t *crc)
@@ -703,19 +703,19 @@ static int database_info_list_iterate_end_no_match(
       if (archive_list && archive_list->size > 0)
       {
          unsigned i;
-         size_t path_len  = strlen(path);
+         size_t _len  = strlen(path);
 
          for (i = 0; i < archive_list->size; i++)
          {
-            if (path_len + strlen(archive_list->elems[i].data)
+            if (_len + strlen(archive_list->elems[i].data)
                      + 1 < PATH_MAX_LENGTH)
             {
                char new_path[PATH_MAX_LENGTH];
                strlcpy(new_path, path, sizeof(new_path));
-               new_path[path_len] = '#';
-               strlcpy(new_path + path_len + 1,
+               new_path[_len] = '#';
+               strlcpy(new_path + _len + 1,
                      archive_list->elems[i].data,
-                     sizeof(new_path) - path_len);
+                     sizeof(new_path) - _len);
                string_list_append(db->list, new_path,
                      archive_list->elems[i].attr);
             }
@@ -790,10 +790,7 @@ static int database_info_list_iterate_found_match(
    entry_path_str[0]              = '\0';
 
    fill_pathname(db_playlist_base_str,
-         path_basename_nocompression(db_path), "", str_len);
-   path_remove_extension(db_playlist_base_str);
-
-   strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
+         path_basename_nocompression(db_path), ".lpl", str_len);
 
    if (!string_is_empty(_db->playlist_directory))
       fill_pathname_join_special(db_playlist_path, _db->playlist_directory,
@@ -827,7 +824,6 @@ static int database_info_list_iterate_found_match(
          *delim = '\0';
       fill_pathname(entry_lbl,
             path_basename_nocompression(entry_path), "", str_len);
-      path_remove_extension(entry_lbl);
 
       RARCH_LOG("[Scanner]: No match for: \"%s\", CRC: 0x%08X\n", entry_path_str, db_state->crc);
    }
@@ -1049,7 +1045,6 @@ static int task_database_iterate_playlist_lutro(
       char game_title[NAME_MAX_LENGTH];
       fill_pathname(game_title,
             path_basename(path), "", sizeof(game_title));
-      path_remove_extension(game_title);
 
       /* the push function reads our entry as const,
        * so these casts are safe */
@@ -1086,19 +1081,12 @@ static bool task_database_check_serial_and_crc(
       database_state_handle_t *db_state)
 {
 #ifdef RARCH_INTERNAL
-   settings_t *settings                    = config_get_ptr();
-#endif
-   const char         *db_path    =
-      database_info_get_current_name(db_state);
-
-#ifdef RARCH_INTERNAL
-   if (!settings->bools.scan_serial_and_crc)
+   if (!config_get_ptr()->bools.scan_serial_and_crc)
        return false;
 #endif
-
    /* the PSP shares serials for disc/download content */
    return string_starts_with(
-         path_basename_nocompression(db_path),
+         path_basename_nocompression(database_info_get_current_name(db_state)),
          "Sony - PlayStation Portable");
 }
 
@@ -1292,9 +1280,7 @@ static void task_database_handler(retro_task_t *task)
 
                if (!string_is_empty(db->fullpath))
                {
-                  const char *slash     = strrchr(db->fullpath, '/');
-                  const char *backslash = strrchr(db->fullpath, '\\');
-                  char *last_slash      = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+                  char *last_slash      = find_last_slash(db->fullpath);
                   dirname               = last_slash + 1;
                }
 
@@ -1303,20 +1289,14 @@ static void task_database_handler(retro_task_t *task)
                   for (i = 0; i < dbstate->list->size; i++)
                   {
                      char *last_slash;
-                     const char *slash;
-                     const char *backslash;
                      const char *data = dbstate->list->elems[i].data;
-                     char *dbname     = NULL;
                      bool strmatch    = false;
                      char *dbpath     = strdup(data);
 
                      path_remove_extension(dbpath);
 
-                     slash            = strrchr(dbpath, '/');
-                     backslash        = strrchr(dbpath, '\\');
-                     last_slash       = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
-                     dbname           = last_slash + 1;
-                     strmatch         = strcasecmp(dbname, dirname) == 0;
+                     last_slash       = find_last_slash(dbpath);
+                     strmatch         = strcasecmp(last_slash + 1, dirname) == 0;
 
                      free(dbpath);
 

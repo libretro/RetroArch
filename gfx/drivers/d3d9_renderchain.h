@@ -87,7 +87,7 @@ typedef struct d3d9_renderchain
       unsigned last_height[TEXTURES];
    } prev;
    LPDIRECT3DDEVICE9 dev;
-   D3DVIEWPORT9 *final_viewport;
+   D3DVIEWPORT9 *out_vp;
    struct shader_pass_vector_list  *passes;
    struct unsigned_vector_list *bound_tex;
    struct unsigned_vector_list *bound_vert;
@@ -285,7 +285,7 @@ static INLINE bool d3d9_renderchain_set_pass_size(
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             (pass2->info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
-            ? D3DFMT_A32B32G32R32F 
+            ? D3DFMT_A32B32G32R32F
             : D3D9_ARGB8888_FORMAT,
             D3DPOOL_DEFAULT, 0, 0, 0,
             NULL, NULL, false);
@@ -308,12 +308,12 @@ static INLINE void d3d9_convert_geometry(
       unsigned *out_height,
       unsigned width,
       unsigned height,
-      D3DVIEWPORT9 *final_viewport)
+      D3DVIEWPORT9 *out_vp)
 {
    switch (info->pass->fbo.type_x)
    {
       case RARCH_SCALE_VIEWPORT:
-         *out_width = info->pass->fbo.scale_x * final_viewport->Width;
+         *out_width = info->pass->fbo.scale_x * out_vp->Width;
          break;
 
       case RARCH_SCALE_ABSOLUTE:
@@ -328,7 +328,7 @@ static INLINE void d3d9_convert_geometry(
    switch (info->pass->fbo.type_y)
    {
       case RARCH_SCALE_VIEWPORT:
-         *out_height = info->pass->fbo.scale_y * final_viewport->Height;
+         *out_height = info->pass->fbo.scale_y * out_vp->Height;
          break;
 
       case RARCH_SCALE_ABSOLUTE:
@@ -374,7 +374,7 @@ static INLINE void d3d9_recompute_pass_sizes(
       d3d9_convert_geometry(
             &link_info,
             &out_width, &out_height,
-            current_width, current_height, &d3d->final_viewport);
+            current_width, current_height, &d3d->out_vp);
 
       link_info.tex_w = next_pow2(out_width);
       link_info.tex_h = next_pow2(out_height);

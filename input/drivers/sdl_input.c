@@ -30,6 +30,10 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
+#ifdef __linux__
+#include "../common/linux_common.h"
+#endif
+
 #ifdef HAVE_SDL2
 #include "../../gfx/common/sdl2_common.h"
 #endif
@@ -54,6 +58,10 @@ typedef struct sdl_input
    int mouse_wd;
    int mouse_wl;
    int mouse_wr;
+#ifdef __linux__
+   /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
+   linux_illuminance_sensor_t *illuminance_sensor;
+#endif
 } sdl_input_t;
 
 #ifdef WEBOS
@@ -248,24 +256,15 @@ static int16_t sdl_input_state(
       case RARCH_DEVICE_POINTER_SCREEN:
          if (idx == 0)
          {
-            struct video_viewport vp;
-            bool screen                 = device == 
+            video_viewport_t vp         = {0};
+            bool screen                 = device ==
                RARCH_DEVICE_POINTER_SCREEN;
-            const int edge_detect       = 32700;
-            bool inside                 = false;
             int16_t res_x               = 0;
             int16_t res_y               = 0;
             int16_t res_screen_x        = 0;
             int16_t res_screen_y        = 0;
 
-            vp.x                        = 0;
-            vp.y                        = 0;
-            vp.width                    = 0;
-            vp.height                   = 0;
-            vp.full_width               = 0;
-            vp.full_height              = 0;
-
-            if (video_driver_translate_coord_viewport_wrap(
+            if (video_driver_translate_coord_viewport_confined_wrap(
                         &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
                         &res_x, &res_y, &res_screen_x, &res_screen_y))
             {
@@ -275,11 +274,6 @@ static int16_t sdl_input_state(
                   res_y = res_screen_y;
                }
 
-               inside =    (res_x >= -edge_detect) 
-                  && (res_y >= -edge_detect)
-                  && (res_x <= edge_detect)
-                  && (res_y <= edge_detect);
-
                switch (id)
                {
                   case RETRO_DEVICE_ID_POINTER_X:
@@ -288,33 +282,50 @@ static int16_t sdl_input_state(
                      return res_y;
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
                      return sdl->mouse_l;
-                  case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                     return !inside;
+                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                     return input_driver_pointer_is_offscreen(res_x, res_y);
                }
             }
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && sdl_key_pressed(id);
+      /* TODO: update button binds to match other input drivers */
       case RETRO_DEVICE_LIGHTGUN:
+      {
+         video_viewport_t vp         = {0};
+         int16_t res_x               = 0;
+         int16_t res_y               = 0;
+         int16_t res_screen_x        = 0;
+         int16_t res_screen_y        = 0;
+
+         if (video_driver_translate_coord_viewport_wrap(
+                     &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+                     &res_x, &res_y, &res_screen_x, &res_screen_y))
+
          switch (id)
          {
+            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+               return res_x;
+            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+               return res_y;
+            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+               return input_driver_pointer_is_offscreen(res_x, res_y);
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                return sdl->mouse_x;
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
                return sdl->mouse_y;
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return sdl->mouse_l;
-            case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:
+            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
                return sdl->mouse_m;
-            case RETRO_DEVICE_ID_LIGHTGUN_TURBO:
-               return sdl->mouse_r;
             case RETRO_DEVICE_ID_LIGHTGUN_START:
-               return sdl->mouse_m && sdl->mouse_r;
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-               return sdl->mouse_m && sdl->mouse_l;
+               return sdl->mouse_r;
+            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+               return sdl->mouse_l && sdl->mouse_r;
          }
          break;
+      }
    }
 
    return 0;
@@ -325,8 +336,9 @@ static void sdl_input_free(void *data)
 #ifndef HAVE_SDL2
    SDL_Event event;
 #endif
+   sdl_input_t *sdl = (sdl_input_t*)data;
 
-   if (!data)
+   if (!sdl)
       return;
 
    /* Flush out all pending events. */
@@ -336,7 +348,71 @@ static void sdl_input_free(void *data)
    while (SDL_PollEvent(&event));
 #endif
 
+#ifdef __linux__
+   linux_close_illuminance_sensor(sdl->illuminance_sensor); /* noop if NULL */
+#endif
+
    free(data);
+}
+
+static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+
+   if (!sdl)
+      return false;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+#ifdef __linux__
+         /* If already disabled, then do nothing */
+         linux_close_illuminance_sensor(sdl->illuminance_sensor); /* noop if NULL */
+         sdl->illuminance_sensor = NULL;
+#endif
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         /** Unimplemented sensor actions that probably shouldn't fail */
+         return true;
+
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+#ifdef __linux__
+         /* Unsupported on non-Linux platforms */
+         if (sdl->illuminance_sensor)
+            /* If we already have a sensor, just set the rate */
+            linux_set_illuminance_sensor_rate(sdl->illuminance_sensor, rate);
+         else
+            sdl->illuminance_sensor = linux_open_illuminance_sensor(rate);
+
+         return sdl->illuminance_sensor != NULL;
+#endif
+      default:
+         break;
+   }
+
+   return false;
+}
+
+static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   sdl_input_t *sdl = (sdl_input_t*)data;
+
+   if (!sdl)
+      return 0.0f;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ILLUMINANCE:
+#ifdef __linux__
+         if (sdl->illuminance_sensor)
+            return linux_get_illuminance_reading(sdl->illuminance_sensor);
+#endif
+      /* Unsupported on non-Linux platforms */
+      default:
+         break;
+   }
+
+   return 0.0f;
 }
 
 #ifdef HAVE_SDL2
@@ -397,7 +473,7 @@ static void sdl_input_poll(void *data)
          switch ((int) event.key.keysym.scancode)
          {
             case SDL_WEBOS_SCANCODE_BACK:
-               /* Because webOS is sending DOWN/UP at the same time, 
+               /* Because webOS is sending DOWN/UP at the same time,
                   we save this flag for later */
                sdl_webos_special_keymap[sdl_webos_spkey_back] |= event.type == SDL_KEYDOWN;
                code = RETROK_BACKSPACE;
@@ -478,8 +554,8 @@ input_driver_t input_sdl = {
    sdl_input_poll,
    sdl_input_state,
    sdl_input_free,
-   NULL,
-   NULL,
+   sdl_set_sensor_state,
+   sdl_get_sensor_input,
    sdl_get_capabilities,
 #ifdef HAVE_SDL2
    "sdl2",

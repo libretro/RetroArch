@@ -20,7 +20,6 @@
 extern "C" {
 #endif
 
-#include "../../../configuration.h"
 #include "../../../setting_list.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_cbs.h"

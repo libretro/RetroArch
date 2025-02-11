@@ -40,15 +40,10 @@ struct memstream
    unsigned writing;
 };
 
-void memstream_set_buffer(uint8_t *buffer, uint64_t size)
+void memstream_set_buffer(uint8_t *s, uint64_t len)
 {
-   g_buffer = buffer;
-   g_size   = size;
-}
-
-uint64_t memstream_get_last_size(void)
-{
-   return last_file_size;
+   g_buffer = s;
+   g_size   = len;
 }
 
 memstream_t *memstream_open(unsigned writing)
@@ -158,15 +153,9 @@ void memstream_rewind(memstream_t *stream)
    memstream_seek(stream, 0L, SEEK_SET);
 }
 
-uint64_t memstream_pos(memstream_t *stream)
-{
-   return stream->ptr;
-}
-
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len)
-{
-   return NULL;
-}
+uint64_t memstream_pos(memstream_t *stream) { return stream->ptr; }
+char *memstream_gets(memstream_t *stream, char *s, size_t len) { return NULL; }
+uint64_t memstream_get_last_size(void) { return last_file_size; }
 
 int memstream_getc(memstream_t *stream)
 {

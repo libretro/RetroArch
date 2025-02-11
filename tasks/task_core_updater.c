@@ -1079,10 +1079,9 @@ void *task_push_core_updater_download(
       {
          char msg[128];
          size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_UPDATE_DISABLED), sizeof(msg));
-         strlcpy(msg + _len, list_entry->display_name, sizeof(msg) - _len);
-
-         runloop_msg_queue_push(msg, 1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _len += strlcpy(msg + _len, list_entry->display_name, sizeof(msg) - _len);
+         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
       goto error;

@@ -316,37 +316,35 @@ static void vg_free(void *data)
 }
 
 static void vg_calculate_quad(vg_t *vg,
-      unsigned width, unsigned height)
+      unsigned vp_width, unsigned vp_height)
 {
+   video_viewport_t vp;
    settings_t *settings      = config_get_ptr();
    bool video_scale_integer  = settings->bools.video_scale_integer;
-   float device_aspect       = (float)width / height;
-   struct video_viewport_t vp;
+   float device_aspect       = (float)vp_width / vp_height;
 
-   vp.x = 0;
-   vp.y = 0;
-   vp.width = width;
-   vp.height = height;
-   vp.full_width = width;
-   vp.full_height = height;
+   vp.x                      = 0;
+   vp.y                      = 0;
+   vp.width                  = vp_width;
+   vp.height                 = vp_height;
+   vp.full_width             = vp_width;
+   vp.full_height            = vp_height;
 
    if (vg->ctx_driver->translate_aspect)
-      device_aspect = vg->ctx_driver->translate_aspect(vg->ctx_data, width, height);
+      device_aspect = vg->ctx_driver->translate_aspect(vg->ctx_data, vp_width, vp_height);
 
    vg->mScreenAspect = device_aspect;
    /* OpenVG uses a bottom-left origin coordinate system */
    if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&vp,
-            width, height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(),
             vg->keep_aspect,
             false);
    }
    else if (vg->keep_aspect)
-   {
-      video_viewport_get_scaled_aspect(&vp, viewport_width, viewport_height, false);
-   }
+      video_viewport_get_scaled_aspect(&vp, vp_width, vp_height, false);
    vg->x1 = vp.x;
    vg->y1 = vp.y;
    vg->x2 = vp.width;

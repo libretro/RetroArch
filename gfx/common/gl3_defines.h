@@ -114,8 +114,8 @@ typedef struct gl3
    unsigned overlays;
    unsigned version_major;
    unsigned version_minor;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
    unsigned rotation;
    unsigned textures_index;
    unsigned scratch_vbo_index;

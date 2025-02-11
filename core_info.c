@@ -100,11 +100,11 @@ static core_info_state_t core_info_st = {
 /* JSON Handlers START */
 
 static bool CCJSONObjectMemberHandler(void *context,
-      const char *pValue, size_t length)
+      const char *pValue, size_t len)
 {
    CCJSONContext *pCtx = (CCJSONContext *)context;
 
-   if (length)
+   if (len)
    {
       switch (pCtx->array_depth)
       {
@@ -262,12 +262,12 @@ static bool CCJSONObjectMemberHandler(void *context,
 }
 
 static bool CCJSONStringHandler(void *context,
-      const char *pValue, size_t length)
+      const char *pValue, size_t len)
 {
    CCJSONContext *pCtx = (CCJSONContext*)context;
 
    if (     pCtx->current_string_val
-         && length
+         && len
          && !string_is_empty(pValue))
    {
       if (*pCtx->current_string_val)
@@ -290,7 +290,7 @@ static bool CCJSONStringHandler(void *context,
 }
 
 static bool CCJSONNumberHandler(void *context,
-      const char *pValue, size_t length)
+      const char *pValue, size_t len)
 {
    CCJSONContext *pCtx              = (CCJSONContext*)context;
 
@@ -849,8 +849,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
             sizeof(file_path));
 
 #if defined(CORE_INFO_CACHE_COMPRESS)
-   file = intfstream_open_rzip_file(file_path,
-         RETRO_VFS_FILE_ACCESS_WRITE);
+   file = intfstream_open_rzip_file(file_path, RETRO_VFS_FILE_ACCESS_WRITE);
 #else
    file = intfstream_open_file(file_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
@@ -1255,10 +1254,8 @@ bool core_info_cache_force_refresh(const char *path_info)
     * if required */
    if (!path_is_valid(file_path))
    {
-      RFILE *refresh_file = filestream_open(
-            file_path,
-            RETRO_VFS_FILE_ACCESS_WRITE,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      RFILE *refresh_file = filestream_open(file_path,
+            RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!refresh_file)
          return false;
@@ -1402,8 +1399,7 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
 
    /* Fetch core directory listing */
    dir_list_ok = dir_list_append(path_list->dir_list,
-         core_dir, exts, false, show_hidden_files,
-               false, false);
+         core_dir, exts, false, show_hidden_files, false, false);
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    {
@@ -1497,18 +1493,15 @@ static bool core_info_path_is_locked(
       core_aux_file_path_list_t *lock_list,
       const char *core_file_name)
 {
-   size_t i, len;
+   size_t i;
    uint32_t hash;
    char lock_filename[NAME_MAX_LENGTH];
 
    if (lock_list->size < 1)
       return false;
 
-   len = strlcpy(lock_filename, core_file_name,
-         sizeof(lock_filename));
-   strlcpy(lock_filename       + len,
-         ".lck",
-         sizeof(lock_filename) - len);
+   fill_pathname(lock_filename, core_file_name,
+         ".lck", sizeof(lock_filename));
 
    hash = core_info_hash_string(lock_filename);
 
@@ -1528,18 +1521,15 @@ static bool core_info_path_is_standalone_exempt(
       core_aux_file_path_list_t *exempt_list,
       const char *core_file_name)
 {
-   size_t i, len;
+   size_t i;
    uint32_t hash;
    char exempt_filename[NAME_MAX_LENGTH];
 
    if (exempt_list->size < 1)
       return false;
 
-   len = strlcpy(exempt_filename, core_file_name,
-         sizeof(exempt_filename));
-   strlcpy(exempt_filename       + len,
-         ".lsae",
-         sizeof(exempt_filename) - len);
+   fill_pathname(exempt_filename, core_file_name,
+         ".lsae", sizeof(exempt_filename));
 
    hash = core_info_hash_string(exempt_filename);
 
@@ -1555,20 +1545,17 @@ static bool core_info_path_is_standalone_exempt(
    return false;
 }
 
-static bool core_info_get_file_id(const char *core_filename,
-      char *core_file_id, size_t len)
+static size_t core_info_get_file_id(const char *core_filename,
+      char *s, size_t len)
 {
+   size_t _len;
    char *last_underscore = NULL;
-
    if (string_is_empty(core_filename))
-      return false;
-
+      return 0;
    /* Core file 'id' is filename without extension
     * or platform-specific suffix */
-
    /* > Remove extension */
-   strlcpy(core_file_id, core_filename, len);
-   path_remove_extension(core_file_id);
+   _len = fill_pathname(s, core_filename, "", len);
 #if defined(IOS) || defined(OSX)
    /* iOS framework names, to quote Apple:
     * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
@@ -1576,42 +1563,39 @@ static bool core_info_get_file_id(const char *core_filename,
     * Since core names include underscore, which is not allowed, but not dot,
     * which is, we change underscore to dot. Here, we need to change it back.
     */
-   string_replace_all_chars(core_file_id, '.', '_');
+   string_replace_all_chars(s, '.', '_');
 #endif
-
    /* > Remove suffix */
-   last_underscore = (char*)strrchr(core_file_id, '_');
-
+   last_underscore = (char*)strrchr(s, '_');
    if (   !string_is_empty(last_underscore)
        && !string_is_equal(last_underscore, "_libretro"))
+   {
       *last_underscore = '\0';
-
-   return !string_is_empty(core_file_id);
+      _len = strlen(s); /* TODO/FIXME - make this unnecessary later on */
+   }
+   return _len;
 }
 
-static core_info_t *core_info_find_internal(
-      core_info_list_t *list,
+static core_info_t *core_info_find_internal(core_info_list_t *list,
       const char *core_path)
 {
-   size_t i;
-   uint32_t hash;
    char core_file_id[256];
 
-   if (   !list
-       || string_is_empty(core_path)
-       || !core_info_get_file_id(path_basename_nocompression(core_path),
-           core_file_id, sizeof(core_file_id)))
-      return NULL;
-
-   hash = core_info_hash_string(core_file_id);
-
-   for (i = 0; i < list->count; i++)
+   if (list && !string_is_empty(core_path))
    {
-      core_info_t *info = &list->list[i];
-
-      if (  (info->core_file_id.hash == hash)
-          && string_is_equal(info->core_file_id.str, core_file_id))
-         return info;
+      if ((core_info_get_file_id(path_basename_nocompression(core_path),
+                  core_file_id, sizeof(core_file_id))) > 0)
+      {
+         size_t i;
+         uint32_t hash = core_info_hash_string(core_file_id);
+         for (i = 0; i < list->count; i++)
+         {
+            core_info_t *info = &list->list[i];
+            if ((info->core_file_id.hash == hash)
+                  && string_is_equal(info->core_file_id.str, core_file_id))
+               return info;
+         }
+      }
    }
 
    return NULL;
@@ -2039,15 +2023,15 @@ static core_info_list_t *core_info_list_new(const char *path,
 
    for (i = 0; i < path_list->core_list->size; i++)
    {
+      char core_file_id[256];
+      config_file_t *conf         = NULL;
       core_info_t *info           = &core_info[i];
       core_file_path_t *core_file = &path_list->core_list->list[i];
       const char *base_path       = core_file->path;
       const char *core_filename   = core_file->filename;
-      config_file_t *conf         = NULL;
-      char core_file_id[256];
-
-      if (!core_info_get_file_id(core_filename, core_file_id,
-               sizeof(core_file_id)))
+      size_t _len = core_info_get_file_id(core_filename, core_file_id,
+               sizeof(core_file_id));
+      if (_len == 0)
          continue;
 
       /* If info cache is available, search for
@@ -2104,7 +2088,7 @@ static core_info_list_t *core_info_list_new(const char *path,
       info->core_file_id.str  = strdup(core_file_id);
       info->core_file_id.hash = core_info_hash_string(core_file_id);
 
-      strlcat(core_file_id, ".info", sizeof(core_file_id));
+      strlcpy(core_file_id + _len, ".info", sizeof(core_file_id) - _len);
 
       /* Parse core info file */
       if ((conf = core_info_get_config_file(core_file_id, info_dir)))
@@ -2208,19 +2192,15 @@ static bool core_info_does_support_file(
       const core_info_t *core, const char *path)
 {
    const char *basename, *ext;
-
    if (!core || !core->supported_extensions_list)
       return false;
    if (string_is_empty(path))
       return false;
-
    basename = path_basename(path);
-
    /* if a core has / in its list of supported extensions, the core
       supports loading of directories on the host file system */
    if (string_is_empty(basename))
       return string_list_find_elem(core->supported_extensions_list, "/");
-
    ext = strrchr(basename, '.');
    return string_list_find_elem_prefix(
          core->supported_extensions_list, ".", (ext ? ext + 1 : ""));
@@ -2238,12 +2218,11 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
    int support_b                 = core_info_does_support_file(b,
          p_coreinfo->tmp_path);
 #ifdef HAVE_COMPRESSION
-   support_a            = support_a ||
-      core_info_does_support_any_file(a, p_coreinfo->tmp_list);
-   support_b            = support_b ||
-      core_info_does_support_any_file(b, p_coreinfo->tmp_list);
+   support_a            = support_a
+      || core_info_does_support_any_file(a, p_coreinfo->tmp_list);
+   support_b            = support_b
+      || core_info_does_support_any_file(b, p_coreinfo->tmp_list);
 #endif
-
    if (support_a != support_b)
       return support_b - support_a;
    return strcasecmp(a->display_name, b->display_name);
@@ -2525,17 +2504,15 @@ bool core_info_core_file_id_is_equal(const char *core_path_a,
 {
    char core_file_id_a[256];
    char core_file_id_b[256];
-
    if (   string_is_empty(core_path_a)
        || string_is_empty(core_path_b)
-       || !core_info_get_file_id(
+       || (core_info_get_file_id(
           path_basename_nocompression(core_path_a),
-            core_file_id_a, sizeof(core_file_id_a))
-       || !core_info_get_file_id(
+            core_file_id_a, sizeof(core_file_id_a) == 0))
+       || (core_info_get_file_id(
           path_basename_nocompression(core_path_b),
-            core_file_id_b, sizeof(core_file_id_b)))
+            core_file_id_b, sizeof(core_file_id_b)) == 0))
       return false;
-
    return string_is_equal(core_file_id_a, core_file_id_b);
 }
 
@@ -2618,27 +2595,18 @@ bool core_info_database_supports_content_path(
    return false;
 }
 
-bool core_info_list_get_display_name(
+size_t core_info_list_get_display_name(
       core_info_list_t *core_info_list,
       const char *core_path, char *s, size_t len)
 {
-   core_info_t *info;
-
-   if (!core_info_list)
-     return false;
-
-   info = core_info_find_internal(
-         core_info_list, core_path);
-
-   if (   s
-       && info
-       && !string_is_empty(info->display_name))
+   if (core_info_list)
    {
-      strlcpy(s, info->display_name, len);
-      return true;
+      core_info_t *info = core_info_find_internal(
+            core_info_list, core_path);
+      if (s && info && !string_is_empty(info->display_name))
+         return strlcpy(s, info->display_name, len);
    }
-
-   return false;
+   return 0;
 }
 
 /* Returns core_info parameters required for
@@ -2816,72 +2784,64 @@ void core_info_qsort(core_info_list_t *core_info_list,
 
 bool core_info_current_supports_savestate(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_BASIC;
 }
 
 bool core_info_current_supports_rewind(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_SERIALIZED;
 }
 
 bool core_info_current_supports_netplay(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_DETERMINISTIC;
 }
 
 bool core_info_current_supports_runahead(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_DETERMINISTIC;
 }
@@ -2929,7 +2889,6 @@ static bool core_info_update_core_aux_file(const char *path, bool create)
  *   core info list this is *not* thread safe */
 bool core_info_set_core_lock(const char *core_path, bool lock)
 {
-   size_t _len;
    core_info_t *core_info = NULL;
    char lock_file_path[PATH_MAX_LENGTH];
 
@@ -2948,11 +2907,8 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
       return false;
 
    /* Get lock file path */
-   _len  = strlcpy(lock_file_path, core_info->path,
-          sizeof(lock_file_path));
-   strlcpy(lock_file_path       + _len,
-         ".lck",
-         sizeof(lock_file_path) - _len);
+   fill_pathname(lock_file_path, core_info->path,
+         ".lck", sizeof(lock_file_path));
 
    /* Create or delete lock file, as required */
    if (!core_info_update_core_aux_file(lock_file_path, lock))
@@ -2976,7 +2932,6 @@ bool core_info_set_core_lock(const char *core_path, bool lock)
  *   must be checked externally */
 bool core_info_get_core_lock(const char *core_path, bool validate_path)
 {
-   size_t _len;
    core_info_t *core_info     = NULL;
    const char *core_file_path = NULL;
    bool is_locked             = false;
@@ -3007,11 +2962,8 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
       return false;
 
    /* Get lock file path */
-   _len = strlcpy(lock_file_path, core_file_path,
-         sizeof(lock_file_path));
-   strlcpy(lock_file_path       + _len,
-         ".lck",
-         sizeof(lock_file_path) - _len);
+   fill_pathname(lock_file_path, core_file_path,
+         ".lck", sizeof(lock_file_path));
 
    /* Check whether lock file exists */
    is_locked = path_is_valid(lock_file_path);
@@ -3039,7 +2991,6 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
    /* Static platforms do not support the contentless
     * cores menu */
 #if defined(HAVE_DYNAMIC)
-   size_t _len;
    core_info_t *core_info = NULL;
    char exempt_file_path[PATH_MAX_LENGTH];
 
@@ -3051,11 +3002,8 @@ bool core_info_set_core_standalone_exempt(const char *core_path, bool exempt)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len = strlcpy(exempt_file_path, core_info->path,
-         sizeof(exempt_file_path));
-   strlcpy(exempt_file_path       + _len,
-         ".lsae",
-         sizeof(exempt_file_path) - _len);
+   fill_pathname(exempt_file_path, core_info->path,
+         ".lsae", sizeof(exempt_file_path));
 
    /* Create or delete 'standalone exempt' file, as required */
    if (core_info_update_core_aux_file(exempt_file_path, exempt))
@@ -3079,7 +3027,6 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
    /* Static platforms do not support the contentless
     * cores menu */
 #if defined(HAVE_DYNAMIC)
-   size_t _len;
    core_info_t *core_info = NULL;
    char exempt_file_path[PATH_MAX_LENGTH];
 
@@ -3091,11 +3038,8 @@ bool core_info_get_core_standalone_exempt(const char *core_path)
       return false;
 
    /* Get 'standalone exempt' file path */
-   _len = strlcpy(exempt_file_path, core_info->path,
-         sizeof(exempt_file_path));
-   strlcpy(exempt_file_path       + _len,
-         ".lsae",
-         sizeof(exempt_file_path) - _len);
+   fill_pathname(exempt_file_path, core_info->path,
+         ".lsae", sizeof(exempt_file_path));
 
    /* Check whether 'standalone exempt' file exists */
    if (path_is_valid(exempt_file_path))

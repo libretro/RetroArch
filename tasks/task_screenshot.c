@@ -190,9 +190,10 @@ static void task_screenshot_handler(retro_task_t *task)
    /* Report any errors */
    if (!ret)
    {
-      char *msg = strdup(msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      runloop_msg_queue_push(msg, 1, (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      free(msg);
+      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1,
+            (state->flags & SS_TASK_FLAG_IS_PAUSED) ? 1 : 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 
    if (task->title)
@@ -307,11 +308,11 @@ static bool screenshot_dump(
    {
       if (savestate)
       {
-         size_t len             = strlcpy(state->filename,
+         size_t _len             = strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         strlcpy(state->filename       + len,
+         strlcpy(state->filename       + _len,
                ".png",
-               sizeof(state->filename) - len);
+               sizeof(state->filename) - _len);
       }
       else
       {
@@ -323,8 +324,8 @@ static bool screenshot_dump(
 
             /* Append content directory name to screenshot
              * path, if required */
-            if (settings->bools.sort_screenshots_by_content_enable &&
-                !string_is_empty(content_dir))
+            if (    settings->bools.sort_screenshots_by_content_enable
+                && !string_is_empty(content_dir))
             {
                char content_dir_name[DIR_MAX_LENGTH];
                fill_pathname_parent_dir_name(content_dir_name,
@@ -366,12 +367,12 @@ static bool screenshot_dump(
          }
          else
          {
-            size_t len = strlcpy(state->shotname,
-                  path_basename_nocompression(name_base),
-                  sizeof(state->shotname));
-            strlcpy(state->shotname       + len,
+            size_t _len = strlcpy(state->shotname,
+                path_basename_nocompression(name_base),
+                 sizeof(state->shotname));
+            strlcpy(state->shotname       + _len,
                   ".png",
-                  sizeof(state->shotname) - len);
+                  sizeof(state->shotname) - _len);
          }
 
          if (     string_is_empty(new_screenshot_dir)
@@ -536,12 +537,12 @@ static bool take_screenshot_choice(
       bool has_valid_framebuffer,
       bool fullpath,
       bool use_thread,
-      bool supports_viewport_read,
+      bool supports_vp_read,
       bool supports_read_frame_raw,
       unsigned pixel_format_type
       )
 {
-   if (supports_viewport_read)
+   if (supports_vp_read)
    {
       /* Avoid taking screenshot of GUI overlays. */
       if (video_st->poke && video_st->poke->set_texture_enable)
@@ -596,19 +597,19 @@ bool take_screenshot(
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    bool video_gpu_screenshot      = settings->bools.video_gpu_screenshot;
-   bool supports_viewport_read    = video_st->current_video->read_viewport
+   bool supports_vp_read          = video_st->current_video->read_viewport
          && (video_st->current_video->viewport_info);
-   bool prefer_viewport_read      = false;
-   if (supports_viewport_read)
+   bool prefer_vp_read            = false;
+   if (supports_vp_read)
    {
       /* Use VP read screenshots if it's a HW context core
        * and read_frame_raw is not implemented */
       if (      video_driver_is_hw_context()
             && !video_st->current_video->read_frame_raw)
-         prefer_viewport_read     = true;
+         prefer_vp_read           = true;
       /* Avoid GPU screenshots with savestates */
       if (video_gpu_screenshot && !savestate)
-         prefer_viewport_read     = true;
+         prefer_vp_read           = true;
    }
 
    /* No way to infer screenshot directory. */
@@ -625,7 +626,7 @@ bool take_screenshot(
          has_valid_framebuffer,
          fullpath,
          use_thread,
-         prefer_viewport_read,
+         prefer_vp_read,
          (video_st->current_video->read_frame_raw != NULL),
          video_st->pix_fmt
          );

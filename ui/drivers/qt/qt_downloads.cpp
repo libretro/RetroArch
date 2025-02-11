@@ -59,7 +59,8 @@ static void cb_extract_thumbnail_pack(retro_task_t *task,
    mainwindow->onThumbnailPackExtractFinished(string_is_empty(err));
 }
 
-void MainWindow::onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError code)
+void MainWindow::onThumbnailPackDownloadNetworkError(
+      QNetworkReply::NetworkError code)
 {
    QByteArray errorStringArray;
    QNetworkReply *reply        = m_thumbnailPackDownloadReply.data();
@@ -85,7 +86,8 @@ void MainWindow::onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError
 #endif
 }
 
-void MainWindow::onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> &errors)
+void MainWindow::onThumbnailPackDownloadNetworkSslErrors(
+      const QList<QSslError> &errors)
 {
    QNetworkReply *reply = m_thumbnailPackDownloadReply.data();
    int i;
@@ -97,9 +99,9 @@ void MainWindow::onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> 
    {
       const QSslError &error = errors.at(i);
       QString string         =
-           QString("Ignoring SSL error code ")
+           QStringLiteral("Ignoring SSL error code ")
          + QString::number(error.error())
-         + ": "
+         + QStringLiteral(": ")
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -117,10 +119,10 @@ void MainWindow::onThumbnailPackDownloadCanceled()
 
 void MainWindow::onThumbnailPackDownloadFinished()
 {
+   int code;
    QString system;
    QNetworkReply *reply = m_thumbnailPackDownloadReply.data();
    QNetworkReply::NetworkError error;
-   int code;
 
    m_thumbnailPackDownloadProgressDialog->cancel();
 
@@ -151,7 +153,8 @@ void MainWindow::onThumbnailPackDownloadFinished()
          QByteArray redirectUrlArray = redirectUrl.toString().toUtf8();
          const char *redirectUrlData = redirectUrlArray.constData();
 
-         RARCH_LOG("[Qt]: Thumbnail pack download got redirect with HTTP code %d: %s\n", code, redirectUrlData);
+         RARCH_LOG("[Qt]: Thumbnail pack download got redirect with HTTP code %d: %s\n",
+               code, redirectUrlData);
 
          reply->disconnect();
          reply->abort();
@@ -162,7 +165,10 @@ void MainWindow::onThumbnailPackDownloadFinished()
          return;
       }
 
-      emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": HTTP Code " + QString::number(code));
+      emit showErrorMessageDeferred(QString(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
+                + QStringLiteral(": HTTP Code ")
+                + QString::number(code));
 
       m_thumbnailPackDownloadFile.remove();
 
@@ -189,11 +195,12 @@ void MainWindow::onThumbnailPackDownloadFinished()
          if (m_thumbnailPackDownloadFile.rename(newFileName))
          {
             settings_t *settings = config_get_ptr();
-
             if (settings)
             {
                RARCH_LOG("[Qt]: Thumbnail pack download finished successfully.\n");
-               emit extractArchiveDeferred(newFileName, settings->paths.directory_thumbnails, TEMP_EXTENSION, cb_extract_thumbnail_pack);
+               emit extractArchiveDeferred(newFileName,
+                     settings->paths.directory_thumbnails,
+                     TEMP_EXTENSION, cb_extract_thumbnail_pack);
             }
          }
          else
@@ -211,7 +218,12 @@ void MainWindow::onThumbnailPackDownloadFinished()
       m_thumbnailPackDownloadFile.remove();
 
       RARCH_ERR("[Qt]: Thumbnail pack download ended prematurely: %s\n", errorData);
-      emit showErrorMessageDeferred(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)) + ": Code " + QString::number(code) + ": " + errorData);
+      emit showErrorMessageDeferred(QString(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
+                + QStringLiteral(": Code ")
+                + QString::number(code)
+                + QStringLiteral(": ")
+                + errorData);
    }
 
    reply->disconnect();
@@ -288,7 +300,9 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
       if (!m_thumbnailPackDownloadFile.open(QIODevice::WriteOnly))
       {
          m_thumbnailPackDownloadProgressDialog->cancel();
-         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         showMessageBox(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED),
+               MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
          return;
       }
@@ -305,7 +319,9 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
    m_thumbnailPackDownloadProgressDialog->setAutoClose(true);
    m_thumbnailPackDownloadProgressDialog->setAutoReset(true);
    m_thumbnailPackDownloadProgressDialog->setValue(0);
-   m_thumbnailPackDownloadProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
+   m_thumbnailPackDownloadProgressDialog->setLabelText(QString(
+            msg_hash_to_str(MSG_DOWNLOADING))
+          + QStringLiteral("..."));
    m_thumbnailPackDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_thumbnailPackDownloadProgressDialog->show();
 
@@ -315,14 +331,23 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
    reply->setProperty("system", system);
 
    /* Make sure any previous connection is removed first */
-   disconnect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
+   disconnect(m_thumbnailPackDownloadProgressDialog,
+         SIGNAL(canceled()), reply, SLOT(abort()));
+   connect(m_thumbnailPackDownloadProgressDialog,
+         SIGNAL(canceled()), reply, SLOT(abort()));
 
-   connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError)));
-   connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this, SLOT(onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError>&)));
-   connect(reply, SIGNAL(finished()), this, SLOT(onThumbnailPackDownloadFinished()));
-   connect(reply, SIGNAL(readyRead()), this, SLOT(onThumbnailPackDownloadReadyRead()));
-   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(onThumbnailPackDownloadProgress(qint64, qint64)));
+   connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this,
+         SLOT(onThumbnailPackDownloadNetworkError(
+               QNetworkReply::NetworkError)));
+   connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this,
+         SLOT(onThumbnailPackDownloadNetworkSslErrors(
+               const QList<QSslError>&)));
+   connect(reply, SIGNAL(finished()), this,
+         SLOT(onThumbnailPackDownloadFinished()));
+   connect(reply, SIGNAL(readyRead()), this,
+         SLOT(onThumbnailPackDownloadReadyRead()));
+   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this,
+         SLOT(onThumbnailPackDownloadProgress(qint64, qint64)));
 }
 
 void MainWindow::onThumbnailPackExtractFinished(bool success)
@@ -338,7 +363,8 @@ void MainWindow::onThumbnailPackExtractFinished(bool success)
 
    RARCH_LOG("[Qt]: Thumbnail pack extracted successfully.\n");
 
-   emit showInfoMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
+   emit showInfoMessageDeferred(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
 
    QNetworkReply *reply = m_thumbnailPackDownloadReply.data();
 
@@ -389,9 +415,9 @@ void MainWindow::onThumbnailDownloadNetworkSslErrors(
    {
       const QSslError &error = errors.at(i);
       QString         string =
-           QString("Ignoring SSL error code ")
+           QStringLiteral("Ignoring SSL error code ")
          + QString::number(error.error())
-         + ": "
+         + QStringLiteral(": ")
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -452,7 +478,8 @@ void MainWindow::onThumbnailDownloadFinished()
 
          m_pendingThumbnailDownloadTypes.prepend(downloadType);
 
-         RARCH_LOG("[Qt]: Thumbnail download got redirect with HTTP code %d: %s\n", code, redirectUrlData);
+         RARCH_LOG("[Qt]: Thumbnail download got redirect with HTTP code %d: %s\n",
+               code, redirectUrlData);
 
          reply->disconnect();
          reply->abort();
@@ -493,14 +520,16 @@ void MainWindow::onThumbnailDownloadFinished()
          {
             RARCH_LOG("[Qt]: Thumbnail download finished successfully.\n");
             /* reload thumbnail image */
-            m_playlistModel->reloadThumbnailPath(m_thumbnailDownloadFile.fileName());
+            m_playlistModel->reloadThumbnailPath(
+                  m_thumbnailDownloadFile.fileName());
             updateVisibleItems();
             emit itemChanged();
          }
          else
          {
             RARCH_ERR("[Qt]: Thumbnail download finished, but temp file could not be renamed.\n");
-            emit showErrorMessageDeferred(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
+            emit showErrorMessageDeferred(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
          }
       }
    }
@@ -514,9 +543,9 @@ void MainWindow::onThumbnailDownloadFinished()
       RARCH_ERR("[Qt]: Thumbnail download ended prematurely: %s\n", errorData);
       emit showErrorMessageDeferred(
               QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR))
-            + ": Code "
+            + QStringLiteral(": Code ")
             + QString::number(code)
-            + ": "
+            + QStringLiteral(": ")
             + errorData);
    }
 
@@ -569,8 +598,10 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    title                    = getScrubbedString(title);
    downloadType             = m_pendingThumbnailDownloadTypes.takeFirst();
    urlString                = QString(THUMBNAIL_URL_HEADER)
-      + system + "/"
-      + downloadType + "/"
+      + system
+      + QStringLiteral("/")
+      + downloadType
+      + QStringLiteral("/")
       + title
       + THUMBNAIL_IMAGE_EXTENSION;
 
@@ -591,9 +622,13 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    {
       QDir dir;
       const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-      QString               dirString = QString(path_dir_thumbnails) + "/" + system + "/" + downloadType;
+      QString               dirString = QString(path_dir_thumbnails)
+                                      + QStringLiteral("/")
+                                      + system
+                                      + QStringLiteral("/")
+                                      + downloadType;
       QString fileName                = dirString
-         + "/"
+         + QStringLiteral("/")
          + title
          + THUMBNAIL_IMAGE_EXTENSION
          + PARTIAL_EXTENSION;
@@ -607,8 +642,11 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
       if (!m_thumbnailDownloadFile.open(QIODevice::WriteOnly))
       {
          m_thumbnailDownloadProgressDialog->cancel();
-         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-         RARCH_ERR("[Qt]: Could not open file for writing: %s\n", fileNameData);
+         showMessageBox(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED),
+               MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+         RARCH_ERR("[Qt]: Could not open file for writing: %s\n",
+               fileNameData);
 
          if (m_thumbnailDownloadReply)
          {
@@ -637,7 +675,8 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    m_thumbnailDownloadProgressDialog->setAutoClose(true);
    m_thumbnailDownloadProgressDialog->setAutoReset(true);
    m_thumbnailDownloadProgressDialog->setValue(0);
-   m_thumbnailDownloadProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
+   m_thumbnailDownloadProgressDialog->setLabelText(QString(
+            msg_hash_to_str(MSG_DOWNLOADING)) + "...");
    m_thumbnailDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_thumbnailDownloadProgressDialog->show();
 
@@ -649,14 +688,19 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    reply->setProperty("download_type", downloadType);
 
    /* Make sure any previous connection is removed first */
-   disconnect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
+   disconnect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         reply, SLOT(abort()));
+   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         reply, SLOT(abort()));
 
-   connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onThumbnailDownloadNetworkError(QNetworkReply::NetworkError)));
-   connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this, SLOT(onThumbnailDownloadNetworkSslErrors(const QList<QSslError>&)));
+   connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this,
+         SLOT(onThumbnailDownloadNetworkError(QNetworkReply::NetworkError)));
+   connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this,
+         SLOT(onThumbnailDownloadNetworkSslErrors(const QList<QSslError>&)));
    connect(reply, SIGNAL(finished()), this, SLOT(onThumbnailDownloadFinished()));
    connect(reply, SIGNAL(readyRead()), this, SLOT(onThumbnailDownloadReadyRead()));
-   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(onThumbnailDownloadProgress(qint64, qint64)));
+   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this,
+         SLOT(onThumbnailDownloadProgress(qint64, qint64)));
 }
 
 void MainWindow::onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError /*code*/)
@@ -675,9 +719,9 @@ void MainWindow::onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslErr
    {
       const QSslError &error = errors.at(i);
       QString string         =
-           QString("Ignoring SSL error code ")
+           QStringLiteral("Ignoring SSL error code ")
          + QString::number(error.error())
-         + ": "
+         + QStringLiteral(": ")
          + error.errorString();
       QByteArray stringArray = string.toUtf8();
       const char *stringData = stringArray.constData();
@@ -726,7 +770,11 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
          reply->abort();
          reply->deleteLater();
 
-         downloadNextPlaylistThumbnail(reply->property("system").toString(), reply->property("title").toString(), reply->property("type").toString(), redirectUrl);
+         downloadNextPlaylistThumbnail(
+               reply->property("system").toString(),
+               reply->property("title").toString(),
+               reply->property("type").toString(),
+               redirectUrl);
 
          return;
       }
@@ -770,7 +818,10 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
       ViewType viewType = getCurrentViewType();
 
       updateVisibleItems();
-      downloadNextPlaylistThumbnail(nextThumbnail.value("db_name"), nextThumbnail.value("label_noext"), nextThumbnail.value("type"));
+      downloadNextPlaylistThumbnail(
+            nextThumbnail.value("db_name"),
+            nextThumbnail.value("label_noext"),
+            nextThumbnail.value("type"));
    }
    else
    {
@@ -784,7 +835,8 @@ void MainWindow::onPlaylistThumbnailDownloadFinished()
    reply->deleteLater();
 }
 
-void MainWindow::onPlaylistThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+void MainWindow::onPlaylistThumbnailDownloadProgress(qint64 bytesReceived,
+      qint64 bytesTotal)
 {
 #if 0
    QNetworkReply *reply = m_playlistThumbnailDownloadReply.data();
@@ -817,9 +869,10 @@ void MainWindow::downloadNextPlaylistThumbnail(
 
    urlString            =
         QString(THUMBNAIL_URL_HEADER)
-      + system  + "/"
+      + system
+      + QStringLiteral("/")
       + type
-      + "/"
+      + QStringLiteral("/")
       + title
       + THUMBNAIL_IMAGE_EXTENSION;
 
@@ -835,15 +888,24 @@ void MainWindow::downloadNextPlaylistThumbnail(
    }
    else
    {
-      QString dirString = QString(settings->paths.directory_thumbnails);
-      QString fileName = dirString + "/" + system + "/" + type + "/" + title + THUMBNAIL_IMAGE_EXTENSION + PARTIAL_EXTENSION;
-      QByteArray fileNameArray = fileName.toUtf8();
       QDir dir;
+      QString dirString = QString(settings->paths.directory_thumbnails);
+      QString fileName = dirString
+         + QStringLiteral("/")
+         + system
+         + QStringLiteral("/")
+         + type
+         + QStringLiteral("/")
+         + title
+         + THUMBNAIL_IMAGE_EXTENSION
+         + PARTIAL_EXTENSION;
+      QByteArray fileNameArray = fileName.toUtf8();
       const char *fileNameData = fileNameArray.constData();
 
-      dir.mkpath(dirString + "/" + system + "/" + THUMBNAIL_BOXART);
-      dir.mkpath(dirString + "/" + system + "/" + THUMBNAIL_SCREENSHOT);
-      dir.mkpath(dirString + "/" + system + "/" + THUMBNAIL_TITLE);
+      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_BOXART);
+      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_SCREENSHOT);
+      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_TITLE);
+      dir.mkpath(dirString + QStringLiteral("/") + system + QStringLiteral("/") + THUMBNAIL_LOGO);
 
       m_playlistThumbnailDownloadFile.setFileName(fileName);
 
@@ -856,7 +918,10 @@ void MainWindow::downloadNextPlaylistThumbnail(
          if (m_pendingPlaylistThumbnails.count() > 0)
          {
             QHash<QString, QString> nextThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
-            downloadNextPlaylistThumbnail(nextThumbnail.value("db_name"), nextThumbnail.value("label_noext"), nextThumbnail.value("type"));
+            downloadNextPlaylistThumbnail(
+                  nextThumbnail.value("db_name"),
+                  nextThumbnail.value("label_noext"),
+                  nextThumbnail.value("type"));
          }
          else
             m_playlistThumbnailDownloadProgressDialog->cancel();
@@ -875,20 +940,36 @@ void MainWindow::downloadNextPlaylistThumbnail(
    reply->setProperty("type", type);
 
    /* Make sure any previous connection is removed first */
-   disconnect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
-   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), reply, SLOT(abort()));
+   disconnect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         reply, SLOT(abort()));
+   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         reply, SLOT(abort()));
 
-   connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError)));
-   connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), this, SLOT(onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslError>&)));
-   connect(reply, SIGNAL(finished()), this, SLOT(onPlaylistThumbnailDownloadFinished()));
-   connect(reply, SIGNAL(readyRead()), this, SLOT(onPlaylistThumbnailDownloadReadyRead()));
-   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(onPlaylistThumbnailDownloadProgress(qint64, qint64)));
+   connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
+         this,
+         SLOT(onPlaylistThumbnailDownloadNetworkError(
+               QNetworkReply::NetworkError)));
+   connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)),
+         this,
+         SLOT(onPlaylistThumbnailDownloadNetworkSslErrors(
+               const QList<QSslError>&)));
+   connect(reply, SIGNAL(finished()), this,
+         SLOT(onPlaylistThumbnailDownloadFinished()));
+   connect(reply, SIGNAL(readyRead()), this,
+         SLOT(onPlaylistThumbnailDownloadReadyRead()));
+   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this,
+         SLOT(onPlaylistThumbnailDownloadProgress(qint64, qint64)));
 
-   m_playlistThumbnailDownloadProgressDialog->setValue(m_playlistThumbnailDownloadProgressDialog->maximum() - m_pendingPlaylistThumbnails.count());
+   m_playlistThumbnailDownloadProgressDialog->setValue(
+           m_playlistThumbnailDownloadProgressDialog->maximum()
+         - m_pendingPlaylistThumbnails.count());
 
    {
-      QString labelText  = QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...\n";
-      QString labelText2 = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS)).arg(m_downloadedThumbnails).arg(m_failedThumbnails);
+      QString labelText  = QString(msg_hash_to_str(MSG_DOWNLOADING))
+                         + QStringLiteral("...\n");
+      QString labelText2 = QString(msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS)).arg(
+                           m_downloadedThumbnails).arg(m_failedThumbnails);
 
       labelText.append(labelText2);
 
@@ -921,7 +1002,9 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
       QHash<QString, QString> hash;
       QHash<QString, QString> hash2;
       QHash<QString, QString> hash3;
-      const QHash<QString, QString> &itemHash = m_playlistModel->index(i, 0).data(PlaylistModel::HASH).value< QHash<QString, QString> >();
+      QHash<QString, QString> hash4;
+      const QHash<QString, QString> &itemHash =
+	      m_playlistModel->index(i, 0).data(PlaylistModel::HASH).value< QHash<QString, QString> >();
 
       hash["db_name"]     = itemHash.value("db_name");
       hash["label_noext"] = itemHash.value("label_noext");
@@ -929,13 +1012,16 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
 
       hash2               = hash;
       hash3               = hash;
+      hash4               = hash;
 
       hash2["type"]       = THUMBNAIL_SCREENSHOT;
       hash3["type"]       = THUMBNAIL_TITLE;
+      hash4["type"]       = THUMBNAIL_LOGO;
 
       m_pendingPlaylistThumbnails.append(hash);
       m_pendingPlaylistThumbnails.append(hash2);
       m_pendingPlaylistThumbnails.append(hash3);
+      m_pendingPlaylistThumbnails.append(hash4);
    }
 
    m_playlistThumbnailDownloadProgressDialog->setWindowModality(Qt::NonModal);
@@ -950,9 +1036,11 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
 
    {
       QHash<QString, QString> firstThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
-
       /* Start downloading the first thumbnail,
        * the rest will download as each one finishes. */
-      downloadNextPlaylistThumbnail(firstThumbnail.value("db_name"), firstThumbnail.value("label_noext"), firstThumbnail.value("type"));
+      downloadNextPlaylistThumbnail(
+            firstThumbnail.value("db_name"),
+            firstThumbnail.value("label_noext"),
+            firstThumbnail.value("type"));
    }
 }

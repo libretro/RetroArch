@@ -921,6 +921,22 @@ ifeq ($(HAVE_PULSE), 1)
    DEF_FLAGS += $(PULSE_CFLAGS)
 endif
 
+ifeq ($(HAVE_PIPEWIRE), 1)
+   OBJ += audio/drivers/pipewire.o \
+          audio/common/pipewire.o
+
+   ifeq ($(HAVE_MICROPHONE), 1)
+      OBJ += audio/drivers_microphone/pipewire.o
+   endif
+
+   ifeq ($(HAVE_PIPEWIRE_STABLE), 1)
+      OBJ += camera/drivers/pipewire.o
+   endif
+
+   LIBS += $(PIPEWIRE_LIBS)
+   DEF_FLAGS += $(PIPEWIRE_CFLAGS)
+endif
+
 ifeq ($(HAVE_OSS_LIB), 1)
    LIBS += -lossaudio
 endif
@@ -1263,7 +1279,11 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \
         gfx/common/wayland/pointer-constraints-unstable-v1.o \
-        gfx/common/wayland/relative-pointer-unstable-v1.o
+        gfx/common/wayland/relative-pointer-unstable-v1.o \
+        gfx/common/wayland/cursor-shape-v1.o \
+        gfx/common/wayland/tablet-unstable-v2.o \
+        gfx/common/wayland/content-type-v1.o \
+        gfx/common/wayland/single-pixel-buffer-v1.o
 
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o
@@ -1554,10 +1574,11 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEF_FLAGS += $(OPENGLES_CFLAGS)
       ifeq ($(HAVE_OPENGLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es3.o
       else
          DEFINES += -DHAVE_OPENGLES2
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
       endif
-      OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
       OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.o
@@ -2176,7 +2197,6 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           core_updater_list.o \
           network/natt.o \
-          network/net_http_special.o \
           tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
@@ -2193,7 +2213,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifneq ($(findstring Linux,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
-   
+
    ifneq ($(findstring Win,$(OS)),)
       HAVE_CLOUDSYNC = 1
    endif
@@ -2485,6 +2505,7 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_3x.o \
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
+          gfx/video_filters/upscale_1_66x_fast.o \
           gfx/video_filters/upscale_256x_320x240.o \
           gfx/video_filters/picoscale_256x_320x240.o \
           gfx/video_filters/upscale_240x160_320x240.o \
@@ -2630,6 +2651,38 @@ ifeq ($(HAVE_ODROIDGO2), 1)
   OBJ += $(DEPS_DIR)/libgo2/src/display.o \
          $(DEPS_DIR)/libgo2/src/queue.o \
          gfx/drivers/oga_gfx.o
+endif
+
+ifeq ($(HAVE_GAME_AI),1)
+   DEFINES += -DHAVE_GAME_AI
+   OBJ += ai/game_ai.o
+endif
+
+# Detect the operating system
+UNAME := $(shell uname -s)
+
+# Check if the system is MSYS2 (MINGW64 or MINGW32)
+ifneq ($(findstring MINGW,$(UNAME)),)
+$(info Detected MSYS2 environment)
+
+NT_VERSION := $(shell \
+  echo '#include <windows.h>' > temp.c; \
+  echo '#ifdef _WIN32_WINNT' >> temp.c; \
+  echo '#define GET_MACRO_VALUE(x) #x' >> temp.c; \
+  echo '#define EXPAND_MACRO_VALUE(x) GET_MACRO_VALUE(x)' >> temp.c; \
+  echo '#pragma message("_WIN32_WINNT=" EXPAND_MACRO_VALUE(_WIN32_WINNT))' >> temp.c; \
+  echo '#endif' >> temp.c; \
+  $(CC) -c temp.c 2>&1 | sed -n 's/^.*_WIN32_WINNT=\(0x[0-9A-Fa-f]\+\).*/\1/p'; \
+  rm -f temp.c temp.o)
+
+ifneq ($(NT_VERSION),)
+ifeq ($(shell [ $$(( $(NT_VERSION) )) -gt $$(( 0x602 )) ] && echo true),true)
+LIBS += -lxaudio2_9
+endif
+else
+$(warning Windows NT version macro (_WIN32_WINNT) is not defined.)
+endif
+
 endif
 
 ##################################

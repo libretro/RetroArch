@@ -131,8 +131,7 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
     float screenscale               = cocoa_screen_get_native_scale();
-    MTKView *g_view                 = apple_platform.renderView;
-    CGRect size                     = g_view.bounds;
+    CGRect size                     = [apple_platform.renderView bounds];
     *width                          = CGRectGetWidth(size)  * screenscale;
     *height                         = CGRectGetHeight(size) * screenscale;
 }

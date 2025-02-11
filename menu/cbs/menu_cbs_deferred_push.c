@@ -294,6 +294,10 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_information_steam_list,    DISPLAYLIST_
 
 GENERIC_DEFERRED_PUSH(deferred_push_file_browser_select_sideload_core, DISPLAYLIST_FILE_BROWSER_SELECT_SIDELOAD_CORE)
 
+#ifdef HAVE_GAME_AI
+GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIST_OPTIONS_GAME_AI)
+#endif
+
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
@@ -353,11 +357,11 @@ static int deferred_push_cursor_manager_list_generic(
       menu_displaylist_info_t *info, enum database_query_type type)
 {
    char query[256];
-   char *tok, *save;
-   char *elem0                   = NULL;
-   char *elem1                   = NULL;
-   char *path_cpy                = NULL;
-   const char *path              = info->path;
+   char *tok, *save  = NULL;
+   char *elem0       = NULL;
+   char *elem1       = NULL;
+   char *path_cpy    = NULL;
+   const char *path  = info->path;
 
    if (!path)
       return -1;
@@ -443,14 +447,13 @@ static int general_push(menu_displaylist_info_t *info,
       else
       {
          char tmp_path[PATH_MAX_LENGTH];
-         fill_pathname_expand_special(tmp_path, menu->scratch2_buf, sizeof(tmp_path));
-         const char *menu_path = tmp_path;
-         fill_pathname_join_special(tmp_str, menu_path,
+         fill_pathname_expand_special(tmp_path,
+               menu->scratch2_buf, sizeof(tmp_path));
+         fill_pathname_join_special(tmp_str, tmp_path,
                menu->scratch_buf, sizeof(tmp_str));
       }
 #else
-      const char *menu_path = menu->scratch2_buf;
-      fill_pathname_join_special(tmp_str, menu_path,
+      fill_pathname_join_special(tmp_str, menu->scratch2_buf,
             menu->scratch_buf, sizeof(tmp_str));
 #endif
 
@@ -517,11 +520,9 @@ static int general_push(menu_displaylist_info_t *info,
             bool filter_by_current_core       = settings->bools.filter_by_current_core;
 
             if (sysinfo && !string_is_empty(sysinfo->valid_extensions))
-            {
                _len += strlcpy(newstr2 + _len,
                      sysinfo->valid_extensions,
                      sizeof(newstr2)   - _len);
-            }
 
             if (!filter_by_current_core)
             {
@@ -529,8 +530,8 @@ static int general_push(menu_displaylist_info_t *info,
                core_info_get_list(&list);
                if (list && !string_is_empty(list->all_ext))
                {
-                  char *tok, *save;
-                  char *all_ext_cpy    = strdup(list->all_ext);
+                  char *tok, *save  = NULL;
+                  char *all_ext_cpy = strdup(list->all_ext);
 
                   /* If the current core already supports
                    * this extension, skip adding it */
@@ -541,8 +542,8 @@ static int general_push(menu_displaylist_info_t *info,
 
                      if (!string_is_empty(newstr2))
                      {
-                        char *tok2, *save2;
-                        char *newstr2_cpy = strdup(newstr2);
+                        char *tok2, *save2 = NULL;
+                        char *newstr2_cpy  = strdup(newstr2);
                         for ( tok2 = strtok_r(newstr2_cpy, "|", &save2); tok2;
                               tok2 = strtok_r(NULL, "|", &save2))
                         {
@@ -691,6 +692,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_physi
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
 #endif
 GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_list,          DISPLAYLIST_ADD_TO_PLAYLIST_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_quickmenu,     DISPLAYLIST_ADD_TO_PLAYLIST_QUICKMENU)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -954,6 +956,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST, deferred_push_lakka_list},
 #endif
        {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST, deferred_push_add_to_playlist_list},
+       {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU, deferred_push_add_to_playlist_quickmenu},
+
+#ifdef HAVE_GAME_AI
+      {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS, deferred_push_core_game_ai_options},
+#endif
    };
 
    if (!string_is_equal(label, "null"))
@@ -1418,6 +1425,14 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_quickmenu);
+            break;
+#ifdef HAVE_GAME_AI
+         case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_game_ai_options);
+            break;
+#endif
          default:
             return -1;
       }

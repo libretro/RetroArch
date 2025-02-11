@@ -36,7 +36,6 @@
 #include "core.h"
 #include "core_info.h"
 #include "file_path_special.h"
-#include "configuration.h"
 #include "msg_hash.h"
 #include "runloop.h"
 #include "verbosity.h"
@@ -152,7 +151,7 @@ static void autosave_thread(void *data)
  * autosave_new:
  * @path            : path to autosave file
  * @data            : pointer to buffer
- * @size            : size of @data buffer
+ * @len             : size of @data buffer
  * @interval        : interval at which saves should be performed.
  *
  * Create and initialize autosave object.
@@ -161,7 +160,7 @@ static void autosave_thread(void *data)
  * NULL.
  **/
 static autosave_t *autosave_new(const char *path,
-      const void *data, size_t size,
+      const void *data, size_t len,
       unsigned interval, bool compress)
 {
    void       *buf               = NULL;
@@ -170,14 +169,14 @@ static autosave_t *autosave_new(const char *path,
       return NULL;
 
    handle->flags                 = 0;
-   handle->bufsize               = size;
+   handle->bufsize               = len;
    handle->interval              = interval;
    if (compress)
       handle->flags             |= AUTOSAVE_FLAG_COMPRESS_FILES;
    handle->retro_buffer          = data;
    handle->path                  = path;
 
-   if (!(buf = malloc(size)))
+   if (!(buf = malloc(len)))
    {
       free(handle);
       return NULL;
@@ -218,17 +217,10 @@ static void autosave_free(autosave_t *handle)
    handle->buffer = NULL;
 }
 
-bool autosave_init(void)
+bool autosave_init(bool compress_files, unsigned autosave_interval)
 {
    unsigned i;
    autosave_t **list          = NULL;
-   settings_t *settings       = config_get_ptr();
-   unsigned autosave_interval = settings->uints.autosave_interval;
-#if defined(HAVE_ZLIB)
-   bool compress_files        = settings->bools.save_file_compression;
-#else
-   bool compress_files        = false;
-#endif
 
    if (autosave_interval < 1 || !task_save_files)
       return false;
@@ -407,7 +399,7 @@ static bool content_load_ram_file(unsigned slot)
  * Attempt to save valuable RAM data somewhere.
  **/
 static bool dump_to_file_desperate(const void *data,
-      size_t size, unsigned type)
+      size_t len, unsigned type)
 {
    char path[PATH_MAX_LENGTH + 256 + 32];
    path            [0]    = '\0';
@@ -418,18 +410,12 @@ static bool dump_to_file_desperate(const void *data,
       size_t _len;
       time_t time_;
       struct tm tm_;
-      char timebuf[256];
-      timebuf         [0] = '\0';
       time(&time_);
-
       rtime_localtime(&time_, &tm_);
-
-      strftime(timebuf, 256 * sizeof(char),
-            "%Y-%m-%d-%H-%M-%S", &tm_);
-
       _len  = strlcat(path, "/RetroArch-recovery-", sizeof(path));
       _len += snprintf(path + _len, sizeof(path) - _len, "%u", type);
-      strlcpy(path + _len, timebuf, sizeof(path) - _len);
+      strftime(path + _len, sizeof(path) - _len,
+            "%Y-%m-%d-%H-%M-%S", &tm_);
 
       /* Fallback (emergency) saves are always
        * uncompressed
@@ -440,7 +426,7 @@ static bool dump_to_file_desperate(const void *data,
        * > In this case, we don't want to further
        *   complicate matters by introducing zlib
        *   compression overheads */
-      if (filestream_write_file(path, data, size))
+      if (filestream_write_file(path, data, len))
       {
          RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
          return true;
@@ -507,31 +493,17 @@ fail:
    return false;
 }
 
-bool event_save_files(bool is_sram_used)
+bool event_save_files(bool is_sram_used, bool compress_files,
+      const char *path_cheat_database)
 {
    unsigned i;
-   settings_t *settings            = config_get_ptr();
 #ifdef HAVE_CHEATS
-   const char *path_cheat_database = settings->paths.path_cheat_database;
-#endif
-#if defined(HAVE_ZLIB)
-   bool compress_files             = settings->bools.save_file_compression;
-#else
-   bool compress_files             = false;
-#endif
-
-#ifdef HAVE_CHEATS
-   cheat_manager_save_game_specific_cheats(
-         path_cheat_database);
+   cheat_manager_save_game_specific_cheats(path_cheat_database);
 #endif
    if (!task_save_files || !is_sram_used)
       return false;
-
    for (i = 0; i < task_save_files->size; i++)
-   {
       content_save_ram_file(i, compress_files);
-   }
-
    return true;
 }
 

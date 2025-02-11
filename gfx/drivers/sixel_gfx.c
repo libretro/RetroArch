@@ -634,10 +634,8 @@ static void sixel_gfx_get_poke_interface(void *data,
    *iface = &sixel_poke_interface;
 }
 
-static void sixel_gfx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
-{
-}
+static void sixel_gfx_set_viewport(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate) { }
 
 bool sixel_has_menu_frame(void)
 {

@@ -44,7 +44,7 @@ int memstream_getc(memstream_t *stream);
 
 void memstream_putc(memstream_t *stream, int c);
 
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
+char *memstream_gets(memstream_t *stream, char *s, size_t len);
 
 uint64_t memstream_pos(memstream_t *stream);
 

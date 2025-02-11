@@ -34,13 +34,16 @@
 #endif
 
 /* Generated from wayland protocol files by generate_wayland_protos.sh */
+#include "../../gfx/common/wayland/content-type-v1.h"
+#include "../../gfx/common/wayland/cursor-shape-v1.h"
 #include "../../gfx/common/wayland/fractional-scale-v1.h"
-#include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/idle-inhibit-unstable-v1.h"
-#include "../../gfx/common/wayland/xdg-shell.h"
-#include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
 #include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
 #include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
+#include "../../gfx/common/wayland/single-pixel-buffer-v1.h"
+#include "../../gfx/common/wayland/viewporter.h"
+#include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
+#include "../../gfx/common/wayland/xdg-shell.h"
 
 #define FRACTIONAL_SCALE_V1_DEN 120
 #define FRACTIONAL_SCALE_MULT(v, scale_num) \
@@ -181,6 +184,11 @@ typedef struct gfx_ctx_wayland_data
    struct zwp_idle_inhibitor_v1 *idle_inhibitor;
    struct zwp_pointer_constraints_v1 *pointer_constraints;
    struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
+   struct wp_cursor_shape_manager_v1 *cursor_shape_manager;
+   struct wp_cursor_shape_device_v1 *cursor_shape_device;
+   struct wp_content_type_manager_v1 *content_type_manager;
+   struct wp_content_type_v1 *content_type;
+   struct wp_single_pixel_buffer_manager_v1 *single_pixel_manager;
    output_info_t *current_output;
 #ifdef HAVE_VULKAN
    gfx_ctx_vulkan_data_t vk;
@@ -227,7 +235,7 @@ typedef struct gfx_ctx_wayland_data
 
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */
-int init_xkb(int fd, size_t size);
+int init_xkb(int fd, size_t len);
 int handle_xkb(int code, int value);
 void handle_xkb_state_mask(uint32_t depressed,
       uint32_t latched, uint32_t locked, uint32_t group);

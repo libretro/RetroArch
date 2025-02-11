@@ -73,16 +73,16 @@ typedef struct
 
 /**
  * msg_queue_new:
- * @size              : maximum size of message
+ * @len               : maximum size of message
  *
  * Creates a message queue with maximum size different messages.
  *
  * Returns: NULL if allocation error, pointer to a message queue
  * if successful. Has to be freed manually.
  **/
-msg_queue_t *msg_queue_new(size_t size);
+msg_queue_t *msg_queue_new(size_t len);
 
-bool msg_queue_initialize(msg_queue_t *queue, size_t size);
+bool msg_queue_initialize(msg_queue_t *queue, size_t len);
 
 /**
  * msg_queue_push:

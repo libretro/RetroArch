@@ -56,7 +56,7 @@ static void task_auto_translate_handler(retro_task_t *task)
    uint32_t runloop_flags      = runloop_get_flags();
    access_state_t *access_st   = access_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   settings_t *settings        = config_get_ptr();
+   bool accessibility_enable   = config_get_ptr()->bools.accessibility_enable;
 #endif
    uint8_t flg                 = task_get_flags(task);
 
@@ -73,8 +73,7 @@ static void task_auto_translate_handler(retro_task_t *task)
          break;
       case 2: /* Narrator Mode */
 #ifdef HAVE_ACCESSIBILITY
-         if (!is_narrator_running(
-                  settings->bools.accessibility_enable))
+         if (!is_narrator_running(accessibility_enable))
             goto task_finished;
 #endif
          break;
@@ -99,13 +98,9 @@ task_finished:
        free(task->user_data);
 }
 
-static void call_auto_translate_task(
-      settings_t *settings,
-      bool *was_paused)
+static void ai_service_call_auto_translate_task(access_state_t *access_st,
+      int ai_service_mode, bool *was_paused)
 {
-   int ai_service_mode       = settings->uints.ai_service_mode;
-   access_state_t *access_st = access_state_get_ptr();
-
    /*Image Mode*/
    if (ai_service_mode == 0)
    {
@@ -116,21 +111,21 @@ static void call_auto_translate_task(
    }
    else /* Speech or Narrator Mode */
    {
-      int* mode                          = NULL;
-      retro_task_t  *t                   = task_init();
+      int* mode          = NULL;
+      retro_task_t  *t   = task_init();
       if (!t)
          return;
 
-      mode                               = (int*)malloc(sizeof(int));
+      mode               = (int*)malloc(sizeof(int));
 
-      t->user_data                       = NULL;
-      t->handler                         = task_auto_translate_handler;
-      t->flags                          |= RETRO_TASK_FLG_MUTE;
+      t->user_data       = NULL;
+      t->handler         = task_auto_translate_handler;
+      t->flags          |= RETRO_TASK_FLG_MUTE;
 
       if (mode)
       {
-         *mode                           = ai_service_mode;
-         t->user_data                    = mode;
+         *mode           = ai_service_mode;
+         t->user_data    = mode;
       }
 
       task_queue_push(t);
@@ -173,6 +168,8 @@ static void handle_translation_cb(
       VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
    dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
 #endif
+   bool ai_service_pause             = settings->bools.ai_service_pause;
+   unsigned ai_service_mode          = settings->uints.ai_service_mode;
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable         = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
@@ -320,6 +317,7 @@ static void handle_translation_cb(
             image_type = IMAGE_TYPE_PNG;
          else
          {
+            /* TODO/FIXME - localize */
             RARCH_LOG("Invalid image type returned from server.\n");
             goto finish;
          }
@@ -328,12 +326,11 @@ static void handle_translation_cb(
                raw_image_file_data, (unsigned)new_image_size,
                image_type))
          {
+            /* TODO/FIXME - localize */
+            const char *_msg = "Video driver not supported.";
             RARCH_LOG("Video driver not supported for AI Service.");
-            runloop_msg_queue_push(
-               /* msg_hash_to_str(MSG_VIDEO_DRIVER_NOT_SUPPORTED), */
-               "Video driver not supported.",
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          else if (gfx_widgets_paused)
          {
@@ -356,16 +353,16 @@ static void handle_translation_cb(
          {
             /* Get image data (24 bit), and convert to the emulated pixel format */
             image_width    =
-               ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 24) +
-               ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 16) +
-               ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 8) +
-               ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 0);
+                 ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 24)
+               + ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 16)
+               + ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 8)
+               + ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 0);
 
             image_height   =
-               ((uint32_t) ((uint8_t)raw_image_file_data[25]) << 24) +
-               ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16) +
-               ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8) +
-               ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
+                 ((uint32_t) ((uint8_t)raw_image_file_data[25]) << 24)
+               + ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16)
+               + ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8)
+               + ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
             raw_image_data = (void*)malloc(image_width * image_height * 3 * sizeof(uint8_t));
             if (raw_image_data)
                memcpy(raw_image_data,
@@ -380,15 +377,15 @@ static void handle_translation_cb(
             int retval   = 0;
             rpng_t *rpng = NULL;
             image_width  =
-                ((uint32_t) ((uint8_t)raw_image_file_data[16]) << 24)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[17]) << 16)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 8)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 0);
+                  ((uint32_t) ((uint8_t)raw_image_file_data[16]) << 24)
+                + ((uint32_t) ((uint8_t)raw_image_file_data[17]) << 16)
+                + ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 8)
+                + ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 0);
             image_height =
-                ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 24)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 16)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 8)+
-                ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 0);
+                  ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 24)
+                + ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 16)
+                + ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 8)
+                + ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 0);
 
             if (!(rpng = rpng_alloc()))
             {
@@ -421,7 +418,8 @@ static void handle_translation_cb(
                      tc = d % 3;
                      th = image_height-d / (image_width * 3) - 1;
                      tw = (d % (image_width * 3)) / 3;
-                     ((uint8_t*) raw_image_data)[tw * 3 + th * 3 * image_width + tc] = ((uint8_t *)raw_image_data_alpha)[ui];
+                     ((uint8_t*) raw_image_data)[tw * 3 + th * 3 * image_width + tc] =
+                        ((uint8_t *)raw_image_data_alpha)[ui];
                      d += 1;
                   }
                }
@@ -517,15 +515,15 @@ static void handle_translation_cb(
    {
       size_t i;
       char key[8];
-      size_t length = strlen(key_str);
+      size_t _len   = strlen(key_str);
       size_t start  = 0;
 
-      for (i = 1; i < length; i++)
+      for (i = 1; i < _len; i++)
       {
          char t = key_str[i];
-         if (i == length - 1 || t == ' ' || t == ',')
+         if (i == _len - 1 || t == ' ' || t == ',')
          {
-            if (i == length - 1 && t != ' ' && t!= ',')
+            if (i == _len - 1 && t != ' ' && t!= ',')
                i++;
 
             if (i-start > 7)
@@ -588,8 +586,7 @@ static void handle_translation_cb(
 #ifdef HAVE_ACCESSIBILITY
    if (     txt_str
          && is_accessibility_enabled(
-            accessibility_enable,
-            access_st->enabled))
+            accessibility_enable, access_st->enabled))
       accessibility_speak_priority(
             accessibility_enable,
             accessibility_narrator_speech_speed,
@@ -626,8 +623,9 @@ finish:
       {
          bool was_paused = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
          if (     (access_st->ai_service_auto != 0)
-               && !settings->bools.ai_service_pause)
-            call_auto_translate_task(settings, &was_paused);
+               && !ai_service_pause)
+            ai_service_call_auto_translate_task(access_st, ai_service_mode,
+                  &was_paused);
       }
       free(auto_str);
    }
@@ -780,7 +778,6 @@ static const char *ai_service_get_str(enum translation_lang id)
 bool run_translation_service(settings_t *settings, bool paused)
 {
    struct video_viewport vp;
-   uint8_t header[54];
    size_t pitch;
    unsigned width, height;
    const void *data                  = NULL;
@@ -795,7 +792,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    char *bmp64_buffer                = NULL;
    rjsonwriter_t *jsonwriter         = NULL;
    const char *json_buffer           = NULL;
-   int bmp64_length                  = 0;
+   int bmp64_len                     = 0;
    bool TRANSLATE_USE_BMP            = false;
    char *sys_lbl                     = NULL;
    core_info_t *core_info            = NULL;
@@ -947,11 +944,10 @@ bool run_translation_service(settings_t *settings, bool paused)
         the BMP header as bytes, and then covert that to a
         b64 encoded array for transport in JSON.
       */
-      form_bmp_header(header, width, height, false);
       if (!(bmp_buffer  = (uint8_t*)malloc(width * height * 3 + 54)))
          goto finish;
 
-      memcpy(bmp_buffer, header, 54 * sizeof(uint8_t));
+      form_bmp_header(bmp_buffer, width, height, false);
       memcpy(bmp_buffer + 54,
             bit24_image,
             width * height * 3 * sizeof(uint8_t));
@@ -967,7 +963,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    if (!(bmp64_buffer = base64((void *)bmp_buffer,
          (int)(sizeof(uint8_t) * buffer_bytes),
-         &bmp64_length)))
+         &bmp64_len)))
       goto finish;
 
    if (!(jsonwriter = rjsonwriter_open_memory()))
@@ -978,7 +974,7 @@ bool run_translation_service(settings_t *settings, bool paused)
    rjsonwriter_add_string(jsonwriter, "image");
    rjsonwriter_raw(jsonwriter, ":", 1);
    rjsonwriter_raw(jsonwriter, " ", 1);
-   rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_length);
+   rjsonwriter_add_string_len(jsonwriter, bmp64_buffer, bmp64_len);
 
    /* Form request... */
    if (sys_lbl)
@@ -1030,7 +1026,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 
 #ifdef DEBUG
    if (access_st->ai_service_auto != 2)
-      RARCH_LOG("Request size: %d\n", bmp64_length);
+      RARCH_LOG("Request size: %d\n", bmp64_len);
 #endif
    {
       char new_ai_service_url[PATH_MAX_LENGTH];

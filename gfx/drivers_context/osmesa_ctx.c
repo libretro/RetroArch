@@ -122,14 +122,14 @@ static void osmesa_fifo_accept(gfx_ctx_osmesa_data_t *osmesa)
 static void osmesa_fifo_write(gfx_ctx_osmesa_data_t *osmesa)
 {
    int i;
-   size_t len = osmesa->width * osmesa->pixsize;
+   size_t _len = osmesa->width * osmesa->pixsize;
 
    if (osmesa->client < 0)
       return;
 
    for (i = osmesa->height -1; i >= 0; --i)
    {
-      int res = send(osmesa->client, osmesa->screen + i * len, len, MSG_NOSIGNAL);
+      int res = send(osmesa->client, osmesa->screen + i * _len, _len, MSG_NOSIGNAL);
 
       if (res < 0)
       {

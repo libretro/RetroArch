@@ -569,10 +569,12 @@ typedef struct udev_input
 #ifdef UDEV_XKB_HANDLING
    bool xkb_handling;
 #endif
+
+   linux_illuminance_sensor_t *illuminance_sensor;
 } udev_input_t;
 
 #ifdef UDEV_XKB_HANDLING
-int init_xkb(int fd, size_t size);
+int init_xkb(int fd, size_t len);
 void free_xkb(void);
 int handle_xkb(int code, int value);
 #endif
@@ -779,96 +781,60 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
    return y + (y < 0 ? -0.5 : 0.5);
 }
 
-static int16_t udev_mouse_get_pointer_x(const udev_input_mouse_t *mouse, bool screen)
+static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
+            bool screen, bool confined, int16_t *ret_x, int16_t *ret_y)
 {
-   video_viewport_t vp;
-   double src_min;
-   double src_width;
-   int32_t x;
+   struct video_viewport vp    = {0};
+   int16_t scaled_x;
+   int16_t scaled_y;
+   int16_t res_x               = 0;
+   int16_t res_y               = 0;
+   int16_t res_screen_x        = 0;
+   int16_t res_screen_y        = 0;
 
    if (!video_driver_get_viewport_info(&vp))
-      return 0;
+      return false;
 
    /* mouse coords are absolute? */
    if (mouse->abs)
    {
-      /* mouse coordinates are relative to the screen; convert them
+      /* mouse coordinates are relative to the full screen; convert them
        * to be relative to the viewport */
-      double scaled_x;
-      src_min = mouse->x_min;
-      src_width = mouse->x_max - mouse->x_min + 1;
-      scaled_x = vp.full_width * (mouse->x_abs - src_min) / src_width;
-      x = -32767.0 + 65535.0 / vp.width * (scaled_x - vp.x);
+      scaled_x = vp.full_width  * (mouse->x_abs - mouse->x_min) / (mouse->x_max - mouse->x_min + 1);
+      scaled_y = vp.full_height * (mouse->y_abs - mouse->y_min) / (mouse->y_max - mouse->y_min + 1);
    }
    else /* mouse coords are viewport relative */
    {
-      if (screen)
-      {
-         src_min   = 0.0;
-         src_width = vp.full_width;
-      }
-      else
-      {
-         src_min   = vp.x;
-         src_width = vp.width;
-      }
-      x  = -32767.0 + 65535.0 / src_width * (mouse->x_abs - src_min);
+      scaled_x = mouse->x_abs;
+      scaled_y = mouse->y_abs;
    }
 
-   x += (x < 0 ? -0.5 : 0.5);
-
-   if (x < -0x7fff)
-      return -0x7fff;
-   else if (x > 0x7fff)
-      return 0x7fff;
-
-   return x;
-}
-
-static int16_t udev_mouse_get_pointer_y(const udev_input_mouse_t *mouse, bool screen)
-{
-   video_viewport_t vp;
-   double src_min;
-   double src_height;
-   int32_t y;
-
-   if (!video_driver_get_viewport_info(&vp))
-      return 0;
-
-   /* Mouse coords are absolute? */
-   if (mouse->abs)
+   if (confined && video_driver_translate_coord_viewport_confined_wrap(
+            &vp, scaled_x, scaled_y,
+            &res_x, &res_y, &res_screen_x, &res_screen_y))
    {
-      double scaled_y;
-      /* mouse coordinates are relative to the screen; convert them
-       * to be relative to the viewport */
-      src_min    = mouse->y_min;
-      src_height = mouse->y_max - mouse->y_min + 1;
-      scaled_y   = vp.full_height * (mouse->y_abs - src_min) / src_height;
-      y          = -32767.0 + 65535.0 / vp.height * (scaled_y - vp.y);
    }
-   else /* mouse coords are viewport relative */
+   else if (!confined && video_driver_translate_coord_viewport_wrap(
+            &vp, scaled_x, scaled_y,
+            &res_x, &res_y, &res_screen_x, &res_screen_y))
    {
-      if (screen)
-      {
-         src_min    = 0.0;
-         src_height = vp.full_height;
-      }
-      else
-      {
-         src_min    = vp.y;
-         src_height = vp.height;
-      }
-      y = -32767.0 + 65535.0 / src_height * (mouse->y_abs - src_min);
+   }
+   else
+   {
+      return false;
    }
 
-   y += (y < 0 ? -0.5 : 0.5);
-
-   if (y < -0x7fff)
-      return -0x7fff;
-   else if (y > 0x7fff)
-      return 0x7fff;
-
-   return y;
+   if (screen)
+   {
+      *ret_x = res_screen_x;
+      *ret_y = res_screen_y;
+   }
+   else
+   {
+      *ret_x = res_x;
+      *ret_y = res_y;
+   }
+   return true;
 }
 
 static void udev_handle_mouse(void *data,
@@ -1243,14 +1209,14 @@ static const char *udev_mt_code_to_str(uint32_t code)
  *
  * @param label Label to prefix the message with.
  * @param request_data Input data structure to dump.
- * @param count Number of elements in the values array.
+ * @param len Number of elements in the values array.
  */
-static void udev_dump_mt_request_data(const char *label, const uint8_t *request_data, size_t count)
+static void udev_dump_mt_request_data(const char *label, const uint8_t *request_data, size_t len)
 {
    uint32_t *mt_req_code = (uint32_t*) request_data;
    int32_t *mt_req_values = ((int32_t*) request_data) + 1;
    RARCH_DBG("[udev] %s: Req { %s, [ ", label, udev_mt_code_to_str(*mt_req_code));
-   for (; mt_req_values < (((int32_t*) mt_req_code) + count + 1); ++mt_req_values)
+   for (; mt_req_values < (((int32_t*) mt_req_code) + len + 1); ++mt_req_values)
    {
       RARCH_DBG("%d, ", *mt_req_values);
    }
@@ -1898,7 +1864,7 @@ static bool udev_translate_touch_pos(
    *pointer_ma_pos_y  = ma_pos_y;
 
    /* Main panel -> Screen and Viewport */
-   return video_driver_translate_coord_viewport(
+   return video_driver_translate_coord_viewport_wrap(
       target_vp,
       *pointer_ma_pos_x,
       *pointer_ma_pos_y,
@@ -2569,7 +2535,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->mouse_pos_y = (int32_t) touch->touchpad_pos_y;
 
                   /* Translate the panel coordinates into normalized coordinates. */
-                  video_driver_translate_coord_viewport(
+                  video_driver_translate_coord_viewport_wrap(
                      &vp, touch->mouse_pos_x, touch->mouse_pos_y,
                      &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
                      &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
@@ -2873,7 +2839,7 @@ static void udev_input_touch_state_trackball(
          /* Get current viewport information */
          video_driver_get_viewport_info(&vp);
          /* Translate the raw coordinates into normalized coordinates. */
-         video_driver_translate_coord_viewport(
+         video_driver_translate_coord_viewport_wrap(
             &vp, touch->mouse_pos_x, touch->mouse_pos_y,
             &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
             &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
@@ -3614,15 +3580,12 @@ static int16_t udev_lightgun_aiming_state(
       udev_input_t *udev, unsigned port, unsigned id )
 {
 
-   const int edge_detect       = 32700;
    udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
+   int16_t res_x;
+   int16_t res_y;
 
-   if (mouse)
+   if (mouse && udev_mouse_get_pointer(mouse, false, false, &res_x, &res_y))
    {
-      bool inside              = false;
-      int16_t res_x            = udev_mouse_get_pointer_x(mouse, false);
-      int16_t res_y            = udev_mouse_get_pointer_y(mouse, false);
-
       switch ( id )
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
@@ -3630,11 +3593,7 @@ static int16_t udev_lightgun_aiming_state(
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             return res_y;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            inside =   (res_x >= -edge_detect)
-               &&      (res_y >= -edge_detect)
-               &&      (res_x <=  edge_detect)
-               &&      (res_y <=  edge_detect);
-            return !inside;
+            return input_driver_pointer_is_offscreen(res_x, res_y);
          default:
             break;
       }
@@ -3726,58 +3685,38 @@ static bool udev_mouse_button_pressed(
 }
 
 static int16_t udev_pointer_state(udev_input_t *udev,
-      unsigned port, unsigned id, bool screen)
+      unsigned port, unsigned idx, unsigned id, bool screen)
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+   int16_t res_x;
+   int16_t res_y;
 
-   if (mouse)
+   if (mouse && udev_mouse_get_pointer(mouse, screen, true, &res_x, &res_y))
    {
       switch (id)
       {
          case RETRO_DEVICE_ID_POINTER_X:
-            return udev_mouse_get_pointer_x(mouse, screen);
+            return res_x;
          case RETRO_DEVICE_ID_POINTER_Y:
-            return udev_mouse_get_pointer_y(mouse, screen);
+            return res_y;
          case RETRO_DEVICE_ID_POINTER_PRESSED:
             if (mouse->abs == 1)
-               return mouse->pp;
-            return mouse->l;
+            {
+               if (idx == 0)
+                  return mouse->pp;
+               else
+                  return 0;
+            }
+            /* Simulate max. 3 touches with mouse buttons*/
+            else if (idx == 0)
+               return (mouse->l | mouse->r | mouse->m);
+            else if (idx == 1)
+               return (mouse->r | mouse->m);
+            else if (idx == 2)
+               return mouse->m;
+         case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+            return input_driver_pointer_is_offscreen(res_x, res_y);
       }
-   }
-
-   return 0;
-}
-
-static unsigned udev_retro_id_to_rarch(unsigned id)
-{
-   switch (id)
-   {
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-         return RARCH_LIGHTGUN_DPAD_RIGHT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-         return RARCH_LIGHTGUN_DPAD_LEFT;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-         return RARCH_LIGHTGUN_DPAD_UP;
-      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-         return RARCH_LIGHTGUN_DPAD_DOWN;
-      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-         return RARCH_LIGHTGUN_SELECT;
-      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-         return RARCH_LIGHTGUN_START;
-      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-         return RARCH_LIGHTGUN_RELOAD;
-      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-         return RARCH_LIGHTGUN_TRIGGER;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-         return RARCH_LIGHTGUN_AUX_A;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-         return RARCH_LIGHTGUN_AUX_B;
-      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-         return RARCH_LIGHTGUN_AUX_C;
-      case RETRO_DEVICE_ID_LIGHTGUN_START:
-         return RARCH_LIGHTGUN_START;
-      default:
-         break;
    }
 
    return 0;
@@ -3900,8 +3839,8 @@ static int16_t udev_input_state(
              return udev_input_touch_state(udev, pointer_dev, binds,
                      keyboard_mapping_blocked, port, device, idx, id);
 #endif
-         if (idx == 0) /* multi-touch unsupported (for now) */
-            return udev_pointer_state(udev, port, id,
+         if (idx < 3)
+            return udev_pointer_state(udev, port, idx, id,
                   device == RARCH_DEVICE_POINTER_SCREEN);
          break;
 
@@ -3933,7 +3872,7 @@ static int16_t udev_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
             case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
                {
-                  unsigned new_id                = udev_retro_id_to_rarch(id);
+                  unsigned new_id                = input_driver_lightgun_id_convert(id);
                   const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
                   const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
                   const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
@@ -4013,7 +3952,61 @@ static void udev_input_free(void *data)
 
    udev_input_kb_free(udev);
 
+   linux_close_illuminance_sensor(udev->illuminance_sensor);
+
    free(udev);
+}
+
+static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
+{
+   udev_input_t *udev = (udev_input_t*)data;
+
+   if (!udev)
+      return false;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         /* If already disabled, then do nothing */
+         linux_close_illuminance_sensor(udev->illuminance_sensor); /* noop if NULL */
+         udev->illuminance_sensor = NULL;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         /** Unimplemented sensor actions that probably shouldn't fail */
+         return true;
+
+      case RETRO_SENSOR_ILLUMINANCE_ENABLE:
+         if (udev->illuminance_sensor)
+            /* If we already have a sensor, just set the rate */
+            linux_set_illuminance_sensor_rate(udev->illuminance_sensor, rate);
+         else
+            udev->illuminance_sensor = linux_open_illuminance_sensor(rate);
+
+         return udev->illuminance_sensor != NULL;
+      default:
+         break;
+   }
+
+   return false;
+}
+
+static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   udev_input_t *udev = (udev_input_t*)data;
+
+   if (!udev)
+      return 0.0f;
+
+   switch (id)
+   {
+      case RETRO_SENSOR_ILLUMINANCE:
+         if (udev->illuminance_sensor)
+            return linux_get_illuminance_reading(udev->illuminance_sensor);
+      default:
+         break;
+   }
+
+   return 0.0f;
 }
 
 static bool open_devices(udev_input_t *udev,
@@ -4227,8 +4220,8 @@ input_driver_t input_udev = {
    udev_input_poll,
    udev_input_state,
    udev_input_free,
-   NULL,
-   NULL,
+   udev_set_sensor_state,
+   udev_get_sensor_input,
    udev_input_get_capabilities,
    "udev",
    udev_input_grab_mouse,

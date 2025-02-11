@@ -87,7 +87,6 @@ static rcheevos_locals_t rcheevos_locals =
    {{0}},/* memory */
 #ifdef HAVE_THREADS
    CMD_EVENT_NONE, /* queued_command */
-   false, /* game_placard_requested */
 #endif
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */
@@ -112,8 +111,8 @@ rcheevos_locals_t* get_rcheevos_locals(void)
 Supporting functions.
 *****************************************************************************/
 
-#define CMD_CHEEVOS_NON_COMMAND -1
-static void rcheevos_show_game_placard(void);
+#define CMD_CHEEVOS_FINALIZE_LOAD -1
+static void rcheevos_finalize_game_load_on_ui_thread(void);
 
 #ifndef CHEEVOS_VERBOSE
 void rcheevos_log(const char* fmt, ...)
@@ -230,8 +229,7 @@ static void rcheevos_show_mastery_placard(void)
    {
       const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals.client);
       char title[256];
-
-      snprintf(title, sizeof(title),
+      size_t _len = snprintf(title, sizeof(title),
          msg_hash_to_str(rc_client_get_hardcore_enabled(rcheevos_locals.client)
             ? MSG_CHEEVOS_MASTERED_GAME
             : MSG_CHEEVOS_COMPLETED_GAME),
@@ -244,11 +242,11 @@ static void rcheevos_show_mastery_placard(void)
          char msg[128];
          char badge_name[32];
          const char* displayname = rc_client_get_user_info(rcheevos_locals.client)->display_name;
-         const bool content_runtime_log = settings->bools.content_runtime_log;
+         const bool content_runtime_log      = settings->bools.content_runtime_log;
          const bool content_runtime_log_aggr = settings->bools.content_runtime_log_aggregate;
-         size_t len = strlcpy(msg, displayname, sizeof(msg));
+         size_t __len = strlcpy(msg, displayname, sizeof(msg));
 
-         if (len < sizeof(msg) - 12
+         if (__len < sizeof(msg) - 12
             && (content_runtime_log || content_runtime_log_aggr))
          {
             const char* content_path = path_get(RARCH_PATH_CONTENT);
@@ -265,21 +263,22 @@ static void rcheevos_show_mastery_placard(void)
                runtime_log_add_runtime_usec(runtime_log,
                   runloop_state->core_runtime_usec);
 
-               len += strlcpy(msg + len, " | ", sizeof(msg) - len);
-               runtime_log_get_runtime_str(runtime_log, msg + len, sizeof(msg) - len);
+               __len += strlcpy(msg + __len, " | ", sizeof(msg) - __len);
+               runtime_log_get_runtime_str(runtime_log, msg + __len, sizeof(msg) - __len);
                msg[sizeof(msg) - 1] = '\0';
 
                free(runtime_log);
             }
          }
 
-         len = strlcpy(badge_name, "i", sizeof(badge_name));
-         strlcpy(badge_name + len, game->badge_name, sizeof(badge_name) - len);
+         __len = strlcpy(badge_name, "i", sizeof(badge_name));
+         strlcpy(badge_name + __len, game->badge_name, sizeof(badge_name) - __len);
          gfx_widgets_push_achievement(title, msg, badge_name);
       }
       else
 #endif
-         runloop_msg_queue_push(title, 0, 3 * 60, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(title, _len, 0, 3 * 60, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
 
@@ -321,10 +320,10 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
          size_t _len = strlcpy(buffer, msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
                sizeof(buffer));
          _len += strlcpy(buffer + _len, ": ", sizeof(buffer) - _len);
-         strlcpy(buffer + _len, cheevo->title, sizeof(buffer) - _len);
-         runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+         _len += strlcpy(buffer + _len, cheevo->title, sizeof(buffer) - _len);
+         runloop_msg_queue_push(buffer, _len, 0, 2 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         runloop_msg_queue_push(cheevo->description, 0, 3 * 60, false, NULL,
+         runloop_msg_queue_push(cheevo->description, strlen(cheevo->description), 0, 3 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
@@ -345,17 +344,19 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
 
       if (shotname)
       {
+         const char *path_directory_screenshot = settings->paths.directory_screenshot;
          video_driver_state_t* video_st = video_state_get_ptr();;
          snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
-            settings->paths.directory_screenshot,
+            path_directory_screenshot,
             path_basename(path_get(RARCH_PATH_BASENAME)),
             (unsigned)cheevo->id);
          shotname[shotname_len - 1] = '\0';
 
-         if (take_screenshot(settings->paths.directory_screenshot,
+         if (take_screenshot(path_directory_screenshot,
             shotname,
             true,
-            video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+            video_st->frame_cache_data
+            && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
             false,
             true))
             CHEEVOS_LOG(RCHEEVOS_TAG
@@ -372,50 +373,55 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
 #endif
 }
 
-static void rcheevos_lboard_submitted(const rc_client_leaderboard_t* lboard, const rc_client_leaderboard_scoreboard_t* scoreboard)
+static void rcheevos_lboard_submitted(const rc_client_leaderboard_t* lboard,
+      const rc_client_leaderboard_scoreboard_t* scoreboard)
 {
    const settings_t* settings = config_get_ptr();
    if (lboard && settings->bools.cheevos_visibility_lboard_submit)
    {
+      size_t _len;
       char buffer[256];
       if (scoreboard)
       {
-         char addendum[64];
-         const size_t len = snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
+         _len = snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
             scoreboard->submitted_score, lboard->title);
+         _len += strlcpy(buffer + _len, " (", sizeof(buffer) - _len);
          if (strcmp(scoreboard->best_score, scoreboard->submitted_score) == 0)
-            snprintf(addendum, sizeof(addendum), msg_hash_to_str(MSG_LEADERBOARD_RANK), scoreboard->new_rank);
+            _len += snprintf(buffer + _len, sizeof(buffer) - _len,
+                  msg_hash_to_str(MSG_LEADERBOARD_RANK), scoreboard->new_rank);
          else
-            snprintf(addendum, sizeof(addendum), msg_hash_to_str(MSG_LEADERBOARD_BEST), scoreboard->best_score);
-         snprintf(buffer + len, sizeof(buffer) - len, " (%s)", addendum);
+            _len += snprintf(buffer + _len, sizeof(buffer) - _len,
+                  msg_hash_to_str(MSG_LEADERBOARD_BEST), scoreboard->best_score);
+         _len += strlcpy(buffer + _len, ")", sizeof(buffer) - _len);
       }
       else
-      {
-         snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
+         _len = snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
             lboard->tracker_value, lboard->title);
-      }
-      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+      runloop_msg_queue_push(buffer, _len, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
 
 static void rcheevos_lboard_canceled(const rc_client_leaderboard_t* lboard)
 {
-   const settings_t* settings = config_get_ptr();
-   if (lboard && settings->bools.cheevos_visibility_lboard_cancel)
+   const settings_t* settings            = config_get_ptr();
+   bool cheevos_visibility_lboard_cancel = settings->bools.cheevos_visibility_lboard_cancel;
+   if (cheevos_visibility_lboard_cancel)
    {
       char buffer[256];
-      snprintf(buffer, sizeof(buffer), "%s: %s",
-         msg_hash_to_str(MSG_LEADERBOARD_FAILED), lboard->title);
-      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+      size_t _len = strlcpy(buffer, msg_hash_to_str(MSG_LEADERBOARD_FAILED), sizeof(buffer));
+      _len += strlcpy(buffer + _len, ": ", sizeof(buffer) - _len);
+      _len += strlcpy(buffer + _len, lboard->title, sizeof(buffer) - _len);
+      runloop_msg_queue_push(buffer, _len, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
 
 static void rcheevos_lboard_started(const rc_client_leaderboard_t* lboard)
 {
-   const settings_t* settings = config_get_ptr();
-   if (settings->bools.cheevos_visibility_lboard_start)
+   const settings_t *settings           = config_get_ptr();
+   bool cheevos_visibility_lboard_start = settings->bools.cheevos_visibility_lboard_start;
+   if (cheevos_visibility_lboard_start)
    {
       char buffer[256];
       size_t _len = strlcpy(buffer, msg_hash_to_str(MSG_LEADERBOARD_STARTED),
@@ -423,10 +429,10 @@ static void rcheevos_lboard_started(const rc_client_leaderboard_t* lboard)
       _len += strlcpy(buffer + _len, ": ", sizeof(buffer) - _len);
       _len += strlcpy(buffer + _len, lboard->title, sizeof(buffer) - _len);
       if (lboard->description && *lboard->description)
-         snprintf(buffer + _len, sizeof(buffer) - _len, "- %s",
+         _len += snprintf(buffer + _len, sizeof(buffer) - _len, "- %s",
             lboard->description);
 
-      runloop_msg_queue_push(buffer, 0, 2 * 60, false, NULL,
+      runloop_msg_queue_push(buffer, _len, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
@@ -463,7 +469,9 @@ static void rcheevos_progress_updated(rcheevos_locals_t* locals,
    const rc_client_achievement_t* cheevo)
 {
    settings_t* settings = config_get_ptr();
-   if (cheevo && gfx_widgets_ready() && settings->bools.cheevos_visibility_progress_tracker)
+   if (     cheevo
+         && gfx_widgets_ready()
+         && settings->bools.cheevos_visibility_progress_tracker)
       gfx_widget_set_achievement_progress(cheevo->badge_name, cheevo->measured_progress);
 }
 
@@ -487,7 +495,7 @@ static void rcheevos_server_error(const char* api_name, const char* message)
    size_t _len = strlcpy(buffer, api_name, sizeof(buffer));
    _len += strlcpy(buffer + _len, " failed: ", sizeof(buffer) - _len);
    _len += strlcpy(buffer + _len, message, sizeof(buffer) - _len);
-   runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+   runloop_msg_queue_push(buffer, _len, 0, 4 * 60, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
 }
 
@@ -497,8 +505,8 @@ static void rcheevos_server_disconnected(void)
 
    /* always show message - even with widget. it helps the user understand what the widget is for */
    {
-      const char* message = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED);
-      runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
+      const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED);
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
    }
 
@@ -513,8 +521,8 @@ static void rcheevos_server_reconnected(void)
    CHEEVOS_LOG(RCHEEVOS_TAG "All pending requests synced to RetroAchievements server\n");
 
    {
-      const char* message = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED);
-      runloop_msg_queue_push(message, 0, 3 * 60, false, NULL,
+      const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED);
+      runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
    }
 
@@ -672,7 +680,6 @@ void rcheevos_pause_hardcore(void)
 
 bool rcheevos_unload(void)
 {
-   settings_t* settings  = config_get_ptr();
    const bool was_loaded = rcheevos_is_game_loaded();
 
 #ifdef HAVE_GFX_WIDGETS
@@ -684,7 +691,6 @@ bool rcheevos_unload(void)
 
 #ifdef HAVE_THREADS
    rcheevos_locals.queued_command = CMD_EVENT_NONE;
-   rcheevos_locals.game_placard_requested = false;
 #endif
 
    if (rcheevos_locals.memory.count > 0)
@@ -709,7 +715,7 @@ bool rcheevos_unload(void)
    rcheevos_locals.queued_command = CMD_EVENT_NONE;
 #endif
 
-   if (!settings->arrays.cheevos_token[0])
+   if (!config_get_ptr()->arrays.cheevos_token[0])
    {
       /* If the config-level token has been cleared, we need to re-login on
        * loading the next game. Easiest way to do that is to destroy the client */
@@ -725,31 +731,26 @@ bool rcheevos_unload(void)
 void rcheevos_leaderboard_trackers_visibility_changed(void)
 {
 #if defined(HAVE_GFX_WIDGETS)
-   const settings_t* settings = config_get_ptr();
-   if (!settings->bools.cheevos_visibility_lboard_trackers)
-   {
-      /* Hide any visible trackers */
+   bool cheevos_visibility_lboard_trackers = config_get_ptr()->bools.cheevos_visibility_lboard_trackers;
+   /* Hide any visible trackers */
+   if (!cheevos_visibility_lboard_trackers)
       gfx_widgets_clear_leaderboard_displays();
-   }
-   else
-   {
-      /* No way to immediately request trackers be reshown, but they
-       * will reappear the next time they're updated */
-   }
 #endif
 }
 
+/* Disable slowdown */
 static void rcheevos_enforce_hardcore_settings(void)
 {
-   /* disable slowdown */
    runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_SLOWMOTION;
 }
 
 static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 {
-   settings_t* settings = config_get_ptr();
-   bool rewind_enable   = settings->bools.rewind_enable;
-   const bool was_enabled = rcheevos_hardcore_active();
+   settings_t* settings                  = config_get_ptr();
+   bool rewind_enable                    = settings->bools.rewind_enable;
+   const bool was_enabled                = rcheevos_hardcore_active();
+   bool notification_show_cheats_applied =
+      settings->bools.notification_show_cheats_applied;
 
    if (!was_enabled)
    {
@@ -766,7 +767,7 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 
 #ifdef HAVE_CHEATS
       /* If one or more emulator managed cheats is active, abort */
-      cheat_manager_apply_cheats();
+      cheat_manager_apply_cheats(notification_show_cheats_applied);
       if (!locals->hardcore_allowed)
       {
          locals->hardcore_being_enabled = false;
@@ -776,10 +777,10 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
 
       if (rcheevos_is_game_loaded())
       {
-         const char* msg = msg_hash_to_str(
+         const char *_msg = msg_hash_to_str(
                MSG_CHEEVOS_HARDCORE_MODE_ENABLE);
-         CHEEVOS_LOG("%s\n", msg);
-         runloop_msg_queue_push(msg, 0, 3 * 60, true, NULL,
+         CHEEVOS_LOG("%s\n", _msg);
+         runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          rcheevos_enforce_hardcore_settings();
@@ -825,13 +826,17 @@ static void rcheevos_toggle_hardcore_active(rcheevos_locals_t* locals)
             command_event(CMD_EVENT_REWIND_INIT, NULL);
       }
    }
+
+#ifdef HAVE_NETWORKING
+   /* force sending a savestate to clients so they'll drop out of hardcore too */
+   netplay_force_send_savestate();
+#endif
 }
 
 void rcheevos_toggle_hardcore_paused(void)
 {
-   settings_t* settings = config_get_ptr();
    /* if hardcore mode is not enabled, we can't toggle whether its active */
-   if (settings->bools.cheevos_hardcore_mode_enable)
+   if (config_get_ptr()->bools.cheevos_hardcore_mode_enable)
       rcheevos_toggle_hardcore_active(&rcheevos_locals);
 }
 
@@ -861,13 +866,13 @@ void rcheevos_hardcore_enabled_changed(void)
 void rcheevos_validate_config_settings(void)
 {
    int i;
+   unsigned console_id;
    const rc_disallowed_setting_t
       *disallowed_settings           = NULL;
    core_option_manager_t* coreopts   = NULL;
    struct retro_system_info *sysinfo =
       &runloop_state_get_ptr()->system.info;
    const settings_t* settings = config_get_ptr();
-   unsigned console_id;
 
    if (!rcheevos_hardcore_active())
       return;
@@ -878,12 +883,16 @@ void rcheevos_validate_config_settings(void)
     * it'll wait for the next vsync event, effectively halfing the fps. the
     * auto setting should achieve the most accurate frame rate anyway, so
     * disallow any manual values */
-   if (!settings->bools.video_frame_delay_auto && settings->uints.video_frame_delay != 0) {
-      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY));
+   if (    !settings->bools.video_frame_delay_auto
+         && settings->uints.video_frame_delay != 0)
+   {
+      const char* error = msg_hash_to_str(
+            MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY);
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n",
+            msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY));
       rcheevos_pause_hardcore();
 
-      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+      runloop_msg_queue_push(error, strlen(error), 0, 4 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       return;
    }
@@ -896,37 +905,30 @@ void rcheevos_validate_config_settings(void)
     * allow 1 even though that could be potentially abused on monitors
     * running at less than 60Hz because 1 is the default value - many users
     * wouldn't know how to change it to auto. */
-   if (settings->uints.video_swap_interval > 1) {
-      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL));
+   if (settings->uints.video_swap_interval > 1)
+   {
+      const char* error = msg_hash_to_str(
+            MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL);
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n",
+            msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL));
       rcheevos_pause_hardcore();
 
-      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+      runloop_msg_queue_push(error, strlen(error), 0, 4 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       return;
    }
 
    /* this causes N blank frames to be rendered between real frames, thus
     * can slow down the actual number of rendered frames per second. */
-   if (settings->uints.video_black_frame_insertion > 0) {
-      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION));
+   if (settings->uints.video_black_frame_insertion > 0)
+   {
+      const char* error = msg_hash_to_str(
+            MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION);
+      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n",
+            msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION));
       rcheevos_pause_hardcore();
 
-      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-      return;
-   }
-
-   /* this causes N dupe frames to be rendered between real frames, for
-      the purposes of shaders that update faster than content. Thus
-    * can slow down the actual number of rendered frames per second. */
-   if (settings->uints.video_shader_subframes > 1) {
-      const char* error = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES);
-      CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES));
-      rcheevos_pause_hardcore();
-
-      runloop_msg_queue_push(error, 0, 4 * 60, false, NULL,
+      runloop_msg_queue_push(error, strlen(error), 0, 4 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       return;
    }
@@ -935,7 +937,8 @@ void rcheevos_validate_config_settings(void)
       return;
 
    disallowed_settings = rc_libretro_get_disallowed_settings(sysinfo->library_name);
-   if (disallowed_settings && retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   if (     disallowed_settings
+         && retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
    {
       for (i = 0; i < (int)coreopts->size; i++)
       {
@@ -944,14 +947,14 @@ void rcheevos_validate_config_settings(void)
          if (!rc_libretro_is_setting_allowed(disallowed_settings, key, val))
          {
             char buffer[128];
-            snprintf(buffer, sizeof(buffer),
+            size_t _len = snprintf(buffer, sizeof(buffer),
                      msg_hash_to_str_us(MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED), key, val);
             CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
-            snprintf(buffer, sizeof(buffer),
+            _len = snprintf(buffer, sizeof(buffer),
                      msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED), key, val);
             rcheevos_pause_hardcore();
 
-            runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+            runloop_msg_queue_push(buffer, _len, 0, 4 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
             return;
          }
@@ -963,16 +966,17 @@ void rcheevos_validate_config_settings(void)
       console_id = game ? game->console_id : 0;
    }
 
-   if (console_id && !rc_libretro_is_system_allowed(sysinfo->library_name, console_id))
+   if (      console_id
+         && !rc_libretro_is_system_allowed(sysinfo->library_name, console_id))
    {
       char buffer[256];
-      snprintf(buffer, sizeof(buffer),
+      size_t _len = snprintf(buffer, sizeof(buffer),
             msg_hash_to_str(MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE),
             rc_console_name(console_id), sysinfo->library_name);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", buffer);
       rcheevos_pause_hardcore();
 
-      runloop_msg_queue_push(buffer, 0, 4 * 60, false, NULL,
+      runloop_msg_queue_push(buffer, _len, 0, 4 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
       return;
    }
@@ -986,16 +990,12 @@ void rcheevos_test(void)
 #ifdef HAVE_THREADS
    if (rcheevos_locals.queued_command != CMD_EVENT_NONE)
    {
-      if ((int)rcheevos_locals.queued_command != CMD_CHEEVOS_NON_COMMAND)
+      if ((int)rcheevos_locals.queued_command == CMD_CHEEVOS_FINALIZE_LOAD)
+         rcheevos_finalize_game_load_on_ui_thread();
+      else
          command_event(rcheevos_locals.queued_command, NULL);
 
       rcheevos_locals.queued_command = CMD_EVENT_NONE;
-
-      if (rcheevos_locals.game_placard_requested)
-      {
-         rcheevos_locals.game_placard_requested = false;
-         rcheevos_show_game_placard();
-      }
    }
 #endif
 
@@ -1208,10 +1208,11 @@ static void rc_hash_reset_cdreader_hooks(void)
 
 static void rcheevos_show_game_placard(void)
 {
-   size_t len;
+   size_t _len;
    char msg[256];
    rc_client_user_game_summary_t summary;
-   const settings_t* settings   = config_get_ptr();
+   const settings_t* settings          = config_get_ptr();
+   unsigned cheevos_visibility_summary = settings->uints.cheevos_visibility_summary;
    const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals.client);
    if (!game) /* Make sure there's actually a game loaded */
       return;
@@ -1221,37 +1222,38 @@ static void rcheevos_show_game_placard(void)
    if (summary.num_core_achievements == 0)
    {
       if (summary.num_unofficial_achievements == 0)
-         len = snprintf(msg, sizeof(msg), "%s", msg_hash_to_str(MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS));
+         _len = strlcpy(msg, msg_hash_to_str(MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS),
+               sizeof(msg));
       else
-         len = snprintf(msg, sizeof(msg),
+         _len = snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED),
                         (int)summary.num_unofficial_achievements);
    }
    else if (rc_client_get_encore_mode_enabled(rcheevos_locals.client))
-      len = snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED),
                      (int)summary.num_core_achievements);
    else
-      len = snprintf(msg, sizeof(msg),
+      _len = snprintf(msg, sizeof(msg),
                      msg_hash_to_str(MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED),
                      (int)summary.num_unlocked_achievements,
                      (int)summary.num_core_achievements);
 
    if (summary.num_unsupported_achievements)
    {
-      if (len < sizeof(msg) - 4)
+      if (_len < sizeof(msg) - 4)
       {
-         msg[len++] = ' ';
-         msg[len++] = '(';
+         msg[_len++] = ' ';
+         msg[_len++] = '(';
 
-         len       += snprintf(&msg[len], sizeof(msg) - len,
+         _len       += snprintf(&msg[_len], sizeof(msg) - _len,
                msg_hash_to_str(MSG_CHEEVOS_UNSUPPORTED_COUNT),
                (int)summary.num_unsupported_achievements);
 
-         if (len < sizeof(msg) - 1)
+         if (_len < sizeof(msg) - 1)
          {
-            msg[len++] = ')';
-            msg[len]   = '\0';
+            msg[_len++] = ')';
+            msg[_len]   = '\0';
          }
       }
    }
@@ -1259,22 +1261,22 @@ static void rcheevos_show_game_placard(void)
    msg[sizeof(msg) - 1] = 0;
    CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
 
-   if (   settings->uints.cheevos_visibility_summary == RCHEEVOS_SUMMARY_ALLGAMES
-      || (settings->uints.cheevos_visibility_summary == RCHEEVOS_SUMMARY_HASCHEEVOS
+   if (   cheevos_visibility_summary == RCHEEVOS_SUMMARY_ALLGAMES
+      || (cheevos_visibility_summary == RCHEEVOS_SUMMARY_HASCHEEVOS
       && (summary.num_core_achievements || summary.num_unofficial_achievements)))
    {
 #if defined (HAVE_GFX_WIDGETS)
       if (gfx_widgets_ready())
       {
          char badge_name[32];
-         size_t _len = strlcpy(badge_name, "i", sizeof(badge_name));
-         _len       += strlcpy(badge_name + _len, game->badge_name,
-               sizeof(badge_name) - _len);
+         size_t __len = strlcpy(badge_name, "i", sizeof(badge_name));
+         __len       += strlcpy(badge_name + __len, game->badge_name,
+               sizeof(badge_name) - __len);
          gfx_widgets_push_achievement(game->title, msg, badge_name);
       }
       else
 #endif
-         runloop_msg_queue_push(msg, 0, 3 * 60, false, NULL,
+         runloop_msg_queue_push(msg, _len, 0, 3 * 60, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 }
@@ -1341,7 +1343,7 @@ static void rcheevos_client_login_callback(int result,
             sizeof(msg));
       _len += strlcpy(msg + _len, error_message, sizeof(msg) - _len);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);
-      runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
+      runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return;
    }
@@ -1354,7 +1356,6 @@ static void rcheevos_client_login_callback(int result,
    else
    {
       settings_t* settings = config_get_ptr();
-
       if (user->token[0])
       {
          /* store the token, clear the password */
@@ -1371,9 +1372,9 @@ static void rcheevos_client_login_callback(int result,
       if (settings->bools.cheevos_visibility_account)
       {
          char msg[128];
-         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_LOGGED_IN_AS_USER),
+         size_t _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_LOGGED_IN_AS_USER),
             user->display_name);
-         runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
+         runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }
@@ -1381,7 +1382,18 @@ static void rcheevos_client_login_callback(int result,
 
 static void rcheevos_finalize_game_load(rc_client_t* client)
 {
-   rcheevos_client_download_achievement_badges(client);
+#if defined(HAVE_GFX_WIDGETS) /* We always want badges if widgets are enabled */
+   bool want_badges     = true;
+#else
+   settings_t* settings = config_get_ptr();
+   bool want_badges     = settings->bools.cheevos_badges_enable;
+   /* Badges are only needed for xmb and ozone menus */
+   want_badges          = want_badges &&
+      (        string_is_equal(settings->arrays.menu_driver, "xmb")
+            || string_is_equal(settings->arrays.menu_driver, "ozone"));
+#endif
+   if (want_badges)
+         rcheevos_client_download_achievement_badges(client);
 
    if (!rc_client_is_processing_required(client))
    {
@@ -1390,12 +1402,31 @@ static void rcheevos_finalize_game_load(rc_client_t* client)
    }
 }
 
+static void rcheevos_finalize_game_load_on_ui_thread(void)
+{
+   rcheevos_show_game_placard();
+
+#if HAVE_REWIND
+   if (!rcheevos_hardcore_active())
+   {
+      /* Re-enable rewind. Additional space will be
+       * allocated for the achievement state data */
+      if (config_get_ptr()->bools.rewind_enable)
+         command_event(CMD_EVENT_REWIND_REINIT, NULL);
+   }
+#endif
+
+#ifdef HAVE_NETWORKING
+   netplay_reinit_serialization();
+#endif
+}
+
 static void rcheevos_client_load_game_callback(int result,
    const char* error_message, rc_client_t* client, void* userdata)
 {
-   const settings_t* settings = config_get_ptr();
-   const rc_client_game_t* game = rc_client_get_game_info(client);
    char msg[256];
+   const settings_t *settings   = config_get_ptr();
+   const rc_client_game_t *game = rc_client_get_game_info(client);
 
 #if defined(HAVE_GFX_WIDGETS)
    gfx_widget_set_cheevos_set_loading(false);
@@ -1403,6 +1434,7 @@ static void rcheevos_client_load_game_callback(int result,
 
    if (result != RC_OK || !game)
    {
+      size_t _len;
       if (result == RC_NO_GAME_LOADED)
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "Game not recognized, pausing hardcore\n");
@@ -1411,18 +1443,18 @@ static void rcheevos_client_load_game_callback(int result,
          if (!settings->bools.cheevos_verbose_enable)
             return;
 
-         snprintf(msg, sizeof(msg), "%s", msg_hash_to_str(MSG_CHEEVOS_GAME_NOT_IDENTIFIED));
+         _len = strlcpy(msg, msg_hash_to_str(MSG_CHEEVOS_GAME_NOT_IDENTIFIED), sizeof(msg));
       }
       else
       {
          if (!error_message)
             error_message = "Unknown error";
 
-         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_GAME_LOAD_FAILED), error_message);
+         _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_GAME_LOAD_FAILED), error_message);
          CHEEVOS_LOG(RCHEEVOS_TAG "Game load failed: %s\n", error_message);
       }
 
-      runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
+      runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       return;
    }
@@ -1437,9 +1469,13 @@ static void rcheevos_client_load_game_callback(int result,
          CHEEVOS_ERR(RCHEEVOS_TAG "No memory exposed by core\n");
 
          if (settings && settings->bools.cheevos_verbose_enable)
-            runloop_msg_queue_push(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE),
-               0, 4 * 60, false, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         {
+            const char *_msg = msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE);
+            runloop_msg_queue_push(_msg, strlen(_msg),
+                  0, 4 * 60, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+         }
 
          rcheevos_unload();
          rcheevos_pause_hardcore();
@@ -1450,55 +1486,32 @@ static void rcheevos_client_load_game_callback(int result,
       rc_client_set_read_memory_function(client, rcheevos_client_read_memory);
    }
 
-#ifdef HAVE_THREADS
-   if (!video_driver_is_threaded() && !task_is_on_main_thread())
-   {
-      /* have to "schedule" this. game image should not be loaded on background thread */
-      rcheevos_locals.queued_command = CMD_CHEEVOS_NON_COMMAND;
-      rcheevos_locals.game_placard_requested = true;
-   }
-   else
-#endif
-      rcheevos_show_game_placard();
-
    rcheevos_finalize_game_load(client);
 
+   /* Hardcore is active. we're going to start processing
+    * achievements. make sure restrictions are enforced */
    if (rcheevos_hardcore_active())
    {
-      /* hardcore is active. we're going to start processing
-       * achievements. make sure restrictions are enforced */
       rcheevos_validate_config_settings();
       rcheevos_enforce_hardcore_settings();
    }
-   else
-   {
-#if HAVE_REWIND
-      /* Re-enable rewind. Additional space will be allocated for the achievement state data */
-      if (settings->bools.rewind_enable)
-      {
-#ifdef HAVE_THREADS
-         if (!task_is_on_main_thread())
-         {
-            /* Have to "schedule" this. CMD_EVENT_REWIND_REINIT should
-             * only be called on the main thread */
-            rcheevos_locals.queued_command = CMD_EVENT_REWIND_REINIT;
-         }
-         else
-#endif
-            command_event(CMD_EVENT_REWIND_REINIT, NULL);
-      }
-#endif
-   }
 
    rcheevos_spectating_changed(); /* synchronize spectating state */
+
+#ifdef HAVE_THREADS
+   /* Have to "schedule" this. Game image should not be
+    * loaded into memory on background thread */
+   if (!task_is_on_main_thread())
+      rcheevos_locals.queued_command = CMD_CHEEVOS_FINALIZE_LOAD;
+   else
+#endif
+      rcheevos_finalize_game_load_on_ui_thread();
 }
 
 static rc_clock_t rcheevos_client_get_time_millisecs(const rc_client_t* client)
 {
    return cpu_features_get_time_usec() / 1000;
 }
-
-
 
 bool rcheevos_load(const void *data)
 {
@@ -1522,7 +1535,10 @@ bool rcheevos_load(const void *data)
    if (string_is_empty(settings->arrays.cheevos_username))
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "Cannot login (no username)\n");
-      runloop_msg_queue_push("Missing RetroAchievements account information.", 0, 5 * 60, false, NULL,
+      runloop_msg_queue_push(
+            "Missing RetroAchievements account information.",
+            STRLEN_CONST("Missing RetroAchievements account information."),
+            0, 5 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
       rcheevos_pause_hardcore();
       return false;
@@ -1534,9 +1550,7 @@ bool rcheevos_load(const void *data)
       sizeof(rcheevos_locals.user_agent_core));
 
    if (rcheevos_locals.client)
-   {
       rc_client_unload_game(rcheevos_locals.client);
-   }
    else
    {
       rcheevos_locals.client = rc_client_create(rcheevos_client_read_memory, rcheevos_client_server_call);
@@ -1575,23 +1589,17 @@ bool rcheevos_load(const void *data)
    {
       /* user not logged in, do so now */
       if (settings->arrays.cheevos_token[0])
-      {
          rc_client_begin_login_with_token(rcheevos_locals.client,
             settings->arrays.cheevos_username, settings->arrays.cheevos_token,
             rcheevos_client_login_callback, NULL);
-      }
       else
-      {
          rc_client_begin_login_with_password(rcheevos_locals.client,
             settings->arrays.cheevos_username, settings->arrays.cheevos_password,
             rcheevos_client_login_callback, NULL);
-      }
    }
 
    if (rcheevos_hardcore_active())
-   {
       rcheevos_enforce_hardcore_settings();
-   }
 
    /* provide hooks for reading files */
    rc_hash_reset_cdreader_hooks();
@@ -1604,14 +1612,13 @@ bool rcheevos_load(const void *data)
    rc_client_begin_identify_and_load_game(rcheevos_locals.client, RC_CONSOLE_UNKNOWN,
       info->path, (const uint8_t*)info->data, info->size, rcheevos_client_load_game_callback, NULL);
 
-
-
    return true;
 }
 
 static void rcheevos_client_change_media_callback(int result,
    const char* error_message, rc_client_t* client, void* userdata)
 {
+   size_t _len;
    char msg[256];
 
    if (result == RC_OK || result == RC_NO_GAME_LOADED)
@@ -1619,7 +1626,7 @@ static void rcheevos_client_change_media_callback(int result,
 
    if (result == RC_HARDCORE_DISABLED)
    {
-      strlcpy(msg, error_message, sizeof(msg));
+      _len = strlcpy(msg, error_message, sizeof(msg));
       rcheevos_hardcore_enabled_changed();
    }
    else
@@ -1627,11 +1634,11 @@ static void rcheevos_client_change_media_callback(int result,
       if (!error_message)
          error_message = "Unknown error";
 
-      snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_CHANGE_MEDIA_FAILED), error_message);
+      _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_CHEEVOS_CHANGE_MEDIA_FAILED), error_message);
       CHEEVOS_LOG(RCHEEVOS_TAG "Change media failed: %s\n", error_message);
    }
 
-   runloop_msg_queue_push(msg, 0, 2 * 60, false, NULL,
+   runloop_msg_queue_push(msg, _len, 0, 2 * 60, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 

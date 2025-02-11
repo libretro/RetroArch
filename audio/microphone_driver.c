@@ -58,6 +58,9 @@ microphone_driver_t *microphone_drivers[] = {
 #ifdef HAVE_SDL2
       &microphone_sdl, /* Microphones are not supported in SDL 1 */
 #endif
+#ifdef HAVE_PIPEWIRE
+      &microphone_pipewire,
+#endif
       &microphone_null,
       NULL,
 };
@@ -140,9 +143,7 @@ const char *config_get_microphone_driver_options(void)
    return char_list_new_special(STRING_LIST_MICROPHONE_DRIVERS, NULL);
 }
 
-bool microphone_driver_find_driver(
-      void *settings_data,
-      const char *prefix,
+bool microphone_driver_find_driver(void *settings_data, const char *prefix,
       bool verbosity_enabled)
 {
    settings_t *settings = (settings_t*)settings_data;
@@ -181,21 +182,23 @@ bool microphone_driver_find_driver(
    return true;
 }
 
-static void mic_driver_microphone_handle_init(retro_microphone_t *microphone, const retro_microphone_params_t *params)
+static void mic_driver_microphone_handle_init(retro_microphone_t *microphone,
+      const retro_microphone_params_t *params)
 {
    if (microphone)
    {
-      const settings_t *settings = config_get_ptr();
-      microphone->microphone_context   = NULL;
-      microphone->flags                = MICROPHONE_FLAG_ACTIVE;
-      microphone->sample_buffer        = NULL;
-      microphone->sample_buffer_length = 0;
+      const settings_t *settings        = config_get_ptr();
+      unsigned microphone_sample_rate   = settings->uints.microphone_sample_rate;
+      microphone->microphone_context    = NULL;
+      microphone->flags                 = MICROPHONE_FLAG_ACTIVE;
+      microphone->sample_buffer         = NULL;
+      microphone->sample_buffer_length  = 0;
 
-      microphone->requested_params.rate = params ? params->rate : settings->uints.microphone_sample_rate;
-      microphone->actual_params.rate = 0;
+      microphone->requested_params.rate = params ? params->rate : microphone_sample_rate;
+      microphone->actual_params.rate    = 0;
       /* We don't set the actual parameters until we actually open the mic.
        * (Remember, the core can request one before the driver is ready.) */
-      microphone->effective_params.rate = params ? params->rate : settings->uints.microphone_sample_rate;
+      microphone->effective_params.rate = params ? params->rate : microphone_sample_rate;
       /* We set the effective parameters because
        * the frontend has to do what it can
        * to give the core what it asks for. */
@@ -248,14 +251,6 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    else
       memset(microphone, 0, sizeof(*microphone));
    /* Do NOT free the microphone handle itself! It's allocated statically! */
-}
-
-static enum resampler_quality microphone_driver_get_resampler_quality(
-      settings_t *settings)
-{
-   if (settings)
-      return (enum resampler_quality)settings->uints.microphone_resampler_quality;
-   return RESAMPLER_QUALITY_DONTCARE;
 }
 
 bool microphone_driver_init_internal(void *settings_data)
@@ -326,7 +321,7 @@ bool microphone_driver_init_internal(void *settings_data)
    else
       mic_st->resampler_ident[0] = '\0';
 
-   mic_st->resampler_quality     = microphone_driver_get_resampler_quality(settings);
+   mic_st->resampler_quality     = (enum resampler_quality)settings->uints.microphone_resampler_quality;
 
    RARCH_LOG("[Microphone]: Initialized microphone driver.\n");
 
@@ -707,15 +702,13 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
    void *driver_context                  = mic_st->driver_context;
 
    if (!settings)
-   {
-      RARCH_ERR("[Microphone]: Failed to open microphone due to uninitialized config.\n");
       return NULL;
-   }
 
+   /* Not checking mic_st->flags because they might not be set yet;
+    * don't forget, the core can ask for a mic
+    * before the audio driver is ready to create one. */
    if (!settings->bools.microphone_enable)
-   { /* Not checking mic_st->flags because they might not be set yet;
-      * don't forget, the core can ask for a mic
-      * before the audio driver is ready to create one. */
+   {
       RARCH_DBG("[Microphone]: Refused to open microphone because it's disabled in the settings.\n");
       return NULL;
    }
@@ -726,8 +719,8 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
       return NULL;
    }
 
-   if (!mic_driver &&
-         (string_is_equal(settings->arrays.microphone_driver, "null")
+   if (        !mic_driver
+            && (string_is_equal(settings->arrays.microphone_driver, "null")
             || string_is_empty(settings->arrays.microphone_driver)))
    { /* If the mic driver hasn't been initialized, but it's not going to be... */
       RARCH_ERR("[Microphone]: Cannot open microphone as the driver won't be initialized.\n");
@@ -753,8 +746,9 @@ retro_microphone_t *microphone_driver_open_mic(const retro_microphone_params_t *
     * But the user still wants a handle, so we'll give them one.
     */
    mic_driver_microphone_handle_init(&mic_st->microphone, params);
-   /* If driver_context is NULL, the handle won't have a valid microphone context (but we'll create one later) */
 
+   /* If driver_context is NULL, the handle won't have
+    * a valid microphone context (but we'll create one later) */
    if (driver_context)
    {
       /* If the microphone driver is ready to open a microphone... */

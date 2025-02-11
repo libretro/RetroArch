@@ -49,7 +49,7 @@ struct core_backup_list
 static bool core_backup_get_backup_dir(
       const char *dir_libretro, const char *dir_core_assets,
       const char *core_filename,
-      char *backup_dir, size_t len)
+      char *s, size_t len)
 {
    char tmp[PATH_MAX_LENGTH];
    char core_file_id[NAME_MAX_LENGTH];
@@ -62,11 +62,8 @@ static bool core_backup_get_backup_dir(
        || (len < 1))
       return false;
 
-   strlcpy(core_file_id, core_filename, sizeof(core_file_id));
-
-   /* > Remove file extension */
-   path_remove_extension(core_file_id);
-
+   fill_pathname(core_file_id, core_filename, "",
+         sizeof(core_file_id));
    if (string_is_empty(core_file_id))
       return false;
 
@@ -90,18 +87,18 @@ static bool core_backup_get_backup_dir(
          : dir_core_assets,
                "core_backups", sizeof(tmp));
 
-   fill_pathname_join_special(backup_dir, tmp,
+   fill_pathname_join_special(s, tmp,
          core_file_id, len);
 
-   if (string_is_empty(backup_dir))
+   if (string_is_empty(s))
       return false;
 
    /* > Create directory, if required */
-   if (!path_is_directory(backup_dir))
+   if (!path_is_directory(s))
    {
-      if (!path_mkdir(backup_dir))
+      if (!path_mkdir(s))
       {
-         RARCH_ERR("[core backup] Failed to create backup directory: %s.\n", backup_dir);
+         RARCH_ERR("[core backup] Failed to create backup directory: %s.\n", s);
          return false;
       }
    }
@@ -115,7 +112,7 @@ bool core_backup_get_backup_path(
       const char *core_path, uint32_t crc,
       enum core_backup_mode backup_mode,
       const char *dir_core_assets,
-      char *backup_path, size_t len)
+      char *s, size_t len)
 {
    time_t current_time;
    struct tm time_info;
@@ -165,7 +162,7 @@ bool core_backup_get_backup_path(
          FILE_PATH_CORE_BACKUP_EXTENSION);
 
    /* Build final path */
-   fill_pathname_join_special(backup_path, backup_dir,
+   fill_pathname_join_special(s, backup_dir,
          backup_filename, len);
 
    return true;
@@ -242,27 +239,25 @@ error:
 
 /* Fetches crc value of specified core backup file.
  * Returns true if successful */
-bool core_backup_get_backup_crc(char *backup_path, uint32_t *crc)
+bool core_backup_get_backup_crc(char *s, uint32_t *crc)
 {
    enum core_backup_type backup_type;
    struct string_list *metadata_list = NULL;
 
-   if (string_is_empty(backup_path) || !crc)
+   if (string_is_empty(s) || !crc)
       return false;
 
    /* Get backup type */
-   backup_type = core_backup_get_backup_type(backup_path);
+   backup_type = core_backup_get_backup_type(s);
 
    switch (backup_type)
    {
       case CORE_BACKUP_TYPE_ARCHIVE:
          {
-            const char *backup_filename = NULL;
             const char *crc_str         = NULL;
-
             /* Split the backup filename into its various
              * metadata components */
-            backup_filename = path_basename(backup_path);
+            const char *backup_filename = path_basename(s);
 
             if (string_is_empty(backup_filename))
                goto error;
@@ -296,7 +291,7 @@ bool core_backup_get_backup_crc(char *backup_path, uint32_t *crc)
 
             /* Open backup file */
             backup_file = intfstream_open_file(
-                  backup_path, RETRO_VFS_FILE_ACCESS_READ,
+                  s, RETRO_VFS_FILE_ACCESS_READ,
                   RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
             if (backup_file)
@@ -337,7 +332,7 @@ error:
  * arguments are otherwise invalid */
 enum core_backup_type core_backup_get_core_path(
       const char *backup_path, const char *dir_libretro,
-      char *core_path, size_t len)
+      char *s, size_t len)
 {
    const char *backup_filename       = NULL;
 
@@ -381,14 +376,14 @@ enum core_backup_type core_backup_get_core_path(
                }
 
                /* All good - build core path */
-               fill_pathname_join_special(core_path, dir_libretro,
+               fill_pathname_join_special(s, dir_libretro,
                      core_filename, len);
                free(core_filename);
             }
             return CORE_BACKUP_TYPE_ARCHIVE;
          case CORE_BACKUP_TYPE_LIB:
             /* This is a plain dynamic library file */
-            fill_pathname_join_special(core_path, dir_libretro,
+            fill_pathname_join_special(s, dir_libretro,
                   backup_filename, len);
             return CORE_BACKUP_TYPE_LIB;
          default:

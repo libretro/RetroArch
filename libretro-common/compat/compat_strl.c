@@ -28,35 +28,28 @@
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
 #ifndef __MACH__
-
-size_t strlcpy(char *dest, const char *source, size_t size)
+size_t strlcpy(char *s, const char *source, size_t len)
 {
-   size_t src_size = 0;
-   size_t        n = size;
-
-   if (n)
-      while (--n && (*dest++ = *source++)) src_size++;
-
-   if (!n)
+   size_t _len  = len;
+   size_t __len = 0;
+   if (_len)
+      while (--_len && (*s++ = *source++)) __len++;
+   if (!_len)
    {
-      if (size) *dest = '\0';
-      while (*source++) src_size++;
+      if (len) *s = '\0';
+      while (*source++) __len++;
    }
-
-   return src_size;
+   return __len;
 }
 
-size_t strlcat(char *dest, const char *source, size_t size)
+size_t strlcat(char *s, const char *source, size_t len)
 {
-   size_t len = strlen(dest);
-
-   dest += len;
-
-   if (len > size)
-      size = 0;
+   size_t _len = strlen(s);
+   s += _len;
+   if (_len > len)
+      len = 0;
    else
-      size -= len;
-
-   return len + strlcpy(dest, source, size);
+      len -= _len;
+   return _len + strlcpy(s, source, len);
 }
 #endif
