@@ -2784,72 +2784,64 @@ void core_info_qsort(core_info_list_t *core_info_list,
 
 bool core_info_current_supports_savestate(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_BASIC;
 }
 
 bool core_info_current_supports_rewind(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_SERIALIZED;
 }
 
 bool core_info_current_supports_netplay(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_DETERMINISTIC;
 }
 
 bool core_info_current_supports_runahead(void)
 {
-   core_info_state_t *p_coreinfo = &core_info_st;
-   settings_t        *settings   = config_get_ptr();
-
-   if (settings->bools.core_info_savestate_bypass)
+   core_info_state_t *p_coreinfo   = &core_info_st;
+   settings_t        *settings     = config_get_ptr();
+   bool core_info_savestate_bypass = settings->bools.core_info_savestate_bypass;
+   if (core_info_savestate_bypass)
       return true;
-
    /* If no core is currently loaded, assume
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
       return true;
-
    return p_coreinfo->current->savestate_support_level >=
          CORE_INFO_SAVESTATE_DETERMINISTIC;
 }

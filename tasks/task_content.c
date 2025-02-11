@@ -1663,7 +1663,8 @@ static void task_push_to_history_list(
             label = runloop_st->name.label;
 
          if (
-              settings && settings->bools.history_list_enable
+                  settings
+               && settings->bools.history_list_enable
                && playlist_hist)
          {
             char subsystem_name[PATH_MAX_LENGTH];
@@ -2014,7 +2015,6 @@ bool task_push_load_content_from_playlist_from_menu(
       void *user_data)
 {
    content_information_ctx_t content_ctx;
-
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    settings_t *settings                       = config_get_ptr();
@@ -2517,7 +2517,6 @@ static bool task_load_content_internal(
       bool loading_from_companion_ui)
 {
    content_information_ctx_t content_ctx;
-
    content_state_t *p_content              = content_state_get_ptr();
    bool ret                                = false;
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
@@ -3021,7 +3020,6 @@ bool content_init(void)
    content_information_ctx_t content_ctx;
    enum msg_hash_enums error_enum     = MSG_UNKNOWN;
    content_state_t *p_content         = content_state_get_ptr();
-
    bool ret                           = true;
    char *error_string                 = NULL;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();

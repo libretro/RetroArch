@@ -2988,7 +2988,19 @@ bool command_event(enum event_command cmd, void *data)
    switch (cmd)
    {
       case CMD_EVENT_SAVE_FILES:
-         event_save_files(runloop_st->flags & RUNLOOP_FLAG_USE_SRAM);
+         event_save_files(
+               runloop_st->flags & RUNLOOP_FLAG_USE_SRAM,
+#if defined(HAVE_ZLIB)
+               settings->bools.save_file_compression,
+#else
+               false,
+#endif
+#ifdef HAVE_CHEATS
+               settings->paths.path_cheat_database
+#else
+               NULL
+#endif
+               );
          break;
       case CMD_EVENT_OVERLAY_UNLOAD:
 #ifdef HAVE_OVERLAY
@@ -3771,7 +3783,14 @@ bool command_event(enum event_command cmd, void *data)
                      RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
             {
-               if (autosave_init())
+               if (autosave_init(
+#if defined(HAVE_ZLIB)
+                        settings->bools.save_file_compression,
+#else
+                        false,
+#endif
+                        settings->uints.autosave_interval)
+                     )
                   runloop_st->flags |=  RUNLOOP_FLAG_AUTOSAVE;
                else
                   runloop_st->flags &= ~RUNLOOP_FLAG_AUTOSAVE;

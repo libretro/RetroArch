@@ -27,6 +27,7 @@
 #include <streams/file_stream.h>
 #include <time/rtime.h>
 
+#include "configuration.h"
 #include "content.h"
 #include "core.h"
 #include "dynamic.h"
