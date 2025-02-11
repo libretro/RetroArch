@@ -2050,10 +2050,8 @@ void MainWindow::appendLogMessage(const QString &msg)
 void MainWindow::onGotLogMessage(const QString &msg)
 {
    QString newMsg = msg;
-
    if (newMsg.at(newMsg.size() - 1) == '\n')
       newMsg.chop(1);
-
    m_logTextEdit->appendMessage(newMsg);
 }
 
@@ -2083,13 +2081,13 @@ void MainWindow::onLaunchWithComboBoxIndexChanged(int)
       if (!value.isEmpty())
       {
          if (!key.isEmpty())
-            core_info_txt                += " ";
+            core_info_txt                += QStringLiteral(" ");
 
          core_info_txt                   += value;
       }
 
       if (i < infoList.count() - 1)
-         core_info_txt                   += "<br>\n";
+         core_info_txt                   += QStringLiteral("<br>\n");
    }
 
    m_coreInfoLabel->setText(core_info_txt);
@@ -2117,16 +2115,15 @@ QString MainWindow::getThemeString(Theme theme)
    switch (theme)
    {
       case THEME_SYSTEM_DEFAULT:
-         return "default";
+         return QStringLiteral("default");
       case THEME_DARK:
-         return "dark";
+         return QStringLiteral("dark");
       case THEME_CUSTOM:
-         return "custom";
+         return QStringLiteral("custom");
       default:
          break;
    }
-
-   return "default";
+   return QStringLiteral("default");
 }
 
 MainWindow::Theme MainWindow::theme() { return m_currentTheme; }
@@ -2310,7 +2307,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
       hash["key"]   = msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE);
-      hash["value"] = "";
+      hash["value"] = QLatin1String("");
 
       infoList.append(hash);
 
@@ -2369,7 +2366,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
          categories += core_info->categories_list->elems[i].data;
 
          if (i < core_info->categories_list->size - 1)
-            categories += ", ";
+            categories += QStringLiteral(", ");
       }
 
       hash["key"]   = QString(
@@ -2389,7 +2386,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
          authors += core_info->authors_list->elems[i].data;
 
          if (i < core_info->authors_list->size - 1)
-            authors += ", ";
+            authors += QStringLiteral(", ");
       }
 
       hash["key"]   = QString(
@@ -2409,7 +2406,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
          permissions += core_info->permissions_list->elems[i].data;
 
          if (i < core_info->permissions_list->size - 1)
-            permissions += ", ";
+            permissions += QStringLiteral(", ");
       }
 
       hash["key"]   = QString(
@@ -2429,7 +2426,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
          licenses += core_info->licenses_list->elems[i].data;
 
          if (i < core_info->licenses_list->size - 1)
-            licenses += ", ";
+            licenses += QStringLiteral(", ");
       }
 
       hash["key"]   = QString(
@@ -2449,7 +2446,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
          supported_extensions += core_info->supported_extensions_list->elems[i].data;
 
          if (i < core_info->supported_extensions_list->size - 1)
-            supported_extensions += ", ";
+            supported_extensions += QStringLiteral(", ");
       }
 
       hash["key"]   = QString(
@@ -2500,7 +2497,8 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       else
          firmware_info.directory.system = settings->paths.directory_system;
 
-      update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
+      update_missing_firmware        = core_info_list_update_missing_firmware(
+            &firmware_info, &set_missing_firmware);
 
       if (set_missing_firmware)
          runloop_st->missing_bios    = true;
@@ -2513,7 +2511,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
          QHash<QString, QString> hash;
 
          hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE)) + ":";
-         hash["value"] = "";
+         hash["value"] = QLatin1String("");
 
          infoList.append(hash);
 
@@ -2521,7 +2519,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
          if (systemfiles_in_content_dir)
          {
             hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY));
-            hash["value"] = "";
+            hash["value"] = QLatin1String("");
 
             infoList.append(hash);
          }
@@ -2532,7 +2530,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
                firmware_info.directory.system);
 
          hash["key"]   = QString(tmp);
-         hash["value"] = "";
+         hash["value"] = QLatin1String("");
 
          infoList.append(hash);
 
@@ -2545,7 +2543,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
             {
                QString val_txt;
                QHash<QString, QString> hash;
-               QString lbl_txt        = "(!) ";
+               QString lbl_txt        = QStringLiteral("(!) ");
                bool missing           = false;
 
                if (core_info->firmware[i].missing)
@@ -2577,7 +2575,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 
                if (missing)
                {
-                  QString style       = "font-weight: bold; color: #ff0000";
+                  QString style       = QStringLiteral("font-weight: bold; color: #ff0000");
                   hash["label_style"] = style;
                   hash["value_style"] = style;
                   hash["html_key"]    = "<b><font color=\"#ff0000\">" + hash["key"] + "</font></b>";
@@ -2585,7 +2583,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
                }
                else
                {
-                  QString style       = "font-weight: bold; color: rgb(0, 175, 0)";
+                  QString style       = QStringLiteral("font-weight: bold; color: rgb(0, 175, 0)");
                   hash["label_style"] = style;
                   hash["value_style"] = style;
                   hash["html_key"]    = "<b><font color=\"#00af00\">" + hash["key"] + "</font></b>";
@@ -2604,7 +2602,7 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       {
          QHash<QString, QString> hash;
 
-         hash["key"]   = "";
+         hash["key"]   = QLatin1String("");
          hash["value"] = core_info->note_list->elems[i].data;
 
          infoList.append(hash);
@@ -2778,8 +2776,7 @@ QHash<QString, QString> MainWindow::getSelectedCore()
             break;
 
          plName = contentHash["pl_name"].isEmpty()
-                ? contentHash["db_name"]
-                : contentHash["pl_name"];
+                ? contentHash["db_name"] : contentHash["pl_name"];
 
          if (plName.isEmpty())
             break;
@@ -2802,8 +2799,9 @@ path - absolute path to the content file
 core_path - absolute path to the core, or "DETECT" to ask the user
 db_name - the display name of the rdb database this content is from
 label - the display name of the content, usually comes from the database
-crc32 - an upper-case, 8 byte string representation of the hex CRC32 checksum (e.g. ABCDEF12) followed by "|crc"
-core_name - the display name of the core, or "DETECT" if unknown
+crc32 - an upper-case, 8 byte string representation of the hex CRC32 checksum
+(e.g. ABCDEF12) followed by "|crc"
+core_name   - the display name of the core, or "DETECT" if unknown
 label_noext - the display name of the content that is guaranteed not to contain a file extension
 */
 void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
@@ -3031,7 +3029,7 @@ void MainWindow::setCoreActions()
          QString coreName = hash["core_name"];
 
          if (coreName.isEmpty())
-            coreName = "<n/a>";
+            coreName = QStringLiteral("<n/a>");
          else
          {
             const char *detect_str = "DETECT";
@@ -3162,10 +3160,14 @@ void MainWindow::setCoreActions()
    {
       QVariantMap comboBoxMap;
       comboBoxMap["core_selection"] = CORE_SELECTION_ASK;
-      m_launchWithComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK), QVariant::fromValue(comboBoxMap));
+      m_launchWithComboBox->addItem(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK),
+            QVariant::fromValue(comboBoxMap));
       m_launchWithComboBox->insertSeparator(m_launchWithComboBox->count());
       comboBoxMap["core_selection"] = CORE_SELECTION_LOAD_CORE;
-      m_launchWithComboBox->addItem(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE)) + "...", QVariant::fromValue(comboBoxMap));
+      m_launchWithComboBox->addItem(QString(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE)) + "...",
+            QVariant::fromValue(comboBoxMap));
    }
 }
 
@@ -3227,21 +3229,25 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    if (!found_hiragana && !found_katakana)
-      m_searchRegularExpression = QRegularExpression(text, QRegularExpression::CaseInsensitiveOption);
+      m_searchRegularExpression = QRegularExpression(text,
+            QRegularExpression::CaseInsensitiveOption);
    else if (found_hiragana && !found_katakana)
       m_searchRegularExpression = QRegularExpression(text + "|"
             + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size()), QRegularExpression::CaseInsensitiveOption);
+               textHiraToKata.size()),
+            QRegularExpression::CaseInsensitiveOption);
    else if (!found_hiragana && found_katakana)
       m_searchRegularExpression = QRegularExpression(text + "|"
             + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()), QRegularExpression::CaseInsensitiveOption);
+               textKataToHira.size()),
+            QRegularExpression::CaseInsensitiveOption);
    else
       m_searchRegularExpression = QRegularExpression(text + "|"
             + QString::fromUcs4(textHiraToKata.constData(),
                textHiraToKata.size()) + "|" +
             QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()), QRegularExpression::CaseInsensitiveOption);
+               textKataToHira.size()),
+            QRegularExpression::CaseInsensitiveOption);
 #else
    if (!found_hiragana && !found_katakana)
       m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
@@ -3270,13 +3276,14 @@ void MainWindow::applySearch()
    {
       case BROWSER_TYPE_PLAYLISTS:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-         if (m_proxyModel->filterRegularExpression() != m_searchRegularExpression)
+         if (     m_proxyModel->filterRegularExpression()
+               != m_searchRegularExpression)
          {
             m_proxyModel->setFilterRegularExpression(m_searchRegularExpression);
             updateItemsCount();
          }
 #else
-	 if (m_proxyModel->filterRegExp() != m_searchRegExp)
+         if (m_proxyModel->filterRegExp() != m_searchRegExp)
          {
             m_proxyModel->setFilterRegExp(m_searchRegExp);
             updateItemsCount();
@@ -3288,7 +3295,7 @@ void MainWindow::applySearch()
          if (m_proxyFileModel->filterRegularExpression() != m_searchRegularExpression)
             m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
 #else
-	 if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
+         if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
             m_proxyFileModel->setFilterRegExp(m_searchRegExp);
 #endif
          break;
@@ -3445,7 +3452,8 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
       item->setText(oldName);
    }
 
-   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
+   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)),
+         this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 }
 
 void MainWindow::onCurrentItemChanged(const QModelIndex &index)
@@ -3679,7 +3687,7 @@ void MainWindow::setCurrentCoreLabel()
       )
    {
       m_currentCore           = no_core_str;
-      m_currentCoreVersion    = "";
+      m_currentCoreVersion    = QLatin1String("");
       update                  = true;
    }
    else
@@ -3925,7 +3933,7 @@ void MainWindow::onContributorsClicked()
    dialog->layout()->addWidget(buttonBox);
 
    textEdit->setReadOnly(true);
-   textEdit->setHtml(QStringLiteral("<pre>") + retroarch_contributors_list + "</pre>");
+   textEdit->setHtml(QStringLiteral("<pre>") + retroarch_contributors_list + QStringLiteral("</pre>"));
 
    dialog->resize(480, 640);
    dialog->exec();
@@ -3939,9 +3947,9 @@ void MainWindow::showAbout()
          "<br><br>" + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
          "<br><br>" + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
 #ifdef HAVE_GIT_VERSION
-         "<br><br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION) + ": " + retroarch_git_version +
+         "<br><br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION) + QStringLiteral(": ") + retroarch_git_version +
 #endif
-         "<br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE) + ": " + __DATE__;
+         QStringLiteral("<br>") + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE) + QStringLiteral(": ") + __DATE__;
    QLabel *label = new QLabel(text, dialog.data());
    QPixmap pix = getInvader();
    QLabel *pixLabel = new QLabel(dialog.data());
