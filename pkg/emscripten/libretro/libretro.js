@@ -246,9 +246,8 @@ function selectFiles(files) {
 }
 
 function uploadData(data, name) {
-   var dataView = new Uint8Array(data);
    Module.FS.mkdirTree("/home/web_user/retroarch/userdata/content");
-   Module.FS.createDataFile('/home/web_user/retroarch/userdata', name, dataView, true, false);
+   Module.FS.writeFile('/home/web_user/retroarch/userdata/content/'+name, data);
 }
 
 function switchCore(corename) {
