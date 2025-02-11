@@ -39,8 +39,9 @@
  * Named_Titles, Named_Boxarts, Named_Logos) for specified thumbnail
  * identifier (right, left) */
 static const char *gfx_thumbnail_get_type(
-      unsigned menu_left_thumbnails,
       unsigned gfx_thumbnails,
+      unsigned left_thumbnails,
+      unsigned icon_thumbnails,
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id)
 {
@@ -59,10 +60,13 @@ static const char *gfx_thumbnail_get_type(
             if (path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
                type = (unsigned)path_data->playlist_left_mode - 1;
             else
-               type = menu_left_thumbnails;
+               type = left_thumbnails;
             break;
          case GFX_THUMBNAIL_ICON:
-            type = 4;
+            if (path_data->playlist_icon_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
+               type = (unsigned)path_data->playlist_icon_mode - 1;
+            else
+               type = icon_thumbnails;
             break;
          default:
             goto end;
@@ -138,9 +142,11 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
    path_data->content_img_short[0] = '\0';
    path_data->right_path[0]        = '\0';
    path_data->left_path[0]         = '\0';
+   path_data->icon_path[0]         = '\0';
 
    path_data->playlist_right_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   path_data->playlist_icon_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
 }
 
 /* Initialisation */
@@ -187,7 +193,7 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
             return menu_left_thumbnails != 0;
          case GFX_THUMBNAIL_ICON:
             if (path_data->playlist_icon_mode != PLAYLIST_THUMBNAIL_MODE_DEFAULT)
-                return path_data->playlist_left_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
+                return path_data->playlist_icon_mode != PLAYLIST_THUMBNAIL_MODE_OFF;
             return menu_icon_thumbnails != 0;
          default:
             break;
@@ -564,8 +570,9 @@ bool gfx_thumbnail_update_path(
    char *thumbnail_path          = NULL;
    const char *dir_thumbnails    = settings->paths.directory_thumbnails;
    bool playlist_allow_non_png   = settings->bools.playlist_allow_non_png;
-   unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
    unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
+   unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
+   unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;   
    /* Thumbnail extension order. The default (i.e. png) is always the first. */
    #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 5
    const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", 0 };
@@ -643,8 +650,8 @@ bool gfx_thumbnail_update_path(
    {
       int  i;
       char tmp_buf[DIR_MAX_LENGTH];
-      const char *type = gfx_thumbnail_get_type(menu_left_thumbnails,
-            gfx_thumbnails, path_data, thumbnail_id);
+      const char *type = gfx_thumbnail_get_type(gfx_thumbnails,
+            menu_left_thumbnails, menu_icon_thumbnails, path_data, thumbnail_id);
       bool thumbnail_found = false;
       /* > Normal content: assemble path */
 
