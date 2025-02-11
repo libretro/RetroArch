@@ -7664,10 +7664,6 @@ MSG_HASH(
    "開啟時「匯入遊戲」忽略支援核心的資訊, 允許未安裝核心時掃描檔案並建立列表。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "掃描校驗避免重複"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "ISO映像檔有時會使用重複產品序號, 尤其是PSP和PSN的作品, 僅依靠產品序號掃描檔案, 可能會導致將項目加入到錯誤的系統中。\n開啟時增加了循環冗餘校驗(CRC), 會嚴重降低掃描速度, 但可能會更準確。"
    )
