@@ -107,7 +107,7 @@ typedef int  (*action_start_handler_t         )(rarch_setting_t *setting);
 typedef int  (*action_cancel_handler_t        )(rarch_setting_t *setting);
 typedef int  (*action_ok_handler_t            )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef int  (*action_select_handler_t        )(rarch_setting_t *setting, size_t idx, bool wraparound);
-typedef void (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
+typedef size_t (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
 
 struct rarch_setting_group_info
 {

@@ -45,55 +45,49 @@
 
 #if HAVE_MENU
 
-bool rcheevos_menu_get_state(unsigned menu_offset, char* buffer, size_t buffer_size)
+size_t rcheevos_menu_get_state(unsigned menu_offset, char *s, size_t len)
 {
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    if (menu_offset < rcheevos_locals->menuitem_count)
    {
-      const rcheevos_menuitem_t* menuitem = &rcheevos_locals->menuitems[menu_offset];
+      const rcheevos_menuitem_t* menuitem   = &rcheevos_locals->menuitems[menu_offset];
       const rc_client_achievement_t* cheevo = menuitem->achievement;
       if (cheevo)
       {
+         size_t _len;
          if (cheevo->state != RC_CLIENT_ACHIEVEMENT_STATE_ACTIVE)
-            strlcpy(buffer, msg_hash_to_str(menuitem->state_label_idx), buffer_size);
+            _len = strlcpy(s, msg_hash_to_str(menuitem->state_label_idx), len);
          else
          {
-            const char* missable = cheevo->type == RC_CLIENT_ACHIEVEMENT_TYPE_MISSABLE ? "[m] " : "";
-            size_t _len = strlcpy(buffer, missable, buffer_size);
-            _len += strlcpy(buffer + _len, msg_hash_to_str(menuitem->state_label_idx), buffer_size - _len);
+            const char* missable = (cheevo->type == RC_CLIENT_ACHIEVEMENT_TYPE_MISSABLE) ? "[m] " : "";
+            _len  = strlcpy(s, missable, len);
+            _len += strlcpy(s + _len, msg_hash_to_str(menuitem->state_label_idx), len - _len);
             if (cheevo->measured_progress[0])
             {
-               _len += strlcpy(buffer + _len, " - ", buffer_size - _len);
-               strlcpy(buffer + _len, cheevo->measured_progress, buffer_size - _len);
+               _len += strlcpy(s + _len, " - ", len - _len);
+               _len += strlcpy(s + _len, cheevo->measured_progress, len - _len);
             }
          }
-         return true;
+         return _len;
       }
    }
-
-   if (buffer)
-      buffer[0] = '\0';
-
-   return false;
+   if (s)
+      s[0] = '\0';
+   return 0;
 }
 
-bool rcheevos_menu_get_sublabel(unsigned menu_offset, char* buffer, size_t buffer_size)
+size_t rcheevos_menu_get_sublabel(unsigned menu_offset, char *s, size_t len)
 {
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-   if (menu_offset < rcheevos_locals->menuitem_count && buffer)
+   if (menu_offset < rcheevos_locals->menuitem_count && s)
    {
       const rcheevos_menuitem_t* menuitem = &rcheevos_locals->menuitems[menu_offset];
       if (menuitem->achievement)
-      {
-         strlcpy(buffer, menuitem->achievement->description, buffer_size);
-         return true;
-      }
+         return strlcpy(s, menuitem->achievement->description, len);
    }
-
-   if (buffer)
-      buffer[0] = '\0';
-
-   return false;
+   if (s)
+      s[0] = '\0';
+   return 0;
 }
 
 void rcheevos_menu_reset_badges(void)
