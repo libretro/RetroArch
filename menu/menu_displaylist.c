@@ -3891,8 +3891,8 @@ static int menu_displaylist_parse_load_content_settings(
       {
          if (menu_entries_append(list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST),
-               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST),
-               MENU_ENUM_LABEL_ADD_TO_PLAYLIST,
+               msg_hash_to_str(MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU),
+               MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU,
                MENU_SETTING_ACTION, 0, 0, NULL))
          count++;
       }
@@ -4714,7 +4714,7 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
 }
 
 static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
-      const char *dir_playlist, bool show_hidden_files)
+      enum menu_displaylist_ctl_state type, const char *dir_playlist, bool show_hidden_files)
 {
    char playlist_display_name[NAME_MAX_LENGTH];
    unsigned count               = 0;
@@ -4759,7 +4759,9 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
                sizeof(playlist_display_name));
 
          menu_entries_append(list, playlist_display_name, path,
-               MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST,
+               (type == DISPLAYLIST_ADD_TO_PLAYLIST_LIST ?
+                     MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST :
+                     MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST_QUICKMENU),
                MENU_SETTING_ACTION, 0, 0, NULL);
          count++;
       }
@@ -14252,27 +14254,33 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             info->flags    |= MD_FLAG_NEED_PUSH;
             break;
          case DISPLAYLIST_ADD_TO_PLAYLIST_LIST:
-            menu_entries_clear(info->list);
+         case DISPLAYLIST_ADD_TO_PLAYLIST_QUICKMENU:
+            {
+               enum msg_hash_enums lbl = (type == DISPLAYLIST_ADD_TO_PLAYLIST_LIST ?
+                     MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST : MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_QUICKMENU);
+               menu_entries_clear(info->list);
 
-         /*  add new list button here */
-            menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST),
-                     msg_hash_to_str(MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST),
-                     MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
-                     MENU_SETTING_ACTION, 0, 0, NULL);
-
-            count = menu_displaylist_parse_add_to_playlist_list(info->list,
-                  settings->paths.directory_playlist,
-                  settings->bools.show_hidden_files);
-
-            if (count == 0)
+               /*  add new list button here */
                menu_entries_append(info->list,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                     msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                     MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                     FILE_TYPE_NONE, 0, 0, NULL);
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST),
+               msg_hash_to_str(lbl),
+               lbl,
+               MENU_SETTING_ACTION, 0, 0, NULL);
 
-            info->flags    |= MD_FLAG_NEED_PUSH;
+               count = menu_displaylist_parse_add_to_playlist_list(info->list,
+                     type,
+                     settings->paths.directory_playlist,
+                     settings->bools.show_hidden_files);
+
+               if (count == 0)
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                        FILE_TYPE_NONE, 0, 0, NULL);
+
+               info->flags    |= MD_FLAG_NEED_PUSH;
+            }
             break;
          case DISPLAYLIST_PLAYLIST_MANAGER_SETTINGS:
             menu_entries_clear(info->list);

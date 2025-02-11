@@ -692,6 +692,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_physi
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
 #endif
 GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_list,          DISPLAYLIST_ADD_TO_PLAYLIST_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_quickmenu,     DISPLAYLIST_ADD_TO_PLAYLIST_QUICKMENU)
 
 static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs,
@@ -955,6 +956,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST, deferred_push_lakka_list},
 #endif
        {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST, deferred_push_add_to_playlist_list},
+       {MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU, deferred_push_add_to_playlist_quickmenu},
 
 #ifdef HAVE_GAME_AI
       {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS, deferred_push_core_game_ai_options},
@@ -1422,6 +1424,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             break;
          case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_add_to_playlist_quickmenu);
             break;
 #ifdef HAVE_GAME_AI
          case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
