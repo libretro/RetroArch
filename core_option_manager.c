@@ -439,10 +439,10 @@ struct retro_core_options_v2 *core_option_manager_convert_v2_intl(
       }
 
       /* Set desc and info strings */
-      option_v2_cats[i].desc = string_is_empty(local_desc)
-            ? options_v2_us->categories[i].desc : local_desc;
-      option_v2_cats[i].info = string_is_empty(local_info)
-            ? options_v2_us->categories[i].info : local_info;
+      option_v2_cats[i].desc = string_is_empty(local_desc) ?
+            options_v2_us->categories[i].desc : local_desc;
+      option_v2_cats[i].info = string_is_empty(local_info) ?
+            options_v2_us->categories[i].info : local_info;
 
    }
 
@@ -854,10 +854,12 @@ core_option_manager_t *core_option_manager_new_vars(
    {
       if (core_option_manager_parse_variable(opt, _len, var, config_src))
       {
+         size_t __len = 0;
          /* If variable is read correctly, add it to
           * the map */
          char address[256];
-         size_t __len = strlcpy(address, "#", sizeof(address));
+         address[  __len]  = '#';
+         address[++__len]  = '\0';
 
          /* Address string is normally:
           *    <category_key><delim><tag><option_key>
@@ -1041,8 +1043,8 @@ static bool core_option_manager_parse_option(
          const char *value   = option->vals->elems[i].data;
          uint32_t value_hash = *((uint32_t*)option->vals->elems[i].userdata);
 
-         if (  (value_hash == entry_value_hash)
-             && string_is_equal(value, entry->value))
+         if ((value_hash == entry_value_hash) &&
+             string_is_equal(value, entry->value))
          {
             option->index = i;
             break;
@@ -1126,8 +1128,8 @@ core_option_manager_t *core_option_manager_new(
    if (categorized && option_cats)
    {
       for (option_cat = option_cats;
-               !string_is_empty(option_cat->key)
-            && !string_is_empty(option_cat->desc);
+           !string_is_empty(option_cat->key) &&
+                  !string_is_empty(option_cat->desc);
            option_cat++)
          cats_size++;
    }
@@ -1155,8 +1157,8 @@ core_option_manager_t *core_option_manager_new(
       /* Parse each category
        * > Note: 'option_cat->info == NULL' is valid */
       for (option_cat = option_cats;
-              !string_is_empty(option_cat->key)
-           && !string_is_empty(option_cat->desc);
+           !string_is_empty(option_cat->key) &&
+                  !string_is_empty(option_cat->desc);
            cats_size++, option_cat++)
       {
          opt->cats[cats_size].key      = strdup(option_cat->key);
@@ -1516,9 +1518,9 @@ bool core_option_manager_get_val_idx(core_option_manager_t *opt,
       const char *option_val   = option->vals->elems[i].data;
       uint32_t option_val_hash = *((uint32_t*)option->vals->elems[i].userdata);
 
-      if (   (val_hash == option_val_hash)
-          && !string_is_empty(option_val)
-          &&  string_is_equal(val, option_val))
+      if ((val_hash == option_val_hash) &&
+          !string_is_empty(option_val) &&
+          string_is_equal(val, option_val))
       {
          *val_idx = i;
          return true;
@@ -1722,8 +1724,8 @@ void core_option_manager_set_val(core_option_manager_t *opt,
    /* Refresh menu (if required) if core option
     * visibility has changed as a result of modifying
     * the current option value */
-   if (   retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL)
-       && refresh_menu)
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
+       refresh_menu)
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -1774,8 +1776,8 @@ void core_option_manager_adjust_val(core_option_manager_t* opt,
    /* Refresh menu (if required) if core option
     * visibility has changed as a result of modifying
     * the current option value */
-   if (   retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL)
-       && refresh_menu)
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
+       refresh_menu)
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -1820,8 +1822,8 @@ void core_option_manager_set_default(core_option_manager_t *opt,
    /* Refresh menu (if required) if core option
     * visibility has changed as a result of modifying
     * the current option value */
-   if (   retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL)
-       && refresh_menu)
+   if (retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL) &&
+       refresh_menu)
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -1857,9 +1859,9 @@ void core_option_manager_set_visible(core_option_manager_t *opt,
    {
       struct core_option *option = &opt->opts[i];
 
-      if (   (key_hash == option->key_hash)
-          && !string_is_empty(option->key)
-          &&  string_is_equal(key, option->key))
+      if ((key_hash == option->key_hash) &&
+          !string_is_empty(option->key) &&
+          string_is_equal(key, option->key))
       {
          option->visible = visible;
          return;

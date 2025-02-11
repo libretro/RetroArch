@@ -623,8 +623,10 @@ bool disk_control_append_image(
       goto error;
 
    /* Display log */
-   _len  = strlcpy(msg, msg_hash_to_str(MSG_APPENDED_DISK), sizeof(msg));
-   _len += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   _len        = strlcpy(msg, msg_hash_to_str(MSG_APPENDED_DISK), sizeof(msg));
+   msg[  _len] = ':';
+   msg[++_len] = ' ';
+   msg[++_len] = '\0';
    _len += strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    RARCH_LOG("[Disc]: %s\n", msg);
@@ -650,9 +652,11 @@ error:
    if (!initial_disk_ejected)
       disk_control_set_eject_state(disk_control, false, false);
 
-   _len  = strlcpy(msg,
+   _len        = strlcpy(msg,
          msg_hash_to_str(MSG_FAILED_TO_APPEND_DISK), sizeof(msg));
-   _len += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   msg[  _len] = ':';
+   msg[++_len] = ' ';
+   msg[++_len] = '\0';
    _len += strlcpy(msg + _len, image_filename, sizeof(msg) - _len);
 
    runloop_msg_queue_push(msg, _len, 0, 180, true, NULL,
