@@ -13699,7 +13699,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_ACHIEVEMENT_PAUSE_MENU:
 #ifdef HAVE_CHEEVOS
             menu_entries_clear(info->list);
-            rcheevos_menu_populate_hardcore_pause_submenu(info);
+            rcheevos_menu_populate_hardcore_pause_submenu(info, settings->bools.cheevos_hardcore_mode_enable);
 #endif
             info->flags    |= MD_FLAG_NEED_REFRESH
                | MD_FLAG_NEED_PUSH;
@@ -13707,7 +13707,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
             menu_entries_clear(info->list);
-            rcheevos_menu_populate(info);
+            rcheevos_menu_populate(info,
+                  settings->bools.cheevos_enable,
+                  settings->bools.cheevos_hardcore_mode_enable);
 #endif
             info->flags    |= MD_FLAG_NEED_REFRESH
                | MD_FLAG_NEED_PUSH;

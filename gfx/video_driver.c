@@ -4300,7 +4300,9 @@ void video_driver_frame(const void *data, unsigned width,
             video_info.monitor_index,
             dynamic_super_width,
             video_info.crt_switch_resolution_super,
-            video_info.crt_switch_hires_menu);
+            video_info.crt_switch_hires_menu,
+            config_get_ptr()->uints.video_aspect_ratio_idx
+            );
    }
    else if (!video_info.crt_switch_resolution)
 #endif

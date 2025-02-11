@@ -559,11 +559,13 @@ bool gfx_thumbnail_update_path(
       enum gfx_thumbnail_id thumbnail_id)
 {
    char content_dir[DIR_MAX_LENGTH];
-   settings_t *settings        = config_get_ptr();
-   const char *system_name     = NULL;
-   char *thumbnail_path        = NULL;
-   const char *dir_thumbnails  = settings->paths.directory_thumbnails;
-   bool playlist_allow_non_png = settings->bools.playlist_allow_non_png;
+   settings_t *settings          = config_get_ptr();
+   const char *system_name       = NULL;
+   char *thumbnail_path          = NULL;
+   const char *dir_thumbnails    = settings->paths.directory_thumbnails;
+   bool playlist_allow_non_png   = settings->bools.playlist_allow_non_png;
+   unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
+   unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
    /* Thumbnail extension order. The default (i.e. png) is always the first. */
    #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 5
    const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", 0 };
@@ -639,12 +641,10 @@ bool gfx_thumbnail_update_path(
    }
    else
    {
-      char tmp_buf[DIR_MAX_LENGTH];
-      const char *type           = gfx_thumbnail_get_type(
-            settings->uints.menu_left_thumbnails,
-            settings->uints.gfx_thumbnails,
-            path_data, thumbnail_id);
       int  i;
+      char tmp_buf[DIR_MAX_LENGTH];
+      const char *type = gfx_thumbnail_get_type(menu_left_thumbnails,
+            gfx_thumbnails, path_data, thumbnail_id);
       bool thumbnail_found = false;
       /* > Normal content: assemble path */
 
@@ -669,7 +669,8 @@ bool gfx_thumbnail_update_path(
            && thumbnail_path[0]!='\0'
            && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS; i++ )
       {
-         strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
+         strlcpy(path_get_extension_mutable(thumbnail_path),
+               SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
          thumbnail_found = path_is_valid(thumbnail_path);
       }
 
@@ -687,7 +688,8 @@ bool gfx_thumbnail_update_path(
            && !thumbnail_found
            && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
-         strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
+         strlcpy(path_get_extension_mutable(thumbnail_path),
+               SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
          thumbnail_found = path_is_valid(thumbnail_path);
       }
 
@@ -705,7 +707,8 @@ bool gfx_thumbnail_update_path(
            && !thumbnail_found
            && i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS ; i++ )
       {
-         strlcpy(path_get_extension_mutable(thumbnail_path),SUPPORTED_THUMBNAIL_EXTENSIONS[i],6);
+         strlcpy(path_get_extension_mutable(thumbnail_path),
+               SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
          thumbnail_found = path_is_valid(thumbnail_path);
       }
       /* This logic is valid for locally stored thumbnails. For optional downloads,

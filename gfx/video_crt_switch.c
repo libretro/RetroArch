@@ -23,7 +23,6 @@
 #include <libretro.h>
 #include <math.h>
 
-#include "../retroarch.h"
 #include <retro_common_api.h>
 #include "video_crt_switch.h"
 #include "video_display_server.h"
@@ -386,9 +385,9 @@ void crt_switch_res_core(
       int crt_switch_center_adjust,
       int crt_switch_porch_adjust,
       int monitor_index, bool dynamic,
-      int super_width, bool hires_menu)
+      int super_width, bool hires_menu,
+      unsigned video_aspect_ratio_idx)
 {
-   settings_t *settings  = config_get_ptr();
    if (height <= 4)
    {
       hz              = 60;
@@ -446,8 +445,8 @@ void crt_switch_res_core(
          crt_store_temp_changes(p_switch);
       }
 
-      if (  (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CORE)
-         && video_driver_get_aspect_ratio() != p_switch->fly_aspect)
+      if (  (video_aspect_ratio_idx == ASPECT_RATIO_CORE)
+         &&  video_driver_get_aspect_ratio() != p_switch->fly_aspect)
       {
          video_driver_state_t *video_st = video_state_get_ptr();
          float fly_aspect               = (float)p_switch->fly_aspect;
