@@ -1234,8 +1234,8 @@ static void setting_get_string_representation_st_bool(rarch_setting_t *setting,
 {
    if (setting)
       strlcpy(s, *setting->value.target.boolean
-            ? setting->boolean.on_label
-            : setting->boolean.off_label,
+            ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
             len);
 }
 
@@ -2062,8 +2062,6 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.value.target.boolean      = target;
    result.original_value.boolean    = *target;
    result.default_value.boolean     = default_value;
-   result.boolean.off_label         = off;
-   result.boolean.on_label          = on;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
 
@@ -24705,8 +24703,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].original_value.fraction          = 0.0f; \
    (*&list)[pos].dir.empty_path                   = NULL; \
    (*&list)[pos].cmd_trigger_idx                  = CMD_EVENT_NONE; \
-   (*&list)[pos].boolean.off_label                = NULL; \
-   (*&list)[pos].boolean.on_label                 = NULL; \
 }
 
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)

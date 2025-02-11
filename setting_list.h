@@ -121,11 +121,6 @@ struct rarch_setting
    float               max;
    struct
    {
-      const char     *off_label;
-      const char     *on_label;
-   } boolean;
-   struct
-   {
       const char     *empty_path;
    } dir;
    const char           *rounding_fraction;
