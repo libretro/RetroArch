@@ -157,7 +157,6 @@ typedef struct menu_file_list_cbs
    menu_search_terms_t search;
    enum msg_hash_enums enum_idx;
    char action_sublabel_cache[MENU_LABEL_MAX_LENGTH];
-   char action_title_cache   [512];
    bool checked;
 } menu_file_list_cbs_t;
 

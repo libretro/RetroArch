@@ -1069,8 +1069,6 @@ size_t menu_entries_get_title(char *s, size_t len)
    if (cbs && cbs->action_get_title)
    {
       const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
-      if (!string_is_empty(cbs->action_title_cache))
-         return strlcpy(s, cbs->action_title_cache, len);
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, "deferred_rpl_entry_actions"))
@@ -1095,8 +1093,7 @@ size_t menu_entries_get_title(char *s, size_t len)
             path               = list->list[list->size - 1].path;
             menu_type          = list->list[list->size - 1].type;
          }
-         if (cbs->action_get_title(path, label, menu_type, s, len) == 1)
-            return strlcpy(cbs->action_title_cache, s, sizeof(cbs->action_title_cache));
+         cbs->action_get_title(path, label, menu_type, s, len);
       }
    }
    return 0;
@@ -4233,7 +4230,6 @@ bool menu_entries_append(
       return false;
 
    cbs->action_sublabel_cache[0]   = '\0';
-   cbs->action_title_cache[0]      = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
    cbs->setting                    = setting;
@@ -4329,7 +4325,6 @@ void menu_entries_prepend(file_list_t *list,
       return;
 
    cbs->action_sublabel_cache[0]   = '\0';
-   cbs->action_title_cache[0]      = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
    cbs->setting                    = menu_setting_find_enum(cbs->enum_idx);
