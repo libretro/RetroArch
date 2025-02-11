@@ -1279,10 +1279,11 @@ void task_push_cloud_sync(void)
 
 void task_push_cloud_sync_update_driver(void)
 {
-   char        manifest_path[PATH_MAX_LENGTH];
+   char manifest_path[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
 
-   cloud_sync_find_driver(settings, "cloud sync driver", verbosity_is_enabled());
+   cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
+         "cloud sync driver", verbosity_is_enabled());
 
    /* The sync does a three-way diff: current local <- last sync -> current server.
     * When the server changes it becomes a four way diff, which can lead to odd

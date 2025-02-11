@@ -5813,6 +5813,7 @@ void main_exit(void *args)
  **/
 int rarch_main(int argc, char *argv[], void *data)
 {
+   settings_t *settings;
    struct rarch_state *p_rarch         = &rarch_st;
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
@@ -5894,7 +5895,18 @@ int rarch_main(int argc, char *argv[], void *data)
          return 1;
    }
 
-   ui_companion_driver_init_first();
+   settings = config_get_ptr();
+
+   ui_companion_driver_init_first(
+#ifdef HAVE_QT
+         settings->bools.desktop_menu_enable,
+         settings->bools.ui_companion_toggle,
+#else
+         false,
+         false,
+#endif
+         settings->bools.ui_companion_start_on_boot
+         );
 #if HAVE_CLOUDSYNC
    task_push_cloud_sync();
 #endif
@@ -7770,7 +7782,7 @@ bool retroarch_main_init(int argc, char *argv[])
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
 #endif
 #ifdef HAVE_CLOUDSYNC
-   cloud_sync_find_driver(settings,
+   cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
          "cloud sync driver", verbosity_enabled);
 #endif
    location_driver_find_driver(settings->arrays.location_driver,
