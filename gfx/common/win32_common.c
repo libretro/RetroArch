@@ -349,6 +349,8 @@ static INT_PTR_COMPAT CALLBACK pick_core_proc(
                SendMessage(hwndList, LB_ADDSTRING, 0,
                      (LPARAM)info->display_name);
             }
+            /* Select the first item in the list */
+            SendMessage(hwndList, LB_SETCURSEL, 0, 0);
             SetFocus(hwndList);
             return TRUE;
          }
