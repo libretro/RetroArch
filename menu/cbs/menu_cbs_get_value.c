@@ -795,7 +795,8 @@ static size_t menu_action_setting_disp_set_label_input_desc(
       if (!string_is_empty(descriptor))
       {
          size_t _len = strlcpy(s, descriptor, len);
-         if (remap_idx < RARCH_FIRST_CUSTOM_BIND) { }
+         if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
+            return 0;
          else if (remap_idx % 2 == 0)
             return strlcpy(s, " +", len);
          else

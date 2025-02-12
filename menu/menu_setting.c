@@ -6726,6 +6726,8 @@ static size_t setting_get_string_representation_turbo_default_button(
             return strlcpy(s, "B", len);
          case INPUT_TURBO_DEFAULT_BUTTON_Y:
             return strlcpy(s, "Y", len);
+         case INPUT_TURBO_DEFAULT_BUTTON_A:
+            return strlcpy(s, "A", len);
          case INPUT_TURBO_DEFAULT_BUTTON_X:
             return strlcpy(s, "X", len);
          case INPUT_TURBO_DEFAULT_BUTTON_L:
