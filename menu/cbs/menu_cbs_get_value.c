@@ -796,11 +796,11 @@ static size_t menu_action_setting_disp_set_label_input_desc(
       {
          size_t _len = strlcpy(s, descriptor, len);
          if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
-            return 0;
+            return _len;
          else if (remap_idx % 2 == 0)
-            return strlcpy(s, " +", len);
+            return strlcpy(s + _len, " +", len - _len);
          else
-            return strlcpy(s, " -", len);
+            return strlcpy(s + _len, " -", len - _len);
       }
    }
    /* If descriptor was not found, set this instead */
