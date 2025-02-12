@@ -12614,14 +12614,6 @@ MSG_HASH(
    "Selecciona dunha lista de reprodución"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Retomar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Retoma o contido en execución e sae do menú rápido."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Ver a lista de %u coincidencias"
    )

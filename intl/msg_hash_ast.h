@@ -3753,14 +3753,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME_LAN,
    "Nomatu (LAN): %s"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Siguir"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Sigue col conteníu n'execución y cola del menú rápidu."
-   )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
    "Opacidá del pié"

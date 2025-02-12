@@ -9530,14 +9530,6 @@ MSG_HASH(
    "Välj från en spellista"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Återuppta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Återupptar det pågående innehållet och lämnar Snabbmenyn."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Visa listan över %u träffar"
    )

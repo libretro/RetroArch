@@ -12866,14 +12866,6 @@ MSG_HASH(
    "Bir oynatma listesinden seç"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Devam"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Çalışan içeriği devam ettirip Hızlı Menüden çıkın."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "%u Eşleşmelerinin Listesini Görüntüle"
    )

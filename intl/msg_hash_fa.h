@@ -3670,10 +3670,6 @@ MSG_HASH(
    "ذخیرهٔ ضبط‌ها در پوشهٔ خروجی"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "ادامه"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "بازی تحت شبکه"
    )

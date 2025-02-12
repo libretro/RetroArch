@@ -11042,14 +11042,6 @@ MSG_HASH(
    "Selecionar de uma lista de reprodução"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Continuar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Continua a execução do conteúdo atual e sai do menu rápido."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Ver lista de %u coincidências"
    )

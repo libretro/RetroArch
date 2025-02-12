@@ -11570,14 +11570,6 @@ MSG_HASH(
    "Valitse soittolistalta"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Jatka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Jatka käynnissä olevaa sisältöä ja poistu pikavalikosta."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Näytä luettelo %u vastaavuuksista"
    )

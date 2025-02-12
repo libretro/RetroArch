@@ -12534,14 +12534,6 @@ MSG_HASH(
    "Kiválasztás játéklistáról"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Folytatás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "A futó tartalom folytatása és a gyorsmenü elhagyása."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "A %u találatból álló lista megtekintése"
    )

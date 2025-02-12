@@ -12718,14 +12718,6 @@ MSG_HASH(
    "從列表中選擇"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "繼續"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "繼續執行。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "查看 %u個 搜尋結果列表"
    )

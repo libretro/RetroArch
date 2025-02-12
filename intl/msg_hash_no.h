@@ -4782,14 +4782,6 @@ MSG_HASH(
    "Velg fra en spilleliste"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Gjenoppta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Gjenoppta gjeldende innhold og forlat hurtigmenyen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE,
    "Nettspill"
    )

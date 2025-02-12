@@ -12878,14 +12878,6 @@ MSG_HASH(
    "실행목록에서 선택"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "이어하기"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "빠른 메뉴를 종료하고 현재 실행 중인 콘텐츠를 이어합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "%u 일치 목록 확인"
    )

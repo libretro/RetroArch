@@ -3455,7 +3455,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_REPLAY_SLOT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_replay_slot);
             break;
-         case MENU_ENUM_LABEL_RESUME:
          case MENU_ENUM_LABEL_RESUME_CONTENT:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_resume_content);
             break;
