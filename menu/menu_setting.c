@@ -1525,7 +1525,6 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.rounding_fraction         = rounding;
 
    result.value.target.fraction     = target;
-   result.original_value.fraction   = *target;
    result.default_value.fraction    = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -1600,7 +1599,6 @@ static rarch_setting_t setting_uint_setting(const char* name,
    result.rounding_fraction               = NULL;
 
    result.value.target.unsigned_integer   = target;
-   result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
 
    result.cmd_trigger_idx                 = CMD_EVENT_NONE;
@@ -1677,7 +1675,6 @@ static rarch_setting_t setting_size_setting(const char* name,
    result.rounding_fraction         = NULL;
 
    result.value.target.sizet        = target;
-   result.original_value.sizet      = *target;
    result.default_value.sizet       = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -2069,7 +2066,6 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.rounding_fraction         = NULL;
 
    result.value.target.boolean      = target;
-   result.original_value.boolean    = *target;
    result.default_value.boolean     = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -2144,7 +2140,6 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.rounding_fraction         = NULL;
 
    result.value.target.integer      = target;
-   result.original_value.integer    = *target;
    result.default_value.integer     = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -24291,7 +24286,6 @@ void menu_setting_free(rarch_setting_t *setting)
    (*&list)[pos].get_string_representation        = NULL; \
    (*&list)[pos].default_value.fraction           = 0.0f; \
    (*&list)[pos].value.target.fraction            = NULL; \
-   (*&list)[pos].original_value.fraction          = 0.0f; \
    (*&list)[pos].dir.empty_path                   = NULL; \
    (*&list)[pos].cmd_trigger_idx                  = CMD_EVENT_NONE; \
 }

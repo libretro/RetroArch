@@ -169,15 +169,6 @@ struct rarch_setting
       bool                       boolean;
    } default_value;
 
-   union
-   {
-      size_t         sizet;
-      int            integer;
-      unsigned int   unsigned_integer;
-      float          fraction;
-      bool           boolean;
-   } original_value;
-
    uint32_t             index_offset;
    uint32_t             size;
    unsigned             bind_type;
