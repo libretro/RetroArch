@@ -354,10 +354,10 @@ static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 #endif
 #ifdef HAVE_BSV_MOVIE
    /* 8-byte block header + content */
-   if(!rewind)
+   if (!rewind)
    {
       size->replay_size = replay_get_serialize_size();
-      if(size->replay_size > 0)
+      if (size->replay_size > 0)
          size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size);
    }
    else

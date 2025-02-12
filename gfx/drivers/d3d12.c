@@ -3514,7 +3514,7 @@ static bool d3d12_gfx_frame(
       if (d3d12->flags & D3D12_ST_FLAG_RESIZE_RTS)
          d3d12_init_render_targets(d3d12, width, height);
 
-      if(frame == RETRO_HW_FRAME_BUFFER_VALID)
+      if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       {
          D3D12_BOX src_box;
          D3D12_TEXTURE_COPY_LOCATION src, dst;

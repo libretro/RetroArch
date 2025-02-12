@@ -511,7 +511,7 @@ static void reallocate_port_if_needed(unsigned detected_port, int vendor_id,
    if (device_has_reserved_slot)
    {
       unsigned prev_assigned_port = settings->uints.input_joypad_index[player];
-      if(detected_port != prev_assigned_port)
+      if (detected_port != prev_assigned_port)
       {
          RARCH_LOG("[Autoconf]: Device \"%s\" (%x:%x) is reserved "
                    "for player %d, updating.\n",

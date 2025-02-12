@@ -1619,7 +1619,7 @@ static bool gfx_thumbnail_set_icon_playlist(
          sizeof(path_data->content_img), path_data->content_label, false);
 
       /* Explicit zero if full name is same as standard name - saves some queries later. */
-      if(string_is_equal(path_data->content_img, path_data->content_img_full))
+      if (string_is_equal(path_data->content_img, path_data->content_img_full))
          path_data->content_img_full[0] = '\0';
 
       gfx_thumbnail_fill_content_img(path_data->content_img_short,

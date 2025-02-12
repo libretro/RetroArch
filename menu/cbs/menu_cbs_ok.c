@@ -6010,7 +6010,7 @@ static int action_ok_add_entry_to_playlist(const char *path,
       return 0;
    if (!menu)
       return -1;
-   if(!label)
+   if (!label)
       return 0;
 
    /*
@@ -6148,7 +6148,7 @@ static void action_input_add_entry_to_new_playlist(void *userdata, const char *l
 
    menu_input_dialog_end();
 
-   if(!line)
+   if (!line)
       return;
 
    /* Create path for new file */
@@ -6165,7 +6165,7 @@ static void action_input_add_entry_to_new_playlist_quickmenu(void *userdata, con
 
    menu_input_dialog_end();
 
-   if(!line)
+   if (!line)
       return;
 
    /* Create path for new file */

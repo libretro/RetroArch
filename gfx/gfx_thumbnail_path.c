@@ -494,7 +494,7 @@ bool gfx_thumbnail_set_content_playlist(
          sizeof(path_data->content_img), path_data->content_label, false);
 
       /* Explicit zero if full name is same as standard name - saves some queries later. */
-      if(string_is_equal(path_data->content_img, path_data->content_img_full))
+      if (string_is_equal(path_data->content_img, path_data->content_img_full))
          path_data->content_img_full[0] = '\0';
 
       gfx_thumbnail_fill_content_img(path_data->content_img_short,
@@ -572,7 +572,7 @@ bool gfx_thumbnail_update_path(
    bool playlist_allow_non_png   = settings->bools.playlist_allow_non_png;
    unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
    unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
-   unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;   
+   unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;
    /* Thumbnail extension order. The default (i.e. png) is always the first. */
    #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 5
    const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga", 0 };

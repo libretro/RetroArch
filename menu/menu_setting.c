@@ -5875,7 +5875,7 @@ static int setting_uint_action_right_custom_vp_height(
    settings_t                 *settings = config_get_ptr();
    video_viewport_t            *custom  = &settings->video_vp_custom;
 
-   if (!settings || !av_info)
+   if (!av_info)
       return -1;
 
    video_driver_get_viewport_info(&vp);
@@ -5994,7 +5994,7 @@ static int setting_string_action_right_driver(
    if (!success)
    {
       settings_t                   *settings = config_get_ptr();
-      bool menu_navigation_wraparound_enable = settings ? settings->bools.menu_navigation_wraparound_enable: false;
+      bool menu_navigation_wraparound_enable = settings->bools.menu_navigation_wraparound_enable;
 
       if (menu_navigation_wraparound_enable)
       {
@@ -6386,7 +6386,8 @@ static size_t setting_get_string_representation_video_frame_delay(
       _len += strlcpy(s + _len, target_unit, len - _len);
       if (*setting->value.target.unsigned_integer >= 20)
          _len += snprintf(s + _len, len - _len, " (%ums)",
-               (unsigned)(1 / settings->floats.video_refresh_rate * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
+               (unsigned)(1 / settings->floats.video_refresh_rate
+                  * 1000 * (*setting->value.target.unsigned_integer / 100.0f)));
    }
    return _len;
 }
@@ -6814,10 +6815,10 @@ static size_t setting_get_string_representation_android_physical_keyboard(
 {
     if (setting)
     {
-       settings_t *settings = config_get_ptr();
        int keyboard_vendor_id;
        int keyboard_product_id;
-       if (sscanf(setting->value.target.string, "%04x:%04x ", &keyboard_vendor_id, &keyboard_product_id) != 2)
+       if (sscanf(setting->value.target.string, "%04x:%04x ",
+                &keyboard_vendor_id, &keyboard_product_id) != 2)
           return strlcpy(s, setting->value.target.string, len);
        return strlcpy(s, &setting->value.target.string[10], len);
     }
@@ -7294,10 +7295,9 @@ int menu_action_handle_setting(rarch_setting_t *setting,
 
 /**
  * menu_setting_find:
- * @settings           : pointer to settings
- * @name               : name of setting to search for
+ * @label              : name of setting to search for
  *
- * Search for a setting with a specified name (@name).
+ * Search for a setting with a specified name (@label).
  *
  * Returns: pointer to setting if found, NULL otherwise.
  **/
@@ -7483,13 +7483,14 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
    video_viewport_t            *custom  = &settings->video_vp_custom;
+   bool video_scale_integer             = settings->bools.video_scale_integer;
 
-   if (!settings || !av_info)
+   if (!av_info)
       return -1;
 
    video_driver_get_viewport_info(&vp);
 
-   if (settings->bools.video_scale_integer)
+   if (video_scale_integer)
    {
       struct retro_game_geometry *geom = (struct retro_game_geometry*)
          &av_info->geometry;
@@ -8151,8 +8152,10 @@ static void general_write_handler(rarch_setting_t *setting)
                1);
 
              /* Set reasonable default for dark frames for current BFI value.
-                Even results OR odd 60hz multiples should be mostly immune to lcd voltage retention.
-                Nothing to be done for 120hz except phase retention usage if needed. */
+                Even results OR odd 60Hz multiples should be mostly immune
+                to LCD voltage retention.
+                Nothing to be done for 120hz except phase retention usage
+                if needed. */
             if (*setting->value.target.unsigned_integer == 1)
             {
                configuration_set_uint(settings,
@@ -8249,7 +8252,7 @@ static void general_write_handler(rarch_setting_t *setting)
             enum dingux_refresh_rate
                target_refresh_rate       =
                   (enum dingux_refresh_rate)settings->uints.video_dingux_refresh_rate;
-            bool refresh_rate_valid                       = false;
+            bool refresh_rate_valid      = false;
 
             /* Get current refresh rate */
             refresh_rate_valid = dingux_get_video_refresh_rate(&current_refresh_rate);
@@ -8303,7 +8306,8 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->floats.video_hdr_max_nits  = roundf(*setting->value.target.fraction);
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_max_nits)
-               video_st->poke->set_hdr_max_nits(video_st->data, settings->floats.video_hdr_max_nits);
+               video_st->poke->set_hdr_max_nits(video_st->data,
+                     settings->floats.video_hdr_max_nits);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS:
@@ -8315,7 +8319,8 @@ static void general_write_handler(rarch_setting_t *setting)
 
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_paper_white_nits)
-               video_st->poke->set_hdr_paper_white_nits(video_st->data, settings->floats.video_hdr_paper_white_nits);
+               video_st->poke->set_hdr_paper_white_nits(video_st->data,
+                     settings->floats.video_hdr_paper_white_nits);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_CONTRAST:
@@ -8325,7 +8330,8 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->floats.video_hdr_display_contrast   = *setting->value.target.fraction;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_contrast)
-               video_st->poke->set_hdr_contrast(video_st->data, VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast);
+               video_st->poke->set_hdr_contrast(video_st->data,
+                     VIDEO_HDR_MAX_CONTRAST - settings->floats.video_hdr_display_contrast);
          }
          break;
       case MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT:
@@ -8335,7 +8341,8 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->bools.video_hdr_expand_gamut        = *setting->value.target.boolean;
 
             if (video_st && video_st->poke && video_st->poke->set_hdr_expand_gamut)
-               video_st->poke->set_hdr_expand_gamut(video_st->data, settings->bools.video_hdr_expand_gamut);
+               video_st->poke->set_hdr_expand_gamut(video_st->data,
+                     settings->bools.video_hdr_expand_gamut);
          }
          break;
       case MENU_ENUM_LABEL_INPUT_MAX_USERS:
@@ -8344,7 +8351,9 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef ANDROID
        case MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD:
            settings->flags |= SETTINGS_FLG_MODIFIED;
-           strlcpy(settings->arrays.input_android_physical_keyboard, setting->value.target.string, sizeof(settings->arrays.input_android_physical_keyboard));
+           strlcpy(settings->arrays.input_android_physical_keyboard,
+                 setting->value.target.string,
+                 sizeof(settings->arrays.input_android_physical_keyboard));
            break;
 #endif
       case MENU_ENUM_LABEL_LOG_TO_FILE:
@@ -8727,8 +8736,8 @@ static void general_write_handler(rarch_setting_t *setting)
              * force a cache refresh on the next
              * core info initialisation */
             if (*setting->value.target.boolean)
-               if (!core_info_cache_force_refresh(!string_is_empty(path_libretro_info) ?
-                     path_libretro_info : dir_libretro))
+               if (!core_info_cache_force_refresh(!string_is_empty(path_libretro_info)
+                     ? path_libretro_info : dir_libretro))
                {
                   const char *_msg = msg_hash_to_str(MSG_CORE_INFO_CACHE_UNSUPPORTED);
                   /* core_info_cache_force_refresh() will fail
@@ -8818,16 +8827,16 @@ static void frontend_log_level_change_handler(rarch_setting_t *setting)
 #ifdef HAVE_RUNAHEAD
 static void runahead_change_handler(rarch_setting_t *setting)
 {
+#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   bool secondary_instance;
+   bool run_ahead_enabled;
+#endif
+   bool preempt_enable;
    settings_t *settings        = config_get_ptr();
    struct menu_state *menu_st  = menu_state_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    preempt_t *preempt          = runloop_st->preempt_data;
    unsigned run_ahead_frames   = settings->uints.run_ahead_frames;
-   bool preempt_enable;
-#if (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-   bool secondary_instance;
-   bool run_ahead_enabled;
-#endif
 
    if (!setting)
       return;
@@ -9574,15 +9583,15 @@ static bool setting_append_list_input_remap_port_options(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   settings_t *settings = config_get_ptr();
+   unsigned user;
    rarch_setting_group_info_t group_info;
    rarch_setting_group_info_t subgroup_info;
    static char key_port[MAX_USERS][64];
    static char label_port[MAX_USERS][64];
-   unsigned user;
+   settings_t *settings = config_get_ptr();
 
-   group_info.name    = NULL;
-   subgroup_info.name = NULL;
+   group_info.name      = NULL;
+   subgroup_info.name   = NULL;
 
    START_GROUP(list, list_info, &group_info,
          "Mapped Ports", parent_group);
@@ -9881,7 +9890,10 @@ static bool setting_append_list(
          }
 #endif
 
-         if (string_is_not_equal(settings->arrays.menu_driver, "xmb") && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
+         if (     string_is_not_equal(settings->arrays.menu_driver, "xmb")
+               && string_is_not_equal(settings->arrays.menu_driver, "ozone"))
+#endif
          {
             CONFIG_ACTION(
                   list, list_info,
@@ -11191,7 +11203,9 @@ static bool setting_append_list(
             uint8_t i, listing = 0;
             struct bool_entry bool_entries[12];
 
-            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS), parent_group);
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS),
+                  parent_group);
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SAVING_SETTINGS);
 
             START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
@@ -11822,7 +11836,9 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_CHEATS:
          {
-            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS), parent_group);
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS),
+                  parent_group);
 
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SETTINGS);
 
@@ -12325,7 +12341,9 @@ static bool setting_append_list(
       case SETTINGS_LIST_VIDEO:
          {
             struct video_viewport *custom_vp   = &settings->video_vp_custom;
-            START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
+            START_GROUP(list, list_info, &group_info,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+                  parent_group);
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
 
             parent_group = msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS);
@@ -12351,9 +12369,11 @@ static bool setting_append_list(
 #endif
 
             END_SUB_GROUP(list, list_info, parent_group);
-            START_SUB_GROUP(list, list_info, "Platform-specific", &group_info, &subgroup_info, parent_group);
+            START_SUB_GROUP(list, list_info, "Platform-specific", &group_info,
+                  &subgroup_info, parent_group);
 
-            video_driver_menu_settings((void**)list, (void*)list_info, (void*)&group_info, (void*)&subgroup_info, parent_group);
+            video_driver_menu_settings((void**)list, (void*)list_info,
+                  (void*)&group_info, (void*)&subgroup_info, parent_group);
 
             END_SUB_GROUP(list, list_info, parent_group);
             START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
@@ -12959,8 +12979,8 @@ static bool setting_append_list(
                   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
 #if defined(DINGUX)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
-                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
+                || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_BOOL(
                      list, list_info,
@@ -17890,9 +17910,9 @@ static bool setting_append_list(
          menu_settings_list_current_add_range(list, list_info, 0, 1800, 10, true, true);
 
 #if (defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)) && !defined(_3DS)
-         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb")  ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (   string_is_equal(settings->arrays.menu_driver, "glui")
+             || string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -17930,10 +17950,10 @@ static bool setting_append_list(
          }
 #endif
 #if defined(HAVE_XMB) || defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_MATERIALUI)
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "rgui") ||
-             string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "rgui")
+             || string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -18445,7 +18465,8 @@ static bool setting_append_list(
                general_read_handler,
                SD_FLAG_NONE);
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
+               || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -18505,9 +18526,9 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
          /* > MaterialUI, XMB and Ozone all support menu scaling */
-         if (string_is_equal(settings->arrays.menu_driver, "glui") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (   string_is_equal(settings->arrays.menu_driver, "glui")
+             || string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_FLOAT(
                   list, list_info,
@@ -19060,7 +19081,8 @@ static bool setting_append_list(
 #endif
 
 #if defined(HAVE_XMB) || defined(HAVE_OZONE)
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
+               || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -19626,10 +19648,10 @@ static bool setting_append_list(
                   SD_FLAG_NONE);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "rgui") ||
-             string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "rgui")
+             || string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             enum msg_hash_enums thumbnails_label_value;
             enum msg_hash_enums left_thumbnails_label_value;
@@ -19740,9 +19762,9 @@ static bool setting_append_list(
             menu_settings_list_current_add_range(list, list_info, (*list)[list_info->index - 1].offset_by, 100, 1, true, true);
          }
 
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "glui"))
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "glui"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -21535,8 +21557,8 @@ static bool setting_append_list(
 
          /* Playlist entry index display and content specific history icon
           * are currently supported only by Ozone & XMB */
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") ||
-             string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (   string_is_equal(settings->arrays.menu_driver, "xmb")
+             || string_is_equal(settings->arrays.menu_driver, "ozone"))
          {
             CONFIG_UINT(
                   list, list_info,
@@ -21684,8 +21706,8 @@ static bool setting_append_list(
             );
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
-         if (string_is_equal(settings->arrays.menu_driver, "ozone") ||
-             string_is_equal(settings->arrays.menu_driver, "xmb"))
+         if (   string_is_equal(settings->arrays.menu_driver, "ozone")
+             || string_is_equal(settings->arrays.menu_driver, "xmb"))
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -21786,7 +21808,8 @@ static bool setting_append_list(
                );
 
 #ifndef HAVE_GFX_WIDGETS
-         if (string_is_equal(settings->arrays.menu_driver, "xmb") || string_is_equal(settings->arrays.menu_driver, "ozone"))
+         if (     string_is_equal(settings->arrays.menu_driver, "xmb")
+               || string_is_equal(settings->arrays.menu_driver, "ozone"))
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.cheevos_badges_enable,

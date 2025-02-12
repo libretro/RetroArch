@@ -394,9 +394,7 @@ static int16_t test_joypad_state(
 			   ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
 		   /* Test input driver uses same button layout internally as RA, so no conversion is needed */
 		   if (joykey != NO_BTN && (test_joypads[port_idx].button_state & (1 << i)))
-		   {
 			   ret |= ( 1 << i);
-         }
 	   }
    }
 
@@ -426,8 +424,8 @@ static void test_joypad_poll(void)
             test_joypad_autodetect_remove(input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
          }
-         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST &&
-                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
+         else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST
+                  && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
          {
             unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST;
             test_joypads[targetpad].button_state |= input_test_steps[i].param_num;
@@ -436,8 +434,8 @@ static void test_joypad_poll(void)
                "[Test joypad driver]: Pressing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
-         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST &&
-                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST)
+         else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST
+                  && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST)
          {
             unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST;
             test_joypads[targetpad].button_state &= ~input_test_steps[i].param_num;
@@ -446,8 +444,8 @@ static void test_joypad_poll(void)
                "[Test joypad driver]: Releasing device %d buttons %x, new state %x.\n",
                targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
          }
-         else if( input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST &&
-                  input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST)
+         else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST
+                  && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST)
          {
             unsigned targetpad =
                (input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST) / MAX_AXIS;
@@ -482,10 +480,7 @@ static bool test_joypad_query_pad(unsigned pad)
    return (pad < MAX_USERS);
 }
 
-static void test_joypad_destroy(void)
-{
-
-}
+static void test_joypad_destroy(void) { }
 
 input_device_driver_t test_joypad = {
    test_joypad_init,

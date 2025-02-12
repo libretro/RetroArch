@@ -28,17 +28,13 @@ static const char* stock_fragment_xmb_snowflake = GLSL(
 
       float dist = d.x*d.x + d.y*d.y;
 
-      if(dist < pos.z/400.0)
+      if (dist < pos.z/400.0)
       {
          float col = 0.0;
-         if(sin(a * 8.0) < 0.0)
-         {
+         if (sin(a * 8.0) < 0.0)
             col=1.0;
-         }
-         if(dist < pos.z/800.0)
-         {
+         if (dist < pos.z/800.0)
             col+=1.0;
-         }
          return col * pos.z;
       }
 

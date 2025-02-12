@@ -2119,7 +2119,7 @@ static void win32_localize_menu(HMENU menu)
       memset(&menu_item_info, 0, sizeof(menu_item_info));
       menu_item_info.cbSize     = sizeof(menu_item_info);
       menu_item_info.dwTypeData = NULL;
-#if(WINVER >= 0x0500)
+#if (WINVER >= 0x0500)
       menu_item_info.fMask      = MIIM_STRING | MIIM_FTYPE | MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
 #else
       menu_item_info.fMask      =                            MIIM_ID | MIIM_STATE | MIIM_SUBMENU;
