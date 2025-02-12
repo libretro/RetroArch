@@ -5584,8 +5584,8 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          {
             ticker_smooth.selected    = entry_selected;
             ticker_smooth.field_width = (unsigned)(entry_title_max_len * rgui->font_width_stride);
-            if (!string_is_empty(entry.rich_label))
-               ticker_smooth.src_str  = entry.rich_label;
+            if (!string_is_empty(entry.label))
+               ticker_smooth.src_str  = entry.label;
             else
                ticker_smooth.src_str  = entry.path;
             ticker_smooth.dst_str     = entry_title_buf;
@@ -5598,8 +5598,8 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          {
             ticker.s                  = entry_title_buf;
             ticker.len                = entry_title_max_len;
-            if (!string_is_empty(entry.rich_label))
-               ticker.str             = entry.rich_label;
+            if (!string_is_empty(entry.label))
+               ticker.str             = entry.label;
             else
                ticker.str             = entry.path;
             ticker.selected           = entry_selected;
