@@ -2639,13 +2639,15 @@ enum rarch_shader_type menu_driver_get_last_shader_preset_type(void)
 }
 
 static void menu_driver_get_last_shader_path_int(
-      settings_t *settings, enum rarch_shader_type type,
-      const char *shader_dir, const char *shader_file_name,
-      const char **dir_out, const char **file_name_out)
+      bool remember_last_dir,
+      const char *video_shader_dir,
+      enum rarch_shader_type type,
+      const char *shader_dir,
+      const char *shader_file_name,
+      const char **dir_out,
+      const char **file_name_out)
 {
    gfx_ctx_flags_t flags;
-   bool remember_last_dir       = settings->bools.video_shader_remember_last_dir;
-   const char *video_shader_dir = settings->paths.directory_video_shader;
 
    /* File name is NULL by default */
    if (file_name_out)
@@ -2699,8 +2701,10 @@ void menu_driver_get_last_shader_preset_path(
       shader_file_name          = menu->last_shader_selection.preset_file_name;
    }
 
-   menu_driver_get_last_shader_path_int(settings, type,
-         shader_dir, shader_file_name,
+   menu_driver_get_last_shader_path_int(
+         settings->bools.video_shader_remember_last_dir,
+         settings->paths.directory_video_shader,
+         type, shader_dir, shader_file_name,
          directory, file_name);
 }
 
@@ -2720,8 +2724,10 @@ void menu_driver_get_last_shader_pass_path(
       shader_file_name          = menu->last_shader_selection.pass_file_name;
    }
 
-   menu_driver_get_last_shader_path_int(settings, type,
-         shader_dir, shader_file_name,
+   menu_driver_get_last_shader_path_int(
+         settings->bools.video_shader_remember_last_dir,
+         settings->paths.directory_video_shader,
+         type, shader_dir, shader_file_name,
          directory, file_name);
 }
 
@@ -2870,9 +2876,9 @@ void menu_shader_manager_apply_changes(
 
    type = menu_shader_manager_get_type(shader);
 
-   if (shader->passes
-         && type != RARCH_SHADER_NONE
-         && !(shader->flags & SHDR_FLAG_DISABLED))
+   if (     shader->passes
+         && (type != RARCH_SHADER_NONE)
+         && (!(shader->flags & SHDR_FLAG_DISABLED)))
    {
       menu_shader_manager_save_preset(shader, NULL,
             dir_video_shader, dir_menu_config, true);
@@ -2980,7 +2986,8 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
 {
    char config_directory[DIR_MAX_LENGTH];
    const char *preset_dirs[3]  = {0};
-   settings_t *settings        = config_get_ptr();
+   bool preset_save_ref_enable = config_get_ptr()->
+      bools.video_shader_preset_save_reference_enable;
 
    if (path_is_empty(RARCH_PATH_CONFIG))
       config_directory[0]      = '\0';
@@ -2994,7 +3001,7 @@ bool menu_shader_manager_save_preset(const struct video_shader *shader,
    preset_dirs[2] = config_directory;
 
    return menu_shader_manager_save_preset_internal(
-         settings->bools.video_shader_preset_save_reference_enable,
+         preset_save_ref_enable,
          shader, basename,
          dir_video_shader,
          apply,
@@ -3012,10 +3019,10 @@ static bool menu_shader_manager_operate_auto_preset(
    char file[PATH_MAX_LENGTH];
    char old_presets_directory[DIR_MAX_LENGTH];
    char config_directory[DIR_MAX_LENGTH];
-   settings_t *settings                           = config_get_ptr();
-   bool video_shader_preset_save_reference_enable = settings->bools.video_shader_preset_save_reference_enable;
+   bool video_shader_preset_save_reference_enable = config_get_ptr()->
+      bools.video_shader_preset_save_reference_enable;
    struct retro_system_info *sysinfo              = &runloop_state_get_ptr()->system.info;
-   static enum rarch_shader_type shader_types[]       =
+   static enum rarch_shader_type shader_types[]   =
    {
       RARCH_SHADER_GLSL, RARCH_SHADER_SLANG, RARCH_SHADER_CG
    };
@@ -3582,7 +3589,7 @@ static int menu_dialog_iterate(
          break;
       case MENU_DIALOG_HELP_EXTRACT:
          {
-            bool bundle_finished        = settings->bools.bundle_finished;
+            bool bundle_finished = settings->bools.bundle_finished;
 
             msg_hash_get_help_enum(
                   MENU_ENUM_LABEL_VALUE_EXTRACTING_PLEASE_WAIT,
@@ -3757,7 +3764,8 @@ static bool rarch_menu_init(
             NULL,
             NULL,
             false);
-      /* Support only 1 version - setting this would prevent the assets from being extracted every time */
+      /* Support only 1 version - setting this would prevent
+       * the assets from being extracted every time */
       configuration_set_int(settings,
             settings->uints.bundle_assets_extract_last_version, 1);
    }
@@ -3879,14 +3887,22 @@ static enum menu_driver_id_type menu_driver_set_id(
 {
    if (!string_is_empty(driver_name))
    {
+#ifdef HAVE_RGUI
       if (string_is_equal(driver_name, "rgui"))
          return MENU_DRIVER_ID_RGUI;
-      else if (string_is_equal(driver_name, "ozone"))
+#endif
+#ifdef HAVE_OZONE
+      if (string_is_equal(driver_name, "ozone"))
          return MENU_DRIVER_ID_OZONE;
-      else if (string_is_equal(driver_name, "glui"))
+#endif
+#ifdef HAVE_MATERIALUI
+      if (string_is_equal(driver_name, "glui"))
          return MENU_DRIVER_ID_GLUI;
-      else if (string_is_equal(driver_name, "xmb"))
+#endif
+#ifdef HAVE_XMB
+      if (string_is_equal(driver_name, "xmb"))
          return MENU_DRIVER_ID_XMB;
+#endif
    }
    return MENU_DRIVER_ID_UNKNOWN;
 }
