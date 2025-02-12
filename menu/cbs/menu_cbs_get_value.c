@@ -1429,7 +1429,6 @@ static size_t menu_action_setting_disp_set_label_playlist_associations(file_list
       const char *path,
       char *s2, size_t len2)
 {
-   size_t _len;
    playlist_t *playlist  = playlist_get_cached();
    const char *core_name = NULL;
 

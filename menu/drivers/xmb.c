@@ -7053,7 +7053,6 @@ static void xmb_draw_fullscreen_thumbnails(
       float right_thumbnail_draw_height = 0.0f;
       float left_thumbnail_draw_width   = 0.0f;
       float left_thumbnail_draw_height  = 0.0f;
-      float *menu_color                 = xmb_gradient_ident(xmb_color_theme);
       /* XMB doesn't have a proper theme interface, so
        * hard-code this alpha value for now... */
       float background_alpha            = 0.95f;
