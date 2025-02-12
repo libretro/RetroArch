@@ -101,7 +101,7 @@
 #define SIDEBAR_ENTRY_ICON_PADDING    15
 #define SIDEBAR_GRADIENT_HEIGHT       28
 
-#define FULLSCREEN_THUMBNAIL_PADDING  32
+#define FULLSCREEN_THUMBNAIL_PADDING  20
 
 #define CURSOR_SIZE                   64
 /* Cursor becomes active when it moves more
@@ -1579,6 +1579,7 @@ static float ozone_last_framebuffer_opacity = -1.0f;
 static void ozone_cursor_animation_cb(void *userdata);
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation);
 static void ozone_unload_thumbnail_textures(void *data);
+extern int action_switch_thumbnail(const char *path, const char *label, unsigned type, size_t idx);
 
 static INLINE uint8_t ozone_count_lines(const char *str)
 {
@@ -1688,7 +1689,7 @@ static void ozone_set_color_theme(
          break;
       case OZONE_COLOR_THEME_SELENIUM:
          theme = &ozone_theme_selenium;
-		break;
+         break;
       case OZONE_COLOR_THEME_SOLARIZED_DARK:
          theme = &ozone_theme_solarized_dark;
          break;
@@ -7219,40 +7220,37 @@ static void ozone_draw_fullscreen_thumbnails(
    if (     (ozone->animations.fullscreen_thumbnail_alpha > 0.0f)
          || (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS))
    {
-      gfx_thumbnail_t *right_thumbnail  = &ozone->thumbnails.right;
-      gfx_thumbnail_t *left_thumbnail   = &ozone->thumbnails.left;
-      unsigned width                    = video_width;
-      unsigned height                   = video_height;
-      int view_width                    = (int)width;
       gfx_display_t *p_disp             = (gfx_display_t*)disp_userdata;
-
-      int view_height                   = (int)height
-            - ozone->dimensions.header_height
-            - ozone->dimensions.footer_height
-            - ozone->dimensions.spacer_1px;
-      int thumbnail_margin              = ozone->dimensions.fullscreen_thumbnail_padding;
-      bool show_right_thumbnail         = false;
-      bool show_left_thumbnail          = false;
-      unsigned num_thumbnails           = 0;
+      gfx_thumbnail_t *right_thumbnail  = &ozone->thumbnails.left;
+      gfx_thumbnail_t *left_thumbnail   = &ozone->thumbnails.right;
       float right_thumbnail_draw_width  = 0.0f;
       float right_thumbnail_draw_height = 0.0f;
       float left_thumbnail_draw_width   = 0.0f;
       float left_thumbnail_draw_height  = 0.0f;
-      float background_alpha            = 0.85f;
+      float background_alpha            = 0.95f;
       static float background_color[16] = {
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
       };
-      int frame_width                   = (int)((float)thumbnail_margin / 3.0f);
       float frame_color[16];
       float separator_color[16];
-      int thumbnail_box_width;
-      int thumbnail_box_height;
-      int right_thumbnail_x;
-      int left_thumbnail_x;
-      int thumbnail_y;
+      int view_width                    = (int)video_width;
+      int view_height                   = (int)video_height
+            - ozone->dimensions.header_height
+            - ozone->dimensions.footer_height
+            - ozone->dimensions.spacer_1px;
+      int thumbnail_padding             = ozone->dimensions.fullscreen_thumbnail_padding;
+      int frame_width                   = (int)((float)thumbnail_padding / 4.0f);
+      int thumbnail_box_width           = 0;
+      int thumbnail_box_height          = 0;
+      int right_thumbnail_x             = 0;
+      int left_thumbnail_x              = 0;
+      int thumbnail_y                   = 0;
+      uint8_t num_thumbnails            = 0;
+      bool show_right_thumbnail         = false;
+      bool show_left_thumbnail          = false;
 
       /* Sanity check: Return immediately if this is
        * a menu without thumbnails and we are not currently
@@ -7298,10 +7296,10 @@ static void ozone_draw_fullscreen_thumbnails(
                video_height,
                0,
                ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
-               width,
+               view_width,
                (unsigned)view_height,
-               width,
-               height,
+               video_width,
+               video_height,
                background_color,
                NULL);
          return;
@@ -7321,23 +7319,23 @@ static void ozone_draw_fullscreen_thumbnails(
 
       /* > Thumbnail bounding box height + y position
        *   are fixed */
-      thumbnail_box_height = view_height - (thumbnail_margin * 2);
-      thumbnail_y          = ozone->dimensions.header_height + thumbnail_margin
+      thumbnail_box_height = view_height - (thumbnail_padding * 2);
+      thumbnail_y          = ozone->dimensions.header_height + thumbnail_padding
                            + ozone->dimensions.spacer_1px;
 
       /* Thumbnail bounding box width and x position
        * depend upon number of active thumbnails */
       if (num_thumbnails == 2)
       {
-         thumbnail_box_width = (view_width - (thumbnail_margin * 3) - frame_width) >> 1;
-         left_thumbnail_x    = thumbnail_margin;
+         thumbnail_box_width = (view_width - (thumbnail_padding * 3) - frame_width) >> 1;
+         left_thumbnail_x    = thumbnail_padding;
          right_thumbnail_x   = left_thumbnail_x + thumbnail_box_width + frame_width
-                             + thumbnail_margin;
+                             + thumbnail_padding;
       }
       else
       {
-         thumbnail_box_width = view_width - (thumbnail_margin * 2);
-         left_thumbnail_x    = thumbnail_margin;
+         thumbnail_box_width = view_width - (thumbnail_padding * 2);
+         left_thumbnail_x    = thumbnail_padding;
          right_thumbnail_x   = left_thumbnail_x;
       }
 
@@ -7427,10 +7425,10 @@ static void ozone_draw_fullscreen_thumbnails(
             video_height,
             0,
             ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
-            width,
+            view_width,
             (unsigned)view_height,
-            width,
-            height,
+            video_width,
+            video_height,
             background_color,
             NULL);
 
@@ -7442,10 +7440,10 @@ static void ozone_draw_fullscreen_thumbnails(
             video_height,
             0,
             ozone->dimensions.header_height,
-            width,
+            view_width,
             ozone->dimensions.spacer_1px,
-            width,
-            height,
+            video_width,
+            video_height,
             separator_color,
             NULL);
 
@@ -7455,11 +7453,11 @@ static void ozone_draw_fullscreen_thumbnails(
             video_width,
             video_height,
             0,
-            height - ozone->dimensions.footer_height,
-            width,
+            video_height - ozone->dimensions.footer_height,
+            view_width,
             ozone->dimensions.spacer_1px,
-            width,
-            height,
+            video_width,
+            video_height,
             separator_color,
             NULL);
 
@@ -7482,8 +7480,8 @@ static void ozone_draw_fullscreen_thumbnails(
                      + ((thumbnail_box_height - (int)right_thumbnail_draw_height) >> 1),
                (unsigned)right_thumbnail_draw_width  + (frame_width << 1),
                (unsigned)right_thumbnail_draw_height + (frame_width << 1),
-               width,
-               height,
+               video_width,
+               video_height,
                frame_color,
                NULL);
 
@@ -7520,8 +7518,8 @@ static void ozone_draw_fullscreen_thumbnails(
                      + ((thumbnail_box_height - (int)left_thumbnail_draw_height) >> 1),
                (unsigned)left_thumbnail_draw_width  + (frame_width << 1),
                (unsigned)left_thumbnail_draw_height + (frame_width << 1),
-               width,
-               height,
+               video_width,
+               video_height,
                frame_color,
                NULL);
 
@@ -8007,15 +8005,6 @@ static void ozone_set_thumbnail_delay(bool on)
       gfx_thumbnail_set_fade_duration(1);
    }
 }
-
-/* Common thumbnail switch requires FILE_TYPE_RPL_ENTRY,
- * which only works with playlists, therefore activate it
- * manually for Quick Menu, Explore and Database */
-extern int action_switch_thumbnail(
-      const char *path,
-      const char *label,
-      unsigned type,
-      size_t idx);
 
 static enum menu_action ozone_parse_menu_entry_action(
       ozone_handle_t *ozone,

@@ -505,8 +505,13 @@ static float xmb_item_color[]   = {
 };
 
 /* Forward declarations */
+extern int action_switch_thumbnail(const char *path,
+      const char *label, unsigned type, size_t idx);
+static int xmb_menu_entry_action(void *userdata,
+      menu_entry_t *entry, size_t i, enum menu_action action);
 static bool xmb_load_image(void *userdata, void *data,
       enum menu_image_type type);
+
 
 static INLINE float xmb_item_y(const xmb_handle_t *xmb,
       int i, size_t current)
@@ -5532,16 +5537,6 @@ static void xmb_set_thumbnail_delay(bool on)
    }
 }
 
-/* Common thumbnail switch requires FILE_TYPE_RPL_ENTRY,
- * which only works with playlists, therefore activate it
- * manually for Quick Menu, Explore and Database */
-extern int action_switch_thumbnail(const char *path,
-      const char *label, unsigned type, size_t idx);
-
-static int xmb_menu_entry_action(
-      void *userdata, menu_entry_t *entry,
-      size_t i, enum menu_action action);
-
 static enum menu_action xmb_parse_menu_entry_action(
       xmb_handle_t *xmb, enum menu_action action)
 {
@@ -7141,8 +7136,8 @@ static void xmb_draw_fullscreen_thumbnails(
          goto error;
 
       /* Get thumbnail pointers */
-      right_thumbnail = &xmb->thumbnails.right;
-      left_thumbnail  = &xmb->thumbnails.left;
+      right_thumbnail = &xmb->thumbnails.left;
+      left_thumbnail  = &xmb->thumbnails.right;
 
       /* Get number of 'active' thumbnails */
       show_right_thumbnail =
