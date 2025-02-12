@@ -12595,8 +12595,8 @@ static bool setting_append_list(
             }
 
 #if defined(DINGUX) && defined(DINGUX_BETA)
-            if (string_is_equal(settings->arrays.video_driver, "sdl_dingux") ||
-                string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
+            if (   string_is_equal(settings->arrays.video_driver, "sdl_dingux")
+                || string_is_equal(settings->arrays.video_driver, "sdl_rs90"))
             {
                CONFIG_UINT(
                      list, list_info,

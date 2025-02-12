@@ -805,9 +805,11 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
    connection->ping       = -1;
    connection->ping_timer = cpu_features_get_time_usec();
 
-   if (!netplay_send(&connection->send_packet_buffer, connection->fd, header,
-         sizeof(header)) ||
-       !netplay_send_flush(&connection->send_packet_buffer, connection->fd, false))
+   if (   !netplay_send(&connection->send_packet_buffer,
+            connection->fd, header,
+            sizeof(header))
+       || !netplay_send_flush(&connection->send_packet_buffer,
+            connection->fd, false))
       return false;
 
    return true;
@@ -866,13 +868,11 @@ static bool netplay_handshake_nick(netplay_t *netplay,
 
    /* Second ping */
    connection->ping_timer = cpu_features_get_time_usec();
-
-   if (!netplay_send(&connection->send_packet_buffer, connection->fd,
-            &nick_buf, sizeof(nick_buf)) ||
-         !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
-            false))
+   if (    !netplay_send(&connection->send_packet_buffer,
+            connection->fd, &nick_buf, sizeof(nick_buf))
+         || !netplay_send_flush(&connection->send_packet_buffer,
+            connection->fd, false))
       return false;
-
    return true;
 }
 
@@ -1233,10 +1233,10 @@ static bool netplay_handshake_info(netplay_t *netplay,
    connection->ping_timer = cpu_features_get_time_usec(); /* Third ping */
 
    /* Send it off and wait for info back */
-   if (!netplay_send(&connection->send_packet_buffer, connection->fd,
-         &info_buf, sizeof(info_buf)) ||
-       !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
-         false))
+   if (  !netplay_send(&connection->send_packet_buffer,
+            connection->fd, &info_buf, sizeof(info_buf))
+       || !netplay_send_flush(&connection->send_packet_buffer,
+            connection->fd, false))
       return false;
 
    return true;
@@ -1380,10 +1380,10 @@ static bool netplay_handshake_sync(netplay_t *netplay,
       autosave_lock();
 #endif
       core_get_memory(&mem_info);
-      if (!netplay_send(&connection->send_packet_buffer, connection->fd,
-               mem_info.data, mem_info.size) ||
-            !netplay_send_flush(&connection->send_packet_buffer, connection->fd,
-               false))
+      if (    !netplay_send(&connection->send_packet_buffer,
+               connection->fd, mem_info.data, mem_info.size)
+            || !netplay_send_flush(&connection->send_packet_buffer,
+               connection->fd, false))
       {
 #ifdef HAVE_THREADS
          autosave_unlock();
@@ -2989,8 +2989,9 @@ static void merge_analog_part(netplay_t *netplay,
             value += (int32_t) new_value;
             break;
          default:
-            if (abs(new_value) > abs(value) ||
-                (abs(new_value) == abs(value) && new_value > value))
+            if (   abs(new_value)   > abs(value)
+                || (abs(new_value) == abs(value)
+                && new_value > value))
                value = new_value;
       }
    }
@@ -3771,9 +3772,11 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
             goto process;
          }
 
-         if (!netplay_init_socket_buffer(&connection->send_packet_buffer,
-                  netplay->packet_buffer_size) ||
-               !netplay_init_socket_buffer(&connection->recv_packet_buffer,
+         if (    !netplay_init_socket_buffer(
+                  &connection->send_packet_buffer,
+                  netplay->packet_buffer_size)
+               || !netplay_init_socket_buffer(
+                  &connection->recv_packet_buffer,
                   netplay->packet_buffer_size))
          {
             netplay_deinit_socket_buffer(&connection->send_packet_buffer);
@@ -3818,9 +3821,10 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
    }
 
    /* We've finished an input frame even if we're stalling */
-   if ((!stalled || netplay->stall == NETPLAY_STALL_INPUT_LATENCY) &&
-       netplay->self_frame_count <
-       netplay->run_frame_count + netplay->input_latency_frames)
+   if (( !stalled
+       || netplay->stall == NETPLAY_STALL_INPUT_LATENCY)
+       && netplay->self_frame_count <
+          netplay->run_frame_count  + netplay->input_latency_frames)
    {
       netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
       netplay->self_frame_count++;
@@ -6128,7 +6132,9 @@ static bool netplay_get_cmd(netplay_t *netplay,
 
 #ifdef HAVE_CHEEVOS
                /* did not receive a protocol 7 packet. server isn't sending achievement data. disable hardcore */
-               if (!netplay->is_server && rcheevos_hardcore_active() && !netplay_is_spectating())
+               if (     !netplay->is_server
+                     &&  rcheevos_hardcore_active()
+                     && !netplay_is_spectating())
                {
                   const char* msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST);
                   runloop_msg_queue_push(msg, strlen(msg), 0, 180, true, NULL,
@@ -6464,8 +6470,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             {
                /* If client, we receive both the nickname and
                   the message from the server. */
-               if (cmd_size <= sizeof(nickname) ||
-                     cmd_size >= sizeof(nickname) + sizeof(message))
+               if (     cmd_size <= sizeof(nickname)
+                     || cmd_size >= sizeof(nickname) + sizeof(message))
                {
                   RARCH_ERR("[Netplay] NETPLAY_CMD_PLAYER_CHAT with incorrect payload size.\n");
                   return netplay_cmd_nak(netplay, connection);
@@ -6813,11 +6819,12 @@ static int init_tcp_connection(netplay_t *netplay, const struct addrinfo *addr,
          new_session.magic = htonl(MITM_SESSION_MAGIC);
 
          /* Tunnel server should provide us with our session ID. */
-         if (socket_send_all_blocking_with_timeout(fd,
-               &new_session, sizeof(new_session), 5000, true) &&
-            socket_receive_all_blocking_with_timeout(fd,
-               &netplay->mitm_session_id, sizeof(netplay->mitm_session_id),
-               5000))
+         if (   socket_send_all_blocking_with_timeout(fd,
+                  &new_session, sizeof(new_session), 5000, true)
+             && socket_receive_all_blocking_with_timeout(fd,
+                  &netplay->mitm_session_id,
+                  sizeof(netplay->mitm_session_id),
+                  5000))
          {
             if (ntohl(netplay->mitm_session_id.magic) == MITM_SESSION_MAGIC &&
                   memcmp(netplay->mitm_session_id.unique, new_session.unique,
@@ -7033,18 +7040,22 @@ static bool netplay_init_socket_buffers(netplay_t *netplay)
       {
          if (connection->send_packet_buffer.data)
          {
-            if (!netplay_resize_socket_buffer(&connection->send_packet_buffer,
-                  packet_buffer_size) ||
-                !netplay_resize_socket_buffer(&connection->recv_packet_buffer,
-                  packet_buffer_size))
+            if (  !netplay_resize_socket_buffer(
+                   &connection->send_packet_buffer,
+                   packet_buffer_size)
+                || !netplay_resize_socket_buffer(
+                   &connection->recv_packet_buffer,
+                   packet_buffer_size))
                return false;
          }
          else
          {
-            if (!netplay_init_socket_buffer(&connection->send_packet_buffer,
-                  packet_buffer_size) ||
-                !netplay_init_socket_buffer(&connection->recv_packet_buffer,
-                  packet_buffer_size))
+            if (  !netplay_init_socket_buffer(
+                     &connection->send_packet_buffer,
+                     packet_buffer_size)
+                || !netplay_init_socket_buffer(
+                     &connection->recv_packet_buffer,
+                     packet_buffer_size))
                return false;
          }
       }
@@ -7406,8 +7417,8 @@ static netplay_t *netplay_new(const char *server, const char *mitm,
       /* Clients get device info from the server. */
    }
 
-   if (!init_tcp_socket(netplay, server, mitm, port) ||
-         !netplay_init_buffers(netplay))
+   if (     !init_tcp_socket(netplay, server, mitm, port)
+         || !netplay_init_buffers(netplay))
       goto failure;
 
    return netplay;
@@ -8174,14 +8185,14 @@ static bool netplay_poll(netplay_t *netplay, bool block_libretro_input)
 
       /* We can't hide this much network latency with replay,
          so hide some with input latency. */
-      if (netplay->input_latency_frames < input_latency_frames_min ||
-            (frames_per_frame < frames_ahead &&
-               netplay->input_latency_frames < input_latency_frames_max))
+      if (      netplay->input_latency_frames < input_latency_frames_min
+            || (frames_per_frame < frames_ahead
+            && netplay->input_latency_frames < input_latency_frames_max))
          netplay->input_latency_frames++;
       /* We don't need this much latency (any more). */
-      else if (netplay->input_latency_frames > input_latency_frames_max ||
-            (frames_per_frame > (frames_ahead + 2) &&
-               netplay->input_latency_frames > input_latency_frames_min))
+      else if (netplay->input_latency_frames > input_latency_frames_max
+            || (frames_per_frame > (frames_ahead + 2)
+            && netplay->input_latency_frames > input_latency_frames_min))
          netplay->input_latency_frames--;
    }
 
@@ -8516,12 +8527,12 @@ static void netplay_announce_cb(retro_task_t *task, void *task_data,
                host_room->host_method = (int)strtol(value, NULL, 10);
             else if (string_is_equal(key, "has_password"))
                host_room->has_password =
-                  string_is_equal_case_insensitive(value, "true") ||
-                  string_is_equal(value, "1");
+                     string_is_equal_case_insensitive(value, "true")
+                  || string_is_equal(value, "1");
             else if (string_is_equal(key, "has_spectate_password"))
                host_room->has_spectate_password =
-                  string_is_equal_case_insensitive(value, "true") ||
-                  string_is_equal(value, "1");
+                     string_is_equal_case_insensitive(value, "true")
+                  || string_is_equal(value, "1");
             else if (string_is_equal(key, "retroarch_version"))
                strlcpy(host_room->retroarch_version, value,
                   sizeof(host_room->retroarch_version));
@@ -8535,8 +8546,8 @@ static void netplay_announce_cb(retro_task_t *task, void *task_data,
                strlcpy(host_room->country, value, sizeof(host_room->country));
             else if (string_is_equal(key, "connectable"))
                host_room->connectable =
-                  string_is_equal_case_insensitive(value, "true") ||
-                  string_is_equal(value, "1");
+                     string_is_equal_case_insensitive(value, "true")
+                  || string_is_equal(value, "1");
          }
       }
 
