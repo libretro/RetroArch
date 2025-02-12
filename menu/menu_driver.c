@@ -442,7 +442,8 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
             path_enabled = true;
       }
 
-      if ((path_enabled || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED))
+      if (   (path_enabled
+          || (entry_flags & MENU_ENTRY_FLAG_VALUE_ENABLED))
           && cbs->action_get_value
           && use_representation)
       {
@@ -470,26 +471,13 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          }
       }
 
-      if (entry_flags & MENU_ENTRY_FLAG_SUBLABEL_ENABLED)
-      {
-         if (!string_is_empty(cbs->action_sublabel_cache))
-            strlcpy(entry->sublabel,
-                     cbs->action_sublabel_cache, sizeof(entry->sublabel));
-         else if (cbs->action_sublabel)
-         {
-            /* If this function callback returns true,
-             * we know that the value won't change - so we
-             * can cache it instead. */
-            if (cbs->action_sublabel(list,
-                     entry->type, (unsigned)i,
-                     label, path,
-                     entry->sublabel,
-                     sizeof(entry->sublabel)) > 0)
-               strlcpy(cbs->action_sublabel_cache,
-                     entry->sublabel,
-                     sizeof(cbs->action_sublabel_cache));
-         }
-      }
+      if (     cbs->action_sublabel
+            && (entry_flags & MENU_ENTRY_FLAG_SUBLABEL_ENABLED))
+            cbs->action_sublabel(list,
+                  entry->type, (unsigned)i,
+                  label, path,
+                  entry->sublabel,
+                  sizeof(entry->sublabel));
    }
 
    /* Inspect core options and set entries with only 2 options as
@@ -2567,12 +2555,7 @@ static void menu_cbs_init(
    menu_cbs_init_bind_sublabel(cbs, path, label, lbl_len, type, idx);
 
    if (menu_driver_ctx && menu_driver_ctx->bind_init)
-      menu_driver_ctx->bind_init(
-            cbs,
-            path,
-            label,
-            type,
-            idx);
+      menu_driver_ctx->bind_init(cbs, path, label, type, idx);
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -4229,7 +4212,6 @@ bool menu_entries_append(
       malloc(sizeof(menu_file_list_cbs_t))))
       return false;
 
-   cbs->action_sublabel_cache[0]   = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
    cbs->setting                    = setting;
@@ -4324,7 +4306,6 @@ void menu_entries_prepend(file_list_t *list,
    if (!cbs)
       return;
 
-   cbs->action_sublabel_cache[0]   = '\0';
    cbs->enum_idx                   = enum_idx;
    cbs->checked                    = false;
    cbs->setting                    = menu_setting_find_enum(cbs->enum_idx);
