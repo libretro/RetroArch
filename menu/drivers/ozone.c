@@ -5817,8 +5817,8 @@ border_iterate:
          entry_value         = entry.value;
 
       /* Prepare text */
-      if (!string_is_empty(entry.label))
-         entry_rich_label  = entry.label;
+      if (!string_is_empty(entry.rich_label))
+         entry_rich_label  = entry.rich_label;
       else
          entry_rich_label  = entry.path;
 
@@ -5891,9 +5891,9 @@ border_iterate:
          /* Playlist manager icons */
          else if (ozone->depth == 3 && entry.enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
          {
-            if (string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+            if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
                texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
-            else if (string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
+            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
                texture = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
             else if (i < ozone->horizontal_list.size)
             {
@@ -5905,7 +5905,7 @@ border_iterate:
                {
                   char playlist_file_noext[NAME_MAX_LENGTH];
                   fill_pathname(playlist_file_noext, ozone->horizontal_list.list[offset].path, "", sizeof(playlist_file_noext));
-                  if (string_is_equal(playlist_file_noext, entry.label))
+                  if (string_is_equal(playlist_file_noext, entry.rich_label))
                      break;
                }
 

@@ -435,10 +435,10 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          cbs->action_label(list,
                entry->type, (unsigned)i,
                label, path,
-               entry->label,
-               sizeof(entry->label));
+               entry->rich_label,
+               sizeof(entry->rich_label));
 
-         if (!path_enabled && string_is_empty(entry->label))
+         if (!path_enabled && string_is_empty(entry->rich_label))
             path_enabled = true;
       }
 
@@ -580,8 +580,8 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
          continue;
 
       /* Get displayed entry label */
-      if (!string_is_empty(entry.label))
-         entry_label = entry.label;
+      if (!string_is_empty(entry.rich_label))
+         entry_label = entry.rich_label;
       else
          entry_label = entry.path;
 
@@ -4020,8 +4020,8 @@ static size_t menu_driver_get_current_menu_label(struct menu_state *menu_st,
                 | MENU_ENTRY_FLAG_VALUE_ENABLED
                 | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   if (!string_is_empty(entry.label))
-      return strlcpy(s, entry.label, len);
+   if (!string_is_empty(entry.rich_label))
+      return strlcpy(s, entry.rich_label, len);
    return strlcpy(s, entry.path, len);
 }
 #endif
@@ -7972,8 +7972,8 @@ size_t menu_update_fullscreen_thumbnail_label(
                          | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&selected_entry, 0, menu_st->selection_ptr, NULL, true);
    /* > Get entry label */
-   if (!string_is_empty(selected_entry.label))
-      return strlcpy(s, selected_entry.label, len);
+   if (!string_is_empty(selected_entry.rich_label))
+      return strlcpy(s, selected_entry.rich_label, len);
    /* > State slot label */
    else if (   is_quick_menu
             && (

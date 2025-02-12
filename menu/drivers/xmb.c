@@ -4779,8 +4779,8 @@ static int xmb_draw_item(
    else
       xmb->ticker_limit         = ticker_limit;
 
-   if (!string_is_empty(entry.label))
-      ticker_str                = entry.label;
+   if (!string_is_empty(entry.rich_label))
+      ticker_str                = entry.rich_label;
    else
       ticker_str                = entry.path;
 
@@ -5059,9 +5059,9 @@ static int xmb_draw_item(
       /* Playlist manager icons */
       else if (xmb->depth == 3 && entry.enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
       {
-         if (string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+         if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
             texture = xmb->textures.list[XMB_TEXTURE_HISTORY];
-         else if (string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
+         else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
             texture = xmb->textures.list[XMB_TEXTURE_FAVORITES];
          else if (i < xmb->horizontal_list.size)
          {
@@ -5074,7 +5074,7 @@ static int xmb_draw_item(
                char playlist_file_noext[NAME_MAX_LENGTH];
                fill_pathname(playlist_file_noext, xmb->horizontal_list.list[offset].path, "",
                      sizeof(playlist_file_noext));
-               if (string_is_equal(playlist_file_noext, entry.label))
+               if (string_is_equal(playlist_file_noext, entry.rich_label))
                   break;
             }
 

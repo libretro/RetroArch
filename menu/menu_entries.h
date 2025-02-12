@@ -39,6 +39,7 @@ RETRO_BEGIN_DECLS
 #define MENU_ENTRY_INITIALIZE(entry) \
    entry.path[0]            = '\0'; \
    entry.label[0]           = '\0'; \
+   entry.rich_label[0]      = '\0'; \
    entry.sublabel[0]        = '\0'; \
    entry.value[0]           = '\0'; \
    entry.password_value[0]  = '\0'; \
@@ -115,6 +116,7 @@ typedef struct menu_entry
    char sublabel[MENU_LABEL_MAX_LENGTH];
    char path[NAME_MAX_LENGTH];
    char label[MENU_LABEL_MAX_LENGTH];
+   char rich_label[MENU_LABEL_MAX_LENGTH];
    char value[NAME_MAX_LENGTH];
    char password_value[NAME_MAX_LENGTH];
 } menu_entry_t;

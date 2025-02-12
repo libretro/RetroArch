@@ -4059,8 +4059,8 @@ static void materialui_render_menu_entry_default(
       mui->ticker.selected = entry_selected;
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->label))
-      entry_label          = entry->label;
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
 
@@ -4488,8 +4488,8 @@ static void materialui_render_menu_entry_playlist_list(
       mui->ticker.selected        = entry_selected;
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->label))
-      entry_label          = entry->label;
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
 
@@ -4746,8 +4746,8 @@ static void materialui_render_menu_entry_playlist_dual_icon(
       mui->ticker.selected = entry_selected;
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->label))
-      entry_label          = entry->label;
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
 
@@ -4901,8 +4901,8 @@ static void materialui_render_menu_entry_playlist_desktop(
                (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
 
    /* Read entry parameters */
-   if (!string_is_empty(entry->label))
-      entry_label          = entry->label;
+   if (!string_is_empty(entry->rich_label))
+      entry_label          = entry->rich_label;
    else
       entry_label          = entry->path;
 
@@ -6442,8 +6442,8 @@ static void materialui_update_fullscreen_thumbnail_label(
    menu_entry_get(&selected_entry, 0, selection, NULL, true);
 
    /* > Get entry label */
-   if (!string_is_empty(selected_entry.label))
-      thumbnail_label          = selected_entry.label;
+   if (!string_is_empty(selected_entry.rich_label))
+      thumbnail_label          = selected_entry.rich_label;
    else
       thumbnail_label          = selected_entry.path;
 
