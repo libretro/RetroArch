@@ -6806,14 +6806,6 @@ MSG_HASH(
    "[ユーザー] を表示"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "プレイリストアイコン"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "表示するプレイリストアイコンサムネイルの種類です。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "[ユーザー] 設定を表示します。"
    )

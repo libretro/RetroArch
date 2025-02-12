@@ -5538,14 +5538,6 @@ MSG_HASH(
    "Visa 'Användare'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Spellistikoner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Typ av miniatyrbild för spellistikonen att visa."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Visa inställningar för 'Användare'."
    )

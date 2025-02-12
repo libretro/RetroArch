@@ -7010,14 +7010,6 @@ MSG_HASH(
    "Показывать 'Пользователь'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Значки в плейлистах"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Тип иконки, отображаемый для плейлиста."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Показать настройки 'Пользователя'."
    )

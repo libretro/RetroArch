@@ -6978,14 +6978,6 @@ MSG_HASH(
    "Mostrar Usuario"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Iconos de las listas de reproducción"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "El tipo de miniatura que se mostrará como icono de las listas de reproducción."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Muestra los ajustes de usuario."
    )

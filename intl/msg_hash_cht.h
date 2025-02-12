@@ -6694,14 +6694,6 @@ MSG_HASH(
    "顯示「使用者」"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "列表圖示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "設定列表圖示顯示的類型。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "顯示「使用者」選項。"
    )

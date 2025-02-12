@@ -6026,10 +6026,6 @@ MSG_HASH(
    "Näytä \"Käyttäjä\""
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Soittolistan kuvakkeet"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Näytä \"Käyttäjä\"-asetukset."
    )

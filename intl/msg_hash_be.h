@@ -6974,14 +6974,6 @@ MSG_HASH(
    "Паказ 'Карыстальнік'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Значкі плэй-ліста"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Тып мініяцюры для адлюстравання значкоў плэй-ліста."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Паказваць налады 'Карыстальнік'."
    )

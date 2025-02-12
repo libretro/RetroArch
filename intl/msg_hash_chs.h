@@ -6762,14 +6762,6 @@ MSG_HASH(
    "显示「用户」"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "游戏列表图标"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "要显示的游戏列表图标缩略图类型。"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "显示「用户」设置。"
    )

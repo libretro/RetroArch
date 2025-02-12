@@ -6934,14 +6934,6 @@ MSG_HASH(
    "Показати 'Користувач'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Значки списку відтворення"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Тип ескізу іконок у плейлісті для відображення."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Показувати налаштування \"Користувач\"."
    )

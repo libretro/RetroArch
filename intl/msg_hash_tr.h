@@ -6954,14 +6954,6 @@ MSG_HASH(
    "'Kullanıcıyı' Göster"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Oynatma Listesi Simgeleri"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Görüntülenecek Oynatma Listesi simgesinin küçük resminin türü."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "'Kullanıcı' ayarlarını gösterin."
    )

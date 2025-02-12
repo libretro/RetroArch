@@ -6934,14 +6934,6 @@ MSG_HASH(
    "\"Felhasználók\" látható"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Játéklista ikonok"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "A játéklista elemeinek ikonjai."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "A felhasználó beállításai jelenjenek meg."
    )

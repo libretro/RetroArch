@@ -6938,14 +6938,6 @@ MSG_HASH(
    "Afficher 'Utilisateur'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Icônes dans la liste de lecture"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Type de miniature pour l'icône dans la liste de lecture à afficher."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Afficher les réglages pour 'Utilisateur'."
    )

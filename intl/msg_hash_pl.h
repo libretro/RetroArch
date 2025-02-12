@@ -6146,14 +6146,6 @@ MSG_HASH(
    "Pokaż 'Użytkownik'"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Ikony listy odtwarzania"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Typ miniatury ikony listy odtwarzania do wyświetlenia."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    "Pokaż ustawienia 'Użytkownika'."
    )
