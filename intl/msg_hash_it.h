@@ -12606,14 +12606,6 @@ MSG_HASH(
    "Seleziona da Playlist"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Riprendi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Riprendi il contenuto corrente e chiude il menu rapido."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Visualizza la lista delle %u partite"
    )

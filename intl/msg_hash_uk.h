@@ -12874,14 +12874,6 @@ MSG_HASH(
    "Вибір зі списку відтворення"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Продовжити"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Відновити актуальний вміст та залишити панель швидкого меню."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Переглянути список матчів %u"
    )

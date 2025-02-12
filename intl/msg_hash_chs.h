@@ -12594,14 +12594,6 @@ MSG_HASH(
    "从列表中选择"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "继续"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "退出菜单并继续游戏。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "查看匹配的 %u 个列表"
    )

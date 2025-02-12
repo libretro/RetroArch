@@ -12778,14 +12778,6 @@ MSG_HASH(
    "Sélectionner depuis une liste de lecture"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Reprendre"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Reprendre le contenu en cours et quitter le menu rapide."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Voir la liste des %u correspondances"
    )

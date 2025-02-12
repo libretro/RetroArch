@@ -7554,14 +7554,6 @@ MSG_HASH(
    "حدد من قائمة التشغيل"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "استئناف"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "استأنف المحتوى قيد التشغيل حاليا و اترك القائمة السريعة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "عرض قائمة %u مباريات"
    )

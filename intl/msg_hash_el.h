@@ -5045,14 +5045,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_ASPECT,
    "Εξαναγκασμένη αναλογία απεικόνισης"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Συνέχιση"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Συνέχιση εκτέλεσης του τρέχοντος περιεχομένου και έξοδος από το Γρήγορο Μενού."
-   )
 MSG_HASH( /* FIXME Still exists in a comment about being removed */
    MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_FOOTER_OPACITY,
    "Αδιαφάνεια Υποσέλιδου"

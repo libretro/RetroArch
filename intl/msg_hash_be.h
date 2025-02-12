@@ -12854,14 +12854,6 @@ MSG_HASH(
    "Выбраць з плэйліста"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Працягнуць"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Закрыць хуткае меню і аднавіць бягучы кантэнт."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Прагляд спісу %u супадзенняў"
    )

@@ -12482,14 +12482,6 @@ MSG_HASH(
    "Wähle aus Wiedergabenliste"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Fortsetzen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Das Schnellmenü verlassen und den aktuellen Inhalt fortsetzen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Liste von %u Treffern ansehen"
    )

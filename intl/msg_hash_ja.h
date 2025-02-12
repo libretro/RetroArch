@@ -12578,14 +12578,6 @@ MSG_HASH(
    "プレイリストから選択"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "再開"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "クイックメニューを閉じて現在動作中のアプリを再開します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "%u 一致リストを表示"
    )

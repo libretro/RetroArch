@@ -6166,10 +6166,6 @@ MSG_HASH(
    "Vynútiť pomer strán"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Pokračovať"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_OPTION,
    "Vymazať túto zhodu"
    )

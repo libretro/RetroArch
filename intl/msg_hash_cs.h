@@ -12158,14 +12158,6 @@ MSG_HASH(
    "Vybrat z playlistu"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Pokračovat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Pokračujte v aktuálně spuštěném obsahu a opusťte rychlou nabídku."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Zobrazit seznam %u shod"
    )

@@ -3407,10 +3407,6 @@ MSG_HASH(
    "restart_retroarch"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RESUME,
-   "resume"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RESUME_CONTENT,
    "resume_content"
    )

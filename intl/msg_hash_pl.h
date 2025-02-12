@@ -11370,14 +11370,6 @@ MSG_HASH(
    "Wybierz z playlisty"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Wznów"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Wznów aktualnie uruchomioną zawartość i opuść szybkie menu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Zobacz listę %u dopasowań"
    )

@@ -12850,14 +12850,6 @@ MSG_HASH(
    "Выбрать из плейлиста"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Продолжить"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "Закрыть быстрое меню и возобновить текущий контент."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
    "Просмотр списка %u совпадений"
    )
