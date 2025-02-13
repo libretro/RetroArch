@@ -1322,43 +1322,6 @@ static ozone_theme_t ozone_theme_dracula = {
    "dracula"                                             /* name */
 };
 
-static ozone_theme_t ozone_theme_selenium = {
-   /* Background color */
-   COLOR_HEX_TO_FLOAT(0x2a2a2a, 1.0f),                   /* background */
-   ozone_background_libretro_running_selenium,     /* background_libretro_running */
-
-   /* Float colors for quads and icons */
-   COLOR_HEX_TO_FLOAT(0x6c6c6c, 1.0f),                   /* header_footer_separator */
-   COLOR_HEX_TO_FLOAT(0xa6a6a6, 1.0f),                   /* text */
-   COLOR_HEX_TO_FLOAT(0x566646, 1.0f),                   /* selection */
-   COLOR_HEX_TO_FLOAT(0x91a666, 1.0f),                   /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x666666, 1.0f),                   /* entries_border */
-   COLOR_HEX_TO_FLOAT(0xa6a6a6, 1.0f),                   /* entries_icon */
-   COLOR_HEX_TO_FLOAT(0x91a666, 1.0f),                   /* text_selected */
-   COLOR_HEX_TO_FLOAT(0x1a1a1a, 1.0f),                   /* message_background */
-
-   /* RGBA colors for text */
-   0xA6A6A6FF,                                           /* text_rgba */
-   0xA6A6A6FF,                                           /* text_sidebar_rgba */
-   0x91a666FF,                                           /* text_selected_rgba */
-   0x666666FF,                                           /* text_sublabel_rgba */
-
-   /* Screensaver 'tint' (RGB24) */
-   0x1a1a1a,                                             /* screensaver_tint */
-
-   /* Sidebar color */
-   ozone_sidebar_background_selenium,              /* sidebar_background */
-   ozone_sidebar_gradient_top_selenium,            /* sidebar_top_gradient */
-   ozone_sidebar_gradient_bottom_selenium,         /* sidebar_bottom_gradient */
-
-   /* Fancy cursor colors */
-   ozone_border_0_selenium,                        /* cursor_border_0 */
-   ozone_border_1_selenium,                        /* cursor_border_1 */
-
-   {0},                                                  /* textures */
-
-   "selenium"                                            /* name */
-};
 
 static ozone_theme_t ozone_theme_solarized_dark = {
    /* Background color */
@@ -1552,6 +1515,45 @@ static ozone_theme_t ozone_theme_purple_rain = {
    "purple_rain"                                         /* name */
 };
 
+static ozone_theme_t ozone_theme_selenium = {
+   /* Background color */
+   COLOR_HEX_TO_FLOAT(0x2a2a2a, 1.0f),                   /* background */
+   ozone_background_libretro_running_selenium,     /* background_libretro_running */
+
+   /* Float colors for quads and icons */
+   COLOR_HEX_TO_FLOAT(0x6c6c6c, 1.0f),                   /* header_footer_separator */
+   COLOR_HEX_TO_FLOAT(0xa6a6a6, 1.0f),                   /* text */
+   COLOR_HEX_TO_FLOAT(0x566646, 1.0f),                   /* selection */
+   COLOR_HEX_TO_FLOAT(0x91a666, 1.0f),                   /* selection_border */
+   COLOR_HEX_TO_FLOAT(0x666666, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0xa6a6a6, 1.0f),                   /* entries_icon */
+   COLOR_HEX_TO_FLOAT(0x91a666, 1.0f),                   /* text_selected */
+   COLOR_HEX_TO_FLOAT(0x1a1a1a, 1.0f),                   /* message_background */
+
+   /* RGBA colors for text */
+   0xA6A6A6FF,                                           /* text_rgba */
+   0xA6A6A6FF,                                           /* text_sidebar_rgba */
+   0x91a666FF,                                           /* text_selected_rgba */
+   0x666666FF,                                           /* text_sublabel_rgba */
+
+   /* Screensaver 'tint' (RGB24) */
+   0x1a1a1a,                                             /* screensaver_tint */
+
+   /* Sidebar color */
+   ozone_sidebar_background_selenium,              /* sidebar_background */
+   ozone_sidebar_gradient_top_selenium,            /* sidebar_top_gradient */
+   ozone_sidebar_gradient_bottom_selenium,         /* sidebar_bottom_gradient */
+
+   /* Fancy cursor colors */
+   ozone_border_0_selenium,                        /* cursor_border_0 */
+   ozone_border_1_selenium,                        /* cursor_border_1 */
+
+   {0},                                                  /* textures */
+
+   /* No theme assets */
+   NULL,                                            /* name */
+};
+
 static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_light,
    &ozone_theme_dark,
@@ -1561,12 +1563,12 @@ static ozone_theme_t *ozone_themes[] = {
    &ozone_theme_hacking_the_kernel,
    &ozone_theme_twilight_zone,
    &ozone_theme_dracula,
-   &ozone_theme_selenium,
    &ozone_theme_solarized_dark,
    &ozone_theme_solarized_light,
    &ozone_theme_gray_dark,
    &ozone_theme_gray_light,
-   &ozone_theme_purple_rain
+   &ozone_theme_purple_rain,
+   &ozone_theme_selenium,
 };
 
 /* TODO/FIXME - global variables referenced outside */
@@ -2875,7 +2877,7 @@ static bool ozone_reset_theme_textures(ozone_handle_t *ozone)
    {
       ozone_theme_t *theme = ozone_themes[j];
 
-      if (!theme->name)
+      if (!theme->name || j != ozone_last_color_theme)
          continue;
 
       fill_pathname_join_special(
@@ -6962,21 +6964,24 @@ static void ozone_draw_messagebox(
    int usable_width         = 0;
    struct string_list list  = {0};
    float scale_factor       = 0.0f;
+   float line_height        = 0;
    unsigned i               = 0;
    unsigned y_position      = 0;
    unsigned width           = video_width;
    unsigned height          = video_height;
+   font_data_impl_t font    = ozone->fonts.time;
    gfx_display_ctx_driver_t
          *dispctx           = p_disp->dispctx;
 
    wrapped_message[0]       = '\0';
 
    /* Sanity check */
-   if (string_is_empty(message) || !ozone->fonts.footer.font)
+   if (string_is_empty(message) || !font.font)
       return;
 
    scale_factor             = ozone->last_scale_factor;
    usable_width             = (int)width - (48 * 8 * scale_factor);
+   line_height              = font.line_height * 1.10f;
 
    if (usable_width < 1)
       return;
@@ -6987,8 +6992,8 @@ static void ozone_draw_messagebox(
          sizeof(wrapped_message),
          message,
          strlen(message),
-         usable_width / (int)ozone->fonts.footer.glyph_width,
-         ozone->fonts.footer.wideglyph_width,
+         usable_width / (int)font.glyph_width,
+         font.wideglyph_width,
          0);
 
    string_list_initialize(&list);
@@ -7004,7 +7009,7 @@ static void ozone_draw_messagebox(
       y_position    = height / 4;
 
    x                = width  / 2;
-   y                = y_position - (list.size * ozone->fonts.footer.line_height) / 2;
+   y                = y_position - (list.size * line_height) / 2;
 
    /* find the longest line width */
    for (i = 0; i < list.size; i++)
@@ -7013,7 +7018,7 @@ static void ozone_draw_messagebox(
 
       if (!string_is_empty(msg))
       {
-         int width = font_driver_get_message_width(ozone->fonts.footer.font, msg, strlen(msg), 1.0f);
+         int width = font_driver_get_message_width(font.font, msg, strlen(msg), 1.0f);
 
          if (width > longest_width)
             longest_width = width;
@@ -7033,11 +7038,12 @@ static void ozone_draw_messagebox(
        * > The actual size and offset of a texture slice
        *   is quite 'loose', and depends upon source image
        *   size, draw size and scale factor... */
-      size_t slice_new_w   = longest_width + 48 * 2 * scale_factor;
-      size_t slice_new_h   = ozone->fonts.footer.line_height * (list.size + 2);
-      unsigned slice_w     = 256;
-      int slice_x          = x - longest_width / 2 - 48 * scale_factor;
-      int slice_y          = y - ozone->fonts.footer.line_height
+      unsigned slice_margin = 50 * scale_factor;
+      unsigned slice_new_w  = longest_width + (slice_margin * 2);
+      unsigned slice_new_h  = line_height * (list.size + 2) + (slice_margin / 2);
+      unsigned slice_w      = 256;
+      int slice_x           = x - (longest_width / 2) - slice_margin;
+      int slice_y           = y - line_height - (slice_margin / 4)
             + ((slice_new_h >= slice_w)
                   ? (16.0f * scale_factor)
                   : (16.0f * ((float)slice_new_h / (float)slice_w)));
@@ -7069,10 +7075,10 @@ static void ozone_draw_messagebox(
 
       if (msg)
          gfx_display_draw_text(
-               ozone->fonts.footer.font,
+               font.font,
                msg,
                x - (longest_width / 2),
-               y + (i * ozone->fonts.footer.line_height) + ozone->fonts.footer.line_ascender,
+               y + (i * line_height) + font.line_ascender,
                width,
                height,
                COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
@@ -11997,7 +12003,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_info->disp_userdata,
             video_width,
             video_height,
-            float_min(ozone->animations.messagebox_alpha, 0.75f));
+            float_min(ozone->animations.messagebox_alpha,
+            (draw_osk) ? 0.95f : 0.75f));
 
       if (draw_osk)
       {

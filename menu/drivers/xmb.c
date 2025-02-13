@@ -7010,7 +7010,8 @@ static void xmb_draw_dark_layer(
       gfx_display_ctx_driver_t *dispctx,
       void *userdata,
       unsigned width,
-      unsigned height)
+      unsigned height,
+      float alpha)
 {
    gfx_display_ctx_draw_t draw;
    float black[16]      = {
@@ -7036,7 +7037,7 @@ static void xmb_draw_dark_layer(
 
    if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);
-   gfx_display_draw_bg(p_disp, &draw, userdata, true, MIN(xmb->alpha, 0.75));
+   gfx_display_draw_bg(p_disp, &draw, userdata, true, MIN(xmb->alpha, alpha));
    if (draw.height > 0 && draw.width > 0)
       if (dispctx && dispctx->draw)
          dispctx->draw(&draw, userdata, width, height);
@@ -8292,7 +8293,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       if (dispctx)
          xmb_draw_dark_layer(xmb, p_disp, dispctx,
-               userdata, video_width, video_height);
+               userdata, video_width, video_height,
+               (input_dialog_display_kb) ? 0.95f : 0.75f);
       if (xmb->font && !string_is_empty(msg))
          xmb_render_messagebox_internal(userdata, p_disp,
                dispctx,
