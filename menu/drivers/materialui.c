@@ -7209,7 +7209,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Darken screen */
       gfx_display_set_alpha(
-            mui->colors.screen_fade, mui->colors.screen_fade_opacity);
+            mui->colors.screen_fade, 0.95f);
       gfx_display_draw_quad(
             p_disp,
             userdata,
@@ -7258,7 +7258,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       /* Darken screen */
       gfx_display_set_alpha(
-            mui->colors.screen_fade, mui->colors.screen_fade_opacity);
+            mui->colors.screen_fade, 0.75f);
       gfx_display_draw_quad(
             p_disp,
             userdata,
