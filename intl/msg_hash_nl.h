@@ -2891,10 +2891,6 @@ MSG_HASH(
    "Menu-schakel"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Schakelt de huidige weergave tussen het menu en de actieve inhoud."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Afsluiten (Bedieningscombinatie)"
    )
@@ -2969,10 +2965,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Pauzeren"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Schakelt om inhoud uit te voeren tussen onderbroken en niet-onderbroken staten."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,

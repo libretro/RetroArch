@@ -2659,10 +2659,6 @@ MSG_HASH(
    "Sett innholdet på pause når menyen er aktiv"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Pauser det nåværende innholdet som kjører når menyen er aktiv."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
    "Avslutt ved stenging av innhold"
    )
@@ -3780,16 +3776,8 @@ MSG_HASH(
    "Gjenoppta"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Gjenoppta gjeldende innhold og forlat hurtigmenyen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Lukk innhold"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Lukk dette innholdet. Eventuelle ulagrede endringer vil gå tapt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,

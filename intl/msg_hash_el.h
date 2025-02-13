@@ -2330,10 +2330,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "Επιστροφή"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Εναλλάσσει εκτελούμενο περιεχόμενο μεταξύ καταστάσεων σε παύση και μη παύση."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
@@ -3672,10 +3668,6 @@ MSG_HASH(
    "Συνέχιση"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Συνέχιση εκτέλεσης του τρέχοντος περιεχομένου και έξοδος από το Γρήγορο Μενού."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Επανεκκίνηση"
    )
@@ -3748,16 +3740,8 @@ MSG_HASH(
    "Επιλογές Πυρήνα"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Αλλαγή επιλογών για το τρέχον εκτελούμενο περιεχόμενο."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Χειρισμοί"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Αλλαγή χειρισμών για το τρέχον εκτελούμενο περιεχόμενο."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,

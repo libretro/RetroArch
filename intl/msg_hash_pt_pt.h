@@ -3940,10 +3940,6 @@ MSG_HASH(
    "Retomar"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Retomar a execução do conteúdo atual e deixar o 'Menu rápido'."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Reiniciar"
    )
@@ -3992,16 +3988,8 @@ MSG_HASH(
    "Se o estado foi sobrescrito, ele voltará ao estado de gravação anterior."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Altera as opções para a execução de conteúdo atual."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Mapeamento de teclas"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Altera as teclas para a execução de conteúdo atual."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,

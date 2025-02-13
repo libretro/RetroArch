@@ -1112,7 +1112,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_HELP_CONTROLS,
-   "Contrôles de base du menu"
+   "Touches de base du menu"
    )
 
 /* Main Menu > Help > Basic Menu Controls */
@@ -3724,7 +3724,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Bascule l'affichage actuel entre le menu et l'exécution de contenu."
+   "Bascule l'affichage actuel entre le menu et le contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3804,7 +3804,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Met en pause/reprend le contenu en cours d'exécution."
+   "Met en pause/reprend le contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6092,7 +6092,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Mettre en pause le contenu en cours d'exécution si le menu est actif."
+   "Met en pause le contenu si le menu est actif."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8401,7 +8401,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Décidez quelles informations relatives au contenu en cours d'exécution seront partagées."
+   "Décidez quelles informations relatives au contenu seront partagées."
    )
 
 MSG_HASH(
@@ -8997,7 +8997,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Reprendre le contenu en cours et quitter le menu rapide."
+   "Reprendre le contenu et quitter le menu rapide."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -9013,7 +9013,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Fermer le contenu actuel. Toute modification non enregistrée pourrait être perdue."
+   "Fermer le contenu. Toute modification non enregistrée pourrait être perdue."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9149,7 +9149,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Modifier les options pour le contenu en cours d'exécution."
+   "Modifier les options pour le contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -9157,7 +9157,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Modifier les contrôles pour le contenu en cours d'exécution."
+   "Modifier les touches pour le contenu."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -9763,7 +9763,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Verifie les changements dans les fichiers de shaders. Après avoir enregistré les modifications à un shader sur le disque, il sera automatiquement recompilé et appliqué au contenu en cours d'exécution."
+   "Verifie les changements dans les fichiers de shaders. Après avoir enregistré les modifications à un shader sur le disque, il sera automatiquement recompilé et appliqué au contenu."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10976,7 +10976,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Activer l'affichage en arrière-plan du contenu en cours d'exécution lorsque le Menu rapide est actif. Désactiver la transparence peut modifier les couleurs du thème."
+   "Activer l'affichage en arrière-plan du contenu lorsque le Menu rapide est actif. Désactiver la transparence peut modifier les couleurs du thème."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -11307,6 +11307,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Type de miniatures à afficher à gauche."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Miniature icône"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Type de miniature pour l'icône dans la liste de lecture à afficher."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,

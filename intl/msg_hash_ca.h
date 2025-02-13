@@ -3359,10 +3359,6 @@ MSG_HASH(
    "Commuta el menú"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Canvia la visualització actual entre el menú i el contingut en execució."
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    "Combinació de botons del controlador per sortir de RetroArch."
    )
@@ -3425,10 +3421,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Fer pausa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Canvia entre estats de pausa i no pausa del contingut executat."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,

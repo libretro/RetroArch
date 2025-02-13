@@ -3739,10 +3739,6 @@ MSG_HASH(
    "Menü váltógomb"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "A menü és a futó tartalom megjelenítése közt vált."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Kontroller kombináció a kilépéshez"
    )
@@ -3817,10 +3813,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Szünet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Váltás a futó tartalom megállítása és továbbengedése közt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6097,10 +6089,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "Tartalom megállítása, amikor a menü aktív"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Megállítja az éppen futó tartalmat, ha a menü aktiválódik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8399,10 +8387,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Állapotüzenetek tartalmának formátuma"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "A futó tartalommal kapcsolatosan megosztott információk."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
@@ -9000,10 +8984,6 @@ MSG_HASH(
    "Folytatás"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "A futó tartalom folytatása és a gyorsmenü elhagyása."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Újraindítás"
    )
@@ -9014,10 +8994,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Tartalom bezárása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Az aktuális tartalom bezárása. Az el nem mentett változtatások elveszhetnek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9152,16 +9128,8 @@ MSG_HASH(
    "Mag beállításai"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "A futó tartalom beállításai."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Irányítás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "A futó tartalom irányításának változtatása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9784,10 +9752,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "A shader fájlok változásainak automatikus alkalmazása."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "A shader fájl változásainak észlelése. A lemezen található shaderbe mentett változtatások után ez automatikusan újra lesz fordítva és alkalmazva a futó tartalomra."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -11005,10 +10969,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "Átlátszóság"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Amikor a gyorsmenü aktív, a futó tartalom látszódik a háttérben. Az átlátszóság kikapcsolása módosíthatja a menü színösszeállítását."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,

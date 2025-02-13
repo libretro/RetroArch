@@ -3779,10 +3779,6 @@ MSG_HASH(
    "메뉴 열기/닫기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "실행중인 콘텐츠와 메뉴 사이를 전환합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "종료 (컨트롤러 버튼 조합)"
    )
@@ -3857,10 +3853,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "일시정지"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "콘텐츠의 일시정지를 설정/해제합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6153,10 +6145,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "메뉴 활성 시 콘텐츠 일시정지"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "RetroArch 메뉴가 활성화되면 실행중인 콘텐츠를 일시정지합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8455,10 +8443,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "고급 상태 표시 콘텐츠 형식"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "실행중인 콘텐츠에 대해 어떤 정보를 공유할지 결정합니다."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
@@ -9056,10 +9040,6 @@ MSG_HASH(
    "이어하기"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "빠른 메뉴를 종료하고 현재 실행 중인 콘텐츠를 이어합니다"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "다시 시작"
    )
@@ -9070,10 +9050,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "콘텐츠 종료"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "현재 콘텐츠를 종료합니다. 저장되지 않은 내용은 사라지게 됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9208,16 +9184,8 @@ MSG_HASH(
    "코어 옵션"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "현재 실행중인 콘텐츠의 옵션을 변경합니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "컨트롤"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "현재 실행중인 콘텐츠의 조작방법 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9848,10 +9816,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "디스크상의 셰이더 파일 변경을 자동으로 적용합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "셰이더 파일에서 변경 사항을 확인합니다. 셰이더 변경 사항을 디스크에 저장하면 자동으로 다시 컴파일되어 실행 중인 콘텐츠에 적용됩니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10993,10 +10957,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "투명도"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "빠른 메뉴 활성 시 실행 중인 컨텐츠를 배경 화면으로 표시합니다. 이 설정을 변경하면 테마 색상이 달라질 수 있습니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,

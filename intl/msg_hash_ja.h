@@ -3651,10 +3651,6 @@ MSG_HASH(
    "メニュー切り替え"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "現在の表示をメニューと実行中のコンテンツの間で切り替えます。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "終了 (コントローラー同時押し)"
    )
@@ -3729,10 +3725,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "一時停止"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "実行中のコンテンツの一時停止と非一時停止の状態を切り替えます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -5977,10 +5969,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "メニュー表示時にコンテンツを一時停止"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "メニューを表示している間、現在実行中のコンテンツを一時停止します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8263,10 +8251,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Rich Presence コンテンツ形式"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "実行中のコンテンツに関連する情報について、どのような情報を共有するかを決定します。"
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
@@ -8864,10 +8848,6 @@ MSG_HASH(
    "再開"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "クイックメニューを閉じて現在動作中のアプリを再開します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "再起動"
    )
@@ -8878,10 +8858,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "コンテンツを閉じる"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "現在のコンテンツを閉じます。すべての保存されていない設定は失われる可能性があります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9016,16 +8992,8 @@ MSG_HASH(
    "コアオプション"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "現在動作中のコンテンツのオプションを変更します。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "コントロール"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "現在動作中のコンテンツのコントロールを変更します。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9656,10 +9624,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "ディスク上のシェーダーファイルに加えられた変更を自動的に適用します。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "シェーダーファイルの新しい変更を監視します。シェーダーの変更をディスクに保存すると、自動的に再コンパイルされ実行中のコンテンツに適用されます。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10901,10 +10865,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "透明度"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "クイックメニューがアクティブな間、実行中のコンテンツの背景表示を有効にします。透明度を無効にするとテーマカラーが変わることがあります。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,

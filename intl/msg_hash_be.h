@@ -2937,6 +2937,10 @@ MSG_HASH(
    "Паскараць гук пры перамотцы наперад. Прадухіляе патрэскванне, але змяняе вышыню."
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   "Аўтаматычна адключаць гук пры выкарыстанні перамотцы назад."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    "Узмацненне гучнасці (дБ)"
    )
@@ -3756,7 +3760,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Пераключае паміж меню ды бягучым змесцівам на бягучым дысплэі."
+   "Пераключае бягучы дысплэй паміж меню ды змесцівам."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3836,7 +3840,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Прыпыняе ці аднаўляе бягучы кантэнт."
+   "Пераключае змесціва паміж станамі з прыпыненнем ды без."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6128,7 +6132,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Прыпыняць запушчаны кантэнт пры выкліку меню."
+   "Прыпыняць змесціва пры выкліку меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -7936,6 +7940,10 @@ MSG_HASH(
    "Дазволіць сканіраванне і даданне кантэнту ў плэйліст без устаноўленых сумяшчальных ядраў."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Сканаваць з праверкай CRC на магчымыя дублікаты"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "Часам серыйныя нумары выяў могуць дублявацца, у прыватнасці для гульняў PSP/PSN. Сканаванне толькі па серыйных нумарах можа прыводзіць да супастаўлення кантэнту з няправільнай сістэмай. Дадзеная опцыя дадае праверку CRC, якая адчувальна запавольвае сканаванне, але робіць яго[...]"
    )
@@ -8441,7 +8449,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Выбраць якая інфармацыя аб запушчаным кантэнце будзе перададзена."
+   "Выбраць, якія звесткі пра змесціва будуць перададзеныя."
    )
 
 MSG_HASH(
@@ -9041,7 +9049,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Закрыць хуткае меню і аднавіць бягучы кантэнт."
+   "Закрыць хуткае меню і аднавіць змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -9057,7 +9065,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Закрыць бягучае змесціва. Любыя незахаваныя змены могуць страціцца."
+   "Закрыць змесціва. Любыя незахаваныя змены могуць быць страчаныя."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9193,7 +9201,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Змяніць опцыі бягучага выканання змесціва."
+   "Змена опцый для змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -9201,7 +9209,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Змяніць кіраванне бягучым выкананнем змесціва."
+   "Змяніць кіраванне для змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9827,7 +9835,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Адсочваць змены ў файлах шэйдара. Пасля захавання змен шэйдара ў памяць, ён будзе аўтаматычна перакампіляваны і ўжыты да запушчанага кантэнту."
+   "Адсочваць змены ў файлах шэйдара. Пасля захавання змен шэйдара на дыск ён будзе аўтаматычна перакампіляваны і ўжыты да змесціва."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -11080,7 +11088,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Адлюстроўваць у фоне запушчаны кантэнт пры выкліку хуткага меню. Адключэнне празрыстасці можа змяніць колеры тэмы."
+   "Адлюстроўваць у фоне змесціва пры выкліку хуткага меню. Адключэнне празрыстасці можа змяніць колеры тэмы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -11379,6 +11387,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Тып мініяцюры для адлюстравання злева."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Значок мініяцюры"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Тып значка мініяцюры, які адлюстроўваецца ў плэй-лісце."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,

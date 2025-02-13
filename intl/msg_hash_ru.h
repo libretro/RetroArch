@@ -3784,7 +3784,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Переключает экран между отображением меню и запущенным контентом."
+   "Переключение между отображением меню и контентом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3864,7 +3864,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Приостанавливает или возобновляет текущий контент."
+   "Переключение между приостановкой и выполнением контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6160,7 +6160,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Приостанавливать запущенный контент при вызове меню."
+   "Приостанавливать контент при вызове меню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8481,7 +8481,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Выбор передаваемой информации о запущенном контенте."
+   "Выбор передаваемой информации о контенте."
    )
 
 MSG_HASH(
@@ -9081,7 +9081,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Закрыть быстрое меню и возобновить текущий контент."
+   "Закрыть быстрое меню и возобновить контент."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -9097,7 +9097,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Закрывает текущий контент. Несохранённые данные могут быть утеряны."
+   "Закрыть контент. Может привести к потере несохранённых данных."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9233,7 +9233,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Настройка опций для загруженного контента."
+   "Изменение настроек для контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -9241,7 +9241,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Настройка управления для текущего контента."
+   "Изменение управления для контента."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9867,7 +9867,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Отслеживать изменения в файлах шейдера. После сохранения изменений шейдера в память, он будет автоматически перекомпилирован и применён к запущенному контенту."
+   "Отслеживать изменения в файлах шейдера. При сохранении изменений шейдера в память он автоматически будет повторно скомпилирован и применён к контенту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -11096,7 +11096,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Отображать в фоне запущенный контент при вызове быстрого меню. Отключение прозрачности может изменить цвета темы."
+   "Включить отображение контента в фоне при вызове быстрого меню. Отключение прозрачности может влиять на цвета темы."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -11391,6 +11391,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Тип миниатюры для отображения слева."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Иконка миниатюр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Тип отображаемой в плейлистах иконки миниатюр."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,

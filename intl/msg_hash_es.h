@@ -3764,7 +3764,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Muestra el menú o el contenido en ejecución."
+   "Muestra el menú o el contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3844,7 +3844,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Pone el contenido en ejecución en pausa o la desactiva."
+   "Pausa o reanuda el contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6128,7 +6128,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Si el menú es activado, pausará el contenido que se esté ejecutando."
+   "Pausa el contenido si el menú está activo."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -7940,6 +7940,10 @@ MSG_HASH(
    "Permite escanear y añadir contenidos a una lista de reproducción sin que haya un núcleo compatible instalado."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Comprobar duplicados mediante sumas de verificación CRC"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "En ocasiones las ISO contienen números de serie duplicados, sobre todo los títulos de PSP/PSN. Al depender únicamente del número de serie, en ocasiones el buscador podría ubicar contenidos en el sistema equivocado. Esta opción añade una comprobación mediante sumas de verificación CRC, lo que ralentizará considerablemente la búsqueda, pero hará que sea más precisa."
    )
@@ -8441,7 +8445,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Decide la información que se compartirá de los contenidos que ejecutes."
+   "Decide la información que se compartirá de los contenidos."
    )
 
 MSG_HASH(
@@ -9041,7 +9045,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Reanuda el contenido ejecutado y abandona el menú rápido."
+   "Reanuda el contenido y abandona el menú rápido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
@@ -9057,7 +9061,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Cierra el contenido actual. Se perderá cualquier progreso no guardado."
+   "Cierra el contenido. Se perderá cualquier progreso no guardado."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9193,7 +9197,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Cambia las opciones del contenido cargado."
+   "Cambia las opciones del contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
@@ -9201,7 +9205,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Cambia los controles del contenido cargado."
+   "Cambia los controles del contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9823,7 +9827,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Busca cambios en los archivos de shaders. Una vez hayas guardado los cambios de un shader del disco, el shader se recompilará automáticamente y se aplicará al contenido ejecutado."
+   "Busca cambios en los archivos de shaders. Una vez hayas guardado los cambios de un shader del disco, el shader se recompilará automáticamente y se aplicará al contenido."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -11008,7 +11012,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Muestra el contenido ejecutado en el fondo del menú rápido. Desactivar la transparencia podría alterar los colores del tema."
+   "Muestra el contenido en el fondo del menú rápido. Desactivar la transparencia podría alterar los colores del tema."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
@@ -11331,6 +11335,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Indica el tipo de miniatura que se mostrará en la parte izquierda de la pantalla."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Miniatura de icono"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "El tipo de miniatura que se mostrará como icono de las listas de reproducción."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,

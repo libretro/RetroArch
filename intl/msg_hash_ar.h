@@ -2419,10 +2419,6 @@ MSG_HASH(
    "تبديل القائمة"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "تبديل العرض الحالي بين القائمة ومحتوى التشغيل."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    "خروج"
    )
@@ -2473,10 +2469,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
    "إرجاع"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "قم بتبديل المحتوى قيد التشغيل بين حالات الإيقاف المؤقت والوضع غير المؤقت."
    )
 
 MSG_HASH(
@@ -4716,10 +4708,6 @@ MSG_HASH(
    "استئناف"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "استأنف المحتوى قيد التشغيل حاليا و اترك القائمة السريعة."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "إعادة التشغيل"
    )
@@ -4792,16 +4780,8 @@ MSG_HASH(
    "الخيارات الأساسية"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "تغيير الإعدادات للمحتوى النشط حاليا."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "التحكم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "تغيير الإعدادات للمحتوى النشط حاليا."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,

@@ -3211,10 +3211,6 @@ MSG_HASH(
    "Visa/dölj meny"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Växlar den aktuella visningen mellan meny och innehåll som körs."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Avsluta (spelkontroll kombo)"
    )
@@ -3285,10 +3281,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Pausa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Växlar innehåll som körs mellan pausat och icke pausat läge."
    )
 
 MSG_HASH(
@@ -4833,10 +4825,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "Pausa innehåll när menyn är aktiv"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Pausa innehållet som körs för närvarande om menyn är aktiv."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6431,10 +6419,6 @@ MSG_HASH(
    "Dela din aktuella status i RetroArch på Steam."
    )
 
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Bestäm vilken information relaterad till innehållet som körs som ska delas."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
@@ -6928,10 +6912,6 @@ MSG_HASH(
    "Återuppta"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Återupptar det pågående innehållet och lämnar Snabbmenyn."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Starta om"
    )
@@ -6942,10 +6922,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Stäng Innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Stäng det aktuella innehållet. Eventuella osparade ändringar kan gå förlorade."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,

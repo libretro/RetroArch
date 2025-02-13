@@ -1636,7 +1636,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Enable background display of running content while Quick Menu is active. Disabling transparency may alter theme colours."
+   "Enable background display of content while Quick Menu is active. Disabling transparency may alter theme colours."
    )
 
 /* RGUI: Settings Options */

@@ -2616,10 +2616,6 @@ MSG_HASH(
    "Siguir"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Sigue col conteníu n'execución y cola del menú rápidu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Zarrar el conteníu"
    )

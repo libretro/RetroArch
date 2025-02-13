@@ -3668,7 +3668,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Wechselt die aktuelle Anzeige zwischen dem Menü und dem laufenden Inhalt."
+   "Schaltet die aktuelle Anzeige zwischen Menü und Inhalt um."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
@@ -3744,7 +3744,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Schaltet den Inhalt zwischen pausierten und nicht-pausierten Zuständen um."
+   "Schaltet den Inhalt zwischen pausiert und nicht-pausiert um."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6016,7 +6016,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Den aktuell laufenden Inhalt pausieren, wenn das Menü aktiv ist."
+   "Pausiert den Inhalt, wenn das Menü aktiv ist."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8281,7 +8281,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Entscheiden, welche Informationen zum laufenden Inhalt geteilt werden."
+   "Festlegen, welche Informationen über den Inhalt geteilt werden sollen."
    )
 
 MSG_HASH(
@@ -8868,10 +8868,6 @@ MSG_HASH(
    "Fortsetzen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Das Schnellmenü verlassen und den aktuellen Inhalt fortsetzen."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Neu starten"
    )
@@ -8882,10 +8878,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Schließen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Den aktuellen Inhalt schließen. Nicht gespeicherte Änderungen können verloren gehen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9020,16 +9012,8 @@ MSG_HASH(
    "Core-Einstellungen"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Die Einstellungen für die aktuell laufende Anwendung ändern."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Steuerung"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Die Steuerung für den aktuell laufenden Inhalt ändern."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -9632,10 +9616,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "Änderungen an Shader-Dateien auf dem Datenträger automatisch übernehmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Shaderdateien auf Änderungen überwachen. Nach dem Speichern von Änderungen an einem Shader wird dieser automatisch neu kompiliert und auf den laufenden Inhalt angewendet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10819,10 +10799,6 @@ MSG_HASH(
    "Transparenz"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Laufende Inhalte im Hintergrund anzeigen, während das Schnellmenü aktiv ist. Das Deaktivieren der Transparenz kann die Farben des Designs verändern."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Schatteneffekte"
    )
@@ -11111,6 +11087,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Art des Vorschaubildes, das auf der linken Seite gezeigt werden soll."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Symbolminiaturbild"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Art des anzuzeigenden Miniaturbildes für die Wiedergabeliste."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,

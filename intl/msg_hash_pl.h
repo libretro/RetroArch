@@ -3443,10 +3443,6 @@ MSG_HASH(
    "Przełączanie menu"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Przełącza bieżący wyświetlacz pomiędzy menu i uruchomioną treścią."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Wyjście (Kontroler Combo)"
    )
@@ -3517,10 +3513,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Pauza"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Przełącza uruchomioną zawartość pomiędzy stanami wstrzymanymi i niewstrzymanymi."
    )
 
 MSG_HASH(
@@ -5361,10 +5353,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "Wstrzymaj zawartość, gdy Menu jest aktywne"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Zatrzymaj aktualnie uruchomioną zawartość, jeśli menu jest aktywne."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -7984,10 +7972,6 @@ MSG_HASH(
    "Wznów zawartość"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Wznów aktualnie uruchomioną zawartość i opuść szybkie menu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Uruchom ponownie"
    )
@@ -7998,10 +7982,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Zamknij zawartość"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Zamknij bieżącą zawartość. Wszelkie niezapisane zmiany mogą zostać utracone."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -8120,16 +8100,8 @@ MSG_HASH(
    "Opcje rdzenia"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Zmień opcje aktualnie wyświetlanej treści."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Elementy sterujące"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Zmień elementy sterujące dla aktualnie uruchomionej zawartości."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9711,10 +9683,6 @@ MSG_HASH(
    "Wybierz predefiniowany motyw menu z przeglądarki plików."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Włącz wyświetlanie w tle uruchomionych treści, gdy szybkie menu jest aktywne. Wyłączenie przezroczystości może zmienić kolory motywu."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Efekty cienia"
    )
@@ -10003,6 +9971,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Typ miniatury do wyświetlenia po lewej stronie."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Miniatura ikony"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Typ miniatury ikony listy odtwarzania do wyświetlenia."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,

@@ -3747,10 +3747,6 @@ MSG_HASH(
    "Menüyü Değiştir"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Mevcut ekranı menü ve çalışan içerik arasında değiştirir."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Çık (Kontrolcü Kombinasyonu)"
    )
@@ -3825,10 +3821,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Duraklat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Çalışan içeriği duraklatılmış ve duraklatılmamış durumlar arasında değiştirir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -6113,10 +6105,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "Menü Etkinken İçeriği Duraklat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Menü etkinse, o anda çalışan içeriği duraklatın."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -8419,10 +8407,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Gelişmiş Durum İçeriği Biçimi"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Çalışan içerikle ilgili hangi bilgilerin paylaşılacağına karar verin."
-   )
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
@@ -9020,10 +9004,6 @@ MSG_HASH(
    "Devam"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Çalışan içeriği devam ettirip Hızlı Menüden çıkın."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Yeniden Başlat"
    )
@@ -9034,10 +9014,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "İçeriği Kapat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Mevcut içeriği kapatın. Kaydedilmemiş tüm değişiklikler kaybolabilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9172,16 +9148,8 @@ MSG_HASH(
    "Çekirdek Seçenekleri"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Çalışan içeriğin seçeneklerini değiştirin."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Kontrolcüler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Çalışan içerik için kontrolcüleri değiştirin."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9808,10 +9776,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "Diskteki gölgelendirici dosyalarında yapılan değişiklikleri otomatik olarak uygulayın."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Yeni değişiklikler için gölgelendirici dosyalarını izleyin. Değişiklikleri diskteki gölgelendiriciye kaydettikten sonra, otomatik olarak yeniden derlenecek ve çalışan içeriğe uygulanacaktır."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -11021,10 +10985,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "Şeffaflık"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Hızlı Menü etkinken çalışan içeriğin arka planda görüntülenmesini etkinleştirin. Şeffaflığın devre dışı bırakılması tema renklerini değiştirebilir."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
