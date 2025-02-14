@@ -8868,6 +8868,10 @@ MSG_HASH(
    "Fortsetzen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
+   "Den Inhalt fortsetzen und das Schnellmenü verlassen."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Neu starten"
    )
@@ -8878,6 +8882,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Schließen"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+   "Den Inhalt schließen. Alle nicht gespeicherte Änderungen können verloren gehen."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9012,8 +9020,16 @@ MSG_HASH(
    "Core-Einstellungen"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+   "Die Optionen für den Inhalt ändern."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Steuerung"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+   "Die Steuerung für den Inhalt ändern."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
@@ -9616,6 +9632,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "Änderungen an Shader-Dateien auf dem Datenträger automatisch übernehmen."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "Shaderdateien auf neue Änderungen beobachten. Nach dem Speichern von Änderungen an einem Shader auf den Datenträger, wird dieser automatisch neu kompiliert und auf den Inhalt angewendet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10797,6 +10817,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    "Transparenz"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Die Hintergrundanzeige des Inhalts aktivieren, wenn das Schnellmenü aktiv ist. Das Deaktivieren der Transparenz kann die Farben des Themas verändern."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
