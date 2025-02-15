@@ -560,6 +560,9 @@ midi_driver_t *midi_drivers[]   = {
 #ifdef HAVE_WINMM
    &midi_winmm,
 #endif
+#ifdef HAVE_COREMIDI
+   &midi_coremidi,
+#endif
    &midi_null
 };
 

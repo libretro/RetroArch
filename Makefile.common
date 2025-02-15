@@ -982,6 +982,12 @@ ifeq ($(HAVE_WINMM), 1)
    LIBS += -lwinmm
 endif
 
+ifeq ($(HAVE_COREMIDI), 1)
+   OBJ += midi/drivers/coremidi.o
+   DEFINES += -DHAVE_COREMIDI
+   LIBS += -framework CoreMIDI
+endif
+
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)

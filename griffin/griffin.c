@@ -961,6 +961,10 @@ MIDI
 #include "../midi/drivers/winmm_midi.c"
 #endif
 
+#ifdef HAVE_COREMIDI
+#include "../midi/drivers/coremidi.c"
+#endif
+
 /*============================================================
 DRIVERS
 ============================================================ */
