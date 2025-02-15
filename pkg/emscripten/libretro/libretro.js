@@ -120,17 +120,6 @@ function preLoadingComplete() {
    });
 }
 
-function loadIndex(index, path) {
-  for (const key of Object.keys(index)) {
-    if (index[key]) {
-      Module.FS.mkdirTree(path+key+"/");
-      loadIndex(index[key], path+key+"/");
-    } else {
-      Module.FS.open(path+key, "w+");
-    }
-  }
-}
-
 async function setupZipFS(zipBuf) {
   async function writeFile(path, data) {
     const dir_end = path.lastIndexOf("/");
