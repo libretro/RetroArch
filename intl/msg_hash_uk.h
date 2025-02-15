@@ -6476,6 +6476,14 @@ MSG_HASH(
    "Показати списки відтворення в головному меню. Ігнорується в GLUI, якщо ввімкнено вкладки списку відтворення та навігаційну панель."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
+   "Показати вкладки списку відтворення"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
+   "Показати вкладки списку відтворення. Не впливає на RGUI. Панель навігації має бути ввімкнена в GLUI. (Потрібен перезапуск Ozone/XMB)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
    "Показати 'Explore'"
    )
@@ -7896,6 +7904,10 @@ MSG_HASH(
    "Дозволити вмісту для сканування і додавання до списку відтворення без ядра підтримується його."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   "Сканування перевіряє CRC на можливі дублікати"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "Іноді ISOs дублюють серіали, особливо з заголовками PSP/PSN. Повираючись виключно на серійний комп'ютер, іноді може призвести до того, що сканер вміщує неправильну систему. Це додає перевірку CRC, яка значно уповільнює сканування, але може бути більш точною."
    )
@@ -8406,6 +8418,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Формат вмісту Rich Presence"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
+   "Вирішіть, яку інформацію, пов’язану з вмістом, буде надано."
    )
 
 MSG_HASH(
@@ -9004,6 +9020,10 @@ MSG_HASH(
    "Продовжити"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
+   "Відновити вміст і вийти зі швидкого меню."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Перезапустити"
    )
@@ -9014,6 +9034,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Закрити вміст"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+   "Закрийте вміст. Усі незбережені зміни можуть бути втрачені."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9148,8 +9172,16 @@ MSG_HASH(
    "Параметри Ядра"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+   "Змініть параметри вмісту."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Управління"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+   "Змініть елементи керування вмістом."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9772,6 +9804,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
    "Автоматично застосовувати зміни, внесені до файлів форматування на диску."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   "Слідкуйте за новими змінами у файлах шейдерів. Після збереження змін шейдера на диску його буде автоматично перекомпільовано та застосовано до вмісту."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
@@ -10987,6 +11023,10 @@ MSG_HASH(
    "Прозорість"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   "Увімкнути фонове відображення вмісту під час активного швидкого меню. Вимкнення прозорості може змінити кольори теми."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Ефект тіні"
    )
@@ -11359,6 +11399,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    "Тип ескізу для відображення вліво."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Мініатюра значка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Тип мініатюри значка списку відтворення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,

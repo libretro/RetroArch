@@ -2929,12 +2929,24 @@ MSG_HASH(
    "Адключыць увесь гук у бясшумным рэжыме."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   "Перамотка наперад з адключаным гукам"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Аўтаматычна адключаць гук пры выкарыстанні перамотцы наперад."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   "Перамотка наперад з паскораным гукам"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    "Паскараць гук пры перамотцы наперад. Прадухіляе патрэскванне, але змяняе вышыню."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   "Перамотка назад з адключанымі гукам"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
@@ -6492,6 +6504,10 @@ MSG_HASH(
    "Паказ 'Плэй-лісты'"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
+   "Паказваць плэй-лісты ў галоўным меню. Ігнаруецца ў GLUI, калі ўключаныя карткі плэй-лістоў ды панэлі навігацыі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
    "Паказ картак плэй-лістоў"
    )
@@ -7083,11 +7099,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Запамінаць выбар пры змене ўкладак"
+   "Запамінаць выбар пры змене картак"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Запамінаць пазіцыю курсора на ўкладках. RGUI не мае ўкладак, але Плэйлісты і Налады паводзяць сябе як такія."
+   "Запамінаць пазіцыю курсора ў картках. RGUI не мае картак, але плэй-лісты ды налады паводзяць сябе гэтаксама."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
@@ -11418,7 +11434,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-   "Эфект анімацыі пры пераключэнні ўкладак."
+   "Эфект анімацыі пры прагортцы картак."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
