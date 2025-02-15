@@ -93,7 +93,9 @@ static void gfx_ctx_emscripten_webgl_check_window(void *data, bool *quit,
 
 static void gfx_ctx_emscripten_webgl_swap_buffers(void *data)
 {
+#ifdef USE_OFFSCREENCANVAS
    emscripten_webgl_commit_frame();
+#endif
 }
 
 static void gfx_ctx_emscripten_webgl_get_video_size(void *data,
@@ -136,7 +138,11 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
    attrs.majorVersion = 2;
    attrs.minorVersion = 0;
    attrs.enableExtensionsByDefault = true;
+#ifdef USE_OFFSCREENCANVAS
    attrs.explicitSwapControl = true;
+#else
+   attrs.explicitSwapControl = false;
+#endif
    attrs.renderViaOffscreenBackBuffer = false;
    attrs.proxyContextToMainThread = EMSCRIPTEN_WEBGL_CONTEXT_PROXY_DISALLOW;
 

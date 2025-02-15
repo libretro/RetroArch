@@ -155,7 +155,11 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
             return false;
 
          /* Must sleep as there is no proper blocking method. */
+#ifdef PROXY_TO_PTHREAD
          retro_sleep(1);
+#else
+         return false;
+#endif
       }
    }
 

@@ -113,13 +113,18 @@ ifeq ($(HAVE_WASMFS), 1)
 endif
 
 ifeq ($(HAVE_WORKER), 1)
-   LIBS += -s PROXY_TO_PTHREAD -s USE_ES6_IMPORT_META=0 -sENVIRONMENT=worker,web
+   LIBS += -s USE_ES6_IMPORT_META=0 -sENVIRONMENT=worker,web
 else 
    ifeq ($(HAVE_AL), 1)
      override ASYNC = 1
    endif
 endif
 
+ifeq ($(PROXY_TO_PTHREAD),1)
+   LIBS += -sPROXY_TO_PTHREAD -sOFFSCREENCANVAS_SUPPORT
+   DEFINES += -DUSE_OFFSCREENCANVAS=1 -DPROXY_TO_PTHREAD=1
+endif
+   
 ifeq ($(HAVE_SDL2), 1)
    LIBS += -s USE_SDL=2
    DEFINES += -DHAVE_SDL2
@@ -131,9 +136,9 @@ LDFLAGS := -L. --no-heap-copy -s STACK_SIZE=$(STACK_SIZE) -s INITIAL_MEMORY=$(IN
            -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_FUNCTIONS="$(EXPORTED_FUNCTIONS)" \
            -s MODULARIZE=1 -s EXPORT_ES6=1 -s EXPORT_NAME="libretro_$(subst -,_,$(LIBRETRO))" \
            -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 \
-           -s OFFSCREENCANVAS_SUPPORT \
            --extern-pre-js emscripten/pre.js \
            --js-library emscripten/library_rwebcam.js \
+           -gsource-map -g2 \
            --js-library emscripten/library_platform_emscripten.js
 
 ifeq ($(HAVE_OPENGLES), 1)
