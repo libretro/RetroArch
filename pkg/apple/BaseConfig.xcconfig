@@ -92,6 +92,7 @@ OTHER_CFLAGS[arch=arm64*] = $(inherited) -D__ARM_NEON__ -DHAVE_NEON
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DGL_SILENCE_DEPRECATION
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COMMAND
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREAUDIO3
+OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DISCORD
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DYLIB
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_GETOPT_LONG
@@ -122,6 +123,7 @@ OTHER_CFLAGS[sdk=iphonesimulator*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE)
 OTHER_CFLAGS[sdk=appletvos*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE)
 OTHER_CFLAGS[sdk=appletvsimulator*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE)
 
+OTHER_CFLAGS_IOS = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_COREMOTION
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_IOS_CUSTOMKEYBOARD
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_IOS_SWIFT
