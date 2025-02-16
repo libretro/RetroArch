@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../command.h"
 #include "../../location_driver.h"
 #include "../../retroarch.h"
 
@@ -140,9 +141,7 @@ static void android_location_stop(void *data)
       return;
 
    settings_t* settings = config_get_ptr();
-   bool auto_save_state = settings->bools.auto_save_state;
-
-   if (auto_save_state)
+   if (settings->bools.auto_save_state)
    {
       /* Make a save state */
       command_event(CMD_EVENT_SAVE_STATE, NULL);
