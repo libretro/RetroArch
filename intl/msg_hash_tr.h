@@ -11309,6 +11309,14 @@ MSG_HASH(
    "Solda görüntülenecek küçük resim türü."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Simge Küçük Resim"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   "Görüntülenecek oynatma listesi simgesi küçük resminin türü."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Dinamik Arkaplan"
    )
