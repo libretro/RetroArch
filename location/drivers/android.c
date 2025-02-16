@@ -140,6 +140,7 @@ static void android_location_stop(void *data)
    if (!androidlocation || !env)
       return;
 
+#if 0
    settings_t* settings = config_get_ptr();
    if (settings->bools.auto_save_state)
    {
@@ -149,13 +150,10 @@ static void android_location_stop(void *data)
       /* Flush the auto save state to disk */
       command_event(CMD_EVENT_AUTOSAVE_DELETE, NULL);
    }
+#endif
 
-   /* Flush SRAM to disk */
    command_event(CMD_EVENT_SAVE_FILES, NULL);
 
-   /* TODO: Save config? */
-
-   /* Stop the location service */
    struct android_app *android_app = (struct android_app*)g_android;
    CALL_VOID_METHOD(env, android_app->activity->clazz,
          androidlocation->onLocationStop);
