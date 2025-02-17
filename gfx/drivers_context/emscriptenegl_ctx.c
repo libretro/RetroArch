@@ -70,11 +70,10 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
    gfx_ctx_emscripten_get_canvas_size(&input_width, &input_height);
-
+   *resize = (emscripten->fb_width != input_width || emscripten->fb_height != input_height);
    *width  = emscripten->fb_width  = (unsigned)input_width;
    *height = emscripten->fb_height = (unsigned)input_height;
    *quit   = false;
-   *resize = false;
 }
 
 static void gfx_ctx_emscripten_swap_buffers(void *data)
@@ -94,9 +93,10 @@ static void gfx_ctx_emscripten_get_video_size(void *data,
 
    if (!emscripten)
       return;
-
-   *width  = emscripten->fb_width;
-   *height = emscripten->fb_height;
+   int w, h;
+   gfx_ctx_emscripten_get_canvas_size(&w, &h);
+   *width = w;
+   *height = h;
 }
 
 static bool gfx_ctx_emscripten_get_metrics(void *data,

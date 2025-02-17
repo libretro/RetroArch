@@ -60,14 +60,13 @@ void PlatformEmscriptenWatchCanvasSize(void) {
          var h = Module.canvas.height;
          if (w == 0 || h == 0 || width == 0 || height == 0) { return; }
          /* Module.print("Setting real canvas size: " + width + " x " + height); */
-         if (Module.canvas.controlTransferredOffscreen) {
-            var new_w = `${width}px`;
-            var new_h = `${height}px`;
-            if (Module.canvas.style.width != new_w || Module.canvas.style.height != new_h) {
-               Module.canvas.style.width = new_w;
-               Module.canvas.style.height = new_h;
-            }
-         } else {
+         var new_w = `${width}px`;
+         var new_h = `${height}px`;
+         if (Module.canvas.style.width != new_w || Module.canvas.style.height != new_h) {
+            Module.canvas.style.width = new_w;
+            Module.canvas.style.height = new_h;
+         }
+         if (!Module.canvas.controlTransferredOffscreen) {
             Module.Browser.setCanvasSize(width, height);
          }
       });
