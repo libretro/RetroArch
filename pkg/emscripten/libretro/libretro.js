@@ -236,7 +236,7 @@ function selectFiles(files) {
 
 function uploadData(data, name) {
    Module.FS.mkdirTree("/home/web_user/retroarch/userdata/content");
-   Module.FS.writeFile('/home/web_user/retroarch/userdata/content/'+name, data);
+   Module.FS.writeFile('/home/web_user/retroarch/userdata/content/'+name, new Uint8Array(data));
 }
 
 function switchCore(corename) {
