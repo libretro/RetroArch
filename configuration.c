@@ -746,6 +746,8 @@ static const enum wifi_driver_enum WIFI_DEFAULT_DRIVER = WIFI_NULL;
 
 #if defined(ANDROID)
 static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_ANDROID;
+#elif defined(HAVE_CORELOCATION)
+static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_CORELOCATION;
 #else
 static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 #endif
