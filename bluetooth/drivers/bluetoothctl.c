@@ -225,8 +225,14 @@ static bool bluetoothctl_remove_device(void *data, unsigned idx)
    string_list_free(list);
 
    snprintf(btctl->command, sizeof(btctl->command), "\
-         echo -e \"disconnect %s\\nremove %s\\n\" | bluetoothctl",
-         device, device);
+         bluetoothctl -- disconnect %s",
+         device);
+
+   pclose(popen(btctl->command, "r"));
+
+   snprintf(btctl->command, sizeof(btctl->command), "\
+         bluetoothctl -- remove %s",
+         device);
 
    pclose(popen(btctl->command, "r"));
 
