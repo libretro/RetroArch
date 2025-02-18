@@ -33,6 +33,9 @@ var Module = {
    },
    preRun: [
       function(module) {
+         Module.ENV['OPFS'] = "/home/web_user/retroarch";
+      },
+      function(module) {
          function stdin() {
             // Return ASCII code of character, or null if no input
             while (module.message_queue.length > 0) {
@@ -105,7 +108,7 @@ function appInitialized()
   /* Need to wait for the wasm runtime to load before enabling the Run button. */
   if (retroarch_ready && filesystem_ready)
   {
-    setupFileSystem().then(() => { preLoadingComplete(); });
+    preLoadingComplete();
   }
  }
 
@@ -121,12 +124,6 @@ function preLoadingComplete() {
       startRetroArch();
       return false;
    });
-}
-
-async function setupFileSystem()
-{
-  Module.FS.mkdirTree("/home/web_user/retroarch/");
-  Module.FS.mount(Module.OPFS, {}, "/home/web_user/retroarch");
 }
 
 // Retrieve the value of the given GET parameter.

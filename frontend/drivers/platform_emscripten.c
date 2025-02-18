@@ -17,7 +17,11 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#include <emscripten/wasmfs.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include <file/config_file.h>
 #include <queues/task_queue.h>
@@ -293,6 +297,79 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 #endif
 }
 
+void PlatformEmscriptenMountFilesystems() {
+   char *opfs_mount = getenv("OPFS");
+   char *fetch_manifest = getenv("FETCH_MANIFEST");
+   printf("[Emscripten] Mount vars: %s %s\n", opfs_mount, fetch_manifest);
+
+   if(opfs_mount) {
+      int res;
+      backend_t opfs = wasmfs_create_opfs_backend();
+      printf("[OPFS] Mount OPFS at %s\n", opfs_mount);
+      {
+         char *parent = strdup(opfs_mount);
+         path_parent_dir(parent, strlen(parent));
+         printf("mkdir %s\n", parent);
+         if(!path_mkdir(parent)) {
+            printf("mkdir error %d\n",errno);
+            abort();
+         }
+         free(parent);
+      }
+      res = wasmfs_create_directory(opfs_mount, 0777, opfs);
+      if(res) {
+         printf("[OPFS] error result %d\n",res);
+         if(errno) {
+            printf("[OPFS] errno %d\n",errno);
+            abort();
+         }
+         abort();
+      }
+   }
+   if(fetch_manifest) {
+      /* fetch_manifest should be a path to a manifest file.
+         manifest files have this format:
+
+         URL PATH
+         URL PATH
+         URL PATH
+         ...
+
+         Where URL may not contain spaces, but PATH may.
+       */
+      int max_line_len = 1024;
+      FILE *file = fopen(fetch_manifest, O_RDONLY);
+      char *line = calloc(sizeof(char), max_line_len);
+      size_t len = 0;
+      while (getline(&line, &len, file) != -1) {
+         char *path = strstr(line, " ");
+         backend_t fetch;
+         int fd;
+         if (!path) {
+            printf("Manifest file has invalid line %s\n",line);
+            return;
+         }
+         *path = '\0';
+         path += 1;
+         printf("Fetch %s from %s\n", path, line);
+         {
+            char *parent = strdup(path);
+            path_parent_dir(parent, strlen(parent));
+            if(!path_mkdir(parent)) {
+               printf("mkdir error %d\n",errno);
+               abort();
+            }
+            free(parent);
+         }
+         fetch = wasmfs_create_fetch_backend(line, 8*1024*1024);
+         fd = wasmfs_create_file(path, 0777, fetch);
+         close(fd);
+      }
+      fclose(file);
+      free(line);
+   }
+}
+
 static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
@@ -327,7 +404,8 @@ int main(int argc, char *argv[])
 {
    PlatformEmscriptenWatchCanvasSize();
    PlatformEmscriptenPowerStateInit();
-
+   PlatformEmscriptenMountFilesystems();
+   
    emscripten_set_canvas_element_size("#canvas", 800, 600);
    emscripten_set_element_css_size("#canvas", 800.0, 600.0);
    emscripten_set_main_loop(emscripten_mainloop, 0, 0);
