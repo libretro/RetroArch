@@ -47,9 +47,16 @@
 }
 
 - (void)requestAuthorization {
-    if (_locationManager.authorizationStatus == kCLAuthorizationStatusNotDetermined) {
+    CLAuthorizationStatus status;
+    if (@available(macOS 11.0, iOS 14.0, tvOS 14.0, *))
+        status = [_locationManager authorizationStatus];
+    else
+        status = [CLLocationManager authorizationStatus];
+
+    if (status == kCLAuthorizationStatusNotDetermined)
         [_locationManager requestWhenInUseAuthorization];
-    }
+    else
+        [self locationManager:_locationManager didChangeAuthorizationStatus:status];
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray<CLLocation *> *)locations {
@@ -64,8 +71,18 @@
 }
 
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
-    self.authorized = (status == kCLAuthorizationStatusAuthorizedWhenInUse ||
-                      status == kCLAuthorizationStatusAuthorizedAlways);
+#if TARGET_OS_OSX
+    if (@available(macOS 10.12, *))
+        self.authorized = (status == kCLAuthorizationStatusAuthorizedAlways);
+#elif TARGET_OS_IPHONE
+    if (@available(iOS 8.0, tvOS 9.0, *))
+        self.authorized = (status == kCLAuthorizationStatusAuthorizedWhenInUse ||
+                           status == kCLAuthorizationStatusAuthorizedAlways);
+#endif
+#if !TARGET_OS_TV
+    if (self.authorized)
+        [_locationManager startUpdatingLocation];
+#endif
 }
 
 @end
@@ -118,8 +135,14 @@ static bool corelocation_get_position(void *data, double *lat, double *lon,
     if (!corelocation || !corelocation->manager.authorized)
         return false;
 
+#if TARGET_OS_TV
+    CLLocation *location = [corelocation->manager.locationManager location];
+    *lat = location.coordinate.latitude;
+    *lon = location.coordinate.longitude;
+#else
     *lat = corelocation->manager.latitude;
     *lon = corelocation->manager.longitude;
+#endif
     *horiz_accuracy = 0.0; // CoreLocation doesn't provide this directly
     *vert_accuracy = 0.0;  // CoreLocation doesn't provide this directly
     return true;

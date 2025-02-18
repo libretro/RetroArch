@@ -69,6 +69,9 @@
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		075650252C488918004C5E7E /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075650242C488918004C5E7E /* CloudKit.framework */; };
+		076512622D64E99200E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
+		076512632D64E99A00E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
+		076512642D64E9A000E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
 		076E640C2BF30A7A00681536 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
 		076E640D2BF30A9200681536 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		076E640E2BF30AA200681536 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
@@ -454,6 +457,7 @@
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		075650242C488918004C5E7E /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		075650262C48B417004C5E7E /* RetroArchCI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchCI.entitlements; sourceTree = "<group>"; };
+		076512612D64E99200E1F6BE /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
 		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
@@ -529,6 +533,7 @@
 				0720995429B1258C001642BB /* MetalKit.framework in Frameworks */,
 				0720995529B1258C001642BB /* libz.dylib in Frameworks */,
 				070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */,
+				076512642D64E9A000E1F6BE /* CoreLocation.framework in Frameworks */,
 				0720995629B1258C001642BB /* CoreAudio.framework in Frameworks */,
 				0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */,
 				0720995829B1258C001642BB /* AppKit.framework in Frameworks */,
@@ -552,6 +557,7 @@
 				07097FFC2D60F4D00021608F /* CoreMIDI.framework in Frameworks */,
 				07F2BBDD2BE83A4700FD1295 /* libz.dylib in Frameworks */,
 				07F2BBDE2BE83A4700FD1295 /* OpenAL.framework in Frameworks */,
+				076512632D64E99A00E1F6BE /* CoreLocation.framework in Frameworks */,
 				07F2BBDF2BE83A4700FD1295 /* CoreAudio.framework in Frameworks */,
 				07F2BBE02BE83A4700FD1295 /* AudioUnit.framework in Frameworks */,
 				07D851CD2CAF06E2005097EA /* CloudKit.framework in Frameworks */,
@@ -576,6 +582,7 @@
 				075650252C488918004C5E7E /* CloudKit.framework in Frameworks */,
 				5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */,
 				070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */,
+				076512622D64E99200E1F6BE /* CoreLocation.framework in Frameworks */,
 				84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */,
 				84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */,
 				84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */,
@@ -1252,6 +1259,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				076512612D64E99200E1F6BE /* CoreLocation.framework */,
 				07097FFA2D60F4C80021608F /* CoreMIDI.framework */,
 				075650242C488918004C5E7E /* CloudKit.framework */,
 				070A883F2A4E7A1B003161C0 /* OpenAL.framework */,

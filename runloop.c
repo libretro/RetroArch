@@ -2550,7 +2550,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (sys_info)
             sys_info->location_cb        = *cb;
 
-         loc_st->active                  = false;
+         loc_st->active                  = true;
          break;
       }
 

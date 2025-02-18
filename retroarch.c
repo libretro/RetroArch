@@ -481,6 +481,9 @@ static bool init_location(
       const char *loc_drv,
       bool verbosity_enabled)
 {
+   if (!location_st->driver || !location_st->driver->init)
+      return false;
+
    /* Resource leaks will follow if location
       interface is initialized twice. */
    if (!location_st->data)

@@ -92,6 +92,8 @@
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>RetroArch uses the local network to find local Netplay participants.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Some cores can use location.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Some cores are able to provide microphone input to games.</string>
 	<key>NSUserActivityTypes</key>
