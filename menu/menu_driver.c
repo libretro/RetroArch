@@ -7977,39 +7977,26 @@ size_t menu_update_fullscreen_thumbnail_label(
    /* > State slot label */
    else if (   is_quick_menu
             && (
-               string_is_equal(selected_entry.label, "state_slot")
-            || string_is_equal(selected_entry.label, "loadstate")
-            || string_is_equal(selected_entry.label, "savestate")
+               string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+            || string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_STATE))
+            || string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_SAVE_STATE))
                )
            )
    {
-      size_t _len = strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
+      int slot    = config_get_ptr()->ints.state_slot;
+      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
             len);
-      _len += snprintf(s + _len, len - _len, " %d",
-            config_get_ptr()->ints.state_slot);
-      return _len;
-   }
-   else if (   is_quick_menu
-            && (
-               string_is_equal(selected_entry.label, "replay_slot")
-            || string_is_equal(selected_entry.label, "record_replay")
-            || string_is_equal(selected_entry.label, "play_replay")
-            || string_is_equal(selected_entry.label, "halt_replay")
-         ))
-   {
-      size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REPLAY_SLOT),
-            len);
-      _len += snprintf(s + _len, len - _len, " %d",
-               config_get_ptr()->ints.replay_slot);
+      if (slot < 0)
+         _len += snprintf(s + _len, len - _len, " %s", "Auto");
+      else
+         _len += snprintf(s + _len, len - _len, " %d", slot);
       return _len;
    }
    else if (string_to_unsigned(selected_entry.label) == MENU_ENUM_LABEL_STATE_SLOT)
    {
       size_t _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_STATE_SLOT),
             len);
-      _len += snprintf(s + _len, len - _len, " %d",
-            string_to_unsigned(selected_entry.path));
+      _len += snprintf(s + _len, len - _len, " %s", selected_entry.path);
       return _len;
    }
    /* > Quick Menu playlist label */

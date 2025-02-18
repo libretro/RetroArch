@@ -35,7 +35,7 @@
 
 #include "../tasks/tasks_internal.h"
 
-#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  83.333333f
+#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
 
 /* Utility structure, sent as userdata when pushing
@@ -884,6 +884,16 @@ void gfx_thumbnail_get_draw_dimensions(
 
       if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+   }
+
+   /* Final overwidth check */
+   if (*draw_width > width)
+   {
+      *draw_width  = (float)width;
+      *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+
+      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
+         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
    }
 
    /* Account for scale factor
