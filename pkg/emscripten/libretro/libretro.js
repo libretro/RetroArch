@@ -4,6 +4,7 @@
  * This provides the basic JavaScript for the RetroArch web player.
  */
 
+var filesystem_ready = false;
 var retroarch_ready = false;
 var setImmediate;
 
@@ -92,15 +93,17 @@ var Module = {
 async function cleanupStorage()
 {
   localStorage.clear();
-  let storage = await navigator.storage.getDirectory();
-  await storage.remove({recursive: true});
+  const root = await navigator.storage.getDirectory();
+  for await (const handle of root.values()) {
+    await root.removeEntry(handle.name, {recursive: true});
+  }
   document.getElementById("btnClean").disabled = true;
 }
 
 function appInitialized()
 {
   /* Need to wait for the wasm runtime to load before enabling the Run button. */
-  if (retroarch_ready)
+  if (retroarch_ready && filesystem_ready)
   {
     setupFileSystem().then(() => { preLoadingComplete(); });
   }
@@ -120,58 +123,8 @@ function preLoadingComplete() {
    });
 }
 
-async function setupZipFS(zipBuf) {
-  async function writeFile(path, data) {
-    const dir_end = path.lastIndexOf("/");
-    const parent = path.substr(0, dir_end);
-    const child = path.substr(dir_end+1);
-    const parent_dir = await mkdirTree(parent);
-    //console.log("about to create", parent, "/", child);
-    const file = await parent_dir.getFileHandle(child,{create:true});
-    const stream = await file.createWritable();
-    await stream.write(data);
-    await stream.close();
-  }
-  async function mkdirTree(path) {
-    const parts = path.split("/");
-    let here = root;
-    for (const part of parts) {
-      if (part == "") { continue; }
-      here = await here.getDirectoryHandle(part, {create:true});
-    }
-    return here;
-  }
-  const root = await navigator.storage.getDirectory();
-  const mount = "assets";
-  const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(zipBuf), {useWebWorkers:false});
-  const entries = await zipReader.getEntries();
-  for(const file of entries) {
-    if (file.getData && !file.directory) {
-      const writer = new zip.Uint8ArrayWriter();
-      const data = await file.getData(writer);
-      await writeFile(mount+"/"+file.filename, data);
-    } else if (file.directory) {
-      await mkdirTree(mount+"/"+file.filename);
-    }
-  }
-  await zipReader.close();
-}
-
-
 async function setupFileSystem()
 {
-  let old_timestamp = localStorage.getItem("asset_time") ?? "";
-  let resp = await fetch("assets-minimal.zip", {
-    headers: {
-      "If-Modified-Since": old_timestamp
-    }
-  });
-  if (resp.status == 200) {
-    await setupZipFS(await resp.bytes());
-    localStorage.setItem("asset_time", resp.headers.get("last-modified"));
-  } else {
-    await resp.text();
-  }
   Module.FS.mkdirTree("/home/web_user/retroarch/");
   Module.FS.mount(Module.OPFS, {}, "/home/web_user/retroarch");
 }
@@ -335,3 +288,11 @@ function loadCore(core) {
       }).catch(err => { console.error("Couldn't load script",err); throw err; });
    });
 }
+
+const setupWorker = new Worker("libretro.worker.js");
+setupWorker.onmessage = (msg) => {
+  filesystem_ready = true;
+  localStorage.setItem("asset_time", msg.data);
+  appInitialized();
+}
+setupWorker.postMessage(localStorage.getItem("asset_time") ?? "");
