@@ -83,16 +83,6 @@ int action_cancel_pop_default(const char *path,
    new_selection_ptr      = menu_st->selection_ptr;
    menu_entries_pop_stack(&new_selection_ptr, 0, 1);
    menu_st->selection_ptr = new_selection_ptr;
-
-   if (menu_st->driver_ctx)
-   {
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
-   }
-
    return 0;
 }
 

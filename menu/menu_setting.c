@@ -7231,33 +7231,11 @@ int menu_action_handle_setting(rarch_setting_t *setting,
                   break;
                case MENU_ACTION_LEFT:
                   if (setting->action_left)
-                  {
                      ret = setting->action_left(setting, selection, false);
-                     if (menu_st->driver_ctx)
-                     {
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-                           menu_st->driver_ctx->update_savestate_thumbnail_path(
-                                 menu_st->userdata, (unsigned)selection);
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-                           menu_st->driver_ctx->update_savestate_thumbnail_image(
-                                 menu_st->userdata);
-                     }
-                  }
                   break;
                case MENU_ACTION_RIGHT:
                   if (setting->action_right)
-                  {
                      ret = setting->action_right(setting, selection, false);
-                     if (menu_st->driver_ctx)
-                     {
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-                           menu_st->driver_ctx->update_savestate_thumbnail_path(
-                                 menu_st->userdata, (unsigned)selection);
-                        if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-                           menu_st->driver_ctx->update_savestate_thumbnail_image(
-                                 menu_st->userdata);
-                     }
-                  }
                   break;
                case MENU_ACTION_SELECT:
                   if (setting->action_select)

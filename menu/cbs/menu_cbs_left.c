@@ -951,8 +951,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
 static int action_left_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
-   settings_t           *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t       *settings = config_get_ptr();
 
    settings->ints.state_slot--;
    if (settings->ints.state_slot < -1)
@@ -960,16 +960,16 @@ static int action_left_state_slot(unsigned type, const char *label,
 
    if (menu_st->driver_ctx)
    {
-      size_t selection            = menu_st->selection_ptr;
       if (menu_st->driver_ctx->update_savestate_thumbnail_path)
          menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
+               menu_st->userdata, (unsigned)menu_st->selection_ptr);
       if (menu_st->driver_ctx->update_savestate_thumbnail_image)
          menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
    }
 
    return 0;
 }
+
 static int action_left_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
@@ -979,16 +979,6 @@ static int action_left_replay_slot(unsigned type, const char *label,
    settings->ints.replay_slot--;
    if (settings->ints.replay_slot < -1)
       settings->ints.replay_slot = 999;
-
-   if (menu_st->driver_ctx)
-   {
-      size_t selection            = menu_st->selection_ptr;
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
-   }
 
    return 0;
 }
@@ -1102,6 +1092,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_LEFT(cbs, manual_content_scan_core_name_left);
+               break;
+            case MENU_ENUM_LABEL_STATE_SLOT:
+               BIND_ACTION_LEFT(cbs, action_left_state_slot);
                break;
             #ifdef HAVE_LAKKA
             case MENU_ENUM_LABEL_CPU_PERF_MODE:
