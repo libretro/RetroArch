@@ -647,6 +647,11 @@ extern microphone_driver_t microphone_wasapi;
 extern microphone_driver_t microphone_pipewire;
 
 /**
+ * The CoreAudio-backed microphone driver.
+ */
+extern microphone_driver_t microphone_coreaudio;
+
+/**
  * @return Pointer to the global microphone driver state.
  */
 microphone_driver_state_t *microphone_state_get_ptr(void);
