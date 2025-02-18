@@ -2669,6 +2669,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                reinit_flags =
                   DRIVERS_CMD_ALL &
                   ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK | DRIVER_MENU_MASK);
+            /* no need to reinit camera or microphone here */
+            reinit_flags &= ~(DRIVER_CAMERA_MASK | DRIVER_MICROPHONE_MASK);
 
             RARCH_LOG("[Environ]: SET_SYSTEM_AV_INFO: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
                   (*info)->geometry.base_width, (*info)->geometry.base_height,
@@ -7030,7 +7032,8 @@ int runloop_iterate(void)
    bsv_movie_next_frame(input_st);
 #endif
 
-   if (     camera_st->cb.caps
+   if (     settings->bools.camera_allow
+         && camera_st->cb.caps
          && camera_st->driver
          && camera_st->driver->poll
          && camera_st->data)
