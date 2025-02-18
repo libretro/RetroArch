@@ -161,6 +161,7 @@ enum microphone_driver_enum
    MICROPHONE_SDL2,
    MICROPHONE_WASAPI,
    MICROPHONE_PIPEWIRE,
+   MICROPHONE_COREAUDIO,
    MICROPHONE_NULL
 };
 
@@ -582,6 +583,8 @@ static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_
 #elif defined(HAVE_SDL2)
 /* The default fallback driver is SDL2, if available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
+#elif defined(HAVE_COREAUDIO)
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_COREAUDIO;
 #else
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_NULL;
 #endif
@@ -1012,6 +1015,8 @@ const char *config_get_default_microphone(void)
          return "wasapi";
       case MICROPHONE_SDL2:
          return "sdl2";
+      case MICROPHONE_COREAUDIO:
+         return "coreaudio";
       case MICROPHONE_NULL:
          break;
    }
