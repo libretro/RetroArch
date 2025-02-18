@@ -786,10 +786,22 @@ static float *xmb_gradient_ident(unsigned xmb_color_theme)
            0.05,      0.05,      0.05, 1.0,
    };
    static float gradient_light[16]           = {
-           0.25,      0.25,      0.25, 1.0,
-           0.25,      0.25,      0.25, 1.0,
-           0.25,      0.25,      0.25, 1.0,
-           0.25,      0.25,      0.25, 1.0,
+           0.50,      0.50,      0.50, 1.0,
+           0.50,      0.50,      0.50, 1.0,
+           0.50,      0.50,      0.50, 1.0,
+           0.50,      0.50,      0.50, 1.0,
+   };
+   static float gradient_gray_dark[16]       = {
+           0.10,      0.10,      0.10, 1.0,
+           0.10,      0.10,      0.10, 1.0,
+           0.10,      0.10,      0.10, 1.0,
+           0.10,      0.10,      0.10, 1.0,
+   };
+   static float gradient_gray_light[16]      = {
+           0.20,      0.20,      0.20, 1.0,
+           0.20,      0.20,      0.20, 1.0,
+           0.20,      0.20,      0.20, 1.0,
+           0.20,      0.20,      0.20, 1.0,
    };
 
    switch (xmb_color_theme)
@@ -832,6 +844,10 @@ static float *xmb_gradient_ident(unsigned xmb_color_theme)
          return &gradient_ice_cold[0];
       case XMB_THEME_LEGACY_RED:
          return &gradient_legacy_red[0];
+      case XMB_THEME_GRAY_DARK:
+         return &gradient_gray_dark[0];
+      case XMB_THEME_GRAY_LIGHT:
+         return &gradient_gray_light[0];
       default:
          return &gradient_dark[0];
    }

@@ -1156,8 +1156,8 @@ static const rgui_theme_t rgui_theme_gray_dark = {
    0xFFFFFFFF, /* title_color */
    0xE0101010, /* bg_dark_color */
    0xE0101010, /* bg_light_color */
-   0xE0303030, /* border_dark_color */
-   0xE0303030, /* border_light_color */
+   0xE0202020, /* border_dark_color */
+   0xE0202020, /* border_light_color */
    0xFF000000, /* shadow_color */
    0xE0202020  /* particle_color */
 };
@@ -1168,8 +1168,8 @@ static const rgui_theme_t rgui_theme_opaque_gray_dark = {
    0xFFFFFFFF, /* title_color */
    0xFF101010, /* bg_dark_color */
    0xFF101010, /* bg_light_color */
-   0xFF303030, /* border_dark_color */
-   0xFF303030, /* border_light_color */
+   0xFF202020, /* border_dark_color */
+   0xFF202020, /* border_light_color */
    0xFF000000, /* shadow_color */
    0xE0202020  /* particle_color */
 };
@@ -1178,8 +1178,8 @@ static const rgui_theme_t rgui_theme_gray_light = {
    0xFFFFFFFF, /* hover_color */
    0xFF808080, /* normal_color */
    0xFFFFFFFF, /* title_color */
-   0xE0303030, /* bg_dark_color */
-   0xE0303030, /* bg_light_color */
+   0xE0202020, /* bg_dark_color */
+   0xE0202020, /* bg_light_color */
    0xE0101010, /* border_dark_color */
    0xE0101010, /* border_light_color */
    0xFF000000, /* shadow_color */
@@ -1190,8 +1190,8 @@ static const rgui_theme_t rgui_theme_opaque_gray_light = {
    0xFFFFFFFF, /* hover_color */
    0xFF808080, /* normal_color */
    0xFFFFFFFF, /* title_color */
-   0xFF303030, /* bg_dark_color */
-   0xFF303030, /* bg_light_color */
+   0xFF202020, /* bg_dark_color */
+   0xFF202020, /* bg_light_color */
    0xFF101010, /* border_dark_color */
    0xFF101010, /* border_light_color */
    0xFF000000, /* shadow_color */
