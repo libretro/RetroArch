@@ -361,6 +361,9 @@ static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
 #endif
+#ifdef HAVE_CORELOCATION
+   &location_corelocation,
+#endif
    &location_null,
    NULL,
 };

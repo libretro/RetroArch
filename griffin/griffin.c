@@ -839,6 +839,8 @@ LOCATION
 ============================================================ */
 #if defined(ANDROID)
 #include "../location/drivers/android.c"
+#elif defined(HAVE_CORELOCATION)
+#include "../location/drivers/corelocation.m"
 #endif
 
 /*============================================================
