@@ -816,7 +816,7 @@ static float ozone_sidebar_background_gray_dark[16]                   =
    COLOR_HEX_TO_FLOAT(0x101010, 0.0f);
 
 static float ozone_sidebar_background_gray_light[16]                  =
-   COLOR_HEX_TO_FLOAT(0x303030, 0.0f);
+   COLOR_HEX_TO_FLOAT(0x202020, 0.0f);
 
 static float ozone_sidebar_background_light[16]                       = {
    0.94f, 0.94f, 0.94f, 1.00f,
@@ -905,7 +905,7 @@ static float ozone_background_libretro_running_gray_dark[16]          =
    COLOR_HEX_TO_FLOAT(0x101010, 1.0f);
 
 static float ozone_background_libretro_running_gray_light[16]         =
-   COLOR_HEX_TO_FLOAT(0x303030, 1.0f);
+   COLOR_HEX_TO_FLOAT(0x202020, 1.0f);
 
 static float ozone_background_libretro_running_light[16]              = {
    0.690f, 0.690f, 0.690f, 0.75f,
@@ -1409,7 +1409,7 @@ static ozone_theme_t ozone_theme_gray_dark = {
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* text */
    COLOR_HEX_TO_FLOAT(0x303030, 1.0f),                   /* selection */
    COLOR_HEX_TO_FLOAT(0x303030, 1.0f),                   /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x181818, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0x101010, 1.0f),                   /* entries_border */
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* entries_icon */
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* text_selected */
    COLOR_HEX_TO_FLOAT(0x202020, 1.0f),                   /* message_background */
@@ -1418,7 +1418,7 @@ static ozone_theme_t ozone_theme_gray_dark = {
    0xC0C0C0FF,                                           /* text_rgba */
    0x808080FF,                                           /* text_sidebar_rgba */
    0xFFFFFFFF,                                           /* text_selected_rgba */
-   0x707070FF,                                           /* text_sublabel_rgba */
+   0x606060FF,                                           /* text_sublabel_rgba */
 
    /* Screensaver 'tint' (RGB24) */
    0xFFFFFF,                                             /* screensaver_tint */
@@ -1440,7 +1440,7 @@ static ozone_theme_t ozone_theme_gray_dark = {
 
 static ozone_theme_t ozone_theme_gray_light = {
    /* Background color */
-   COLOR_HEX_TO_FLOAT(0x303030, 1.0f),                   /* background */
+   COLOR_HEX_TO_FLOAT(0x202020, 1.0f),                   /* background */
    ozone_background_libretro_running_gray_light,         /* background_libretro_running */
 
    /* Float colors for quads and icons */
@@ -1448,7 +1448,7 @@ static ozone_theme_t ozone_theme_gray_light = {
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* text */
    COLOR_HEX_TO_FLOAT(0x101010, 1.0f),                   /* selection */
    COLOR_HEX_TO_FLOAT(0x101010, 1.0f),                   /* selection_border */
-   COLOR_HEX_TO_FLOAT(0x282828, 1.0f),                   /* entries_border */
+   COLOR_HEX_TO_FLOAT(0x202020, 1.0f),                   /* entries_border */
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* entries_icon */
    COLOR_HEX_TO_FLOAT(0xFFFFFF, 1.0f),                   /* text_selected */
    COLOR_HEX_TO_FLOAT(0x202020, 1.0f),                   /* message_background */
@@ -1457,7 +1457,7 @@ static ozone_theme_t ozone_theme_gray_light = {
    0xC0C0C0FF,                                           /* text_rgba */
    0x808080FF,                                           /* text_sidebar_rgba */
    0xFFFFFFFF,                                           /* text_selected_rgba */
-   0x707070FF,                                           /* text_sublabel_rgba */
+   0x606060FF,                                           /* text_sublabel_rgba */
 
    /* Screensaver 'tint' (RGB24) */
    0xFFFFFF,                                             /* screensaver_tint */

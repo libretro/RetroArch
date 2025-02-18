@@ -1764,7 +1764,7 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
       0xC0C0C0, /* on_header */
       0xC0C0C0, /* list_text */
       0xFFFFFF, /* list_text_highlighted */
-      0x707070, /* list_hint_text */
+      0x606060, /* list_hint_text */
       0x808080, /* list_hint_text_highlighted */
       0x808080, /* status_bar_text */
       /* Background colours */
@@ -1774,29 +1774,29 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
       0x303030, /* list_highlighted_background */
       0x101010, /* nav_bar_background */
       0x202020, /* surface_background */
-      0x0C0C0C, /* thumbnail_background */
+      0x020202, /* thumbnail_background */
       0x101010, /* side_bar_background */
       0x101010, /* status_bar_background */
       /* List icon colours */
       0xFFFFFF, /* list_icon */
       0xFFFFFF, /* list_switch_on */
       0x202020, /* list_switch_on_background */
-      0x707070, /* list_switch_off */
+      0x606060, /* list_switch_off */
       0x202020, /* list_switch_off_background */
       /* Navigation bar icon colours */
       0xFFFFFF, /* nav_bar_icon_active */
-      0x707070, /* nav_bar_icon_passive */
-      0x202020, /* nav_bar_icon_disabled */
+      0x606060, /* nav_bar_icon_passive */
+      0x303030, /* nav_bar_icon_disabled */
       /* Screensaver */
       0x101010, /* screensaver_tint */
       /* Misc. colours */
       0x202020, /* header_shadow */
       0x202020, /* landscape_border_shadow */
       0x202020, /* status_bar_shadow */
-      0x0C0C0C, /* selection_marker_shadow */
+      0x202020, /* selection_marker_shadow */
       0x202020, /* scrollbar */
       0x101010, /* divider */
-      0x0C0C0C, /* screen_fade */
+      0x020202, /* screen_fade */
       0x202020, /* missing_thumbnail_icon */
       0.0f,     /* header_shadow_opacity */
       0.0f,     /* landscape_border_shadow_opacity */
@@ -1811,39 +1811,39 @@ static const materialui_theme_t *materialui_get_theme(enum materialui_color_them
       0xC0C0C0, /* on_header */
       0xC0C0C0, /* list_text */
       0xFFFFFF, /* list_text_highlighted */
-      0x707070, /* list_hint_text */
+      0x606060, /* list_hint_text */
       0x808080, /* list_hint_text_highlighted */
       0x808080, /* status_bar_text */
       /* Background colours */
-      0x303030, /* sys_bar_background */
-      0x303030, /* title_bar_background */
-      0x303030, /* list_background */
+      0x202020, /* sys_bar_background */
+      0x202020, /* title_bar_background */
+      0x202020, /* list_background */
       0x101010, /* list_highlighted_background */
-      0x303030, /* nav_bar_background */
+      0x202020, /* nav_bar_background */
       0x202020, /* surface_background */
-      0x0C0C0C, /* thumbnail_background */
-      0x303030, /* side_bar_background */
-      0x303030, /* status_bar_background */
+      0x020202, /* thumbnail_background */
+      0x202020, /* side_bar_background */
+      0x202020, /* status_bar_background */
       /* List icon colours */
       0xFFFFFF, /* list_icon */
       0xFFFFFF, /* list_switch_on */
-      0x202020, /* list_switch_on_background */
-      0x707070, /* list_switch_off */
-      0x202020, /* list_switch_off_background */
+      0x303030, /* list_switch_on_background */
+      0x606060, /* list_switch_off */
+      0x303030, /* list_switch_off_background */
       /* Navigation bar icon colours */
       0xFFFFFF, /* nav_bar_icon_active */
-      0x707070, /* nav_bar_icon_passive */
-      0x202020, /* nav_bar_icon_disabled */
+      0x606060, /* nav_bar_icon_passive */
+      0x303030, /* nav_bar_icon_disabled */
       /* Screensaver */
       0x101010, /* screensaver_tint */
       /* Misc. colours */
       0x202020, /* header_shadow */
       0x202020, /* landscape_border_shadow */
       0x202020, /* status_bar_shadow */
-      0x0C0C0C, /* selection_marker_shadow */
-      0x202020, /* scrollbar */
-      0x303030, /* divider */
-      0x0C0C0C, /* screen_fade */
+      0x202020, /* selection_marker_shadow */
+      0x303030, /* scrollbar */
+      0x202020, /* divider */
+      0x020202, /* screen_fade */
       0x202020, /* missing_thumbnail_icon */
       0.0f,     /* header_shadow_opacity */
       0.0f,     /* landscape_border_shadow_opacity */
