@@ -112,6 +112,9 @@ ifeq ($(HAVE_WASMFS), 1)
    DEFINES += -DHAVE_WASMFS=1
    LIBS += -sWASMFS -sFORCE_FILESYSTEM=1 -lfetchfs.js -lopfs.js
    EXPORTS := $(EXPORTS),FETCHFS,OPFS
+   ifeq ($(PTHREAD),0)
+   $(error ERROR: WASMFS requires threading support)
+   endif
 endif
 
 ifeq ($(PROXY_TO_PTHREAD),1)

@@ -310,26 +310,20 @@ static bool filesystem_ready = false;
 void PlatformEmscriptenMountFilesystems(void *info) {
    char *opfs_mount = getenv("OPFS");
    char *fetch_manifest = getenv("FETCH_MANIFEST");
-   printf("[Emscripten] Mount vars: %s %s\n", opfs_mount, fetch_manifest);
    if(opfs_mount) {
       int res;
       printf("[OPFS] Mount OPFS at %s\n", opfs_mount);
       backend_t opfs = wasmfs_create_opfs_backend();
-      sleep(1);
-      printf("[OPFS] created\n");
       {
          char *parent = strdup(opfs_mount);
          path_parent_dir(parent, strlen(parent));
-         printf("mkdir %s\n", parent);
          if(!path_mkdir(parent)) {
             printf("mkdir error %d\n",errno);
             abort();
          }
          free(parent);
       }
-      printf("[OPFS] parent dir of %s created\n", opfs_mount);
       res = wasmfs_create_directory(opfs_mount, 0777, opfs);
-      printf("[OPFS] mount finished %d\n", res);
       if(res) {
          printf("[OPFS] error result %d\n",res);
          if(errno) {
@@ -351,6 +345,7 @@ void PlatformEmscriptenMountFilesystems(void *info) {
          Where URL may not contain spaces, but PATH may.
        */
       int max_line_len = 1024;
+      printf("[FetchFS] read fetch manifest from %s\n",fetch_manifest);
       FILE *file = fopen(fetch_manifest, O_RDONLY);
       char *line = calloc(sizeof(char), max_line_len);
       size_t len = 0;
@@ -384,7 +379,7 @@ void PlatformEmscriptenMountFilesystems(void *info) {
    filesystem_ready = true;
 #if !PROXY_TO_PTHREAD
    while (!retro_started) {
-      sleep(1);
+      retro_sleep(1);
    }
 #endif
 }

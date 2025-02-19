@@ -292,7 +292,7 @@ setupWorker.onmessage = (msg) => {
     localStorage.setItem("asset_time", msg.data.time);
     appInitialized();
   } else if(msg.data.command == "uploaded_file") {
-    console.log("finished upload of",msg.data.name);
+    // console.log("finished upload of",msg.data.name);
   }
 }
 setupWorker.postMessage({command:"load_bundle",time:localStorage.getItem("asset_time") ?? ""});
