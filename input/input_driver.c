@@ -1199,12 +1199,10 @@ static int16_t input_overlay_device_mouse_state(
          ptr_st->device_mask |= (1 << RETRO_DEVICE_MOUSE);
          res =   (ptr_st->mouse.scale_x)
                * (ptr_st->screen_x - ptr_st->mouse.prev_screen_x);
-         ptr_st->mouse.prev_screen_x = ptr_st->screen_x;
          return res;
       case RETRO_DEVICE_ID_MOUSE_Y:
          res =   (ptr_st->mouse.scale_y)
                * (ptr_st->screen_y - ptr_st->mouse.prev_screen_y);
-         ptr_st->mouse.prev_screen_y = ptr_st->screen_y;
          return res;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return    (ptr_st->mouse.click & 0x1)
@@ -3468,11 +3466,13 @@ static void input_overlay_update_pointer_coords(
    if (     !ptr_st->count
          && (ptr_st->device_mask & (1 << RETRO_DEVICE_MOUSE)))
    {
+      ptr_st->mouse.prev_screen_x = ptr_st->screen_x;
       ptr_st->screen_x = current_input->input_state(
             input_data, NULL, NULL, NULL, NULL, true, 0,
             RARCH_DEVICE_POINTER_SCREEN,
             touch_idx,
             RETRO_DEVICE_ID_POINTER_X);
+      ptr_st->mouse.prev_screen_y = ptr_st->screen_y;
       ptr_st->screen_y = current_input->input_state(
             input_data, NULL, NULL, NULL, NULL, true, 0,
             RARCH_DEVICE_POINTER_SCREEN,
