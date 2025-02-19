@@ -2515,6 +2515,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
        * > Thumbnail has never been loaded *OR*
        * > Thumbnail path has changed */
       if (     (mui->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+            || (mui->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)
             || !string_is_equal(mui->savestate_thumbnail_file_path,
                      mui->prev_savestate_thumbnail_file_path))
       {
@@ -3234,8 +3235,7 @@ static void materialui_compute_entries_box_savestate_list(
    float node_entry_width     = (float)width -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)mui->nav_bar_layout_width -
-         (float)mui->thumbnail_width_max -
-         (float)(mui->margin * 2) -
+         ((mui->flags & MUI_FLAG_IS_PORTRAIT) ? 0 : (float)(mui->thumbnail_width_max) + (float)(mui->margin * 2)) -
          (float)(mui->entry_divider_width * (mui->landscape_optimization.enabled ? 2 : 1));
    float node_x               = (float)mui->landscape_optimization.border_width +
          (float)(mui->entry_divider_width * (mui->landscape_optimization.enabled ? 2 : 1));
@@ -5833,9 +5833,21 @@ static void materialui_render_selected_entry_aux_savestate_list(
          (int)mui->nav_bar_layout_height - (int)mui->status_bar.height;
    float thumbnail_x       = background_x + (float)mui->margin +
          (mui->landscape_optimization.enabled ? mui->entry_divider_width : 0);
-   float thumbnail_y       = background_y + (float)mui->margin + (background_height - mui->thumbnail_height_max) / 2;
+   float thumbnail_y       = background_y + (background_height - mui->thumbnail_height_max) / 2;
    gfx_display_t *p_disp   = disp_get_ptr();
    settings_t *settings    = config_get_ptr();
+
+   /* Portrait moves thumbnail to bottom and full width */
+   if (mui->flags & MUI_FLAG_IS_PORTRAIT)
+   {
+      background_x      = (float)(x_offset + (int)mui->landscape_optimization.border_width);
+      background_y      = video_height - mui->thumbnail_height_max - (mui->margin * 2) -
+            (int)mui->nav_bar_layout_height - (int)mui->status_bar.height;
+      background_width  = video_width;
+      background_height = mui->thumbnail_height_max + (mui->margin * 2);
+      thumbnail_x       = background_x + (background_width - mui->thumbnail_width_max) / 2;
+      thumbnail_y       = background_y + (float)mui->margin;
+   }
 
    /* Sanity check */
    if (   (background_width  <= 0)
@@ -8426,6 +8438,50 @@ static void materialui_set_thumbnail_dimensions(materialui_handle_t *mui)
          mui->thumbnail_width_max =
                (unsigned)(((float)mui->thumbnail_height_max *
                      MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
+
+         /* Limit size to half screen width in landscape and full in portrait,
+          * and vice versa */
+         {
+            unsigned usable_width  =
+                  (int)(mui->last_width) -
+                  (int)(mui->margin * 3) -
+                  (int)(mui->landscape_optimization.border_width * 2) -
+                  (int)mui->nav_bar_layout_width;
+
+            unsigned usable_height =
+                  (int)mui->last_height - (int)disp_get_ptr()->header_height -
+                  (int)(mui->margin * 2) - (int)mui->nav_bar_layout_height -
+                  (int)mui->status_bar.height;
+
+            if (mui->flags & MUI_FLAG_IS_PORTRAIT)
+            {
+               unsigned half_height = (usable_height >> 1);
+               if (usable_height > half_height)
+                  usable_height = half_height;
+            }
+            else
+            {
+               unsigned half_width = (usable_width >> 1);
+               if (usable_width > half_width)
+                  usable_width = half_width;
+            }
+
+            if (mui->thumbnail_width_max >= usable_width)
+            {
+               mui->thumbnail_width_max  = usable_width;
+               mui->thumbnail_height_max =
+                     (unsigned)(((float)mui->thumbnail_width_max /
+                           MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
+            }
+
+            if (mui->thumbnail_height_max >= usable_height)
+            {
+               mui->thumbnail_height_max = usable_height;
+               mui->thumbnail_width_max  =
+                     (unsigned)(((float)mui->thumbnail_height_max *
+                           MUI_THUMBNAIL_DEFAULT_ASPECT_RATIO) + 0.5f);
+            }
+         }
          break;
 
       case MUI_LIST_VIEW_PLAYLIST:
@@ -10389,12 +10445,13 @@ static int materialui_menu_entry_action(
 static int materialui_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
+#if 1
+   /* Use common lists for all drivers */
+   return -1;
+#else
    int ret                  = -1;
    core_info_list_t *list   = NULL;
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
-
-   /* Use common lists for all drivers */
-   return ret;
 
    if (!mui)
       return ret;
@@ -10658,6 +10715,7 @@ static int materialui_list_push(void *data, void *userdata,
          break;
    }
    return ret;
+#endif
 }
 
 /* Returns the active tab id */
