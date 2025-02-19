@@ -28,6 +28,7 @@
 #endif
 
 #include <retro_timers.h>
+#include <time.h>
 
 #include <math/float_minmax.h>
 #include <string/stdstring.h>

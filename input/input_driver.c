@@ -1076,16 +1076,16 @@ static int16_t input_joypad_analog_axis(
             ? joypad_info->auto_binds[ident_y_plus].joyaxis
             : bind_y_plus->joyaxis;
          /* normalized magnitude for radial scaled analog deadzone */
-         if (x_axis_plus != AXIS_NONE)
+         if (x_axis_plus != AXIS_NONE && drv->axis)
             x                     = drv->axis(
                   joypad_info->joy_idx, x_axis_plus);
-         if (x_axis_minus != AXIS_NONE)
+         if (x_axis_minus != AXIS_NONE && drv->axis)
             x                    += drv->axis(joypad_info->joy_idx,
                   x_axis_minus);
-         if (y_axis_plus != AXIS_NONE)
+         if (y_axis_plus != AXIS_NONE && drv->axis)
             y                     = drv->axis(
                   joypad_info->joy_idx, y_axis_plus);
-         if (y_axis_minus != AXIS_NONE)
+         if (y_axis_minus != AXIS_NONE && drv->axis)
             y                    += drv->axis(
                   joypad_info->joy_idx, y_axis_minus);
          normal_mag               = (1.0f / 0x7fff) * sqrt(x * x + y * y);
@@ -1113,9 +1113,9 @@ static int16_t input_joypad_analog_axis(
       uint16_t key_plus     = (bind_plus->joykey  == NO_BTN)
          ? joypad_info->auto_binds[ident_plus].joykey
          : bind_plus->joykey;
-      if (drv->button(joypad_info->joy_idx, key_plus))
+      if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
          res  = 0x7fff;
-      if (drv->button(joypad_info->joy_idx, key_minus))
+      if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
          res += -0x7fff;
    }
 

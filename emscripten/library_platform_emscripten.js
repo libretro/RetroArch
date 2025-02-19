@@ -15,28 +15,6 @@ var LibraryPlatformEmscripten = {
       }
    },
 
-   PlatformEmscriptenWatchCanvasSize: function() {
-      RPE.observer = new ResizeObserver(function(e) {
-         var width, height;
-         var entry = e.find(i => i.target == Module.canvas);
-         if (!entry) return;
-         if (entry.devicePixelContentBoxSize) {
-            width = entry.devicePixelContentBoxSize[0].inlineSize;
-            height = entry.devicePixelContentBoxSize[0].blockSize;
-         } else {
-            width = Math.round(entry.contentRect.width * window.devicePixelRatio);
-            height = Math.round(entry.contentRect.height * window.devicePixelRatio);
-         }
-         Module.setCanvasSize(width, height);
-         Module.print("Setting real canvas size: " + width + " x " + height);
-      });
-      RPE.observer.observe(Module.canvas);
-      window.addEventListener("resize", function(e) {
-         RPE.observer.unobserve(Module.canvas);
-         RPE.observer.observe(Module.canvas);
-      }, false);
-   },
-
    PlatformEmscriptenPowerStateInit: function() {
       if (!navigator.getBattery) return;
       navigator.getBattery().then(function(battery) {

@@ -1536,7 +1536,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
-      OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      ifeq ($(HAVE_EGL), 1)
+        OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      endif
+      OBJ += gfx/drivers_context/emscriptenwebgl_ctx.o
    endif
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
@@ -2203,10 +2206,15 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           core_updater_list.o \
           network/natt.o \
-          tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
           tasks/task_netplay_find_content.o
+
+   ifeq ($(HAVE_EMSCRIPTEN), 1)
+     OBJ += tasks/task_http_emscripten.o
+   else
+     OBJ += tasks/task_http.o
+   endif
 
    ifeq ($(HAVE_MENU), 1)
       OBJ += tasks/task_pl_thumbnail_download.o

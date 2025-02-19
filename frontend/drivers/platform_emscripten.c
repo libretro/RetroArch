@@ -17,7 +17,13 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#if HAVE_WASMFS
+#include <emscripten/wasmfs.h>
+#endif
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include <file/config_file.h>
 #include <queues/task_queue.h>
@@ -50,7 +56,33 @@
 #include "../../audio/audio_driver.h"
 
 void emscripten_mainloop(void);
-void PlatformEmscriptenWatchCanvasSize(void);
+void PlatformEmscriptenWatchCanvasSize(void) {
+   MAIN_THREAD_ASYNC_EM_ASM(
+      RPE.observer = new ResizeObserver(function(_e) {
+         var container = Module.canvas.parentElement;
+         var width = container.offsetWidth;
+         var height = container.offsetHeight;
+         var w = Module.canvas.width;
+         var h = Module.canvas.height;
+         if (w == 0 || h == 0 || width == 0 || height == 0) { return; }
+         /* Module.print("Setting real canvas size: " + width + " x " + height); */
+         var new_w = `${width}px`;
+         var new_h = `${height}px`;
+         if (Module.canvas.style.width != new_w || Module.canvas.style.height != new_h) {
+            Module.canvas.style.width = new_w;
+            Module.canvas.style.height = new_h;
+         }
+         if (!Module.canvas.controlTransferredOffscreen) {
+            Module.Browser.setCanvasSize(width, height);
+         }
+      });
+      RPE.observer.observe(Module.canvas.parentElement);
+      window.addEventListener("resize", function(e) {
+         RPE.observer.unobserve(Module.canvas.parentElement);
+         RPE.observer.observe(Module.canvas.parentElement);
+      }, false);
+   );
+}
 void PlatformEmscriptenPowerStateInit(void);
 bool PlatformEmscriptenPowerStateGetSupported(void);
 int PlatformEmscriptenPowerStateGetDischargeTime(void);
@@ -262,16 +294,100 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], "/tmp/",
          "retroarch", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
-   /* history and main config */
+   /* history */
    strlcpy(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY],
          user_path, sizeof(g_defaults.dirs[DEFAULT_DIR_CONTENT_HISTORY]));
-   fill_pathname_join(g_defaults.path_config, user_path,
-         FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
 #endif
 }
+
+typedef struct args {
+   int argc;
+   char **argv;
+} args_t;
+static bool retro_started = false;
+static bool filesystem_ready = false;
+
+#if HAVE_WASMFS
+void PlatformEmscriptenMountFilesystems(void *info) {
+   char *opfs_mount = getenv("OPFS");
+   char *fetch_manifest = getenv("FETCH_MANIFEST");
+   if(opfs_mount) {
+      int res;
+      printf("[OPFS] Mount OPFS at %s\n", opfs_mount);
+      backend_t opfs = wasmfs_create_opfs_backend();
+      {
+         char *parent = strdup(opfs_mount);
+         path_parent_dir(parent, strlen(parent));
+         if(!path_mkdir(parent)) {
+            printf("mkdir error %d\n",errno);
+            abort();
+         }
+         free(parent);
+      }
+      res = wasmfs_create_directory(opfs_mount, 0777, opfs);
+      if(res) {
+         printf("[OPFS] error result %d\n",res);
+         if(errno) {
+            printf("[OPFS] errno %d\n",errno);
+            abort();
+         }
+         abort();
+      }
+   }
+   if(fetch_manifest) {
+      /* fetch_manifest should be a path to a manifest file.
+         manifest files have this format:
+
+         URL PATH
+         URL PATH
+         URL PATH
+         ...
+
+         Where URL may not contain spaces, but PATH may.
+       */
+      int max_line_len = 1024;
+      printf("[FetchFS] read fetch manifest from %s\n",fetch_manifest);
+      FILE *file = fopen(fetch_manifest, O_RDONLY);
+      char *line = calloc(sizeof(char), max_line_len);
+      size_t len = 0;
+      while (getline(&line, &len, file) != -1) {
+         char *path = strstr(line, " ");
+         backend_t fetch;
+         int fd;
+         if (!path) {
+            printf("Manifest file has invalid line %s\n",line);
+            return;
+         }
+         *path = '\0';
+         path += 1;
+         printf("Fetch %s from %s\n", path, line);
+         {
+            char *parent = strdup(path);
+            path_parent_dir(parent, strlen(parent));
+            if(!path_mkdir(parent)) {
+               printf("mkdir error %d\n",errno);
+               abort();
+            }
+            free(parent);
+         }
+         fetch = wasmfs_create_fetch_backend(line, 8*1024*1024);
+         fd = wasmfs_create_file(path, 0777, fetch);
+         close(fd);
+      }
+      fclose(file);
+      free(line);
+   }
+   filesystem_ready = true;
+#if !PROXY_TO_PTHREAD
+   while (!retro_started) {
+      retro_sleep(1);
+   }
+#endif
+}
+#endif /* HAVE_WASMFS */
 
 static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds, int *percent)
 {
@@ -303,17 +419,42 @@ static uint64_t frontend_emscripten_get_free_mem(void)
    return PlatformEmscriptenGetFreeMem();
 }
 
+void emscripten_bootup_mainloop(void *argptr) {
+   if(filesystem_ready) {
+      args_t *args = (args_t*)argptr;
+      emscripten_set_main_loop(emscripten_mainloop, 0, 0);
+      emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
+      rarch_main(args->argc, args->argv, NULL);
+      retro_started = true;
+      free(args);
+   }
+}
+
 int main(int argc, char *argv[])
 {
+   args_t *args = calloc(sizeof(args_t), 1);
+
    PlatformEmscriptenWatchCanvasSize();
    PlatformEmscriptenPowerStateInit();
 
-   EM_ASM({
-      specialHTMLTargets["!canvas"] = Module.canvas;
-   });
-
-   emscripten_set_main_loop(emscripten_mainloop, 0, 0);
-   rarch_main(argc, argv, NULL);
+   emscripten_set_canvas_element_size("#canvas", 800, 600);
+   emscripten_set_element_css_size("#canvas", 800.0, 600.0);
+#if HAVE_WASMFS
+#if PROXY_TO_PTHREAD
+   {
+      PlatformEmscriptenMountFilesystems(NULL);
+   }
+#else /* !PROXY_TO_PTHREAD */
+   {
+      sthread_t *thread = sthread_create(PlatformEmscriptenMountFilesystems, NULL);
+      sthread_detach(thread);
+   }
+#endif /* PROXY_TO_PTHREAD */
+#else /* !HAVE_WASMFS */
+   filesystem_ready = true;
+#endif /* HAVE_WASMFS */
+   emscripten_set_main_loop_arg(emscripten_bootup_mainloop, (void *)args, 0, 0);
+   emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
 
    return 0;
 }

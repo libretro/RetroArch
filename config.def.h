@@ -1833,7 +1833,11 @@
 #define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 
+#ifdef EMSCRIPTEN
+#define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "https://buildbot.libretro.com/assets/"
+#else
 #define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "http://buildbot.libretro.com/assets/"
+#endif
 
 #define DEFAULT_DISCORD_APP_ID "475456035851599874"
 
