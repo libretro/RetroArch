@@ -6,10 +6,9 @@ async function setupZipFS(zipBuf) {
     const parent = path.substr(0, dir_end);
     const child = path.substr(dir_end+1);
     const parent_dir = await mkdirTree(parent);
-    //console.log("about to create", parent, "/", child);
     const file = await parent_dir.getFileHandle(child,{create:true});
     const stream = await file.createSyncAccessHandle();
-    stream.write(data);
+    const written = stream.write(data);
     stream.close();
   }
   async function mkdirTree(path) {
@@ -22,16 +21,15 @@ async function setupZipFS(zipBuf) {
     return here;
   }
   const root = await navigator.storage.getDirectory();
-  const mount = "assets";
   const zipReader = new zip.ZipReader(new zip.Uint8ArrayReader(zipBuf), {useWebWorkers:false});
   const entries = await zipReader.getEntries();
   for(const file of entries) {
     if (file.getData && !file.directory) {
       const writer = new zip.Uint8ArrayWriter();
       const data = await file.getData(writer);
-      await writeFile(mount+"/"+file.filename, data);
+      await writeFile(file.filename, data);
     } else if (file.directory) {
-      await mkdirTree(mount+"/"+file.filename);
+      await mkdirTree(file.filename);
     }
   }
   await zipReader.close();
@@ -39,7 +37,13 @@ async function setupZipFS(zipBuf) {
 
 onmessage = async (msg) => {
   let old_timestamp = msg.data;
-  let resp = await fetch("assets-minimal.zip", {
+  try {
+    const root = await navigator.storage.getDirectory();
+    const _bundle = await root.getDirectoryHandle("bundle");
+  } catch (_e) {
+    old_timestamp = "";
+  }
+  let resp = await fetch("assets/frontend/bundle-minimal.zip", {
     headers: {
       "If-Modified-Since": old_timestamp
     }

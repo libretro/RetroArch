@@ -17,7 +17,9 @@
 
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+#if HAVE_WASMFS
 #include <emscripten/wasmfs.h>
+#endif
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -240,23 +242,23 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 
    /* bundle data */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
-         "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+         "bundle/assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
-         "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+         "bundle/autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
-         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+         "bundle/database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
-         "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+         "bundle/info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
-         "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
+         "bundle/overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], base_path,
-         "overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
+         "bundle/overlays/keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
-         "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+         "bundle/shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], base_path,
-         "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+         "bundle/filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], base_path,
-         "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+         "bundle/filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
 
    /* user data dirs */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], user_path,
@@ -266,7 +268,7 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT], user_path,
          "content", sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], user_path,
-         "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
+         "content/downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST], user_path,
          "playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
@@ -297,14 +299,14 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 #endif
 }
 
-static bool filesystem_ready = false;
 typedef struct args {
    int argc;
    char **argv;
 } args_t;
-
 static bool retro_started = false;
+static bool filesystem_ready = false;
 
+#if HAVE_WASMFS
 void PlatformEmscriptenMountFilesystems(void *info) {
    char *opfs_mount = getenv("OPFS");
    char *fetch_manifest = getenv("FETCH_MANIFEST");
@@ -380,10 +382,13 @@ void PlatformEmscriptenMountFilesystems(void *info) {
       free(line);
    }
    filesystem_ready = true;
+#if !PROXY_TO_PTHREAD
    while (!retro_started) {
       sleep(1);
    }
+#endif
 }
+#endif /* HAVE_WASMFS */
 
 static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds, int *percent)
 {
@@ -416,7 +421,6 @@ static uint64_t frontend_emscripten_get_free_mem(void)
 }
 
 void emscripten_bootup_mainloop(void *argptr) {
-   printf("FS ready? %d\n",filesystem_ready);
    if(filesystem_ready) {
       args_t *args = (args_t*)argptr;
       emscripten_set_main_loop(emscripten_mainloop, 0, 0);
@@ -436,18 +440,20 @@ int main(int argc, char *argv[])
 
    emscripten_set_canvas_element_size("#canvas", 800, 600);
    emscripten_set_element_css_size("#canvas", 800.0, 600.0);
-
+#if HAVE_WASMFS
 #if PROXY_TO_PTHREAD
    {
       PlatformEmscriptenMountFilesystems(NULL);
    }
-#else
+#else /* !PROXY_TO_PTHREAD */
    {
       sthread_t *thread = sthread_create(PlatformEmscriptenMountFilesystems, NULL);
       sthread_detach(thread);
    }
-#endif
-
+#endif /* PROXY_TO_PTHREAD */
+#else /* !HAVE_WASMFS */
+   filesystem_ready = true;
+#endif /* HAVE_WASMFS */
    emscripten_set_main_loop_arg(emscripten_bootup_mainloop, (void *)args, 0, 0);
    emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
 
