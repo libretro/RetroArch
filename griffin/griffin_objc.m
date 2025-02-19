@@ -61,6 +61,10 @@
 #include "../audio/drivers/coreaudio3.m"
 #endif
 
+#ifdef HAVE_CORELOCATION
+#include "../location/drivers/corelocation.m"
+#endif
+
 #if defined(HAVE_DISCORD)
 #include "../deps/discord-rpc/src/discord_register_osx.m"
 #endif
