@@ -297,15 +297,24 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
 #endif
 }
 
-void PlatformEmscriptenMountFilesystems() {
+static bool filesystem_ready = false;
+typedef struct args {
+   int argc;
+   char **argv;
+} args_t;
+
+static bool retro_started = false;
+
+void PlatformEmscriptenMountFilesystems(void *info) {
    char *opfs_mount = getenv("OPFS");
    char *fetch_manifest = getenv("FETCH_MANIFEST");
    printf("[Emscripten] Mount vars: %s %s\n", opfs_mount, fetch_manifest);
-
    if(opfs_mount) {
       int res;
-      backend_t opfs = wasmfs_create_opfs_backend();
       printf("[OPFS] Mount OPFS at %s\n", opfs_mount);
+      backend_t opfs = wasmfs_create_opfs_backend();
+      sleep(1);
+      printf("[OPFS] created\n");
       {
          char *parent = strdup(opfs_mount);
          path_parent_dir(parent, strlen(parent));
@@ -316,7 +325,9 @@ void PlatformEmscriptenMountFilesystems() {
          }
          free(parent);
       }
+      printf("[OPFS] parent dir of %s created\n", opfs_mount);
       res = wasmfs_create_directory(opfs_mount, 0777, opfs);
+      printf("[OPFS] mount finished %d\n", res);
       if(res) {
          printf("[OPFS] error result %d\n",res);
          if(errno) {
@@ -368,6 +379,10 @@ void PlatformEmscriptenMountFilesystems() {
       fclose(file);
       free(line);
    }
+   filesystem_ready = true;
+   while (!retro_started) {
+      sleep(1);
+   }
 }
 
 static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds, int *percent)
@@ -400,17 +415,41 @@ static uint64_t frontend_emscripten_get_free_mem(void)
    return PlatformEmscriptenGetFreeMem();
 }
 
+void emscripten_bootup_mainloop(void *argptr) {
+   printf("FS ready? %d\n",filesystem_ready);
+   if(filesystem_ready) {
+      args_t *args = (args_t*)argptr;
+      emscripten_set_main_loop(emscripten_mainloop, 0, 0);
+      emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
+      rarch_main(args->argc, args->argv, NULL);
+      retro_started = true;
+      free(args);
+   }
+}
+
 int main(int argc, char *argv[])
 {
+   args_t *args = calloc(sizeof(args_t), 1);
+
    PlatformEmscriptenWatchCanvasSize();
    PlatformEmscriptenPowerStateInit();
-   PlatformEmscriptenMountFilesystems();
-   
+
    emscripten_set_canvas_element_size("#canvas", 800, 600);
    emscripten_set_element_css_size("#canvas", 800.0, 600.0);
-   emscripten_set_main_loop(emscripten_mainloop, 0, 0);
+
+#if PROXY_TO_PTHREAD
+   {
+      PlatformEmscriptenMountFilesystems(NULL);
+   }
+#else
+   {
+      sthread_t *thread = sthread_create(PlatformEmscriptenMountFilesystems, NULL);
+      sthread_detach(thread);
+   }
+#endif
+
+   emscripten_set_main_loop_arg(emscripten_bootup_mainloop, (void *)args, 0, 0);
    emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
-   rarch_main(argc, argv, NULL);
 
    return 0;
 }

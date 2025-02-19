@@ -50,5 +50,5 @@ onmessage = async (msg) => {
     await resp.text();
   }
   postMessage(resp.headers.get("last-modified"));
+  close();
 }
-

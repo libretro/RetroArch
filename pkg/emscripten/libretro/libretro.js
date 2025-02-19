@@ -291,5 +291,6 @@ setupWorker.onmessage = (msg) => {
   filesystem_ready = true;
   localStorage.setItem("asset_time", msg.data);
   appInitialized();
+  setupWorker.terminate();
 }
 setupWorker.postMessage(localStorage.getItem("asset_time") ?? "");
