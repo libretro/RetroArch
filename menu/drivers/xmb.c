@@ -2290,7 +2290,10 @@ static void xmb_set_title(xmb_handle_t *xmb)
    if (     (xmb->categories_selection_ptr <= xmb->system_tab_end)
          || (xmb->is_quick_menu && !menu_is_running_quick_menu())
          || (xmb->depth > 1))
+   {
       menu_entries_get_title(xmb->title_name, sizeof(xmb->title_name));
+      strlcpy(xmb->title_name_alt, xmb->title_name, sizeof(xmb->title_name_alt));
+   }
    else
    {
       xmb_node_t *node = (xmb_node_t*)file_list_get_userdata_at_offset(
@@ -2317,8 +2320,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
                xmb->title_name_alt, sizeof(xmb->title_name_alt));
       }
    }
+
    while ((scrub_char_ptr = strchr(xmb->title_name, '/')))
-      *scrub_char_ptr = ' ';
+      *scrub_char_ptr = '-';
 }
 
 static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
