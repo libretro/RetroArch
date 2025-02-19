@@ -4607,6 +4607,8 @@ MSG_HASH(
    "Quando ativado, cada item de metadados de conteúdo apresentado na barra lateral direita das listas de reprodução (núcleo associado, tempo de reprodução) ocupará uma única linha, e as cadeias que excedam a largura disponível serão automaticamente deslocadas. Quando desativado, cada item de metadados será exibido estaticamente, ocupando tantas linhas quantas forem necessárias."
    )
 
+
+
 /* MaterialUI: Settings > User Interface > Appearance */
 
 

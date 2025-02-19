@@ -11691,6 +11691,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "Мідгар"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "Цёмна-шэрая"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "Светла-шэрая"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11719,6 +11727,31 @@ MSG_HASH(
    "Плэйлісты будуць перасартаваны ў алфавітным парадку пасля выдалення назваў кампаній."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Другарадная мініяцюра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Замяняе вобласць метададзеных дадатковай мініяцюрай."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "Скролінг метададзеных кантэнту"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Калі ўключана, метададзеныя ў правай частцы плэйліста (прывязка ядра, час працы) займаюць адзін радок; запісы больш шырыні бакавой панэлі будуць адлюстраваны бягучым радком. Калі выключана, усе метададзеныя будуць адлюстраваны статычна, займаючы неабходную колькасць рад[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Каэфіцыент маштабавання мініяцюр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Змяняе памер вобласці мініяцюр."
+   )
+
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Колеравая тэма"
    )
@@ -11743,10 +11776,6 @@ MSG_HASH(
    "Змрочная зона"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
-   "Сэлен"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "Solarized цёмная"
    )
@@ -11763,29 +11792,10 @@ MSG_HASH(
    "Светла-шэрая"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Другарадная мініяцюра"
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "Сэлен"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Замяняе вобласць метададзеных дадатковай мініяцюрай."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Скролінг метададзеных кантэнту"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Калі ўключана, метададзеныя ў правай частцы плэйліста (прывязка ядра, час працы) займаюць адзін радок; запісы больш шырыні бакавой панэлі будуць адлюстраваны бягучым радком. Калі выключана, усе метададзеныя будуць адлюстраваны статычна, займаючы неабходную колькасць рад[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Каэфіцыент маштабавання мініяцюр"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Змяняе памер вобласці мініяцюр."
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 

@@ -5842,6 +5842,7 @@ MSG_HASH(
 
 /* Ozone: Settings > User Interface > Appearance */
 
+
 MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
    "Selecteer een ander kleurenschema."
@@ -5854,6 +5855,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
    "Zwart"
    )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 

@@ -10931,6 +10931,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD,
    "Studená ledová"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "Tmavě šedá"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "Světle šedá"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -10950,6 +10958,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Playlisty budou po odstranění složky výrobce z jejich názvu seřazeny podle abecedy."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Sekundární miniatura"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Nahraďte panel metadat obsahu jinou miniaturou."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "Použít text oznámení pro metadata obsahu"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Je-li tato funkce povolena, každá položka metadat obsahu zobrazená na pravém postranním panelu playlistu (přidružené jádro, čas přehrávání) zabere jeden řádek; řetězce přesahující šířku postranního panelu se zobrazí jako rolovací text. Je-li vypnuta, bude každá položka metadat obsahu zobrazena staticky, zabalená tak, aby zabírala tolik řádků, kolik je potřeba."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Faktor měřítka miniatur"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Měřítko velikosti panelu miniatur."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Barevný motiv"
@@ -11006,30 +11039,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
    "Fialový déšť"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Sekundární miniatura"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Nahraďte panel metadat obsahu jinou miniaturou."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Použít text oznámení pro metadata obsahu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Je-li tato funkce povolena, každá položka metadat obsahu zobrazená na pravém postranním panelu playlistu (přidružené jádro, čas přehrávání) zabere jeden řádek; řetězce přesahující šířku postranního panelu se zobrazí jako rolovací text. Je-li vypnuta, bude každá položka metadat obsahu zobrazena staticky, zabalená tak, aby zabírala tolik řádků, kolik je potřeba."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Faktor měřítka miniatur"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Měřítko velikosti panelu miniatur."
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 

@@ -11703,6 +11703,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "Веселка"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "Темно-сірий"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "Сіре світло"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11730,6 +11738,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "Плейлісти будуть повторно сортовані в алфавітному порядку після видалення компонента виконавців їх імен."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "Додаткова мініатюра"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "Замінити панель метаданих вмісту іншою мініатюрою."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "Використовувати тікер для вмісту метаданих"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "Коли увімкнено, кожен елемент метаданих, що відображаються на правій бічній панелі списків відтворення (пов’язаний з ядром, час гри) буде займати одну лінію; рядки, що перевищують ширину бічної панелі, будуть відображатися як текст прокрутки тікета. Коли вимкнено, кожен ел[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Фактор масштабування мініатюр"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "Масштабувати розмір мініатюри (основного розміру)."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "Колір теми"
@@ -11790,30 +11823,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN,
    "Фіолетовий Дощ"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Додаткова мініатюра"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Замінити панель метаданих вмісту іншою мініатюрою."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Використовувати тікер для вмісту метаданих"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "Коли увімкнено, кожен елемент метаданих, що відображаються на правій бічній панелі списків відтворення (пов’язаний з ядром, час гри) буде займати одну лінію; рядки, що перевищують ширину бічної панелі, будуть відображатися як текст прокрутки тікета. Коли вимкнено, кожен ел[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Фактор масштабування мініатюр"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Масштабувати розмір мініатюри (основного розміру)."
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 

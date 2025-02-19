@@ -11451,6 +11451,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "三原色"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "暗灰色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "亮灰色"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11478,6 +11486,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "截斷列表名稱開啟時, 連接號之後的文字依字母順序重新排序。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "次要的預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "設定次要的預覽縮圖顯示類型, 開啟時覆蓋列表資訊欄並且支援按鍵切換。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "套用滾動文字到列表資訊欄"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "開啟時列表的資訊欄每個項目只占用一行, 超出欄位的文字使用滾動效果顯示, 關閉時則自動換行顯示。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "預覽縮圖欄位大小"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "設定預覽縮圖的欄位大小。"
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "自訂選單色彩主題"
@@ -11519,10 +11552,6 @@ MSG_HASH(
    "德古拉紫"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
-   "硒元素灰"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "暗青色"
    )
@@ -11543,29 +11572,10 @@ MSG_HASH(
    "紫雨紫"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "次要的預覽縮圖"
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "硒元素灰"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "設定次要的預覽縮圖顯示類型, 開啟時覆蓋列表資訊欄並且支援按鍵切換。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "套用滾動文字到列表資訊欄"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "開啟時列表的資訊欄每個項目只占用一行, 超出欄位的文字使用滾動效果顯示, 關閉時則自動換行顯示。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "預覽縮圖欄位大小"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "設定預覽縮圖的欄位大小。"
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 

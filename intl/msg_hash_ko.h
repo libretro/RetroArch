@@ -11687,6 +11687,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "미드가르"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "어두운 회색"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "밝은 회색"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11714,6 +11722,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "이름에서 제조사 항목을 삭제한 후 실행목록을 알파벳 순으로 다시 정렬합니다."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "두 번째 미리보기"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "콘텐츠 메타데이터 패널 대신 다른 미리보기를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "콘텐츠 메타데이터 한 줄로 표시"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "사용할 경우, 오른쪽 사이드바에 표시되는 콘텐츠 메타데이터(코어, 실행 시간 등)를 항목당 한 줄씩으로 표시합니다. 사이드바 너비를 초과하는 길이의 문구는 스크롤됩니다. 사용하지 않을 경우, 컨텐츠 메타데이터는 필요한 만큼 줄 수를 늘려가며 정적으로 표시됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "미리보기 배율"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "섬네일 바의 크기 배율을 설정합니다."
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "색상 테마"
@@ -11755,10 +11788,6 @@ MSG_HASH(
    "드라큘라"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
-   "셀레늄"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "솔라라이즈 다크"
    )
@@ -11779,29 +11808,10 @@ MSG_HASH(
    "자줏빛 비"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "두 번째 미리보기"
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "셀레늄"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "콘텐츠 메타데이터 패널 대신 다른 미리보기를 표시합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "콘텐츠 메타데이터 한 줄로 표시"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "사용할 경우, 오른쪽 사이드바에 표시되는 콘텐츠 메타데이터(코어, 실행 시간 등)를 항목당 한 줄씩으로 표시합니다. 사이드바 너비를 초과하는 길이의 문구는 스크롤됩니다. 사용하지 않을 경우, 컨텐츠 메타데이터는 필요한 만큼 줄 수를 늘려가며 정적으로 표시됩니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "미리보기 배율"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "섬네일 바의 크기 배율을 설정합니다."
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
