@@ -1164,13 +1164,13 @@ static void xmb_render_messagebox_internal(
    string_list_deinitialize(&list);
 }
 
-static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb,
-      bool menu_dynamic_wallpaper_enable,
-      unsigned xmb_color_theme,
-      const char *path_menu_wallpaper,
-      const char *dir_dynamic_wallpapers
-      )
+static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb)
 {
+   settings_t *settings               = config_get_ptr();
+   bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
+   unsigned xmb_color_theme           = settings->uints.menu_xmb_color_theme;
+   const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
+   const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
    char path[PATH_MAX_LENGTH];
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
@@ -1208,18 +1208,9 @@ static char *xmb_path_dynamic_wallpaper(xmb_handle_t *xmb,
    return strdup(path);
 }
 
-static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset,
-      bool menu_dynamic_wallpaper_enable,
-      unsigned xmb_color_theme,
-      const char *path_menu_wallpaper,
-      const char *dir_dynamic_wallpapers)
+static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 {
-   const char *path = xmb_path_dynamic_wallpaper(xmb,
-         menu_dynamic_wallpaper_enable,
-         xmb_color_theme,
-         path_menu_wallpaper,
-         dir_dynamic_wallpapers
-         );
+   const char *path = xmb_path_dynamic_wallpaper(xmb);
 
    if (!string_is_equal(path, xmb->bg_file_path) || reset)
    {
@@ -1229,16 +1220,14 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset,
                video_driver_supports_rgba(), 0,
                menu_display_handle_wallpaper_upload, NULL);
 
-         if (xmb->bg_file_path)
-            free(xmb->bg_file_path);
+         free(xmb->bg_file_path);
          xmb->bg_file_path = strdup(path);
       }
       else
       {
          xmb_load_image(xmb, NULL, MENU_IMAGE_NONE);
 
-         if (xmb->bg_file_path)
-            free(xmb->bg_file_path);
+         free(xmb->bg_file_path);
          xmb->bg_file_path = NULL;
       }
    }
@@ -3165,12 +3154,7 @@ static void xmb_populate_entries(void *data,
       xmb_unload_icon_thumbnail_textures(xmb);
 
    if (xmb->allow_dynamic_wallpaper)
-      xmb_update_dynamic_wallpaper(xmb, false,
-            settings->bools.menu_dynamic_wallpaper_enable,
-            settings->uints.menu_xmb_color_theme,
-            settings->paths.path_menu_wallpaper,
-            settings->paths.directory_dynamic_wallpapers
-            );
+      xmb_update_dynamic_wallpaper(xmb, false);
 
    /* Determine whether to show entry index */
    xmb->entry_index_str[0] = '\0';
@@ -5597,6 +5581,7 @@ static enum menu_action xmb_parse_menu_entry_action(
                || xmb->want_fullscreen_thumbnails)
          {
             xmb_hide_fullscreen_thumbnails(xmb, true);
+            new_action = MENU_ACTION_NOOP;
          }
          break;
       case MENU_ACTION_SCAN:
@@ -6494,12 +6479,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->assets_missing     = false;
       if (!xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme))
          xmb->assets_missing  = true;
-      xmb_update_dynamic_wallpaper(xmb, true,
-            settings->bools.menu_dynamic_wallpaper_enable,
-            settings->uints.menu_xmb_color_theme,
-            settings->paths.path_menu_wallpaper,
-            settings->paths.directory_dynamic_wallpapers
-            );
+      xmb_update_dynamic_wallpaper(xmb, true);
 
       /* Reset previous selection buffer */
       if (xmb->depth > 2)
@@ -9108,6 +9088,20 @@ static int xmb_list_bind_init(menu_file_list_cbs_t *cbs,
 static int xmb_list_push(void *data, void *userdata,
       menu_displaylist_info_t *info, unsigned type)
 {
+#if 1
+   switch (type)
+   {
+      case DISPLAYLIST_MENU_SETTINGS_LIST:
+      {
+         xmb_handle_t *xmb    = (xmb_handle_t*)userdata;
+         xmb_update_dynamic_wallpaper(xmb, false);
+         break;
+      }
+   }
+
+   /* Use common lists for all drivers */
+   return -1;
+#else
    int ret                         = -1;
    core_info_list_t *list          = NULL;
    settings_t *settings            = config_get_ptr();
@@ -9142,9 +9136,6 @@ static int xmb_list_push(void *data, void *userdata,
    const char *menu_content_show_settings_password
                                    = settings->paths.menu_content_show_settings_password;
    const char *kiosk_mode_password = settings->paths.kiosk_mode_password;
-
-   /* Use common lists for all drivers */
-   return -1;
 
    switch (type)
    {
@@ -9403,6 +9394,7 @@ static int xmb_list_push(void *data, void *userdata,
          break;
    }
    return ret;
+#endif
 }
 
 static bool xmb_menu_init_list(void *data)

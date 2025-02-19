@@ -18785,6 +18785,8 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
                (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+               (*list)[list_info->index - 1].action_left = &setting_uint_action_left_with_refresh;
+               (*list)[list_info->index - 1].action_right = &setting_uint_action_right_with_refresh;
                (*list)[list_info->index - 1].get_string_representation =
                   &setting_get_string_representation_uint_xmb_menu_color_theme;
             menu_settings_list_current_add_range(list, list_info, 0, XMB_THEME_LAST-1, 1, true, true);
