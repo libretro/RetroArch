@@ -185,9 +185,7 @@ function selectFiles(files) {
 }
 
 function uploadData(data, name) {
-   Module.FS.mkdirTree("/home/web_user/retroarch/userdata/content");
-   //console.log("uploaded",name,"of",data.byteLength,"bytes");
-   Module.FS.writeFile('/home/web_user/retroarch/userdata/content/'+name, new Uint8Array(data));
+  setupWorker.postMessage({command:"upload_file", name:name, data:data}, {transfer:[data]});
 }
 
 function switchCore(corename) {
@@ -289,9 +287,12 @@ function loadCore(core) {
 
 const setupWorker = new Worker("libretro.worker.js");
 setupWorker.onmessage = (msg) => {
-  filesystem_ready = true;
-  localStorage.setItem("asset_time", msg.data);
-  appInitialized();
-  setupWorker.terminate();
+  if(msg.data.command == "loaded_bundle") {
+    filesystem_ready = true;
+    localStorage.setItem("asset_time", msg.data.time);
+    appInitialized();
+  } else if(msg.data.command == "uploaded_file") {
+    console.log("finished upload of",msg.data.name);
+  }
 }
-setupWorker.postMessage(localStorage.getItem("asset_time") ?? "");
+setupWorker.postMessage({command:"load_bundle",time:localStorage.getItem("asset_time") ?? ""});
