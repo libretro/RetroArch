@@ -4540,6 +4540,9 @@ static void ozone_list_cache(void *data,
    selection_buf              = MENU_LIST_GET_SELECTION(menu_list, 0);
    bottom_boundary            = video_info_height - ozone->dimensions.header_height - ozone->dimensions.footer_height;
 
+   if (!selection_buf->size)
+      return;
+
    for (i = 0; i < entries_end; i++)
    {
       ozone_node_t *node = (ozone_node_t*)selection_buf->list[i].userdata;
@@ -5462,6 +5465,9 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
       ozone_update_content_metadata(ozone);
 
    selection_buf                 = MENU_LIST_GET_SELECTION(menu_list, 0);
+
+   if (!selection_buf->size)
+      return;
 
    video_driver_get_size(&video_info_width, &video_info_height);
 
