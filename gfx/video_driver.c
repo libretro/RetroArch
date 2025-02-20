@@ -3793,7 +3793,7 @@ void video_driver_frame(const void *data, unsigned width,
       /* Consider frame dropped when frame time exceeds 1.75x target */
       if (     video_st->frame_count > 4
             && !menu_is_alive
-            && frame_time > 1000000.0f / video_info.refresh_rate * 1.75f)
+            && frame_time > 1000000.0f / video_st->av_info.timing.fps * 1.75f)
          video_st->frame_drop_count++;
 
       if (video_info.fps_show)
