@@ -112,8 +112,8 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
    settings_t           *settings = config_get_ptr();
    bool apply_cheats_after_toggle = settings->bools.apply_cheats_after_toggle;
 
-   cheat_manager_toggle_index(
-         apply_cheats_after_toggle,
+   cheat_manager_toggle_index(apply_cheats_after_toggle,
+         settings->bools.notification_show_cheats_applied,
          (unsigned)idx);
 
    return 0;
@@ -259,7 +259,7 @@ static int action_right_scroll(unsigned type, const char *label,
       }
    }
 #ifdef HAVE_AUDIOMIXER
-   if (selection != menu_st->selection_ptr) 
+   if (selection != menu_st->selection_ptr)
       audio_driver_mixer_play_scroll_sound(false);
 #endif
 
@@ -287,15 +287,15 @@ static int action_right_mainmenu(unsigned type, const char *label,
 #ifdef HAVE_XMB
    struct menu_state    *menu_st       = menu_state_get_ptr();
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
-   const char *menu_ident              = (driver_ctx && driver_ctx->ident) 
-      ? driver_ctx->ident 
+   const char *menu_ident              = (driver_ctx && driver_ctx->ident)
+      ? driver_ctx->ident
       : NULL;
-   size_t size                         = (driver_ctx && driver_ctx->list_get_size) 
-      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) 
+   size_t _len                         = (driver_ctx && driver_ctx->list_get_size)
+      ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN)
       : 0;
    /* Tab switching functionality only applies
     * to XMB */
-   if (  (size == 1)
+   if (  (_len == 1)
        && string_is_equal(menu_ident, "xmb"))
    {
       size_t horiz_size = 0, tabs_size = 0, selection = 0;
@@ -303,8 +303,8 @@ static int action_right_mainmenu(unsigned type, const char *label,
       bool menu_nav_wraparound_enable  = settings->bools.menu_navigation_wraparound_enable;
       if (driver_ctx)
       {
-         selection          = (driver_ctx->list_get_selection) 
-            ? driver_ctx->list_get_selection(menu_st->userdata) 
+         selection          = (driver_ctx->list_get_selection)
+            ? driver_ctx->list_get_selection(menu_st->userdata)
             : 0;
          if (driver_ctx->list_get_size)
          {
@@ -613,7 +613,7 @@ static void playlist_thumbnail_mode_right(playlist_t *playlist, enum playlist_th
    enum playlist_thumbnail_mode thumbnail_mode =
          playlist_get_thumbnail_mode(playlist, thumbnail_id);
 
-   if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_BOXARTS)
+   if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_LOGOS)
       thumbnail_mode = (enum playlist_thumbnail_mode)((unsigned)thumbnail_mode + 1);
    else if (wraparound)
       thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
@@ -951,8 +951,8 @@ static int disk_options_disk_idx_right(unsigned type, const char *label,
 static int action_right_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   settings_t       *settings = config_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t       *settings = config_get_ptr();
 
    settings->ints.state_slot++;
    if (settings->ints.state_slot > 999)
@@ -960,10 +960,9 @@ static int action_right_state_slot(unsigned type, const char *label,
 
    if (menu_st->driver_ctx)
    {
-      size_t selection = menu_st->selection_ptr;
       if (menu_st->driver_ctx->update_savestate_thumbnail_path)
          menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
+               menu_st->userdata, (unsigned)menu_st->selection_ptr);
       if (menu_st->driver_ctx->update_savestate_thumbnail_image)
          menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
    }
@@ -975,21 +974,11 @@ static int action_right_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
    struct menu_state *menu_st     = menu_state_get_ptr();
-   size_t selection               = menu_st->selection_ptr;
    settings_t           *settings = config_get_ptr();
 
    settings->ints.replay_slot++;
    if (settings->ints.replay_slot > 999)
       settings->ints.replay_slot = -1;
-
-   if (menu_st->driver_ctx)
-   {
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
-   }
 
    return 0;
 }
@@ -1242,6 +1231,9 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_RIGHT(cbs, manual_content_scan_core_name_right);
                break;
+            case MENU_ENUM_LABEL_STATE_SLOT:
+               BIND_ACTION_RIGHT(cbs, action_right_state_slot);
+               break;
             #ifdef HAVE_LAKKA
             case MENU_ENUM_LABEL_CPU_PERF_MODE:
                BIND_ACTION_RIGHT(cbs, cpu_policy_mode_change);
@@ -1308,7 +1300,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
          return 0;
       }
    }
-   
+
    if (menu_cbs_init_bind_right_compare_label(cbs, label, lbl_len, menu_lbl, menu_lbl_len
             ) == 0)
       return 0;

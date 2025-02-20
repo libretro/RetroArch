@@ -115,7 +115,7 @@ HRESULT WINAPI
 }
 #endif
 
-bool d3d_compile(const char* src, size_t size,
+bool d3d_compile(const char* src, size_t len,
       LPCSTR src_name, LPCSTR entrypoint, LPCSTR target, D3DBlob* out)
 {
    D3DBlob error_msg;
@@ -125,18 +125,18 @@ bool d3d_compile(const char* src, size_t size,
    UINT compileflags    = 0;
 #endif
 
-   if (!size)
-      size = strlen(src);
+   if (!len)
+      len = strlen(src);
 
    if (FAILED(D3DCompile(
-             src, size, src_name, NULL, NULL,
+             src, len, src_name, NULL, NULL,
              entrypoint, target, compileflags, 0, out, &error_msg)))
    {
       if (error_msg)
       {
          const char* msg = (const char*)error_msg->lpVtbl->GetBufferPointer(error_msg);
          RARCH_ERR("D3DCompile failed :\n%s\n", msg);
-         /* Place a breakpoint here, if you want, 
+         /* Place a breakpoint here, if you want,
             to see shader compilation issues */
          Release(error_msg);
       }

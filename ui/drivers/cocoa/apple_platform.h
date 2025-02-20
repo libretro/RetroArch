@@ -15,6 +15,10 @@ extern void ios_show_file_sheet(void);
 extern bool ios_running_on_ipad(void);
 #endif
 
+#if TARGET_OS_OSX
+extern void osx_show_file_sheet(void);
+#endif
+
 #ifdef __OBJC__
 
 #import <Foundation/Foundation.h>
@@ -56,6 +60,9 @@ typedef enum apple_view_type
  * the displays should not sleep.
  */
 - (bool)setDisableDisplaySleep:(bool)disable;
+#if !defined(HAVE_COCOATOUCH)
+- (void)openDocument:(id)sender;
+#endif
 @end
 
 #endif

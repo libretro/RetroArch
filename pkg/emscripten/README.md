@@ -1,10 +1,10 @@
 # RetroArch Web Player
 
-The RetroArch Web Player is RetroArch compiled through [Emscripten](http://kripken.github.io/emscripten-site/). The following outlines how to compile RetroArch using Emscripten, and running it in your browser.
+The RetroArch Web Player is RetroArch compiled through [Emscripten](https://emscripten.org/). The following outlines how to compile RetroArch using Emscripten, and running it in your browser.
 
-## Compiling
+## Compiling the Single-Threaded Player
 
-To compile RetroArch with Emscripten, you'll first have to [download and install the Emscripten SDK](http://kripken.github.io/emscripten-site/docs/getting_started/downloads.html) at 3.1.46:
+To compile RetroArch with Emscripten, you'll first have to [download and install the Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) at 3.1.46:
 
 ```
 git clone https://github.com/emscripten-core/emsdk.git
@@ -35,7 +35,7 @@ cp fceumm_libretro.{js,wasm} pkg/emscripten/libretro
 
 The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  You'll need the asset package from the latest emscripten nightly build ( https://buildbot.libretro.com/nightly/emscripten/ ); take its `assets/` folder and put it into `pkg/emscripten/libretro`.  This `assets/` folder should contain a `frontend/` directory and a `cores/` directory.
 
-If you're building your own frontend asset bundle (i.e. modifying `frontend/bundle/`), you'll need to turn the bundle into zipped partfiles.  Open a terminal in `assets/frontend` and `zip -r9 bundle.zip bundle && split -b 30M bundle.zip bundle.zip.` (this should work on Mac and Linux, please file a PR with instructions for Windows).
+If you're building your own frontend asset bundle (i.e. modifying `frontend/bundle/`), you'll need to turn the bundle into zipped partfiles.  Open a terminal in `assets/frontend/` and `zip -r9 bundle.zip bundle && cd .. && split -b 30M bundle.zip bundle.zip.` (this should work on Mac and Linux, please file a PR with instructions for Windows).
 
 If you want to add more built-in core content files to `assets/cores`, you need to re-run the indexer script:
 
@@ -83,11 +83,11 @@ emmake make -f Makefile platform=emscripten
 cp melonds_libretro_emscripten.bc ~/retroarch/RetroArch/libretro_emscripten.bc
 ```
 
-Now build the frontend with the pthreads env variable: (2 is the number of workers this can be any integer)
+Now build the frontend with the pthreads env variable: (2 is the number of workers; this can be any integer, but many browsers limit the number of workers)
 
 ```
 cd ~/retroarch/RetroArch
-pthread=2 emmake make -f Makefile.emscripten LIBRETRO=melonds && cp melonds_libretro.* pkg/emscripten/libretro
+emmake make -f Makefile.emscripten LIBRETRO=melonds PTHREAD=2 && cp melonds_libretro.* pkg/emscripten/libretro
 ```
 
 Your resulting output will be located in:
@@ -95,12 +95,11 @@ Your resulting output will be located in:
 ```
 ~/retroarch/RetroArch/pkg/emscripten/libretro/melonds_libretro.js
 ~/retroarch/RetroArch/pkg/emscripten/libretro/melonds_libretro.wasm
-~/retroarch/RetroArch/pkg/emscripten/libretro/melonds_libretro.worker.js
 ```
 
 ## Setting up your webserver (Threaded)
 
-Unless loading from `localhost` you will need to server the content from an HTTPS endpoint with a valid SSL certificate. This is a security limitation imposed by the browser. Along with that you will need to set content control policies with special headers in your server: 
+To support multithreaded builds, you will need to serve the content from an HTTPS endpoint with a valid SSL certificate. This is a security limitation imposed by the browser. Along with that you will need to set content control policies with special headers in your server:
 
 In Nodejs with express:
 
@@ -108,6 +107,7 @@ In Nodejs with express:
 app.use(function(req, res, next) {
   res.header("Cross-Origin-Embedder-Policy", "require-corp");
   res.header("Cross-Origin-Opener-Policy", "same-origin");
+  res.header("Cross-Origin-Resource-Policy", "same-origin");
   next();
 });
 ```
@@ -117,4 +117,50 @@ In NGINX: (site config under `server {`)
 ```
   add_header Cross-Origin-Opener-Policy same-origin;
   add_header Cross-Origin-Embedder-Policy require-corp;
+  add_header Cross-Origin-Resource-Policy same-origin;
 ```
+
+Node http-server:
+
+```
+http-server . -S \
+  --header "Cross-Origin-Opener-Policy: same-origin" \
+  --header "Cross-Origin-Embedder-Policy: require-corp" \
+  --header "Cross-Origin-Resource-Policy: same-origin"
+```
+
+# Compiling the Multi-Threaded Frontend
+
+To compile the multi-threaded RetroArch frontend with Emscripten and make use of wasmfs and other features, you'll first have to [download and install the Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html).  Currently, we need the "top of tree" or latest version of Emscripten:
+
+```
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install tot
+./emsdk activate tot
+source emsdk_env.sh
+```
+
+After emsdk is installed you will need to build an emulator core, move that output into Retroarch, and use helper scripts to produce web ready assets, in this example we will be building [https://github.com/libretro/libretro-fceumm](https://github.com/libretro/libretro-fceumm):
+
+```
+mkdir ~/retroarch
+cd ~/retroarch
+git clone https://github.com/libretro/libretro-fceumm.git
+cd libretro-fceumm
+emmake make -f Makefile.libretro platform=emscripten
+git clone https://github.com/libretro/RetroArch.git ~/retroarch/RetroArch
+cp ~/retroarch/libretro-fceumm/fceumm_libretro_emscripten.bc ~/retroarch/RetroArch/libretro_emscripten.bc
+
+cd ~/retroarch
+emmake make -f Makefile.emscripten LIBRETRO=fceumm PROXY_TO_PTHREAD=1 PTHREAD=4 HAVE_WASMFS=1 ASYNC=0 HAVE_EGL=0 -j all
+cp fceumm_libretro.{js,wasm} pkg/emscripten/libretro-thread
+```
+
+## Dependencies
+
+The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  While it supports the regular desktop asset and content downloaders, we also provide a small bundle of UI assets for first launch.  You can obtain these files from the nightly Emscripten build on the buildbot, or make them yourself by `zip -r bundle-minimal.zip bundle-minimal` (essentially, just the `assets/ozone`, `assets/pkg`, and `assets/sounds` folders from the regular asset package).
+
+## Usage
+
+Hosting the threaded web build is the same as for the multi-threaded emulators above; SSL and proper CORS headers are required.

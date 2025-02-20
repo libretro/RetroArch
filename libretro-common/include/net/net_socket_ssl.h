@@ -33,13 +33,13 @@ void* ssl_socket_init(int fd, const char *domain);
 
 int ssl_socket_connect(void *state_data, void *data, bool timeout_enable, bool nonblock);
 
-int ssl_socket_send_all_blocking(void *state_data, const void *data_, size_t size, bool no_signal);
+int ssl_socket_send_all_blocking(void *state_data, const void *data_, size_t len, bool no_signal);
 
-ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_, size_t size, bool no_signal);
+ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_, size_t len, bool no_signal);
 
-int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t size);
+int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len);
 
-ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *data_, size_t size);
+ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *data_, size_t len);
 
 void ssl_socket_close(void *state_data);
 

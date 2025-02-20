@@ -124,9 +124,9 @@ static int32_t dinput_joypad_button_state(
                   static const unsigned check1 = (JOY_POVRIGHT/2);
                   static const unsigned check2 = (JOY_POVLEFT+JOY_POVRIGHT/2);
                   return (
-                        (pov == JOY_POVFORWARD) ||
-                        (pov == check1)         ||
-                        (pov == check2)
+                           (pov == JOY_POVFORWARD)
+                        || (pov == check1)
+                        || (pov == check2)
                         );
                }
             case HAT_RIGHT_MASK:
@@ -134,20 +134,20 @@ static int32_t dinput_joypad_button_state(
                   static const unsigned check1 = (JOY_POVRIGHT/2);
                   static const unsigned check2 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
                   return (
-                        (pov == JOY_POVRIGHT) ||
-                        (pov == check1)       ||
-                        (pov == check2)
+                           (pov == JOY_POVRIGHT)
+                        || (pov == check1)
+                        || (pov == check2)
                         );
                }
             case HAT_DOWN_MASK:
                {
                   static const unsigned check1 = (JOY_POVRIGHT+JOY_POVRIGHT/2);
                   static const unsigned check2 = (JOY_POVBACKWARD+JOY_POVRIGHT/2);
-                  return 
+                  return
                      (
-                      (pov == JOY_POVBACKWARD) ||
-                      (pov == check1)          ||
-                      (pov == check2)
+                         (pov == JOY_POVBACKWARD)
+                      || (pov == check1)
+                      || (pov == check2)
                      );
                }
             case HAT_LEFT_MASK:
@@ -157,9 +157,9 @@ static int32_t dinput_joypad_button_state(
 
                   return
                      (
-                      (pov == JOY_POVLEFT) || 
-                      (pov == check1)      || 
-                      (pov == check2)
+                         (pov == JOY_POVLEFT)
+                      || (pov == check1)
+                      || (pov == check2)
                      );
                }
             default:
@@ -284,12 +284,12 @@ static int16_t dinput_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && dinput_joypad_button_state(
                pad, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(dinput_joypad_axis_state(pad, joyaxis)) 
+            ((float)abs(dinput_joypad_axis_state(pad, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }

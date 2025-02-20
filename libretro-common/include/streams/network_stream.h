@@ -97,7 +97,7 @@ typedef struct netstream
  * or less than \c used.
  * @see netstream_close
  */
-bool netstream_open(netstream_t *stream, void *buf, size_t size, size_t used);
+bool netstream_open(netstream_t *stream, void *buf, size_t len, size_t used);
 
 /**
  * Closes a network-order stream.

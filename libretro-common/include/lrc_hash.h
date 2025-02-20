@@ -39,13 +39,13 @@ RETRO_BEGIN_DECLS
 
 /**
  * sha256_hash:
- * @out               : Output.
+ * @s                 : Output.
  * @in                : Input.
- * @size              : Size of @out.
+ * @len               : Size of @out.
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
-void sha256_hash(char *out, const uint8_t *in, size_t size);
+void sha256_hash(char *s, const uint8_t *in, size_t len);
 
 int sha1_calculate(const char *path, char *result);
 

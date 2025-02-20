@@ -92,27 +92,24 @@ int socket_next(void **address)
 }
 
 ssize_t socket_receive_all_nonblocking(int fd, bool *error,
-      void *data_, size_t size)
+      void *data_, size_t len)
 {
-   ssize_t ret = recv(fd, (char*)data_, size, 0);
-
+   ssize_t ret = recv(fd, (char*)data_, len, 0);
    if (ret > 0)
       return ret;
-
    if (ret < 0 && isagain((int)ret))
       return 0;
-
    *error = true;
    return -1;
 }
 
-bool socket_receive_all_blocking(int fd, void *data_, size_t size)
+bool socket_receive_all_blocking(int fd, void *data_, size_t len)
 {
    const uint8_t *data = (const uint8_t*)data_;
 
-   while (size)
+   while (len)
    {
-      ssize_t ret = recv(fd, (char*)data, size, 0);
+      ssize_t ret = recv(fd, (char*)data, len, 0);
 
       if (!ret)
          return false;
@@ -125,7 +122,7 @@ bool socket_receive_all_blocking(int fd, void *data_, size_t size)
       else
       {
          data += ret;
-         size -= ret;
+         len  -= ret;
       }
    }
 
@@ -133,8 +130,7 @@ bool socket_receive_all_blocking(int fd, void *data_, size_t size)
 }
 
 bool socket_receive_all_blocking_with_timeout(int fd,
-      void *data_, size_t size,
-      int timeout)
+      void *data_, size_t len, int timeout)
 {
    const uint8_t *data    = (const uint8_t*)data_;
    retro_time_t  deadline = cpu_features_get_time_usec();
@@ -144,9 +140,9 @@ bool socket_receive_all_blocking_with_timeout(int fd,
    else
       deadline += 5000000;
 
-   while (size)
+   while (len)
    {
-      ssize_t ret = recv(fd, (char*)data, size, 0);
+      ssize_t ret = recv(fd, (char*)data, len, 0);
 
       if (!ret)
          return false;
@@ -169,7 +165,7 @@ bool socket_receive_all_blocking_with_timeout(int fd,
       else
       {
          data += ret;
-         size -= ret;
+         len  -= ret;
       }
    }
 
@@ -570,15 +566,15 @@ bool socket_wait(int fd, bool *rd, bool *wr, int timeout)
 #endif
 }
 
-bool socket_send_all_blocking(int fd, const void *data_, size_t size,
+bool socket_send_all_blocking(int fd, const void *data_, size_t len,
       bool no_signal)
 {
    const uint8_t *data = (const uint8_t*)data_;
    int           flags = no_signal ? MSG_NOSIGNAL : 0;
 
-   while (size)
+   while (len)
    {
-      ssize_t ret = send(fd, (const char*)data, size, flags);
+      ssize_t ret = send(fd, (const char*)data, len, flags);
 
       if (!ret)
          continue;
@@ -591,7 +587,7 @@ bool socket_send_all_blocking(int fd, const void *data_, size_t size,
       else
       {
          data += ret;
-         size -= ret;
+         len  -= ret;
       }
    }
 
@@ -599,7 +595,7 @@ bool socket_send_all_blocking(int fd, const void *data_, size_t size,
 }
 
 bool socket_send_all_blocking_with_timeout(int fd,
-      const void *data_, size_t size,
+      const void *data_, size_t len,
       int timeout, bool no_signal)
 {
    const uint8_t *data    = (const uint8_t*)data_;
@@ -611,9 +607,9 @@ bool socket_send_all_blocking_with_timeout(int fd,
    else
       deadline += 5000000;
 
-   while (size)
+   while (len)
    {
-      ssize_t ret = send(fd, (const char*)data, size, flags);
+      ssize_t ret = send(fd, (const char*)data, len, flags);
 
       if (!ret)
          continue;
@@ -636,22 +632,22 @@ bool socket_send_all_blocking_with_timeout(int fd,
       else
       {
          data += ret;
-         size -= ret;
+         len  -= ret;
       }
    }
 
    return true;
 }
 
-ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
+ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t len,
       bool no_signal)
 {
    const uint8_t *data = (const uint8_t*)data_;
    int           flags = no_signal ? MSG_NOSIGNAL : 0;
 
-   while (size)
+   while (len)
    {
-      ssize_t ret = send(fd, (const char*)data, size, flags);
+      ssize_t ret = send(fd, (const char*)data, len, flags);
 
       if (!ret)
          break;
@@ -666,7 +662,7 @@ ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
       else
       {
          data += ret;
-         size -= ret;
+         len  -= ret;
       }
    }
 

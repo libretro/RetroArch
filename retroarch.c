@@ -209,6 +209,10 @@
 
 #include "accessibility.h"
 
+#ifdef HAVE_GAME_AI
+#include "ai/game_ai.h"
+#endif
+
 #if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX)
 #include "SDL.h"
 #endif
@@ -310,7 +314,7 @@ struct rarch_state
    sthread_tls_t rarch_tls;               /* unsigned alignment */
 #endif
    unsigned perf_ptr_rarch;
-   uint16_t flags;
+   uint32_t flags;
 
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
@@ -357,6 +361,9 @@ static const location_driver_t *location_drivers[] = {
 #ifdef ANDROID
    &location_android,
 #endif
+#ifdef HAVE_CORELOCATION
+   &location_corelocation,
+#endif
    &location_null,
    NULL,
 };
@@ -374,14 +381,12 @@ const char *config_get_location_driver_options(void)
 }
 
 static void location_driver_find_driver(
-      settings_t *settings,
+      const char *loc_drv,
       location_driver_state_t *location_st,
       const char *prefix,
       bool verbosity_enabled)
 {
-   int i                        = (int)driver_find_index(
-         "location_driver",
-         settings->arrays.location_driver);
+   int i                        = (int)driver_find_index("location_driver", loc_drv);
 
    if (i >= 0)
       location_st->driver       = (const location_driver_t*)
@@ -391,8 +396,7 @@ static void location_driver_find_driver(
       if (verbosity_enabled)
       {
          unsigned d;
-         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.location_driver);
+         RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix, loc_drv);
          RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
          for (d = 0; location_drivers[d]; d++)
             RARCH_LOG_OUTPUT("\t%s\n", location_drivers[d]->ident);
@@ -418,7 +422,10 @@ bool driver_location_start(void)
       if (location_allow)
          return location_st->driver->start(location_st->data);
 
-      runloop_msg_queue_push("Location is explicitly disabled.\n",
+      /* TODO/FIXME - localize */
+      runloop_msg_queue_push(
+            "Location is explicitly disabled.\n",
+            STRLEN_CONST("Location is explicitly disabled.\n"),
             1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
             MESSAGE_QUEUE_CATEGORY_INFO);
    }
@@ -471,16 +478,18 @@ bool driver_location_get_position(double *lat, double *lon,
 static bool init_location(
       void *data,
       location_driver_state_t *location_st,
-      settings_t *settings,
+      const char *loc_drv,
       bool verbosity_enabled)
 {
+   if (!location_st->driver || !location_st->driver->init)
+      return false;
+
    /* Resource leaks will follow if location
       interface is initialized twice. */
    if (!location_st->data)
    {
       rarch_system_info_t *sys_info = (rarch_system_info_t*)data;
-      location_driver_find_driver(settings,
-            &location_driver_st,
+      location_driver_find_driver(loc_drv, &location_driver_st,
             "location driver", verbosity_enabled);
 
       if (!(location_st->data = location_st->driver->init()))
@@ -556,6 +565,9 @@ midi_driver_t *midi_drivers[]   = {
 #endif
 #ifdef HAVE_WINMM
    &midi_winmm,
+#endif
+#ifdef HAVE_COREMIDI
+   &midi_coremidi,
 #endif
    &midi_null
 };
@@ -857,8 +869,6 @@ bool midi_driver_set_input(const char *input)
 
 bool midi_driver_set_output(void *settings_data, const char *output)
 {
-   settings_t        *settings = (settings_t*)settings_data;
-
    if (!rarch_midi_drv_data)
    {
 #ifdef DEBUG
@@ -881,10 +891,12 @@ bool midi_driver_set_output(void *settings_data, const char *output)
 
    if (output)
    {
+      settings_t *settings = (settings_t*)settings_data;
+      unsigned midi_volume = settings->uints.midi_volume;
       rarch_midi_drv_output_enabled = true;
       RARCH_LOG("[MIDI]: Output device changed to \"%s\".\n", output);
 
-      midi_driver_set_volume(settings->uints.midi_volume);
+      midi_driver_set_volume(midi_volume);
    }
    else
    {
@@ -1128,161 +1140,90 @@ size_t midi_driver_get_event_size(uint8_t status)
  * Returns: NULL if no driver based on @label found, otherwise
  * pointer to driver.
  **/
-static const void *find_driver_nonempty(
-      const char *label, int i,
-      char *s, size_t len)
+static size_t find_driver_nonempty(
+      const char *label, int i, char *s, size_t len)
 {
    if (string_is_equal(label, "camera_driver"))
    {
       if (camera_drivers[i])
-      {
-         const char *ident = camera_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return camera_drivers[i];
-      }
+         return strlcpy(s, camera_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "location_driver"))
    {
       if (location_drivers[i])
-      {
-         const char *ident = location_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return location_drivers[i];
-      }
+         return strlcpy(s, location_drivers[i]->ident, len);
    }
 #ifdef HAVE_MENU
    else if (string_is_equal(label, "menu_driver"))
    {
       if (menu_ctx_drivers[i])
-      {
-         const char *ident = menu_ctx_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return menu_ctx_drivers[i];
-      }
+         return strlcpy(s, menu_ctx_drivers[i]->ident, len);
    }
 #endif
    else if (string_is_equal(label, "input_driver"))
    {
       if (input_drivers[i])
-      {
-         const char *ident = input_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return input_drivers[i];
-      }
+         return strlcpy(s, input_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "input_joypad_driver"))
    {
       if (joypad_drivers[i])
-      {
-         const char *ident = joypad_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return joypad_drivers[i];
-      }
+         return strlcpy(s, joypad_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "video_driver"))
    {
       if (video_drivers[i])
-      {
-         const char *ident = video_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return video_drivers[i];
-      }
+         return strlcpy(s, video_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "audio_driver"))
    {
       if (audio_drivers[i])
-      {
-         const char *ident = audio_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return audio_drivers[i];
-      }
+         return strlcpy(s, audio_drivers[i]->ident, len);
    }
 #ifdef HAVE_MICROPHONE
    else if (string_is_equal(label, "microphone_driver"))
    {
       if (microphone_drivers[i])
-      {
-         const char *ident = microphone_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return microphone_drivers[i];
-      }
+         return strlcpy(s, microphone_drivers[i]->ident, len);
    }
 #endif
    else if (string_is_equal(label, "record_driver"))
    {
       if (record_drivers[i])
-      {
-         const char *ident = record_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return record_drivers[i];
-      }
+         return strlcpy(s, record_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "midi_driver"))
    {
       if (midi_driver_find_handle(i))
-      {
-         const char *ident = midi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return midi_drivers[i];
-      }
+         return strlcpy(s, midi_drivers[i]->ident, len);
    }
    else if (string_is_equal(label, "audio_resampler_driver"))
    {
       if (audio_resampler_driver_find_handle(i))
-      {
-         const char *ident = audio_resampler_driver_find_ident(i);
-
-         strlcpy(s, ident, len);
-         return audio_resampler_driver_find_handle(i);
-      }
+         return strlcpy(s, audio_resampler_driver_find_ident(i), len);
    }
 #ifdef HAVE_BLUETOOTH
    else if (string_is_equal(label, "bluetooth_driver"))
    {
       if (bluetooth_drivers[i])
-      {
-         const char *ident = bluetooth_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return bluetooth_drivers[i];
-      }
+         return strlcpy(s, bluetooth_drivers[i]->ident, len);
    }
 #endif
 #ifdef HAVE_WIFI
    else if (string_is_equal(label, "wifi_driver"))
    {
       if (wifi_drivers[i])
-      {
-         const char *ident = wifi_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return wifi_drivers[i];
-      }
+         return strlcpy(s, wifi_drivers[i]->ident, len);
    }
 #endif
 #ifdef HAVE_CLOUDSYNC
    else if (string_is_equal(label, "cloud_sync_driver"))
    {
       if (cloud_sync_drivers[i])
-      {
-         const char *ident = cloud_sync_drivers[i]->ident;
-
-         strlcpy(s, ident, len);
-         return cloud_sync_drivers[i];
-      }
+         return strlcpy(s, cloud_sync_drivers[i]->ident, len);
    }
 #endif
-   return NULL;
+   return 0;
 }
 
 int driver_find_index(const char *label, const char *drv)
@@ -1293,7 +1234,7 @@ int driver_find_index(const char *label, const char *drv)
    str[0] = '\0';
 
    for (i = 0;
-         find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
+         find_driver_nonempty(label, i, str, sizeof(str)) > 0; i++)
    {
       if (string_is_empty(str))
          break;
@@ -1317,7 +1258,7 @@ static void driver_find_last(const char *label, char *s, size_t len)
    unsigned i;
 
    for (i = 0;
-         find_driver_nonempty(label, i, s, len) != NULL; i++) { }
+         find_driver_nonempty(label, i, s, len) > 0; i++) { }
 
    if (i)
       i = i - 1;
@@ -1335,19 +1276,16 @@ static void driver_find_last(const char *label, char *s, size_t len)
  *
  * Find previous driver in driver array.
  **/
-static bool driver_find_prev(const char *label, char *s, size_t len)
+static size_t driver_find_prev(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
 
    if (i > 0)
-   {
-      find_driver_nonempty(label, i - 1, s, len);
-      return true;
-   }
+      return find_driver_nonempty(label, i - 1, s, len);
 
    RARCH_WARN(
          "Couldn't find any previous driver (current one: \"%s\").\n", s);
-   return false;
+   return 0;
 }
 
 /**
@@ -1358,20 +1296,15 @@ static bool driver_find_prev(const char *label, char *s, size_t len)
  *
  * Find next driver in driver array.
  **/
-static bool driver_find_next(const char *label, char *s, size_t len)
+static size_t driver_find_next(const char *label, char *s, size_t len)
 {
    int i = driver_find_index(label, s);
-
    if (i >= 0 && string_is_not_equal(s, "null"))
-   {
-      find_driver_nonempty(label, i + 1, s, len);
-      return true;
-   }
-
+      return find_driver_nonempty(label, i + 1, s, len);
    RARCH_WARN("%s (current one: \"%s\").\n",
          msg_hash_to_str(MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER),
          s);
-   return false;
+   return 0;
 }
 
 static float audio_driver_monitor_adjust_system_rates(
@@ -1721,13 +1654,13 @@ void drivers_init(
             if (camera_st->driver)
             {
                camera_st->data = camera_st->driver->init(
-                     *settings->arrays.camera_device ?
-                     settings->arrays.camera_device : NULL,
+                     *settings->arrays.camera_device
+                     ? settings->arrays.camera_device : NULL,
                      camera_st->cb.caps,
-                     settings->uints.camera_width ?
-                     settings->uints.camera_width  : camera_st->cb.width,
-                     settings->uints.camera_height ?
-                     settings->uints.camera_height : camera_st->cb.height);
+                     settings->uints.camera_width
+                     ? settings->uints.camera_width  : camera_st->cb.width,
+                     settings->uints.camera_height
+                     ? settings->uints.camera_height : camera_st->cb.height);
 
                if (!camera_st->data)
                {
@@ -1756,8 +1689,8 @@ void drivers_init(
       /* Only initialize location driver if we're ever going to use it. */
       if (location_st->active)
          if (!init_location(&runloop_state_get_ptr()->system,
-                  &location_driver_st,
-                  settings, verbosity_is_enabled()))
+                  &location_driver_st, settings->arrays.location_driver,
+                  verbosity_is_enabled()))
             location_st->active = false;
    }
 
@@ -2073,11 +2006,11 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_FIND_PREV:
          if (!drv)
             return false;
-         return driver_find_prev(drv->label, drv->s, drv->len);
+         return (bool)driver_find_prev(drv->label, drv->s, drv->len);
       case RARCH_DRIVER_CTL_FIND_NEXT:
          if (!drv)
             return false;
-         return driver_find_next(drv->label, drv->s, drv->len);
+         return (bool)driver_find_next(drv->label, drv->s, drv->len);
       case RARCH_DRIVER_CTL_NONE:
       default:
          break;
@@ -2166,10 +2099,14 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_SHADERS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          {
+            gfx_ctx_flags_t flags;
             size_t _len         = 0;
+            flags.flags         = 0;
             ext_shaders[0]      = '\0';
 
-            if (video_shader_is_supported(RARCH_SHADER_CG))
+            video_context_driver_get_flags(&flags);
+
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
             {
                _len    += strlcpy(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
                if (ext_shaders[_len-1] != '\0')
@@ -2177,7 +2114,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
                _len    += strlcpy(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
             }
 
-            if (video_shader_is_supported(RARCH_SHADER_GLSL))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
             {
                if (ext_shaders[_len-1] != '\0')
                   _len += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
@@ -2187,7 +2124,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
                _len    += strlcpy(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
             }
 
-            if (video_shader_is_supported(RARCH_SHADER_SLANG))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
             {
                if (ext_shaders[_len-1] != '\0')
                   _len += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
@@ -2222,8 +2159,8 @@ struct string_list *dir_list_new_special(const char *input_dir,
          type == DIR_LIST_CORE_INFO, recursive);
 }
 
-struct string_list *string_list_new_special(enum string_list_type type,
-      void *data, unsigned *len, size_t *list_size)
+static struct string_list *string_list_new_special(
+      enum string_list_type type, unsigned *len)
 {
    union string_list_elem_attr attr;
    unsigned i;
@@ -2415,11 +2352,11 @@ struct string_list *string_list_new_special(enum string_list_type type,
                char zone_desc[TIMEZONE_LENGTH];
                while (fgets(zone_desc, TIMEZONE_LENGTH, zones_file))
                {
-                  size_t zone_desc_len = strlen(zone_desc);
+                  size_t _len = strlen(zone_desc);
 
-                  if (zone_desc_len > 0)
-                     if (zone_desc[--zone_desc_len] == '\n')
-                        zone_desc[zone_desc_len] = '\0';
+                  if (_len > 0)
+                     if (zone_desc[--_len] == '\n')
+                        zone_desc[_len] = '\0';
 
                   if (zone_desc && zone_desc[0] != '\0')
                   {
@@ -2449,17 +2386,13 @@ error:
 const char *char_list_new_special(enum string_list_type type, void *data)
 {
    unsigned len = 0;
-   size_t list_size;
-   struct string_list *s = string_list_new_special(type, data, &len, &list_size);
-   char         *options = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;
-
-   if (options && s)
-      string_list_join_concat(options, len, s, "|");
-
+   struct string_list *s = string_list_new_special(type, &len);
+   char         *opt     = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;
+   if (opt && s)
+      string_list_join_concat(opt, len, s, "|");
    string_list_free(s);
    s = NULL;
-
-   return options;
+   return opt;
 }
 
 char *path_get_ptr(enum rarch_path_type type)
@@ -2506,7 +2439,6 @@ char *path_get_ptr(enum rarch_path_type type)
 const char *path_get(enum rarch_path_type type)
 {
    struct rarch_state *p_rarch = &rarch_st;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    switch (type)
    {
@@ -2514,14 +2446,10 @@ const char *path_get(enum rarch_path_type type)
          return p_rarch->path_content;
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return p_rarch->path_default_shader_preset;
-      case RARCH_PATH_BASENAME:
-         return runloop_st->runtime_content_path_basename;
       case RARCH_PATH_CORE_OPTIONS:
          if (!path_is_empty(RARCH_PATH_CORE_OPTIONS))
             return p_rarch->path_core_options_file;
          break;
-      case RARCH_PATH_SUBSYSTEM:
-         return runloop_st->subsystem_path;
       case RARCH_PATH_CONFIG:
          if (!path_is_empty(RARCH_PATH_CONFIG))
             return p_rarch->path_config_file;
@@ -2539,6 +2467,10 @@ const char *path_get(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
+      case RARCH_PATH_BASENAME:
+         return runloop_state_get_ptr()->runtime_content_path_basename;
+      case RARCH_PATH_SUBSYSTEM:
+         return runloop_state_get_ptr()->subsystem_path;
    }
 
    return NULL;
@@ -2554,12 +2486,8 @@ size_t path_get_realsize(enum rarch_path_type type)
          return sizeof(p_rarch->path_content);
       case RARCH_PATH_DEFAULT_SHADER_PRESET:
          return sizeof(p_rarch->path_default_shader_preset);
-      case RARCH_PATH_BASENAME:
-         return sizeof(runloop_state_get_ptr()->runtime_content_path_basename);
       case RARCH_PATH_CORE_OPTIONS:
          return sizeof(p_rarch->path_core_options_file);
-      case RARCH_PATH_SUBSYSTEM:
-         return sizeof(runloop_state_get_ptr()->subsystem_path);
       case RARCH_PATH_CONFIG:
          return sizeof(p_rarch->path_config_file);
       case RARCH_PATH_CONFIG_APPEND:
@@ -2571,6 +2499,10 @@ size_t path_get_realsize(enum rarch_path_type type)
       case RARCH_PATH_NONE:
       case RARCH_PATH_NAMES:
          break;
+      case RARCH_PATH_BASENAME:
+         return sizeof(runloop_state_get_ptr()->runtime_content_path_basename);
+      case RARCH_PATH_SUBSYSTEM:
+         return sizeof(runloop_state_get_ptr()->subsystem_path);
    }
 
    return 0;
@@ -2620,6 +2552,8 @@ bool path_set(enum rarch_path_type type, const char *path)
          strlcpy(p_rarch->path_content, path,
                sizeof(p_rarch->path_content));
          break;
+      case RARCH_PATH_NONE:
+         break;
       case RARCH_PATH_BASENAME:
          runloop_st = runloop_state_get_ptr();
          strlcpy(runloop_st->runtime_content_path_basename, path,
@@ -2629,8 +2563,6 @@ bool path_set(enum rarch_path_type type, const char *path)
          runloop_st = runloop_state_get_ptr();
          strlcpy(runloop_st->subsystem_path, path,
                sizeof(runloop_st->subsystem_path));
-         break;
-      case RARCH_PATH_NONE:
          break;
    }
 
@@ -3060,12 +2992,24 @@ bool command_event(enum event_command cmd, void *data)
 #endif
    video_driver_state_t *video_st  = video_state_get_ptr();
    settings_t *settings            = config_get_ptr();
-   recording_state_t *recording_st = recording_state_get_ptr();
+   recording_state_t *rec_st       = recording_state_get_ptr();
 
    switch (cmd)
    {
       case CMD_EVENT_SAVE_FILES:
-         event_save_files(runloop_st->flags & RUNLOOP_FLAG_USE_SRAM);
+         event_save_files(
+               runloop_st->flags & RUNLOOP_FLAG_USE_SRAM,
+#if defined(HAVE_ZLIB)
+               settings->bools.save_file_compression,
+#else
+               false,
+#endif
+#ifdef HAVE_CHEATS
+               settings->paths.path_cheat_database
+#else
+               NULL
+#endif
+               );
          break;
       case CMD_EVENT_OVERLAY_UNLOAD:
 #ifdef HAVE_OVERLAY
@@ -3096,7 +3040,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEAT_TOGGLE:
 #ifdef HAVE_CHEATS
-         cheat_manager_toggle();
+         cheat_manager_toggle(settings->bools.notification_show_cheats_applied);
 #endif
          break;
       case CMD_EVENT_SHADER_NEXT:
@@ -3186,7 +3130,7 @@ bool command_event(enum event_command cmd, void *data)
             break;
          }
       case CMD_EVENT_STREAMING_TOGGLE:
-         if (recording_st->streaming_enable)
+         if (rec_st->streaming_enable)
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          else
          {
@@ -3199,9 +3143,9 @@ bool command_event(enum event_command cmd, void *data)
          {
             if (!core_info_current_supports_runahead())
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD),
-                     1, 100, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                break;
             }
 
@@ -3211,15 +3155,16 @@ bool command_event(enum event_command cmd, void *data)
             if (settings->bools.run_ahead_enabled)
             {
                char msg[128];
+               size_t _len;
                if (settings->bools.run_ahead_secondary_instance)
-                  snprintf(msg, sizeof(msg),
+                  _len = snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE),
                         settings->uints.run_ahead_frames);
                else
-                  snprintf(msg, sizeof(msg),
+                  _len = snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_RUNAHEAD_ENABLED),
                         settings->uints.run_ahead_frames);
-               runloop_msg_queue_push(msg, 1, 100, false,
+               runloop_msg_queue_push(msg, _len, 1, 100, false,
                      NULL, MESSAGE_QUEUE_ICON_DEFAULT,
                      MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -3228,9 +3173,11 @@ bool command_event(enum event_command cmd, void *data)
                preempt_deinit(runloop_st);
             }
             else
-               runloop_msg_queue_push(msg_hash_to_str(MSG_RUNAHEAD_DISABLED),
-                     1, 100, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_RUNAHEAD_DISABLED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
 
 #ifdef HAVE_MENU
             /* Update menu */
@@ -3254,17 +3201,18 @@ bool command_event(enum event_command cmd, void *data)
             settings->bools.run_ahead_hide_warnings = old_warn;
 
             if (old_inited && !runloop_st->preempt_data)
-               runloop_msg_queue_push(msg_hash_to_str(MSG_PREEMPT_DISABLED),
-                     1, 100, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_PREEMPT_DISABLED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
             else if (runloop_st->preempt_data)
             {
                char msg[128];
-               snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_PREEMPT_ENABLED),
+               size_t _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_PREEMPT_ENABLED),
                      settings->uints.run_ahead_frames);
-               runloop_msg_queue_push(
-                     msg, 1, 100, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(msg, _len, 1, 100, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
                /* Disable runahead */
                settings->bools.run_ahead_enabled        = false;
@@ -3296,7 +3244,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RECORDING_TOGGLE:
-         if (recording_st->enable)
+         if (rec_st->enable)
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          else
             command_event(CMD_EVENT_RECORD_INIT, NULL);
@@ -3311,25 +3259,27 @@ bool command_event(enum event_command cmd, void *data)
 
             if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
             {
+               size_t _len;
                char msg[128];
 
                video_driver_set_video_mode(width, height, true);
 
                if (width == 0 || height == 0)
-                  strlcpy(msg, msg_hash_to_str(MSG_SCREEN_RESOLUTION_DEFAULT), sizeof(msg));
+                  _len = strlcpy(msg, msg_hash_to_str(MSG_SCREEN_RESOLUTION_DEFAULT), sizeof(msg));
                else
                {
                   msg[0] = '\0';
                   if (!string_is_empty(desc))
-                     snprintf(msg, sizeof(msg),
+                     _len = snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC),
                         width, height, desc);
                   else
-                     snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_NO_DESC),
+                     _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_NO_DESC),
                         width, height);
                }
 
-               runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             }
          }
 #endif
@@ -3338,7 +3288,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             rarch_system_info_t *sys_info     = &runloop_st->system;
             struct retro_system_info *sysinfo = &sys_info->info;
-            const char *core_path             = path_get(RARCH_PATH_CORE);
+            const char *core_path             = p_rarch->path_libretro;
 
 #if defined(HAVE_DYNAMIC)
             if (string_is_empty(core_path))
@@ -3393,7 +3343,9 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
             if (rcheevos_hardcore_active())
             {
-               runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE), 0, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+               const char *_msg = msg_hash_to_str(MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 0, 180, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
                return false;
             }
 #endif
@@ -3441,34 +3393,38 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESET:
-         RARCH_LOG("[Core]: %s.\n", msg_hash_to_str(MSG_RESET));
-         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         {
+            const char *_msg = msg_hash_to_str(MSG_RESET);
+            RARCH_LOG("[Core]: %s.\n", _msg);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-         core_reset();
+            core_reset();
 #ifdef HAVE_CHEEVOS
 #ifdef HAVE_GFX_WIDGETS
-         rcheevos_reset_game(dispwidget_get_ptr()->active);
+            rcheevos_reset_game(dispwidget_get_ptr()->active);
 #else
-         rcheevos_reset_game(false);
+            rcheevos_reset_game(false);
 #endif
 #endif
 #ifdef HAVE_NETWORKING
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
+            netplay_driver_ctl(RARCH_NETPLAY_CTL_RESET, NULL);
 #endif
-         /* Recalibrate frame delay target */
-         if (settings->bools.video_frame_delay_auto)
-            video_st->frame_delay_target = 0;
+            /* Recalibrate frame delay target */
+            if (settings->bools.video_frame_delay_auto)
+               video_st->frame_delay_target = 0;
 
-         /* Run a few frames to blank core output while paused */
-         if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-         {
-            runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
-            runloop_st->run_frames_and_pause = 8;
-         }
+            /* Run a few frames to blank core output while paused */
+            if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+            {
+               runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
+               runloop_st->run_frames_and_pause = 8;
+            }
 
 #if HAVE_RUNAHEAD
-         command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
+            command_event(CMD_EVENT_PREEMPT_RESET_BUFFER, NULL);
 #endif
+         }
          return false;
       case CMD_EVENT_PLAY_REPLAY:
       {
@@ -3481,18 +3437,17 @@ bool command_event(enum event_command cmd, void *data)
             res = false;
          else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
             res = movie_stop(input_st);
-         if (!runloop_get_current_replay_path(replay_path, sizeof(replay_path)))
+         if (!runloop_get_replay_path(replay_path, sizeof(replay_path), settings->ints.replay_slot))
             res = false;
          if (res)
             res = movie_start_playback(input_st, replay_path);
          if (!res)
          {
-            const char *movie_fail_str        =
+            const char *_msg        =
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE);
-            runloop_msg_queue_push(movie_fail_str,
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("%s.\n", movie_fail_str);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_ERR("%s.\n", _msg);
          }
          return res;
 #else
@@ -3521,12 +3476,10 @@ bool command_event(enum event_command cmd, void *data)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);
          if (!res)
          {
-             const char *movie_rec_fail_str        =
-               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
-            runloop_msg_queue_push(movie_rec_fail_str,
-               1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            RARCH_ERR("%s.\n", movie_rec_fail_str);
+             const char *_msg = msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            RARCH_ERR("%s.\n", _msg);
          }
          return res;
 #else
@@ -3596,7 +3549,7 @@ bool command_event(enum event_command cmd, void *data)
             const char *dir_screenshot      = settings->paths.directory_screenshot;
             video_driver_state_t *video_st  = video_state_get_ptr();
             if (!take_screenshot(dir_screenshot,
-                     path_get(RARCH_PATH_BASENAME),
+                     runloop_st->runtime_content_path_basename,
                      false,
                      video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
                      false,
@@ -3706,7 +3659,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          /* If we need to quit, skip unloading the core to avoid performing
           * cleanup actions (like writing autosave state) twice. */
-         if (should_quit_on_close()) {
+         if (should_quit_on_close())
+         {
             command_event(CMD_EVENT_QUIT, NULL);
             break;
          }
@@ -3752,7 +3706,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CHEATS_APPLY:
 #ifdef HAVE_CHEATS
-         cheat_manager_apply_cheats();
+         cheat_manager_apply_cheats(settings->bools.notification_show_cheats_applied);
 #endif
          break;
       case CMD_EVENT_REWIND_DEINIT:
@@ -3838,7 +3792,14 @@ bool command_event(enum event_command cmd, void *data)
                      RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
 #endif
             {
-               if (autosave_init())
+               if (autosave_init(
+#if defined(HAVE_ZLIB)
+                        settings->bools.save_file_compression,
+#else
+                        false,
+#endif
+                        settings->uints.autosave_interval)
+                     )
                   runloop_st->flags |=  RUNLOOP_FLAG_AUTOSAVE;
                else
                   runloop_st->flags &= ~RUNLOOP_FLAG_AUTOSAVE;
@@ -3924,7 +3885,7 @@ bool command_event(enum event_command cmd, void *data)
                      audio_st->mute_enable);
             else
 #endif
-               runloop_msg_queue_push(msg, 1, 180, true, NULL,
+               runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
@@ -3985,9 +3946,11 @@ bool command_event(enum event_command cmd, void *data)
             else if (!string_is_empty(settings->paths.path_osk_overlay))
                input_st->flags |=  INP_FLAG_KB_LINEFEED_ENABLE;
             else
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_OSK_OVERLAY_NOT_SET), 1, 100, false,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_OSK_OVERLAY_NOT_SET);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
 
             command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 
@@ -4001,6 +3964,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          }
 #endif
+         break;
+      case CMD_EVENT_RELOAD_CONFIG:
+         config_load(global_get_ptr());
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
 #ifdef HAVE_DSP_FILTER
@@ -4018,13 +3984,13 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RECORD_DEINIT:
-         recording_st->enable = false;
+         rec_st->enable = false;
          streaming_set_state(false);
          if (!recording_deinit())
             return false;
          break;
       case CMD_EVENT_RECORD_INIT:
-         recording_st->enable = true;
+         rec_st->enable = true;
          if (!recording_init())
          {
             command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -4356,34 +4322,38 @@ bool command_event(enum event_command cmd, void *data)
          break;
 #endif
       case CMD_EVENT_SHUTDOWN:
-#if defined(__linux__) && !defined(ANDROID)
-         if (settings->bools.config_save_on_exit)
          {
-            command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-         }
-         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if defined(__linux__) && !defined(ANDROID)
+            const char *_msg = msg_hash_to_str(MSG_VALUE_SHUTTING_DOWN);
+            if (settings->bools.config_save_on_exit)
+               command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
-         system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
+            system("nohup /usr/bin/lakka-shutdown.sh 2>&1 >/dev/null & exit");
 #else
-         command_event(CMD_EVENT_QUIT, NULL);
-         system("shutdown -P now");
+            command_event(CMD_EVENT_QUIT, NULL);
+            system("shutdown -P now");
 #endif /* HAVE_LAKKA */
 #endif
+         }
          break;
       case CMD_EVENT_REBOOT:
-#if defined(__linux__) && !defined(ANDROID)
-         if (settings->bools.config_save_on_exit)
          {
-            command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-         }
-         runloop_msg_queue_push(msg_hash_to_str(MSG_VALUE_REBOOTING), 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#if defined(__linux__) && !defined(ANDROID)
+            const char *_msg = msg_hash_to_str(MSG_VALUE_REBOOTING);
+            if (settings->bools.config_save_on_exit)
+               command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #ifdef HAVE_LAKKA
-         system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
+            system("nohup /usr/bin/lakka-reboot.sh 2>&1 >/dev/null & exit");
 #else
-         command_event(CMD_EVENT_QUIT, NULL);
-         system("shutdown -r now");
+            command_event(CMD_EVENT_QUIT, NULL);
+            system("shutdown -r now");
 #endif /* HAVE_LAKKA */
 #endif
+         }
          break;
       case CMD_EVENT_RESUME:
 #ifdef HAVE_MENU
@@ -4407,11 +4377,11 @@ bool command_event(enum event_command cmd, void *data)
             struct string_list *str_list = (struct string_list*)data;
 
             /* Check whether favourites playlist is at capacity */
-            if (playlist_size(g_defaults.content_favorites) >=
-                  playlist_capacity(g_defaults.content_favorites))
+            if (     playlist_size(g_defaults.content_favorites)
+                  >= playlist_capacity(g_defaults.content_favorites))
             {
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_ADD_TO_FAVORITES_FAILED), 1, 180, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_ADD_TO_FAVORITES_FAILED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
                return true;
             }
@@ -4433,6 +4403,7 @@ bool command_event(enum event_command cmd, void *data)
                   /* Write playlist entry */
                   if (playlist_push(g_defaults.content_favorites, &entry))
                   {
+                     const char *_msg;
                      enum playlist_sort_mode current_sort_mode =
                         playlist_get_sort_mode(g_defaults.content_favorites);
 
@@ -4443,8 +4414,8 @@ bool command_event(enum event_command cmd, void *data)
                         playlist_qsort(g_defaults.content_favorites);
 
                      playlist_write_file(g_defaults.content_favorites);
-                     runloop_msg_queue_push(
-                           msg_hash_to_str(MSG_ADDED_TO_FAVORITES), 1, 180, true, NULL,
+                     _msg = msg_hash_to_str(MSG_ADDED_TO_FAVORITES);
+                     runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #if TARGET_OS_TV
                      update_topshelf();
@@ -4491,11 +4462,11 @@ bool command_event(enum event_command cmd, void *data)
                   playlist = playlist_init(&playlist_config);
 
                   /* Check whether favourites playlist is at capacity */
-                  if (playlist_size(playlist) >=
-                        playlist_capacity(playlist))
+                  if (     playlist_size(playlist)
+                        >= playlist_capacity(playlist))
                   {
-                     runloop_msg_queue_push(
-                           msg_hash_to_str(MSG_ADD_TO_PLAYLIST_FAILED), 1, 180, true, NULL,
+                     const char *_msg = msg_hash_to_str(MSG_ADD_TO_PLAYLIST_FAILED);
+                     runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
                      return true;
                   }
@@ -4503,6 +4474,7 @@ bool command_event(enum event_command cmd, void *data)
                   /* Write playlist entry */
                   if (playlist_push(playlist, &entry))
                   {
+                     const char *_msg = NULL;
                      enum playlist_sort_mode current_sort_mode =
                         playlist_get_sort_mode(playlist);
 
@@ -4513,8 +4485,8 @@ bool command_event(enum event_command cmd, void *data)
                         playlist_qsort(playlist);
 
                      playlist_write_file(playlist);
-                     runloop_msg_queue_push(
-                           msg_hash_to_str(MSG_ADDED_TO_PLAYLIST), 1, 180, true, NULL,
+                     _msg = msg_hash_to_str(MSG_ADDED_TO_PLAYLIST);
+                     runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                   }
                   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
@@ -4528,6 +4500,7 @@ bool command_event(enum event_command cmd, void *data)
          }
       case CMD_EVENT_RESET_CORE_ASSOCIATION:
          {
+            const char *_msg;
             const char *core_name          = "DETECT";
             const char *core_path          = "DETECT";
             size_t *playlist_index         = (size_t*)data;
@@ -4553,8 +4526,8 @@ bool command_event(enum event_command cmd, void *data)
                      menu_st->userdata, i);
 #endif
 
-            runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION), 1, 180, true, NULL,
+            _msg = msg_hash_to_str(MSG_RESET_CORE_ASSOCIATION);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             break;
          }
@@ -4610,7 +4583,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CONFIGFILE
          if (!command_event_save_core_config(
                   settings->paths.directory_menu_config,
-                  path_get(RARCH_PATH_CONFIG)))
+                  p_rarch->path_config_file))
             return false;
 #endif
          break;
@@ -4884,17 +4857,15 @@ bool command_event(enum event_command cmd, void *data)
             else if (!task_push_netplay_content_reload(NULL))
             {
 #ifdef HAVE_DYNAMIC
+               const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED);
                command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
                netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
-               runloop_msg_queue_push(
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED),
-                  1, 480, true, NULL,
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #else
-               runloop_msg_queue_push(
-                  msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED),
-                  1, 480, true, NULL,
+               const char *_msg = msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 #endif
 
@@ -5041,10 +5012,11 @@ bool command_event(enum event_command cmd, void *data)
                return success;
             }
             else
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
          break;
       case CMD_EVENT_DISK_EJECT_TOGGLE:
@@ -5081,10 +5053,11 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             }
             else
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
          break;
       case CMD_EVENT_DISK_NEXT:
@@ -5108,10 +5081,11 @@ bool command_event(enum event_command cmd, void *data)
                disk_control_set_index_next(&sys_info->disk_control, verbose);
             }
             else
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
          break;
       case CMD_EVENT_DISK_PREV:
@@ -5135,10 +5109,11 @@ bool command_event(enum event_command cmd, void *data)
                disk_control_set_index_prev(&sys_info->disk_control, verbose);
             }
             else
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
          break;
       case CMD_EVENT_DISK_INDEX:
@@ -5154,10 +5129,11 @@ bool command_event(enum event_command cmd, void *data)
             if (disk_control_enabled(&sys_info->disk_control))
                disk_control_set_index(&sys_info->disk_control, *index, false);
             else
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
-                     1, 120, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
          }
          break;
       case CMD_EVENT_RUMBLE_STOP:
@@ -5316,13 +5292,15 @@ bool command_event(enum event_command cmd, void *data)
                                      | INP_FLAG_KB_MAPPING_BLOCKED);
 
                if (show_message)
-                  runloop_msg_queue_push(
+               {
+                  const char *_msg =
                         input_st->game_focus_state.enabled ?
                         msg_hash_to_str(MSG_GAME_FOCUS_ON) :
-                        msg_hash_to_str(MSG_GAME_FOCUS_OFF),
-                        1, 60, true,
-                        NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                        MESSAGE_QUEUE_CATEGORY_INFO);
+                        msg_hash_to_str(MSG_GAME_FOCUS_OFF);
+
+                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 60, true, NULL,
+                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+               }
 
                RARCH_LOG("[Input]: %s => %s\n",
                      "Game Focus",
@@ -5331,17 +5309,14 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_VOLUME_UP:
-         {
-            audio_driver_state_t
-               *audio_st              = audio_state_get_ptr();
-            command_event_set_volume(settings, 0.5f,
+         command_event_set_volume(settings, 0.5f,
 #if defined(HAVE_GFX_WIDGETS)
-                  dispwidget_get_ptr()->active,
+               dispwidget_get_ptr()->active,
 #else
-                  false,
+               false,
 #endif
-                  audio_st->mute_enable);
-         }
+               audio_state_get_ptr()->mute_enable
+         );
          break;
       case CMD_EVENT_VOLUME_DOWN:
          command_event_set_volume(settings, -0.5f,
@@ -5351,7 +5326,7 @@ bool command_event(enum event_command cmd, void *data)
                false,
 #endif
                audio_state_get_ptr()->mute_enable
-               );
+         );
          break;
       case CMD_EVENT_MIXER_VOLUME_UP:
          command_event_set_mixer_volume(settings, 0.5f);
@@ -5459,12 +5434,14 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_VRR_RUNLOOP_TOGGLE:
-         settings->bools.vrr_runloop_enable = !(settings->bools.vrr_runloop_enable);
-         runloop_msg_queue_push(
-               msg_hash_to_str(
+         {
+            const char *_msg = msg_hash_to_str(
                      settings->bools.vrr_runloop_enable ? MSG_VRR_RUNLOOP_ENABLED
-                                                        : MSG_VRR_RUNLOOP_DISABLED),
-               1, 100, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+                     : MSG_VRR_RUNLOOP_DISABLED);
+            settings->bools.vrr_runloop_enable = !(settings->bools.vrr_runloop_enable);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
          break;
       case CMD_EVENT_NONE:
          return false;
@@ -5555,6 +5532,9 @@ void retroarch_override_setting_set(
       case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
          p_rarch->flags |= RARCH_FLAGS_CLI_DATABASE_SCAN;
          break;
+      case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
+         p_rarch->flags |= RARCH_FLAGS_HAS_SET_OVERLAY_PRESET;
+         break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -5636,6 +5616,9 @@ void retroarch_override_setting_unset(
          break;
       case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
          p_rarch->flags &= ~RARCH_FLAGS_CLI_DATABASE_SCAN;
+         break;
+      case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
+         p_rarch->flags &= ~RARCH_FLAGS_HAS_SET_OVERLAY_PRESET;
          break;
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
@@ -5778,8 +5761,8 @@ void main_exit(void *args)
 #endif
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(
-         path_get_ptr(RARCH_PATH_CORE),
-         path_get_realsize(RARCH_PATH_CORE),
+         p_rarch->path_libretro,
+         sizeof(p_rarch->path_libretro),
          p_rarch->launch_arguments);
 
    p_rarch->flags                  &= ~RARCH_FLAGS_HAS_SET_USERNAME;
@@ -5839,6 +5822,7 @@ void main_exit(void *args)
  **/
 int rarch_main(int argc, char *argv[], void *data)
 {
+   settings_t *settings;
    struct rarch_state *p_rarch         = &rarch_st;
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
@@ -5920,7 +5904,18 @@ int rarch_main(int argc, char *argv[], void *data)
          return 1;
    }
 
-   ui_companion_driver_init_first();
+   settings = config_get_ptr();
+
+   ui_companion_driver_init_first(
+#ifdef HAVE_QT
+         settings->bools.desktop_menu_enable,
+         settings->bools.ui_companion_toggle,
+#else
+         false,
+         false,
+#endif
+         settings->bools.ui_companion_start_on_boot
+         );
 #if HAVE_CLOUDSYNC
    task_push_cloud_sync();
 #endif
@@ -6101,54 +6096,176 @@ static void retroarch_print_features(void)
    frontend_driver_attach_console();
 
    _len  = strlcpy(buf, "Features:\n", sizeof(buf));
+#ifdef HAVE_LIBRETRODB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_LIBRETRODB,      "LibretroDB",      "LibretroDB support");
+#endif
+#ifdef HAVE_COMMAND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COMMAND,         "Command",         "Command interface support");
+#endif
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_NETWORK_COMMAND, "Network Command", "Network Command interface support");
-   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL,             "SDL",             "SDL input/audio/video drivers");
+#ifdef HAVE_SDL
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL,             "SDL1",            "SDL1 input/audio/video drivers");
+#endif
+#ifdef HAVE_SDL2
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
+#endif
+#ifdef HAVE_X11
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
+#endif
+#ifdef HAVE_UDEV
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_UDEV,            "UDEV",            "UDEV/EVDEV input driver");
+#endif
+#ifdef HAVE_WAYLAND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_WAYLAND,         "Wayland",         "Wayland input/video drivers");
+#endif
+#ifdef HAVE_THREADS
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_THREAD,          "Threads",         "Threading support");
+#endif
+#ifdef HAVE_GDI
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_GDI,            "GDI",               "Video driver");
+#endif
+#ifdef HAVE_D3D8
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D8,            "Direct3D 8",       "Video driver");
+#endif
+#ifdef HAVE_D3D9
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D9,            "Direct3D 9",       "Video driver");
+#endif
+#ifdef HAVE_D3D10
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D10,           "Direct3D 10",      "Video driver");
+#endif
+#ifdef HAVE_D3D11
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D11,           "Direct3D 11",      "Video driver");
+#endif
+#ifdef HAVE_D3D12
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D12,           "Direct3D 12",      "Video driver");
+#endif
+#ifdef HAVE_VULKAN
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_VULKAN,          "Vulkan",          "Video driver");
+#endif
+#ifdef HAVE_METAL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_METAL,           "Metal",           "Video driver");
+#endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_OPENGL,          "OpenGL",          "Video driver");
+#endif
+#if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES3_1) || defined(HAVE_OPENGLES3_2)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_OPENGLES,        "OpenGLES",        "Video driver");
+#endif
+#ifdef HAVE_XVIDEO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_XVIDEO,          "XVideo",          "Video driver");
+#endif
+#ifdef HAVE_EGL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_EGL,             "EGL",             "Video context driver");
+#endif
+#ifdef HAVE_KMS
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_KMS,             "KMS",             "Video context driver");
+#endif
+#ifdef HAVE_VG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_VG,              "OpenVG",          "Video context driver");
+#endif
+#ifdef HAVE_COREAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO,       "CoreAudio",       "Audio driver");
+#endif
+#ifdef HAVE_COREAUDIO3
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO3,      "CoreAudioV3",     "Audio driver");
+#endif
+#ifdef HAVE_ALSA
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ALSA,            "ALSA",            "Audio driver");
+#endif
+#ifdef HAVE_PIPEWIRE
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_PIPEWIRE,        "PipeWire",        "Audio driver");
+#endif
+#ifdef HAVE_OSS
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_OSS,             "OSS",             "Audio driver");
+#endif
+#ifdef HAVE_JACK
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_JACK,            "Jack",            "Audio driver");
+#endif
+#ifdef HAVE_RSOUND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RSOUND,          "RSound",          "Audio driver");
+#endif
+#ifdef HAVE_ROAR
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ROAR,            "RoarAudio",       "Audio driver");
+#endif
+#ifdef HAVE_PULSE
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_PULSE,           "PulseAudio",      "Audio driver");
+#endif
+#ifdef HAVE_DSOUND
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DSOUND,          "DirectSound",     "Audio driver");
+#endif
+#ifdef HAVE_WASAPI
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_WASAPI,          "WASAPI",          "Audio driver");
+#endif
+#ifdef HAVE_XAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
+#endif
+#ifdef HAVE_AL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_AL,              "OpenAL",          "Audio driver");
+#endif
+#ifdef HAVE_SL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SL,              "OpenSL",          "Audio driver");
+#endif
+#ifdef HAVE_7ZIP
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_7ZIP,            "7zip",            "7zip extraction support");
+#endif
+#ifdef HAVE_ZLIB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ZLIB,            "zlib",            "zip extraction support");
+#endif
+#ifdef HAVE_DYLIB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DYLIB,           "External",        "External filter and plugin support");
+#endif
+#ifdef HAVE_CG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_CG,              "Cg",              "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_GLSL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_GLSL,            "GLSL",            "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_HLSL
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_HLSL,            "HLSL",            "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_SLANG
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SLANG,           "glslang",         "Fragment/vertex shader driver");
+#endif
+#ifdef HAVE_SDL_IMAGE
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL_IMAGE,       "SDL_image",       "SDL_image image loading");
+#endif
+#ifdef HAVE_RPNG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RPNG,            "rpng",            "PNG image loading/encoding");
+#endif
+#ifdef HAVE_RJPEG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_RJPEG,           "rjpeg",           "JPEG image loading");
+#endif
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DYNAMIC,         "Dynamic",         "Dynamic run-time loading of libretro library");
+#ifdef HAVE_FFMPEG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay with libavcodec");
+#endif
+#ifdef HAVE_FREETYPE
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_FREETYPE,        "FreeType",        "TTF font rendering driver");
+#endif
+#ifdef HAVE_CORETEXT
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_CORETEXT,        "CoreText",        "TTF font rendering driver");
+#endif
+#ifdef HAVE_NETWORKING
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_NETPLAY,         "Netplay",         "Peer-to-peer netplay");
+#endif
+#ifdef HAVE_SSL
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SSL,              "SSL",            "SSL Support");
+#endif
+#ifdef HAVE_LIBUSB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_LIBUSB,          "Libusb",          "Libusb support");
+#endif
+#ifdef HAVE_COCOA
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COCOA,           "Cocoa",           "Cocoa UI companion support (for OSX and/or iOS)");
+#endif
+#ifdef HAVE_QT
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_QT,              "Qt",              "Qt UI companion support");
-   _PSUPP_BUF(buf, _len, SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
+#endif
+#ifdef HAVE_QT6
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_QT6,             "Qt6",              "Qt 6.x support");
+#endif
+#ifdef HAVE_V4L2
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_V4L2,            "Video4Linux2",    "Camera driver");
+#endif
 
    fputs(buf, stdout);
 }
@@ -6438,11 +6555,34 @@ static void retroarch_print_help(const char *arg0)
          "Path for the save state files (*.state). (DEPRECATED, use --appendconfig and savestate_directory)\n"
          , sizeof(buf) - _len);
 
+   /* Flush buffer here to avoid the error "error: string length ‘752’
+    * is greater than the length ‘509’ ISO C90 compilers are required
+    * to support" */
    fputs(buf, stdout);
+
+#if defined(__linux__) || defined(__GNU__) || (defined(BSD) && !defined(__MACH__))
+   buf[0] = '\0';
+   _len   = 0;
+   _len += strlcpy(buf + _len,
+         "\nThe following environment variables are supported:\n\n"
+         "  LIBRETRO_ASSETS_DIRECTORY\n"
+         "  LIBRETRO_AUTOCONFIG_DIRECTORY\n"
+         "  LIBRETRO_CHEATS_DIRECTORY\n"
+         "  LIBRETRO_DATABASE_DIRECTORY\n"
+         "  LIBRETRO_DIRECTORY\n"
+         "  LIBRETRO_SYSTEM_DIRECTORY\n"
+         "  LIBRETRO_VIDEO_FILTER_DIRECTORY\n"
+         "  LIBRETRO_VIDEO_SHADER_DIRECTORY\n\n"
+         "Refer to `man 6 retroarch' for a description of what they do.\n"
+         , sizeof(buf) - _len);
+   fputs(buf, stdout);
+#endif
 }
 
 #ifdef HAVE_DYNAMIC
-static void retroarch_parse_input_libretro_path(const char *path, size_t path_len)
+static void retroarch_parse_input_libretro_path(
+      struct rarch_state *p_rarch,
+      const char *path, size_t path_len)
 {
    settings_t *settings   = config_get_ptr();
    int path_stats         = 0;
@@ -6528,12 +6668,10 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
    else
    {
       size_t _len;
-      const char *slash     = strrchr(path, '/');
-      const char *backslash = strrchr(path, '\\');
       /* If path has no extension and contains no path
        * delimiters, check if it is a core 'name', matching
        * an existing file in the cores directory */
-      if (((!slash || (backslash > slash)) ? (char*)backslash : (char*)slash))
+      if (find_last_slash(path))
          goto end;
 
       /* First check for built-in cores */
@@ -6584,7 +6722,8 @@ static void retroarch_parse_input_libretro_path(const char *path, size_t path_le
 end:
    if (!string_is_empty(core_path))
    {
-      path_set(RARCH_PATH_CORE, core_path);
+      strlcpy(p_rarch->path_libretro, core_path,
+            sizeof(p_rarch->path_libretro));
       retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
 
       /* We requested an explicit core, so use PLAIN core type. */
@@ -6628,7 +6767,7 @@ static bool retroarch_parse_input_and_config(
    bool                 cli_active = false;
    bool               cli_core_set = false;
    bool            cli_content_set = false;
-   recording_state_t *recording_st = recording_state_get_ptr();
+   recording_state_t *rec_st       = recording_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = runloop_state_get_ptr();
    settings_t          *settings   = config_get_ptr();
@@ -6831,10 +6970,12 @@ static bool retroarch_parse_input_and_config(
 
 #ifdef HAVE_CONFIGFILE
             case 'c':
-               path_set(RARCH_PATH_CONFIG, optarg);
+               strlcpy(p_rarch->path_config_file, optarg,
+                     sizeof(p_rarch->path_config_file));
                break;
             case RA_OPT_APPENDCONFIG:
-               path_set(RARCH_PATH_CONFIG_APPEND, optarg);
+               strlcpy(p_rarch->path_config_append_file, optarg,
+                     sizeof(p_rarch->path_config_append_file));
                break;
 #endif
 
@@ -7020,10 +7161,9 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case 'r':
-               strlcpy(recording_st->path, optarg,
-                     sizeof(recording_st->path));
-               if (recording_st->enable)
-                  recording_st->enable = true;
+               strlcpy(rec_st->path, optarg, sizeof(rec_st->path));
+               if (rec_st->enable)
+                  rec_st->enable = true;
                break;
 
             case RA_OPT_SET_SHADER:
@@ -7048,7 +7188,7 @@ static bool retroarch_parse_input_and_config(
 
 #ifdef HAVE_DYNAMIC
             case 'L':
-               retroarch_parse_input_libretro_path(optarg, strlen(optarg));
+               retroarch_parse_input_libretro_path(p_rarch, optarg, strlen(optarg));
                break;
 #endif
             case 'P':
@@ -7199,8 +7339,7 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_SIZE:
                if (sscanf(optarg, "%ux%u",
-                        &recording_st->width,
-                        &recording_st->height) != 2)
+                        &rec_st->width, &rec_st->height) != 2)
                {
                   RARCH_ERR("Wrong format for --size.\n");
                   retroarch_print_help(argv[0]);
@@ -7209,8 +7348,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_RECORDCONFIG:
-               strlcpy(recording_st->config, optarg,
-                     sizeof(recording_st->config));
+               strlcpy(rec_st->config, optarg, sizeof(rec_st->config));
                break;
 
             case RA_OPT_MAX_FRAMES:
@@ -7232,7 +7370,8 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case RA_OPT_SUBSYSTEM:
-               path_set(RARCH_PATH_SUBSYSTEM, optarg);
+               strlcpy(runloop_st->subsystem_path, optarg,
+                     sizeof(runloop_st->subsystem_path));
                break;
 
             case RA_OPT_EOF_EXIT:
@@ -7271,12 +7410,13 @@ static bool retroarch_parse_input_and_config(
                break;
             case 'e':
                {
-                  unsigned entry_state_slot = (unsigned)strtoul(optarg, NULL, 0);
+                  char *endptr;
+                  int16_t entry_state_slot = (unsigned)strtoul(optarg, &endptr, 0);
 
-                  if (entry_state_slot)
+                  if (entry_state_slot > -1 && string_is_empty(endptr))
                      runloop_st->entry_state_slot = entry_state_slot;
                   else
-                     RARCH_WARN("--entryslot argument \"%s\" is not a valid "
+                     RARCH_WARN("[State]: --entryslot argument \"%s\" is not a valid "
                         "entry state slot index. Ignoring.\n", optarg);
                }
                break;
@@ -7354,7 +7494,12 @@ static bool retroarch_parse_input_and_config(
       runloop_set_current_core_type(CORE_TYPE_PLAIN, false);
 
       if (subsystem_path_is_empty)
-         path_set(RARCH_PATH_NAMES, (const char*)argv[optind]);
+      {
+         runloop_path_set_basename((const char*)argv[optind]);
+         runloop_path_set_names();
+         runloop_path_set_redirect(settings, p_rarch->dir_savefile,
+               p_rarch->dir_savestate);
+      }
       else
          runloop_path_set_special(argv + optind, argc - optind);
 
@@ -7362,18 +7507,18 @@ static bool retroarch_parse_input_and_config(
        * command line interface */
       cli_content_set = true;
    }
-   else if (runloop_st->entry_state_slot)
+   else if (runloop_st->entry_state_slot > -1)
    {
-      runloop_st->entry_state_slot = 0;
+      runloop_st->entry_state_slot = -1;
       RARCH_WARN("Trying to load entry state without content. Ignoring.\n");
    }
    #ifdef HAVE_BSV_MOVIE
-   if (runloop_st->entry_state_slot)
+   if (runloop_st->entry_state_slot > -1)
    {
      input_driver_state_t *input_st = input_state_get_ptr();
      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
      {
-        runloop_st->entry_state_slot = 0;
+        runloop_st->entry_state_slot = -1;
         RARCH_WARN("Trying to load entry state while replay playback is active. Ignoring entry state.\n");
      }
    }
@@ -7456,8 +7601,7 @@ bool retroarch_main_init(int argc, char *argv[])
       *input_st                  = input_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
-   recording_state_t
-      *recording_st              = recording_state_get_ptr();
+   recording_state_t *rec_st     = recording_state_get_ptr();
    global_t            *global   = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
@@ -7471,6 +7615,7 @@ bool retroarch_main_init(int argc, char *argv[])
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
    video_st->flags              |= VIDEO_FLAG_ACTIVE;
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
+   runloop_st->entry_state_slot  = -1;
 
    if (setjmp(global->error_sjlj_context) > 0)
    {
@@ -7529,8 +7674,9 @@ bool retroarch_main_init(int argc, char *argv[])
             _len += strlcpy(str_output + _len,
                   FILE_PATH_LOG_INFO " CPU Model Name: ",
                   sizeof(str_output)   - _len);
-            _len              += strlcpy(str_output + _len, cpu_model,
-                                 sizeof(str_output) - _len);
+            _len += strlcpy(str_output + _len,
+                  cpu_model,
+                  sizeof(str_output) - _len);
             str_output[  _len] = '\n';
             str_output[++_len] = '\0';
          }
@@ -7579,7 +7725,7 @@ bool retroarch_main_init(int argc, char *argv[])
    retroarch_init_task_queue();
 
    {
-      const char    *fullpath  = path_get(RARCH_PATH_CONTENT);
+      const char    *fullpath  = p_rarch->path_content;
 
       if (!string_is_empty(fullpath))
       {
@@ -7625,7 +7771,7 @@ bool retroarch_main_init(int argc, char *argv[])
     * Attempts to find a default driver for
     * all driver types.
     */
-   if (!(audio_driver_find_driver(settings,
+   if (!(audio_driver_find_driver(settings->arrays.audio_driver,
          "audio driver", verbosity_enabled)))
       retroarch_fail(1, "audio_driver_find()");
    if (!video_driver_find_driver(settings,
@@ -7645,10 +7791,10 @@ bool retroarch_main_init(int argc, char *argv[])
    wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
 #endif
 #ifdef HAVE_CLOUDSYNC
-   cloud_sync_find_driver(settings,
+   cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
          "cloud sync driver", verbosity_enabled);
 #endif
-   location_driver_find_driver(settings,
+   location_driver_find_driver(settings->arrays.location_driver,
          &location_driver_st,
          "location driver", verbosity_enabled);
 #ifdef HAVE_MENU
@@ -7758,7 +7904,7 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_REWIND_INIT, NULL);
 #endif
    command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
-   if (!string_is_empty(recording_st->path))
+   if (!string_is_empty(rec_st->path))
       command_event(CMD_EVENT_RECORD_INIT, NULL);
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
@@ -7796,6 +7942,12 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
       preempt_init(runloop_st);
 #endif
+
+#ifdef HAVE_GAME_AI
+   game_ai_init();
+#endif
+
+
 
    return true;
 
@@ -7856,7 +8008,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             {
                /* Get loaded core file name */
                const char *loaded_core_file = path_basename_nocompression(
-                     path_get(RARCH_PATH_CORE));
+                     p_rarch->path_libretro);
                /* Check whether specified core and currently
                 * loaded core are the same */
                if (!string_is_empty(loaded_core_file))
@@ -8112,6 +8264,8 @@ bool retroarch_override_setting_is_set(
          return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_LOG_TO_FILE) > 0);
       case RARCH_OVERRIDE_SETTING_DATABASE_SCAN:
          return ((p_rarch->flags & RARCH_FLAGS_CLI_DATABASE_SCAN) > 0);
+      case RARCH_OVERRIDE_SETTING_OVERLAY_PRESET:
+         return ((p_rarch->flags & RARCH_FLAGS_HAS_SET_OVERLAY_PRESET) > 0);
       case RARCH_OVERRIDE_SETTING_NONE:
       default:
          break;
@@ -8120,8 +8274,8 @@ bool retroarch_override_setting_is_set(
    return false;
 }
 
-int retroarch_get_capabilities(enum rarch_capabilities type,
-      char *str_out, size_t str_len)
+size_t retroarch_get_capabilities(enum rarch_capabilities type,
+      char *s, size_t len)
 {
    size_t _len = 0;
    switch (type)
@@ -8130,80 +8284,79 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
          {
             uint64_t cpu = cpu_features_get();
             if (cpu & RETRO_SIMD_MMX)
-               _len += strlcpy(str_out + _len, "MMX ", str_len - _len);
+               _len += strlcpy(s + _len, "MMX ", len - _len);
             if (cpu & RETRO_SIMD_MMXEXT)
-               _len += strlcpy(str_out + _len, "MMXEXT ", str_len - _len);
+               _len += strlcpy(s + _len, "MMXEXT ", len - _len);
             if (cpu & RETRO_SIMD_SSE)
-               _len += strlcpy(str_out + _len, "SSE ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE ", len - _len);
             if (cpu & RETRO_SIMD_SSE2)
-               _len += strlcpy(str_out + _len, "SSE2 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE2 ", len - _len);
             if (cpu & RETRO_SIMD_SSE3)
-               _len += strlcpy(str_out + _len, "SSE3 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE3 ", len - _len);
             if (cpu & RETRO_SIMD_SSSE3)
-               _len += strlcpy(str_out + _len, "SSSE3 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSSE3 ", len - _len);
             if (cpu & RETRO_SIMD_SSE4)
-               _len += strlcpy(str_out + _len, "SSE4 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE4 ", len - _len);
             if (cpu & RETRO_SIMD_SSE42)
-               _len += strlcpy(str_out + _len, "SSE42 ", str_len - _len);
+               _len += strlcpy(s + _len, "SSE42 ", len - _len);
             if (cpu & RETRO_SIMD_AES)
-               _len += strlcpy(str_out + _len, "AES ", str_len - _len);
+               _len += strlcpy(s + _len, "AES ", len - _len);
             if (cpu & RETRO_SIMD_AVX)
-               _len += strlcpy(str_out + _len, "AVX ", str_len - _len);
+               _len += strlcpy(s + _len, "AVX ", len - _len);
             if (cpu & RETRO_SIMD_AVX2)
-               _len += strlcpy(str_out + _len, "AVX2 ", str_len - _len);
+               _len += strlcpy(s + _len, "AVX2 ", len - _len);
             if (cpu & RETRO_SIMD_NEON)
-               _len += strlcpy(str_out + _len, "NEON ", str_len - _len);
+               _len += strlcpy(s + _len, "NEON ", len - _len);
             if (cpu & RETRO_SIMD_VFPV3)
-               _len += strlcpy(str_out + _len, "VFPV3 ", str_len - _len);
+               _len += strlcpy(s + _len, "VFPV3 ", len - _len);
             if (cpu & RETRO_SIMD_VFPV4)
-               _len += strlcpy(str_out + _len, "VFPV4 ", str_len - _len);
+               _len += strlcpy(s + _len, "VFPV4 ", len - _len);
             if (cpu & RETRO_SIMD_VMX)
-               _len += strlcpy(str_out + _len, "VMX ", str_len - _len);
+               _len += strlcpy(s + _len, "VMX ", len - _len);
             if (cpu & RETRO_SIMD_VMX128)
-               _len += strlcpy(str_out + _len, "VMX128 ", str_len - _len);
+               _len += strlcpy(s + _len, "VMX128 ", len - _len);
             if (cpu & RETRO_SIMD_VFPU)
-               _len += strlcpy(str_out + _len, "VFPU ", str_len - _len);
+               _len += strlcpy(s + _len, "VFPU ", len - _len);
             if (cpu & RETRO_SIMD_PS)
-               _len += strlcpy(str_out + _len, "PS ", str_len - _len);
+               _len += strlcpy(s + _len, "PS ", len - _len);
             if (cpu & RETRO_SIMD_ASIMD)
-               _len += strlcpy(str_out + _len, "ASIMD ", str_len - _len);
+               _len += strlcpy(s + _len, "ASIMD ", len - _len);
             break;
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:
 #if defined(_MSC_VER)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": MSVC (%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": MSVC (%d)",
                _MSC_VER);
 #elif defined(__SNC__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": SNC (%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": SNC (%d)",
                __SN_VER__);
 #elif defined(_WIN32) && defined(__GNUC__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": MinGW (%d.%d.%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": MinGW (%d.%d.%d)",
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #elif defined(__clang__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += strlcpy(str_out + _len, ": Clang/LLVM (", str_len - _len);
-         _len += strlcpy(str_out + _len, __clang_version__, str_len - _len);
-         _len += strlcpy(str_out + _len, ")", str_len - _len);
+         _len += strlcpy(s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += strlcpy(s + _len, ": Clang/LLVM (", len - _len);
+         _len += strlcpy(s + _len, __clang_version__, len - _len);
+         _len += strlcpy(s + _len, ")", len - _len);
 #elif defined(__GNUC__)
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_COMPILER), str_len);
-         _len += snprintf(str_out + _len, str_len - _len, ": GCC (%d.%d.%d)",
+         _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
+         _len += snprintf(s + _len, len - _len, ": GCC (%d.%d.%d)",
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #else
-         _len  = strlcpy(str_out, msg_hash_to_str(MSG_UNKNOWN_COMPILER), str_len);
+         _len += strlcpy(s + _len, msg_hash_to_str(MSG_UNKNOWN_COMPILER), len - _len);
 #endif
-         snprintf(str_out + _len, str_len - _len, " %u-bit",
+         _len += snprintf(s + _len, len - _len, " %u-bit",
                (unsigned)(CHAR_BIT * sizeof(size_t)));
          break;
       default:
       case RARCH_CAPABILITIES_NONE:
          break;
    }
-
-   return 0;
+   return _len;
 }
 
 void retroarch_fail(int error_code, const char *error)
@@ -8212,8 +8365,8 @@ void retroarch_fail(int error_code, const char *error)
    /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
-   strlcpy(global->error_string,
-         error, sizeof(global->error_string));
+   strlcpy(global->error_string, error,
+         sizeof(global->error_string));
    longjmp(global->error_sjlj_context, error_code);
 }
 
@@ -8288,8 +8441,8 @@ bool retroarch_main_quit(void)
 
    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
-      if (settings->bools.savestate_auto_save &&
-          runloop_st->current_core_type != CORE_TYPE_DUMMY)
+      if (   settings->bools.savestate_auto_save
+          && runloop_st->current_core_type != CORE_TYPE_DUMMY)
          command_event_save_auto_state();
 
       /* If any save states are in progress, wait
@@ -8334,6 +8487,10 @@ bool retroarch_main_quit(void)
    runloop_st->flags |= RUNLOOP_FLAG_SHUTDOWN_INITIATED;
 #ifdef HAVE_MENU
    retroarch_menu_running_finished(true);
+#endif
+
+#ifdef HAVE_GAME_AI
+   game_ai_shutdown();
 #endif
 
    return true;

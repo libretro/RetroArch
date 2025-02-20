@@ -61,15 +61,13 @@ typedef struct
    uint8_t *decompressed_data;
 } zip_context_t;
 
-static INLINE uint32_t read_le(const uint8_t *data, unsigned size)
+static INLINE uint32_t read_le(const uint8_t *data, size_t len)
 {
    unsigned i;
    uint32_t val = 0;
-
-   size *= 8;
-   for (i = 0; i < size; i += 8)
+   len *= 8;
+   for (i = 0; i < len; i += 8)
       val |= (uint32_t)*data++ << i;
-
    return val;
 }
 
@@ -114,9 +112,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    /* seek past most of the local directory header */
 #ifdef HAVE_MMAP
    if (state->archive_mmap_data)
-   {
       local_header = state->archive_mmap_data + (size_t)cdata + 26;
-   }
    else
 #endif
    {
@@ -156,7 +152,8 @@ static bool zlib_stream_decompress_data_to_file_init(
       zip_context->zstream->zfree     = NULL;
       zip_context->zstream->opaque    = NULL;
 
-      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK) {
+      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK)
+      {
          free(zip_context->zstream);
          zip_context->zstream = NULL;
          goto error;
@@ -180,13 +177,11 @@ static int zlib_stream_decompress_data_to_file_iterate(
    if (zip_context->cmode == ZIP_MODE_STORED)
    {
       #ifdef HAVE_MMAP
+      /* Simply copy the data to the output buffer */
       if (zip_context->state->archive_mmap_data)
-      {
-         /* Simply copy the data to the output buffer */
          memcpy(zip_context->decompressed_data,
                 zip_context->state->archive_mmap_data + (size_t)zip_context->fdoffset,
                 zip_context->usize);
-      }
       else
       #endif
       {
@@ -203,27 +198,26 @@ static int zlib_stream_decompress_data_to_file_iterate(
    }
    else if (zip_context->cmode == ZIP_MODE_DEFLATED)
    {
-      int to_read = MIN(zip_context->csize - zip_context->boffset, _READ_CHUNK_SIZE);
       uint8_t *dptr;
+      int to_read = MIN(zip_context->csize - zip_context->boffset, _READ_CHUNK_SIZE);
+      /* File was uncompressed or decompression finished before */
       if (!zip_context->zstream)
-      {
-         /* file was uncompressed or decompression finished before */
          return 1;
-      }
 
       #ifdef HAVE_MMAP
       if (state->archive_mmap_data)
       {
          /* Decompress from the mapped file */
          dptr = state->archive_mmap_data + (size_t)zip_context->fdoffset + zip_context->boffset;
-         rd = to_read;
+         rd   = to_read;
       }
       else
       #endif
       {
          /* Read some compressed data from file to the temp buffer */
-         filestream_seek(state->archive_file, zip_context->fdoffset + zip_context->boffset,
-                         RETRO_VFS_SEEK_POSITION_START);
+         filestream_seek(state->archive_file,
+               zip_context->fdoffset + zip_context->boffset,
+               RETRO_VFS_SEEK_POSITION_START);
          rd = filestream_read(state->archive_file, zip_context->tmpbuf, to_read);
          if (rd < 0)
             return -1;
@@ -255,9 +249,9 @@ static int zlib_stream_decompress_data_to_file_iterate(
 }
 
 static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
-      const uint8_t *data, size_t length)
+      const uint8_t *data, size_t len)
 {
-   return encoding_crc32(crc, data, length);
+   return encoding_crc32(crc, data, len);
 }
 
 static bool zip_file_decompressed_handle(
@@ -364,7 +358,6 @@ static int64_t zip_file_read(
    file_archive_transfer_t state            = {0};
    decomp_state_t decomp                    = {0};
    struct archive_extract_userdata userdata = {0};
-   bool returnerr                           = true;
    int ret                                  = 0;
 
    if (needle)
@@ -379,6 +372,7 @@ static int64_t zip_file_read(
 
    do
    {
+      bool returnerr = true;
       ret = file_archive_parse_file_iterate(&state, &returnerr, path,
             "", zip_file_decompressed, &userdata);
       if (!returnerr)
@@ -521,13 +515,13 @@ static int zip_parse_file_iterate_step(void *context,
       file_archive_file_cb file_cb)
 {
    zip_context_t *zip_context = (zip_context_t *)context;
-   const uint8_t *cdata           = NULL;
-   uint32_t checksum              = 0;
-   uint32_t size                  = 0;
-   uint32_t csize                 = 0;
-   unsigned cmode                 = 0;
-   unsigned payload               = 0;
-   int ret                        = zip_parse_file_iterate_step_internal(zip_context,
+   const uint8_t *cdata       = NULL;
+   uint32_t checksum          = 0;
+   uint32_t size              = 0;
+   uint32_t csize             = 0;
+   unsigned cmode             = 0;
+   unsigned payload           = 0;
+   int ret                    = zip_parse_file_iterate_step_internal(zip_context,
          userdata->current_file_path, &cdata, &cmode, &size, &csize, &checksum, &payload);
 
    if (ret != 1)

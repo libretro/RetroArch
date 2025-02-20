@@ -125,7 +125,7 @@ static bool KTifJSONObjectEndHandler(void* context)
    return true;
 }
 
-static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_t length)
+static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
@@ -133,7 +133,7 @@ static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_
    if (pCtx->current_entry_str_val)
       return false;
 
-   if (length)
+   if (len)
    {
       if (string_is_equal(pValue, "frame"))
          pCtx->current_entry_uint_val = &pCtx->frame;
@@ -149,11 +149,11 @@ static bool KTifJSONObjectMemberHandler(void* context, const char *pValue, size_
    return true;
 }
 
-static bool KTifJSONNumberHandler(void* context, const char *pValue, size_t length)
+static bool KTifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -162,11 +162,11 @@ static bool KTifJSONNumberHandler(void* context, const char *pValue, size_t leng
    return true;
 }
 
-static bool KTifJSONStringHandler(void* context, const char *pValue, size_t length)
+static bool KTifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && length && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
@@ -412,9 +412,9 @@ static void test_input_poll(void *data)
    {
       if (!input_test_steps[i].handled && curr_frame > input_test_steps[i].frame)
       {
-         if( input_test_steps[i].action == INPUT_TEST_COMMAND_PRESS_KEY)
+         if (input_test_steps[i].action == INPUT_TEST_COMMAND_PRESS_KEY)
          {
-            if(input_test_steps[i].param_num < RETROK_LAST)
+            if (input_test_steps[i].param_num < RETROK_LAST)
             {
                test_key_state[DEFAULT_MAX_PADS][input_test_steps[i].param_num] = 1;
                input_keyboard_event(true, input_test_steps[i].param_num, 0, 0, RETRO_DEVICE_KEYBOARD);
@@ -424,9 +424,9 @@ static void test_input_poll(void *data)
                "[Test input driver]: Pressing keyboard button %d at frame %d\n",
                input_test_steps[i].param_num, curr_frame);
          }
-         else if( input_test_steps[i].action == INPUT_TEST_COMMAND_RELEASE_KEY)
+         else if (input_test_steps[i].action == INPUT_TEST_COMMAND_RELEASE_KEY)
          {
-            if(input_test_steps[i].param_num < RETROK_LAST)
+            if (input_test_steps[i].param_num < RETROK_LAST)
             {
                test_key_state[DEFAULT_MAX_PADS][input_test_steps[i].param_num] = 0;
                input_keyboard_event(false, input_test_steps[i].param_num, 0, 0, RETRO_DEVICE_KEYBOARD);
@@ -436,9 +436,9 @@ static void test_input_poll(void *data)
                "[Test input driver]: Releasing keyboard button %d at frame %d\n",
                input_test_steps[i].param_num, curr_frame);
          }
-         else if(input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_ACC_X ||
-                 input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_ACC_Y ||
-                 input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_ACC_Z)
+         else if (  input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_ACC_X
+                 || input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_ACC_Y
+                 || input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_ACC_Z)
          {
             float setval = test_input_unsigned_to_float_acc(input_test_steps[i].param_num);
             switch (input_test_steps[i].action)
@@ -458,9 +458,9 @@ static void test_input_poll(void *data)
                "[Test input driver]: Setting accelerometer axis %d to %f at frame %d\n",
                input_test_steps[i].action - INPUT_TEST_COMMAND_SET_SENSOR_ACC_X, setval, curr_frame);
          }
-         else if(input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_GYR_X ||
-                 input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_GYR_Y ||
-                 input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_GYR_Z)
+         else if (  input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_GYR_X
+                 || input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_GYR_Y
+                 || input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_GYR_Z)
          {
             float setval = test_input_unsigned_to_float_gyro(input_test_steps[i].param_num);
             switch (input_test_steps[i].action)
@@ -480,7 +480,7 @@ static void test_input_poll(void *data)
                "[Test input driver]: Setting gyroscope axis %d to %f at frame %d\n",
                input_test_steps[i].action - INPUT_TEST_COMMAND_SET_SENSOR_GYR_X, setval, curr_frame);
          }
-         else if(input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_LUX)
+         else if (input_test_steps[i].action == INPUT_TEST_COMMAND_SET_SENSOR_LUX)
          {
             float setval = test_input_unsigned_to_float_lux(input_test_steps[i].param_num);
             test_input_values.lux_sensor_state = setval;
@@ -510,23 +510,23 @@ static bool test_input_set_sensor_state(void *data, unsigned port,
 static float test_input_get_sensor_input(void *data,
       unsigned port, unsigned id)
 {
-      switch (id)
-      {
-         case RETRO_SENSOR_ACCELEROMETER_X:
-            return test_input_values.accelerometer_state.x;
-         case RETRO_SENSOR_ACCELEROMETER_Y:
-            return test_input_values.accelerometer_state.y;
-         case RETRO_SENSOR_ACCELEROMETER_Z:
-            return test_input_values.accelerometer_state.z;
-         case RETRO_SENSOR_GYROSCOPE_X:
-            return test_input_values.gyroscope_state.x;
-         case RETRO_SENSOR_GYROSCOPE_Y:
-            return test_input_values.gyroscope_state.y;
-         case RETRO_SENSOR_GYROSCOPE_Z:
-            return test_input_values.gyroscope_state.z;
-         case RETRO_SENSOR_ILLUMINANCE:
-            return test_input_values.lux_sensor_state;
-      }
+   switch (id)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_X:
+         return test_input_values.accelerometer_state.x;
+      case RETRO_SENSOR_ACCELEROMETER_Y:
+         return test_input_values.accelerometer_state.y;
+      case RETRO_SENSOR_ACCELEROMETER_Z:
+         return test_input_values.accelerometer_state.z;
+      case RETRO_SENSOR_GYROSCOPE_X:
+         return test_input_values.gyroscope_state.x;
+      case RETRO_SENSOR_GYROSCOPE_Y:
+         return test_input_values.gyroscope_state.y;
+      case RETRO_SENSOR_GYROSCOPE_Z:
+         return test_input_values.gyroscope_state.z;
+      case RETRO_SENSOR_ILLUMINANCE:
+         return test_input_values.lux_sensor_state;
+   }
 
    return 0.0f;
 }

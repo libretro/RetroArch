@@ -175,13 +175,10 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
    return list;
 }
 
-static void task_cloud_sync_manifest_filename(char *path, size_t len, bool server)
+static void task_cloud_sync_manifest_filename(char *s, size_t len, bool server)
 {
-   settings_t *settings             = config_get_ptr();
-   const char *path_dir_core_assets = settings->paths.directory_core_assets;
-
-   fill_pathname_join_special(path,
-         path_dir_core_assets,
+   const char *path_dir_core_assets = config_get_ptr()->paths.directory_core_assets;
+   fill_pathname_join_special(s, path_dir_core_assets,
          server ? MANIFEST_FILENAME_SERVER : MANIFEST_FILENAME_LOCAL,
          len);
 }
@@ -525,8 +522,7 @@ static void task_cloud_sync_backup_file(struct item_file *file)
    char        new_dir[DIR_MAX_LENGTH];
    char        backup_dir[DIR_MAX_LENGTH];
    char        new_path[PATH_MAX_LENGTH];
-   settings_t *settings             = config_get_ptr();
-   const char *path_dir_core_assets = settings->paths.directory_core_assets;
+   const char *path_dir_core_assets = config_get_ptr()->paths.directory_core_assets;
    time_t      cur_time             = time(NULL);
    rtime_localtime(&cur_time, &tm_);
 
@@ -539,6 +535,7 @@ static void task_cloud_sync_backup_file(struct item_file *file)
                                     CS_FILE_KEY(file),
                                     sizeof(new_path));
    strftime(new_path + len, sizeof(new_path) - len, "-%y%m%d-%H%M%S", &tm_);
+   pathname_conform_slashes_to_os(new_path);
    fill_pathname_basedir(new_dir, new_path, sizeof(new_dir));
    path_mkdir(new_dir);
    filestream_rename(file->path, new_path);
@@ -583,8 +580,9 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    struct string_list *dirlist     = task_cloud_sync_directory_map();
    struct item_file   *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char         *key         = CS_FILE_KEY(server_file);
-   const char         *path        = strchr(key, PATH_DEFAULT_SLASH_C()) + 1;
-   settings_t         *settings = config_get_ptr();
+   /* the key from the server file is in "portable" format, use '/' */
+   const char         *path        = strchr(key, '/') + 1;
+   settings_t         *settings    = config_get_ptr();
 
    /* we're just fetching a file the server has, we can update this now */
    task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
@@ -604,6 +602,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
       if (!string_starts_with(key, dirlist->elems[i].data))
          continue;
       fill_pathname_join_special(filename, dirlist->elems[i].userdata, path, sizeof(filename));
+      pathname_conform_slashes_to_os(filename);
       break;
    }
    if (string_is_empty(filename))
@@ -740,12 +739,12 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
 
 static void task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_state)
 {
-   struct item_file *item     = &sync_state->current_manifest->list[sync_state->current_idx];
-   settings_t       *settings = config_get_ptr();
+   struct item_file *item      = &sync_state->current_manifest->list[sync_state->current_idx];
+   bool cloud_sync_destructive = config_get_ptr()->bools.cloud_sync_destructive;
 
    RARCH_WARN(CSPFX "server has deleted %s, so shall we\n", CS_FILE_KEY(item));
 
-   if (settings->bools.cloud_sync_destructive)
+   if (cloud_sync_destructive)
       filestream_delete(item->path);
    else
       task_cloud_sync_backup_file(item);
@@ -799,7 +798,10 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
    else if (!CS_FILE_DELETED(server_file))
       task_cloud_sync_fetch_server_file(sync_state);
    else
+   {
       task_cloud_sync_delete_current_file(sync_state);
+      task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), CS_FILE_HASH(server_file), false);
+   }
 }
 
 static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool success, RFILE *file)
@@ -952,10 +954,10 @@ static void task_cloud_sync_diff_next(task_cloud_sync_state_t *sync_state)
          /* the file has been deleted locally */
          if (!CS_FILE_DELETED(server_file))
          {
-            if (CS_FILE_DELETED(current_file))
+            if (CS_FILE_DELETED(local_file))
                /* previously saw the delete, now it's resurrected */
                task_cloud_sync_fetch_server_file(sync_state);
-            else if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(current_file)))
+            else if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(local_file)))
                /* server didn't change, delete from the server */
                task_cloud_sync_delete_server_file(sync_state);
             else
@@ -1115,15 +1117,15 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
       char title[128];
-      size_t len = strlcpy(title, "Cloud Sync finished", sizeof(title));
+      size_t _len = strlcpy(title, "Cloud Sync finished", sizeof(title));
       if (sync_state->failures || sync_state->conflicts)
-         len += strlcpy(title + len, " with ", sizeof(title) - len);
+         _len += strlcpy(title + _len, " with ", sizeof(title) - _len);
       if (sync_state->failures)
-         len += strlcpy(title + len, "failures", sizeof(title) - len);
+         _len += strlcpy(title + _len, "failures", sizeof(title) - _len);
       if (sync_state->failures && sync_state->conflicts)
-         len += strlcpy(title + len, " and ", sizeof(title) - len);
+         _len += strlcpy(title + _len, " and ", sizeof(title) - _len);
       if (sync_state->conflicts)
-         strlcpy(title + len, "conflicts", sizeof(title) - len);
+         strlcpy(title + _len, "conflicts", sizeof(title) - _len);
       task_set_title(task, strdup(title));
    }
 
@@ -1233,13 +1235,13 @@ static bool task_cloud_sync_task_finder(retro_task_t *task, void *user_data)
 
 void task_push_cloud_sync(void)
 {
-   settings_t              *settings   = config_get_ptr();
+   char task_title[128];
    task_finder_data_t       find_data;
    task_cloud_sync_state_t *sync_state = NULL;
    retro_task_t            *task       = NULL;
-   char                     task_title[128];
+   bool cloud_sync_enable              = config_get_ptr()->bools.cloud_sync_enable;
 
-   if (!settings->bools.cloud_sync_enable)
+   if (!cloud_sync_enable)
       return;
 
    if (!tcs_running_lock)
@@ -1262,7 +1264,7 @@ void task_push_cloud_sync(void)
       return;
    }
 
-   sync_state->phase = CLOUD_SYNC_PHASE_BEGIN;
+   sync_state->phase      = CLOUD_SYNC_PHASE_BEGIN;
    sync_state->start_time = cpu_features_get_time_usec();
 
    strlcpy(task_title, "Cloud Sync in progress", sizeof(task_title));
@@ -1277,10 +1279,11 @@ void task_push_cloud_sync(void)
 
 void task_push_cloud_sync_update_driver(void)
 {
-   char        manifest_path[PATH_MAX_LENGTH];
+   char manifest_path[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
 
-   cloud_sync_find_driver(settings, "cloud sync driver", verbosity_is_enabled());
+   cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
+         "cloud sync driver", verbosity_is_enabled());
 
    /* The sync does a three-way diff: current local <- last sync -> current server.
     * When the server changes it becomes a four way diff, which can lead to odd

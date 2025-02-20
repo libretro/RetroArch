@@ -1568,14 +1568,14 @@ static chd_error hunk_read_into_cache(chd_file *chd, UINT32 hunknum)
     hunk
 -------------------------------------------------*/
 
-static UINT8* hunk_read_compressed(chd_file *chd, UINT64 offset, size_t size)
+static UINT8* hunk_read_compressed(chd_file *chd, UINT64 offset, size_t len)
 {
    int64_t bytes;
    if (chd->file_cache)
       return chd->file_cache + offset;
    filestream_seek(chd->file, offset, SEEK_SET);
-   bytes = filestream_read(chd->file, chd->compressed, size);
-   if (bytes != (int64_t)size)
+   bytes = filestream_read(chd->file, chd->compressed, len);
+   if (bytes != (int64_t)len)
       return NULL;
    return chd->compressed;
 }
@@ -1585,17 +1585,17 @@ static UINT8* hunk_read_compressed(chd_file *chd, UINT64 offset, size_t size)
     hunk
 -------------------------------------------------*/
 
-static chd_error hunk_read_uncompressed(chd_file *chd, UINT64 offset, size_t size, UINT8 *dest)
+static chd_error hunk_read_uncompressed(chd_file *chd, UINT64 offset, size_t len, UINT8 *dest)
 {
    int64_t bytes;
    if (chd->file_cache)
    {
-      memcpy(dest, chd->file_cache + offset, size);
+      memcpy(dest, chd->file_cache + offset, len);
       return CHDERR_NONE;
    }
    filestream_seek(chd->file, offset, SEEK_SET);
-   bytes = filestream_read(chd->file, dest, size);
-   if (bytes != (int64_t)size)
+   bytes = filestream_read(chd->file, dest, len);
+   if (bytes != (int64_t)len)
       return CHDERR_READ_ERROR;
    return CHDERR_NONE;
 }

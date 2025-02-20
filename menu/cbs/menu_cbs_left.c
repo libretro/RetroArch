@@ -258,11 +258,11 @@ static int action_left_mainmenu(unsigned type, const char *label,
 #ifdef HAVE_XMB
    struct menu_state    *menu_st       = menu_state_get_ptr();
    const menu_ctx_driver_t *driver_ctx = menu_st->driver_ctx;
-   size_t size                         = (driver_ctx && driver_ctx->list_get_size) ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) : 0;
+   size_t _len                         = (driver_ctx && driver_ctx->list_get_size) ? driver_ctx->list_get_size(menu_st->userdata, MENU_LIST_PLAIN) : 0;
    const char *menu_ident              = (driver_ctx && driver_ctx->ident) ? driver_ctx->ident : NULL;
    /* Tab switching functionality only applies
     * to XMB */
-   if (  (size == 1)
+   if (  (_len == 1)
        && string_is_equal(menu_ident, "xmb"))
    {
       settings_t            *settings  = config_get_ptr();
@@ -504,7 +504,7 @@ static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thu
    if (thumbnail_mode > PLAYLIST_THUMBNAIL_MODE_DEFAULT)
       thumbnail_mode = (enum playlist_thumbnail_mode)((unsigned)thumbnail_mode - 1);
    else if (wraparound)
-      thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_BOXARTS;
+      thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_LOGOS;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
    playlist_write_file(playlist);
@@ -697,18 +697,19 @@ static int cpu_policy_freq_managed_tweak(unsigned type, const char *label,
    cpu_scaling_opts_t opts;
    enum cpu_scaling_mode mode = get_cpu_scaling_mode(&opts);
 
-   switch (type) {
-   case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
-      opts.min_freq = get_cpu_scaling_next_frequency_limit(
-         opts.min_freq, -1);
-      set_cpu_scaling_mode(mode, &opts);
-      break;
-   case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
-      opts.max_freq = get_cpu_scaling_next_frequency_limit(
-         opts.max_freq, -1);
-      set_cpu_scaling_mode(mode, &opts);
-      break;
-   };
+   switch (type)
+   {
+      case MENU_SETTINGS_CPU_MANAGED_SET_MINFREQ:
+         opts.min_freq = get_cpu_scaling_next_frequency_limit(
+               opts.min_freq, -1);
+         set_cpu_scaling_mode(mode, &opts);
+         break;
+      case MENU_SETTINGS_CPU_MANAGED_SET_MAXFREQ:
+         opts.max_freq = get_cpu_scaling_next_frequency_limit(
+               opts.max_freq, -1);
+         set_cpu_scaling_mode(mode, &opts);
+         break;
+   }
 
    return 0;
 }
@@ -726,30 +727,31 @@ static int cpu_policy_freq_managed_gov(unsigned type, const char *label,
    if (!drivers || !drivers[0])
       return -1;
 
-   switch (atoi(label)) {
-   case 0:
-      pidx = string_list_find_elem(drivers[0]->available_governors,
-         opts.main_policy);
-      if (pidx > 1)
-      {
-         strlcpy(opts.main_policy,
-            drivers[0]->available_governors->elems[pidx-2].data,
-            sizeof(opts.main_policy));
-         set_cpu_scaling_mode(mode, &opts);
-      }
-      break;
-   case 1:
-      pidx = string_list_find_elem(drivers[0]->available_governors,
-         opts.menu_policy);
-      if (pidx > 1)
-      {
-         strlcpy(opts.menu_policy,
-            drivers[0]->available_governors->elems[pidx-2].data,
-            sizeof(opts.menu_policy));
-         set_cpu_scaling_mode(mode, &opts);
-      }
-      break;
-   };
+   switch (atoi(label))
+   {
+      case 0:
+         pidx = string_list_find_elem(drivers[0]->available_governors,
+               opts.main_policy);
+         if (pidx > 1)
+         {
+            strlcpy(opts.main_policy,
+                  drivers[0]->available_governors->elems[pidx-2].data,
+                  sizeof(opts.main_policy));
+            set_cpu_scaling_mode(mode, &opts);
+         }
+         break;
+      case 1:
+         pidx = string_list_find_elem(drivers[0]->available_governors,
+               opts.menu_policy);
+         if (pidx > 1)
+         {
+            strlcpy(opts.menu_policy,
+                  drivers[0]->available_governors->elems[pidx-2].data,
+                  sizeof(opts.menu_policy));
+            set_cpu_scaling_mode(mode, &opts);
+         }
+         break;
+   }
 
    return 0;
 }
@@ -764,29 +766,30 @@ static int cpu_policy_freq_tweak(unsigned type, const char *label,
    if (!drivers)
      return 0;
 
-   switch (type) {
-   case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
-      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
-         drivers[policyid]->min_policy_freq, -1);
-      set_cpu_scaling_min_frequency(drivers[policyid], next_freq);
-      break;
-   case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
-      next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
-         drivers[policyid]->max_policy_freq, -1);
-      set_cpu_scaling_max_frequency(drivers[policyid], next_freq);
-      break;
-   case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+   switch (type)
    {
-      int pidx = string_list_find_elem(drivers[policyid]->available_governors,
-         drivers[policyid]->scaling_governor);
-      if (pidx > 1)
-      {
-         set_cpu_scaling_governor(drivers[policyid],
-            drivers[policyid]->available_governors->elems[pidx-2].data);
-      }
-      break;
+      case MENU_SETTINGS_CPU_POLICY_SET_MINFREQ:
+         next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+               drivers[policyid]->min_policy_freq, -1);
+         set_cpu_scaling_min_frequency(drivers[policyid], next_freq);
+         break;
+      case MENU_SETTINGS_CPU_POLICY_SET_MAXFREQ:
+         next_freq = get_cpu_scaling_next_frequency(drivers[policyid],
+               drivers[policyid]->max_policy_freq, -1);
+         set_cpu_scaling_max_frequency(drivers[policyid], next_freq);
+         break;
+      case MENU_SETTINGS_CPU_POLICY_SET_GOVERNOR:
+         {
+            int pidx = string_list_find_elem(drivers[policyid]->available_governors,
+                  drivers[policyid]->scaling_governor);
+            if (pidx > 1)
+            {
+               set_cpu_scaling_governor(drivers[policyid],
+                     drivers[policyid]->available_governors->elems[pidx-2].data);
+            }
+            break;
+         }
    }
-   };
 
    return 0;
 }
@@ -948,8 +951,8 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
 static int action_left_state_slot(unsigned type, const char *label,
       bool wraparound)
 {
-   struct menu_state *menu_st     = menu_state_get_ptr();
-   settings_t           *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t       *settings = config_get_ptr();
 
    settings->ints.state_slot--;
    if (settings->ints.state_slot < -1)
@@ -957,16 +960,16 @@ static int action_left_state_slot(unsigned type, const char *label,
 
    if (menu_st->driver_ctx)
    {
-      size_t selection            = menu_st->selection_ptr;
       if (menu_st->driver_ctx->update_savestate_thumbnail_path)
          menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
+               menu_st->userdata, (unsigned)menu_st->selection_ptr);
       if (menu_st->driver_ctx->update_savestate_thumbnail_image)
          menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
    }
 
    return 0;
 }
+
 static int action_left_replay_slot(unsigned type, const char *label,
       bool wraparound)
 {
@@ -976,16 +979,6 @@ static int action_left_replay_slot(unsigned type, const char *label,
    settings->ints.replay_slot--;
    if (settings->ints.replay_slot < -1)
       settings->ints.replay_slot = 999;
-
-   if (menu_st->driver_ctx)
-   {
-      size_t selection            = menu_st->selection_ptr;
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
-   }
 
    return 0;
 }
@@ -1099,6 +1092,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                break;
             case MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME:
                BIND_ACTION_LEFT(cbs, manual_content_scan_core_name_left);
+               break;
+            case MENU_ENUM_LABEL_STATE_SLOT:
+               BIND_ACTION_LEFT(cbs, action_left_state_slot);
                break;
             #ifdef HAVE_LAKKA
             case MENU_ENUM_LABEL_CPU_PERF_MODE:
@@ -1218,7 +1214,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_VIDEO_FONT:
          case MENU_SETTING_GROUP:
          case MENU_SETTINGS_CORE_INFO_NONE:
-            if (  
+            if (
                   string_ends_with_size(menu_label, "_tab",
                      menu_lbl_len, STRLEN_CONST("_tab"))
                   || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU))
@@ -1280,7 +1276,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
 
    if (type == MENU_SETTING_NO_ITEM)
    {
-      if (  
+      if (
                string_ends_with_size(menu_label, "_tab",
                   menu_lbl_len, STRLEN_CONST("_tab"))
             || string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU))

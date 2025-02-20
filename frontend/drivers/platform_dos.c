@@ -107,11 +107,11 @@ static void frontend_dos_get_env_settings(int *argc, char *argv[],
 static void frontend_dos_exec(const char *path, bool should_load_game)
 {
 	char *newargv[]    = { NULL, NULL };
-	size_t len         = strlen(path);
+	size_t _len        = strlen(path);
 
-	newargv[0] = (char*)malloc(len);
+	newargv[0] = (char*)malloc(_len);
 
-	strlcpy(newargv[0], path, len);
+	strlcpy(newargv[0], path, _len);
 
 	execv(path, newargv);
 }

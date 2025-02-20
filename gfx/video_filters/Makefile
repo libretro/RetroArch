@@ -126,6 +126,7 @@ objects += blargg_ntsc_snes.$(DYLIB) \
 			  dot_matrix_3x.$(DYLIB) \
 			  dot_matrix_4x.$(DYLIB) \
 			  upscale_1_5x.$(DYLIB) \
+			  upscale_1_66x_fast.$(DYLIB) \
 			  upscale_256x_320x240.$(DYLIB) \
 			  picoscale_256x_320x240.$(DYLIB) \
 			  upscale_240x160_320x240.$(DYLIB) \

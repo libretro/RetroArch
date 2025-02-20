@@ -79,7 +79,7 @@ static void *gx_audio_init(const char *device,
    AIInit(NULL);
    AIRegisterDMACallback(dma_callback);
 
-   /* Ranges 0-32000 (default low) and 40000-47999 
+   /* Ranges 0-32000 (default low) and 40000-47999
       (in settings going down from 48000) -> set to 32000 hz */
    if (rate <= 32000 || (rate >= 40000 && rate < 48000))
    {
@@ -103,18 +103,18 @@ static void *gx_audio_init(const char *device,
 
 /* Wii uses silly R, L, R, L interleaving. */
 static INLINE void copy_swapped(uint32_t * restrict dst,
-      const uint32_t * restrict src, size_t size)
+      const uint32_t * restrict src, size_t len)
 {
    do
    {
       uint32_t s = *src++;
       *dst++ = (s >> 16) | (s << 16);
-   } while (--size);
+   } while (--len);
 }
 
-static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
+static ssize_t gx_audio_write(void *data, const void *buf_, size_t len)
 {
-   size_t       frames = size >> 2;
+   size_t       frames = len >> 2;
    const uint32_t *buf = buf_;
    gx_audio_t      *wa = data;
 
@@ -142,8 +142,7 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t size)
          wa->dma_write = (wa->dma_write + 1) & (BLOCKS - 1);
       }
    }
-
-   return size;
+   return len;
 }
 
 static bool gx_audio_stop(void *data)
@@ -209,18 +208,9 @@ static size_t gx_audio_write_avail(void *data)
          & (BLOCKS - 1)) * CHUNK_SIZE;
 }
 
-static size_t gx_audio_buffer_size(void *data)
-{
-   (void)data;
-   return BLOCKS * CHUNK_SIZE;
-}
-
-static bool gx_audio_use_float(void *data)
-{
-   /* TODO/FIXME - verify */
-   (void)data;
-   return false;
-}
+static size_t gx_audio_buffer_size(void *data) { return BLOCKS * CHUNK_SIZE; }
+/* TODO/FIXME - implement/verify? */
+static bool gx_audio_use_float(void *data) { return false; }
 
 audio_driver_t audio_gx = {
    gx_audio_init,

@@ -186,7 +186,7 @@ static ssize_t libnx_audren_audio_get_free_wavebuf_idx(libnx_audren_t* aud)
 }
 
 static size_t libnx_audren_audio_append(
-      libnx_audren_t* aud, const void *buf, size_t size)
+      libnx_audren_t* aud, const void *s, size_t len)
 {
    void *dstbuf     = NULL;
    ssize_t free_idx = -1;
@@ -202,14 +202,14 @@ static size_t libnx_audren_audio_append(
       aud->current_size = 0;
    }
 
-   if (size > aud->buffer_size - aud->current_size)
-      size = aud->buffer_size - aud->current_size;
+   if (len > aud->buffer_size - aud->current_size)
+      len = aud->buffer_size - aud->current_size;
 
    dstbuf = aud->current_pool_ptr + aud->current_size;
-   memcpy(dstbuf, buf, size);
-   armDCacheFlush(dstbuf, size);
+   memcpy(dstbuf, s, len);
+   armDCacheFlush(dstbuf, len);
 
-   aud->current_size += size;
+   aud->current_size += len;
 
    if (aud->current_size == aud->buffer_size)
    {
@@ -227,11 +227,11 @@ static size_t libnx_audren_audio_append(
       aud->current_wavebuf = NULL;
    }
 
-   return size;
+   return len;
 }
 
 static ssize_t libnx_audren_audio_write(void *data,
-      const void *buf, size_t size)
+      const void *s, size_t len)
 {
    libnx_audren_t *aud = (libnx_audren_t*)data;
    size_t written      = 0;
@@ -241,21 +241,21 @@ static ssize_t libnx_audren_audio_write(void *data,
 
    if (aud->nonblock)
    {
-      while (written < size)
+      while (written < len)
       {
          written += libnx_audren_audio_append(
-               aud, buf + written, size - written);
-         if (written != size)
+               aud, s + written, len - written);
+         if (written != len)
             break;
       }
    }
    else
    {
-      while (written < size)
+      while (written < len)
       {
          written += libnx_audren_audio_append(
-               aud, buf + written, size - written);
-         if (written != size)
+               aud, s + written, len - written);
+         if (written != len)
          {
             mutexLock(&aud->update_lock);
             audrvUpdate(&aud->drv);

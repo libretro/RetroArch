@@ -162,10 +162,10 @@ static enum patch_error bps_apply_patch(
    bps.target_relative_offset = 0;
    bps.output_offset          = 0;
 
-   if (  (bps_read(&bps) != 'B') ||
-         (bps_read(&bps) != 'P') ||
-         (bps_read(&bps) != 'S') ||
-         (bps_read(&bps) != '1'))
+   if (     (bps_read(&bps) != 'B')
+         || (bps_read(&bps) != 'P')
+         || (bps_read(&bps) != 'S')
+         || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
    modify_source_size  = bps_decode(&bps);
@@ -193,15 +193,15 @@ static enum patch_error bps_apply_patch(
 
    while (bps.modify_offset < bps.modify_length - 12)
    {
-      size_t length = bps_decode(&bps);
-      unsigned mode = length & 3;
+      size_t _len   = bps_decode(&bps);
+      unsigned mode = _len & 3;
 
-      length = (length >> 2) + 1;
+      _len          = (_len >> 2) + 1;
 
       switch (mode)
       {
          case SOURCE_READ:
-            while (length--)
+            while (_len--)
             {
                uint8_t data = bps.source_data[bps.output_offset];
                bps.target_data[bps.output_offset++] = data;
@@ -210,7 +210,7 @@ static enum patch_error bps_apply_patch(
             break;
 
          case TARGET_READ:
-            while (length--)
+            while (_len--)
             {
                uint8_t data = bps_read(&bps);
                bps.target_data[bps.output_offset++] = data;
@@ -232,7 +232,7 @@ static enum patch_error bps_apply_patch(
             if (mode == SOURCE_COPY)
             {
                bps.source_offset += offset;
-               while (length--)
+               while (_len--)
                {
                   uint8_t data = bps.source_data[bps.source_offset++];
                   bps.target_data[bps.output_offset++] = data;
@@ -242,7 +242,7 @@ static enum patch_error bps_apply_patch(
             else
             {
                bps.target_offset += offset;
-               while (length--)
+               while (_len--)
                {
                   uint8_t data = bps.target_data[bps.target_offset++];
                   bps.target_data[bps.output_offset++] = data;
@@ -368,10 +368,10 @@ static enum patch_error ups_apply_patch(
       return PATCH_PATCH_INVALID;
 
    if (
-         (ups_patch_read(&data) != 'U') ||
-         (ups_patch_read(&data) != 'P') ||
-         (ups_patch_read(&data) != 'S') ||
-         (ups_patch_read(&data) != '1')
+            (ups_patch_read(&data) != 'U')
+         || (ups_patch_read(&data) != 'P')
+         || (ups_patch_read(&data) != 'S')
+         || (ups_patch_read(&data) != '1')
       )
       return PATCH_PATCH_INVALID;
 
@@ -548,12 +548,12 @@ static enum patch_error ips_apply_patch(
 {
    uint32_t offset = 5;
    enum patch_error error_patch = PATCH_UNKNOWN;
-   if (  patchlen      < 8   ||
-         patchdata[0] != 'P' ||
-         patchdata[1] != 'A' ||
-         patchdata[2] != 'T' ||
-         patchdata[3] != 'C' ||
-         patchdata[4] != 'H')
+   if (     patchlen      < 8
+         || patchdata[0] != 'P'
+         || patchdata[1] != 'A'
+         || patchdata[2] != 'T'
+         || patchdata[3] != 'C'
+         || patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
 
    if ((error_patch = ips_alloc_targetdata(
@@ -639,11 +639,11 @@ static enum patch_error xdelta_apply_patch(
    xd3_source source;
 
    /* Validate the magic number, as given by RFC 3284 section 4.1 */
-   if (patchlen      < 8    ||
-       patchdata[0] != 0xD6 ||
-       patchdata[1] != 0xC3 ||
-       patchdata[2] != 0xC4 ||
-       patchdata[3] != 0x00)
+   if (   patchlen      < 8
+       || patchdata[0] != 0xD6
+       || patchdata[1] != 0xC3
+       || patchdata[2] != 0xC4
+       || patchdata[3] != 0x00)
       return PATCH_PATCH_INVALID_HEADER;
 
    xd3_init_config(&config, XD3_SKIP_EMIT);
@@ -727,9 +727,6 @@ static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func, void *patch_data, int64_t patch_size)
 {
-   settings_t *settings     = config_get_ptr();
-   bool show_notification   = settings ?
-         settings->bools.notification_show_patch_applied : false;
    enum patch_error err     = PATCH_UNKNOWN;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
@@ -747,14 +744,14 @@ static bool apply_patch_content(uint8_t **buf,
       *size = target_size;
 
       /* Show an OSD message */
-      if (show_notification)
+      if (config_get_ptr()->bools.notification_show_patch_applied)
       {
          char msg[128];
          const char *patch_filename = path_basename_nocompression(patch_path);
-         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
+         size_t _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
                patch_filename ? patch_filename :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN));
-         runloop_msg_queue_push(msg, 1, 180, false, NULL,
+         runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
    }

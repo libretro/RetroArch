@@ -37,6 +37,7 @@ typedef struct
    bool nonblock;
    bool success;
    bool is_paused;
+   bool is_ready;
    struct string_list *devicelist;
 } pa_t;
 
@@ -65,6 +66,9 @@ static void pulse_free(void *data)
    if (pa->mainloop)
       pa_threaded_mainloop_free(pa->mainloop);
 
+   if (pa->devicelist)
+      string_list_free(pa->devicelist);
+
    free(pa);
 }
 
@@ -83,8 +87,15 @@ static void context_state_cb(pa_context *c, void *data)
    switch (pa_context_get_state(c))
    {
       case PA_CONTEXT_READY:
-      case PA_CONTEXT_TERMINATED:
+         pa_threaded_mainloop_signal(pa->mainloop, 0);
+         break;
       case PA_CONTEXT_FAILED:
+         RARCH_ERR("[PulseAudio]: Connection failed\n");
+         pa->is_ready = false;
+         pa_threaded_mainloop_signal(pa->mainloop, 0);
+         break;
+      case PA_CONTEXT_TERMINATED:
+         pa->is_ready = false;
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
       default:
@@ -92,21 +103,20 @@ static void context_state_cb(pa_context *c, void *data)
    }
 }
 
-static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *data) 
+static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *data)
 {
    union string_list_elem_attr attr;
    attr.i = 0;
    pa_t *pa = (pa_t*)data;
 
-   if (!pa->devicelist)
-     pa->devicelist = string_list_new();
-   if (!pa->devicelist)
+   if (!pa || !pa->devicelist)
       return;
 
-   // If eol is set to a positive number, you're at the end of the list
-   if (eol > 0) {
+   /* If EOL is set to a positive number,
+    * you're at the end of the list */
+   if (eol > 0)
       return;
-   }
+
    RARCH_DBG("[PulseAudio]: Sink detected: %s\n",l->name);
    string_list_append(pa->devicelist, l->name, attr);
 }
@@ -118,8 +128,13 @@ static void stream_state_cb(pa_stream *s, void *data)
    switch (pa_stream_get_state(s))
    {
       case PA_STREAM_READY:
+         pa->is_ready = true;
+         pa_threaded_mainloop_signal(pa->mainloop, 0);
+         break;
+      case PA_STREAM_UNCONNECTED:
       case PA_STREAM_FAILED:
       case PA_STREAM_TERMINATED:
+         pa->is_ready = false;
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
       default:
@@ -127,22 +142,15 @@ static void stream_state_cb(pa_stream *s, void *data)
    }
 }
 
-static void stream_request_cb(pa_stream *s, size_t length, void *data)
+static void stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
-
-   (void)length;
-   (void)s;
-
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void stream_latency_update_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
-
-   (void)s;
-
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
@@ -186,6 +194,8 @@ static void *pulse_init(const char *device, unsigned rate,
    if (!pa)
       goto error;
 
+   pa->devicelist = string_list_new();
+
    pa->mainloop = pa_threaded_mainloop_new();
    if (!pa->mainloop)
       goto error;
@@ -209,11 +219,11 @@ static void *pulse_init(const char *device, unsigned rate,
    if (pa_context_get_state(pa->context) != PA_CONTEXT_READY)
       goto unlock_error;
 
-   pa_context_get_sink_info_list(pa->context,pa_sinklist_cb,pa);
+   pa_context_get_sink_info_list(pa->context, pa_sinklist_cb, pa);
    /* Checking device against sink list would be tricky due to callback, so it is just set. */
    if (device)
      pa_context_set_default_sink(pa->context, device, NULL, NULL);
-         
+
    spec.format   = is_little_endian() ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_FLOAT32BE;
    spec.channels = 2;
    spec.rate     = rate;
@@ -255,6 +265,7 @@ static void *pulse_init(const char *device, unsigned rate,
       pa->buffer_size = buffer_attr.tlength;
 
    pa_threaded_mainloop_unlock(pa->mainloop);
+   pa->is_ready = true;
 
    return pa;
 
@@ -265,11 +276,31 @@ error:
    return NULL;
 }
 
-static bool pulse_start(void *data, bool is_shutdown);
-static ssize_t pulse_write(void *data, const void *buf_, size_t size)
+static bool pulse_start(void *data, bool is_shutdown)
+{
+   bool ret;
+   pa_t *pa = (pa_t*)data;
+
+   if (!pa->is_ready)
+      return false;
+   if (!pa->is_paused)
+      return true;
+
+   pa->success = true; /* In case of spurious wakeup. Not critical. */
+   pa_threaded_mainloop_lock(pa->mainloop);
+   pa_stream_cork(pa->stream, false, stream_success_cb, pa);
+   pa_threaded_mainloop_wait(pa->mainloop);
+   ret = pa->success;
+   pa_threaded_mainloop_unlock(pa->mainloop);
+   pa->is_paused = false;
+   return ret;
+}
+
+
+static ssize_t pulse_write(void *data, const void *s, size_t len)
 {
    pa_t           *pa = (pa_t*)data;
-   const uint8_t *buf = (const uint8_t*)buf_;
+   const uint8_t *buf = (const uint8_t*)s;
    size_t     written = 0;
 
    /* Workaround buggy menu code.
@@ -278,16 +309,19 @@ static ssize_t pulse_write(void *data, const void *buf_, size_t size)
       if (!pulse_start(pa, false))
          return -1;
 
+   if (!pa->is_ready)
+      return 0;
+
    pa_threaded_mainloop_lock(pa->mainloop);
-   while (size)
+   while (len)
    {
-      size_t writable = MIN(size, pa_stream_writable_size(pa->stream));
+      size_t writable = MIN(len, pa_stream_writable_size(pa->stream));
 
       if (writable)
       {
          pa_stream_write(pa->stream, buf, writable, NULL, 0, PA_SEEK_RELATIVE);
-         buf += writable;
-         size -= writable;
+         buf     += writable;
+         len     -= writable;
          written += writable;
       }
       else if (!pa->nonblock)
@@ -305,10 +339,11 @@ static bool pulse_stop(void *data)
 {
    bool ret;
    pa_t *pa = (pa_t*)data;
+
+   if (!pa->is_ready)
+      return false;
    if (pa->is_paused)
       return true;
-
-   RARCH_LOG("[PulseAudio]: Pausing.\n");
 
    pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
@@ -324,28 +359,9 @@ static bool pulse_alive(void *data)
 {
    pa_t *pa = (pa_t*)data;
 
-   if (!pa)
+   if (!pa || !pa->is_ready)
       return false;
    return !pa->is_paused;
-}
-
-static bool pulse_start(void *data, bool is_shutdown)
-{
-   bool ret;
-   pa_t *pa = (pa_t*)data;
-   if (!pa->is_paused)
-      return true;
-
-   RARCH_LOG("[PulseAudio]: Unpausing.\n");
-
-   pa->success = true; /* In case of spurious wakeup. Not critical. */
-   pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, false, stream_success_cb, pa);
-   pa_threaded_mainloop_wait(pa->mainloop);
-   ret = pa->success;
-   pa_threaded_mainloop_unlock(pa->mainloop);
-   pa->is_paused = false;
-   return ret;
 }
 
 static void pulse_set_nonblock_state(void *data, bool state)
@@ -355,23 +371,22 @@ static void pulse_set_nonblock_state(void *data, bool state)
       pa->nonblock = state;
 }
 
-static bool pulse_use_float(void *data)
-{
-   (void)data;
-   return true;
-}
+static bool pulse_use_float(void *data) { return true; }
 
 static size_t pulse_write_avail(void *data)
 {
-   size_t length;
+   size_t _len;
    pa_t *pa = (pa_t*)data;
 
+   if (!pa->is_ready)
+      return 0;
+
    pa_threaded_mainloop_lock(pa->mainloop);
-   length = pa_stream_writable_size(pa->stream);
+   _len = pa_stream_writable_size(pa->stream);
 
    audio_driver_set_buffer_size(pa->buffer_size); /* Can change spuriously. */
    pa_threaded_mainloop_unlock(pa->mainloop);
-   return length;
+   return _len;
 }
 
 static size_t pulse_buffer_size(void *data)
@@ -383,13 +398,11 @@ static size_t pulse_buffer_size(void *data)
 static void *pulse_device_list_new(void *data)
 {
    pa_t *pa = (pa_t*)data;
-   if (!pa)
-      return NULL;
 
-   struct string_list *s = pa->devicelist ? string_list_clone(pa->devicelist) : NULL;
-   if (!s)
-      return NULL;
-   return s;
+   if (pa && pa->devicelist)
+      return string_list_clone(pa->devicelist);
+
+   return NULL;
 }
 
 static void pulse_device_list_free(void *data, void *array_list_data)

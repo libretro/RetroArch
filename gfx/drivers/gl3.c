@@ -86,9 +86,8 @@ static const float gl3_colors[16]    = {
  * FORWARD DECLARATIONS
  */
 static void gl3_set_viewport(gl3_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
-      bool force_full, bool allow_rotate);
+      unsigned vp_width, unsigned vp_height,
+      bool force_full,   bool allow_rotate);
 
 /**
  * GL3 COMMON
@@ -283,12 +282,12 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    return 100 * major + 10 * minor;
 }
 
-static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t size)
+static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t len)
 {
    if (!gl->scratch_vbos[gl->scratch_vbo_index])
       glGenBuffers(1, &gl->scratch_vbos[gl->scratch_vbo_index]);
    glBindBuffer(GL_ARRAY_BUFFER, gl->scratch_vbos[gl->scratch_vbo_index]);
-   glBufferData(GL_ARRAY_BUFFER, size, data, GL_STREAM_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, len, data, GL_STREAM_DRAW);
    gl->scratch_vbo_index++;
    if (gl->scratch_vbo_index >= GL_CORE_NUM_VBOS)
       gl->scratch_vbo_index = 0;
@@ -1564,40 +1563,39 @@ static void gl3_set_projection(gl3_t *gl,
 }
 
 static void gl3_set_viewport(gl3_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
+      unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
    settings_t *settings            = config_get_ptr();
-   float device_aspect             = (float)viewport_width / viewport_height;
+   float device_aspect             = (float)vp_width / vp_height;
    bool video_scale_integer        = settings->bools.video_scale_integer;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
-            gl->ctx_data, viewport_width, viewport_height);
+            gl->ctx_data, vp_width, vp_height);
 
    if (video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(),
             (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false,
             false);
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      vp_width  = gl->vp.width;
+      vp_height = gl->vp.height;
    }
    else if ((gl->flags & GL3_FLAG_KEEP_ASPECT) && !force_full)
    {
       gl->vp.full_height = gl->video_height;
-      video_viewport_get_scaled_aspect2(&gl->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      video_viewport_get_scaled_aspect2(&gl->vp, vp_width, vp_height, false, device_aspect, video_driver_get_aspect_ratio());
+      vp_width           = gl->vp.width;
+      vp_height          = gl->vp.height;
    }
    else
    {
-      gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.x           = gl->vp.y = 0;
+      gl->vp.width       = vp_width;
+      gl->vp.height      = vp_height;
    }
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
@@ -1606,8 +1604,8 @@ static void gl3_set_viewport(gl3_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->vp_out_width  = viewport_width;
-      gl->vp_out_height = viewport_height;
+      gl->out_vp_width  = vp_width;
+      gl->out_vp_height = vp_height;
    }
 
    gl->filter_chain_vp.x = gl->vp.x;
@@ -1616,7 +1614,7 @@ static void gl3_set_viewport(gl3_t *gl,
    gl->filter_chain_vp.height = gl->vp.height;
 
 #if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+   RARCH_LOG("Setting viewport @ %ux%u\n", vp_width, vp_height);
 #endif
 }
 
@@ -1897,12 +1895,12 @@ static void gl3_begin_debug(gl3_t *gl)
 #endif
 
 static void gl3_set_viewport_wrapper(void *data,
-      unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+      unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate)
 {
    gl3_t *gl = (gl3_t*)data;
-   gl3_set_viewport(gl,
-         viewport_width, viewport_height, force_full, allow_rotate);
+   gl3_set_viewport(gl, vp_width, vp_height,
+         force_full, allow_rotate);
 }
 
 
@@ -2742,7 +2740,7 @@ static bool gl3_frame(void *data, const void *frame,
 #else
    gl3_filter_chain_set_frame_direction(gl->filter_chain, 1);
 #endif
-   gl3_filter_chain_set_frame_time_delta(gl->filter_chain, video_driver_get_frame_time_delta_usec());
+   gl3_filter_chain_set_frame_time_delta(gl->filter_chain, (uint32_t)video_driver_get_frame_time_delta_usec());
 
    gl3_filter_chain_set_original_fps(gl->filter_chain, video_driver_get_original_fps());
 

@@ -24,9 +24,7 @@
 #include "menu_driver.h"
 #include "menu_displaylist.h"
 #include "../file_path_special.h"
-#include "../retroarch.h"
 #include "../core_info.h"
-#include "../configuration.h"
 
 #define CONTENTLESS_CORE_ICON_DEFAULT "default.png"
 
@@ -99,8 +97,8 @@ static void contentless_cores_free_info_entries(
 static void contentless_cores_init_info_entries(
       contentless_cores_state_t *state)
 {
-   core_info_list_t *core_info_list = NULL;
    size_t i;
+   core_info_list_t *core_info_list = NULL;
 
    if (!state)
       return;
@@ -133,14 +131,10 @@ static void contentless_cores_init_info_entries(
 
          /* Populate licences string */
          if (core_info->licenses_list)
-         {
-            char tmp_str[MENU_LABEL_MAX_LENGTH - 2];
-            tmp_str[0] = '\0';
-            string_list_join_concat(tmp_str, sizeof(tmp_str),
+            string_list_join_concat_special(
+                          licenses_str + _len,
+                  sizeof(licenses_str) - _len,
                   core_info->licenses_list, ", ");
-            strlcpy(licenses_str       + _len, tmp_str,
-                  sizeof(licenses_str) - _len);
-         }
          /* No license found - set to N/A */
          else
             strlcpy(licenses_str       + _len,
@@ -211,8 +205,8 @@ void menu_contentless_cores_get_info(const char *core_id,
 
 void menu_contentless_cores_flush_runtime(void)
 {
-   contentless_cores_state_t *state = contentless_cores_state;
    size_t i, cap;
+   contentless_cores_state_t *state = contentless_cores_state;
 
    if (!state || !state->info_entries)
       return;
@@ -332,14 +326,14 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          struct texture_image ti;
          const char *icon_name   =
                core_info->databases_list->elems[0].data;
-         size_t len              = fill_pathname_join_special(
+         size_t _len             = fill_pathname_join_special(
                icon_path, icon_directory,
                icon_name, sizeof(icon_path));
-         icon_path[  len]        = '.';
-         icon_path[++len]        = 'p';
-         icon_path[++len]        = 'n';
-         icon_path[++len]        = 'g';
-         icon_path[++len]        = '\0';
+         icon_path[  _len]       = '.';
+         icon_path[++_len]       = 'p';
+         icon_path[++_len]       = 'n';
+         icon_path[++_len]       = 'g';
+         icon_path[++_len]       = '\0';
 
          ti.pixels               = NULL;
          ti.width                = 0;
@@ -406,12 +400,10 @@ void menu_contentless_cores_free(void)
    contentless_cores_state = NULL;
 }
 
-unsigned menu_displaylist_contentless_cores(file_list_t *list, settings_t *settings)
+unsigned menu_displaylist_contentless_cores(file_list_t *list,
+      enum menu_contentless_cores_display_type core_display_type)
 {
    unsigned count                   = 0;
-   enum menu_contentless_cores_display_type
-         core_display_type          = (enum menu_contentless_cores_display_type)
-               settings->uints.menu_content_show_contentless_cores;
    core_info_list_t *core_info_list = NULL;
 
    /* Get core list */

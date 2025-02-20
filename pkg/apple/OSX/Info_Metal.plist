@@ -64,6 +64,8 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024 RetroArch. All rights reserved.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Some cores can use location.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu_Metal</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -307,12 +307,11 @@ static void *coreaudio3_init(const char *device,
    return (__bridge_retained void *)dev;
 }
 
-static ssize_t coreaudio3_write(void *data,
-      const void *buf_, size_t size)
+static ssize_t coreaudio3_write(void *data, const void *buf_, size_t len)
 {
    CoreAudio3 *dev = (__bridge CoreAudio3 *)data;
    return [dev writeFloat:(const float *)
-             buf_ samples:size/sizeof(float)] * sizeof(float);
+             buf_ samples:len / sizeof(float)] * sizeof(float);
 }
 
 static void coreaudio3_set_nonblock_state(void *data, bool state)

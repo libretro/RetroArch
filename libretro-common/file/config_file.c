@@ -355,12 +355,7 @@ static void config_file_add_child_list(config_file_t *parent,
 static void config_file_get_realpath(char *s, size_t len,
       char *path, const char *config_path)
 {
-#ifdef _WIN32
-   if (!string_is_empty(config_path))
-      fill_pathname_resolve_relative(s, config_path,
-            path, len);
-#else
-#if !defined(__PSL1GHT__) && !defined(__PS3__)
+#if !defined(_WIN32) && !defined(__PSL1GHT__) && !defined(__PS3__)
    if (*path == '~')
    {
       const char *home = getenv("HOME");
@@ -374,13 +369,15 @@ static void config_file_get_realpath(char *s, size_t len,
    }
    else
 #endif
+   {
       if (!string_is_empty(config_path))
-         fill_pathname_resolve_relative(s, config_path, path, len);
-#endif
+         fill_pathname_resolve_relative(s, config_path,
+            path, len);
+   }
 }
 
 static void config_file_add_sub_conf(config_file_t *conf, char *path,
-      char *real_path, size_t len, config_file_cb_t *cb)
+      char *s, size_t len, config_file_cb_t *cb)
 {
    struct config_include_list *head = conf->includes;
    struct config_include_list *node = (struct config_include_list*)
@@ -403,20 +400,24 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
          conf->includes = node;
    }
 
-   config_file_get_realpath(real_path, len, path,
+   config_file_get_realpath(s, len, path,
          conf->path);
 }
 
 size_t config_file_add_reference(config_file_t *conf, char *path)
 {
-   size_t len;
+   size_t _len;
    /* It is expected that the conf has it's path already set */
    char short_path[NAME_MAX_LENGTH];
    if (!conf->references)
-      conf->references = path_linked_list_new();
-   len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
+   {
+      conf->references       = (struct path_linked_list*)malloc(sizeof(*conf->references));
+      conf->references->next = NULL;
+      conf->references->path = NULL;
+   }
+   _len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
    path_linked_list_add_path(conf->references, short_path);
-   return len;
+   return _len;
 }
 
 static int config_file_load_internal(
@@ -1159,37 +1160,36 @@ bool config_get_string(config_file_t *conf, const char *key, char **str)
   * Extracts a string to a preallocated buffer.
   * Avoid memory allocation.
   **/
-bool config_get_config_path(config_file_t *conf, char *s, size_t len)
+size_t config_get_config_path(config_file_t *conf, char *s, size_t len)
 {
    if (conf)
       return strlcpy(s, conf->path, len);
-   return false;
+   return 0;
 }
 
 bool config_get_array(config_file_t *conf, const char *key,
-      char *buf, size_t size)
+      char *s, size_t len)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
-      return strlcpy(buf, entry->value, size) < size;
+      return strlcpy(s, entry->value, len) < len;
    return false;
 }
 
 bool config_get_path(config_file_t *conf, const char *key,
-      char *buf, size_t size)
+      char *s, size_t len)
 {
 #if defined(RARCH_CONSOLE) || !defined(RARCH_INTERNAL)
-   if (config_get_array(conf, key, buf, size))
-      return true;
+   return config_get_array(conf, key, s, len);
 #else
    const struct config_entry_list *entry = config_get_entry(conf, key);
    if (entry)
    {
-      fill_pathname_expand_special(buf, entry->value, size);
+      fill_pathname_expand_special(s, entry->value, len);
       return true;
    }
-#endif
    return false;
+#endif
 }
 
 /**
@@ -1334,62 +1334,62 @@ size_t config_set_double(config_file_t *conf, const char *key, double val)
 {
    char buf[320];
 #ifdef __cplusplus
-   size_t len = snprintf(buf, sizeof(buf), "%f", (float)val);
+   size_t _len = snprintf(buf, sizeof(buf), "%f", (float)val);
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
-   size_t len = snprintf(buf, sizeof(buf), "%lf", val);
+   size_t _len = snprintf(buf, sizeof(buf), "%lf", val);
 #else
-   size_t len = snprintf(buf, sizeof(buf), "%f", (float)val);
+   size_t _len = snprintf(buf, sizeof(buf), "%f", (float)val);
 #endif
    config_set_string(conf, key, buf);
-   return len;
+   return _len;
 }
 
 size_t config_set_float(config_file_t *conf, const char *key, float val)
 {
    char buf[64];
-   size_t len = snprintf(buf, sizeof(buf), "%f", val);
+   size_t _len = snprintf(buf, sizeof(buf), "%f", val);
    config_set_string(conf, key, buf);
-   return len;
+   return _len;
 }
 
 size_t config_set_int(config_file_t *conf, const char *key, int val)
 {
    char buf[16];
-   size_t len = snprintf(buf, sizeof(buf), "%d", val);
+   size_t _len = snprintf(buf, sizeof(buf), "%d", val);
    config_set_string(conf, key, buf);
-   return len;
+   return _len;
 }
 
 size_t config_set_uint(config_file_t *conf, const char *key, unsigned int val)
 {
    char buf[16];
-   size_t len = snprintf(buf, sizeof(buf), "%u", val);
+   size_t _len = snprintf(buf, sizeof(buf), "%u", val);
    config_set_string(conf, key, buf);
-   return len;
+   return _len;
 }
 
 size_t config_set_hex(config_file_t *conf, const char *key, unsigned val)
 {
    char buf[16];
-   size_t len = snprintf(buf, sizeof(buf), "%x", val);
+   size_t _len = snprintf(buf, sizeof(buf), "%x", val);
    config_set_string(conf, key, buf);
-   return len;
+   return _len;
 }
 
 size_t config_set_uint64(config_file_t *conf, const char *key, uint64_t val)
 {
    char buf[32];
-   size_t len = snprintf(buf, sizeof(buf), "%" PRIu64, val);
+   size_t _len = snprintf(buf, sizeof(buf), "%" PRIu64, val);
    config_set_string(conf, key, buf);
-   return len;
+   return _len;
 }
 
 size_t config_set_char(config_file_t *conf, const char *key, char val)
 {
    char buf[2];
-   size_t len = snprintf(buf, sizeof(buf), "%c", val);
+   size_t _len = snprintf(buf, sizeof(buf), "%c", val);
    config_set_string(conf, key, buf);
-   return len;
+   return _len;
 }
 
 /**

@@ -296,8 +296,8 @@ bool task_image_load_handler(retro_task_t *task)
          case IMAGE_STATUS_TRANSFER_PARSE:
             if (image->handle && image->cb)
             {
-               size_t len = 0;
-               if (image->cb(nbio, len) == -1)
+               size_t _len = 0;
+               if (image->cb(nbio, _len) == -1)
                   return false;
             }
             if (image->flags & IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING)
@@ -322,8 +322,8 @@ bool task_image_load_handler(retro_task_t *task)
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
             if (image->handle && image->cb)
             {
-               size_t len = 0;
-               if (image->cb(nbio, len) == -1)
+               size_t _len = 0;
+               if (image->cb(nbio, _len) == -1)
                   return false;
             }
             if (!(image->flags & IMAGE_FLAG_IS_FINISHED))

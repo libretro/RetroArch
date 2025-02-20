@@ -71,14 +71,12 @@ static void ps2_audio_free(void *data)
    free(ps2);
 }
 
-static ssize_t ps2_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ps2_audio_write(void *data, const void *s, size_t len)
 {
    ps2_audio_t* ps2 = (ps2_audio_t*)data;
-
    if (!ps2->running)
       return -1;
-
-   return audsrv_play_audio(buf, size);
+   return audsrv_play_audio(s, len);
 }
 
 static bool ps2_audio_alive(void *data)

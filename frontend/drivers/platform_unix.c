@@ -1240,39 +1240,38 @@ static enum frontend_architecture frontend_unix_get_arch(void)
    return FRONTEND_ARCH_NONE;
 }
 
-static void frontend_unix_get_os(char *s,
+static size_t frontend_unix_get_os(char *s,
       size_t len, int *major, int *minor)
 {
+   size_t _len = 0;
 #ifdef ANDROID
    int rel;
    frontend_android_get_version(major, minor, &rel);
-
-   strlcpy(s, "Android", len);
+   _len = strlcpy(s, "Android", len);
 #else
    char *ptr;
    struct utsname buffer;
-
    if (uname(&buffer) != 0)
-      return;
-
+      return _len;
    *major = (int)strtol(buffer.release, &ptr, 10);
    *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
-   strlcpy(s, "FreeBSD", len);
+   _len = strlcpy(s, "FreeBSD", len);
 #elif defined(__NetBSD__)
-   strlcpy(s, "NetBSD", len);
+   _len = strlcpy(s, "NetBSD", len);
 #elif defined(__OpenBSD__)
-   strlcpy(s, "OpenBSD", len);
+   _len = strlcpy(s, "OpenBSD", len);
 #elif defined(__DragonFly__)
-   strlcpy(s, "DragonFly BSD", len);
+   _len = strlcpy(s, "DragonFly BSD", len);
 #elif defined(BSD)
-   strlcpy(s, "BSD", len);
+   _len = strlcpy(s, "BSD", len);
 #elif defined(__HAIKU__)
-   strlcpy(s, "Haiku", len);
+   _len = strlcpy(s, "Haiku", len);
 #else
-   strlcpy(s, "Linux", len);
+   _len = strlcpy(s, "Linux", len);
 #endif
 #endif
+   return _len;
 }
 
 #ifdef HAVE_LAKKA
@@ -1324,6 +1323,13 @@ static void frontend_unix_get_env(int *argc,
 {
    unsigned i;
    const char* libretro_directory = getenv("LIBRETRO_DIRECTORY");
+   const char* libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
+   const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_cheats_directory = getenv("LIBRETRO_CHEATS_DIRECTORY");
+   const char* libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
+   const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
+   const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX]  = {0};
@@ -1765,12 +1771,20 @@ static void frontend_unix_get_env(int *argc,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
    else
 #endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
-         "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   if (!string_is_empty(libretro_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
+            "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
 #endif
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
-         "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-
+   if (!string_is_empty(libretro_autoconfig_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+	    libretro_autoconfig_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
+            "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
 #ifdef ASSETS_DIR
    if (path_is_directory(ASSETS_DIR "/assets"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
@@ -1778,7 +1792,10 @@ static void frontend_unix_get_env(int *argc,
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    else
 #endif
-   if (path_is_directory("/usr/local/share/retroarch/assets"))
+   if (!string_is_empty(libretro_assets_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], libretro_assets_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   else if (path_is_directory("/usr/local/share/retroarch/assets"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
             "/usr/local/share/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -1838,7 +1855,11 @@ static void frontend_unix_get_env(int *argc,
             "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
 #endif
-   if (path_is_directory("/usr/local/share/retroarch/filters/video"))
+   if (!string_is_empty(libretro_video_filter_directory))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+	      libretro_video_filter_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else if (path_is_directory("/usr/local/share/retroarch/filters/video"))
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
             "/usr/local/share/retroarch",
             "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
@@ -1870,12 +1891,27 @@ static void frontend_unix_get_env(int *argc,
          "records_config", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT], base_path,
          "records", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
-         "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
-         "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
-         "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   if (!string_is_empty(libretro_database_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+	       libretro_database_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], base_path,
+             "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   if (!string_is_empty(libretro_video_shader_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
+	       libretro_video_shader_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
+             "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   if (!string_is_empty(libretro_cheats_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+	       libretro_cheats_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS], base_path,
+             "cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], base_path,
          "overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY], base_path,
@@ -1892,8 +1928,13 @@ static void frontend_unix_get_env(int *argc,
          "saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SAVESTATE], base_path,
          "states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], base_path,
-         "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   if (!string_is_empty(libretro_system_directory))
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+	       libretro_system_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   else
+       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], base_path,
+             "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 #endif
 
 #ifndef IS_SALAMANDER
@@ -2354,11 +2395,11 @@ static bool frontend_unix_set_fork(enum frontend_fork fork_mode)
 static void frontend_unix_exec(const char *path, bool should_load_content)
 {
    char *newargv[]    = { NULL, NULL };
-   size_t len         = strlen(path);
+   size_t _len        = strlen(path);
 
-   newargv[0] = (char*)malloc(len);
+   newargv[0] = (char*)malloc(_len);
 
-   strlcpy(newargv[0], path, len);
+   strlcpy(newargv[0], path, _len);
 
    execv(path, newargv);
 }

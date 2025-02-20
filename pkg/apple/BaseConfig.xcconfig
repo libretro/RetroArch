@@ -4,6 +4,7 @@
 //
 //
 
+OTHER_CFLAGS = $(inherited) -DFLAC__HAS_OGG=0
 OTHER_CFLAGS = $(inherited) -DGLSLANG_OSINCLUDE_UNIX
 OTHER_CFLAGS = $(inherited) -DHAVE_7ZIP
 OTHER_CFLAGS = $(inherited) -DHAVE_ACCESSIBILITY
@@ -20,10 +21,15 @@ OTHER_CFLAGS = $(inherited) -DHAVE_CLOUDSYNC
 OTHER_CFLAGS = $(inherited) -DHAVE_COCOA_METAL
 OTHER_CFLAGS = $(inherited) -DHAVE_CONFIGFILE
 OTHER_CFLAGS = $(inherited) -DHAVE_COREAUDIO
+OTHER_CFLAGS = $(inherited) -DHAVE_CORELOCATION
+OTHER_CFLAGS = $(inherited) -DHAVE_DR_FLAC
+OTHER_CFLAGS = $(inherited) -DHAVE_DR_MP3
 OTHER_CFLAGS = $(inherited) -DHAVE_DSP_FILTER
 OTHER_CFLAGS = $(inherited) -DHAVE_DYNAMIC
 OTHER_CFLAGS = $(inherited) -DHAVE_EASTEREGG
 OTHER_CFLAGS = $(inherited) -DHAVE_FILTERS_BUILTIN
+OTHER_CFLAGS = $(inherited) -DHAVE_FLAC
+OTHER_CFLAGS = $(inherited) -DHAVE_GCD
 OTHER_CFLAGS = $(inherited) -DHAVE_GFX_WIDGETS
 OTHER_CFLAGS = $(inherited) -DHAVE_GIT_VERSION
 OTHER_CFLAGS = $(inherited) -DHAVE_GLSL
@@ -34,9 +40,11 @@ OTHER_CFLAGS = $(inherited) -DHAVE_IFINFO
 OTHER_CFLAGS = $(inherited) -DHAVE_IMAGEVIEWER
 OTHER_CFLAGS = $(inherited) -DHAVE_LANGEXTRA
 OTHER_CFLAGS = $(inherited) -DHAVE_LIBRETRODB
+OTHER_CFLAGS = $(inherited) -DHAVE_LROUND
 OTHER_CFLAGS = $(inherited) -DHAVE_MENU
 OTHER_CFLAGS = $(inherited) -DHAVE_METAL
 OTHER_CFLAGS = $(inherited) -DHAVE_MFI
+OTHER_CFLAGS = $(inherited) -DHAVE_MMAP
 OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY
 OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY_NSNET
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKGAMEPAD
@@ -82,26 +90,19 @@ OTHER_CFLAGS = $(inherited) -D__LIBRETRO__
 OTHER_CFLAGS[arch=x86_64] = $(inherited) -DHAVE_SSE
 OTHER_CFLAGS[arch=arm64*] = $(inherited) -D__ARM_NEON__ -DHAVE_NEON
 
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DFLAC__HAS_OGG=0
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DGL_SILENCE_DEPRECATION
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COMMAND
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREAUDIO3
+OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DISCORD
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DR_FLAC
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DR_MP3
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DYLIB
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_FLAC
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_GETOPT_LONG
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_IOHIDMANAGER
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_LROUND
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_MATERIALUI
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_MMAP
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_NETWORK_CMD
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_OPENGL_CORE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_PRESENCE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_STDIN_CMD
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_VIDEO_LAYOUT
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DMETAL_DEBUG
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DOSX
 
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DGLES_SILENCE_DEPRECATION
@@ -117,13 +118,13 @@ OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DHAVE_OPENGLES3
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DIOS
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DPACKAGE_VERSION=\"$(MARKETING_VERSION)\"
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DRARCH_MOBILE
-OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -D_LZMA_UINT32_IS_ULONG
 
 OTHER_CFLAGS[sdk=iphoneos*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE)
 OTHER_CFLAGS[sdk=iphonesimulator*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE)
 OTHER_CFLAGS[sdk=appletvos*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE)
 OTHER_CFLAGS[sdk=appletvsimulator*] = $(inherited) $(OTHER_CFLAGS_IOS_TVOS_SHARE)
 
+OTHER_CFLAGS_IOS = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_COREMOTION
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_IOS_CUSTOMKEYBOARD
 OTHER_CFLAGS_IOS = $(inherited) -DHAVE_IOS_SWIFT

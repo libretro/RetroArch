@@ -57,16 +57,16 @@ public:
    QString categoryIconName() const { return m_categoryIconName; }
    virtual void load()
    {
-      unsigned i;
-      size_t size = m_pages.size();
-      for (i = 0; i < size; i++)
+      size_t i;
+      size_t _len = m_pages.size();
+      for (i = 0; i < _len; i++)
          m_pages.at(i)->load();
    }
    virtual void apply()
    {
-      unsigned i;
-      size_t size = m_pages.size();
-      for (i = 0; i < size; i++)
+      size_t i;
+      size_t _len = m_pages.size();
+      for (i = 0; i < _len; i++)
          m_pages.at(i)->apply();
    }
 protected:

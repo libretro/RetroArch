@@ -104,7 +104,7 @@ bool string_split_noalloc(struct string_list *list,
  **/
 struct string_list *string_separate(char *str, const char *delim);
 
-bool string_separate_noalloc(struct string_list *list, 
+bool string_separate_noalloc(struct string_list *list,
       char *str, const char *delim);
 
 bool string_list_deinitialize(struct string_list *list);
@@ -166,22 +166,38 @@ void string_list_free(struct string_list *list);
 
 /**
  * string_list_join_concat:
- * @buffer           : buffer that @list will be joined to.
- * @size             : length of @buffer.
+ * @s                : buffer that @list will be joined to.
+ * @len              : length of @s.
  * @list             : pointer to string list.
  * @delim            : delimiter character for @list.
  *
  * A string list will be joined/concatenated as a
- * string to @buffer, delimited by @delim.
+ * string to @s, delimited by @delim.
  *
- * NOTE: @buffer must be NULL-terminated.
+ * NOTE: @s must be NULL-terminated.
  *
  * Hidden non-leaf function cost:
  * - Calls strlen_size()
  * - Calls strlcat x times in a loop
  **/
-void string_list_join_concat(char *buffer, size_t size,
+void string_list_join_concat(char *s, size_t len,
       const struct string_list *list, const char *sep);
+
+/**
+ * string_list_join_concat:
+ * @s                : buffer that @list will be joined to.
+ * @len              : length of @s.
+ * @list             : pointer to string list.
+ * @delim            : delimiter character for @list.
+ *
+ * Specialized version of string_list_join_concat
+ * without the bounds check.
+ *
+ * A string list will be joined/concatenated as a
+ * string to @s, delimited by @delim.
+ **/
+void string_list_join_concat_special(char *s, size_t len,
+      const struct string_list *list, const char *delim);
 
 /**
  * string_list_set:

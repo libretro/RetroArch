@@ -79,8 +79,6 @@ void *task_push_http_post_transfer_with_user_agent(const char *url, const char *
 void *task_push_http_post_transfer_with_headers(const char *url, const char *post_data, bool mute,
    const char *type, const char *headers, retro_task_callback_t cb, void *user_data);
 
-task_retriever_info_t *http_task_get_transfer_list(void);
-
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_mkdir(const char *url, bool mute, const char *headers,
@@ -240,7 +238,8 @@ bool take_screenshot(
 
 bool event_load_save_files(bool is_sram_load_disabled);
 
-bool event_save_files(bool sram_used);
+bool event_save_files(bool sram_used, bool compress_files,
+      const char *path_cheat_database);
 
 void path_init_savefile_rtc(const char *savefile_path);
 

@@ -142,24 +142,23 @@ static void *ps3_audio_init(const char *device,
    return data;
 }
 
-static ssize_t ps3_audio_write(void *data, const void *buf, size_t size)
+static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
 {
    ps3_audio_t *aud = data;
 
    if (aud->nonblock)
    {
-      if (FIFO_WRITE_AVAIL(aud->buffer) < size)
+      if (FIFO_WRITE_AVAIL(aud->buffer) < len)
          return 0;
    }
 
-   while (FIFO_WRITE_AVAIL(aud->buffer) < size)
+   while (FIFO_WRITE_AVAIL(aud->buffer) < len)
       sysLwCondWait(&aud->cond, 0);
 
    sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
-   fifo_write(aud->buffer, buf, size);
+   fifo_write(aud->buffer, s, len);
    sysLwMutexUnlock(&aud->lock);
-
-   return size;
+   return len;
 }
 
 static bool ps3_audio_stop(void *data)
@@ -220,10 +219,7 @@ static void ps3_audio_free(void *data)
    free(data);
 }
 
-static bool ps3_audio_use_float(void *data)
-{
-   return true;
-}
+static bool ps3_audio_use_float(void *data) { return true; }
 
 static size_t ps3_audio_write_avail(void *data)
 {

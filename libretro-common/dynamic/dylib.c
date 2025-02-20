@@ -58,14 +58,12 @@ static char last_dyn_error[512];
 static void set_dl_error(void)
 {
    DWORD err = GetLastError();
-
-   if (FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
-            FORMAT_MESSAGE_FROM_SYSTEM,
-            NULL,
-            err,
+   if (FormatMessage(
+              FORMAT_MESSAGE_IGNORE_INSERTS
+            | FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL, err,
             MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            last_dyn_error,
-            sizeof(last_dyn_error) - 1,
+            last_dyn_error, sizeof(last_dyn_error) - 1,
             NULL) == 0)
       snprintf(last_dyn_error, sizeof(last_dyn_error) - 1,
             "unknown error %lu", err);

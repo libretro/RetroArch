@@ -164,11 +164,11 @@ char *_mem2_strdup(const char *s)
 
     if (s)
     {
-        size_t len = strlen(s) + 1;
-        ptr        = _mem2_calloc(1, len);
+        size_t _len = strlen(s) + 1;
+        ptr         = _mem2_calloc(1, _len);
 
         if (ptr)
-            memcpy(ptr, s, len);
+            memcpy(ptr, s, _len);
     }
 
     return ptr;
@@ -180,11 +180,11 @@ char *_mem2_strndup(const char *s, size_t n)
 
     if (s)
     {
-        int len = n + 1;
-        ptr = _mem2_calloc(1, len);
+        int _len = n + 1;
+        ptr      = _mem2_calloc(1, _len);
 
         if (ptr)
-            memcpy(ptr, s, len);
+            memcpy(ptr, s, _len);
     }
     return ptr;
 }
@@ -203,37 +203,37 @@ uint32_t gx_mem2_total(void)
    return info.used_size + info.free_size;
 }
 
-void *__real_malloc(size_t size);
-void *__real_calloc(size_t n, size_t size);
-void *__real_memalign(size_t a, size_t size);
+void *__real_malloc(size_t len);
+void *__real_calloc(size_t n, size_t len);
+void *__real_memalign(size_t a, size_t len);
 void __real_free(void *p);
-void *__real_realloc(void *p, size_t size);
+void *__real_realloc(void *p, size_t len);
 void *__real_strdup(const char *s);
 void *__real_strndup(const char *s, size_t n);
 size_t __real_malloc_usable_size(void *p);
 
-__attribute__ ((used)) void *__wrap_malloc(size_t size)
+__attribute__ ((used)) void *__wrap_malloc(size_t len)
 {
-   void *p = __real_malloc(size);
+   void *p = __real_malloc(len);
    if (p != 0)
       return p;
-   return _mem2_malloc(size);
+   return _mem2_malloc(len);
 }
 
-__attribute__ ((used)) void *__wrap_calloc(size_t n, size_t size)
+__attribute__ ((used)) void *__wrap_calloc(size_t n, size_t len)
 {
-   void *p = __real_calloc(n, size);
+   void *p = __real_calloc(n, len);
    if (p != 0)
       return p;
-   return _mem2_calloc(n, size);
+   return _mem2_calloc(n, len);
 }
 
-__attribute__ ((used)) void *__wrap_memalign(size_t a, size_t size)
+__attribute__ ((used)) void *__wrap_memalign(size_t a, size_t len)
 {
-   void *p = __real_memalign(a, size);
+   void *p = __real_memalign(a, len);
    if (p != 0)
       return p;
-   return _mem2_memalign(a, size);
+   return _mem2_memalign(a, len);
 }
 
 __attribute__ ((used)) void __wrap_free(void *p)
@@ -247,37 +247,37 @@ __attribute__ ((used)) void __wrap_free(void *p)
       __real_free(p);
 }
 
-__attribute__ ((used)) void *__wrap_realloc(void *p, size_t size)
+__attribute__ ((used)) void *__wrap_realloc(void *p, size_t len)
 {
    void *n;
    /* ptr from mem2 */
    if (((uint32_t) p & 0x10000000) != 0)
    {
-      n = _mem2_realloc(p, size);
+      n = _mem2_realloc(p, len);
       if (n != 0)
          return n;
-      n = __real_malloc(size);
+      n = __real_malloc(len);
       if (n == 0)
          return 0;
       if (p != 0)
       {
          size_t heap_size = __lwp_heap_block_size(&gx_mem2_heap, p);
-         memcpy(n, p, heap_size < size ? heap_size : size);
+         memcpy(n, p, heap_size < len ? heap_size : len);
          _mem2_free(p);
       }
       return n;
    }
    /* ptr from malloc */
-   n = __real_realloc(p, size);
+   n = __real_realloc(p, len);
    if (n != 0)
       return n;
-   n = _mem2_malloc(size);
+   n = _mem2_malloc(len);
    if (n == 0)
       return 0;
    if (p != 0)
    {
       size_t heap_size = __real_malloc_usable_size(p);
-      memcpy(n, p, heap_size < size ? heap_size : size);
+      memcpy(n, p, heap_size < len ? heap_size : len);
       __real_free(p);
    }
    return n;

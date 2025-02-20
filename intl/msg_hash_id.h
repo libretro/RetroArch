@@ -2085,10 +2085,6 @@ MSG_HASH(
    "Senyapkan suara Mixer."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Senyapkan saat dipercepat"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "Otomatis senyapkan audio saat menggunakan percepat."
    )
@@ -2166,10 +2162,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "Latensi Audio (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Latensi audio sekeinginan dalam milidetik. Mungkin akan diabaikan jika kandar audio tidak mendukung latensi ini."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -2361,14 +2353,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
    "Timpa input bind dengan bind yang telah diubah untuk 'core' saat ini."
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sort Remaps By Gamepad"
-   )   
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Remaps will only apply to the active gamepad in which they were saved."
-   )   
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Konfigurasi otomatis"
@@ -2785,6 +2769,10 @@ MSG_HASH(
 
 /* Settings > File Browser */
 
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   "Menyaring berkas sesuai Core saat ini di Peramban Berkas."
+   )
 
 /* Settings > Frame Throttle */
 
@@ -3328,7 +3316,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Perambah Berkas"
+   "Direktori Awal"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -3899,6 +3887,8 @@ MSG_HASH(
    "Urut Daftar Main Setelah Pemenggalan Nama (Perlu Mulai Ulang)"
    )
 
+
+
 /* MaterialUI: Settings > User Interface > Appearance */
 
 MSG_HASH(
@@ -4444,3 +4434,10 @@ MSG_HASH(
    MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
    "Mikrofon sdl2 perlu pengandar audio sdl2"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

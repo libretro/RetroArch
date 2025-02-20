@@ -39,8 +39,8 @@ RETRO_BEGIN_DECLS
 #define MENU_ENTRY_INITIALIZE(entry) \
    entry.path[0]            = '\0'; \
    entry.label[0]           = '\0'; \
-   entry.sublabel[0]        = '\0'; \
    entry.rich_label[0]      = '\0'; \
+   entry.sublabel[0]        = '\0'; \
    entry.value[0]           = '\0'; \
    entry.password_value[0]  = '\0'; \
    entry.enum_idx           = MSG_UNKNOWN; \
@@ -149,19 +149,17 @@ typedef struct menu_file_list_cbs
          unsigned type, unsigned i,
          const char *label, const char *path,
          char *s, size_t len);
-   void (*action_get_value)(file_list_t* list,
+   size_t (*action_get_value)(file_list_t* list,
          unsigned *w, unsigned type, unsigned i,
          const char *label, char *s, size_t len,
          const char *path,
-         char *path_buf, size_t path_buf_size);
+         char *s2, size_t len2);
    menu_search_terms_t search;
    enum msg_hash_enums enum_idx;
-   char action_sublabel_cache[MENU_LABEL_MAX_LENGTH];
-   char action_title_cache   [512];
    bool checked;
 } menu_file_list_cbs_t;
 
-int menu_entries_get_title(char *title, size_t title_len);
+size_t menu_entries_get_title(char *s, size_t len);
 
 void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 

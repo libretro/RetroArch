@@ -59,30 +59,27 @@ struct sevenzip_context_t
    uint32_t parse_index;
    uint32_t decompress_index;
    uint32_t packIndex;
-   uint32_t   block_index;
+   uint32_t block_index;
 };
 
-static void *sevenzip_stream_alloc_impl(ISzAllocPtr p, size_t size)
+static void *sevenzip_stream_alloc_impl(ISzAllocPtr p, size_t len)
 {
-   if (size == 0)
+   if (len == 0)
       return 0;
-   return malloc(size);
+   return malloc(len);
 }
 
 static void sevenzip_stream_free_impl(ISzAllocPtr p, void *address)
 {
-   (void)p;
-
    if (address)
       free(address);
 }
 
-static void *sevenzip_stream_alloc_tmp_impl(ISzAllocPtr p, size_t size)
+static void *sevenzip_stream_alloc_tmp_impl(ISzAllocPtr p, size_t len)
 {
-   (void)p;
-   if (size == 0)
+   if (len == 0)
       return 0;
-   return malloc(size);
+   return malloc(len);
 }
 
 static void* sevenzip_stream_new(void)
@@ -140,11 +137,11 @@ static int64_t sevenzip_file_read(
       const char *needle, void **buf,
       const char *optional_outfile)
 {
+   CSzArEx db;
    CFileInStream archiveStream;
    CLookToRead2 lookStream;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   CSzArEx db;
    uint8_t *output      = 0;
    int64_t outsize      = -1;
 
@@ -164,18 +161,16 @@ static int64_t sevenzip_file_read(
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(path))
    {
-      wchar_t *pathW = utf8_to_utf16_string_alloc(path);
-
-      if (pathW)
+      wchar_t *path_w = utf8_to_utf16_string_alloc(path);
+      if (path_w)
       {
          /* Could not open 7zip archive? */
-         if (InFile_OpenW(&archiveStream.file, pathW))
+         if (InFile_OpenW(&archiveStream.file, path_w))
          {
-            free(pathW);
+            free(path_w);
             return -1;
          }
-
-         free(pathW);
+         free(path_w);
       }
    }
 #else
@@ -205,7 +200,7 @@ static int64_t sevenzip_file_read(
 
       for (i = 0; i < db.NumFiles; i++)
       {
-         size_t len;
+         size_t _len;
          char infile[PATH_MAX_LENGTH];
          size_t offset                = 0;
          size_t outSizeProcessed      = 0;
@@ -215,14 +210,14 @@ static int64_t sevenzip_file_read(
          if (SzArEx_IsDir(&db, i))
             continue;
 
-         len = SzArEx_GetFileNameUtf16(&db, i, NULL);
+         _len = SzArEx_GetFileNameUtf16(&db, i, NULL);
 
-         if (len > temp_size)
+         if (_len > temp_size)
          {
             if (temp)
                free(temp);
-            temp_size = len;
-            temp = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
+            temp_size = _len;
+            temp      = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
 
             if (temp == 0)
             {
@@ -276,7 +271,7 @@ static int64_t sevenzip_file_read(
                 * copy and free the old one. */
                *buf = malloc((size_t)(outsize + 1));
                ((char*)(*buf))[outsize] = '\0';
-               memcpy(*buf,output + offset,outsize);
+               memcpy(*buf, output + offset, outsize);
             }
             break;
          }
@@ -369,18 +364,18 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 #if defined(_WIN32) && defined(USE_WINDOWS_FILE) && !defined(LEGACY_WIN32)
    if (!string_is_empty(file))
    {
-      wchar_t *fileW = utf8_to_utf16_string_alloc(file);
+      wchar_t *file_w = utf8_to_utf16_string_alloc(file);
 
-      if (fileW)
+      if (file_w)
       {
          /* could not open 7zip archive? */
-         if (InFile_OpenW(&sevenzip_context->archiveStream.file, fileW))
+         if (InFile_OpenW(&sevenzip_context->archiveStream.file, file_w))
          {
-            free(fileW);
+            free(file_w);
             goto error;
          }
 
-         free(fileW);
+         free(file_w);
       }
    }
 #else
@@ -412,14 +407,19 @@ error:
 }
 
 static int sevenzip_parse_file_iterate_step_internal(
-      struct sevenzip_context_t *sevenzip_context, char *filename,
-      const uint8_t **cdata, unsigned *cmode,
-      uint32_t *size, uint32_t *csize, uint32_t *checksum,
-      unsigned *payback, struct archive_extract_userdata *userdata)
+      struct sevenzip_context_t *sevenzip_context,
+      char *s,
+      const uint8_t **cdata,
+      unsigned *cmode,
+      uint32_t *size,
+      uint32_t *csize,
+      uint32_t *checksum,
+      unsigned *payback,
+      struct archive_extract_userdata *userdata)
 {
    if (sevenzip_context->parse_index < sevenzip_context->db.NumFiles)
    {
-      size_t len = SzArEx_GetFileNameUtf16(&sevenzip_context->db,
+      size_t _len = SzArEx_GetFileNameUtf16(&sevenzip_context->db,
             sevenzip_context->parse_index, NULL);
       uint64_t compressed_size = 0;
 
@@ -431,32 +431,27 @@ static int sevenzip_parse_file_iterate_step_internal(
          sevenzip_context->packIndex++;
       }
 
-      if (len < PATH_MAX_LENGTH &&
-          !SzArEx_IsDir(&sevenzip_context->db, sevenzip_context->parse_index))
+      if (   (_len < PATH_MAX_LENGTH)
+          && !SzArEx_IsDir(&sevenzip_context->db, sevenzip_context->parse_index))
       {
-         char infile[PATH_MAX_LENGTH];
-         SRes res                     = SZ_ERROR_FAIL;
-         uint16_t *temp               = (uint16_t*)malloc(len * sizeof(uint16_t));
+         SRes res       = SZ_ERROR_FAIL;
+         uint16_t *temp = (uint16_t*)malloc(_len * sizeof(uint16_t));
 
          if (!temp)
             return -1;
-
-         infile[0] = '\0';
 
          SzArEx_GetFileNameUtf16(&sevenzip_context->db, sevenzip_context->parse_index,
                temp);
 
          if (temp)
          {
-            res  = utf16_to_char_string(temp, infile, sizeof(infile))
+            res  = utf16_to_char_string(temp, s, PATH_MAX_LENGTH)
                ? SZ_OK : SZ_ERROR_FAIL;
             free(temp);
          }
 
          if (res != SZ_OK)
             return -1;
-
-         strlcpy(filename, infile, PATH_MAX_LENGTH);
 
          *cmode    = 0; /* unused for 7zip */
          *checksum = sevenzip_context->db.CRCs.Vals[sevenzip_context->parse_index];
@@ -510,9 +505,9 @@ static int sevenzip_parse_file_iterate_step(void *context,
 }
 
 static uint32_t sevenzip_stream_crc32_calculate(uint32_t crc,
-      const uint8_t *data, size_t length)
+      const uint8_t *data, size_t len)
 {
-   return encoding_crc32(crc, data, length);
+   return encoding_crc32(crc, data, len);
 }
 
 const struct file_archive_file_backend sevenzip_backend = {

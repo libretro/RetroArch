@@ -707,6 +707,30 @@ MSG_HASH(
    "SDL 2 támogatás"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D8_SUPPORT,
+   "Direct3D 8 támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D9_SUPPORT,
+   "Direct3D 9 támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D10_SUPPORT,
+   "Direct3D 10 támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D11_SUPPORT,
+   "Direct3D 11 támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_D3D12_SUPPORT,
+   "Direct3D 12 támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GDI_SUPPORT,
+   "GDI támogatás"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT,
    "Vulkan támogatás"
    )
@@ -787,6 +811,10 @@ MSG_HASH(
    "PulseAudio támogatás"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PIPEWIRE_SUPPORT,
+   "PipeWire támogatás"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_COREAUDIO_SUPPORT,
    "CoreAudio támogatás"
    )
@@ -865,6 +893,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_V4L2_SUPPORT,
    "Video4Linux2 támogatás"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_SSL_SUPPORT,
+   "SSL támogatás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LIBUSB_SUPPORT,
@@ -1722,6 +1754,10 @@ MSG_HASH(
    "PulseAudio illesztő. Ha a rendszer PulseAudio-t használ, mindenképpen ez az illesztő ajánlott pl. az ALSA helyett."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   "PipeWire illesztő. Ha a rendszer PipeWire-t használ, mindenképpen ez az illesztő ajánlott pl. a PulseAudio helyett."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
    "Jack Audio Connection Kit illesztő."
    )
@@ -1912,7 +1948,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "Egy vagy több fekete képkocka beszúrása a képkockák közé. A mozgási elmosódást nagymértékben csökkentheti a CRT hatás emulálásával, a fényerő kárára. Nem kombinálható az 1-nél nagyobb váltóperiódussal, az alképkockákkal, képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazítással."
+   "FIGYELEM: a gyors villódzás bizonyos kijelzőkön képvisszatartást okozhat. Csak saját felelősségre. // Fekete képkockák beszúrása a képkockák közé. A mozgásból adódó elmosódást a CRT-szerű megjelenítéssel nagyban csökkenti, de a fényesség rovására."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
@@ -1996,7 +2032,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "További képkockák előállítása a shaderek számára a képkockák közt, így a shaderek a tartalomnál magasabb frissítésű effekteket is használhatnak. Ajánlott a képernyő frissítési frekvenciájára állítani. Nem kombinálható az 1-nél nagyobb váltóperiódussal, a fekete képkocka beszúrással, a képvárakoztatással, vagy a tartalom pontos képfrissítéséhez igazodással."
+   "FIGYELEM: a gyors villódzás bizonyos kijelzőkön képvisszatartást okozhat. Csak saját felelősségre. // Egyszerű gördülő elektronsugár szimuláció több alképkockán keresztül, a képernyőt az alképkockák számának megfelelően függőlegesen felosztva és részlegesen megjelenítve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
@@ -2072,7 +2108,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "Egyszerű gördülő elektronsugár szimuláció több alképkockán keresztül, a képernyőt az alképkockák számának megfelelően függőlegesen felosztva és részlegesen megjelenítve."
+   "FIGYELEM: a gyors villódzás bizonyos kijelzőkön képvisszatartást okozhat. Csak saját felelősségre. // Egyszerű gördülő elektronsugár szimuláció több alképkockán keresztül, a képernyőt az alképkockák számának megfelelően függőlegesen felosztva és részlegesen megjelenítve."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
@@ -2499,7 +2535,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Méretezés csak a magasság, vagy a magasság és szélesség szerint. A fél lépések a nagyfelbontású forrásokra vonatkoznak."
+   "Méretezés a magasság, a szélesség, vagy mindkettő szerint. A fél lépések csak a nagyfelbontású forrásokra vonatkoznak."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
@@ -2600,11 +2636,11 @@ MSG_HASH(
    "Nézőablak függőleges eltolása"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "Az egyedi nézőablak vízszintes középrehelyezése, ha a nézőablak szélesebb, mint a tartalom. 0.0 esetén teljesen balra, 1.0 esetén teljesen jobbra igazodik."
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "Az egyedi nézőablak függőleges középrehelyezése, ha a nézőablak magasabb, mint a tartalom. 0.0 esetén teljesen fentre, 1.0 esetén teljesen lentre igazodik."
    )
 #if defined(RARCH_MOBILE)
@@ -2625,11 +2661,11 @@ MSG_HASH(
    "Nézőablak függőleges eltolása (álló nézetben)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "Az egyedi nézőablak vízszintes középrehelyezése, ha a nézőablak szélesebb, mint a tartalom. 0.0 esetén teljesen balra, 1.0 esetén teljesen jobbra igazodik. (Álló nézet esetén.)"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Az egyedi nézőablak függőleges középrehelyezése, ha a nézőablak magasabb, mint a tartalom. 0.0 esetén teljesen fentre, 1.0 esetén teljesen lentre igazodik. (Álló nézet esetén.)"
    )
 #endif
@@ -2877,16 +2913,8 @@ MSG_HASH(
    "Minden hang letiltása Csendes módban."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Hang kikapcsolása gyorsításkor"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "A hang automatikus elnémítása gyorsításkor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Hang gyorsított lejátszása gyorsításkor"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -2997,7 +3025,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "A kívánt hangkésleltetés ezredmásodpercben. Előfordulhat, hogy a hang illesztőprogramja nem képes a kívánt késleltetést biztosítani."
+   "A legnagyobb hangkésleltetés ezredmásodpercben. Az illesztő a tényleges késleltetést ezen érték 50%-a körül próbálja tartani. Ha a hangillesztő nem tudja a kívánt késleltetést biztosítani, az érték eltérhet."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -3300,11 +3328,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "Remap fájlok rendezése kontroller szerint"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "A remap fájlok csak arra az aktív kontrollerre lesznek érvényesek, amivel el voltak mentve."
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "Automatikus beállítás"
@@ -3711,10 +3739,6 @@ MSG_HASH(
    "Menü váltógomb"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "A menü és a futó tartalom megjelenítése közt vált."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "Kontroller kombináció a kilépéshez"
    )
@@ -3789,10 +3813,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "Szünet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Váltás a futó tartalom megállítása és továbbengedése közt."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -4761,7 +4781,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "A tartalom bezárásakor automatikusan készít egy mentést a játékállásról. Ha a \"Játékállás automatikus betöltése\" be van kapcsolva, ez fog betöltődni."
+   "Automatikus állapotmentés a tartalom bezárásakor. Ez az állapot töltődik be indításkor, ha az \"Automatikus játékállás betöltés\" be van kapcsolva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
@@ -4942,10 +4962,6 @@ MSG_HASH(
    "A nem támogatott kiterjesztésű fájlok nem jelennek meg a Fájlböngészőben."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "A beépített médialejátszó használata"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "Szűrés az aktuális mag szerint"
    )
@@ -4956,6 +4972,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "A Fájlböngésző az utoljára használt helyen nyílik meg a kezdő könyvtárból töltésnél. A RetroArch újraindításakor visszaáll az alapállapotra."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "A beépített médialejátszó használata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "A beépített képnézegető használata"
    )
 
 /* Settings > Frame Throttle */
@@ -5315,12 +5339,24 @@ MSG_HASH(
    "A négy előlapi gomb átfedő zónáinak mérete. 100% a nyolc irányban szimmetrikus beállítás."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Analóg központosítási zóna"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "Ezen a zónán belüli érintéskor az analóg kar érzékelése az első érintéshez lesz viszonyítva."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Képernyőrátétek"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
    "A preferált rátét automatikus betöltése"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   "Rendszer nevén alapuló rátét betöltése az alapértelmezett preset helyett. Hatástalan, ha a rátét preset felül van bírálva."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
@@ -5899,7 +5935,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "A betűtípus mérete pontokban."
+   "A betűtípus mérete pontokban. Widgetek használatakor ez a méret csak a képernyőn megjelenő statisztikára van hatással."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
@@ -6053,10 +6089,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "Tartalom megállítása, amikor a menü aktív"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Megállítja az éppen futó tartalmat, ha a menü aktiválódik."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6410,10 +6442,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "\"Játéklisták\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "A \"Játéklisták\" menü jelenjen meg. (Ozone / XMB esetén újraindítás szükséges.)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6892,14 +6920,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "\"Felhasználók\" látható"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Játéklista ikonok"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "A játéklista elemeinek ikonjai."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7864,10 +7884,6 @@ MSG_HASH(
    "A tartalom beolvasása és játéklistához adása anélkül, hogy lenne azt támogató mag telepítve."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "CRC ellenőrzés duplikált azonosítók esetén"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "Az ISO fájlok sorozatszáma néha megegyezik, különösen a PSP/PSN lemezeknél. Ilyenkor ha a beolvasó csak a sorozatszámra hagyatkozik, rossz rendszert társíthat a tartalomhoz. A CRC ellenőrzést bekapcsolva a beolvasás jóval lassabb, de pontosabb lehet."
    )
@@ -8128,7 +8144,7 @@ MSG_HASH(
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Fájlkezelő"
+   "Kezdő könyvtár"
    )
 MSG_HASH( /* FIXME Not RGUI specific */
    MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
@@ -8370,10 +8386,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Állapotüzenetek tartalmának formátuma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "A futó tartalommal kapcsolatosan megosztott információk."
    )
 
 MSG_HASH(
@@ -8972,10 +8984,6 @@ MSG_HASH(
    "Folytatás"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "A futó tartalom folytatása és a gyorsmenü elhagyása."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "Újraindítás"
    )
@@ -8986,10 +8994,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "Tartalom bezárása"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Az aktuális tartalom bezárása. Az el nem mentett változtatások elveszhetnek."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -9124,16 +9128,8 @@ MSG_HASH(
    "Mag beállításai"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "A futó tartalom beállításai."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "Irányítás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "A futó tartalom irányításának változtatása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9758,10 +9754,6 @@ MSG_HASH(
    "A shader fájlok változásainak automatikus alkalmazása."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "A shader fájl változásainak észlelése. A lemezen található shaderbe mentett változtatások után ez automatikusan újra lesz fordítva és alkalmazva a futó tartalomra."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
    "Utoljára használt shader könyvtár megjegyzése"
    )
@@ -10219,6 +10211,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
    "Bélyegképek váltogatása"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   "Véletlen választás"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
@@ -10975,10 +10971,6 @@ MSG_HASH(
    "Átlátszóság"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Amikor a gyorsmenü aktív, a futó tartalom látszódik a háttérben. Az átlátszóság kikapcsolása módosíthatja a menü színösszeállítását."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "Árnyék effekt"
    )
@@ -11419,26 +11411,6 @@ MSG_HASH(
    "A játéklisták a gyártó neve nélküli betűrend szerint lesznek ábécésorrendben."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Színösszeállítás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-   "A színösszeállítás lecserélése."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-   "Egyszerű fehér"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-   "Egyszerű fekete"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
-   "Drakula"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
    "Másodlagos bélyegkép"
    )
@@ -11462,6 +11434,28 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
    "A bélyegkép oszlop méretezése."
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   "Színösszeállítás"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+   "A színösszeállítás lecserélése."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+   "Egyszerű fehér"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+   "Egyszerű fekete"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA,
+   "Drakula"
+   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -11818,6 +11812,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
    "Kezdő képernyő"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   "Logó"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
@@ -12363,10 +12361,6 @@ MSG_HASH(
    "Bill"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "A beépített képnézegető használata"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "Swapchain képek maximális száma"
    )
@@ -12500,14 +12494,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
    "Kiválasztás játéklistáról"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "Folytatás"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "A futó tartalom folytatása és a gyorsmenü elhagyása."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -13106,10 +13092,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTODETECT,
    "Automatikus felismerés"
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Játékállás automatikus betöltése innen"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -14196,6 +14178,10 @@ MSG_HASH(
    "Virtuális lemeztálca becsukása sikertelen."
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "Játékállás automatikus betöltése innen"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "Játékállás automatikus betöltése innen: \"%s\", sikertelen."
    )
@@ -14504,6 +14490,14 @@ MSG_HASH(
    "Csalás aktiválva. A Hardcore trófea mód letiltva a mostani játékmenet idejére."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   "A kiszolgáló megváltoztatta a trófeák Hardcore módját."
+   )
+MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   "A Netplay kiszolgálót frissíteni kell. A Hardcore trófea mód letiltva a mostani játékmenet idejére."
+   )
+MSG_HASH(
    MSG_CHEEVOS_MASTERED_GAME,
    "Mester szint: %s"
    )
@@ -14542,10 +14536,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
    "Hardcore szüneteltetve. A kézi képvárakoztatás beállítása nem engedélyezett."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SHADER_SUBFRAMES,
-   "Hardcore szüneteltetve. A shader alképkockák nem engedélyezettek."
    )
 MSG_HASH(
    MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
@@ -15512,3 +15502,10 @@ MSG_HASH(
    MSG_AI_SERVICE_STOPPED,
    "leállítva."
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

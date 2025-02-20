@@ -410,9 +410,10 @@ typedef struct
 
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
-   char *core_buf;
 
-   size_t                     core_len;
+   char *core_buf;
+   size_t core_len;
+
    /* This is used for storing intermediary variables
     * that get used later on during menu actions -
     * for instance, selecting a shader pass for a shader
@@ -524,9 +525,6 @@ struct menu_state
     * the entry with a label matching 'pending_selection' will
     * be selected automatically */
    char pending_selection[PATH_MAX_LENGTH];
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[NAME_MAX_LENGTH];
    /* Filled with current content path when a core calls
     * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
     * generic_menu_entry_action(), and must be cached
@@ -630,9 +628,9 @@ bool menu_driver_init(bool video_is_threaded);
 
 retro_time_t menu_driver_get_current_time(void);
 
-size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len);
 
-void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
+size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len);
 
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
@@ -671,9 +669,6 @@ int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enu
 void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
       file_list_t *list);
-
-void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len);
 
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
@@ -742,18 +737,16 @@ size_t menu_update_fullscreen_thumbnail_label(
       bool is_quick_menu, const char *title);
 
 bool menu_is_running_quick_menu(void);
-bool menu_is_nonrunning_quick_menu(void);
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
 
-void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
-
-size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
-
 #ifdef HAVE_RUNAHEAD
 void menu_update_runahead_mode(void);
 #endif
+
+size_t menu_playlist_random_selection(
+      size_t selection, bool is_explore_list);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

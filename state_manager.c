@@ -205,8 +205,8 @@ static size_t state_manager_raw_maxsize(size_t uncomp)
  */
 static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
 {
-   size_t  len16 = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
-   uint16_t *ret = (uint16_t*)calloc(len16 + sizeof(uint16_t) * 4 + 16, 1);
+   size_t  _len  = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
+   uint16_t *ret = (uint16_t*)calloc(_len + sizeof(uint16_t) * 4 + 16, 1);
 
    if (!ret)
       return NULL;
@@ -222,7 +222,7 @@ static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
     *
     * It doesn't make any difference to us, but sacrificing 16 bytes to get
     * Valgrind happy is worth it. */
-   ret[len16/sizeof(uint16_t) + 3] = uniq;
+   ret[_len / sizeof(uint16_t) + 3] = uniq;
 
    return ret;
 }
@@ -270,7 +270,7 @@ static size_t state_manager_raw_compress(const void *src,
          continue;
       }
 
-      changed         = find_same(old16, new16);
+      changed = find_same(old16, new16);
       if (changed > UINT16_MAX)
          changed = UINT16_MAX;
 
@@ -301,8 +301,7 @@ static size_t state_manager_raw_compress(const void *src,
  * If the given arguments do not match a previous call to
  * state_manager_raw_compress(), anything at all can happen.
  */
-static void state_manager_raw_decompress(const void *patch,
-      size_t patchlen, void *data, size_t datalen)
+static void state_manager_raw_decompress(const void *patch, void *data)
 {
    uint16_t         *out16 = (uint16_t*)data;
    const uint16_t *patch16 = (const uint16_t*)patch;
@@ -473,8 +472,7 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
    compressed                   = state->data + start + sizeof(size_t);
    out                          = state->thisblock;
 
-   state_manager_raw_decompress(compressed,
-         state->maxcompsize, out, state->blocksize);
+   state_manager_raw_decompress(compressed, out);
 
    state->entries--;
    return true;
@@ -512,10 +510,11 @@ static void state_manager_push_do(state_manager_t *state)
 
    if (state->thisblock_valid)
    {
-      const uint8_t *oldb, *newb;
       uint8_t *compressed;
+      const uint8_t *oldb, *newb;
       size_t headpos, tailpos, remaining;
-      if (state->capacity < sizeof(size_t) + state->maxcompsize) {
+      if (state->capacity < sizeof(size_t) + state->maxcompsize)
+      {
          RARCH_ERR("State capacity insufficient\n");
          return;
       }
@@ -655,7 +654,7 @@ void state_manager_event_deinit(
    if (!rewind_st)
       return;
 
-   restore_callbacks = 
+   restore_callbacks =
             (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)
          && (rewind_st->state)
          && (current_core);
@@ -666,14 +665,14 @@ void state_manager_event_deinit(
       free(rewind_st->state);
    }
 
-   rewind_st->state              = NULL;
-   rewind_st->size               = 0;
-   rewind_st->flags             &= ~(
-                                   STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
-                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
-                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
-                                 | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
-                                    );
+   rewind_st->state  = NULL;
+   rewind_st->size   = 0;
+   rewind_st->flags &= ~(
+                          STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
+                        | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
+                        | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
+                        | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
+                        );
 
    /* Restore regular (non-rewind) core audio
     * callbacks if required */
@@ -717,13 +716,15 @@ bool state_manager_check_rewind(
 
    if (!rewind_st->state)
    {
-      if ((pressed 
-          && (!(rewind_st->flags 
+      if ((pressed
+          && (!(rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED)))
           && !core_info_current_supports_rewind())
-         runloop_msg_queue_push(msg_hash_to_str(MSG_REWIND_UNSUPPORTED),
-               1, 100, false, NULL,
+      {
+         const char *_msg = msg_hash_to_str(MSG_REWIND_UNSUPPORTED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
 
       if (pressed)
          rewind_st->flags |=  STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED;
@@ -817,16 +818,16 @@ bool state_manager_check_rewind(
    {
       if (current_core->retro_set_audio_sample)
          current_core->retro_set_audio_sample(
-               (rewind_st->flags 
+               (rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
-               ? audio_driver_sample_rewind 
+               ? audio_driver_sample_rewind
                : audio_driver_sample);
 
       if (current_core->retro_set_audio_sample_batch)
          current_core->retro_set_audio_sample_batch(
-               (  rewind_st->flags 
+               (  rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
-               ? audio_driver_sample_batch_rewind 
+               ? audio_driver_sample_batch_rewind
                : audio_driver_sample_batch);
    }
 

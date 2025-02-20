@@ -623,6 +623,8 @@
 #define DEFAULT_INPUT_OVERLAY_POINTER_ENABLE false
 #endif
 
+#define DEFAULT_INPUT_OVERLAY_ANALOG_RECENTER_ZONE 0
+
 #define DEFAULT_INPUT_OVERLAY_LIGHTGUN_PORT -1
 #define DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH true
 #define DEFAULT_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY 1
@@ -762,6 +764,9 @@
 #define DEFAULT_MENU_TICKER_SPEED 2.0f
 #define DEFAULT_MENU_TICKER_SMOOTH true
 
+/* Don't skip rendering assets based on the absence of other assets */
+#define DEFAULT_MENU_IGNORE_MISSING_ASSETS false
+
 #if defined(HAVE_THREADS)
 #define DEFAULT_MENU_SAVESTATE_RESUME true
 #else
@@ -803,14 +808,10 @@
 #endif
 #endif
 
-/* Specifies 'add content' visibility when using
- * menus WITH a dedicated 'Import Content' tab */
-#define DEFAULT_MENU_CONTENT_SHOW_ADD true
-/* Specifies 'add content' visibility when using
- * menus WITHOUT a dedicated 'Import Content' tab */
-#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB
+#define DEFAULT_MENU_CONTENT_SHOW_ADD_ENTRY MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB
 
 #define DEFAULT_CONTENT_SHOW_PLAYLISTS true
+#define DEFAULT_CONTENT_SHOW_PLAYLIST_TABS true
 
 #if defined(HAVE_LIBRETRODB)
 #define DEFAULT_MENU_CONTENT_SHOW_EXPLORE true
@@ -925,7 +926,11 @@
 #define DEFAULT_INPUT_BACKTOUCH_TOGGLE false
 #endif
 
+#if defined(ANDROID) || defined(IOS)
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
+#else
+#define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED false
+#endif
 
 #if defined(HAVE_OVERLAY)
 #if defined(RARCH_MOBILE)
@@ -1211,12 +1216,12 @@
 #define DEFAULT_AUDIO_RESPECT_SILENT_MODE true
 #endif
 
-/* Automatically mute audio when fast forward
- * is enabled */
+/* Automatically mute audio when fast forward is enabled. */
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
-/* Speed up audio to match fast-forward speed up.
- * Avoids crackling */
+/* Speed up audio to match fast forward speed up. */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+/* Automatically mute audio when rewind is enabled. */
+#define DEFAULT_AUDIO_REWIND_MUTE false
 
 #ifdef HAVE_MICROPHONE
 /* Microphone support */
@@ -1452,11 +1457,7 @@
  * a new one) */
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
 
-#if defined(ANDROID) || defined(__APPLE__)
-#define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS true
-#else
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
-#endif
 
 /* Number of entries that will be kept in content history playlist file. */
 #define DEFAULT_CONTENT_HISTORY_SIZE 200
@@ -1832,7 +1833,11 @@
 #define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 
+#ifdef EMSCRIPTEN
+#define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "https://buildbot.libretro.com/assets/"
+#else
 #define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "http://buildbot.libretro.com/assets/"
+#endif
 
 #define DEFAULT_DISCORD_APP_ID "475456035851599874"
 

@@ -28,8 +28,18 @@
 
 #include <features/features_cpu.h>
 
+#if defined(HAVE_GCD) && !defined(HAVE_THREADS)
+#error "gcd uses threads, what are you doing"
+#endif
+
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#endif
+#ifdef EMSCRIPTEN
+#include <retro_timers.h>
+#endif
+#ifdef HAVE_GCD
+#include <dispatch/dispatch.h>
 #endif
 
 typedef struct
@@ -70,6 +80,10 @@ static scond_t *worker_cond                 = NULL;
 static sthread_t *worker_thread             = NULL;
 static bool worker_continue                 = true;
 /* use running_lock when touching it */
+#endif
+
+#ifdef HAVE_GCD
+static unsigned gcd_queue_count             = 0;
 #endif
 
 static void task_queue_msg_push(retro_task_t *task,
@@ -481,10 +495,13 @@ static void threaded_worker(void *userdata)
       retro_task_t *task  = NULL;
       bool       finished = false;
 
-      if (!worker_continue)
-         break; /* should we keep running until all tasks finished? */
-
       slock_lock(running_lock);
+
+      if (!worker_continue)
+      {
+         slock_unlock(running_lock);
+         break; /* should we keep running until all tasks finished? */
+      }
 
       /* Get first task to run */
       if (!(task = tasks_running.front))
@@ -507,8 +524,14 @@ static void threaded_worker(void *userdata)
       }
 
       slock_unlock(running_lock);
-
       task->handler(task);
+#ifdef EMSCRIPTEN
+      /* Workaround emscripten pthread bug where not parking the
+         thread will prevent other important stuff from
+         happening. Maybe due to lack of signals implementation in
+         emscripten's pthreads?  */
+      retro_sleep(1);
+#endif
 
       slock_lock(property_lock);
       finished = ((task->flags & RETRO_TASK_FLG_FINISHED) > 0) ? true : false;
@@ -602,6 +625,160 @@ static struct retro_task_impl impl_threaded = {
 };
 #endif
 
+#ifdef HAVE_GCD
+
+static void gcd_worker(retro_task_t *task)
+{
+   bool       finished = false;
+   slock_lock(running_lock);
+
+   if (!worker_continue)
+   {
+      gcd_queue_count--;
+      if (!gcd_queue_count)
+         scond_signal(worker_cond);
+      slock_unlock(running_lock);
+      return;
+   }
+
+   if (task->when)
+   {
+      retro_time_t now   = cpu_features_get_time_usec();
+      retro_time_t delay = task->when - now - 500;
+      if (delay > 0)
+      {
+         dispatch_time_t after = dispatch_time(DISPATCH_TIME_NOW, delay);
+         dispatch_after(after, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+                        ^{ gcd_worker(task); });
+         slock_unlock(running_lock);
+         return;
+      }
+   }
+
+   slock_unlock(running_lock);
+
+   task->handler(task);
+
+   slock_lock(property_lock);
+   finished = ((task->flags & RETRO_TASK_FLG_FINISHED) > 0) ? true : false;
+   slock_unlock(property_lock);
+
+   if (!finished)
+      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+                     ^{ gcd_worker(task); });
+   else
+   {
+      /* Remove task from running queue */
+      slock_lock(running_lock);
+      slock_lock(queue_lock);
+      gcd_queue_count--;
+      if (!gcd_queue_count)
+         scond_signal(worker_cond);
+      task_queue_remove(&tasks_running, task);
+      slock_unlock(queue_lock);
+      slock_unlock(running_lock);
+
+      /* Add task to finished queue */
+      slock_lock(finished_lock);
+      task_queue_put(&tasks_finished, task);
+      slock_unlock(finished_lock);
+   }
+}
+
+static void retro_task_gcd_push_running(retro_task_t *task)
+{
+   slock_lock(running_lock);
+   slock_lock(queue_lock);
+   task_queue_put(&tasks_running, task);
+   gcd_queue_count++;
+   dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+                  ^{ gcd_worker(task); });
+   slock_unlock(queue_lock);
+   slock_unlock(running_lock);
+}
+
+static void retro_task_gcd_wait(retro_task_condition_fn_t cond, void* data)
+{
+   bool wait = false;
+
+   do
+   {
+      retro_task_t *task = NULL;
+      retro_task_threaded_gather();
+
+      slock_lock(running_lock);
+      wait = false;
+      /* can't just look at the first task like threaded, they're not sorted by when */
+      for (task = tasks_running.front; !wait && task; task = task->next)
+         wait |= !task->when;
+      slock_unlock(running_lock);
+
+      if (!wait)
+      {
+         slock_lock(finished_lock);
+         for (task = tasks_finished.front; !wait && task; task = task->next)
+            wait |= !task->when;
+         slock_unlock(finished_lock);
+      }
+   } while (wait && (!cond || cond(data)));
+}
+
+static void retro_task_gcd_init(void)
+{
+   retro_task_t *task = NULL;
+
+   running_lock    = slock_new();
+   finished_lock   = slock_new();
+   property_lock   = slock_new();
+   queue_lock      = slock_new();
+   worker_cond     = scond_new();
+
+   slock_lock(running_lock);
+   worker_continue = true;
+   for (task = tasks_running.front; task; task = task->next)
+   {
+      gcd_queue_count++;
+      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+                     ^{ gcd_worker(task); });
+   };
+   slock_unlock(running_lock);
+}
+
+static void retro_task_gcd_deinit(void)
+{
+   slock_lock(running_lock);
+   worker_continue = false;
+   if (gcd_queue_count)
+      scond_wait(worker_cond, running_lock);
+   slock_unlock(running_lock);
+
+   scond_free(worker_cond);
+   slock_free(running_lock);
+   slock_free(finished_lock);
+   slock_free(property_lock);
+   slock_free(queue_lock);
+
+   worker_cond     = NULL;
+   running_lock    = NULL;
+   finished_lock   = NULL;
+   property_lock   = NULL;
+   queue_lock      = NULL;
+}
+
+static struct retro_task_impl impl_gcd = {
+   NULL,
+   retro_task_gcd_push_running,
+   retro_task_threaded_cancel,
+   retro_task_threaded_reset,
+   retro_task_gcd_wait,
+   retro_task_threaded_gather,
+   retro_task_threaded_find,
+   retro_task_threaded_retrieve,
+   retro_task_gcd_init,
+   retro_task_gcd_deinit
+};
+#endif
+
 /* Deinitializes the task system.
  * This deinitializes the task system.
  * The tasks that are running at
@@ -621,7 +798,11 @@ void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push)
    if (threaded)
    {
       task_threaded_enable = true;
+#ifdef HAVE_GCD
+      impl_current         = &impl_gcd;
+#else
       impl_current         = &impl_threaded;
+#endif
    }
 #endif
 
@@ -659,7 +840,7 @@ void task_queue_retrieve(task_retriever_data_t *data)
 void task_queue_check(void)
 {
 #ifdef HAVE_THREADS
-   bool current_threaded = (impl_current == &impl_threaded);
+   bool current_threaded = (impl_current != &impl_regular);
    bool want_threaded    = task_threaded_enable;
 
    if (want_threaded != current_threaded)

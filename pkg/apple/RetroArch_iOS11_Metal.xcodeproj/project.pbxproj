@@ -1323,7 +1323,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.19.1;
+				CURRENT_PROJECT_VERSION = 1.20.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1352,7 +1352,7 @@
 					"@executable_path/Frameworks",
 					"$(PROJECT_DIR)/iOS/modules",
 				);
-				MARKETING_VERSION = 1.19.1;
+				MARKETING_VERSION = 1.20.0;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
@@ -1448,7 +1448,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.19.1;
+				CURRENT_PROJECT_VERSION = 1.20.0;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1477,7 +1477,7 @@
 					"@executable_path/Frameworks",
 					"$(PROJECT_DIR)/iOS/modules",
 				);
-				MARKETING_VERSION = 1.19.1;
+				MARKETING_VERSION = 1.20.0;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1654,7 +1654,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.19.1;
+				CURRENT_PROJECT_VERSION = 1.20.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1688,7 +1688,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/modules",
 				);
-				MARKETING_VERSION = 1.19.1;
+				MARKETING_VERSION = 1.20.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1795,7 +1795,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.19.1;
+				CURRENT_PROJECT_VERSION = 1.20.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1829,7 +1829,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/modules",
 				);
-				MARKETING_VERSION = 1.19.1;
+				MARKETING_VERSION = 1.20.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (

@@ -276,18 +276,18 @@ static int get_default_adapter(bluez_t *bluez, DBusMessage *reply)
       do
       {
          /* empty array? */
-         if (DBUS_TYPE_INVALID == 
+         if (DBUS_TYPE_INVALID ==
                dbus_message_iter_get_arg_type(&array_2_iter))
             continue;
 
          /* a{oa{...}} */
-         if (DBUS_TYPE_DICT_ENTRY != 
+         if (DBUS_TYPE_DICT_ENTRY !=
                dbus_message_iter_get_arg_type(&array_2_iter))
             return 1;
          dbus_message_iter_recurse(&array_2_iter, &dict_2_iter);
 
          /* a{oa{s...}} */
-         if (DBUS_TYPE_STRING != 
+         if (DBUS_TYPE_STRING !=
                dbus_message_iter_get_arg_type(&dict_2_iter))
             return 1;
          dbus_message_iter_get_basic(&dict_2_iter, &interface_name);
@@ -327,14 +327,14 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
    do
    {
       /* a{...} */
-      if (DBUS_TYPE_DICT_ENTRY != 
+      if (DBUS_TYPE_DICT_ENTRY !=
             dbus_message_iter_get_arg_type(&array_1_iter))
          return 1;
 
       dbus_message_iter_recurse(&array_1_iter, &dict_1_iter);
 
       /* a{o...} */
-      if (DBUS_TYPE_OBJECT_PATH != 
+      if (DBUS_TYPE_OBJECT_PATH !=
             dbus_message_iter_get_arg_type(&dict_1_iter))
          return 1;
 
@@ -344,7 +344,7 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
          return 1;
 
       /* a{oa} */
-      if (DBUS_TYPE_ARRAY != 
+      if (DBUS_TYPE_ARRAY !=
             dbus_message_iter_get_arg_type(&dict_1_iter))
          return 1;
 
@@ -352,18 +352,18 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
       do
       {
          /* empty array? */
-         if (DBUS_TYPE_INVALID == 
+         if (DBUS_TYPE_INVALID ==
                dbus_message_iter_get_arg_type(&array_2_iter))
             continue;
 
          /* a{oa{...}} */
-         if (DBUS_TYPE_DICT_ENTRY != 
+         if (DBUS_TYPE_DICT_ENTRY !=
                dbus_message_iter_get_arg_type(&array_2_iter))
             return 1;
          dbus_message_iter_recurse(&array_2_iter, &dict_2_iter);
 
          /* a{oa{s...}} */
-         if (DBUS_TYPE_STRING != 
+         if (DBUS_TYPE_STRING !=
                dbus_message_iter_get_arg_type(&dict_2_iter))
             return 1;
          dbus_message_iter_get_basic(&dict_2_iter, &interface_name);
@@ -390,13 +390,13 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
                continue;
 
             /* a{oa{sa{...}}} */
-            if (DBUS_TYPE_DICT_ENTRY != 
+            if (DBUS_TYPE_DICT_ENTRY !=
                   dbus_message_iter_get_arg_type(&array_3_iter))
                return 1;
             dbus_message_iter_recurse(&array_3_iter, &dict_3_iter);
 
             /* a{oa{sa{s...}}} */
-            if (DBUS_TYPE_STRING != 
+            if (DBUS_TYPE_STRING !=
                   dbus_message_iter_get_arg_type(&dict_3_iter))
                return 1;
 
@@ -406,7 +406,7 @@ static int read_scanned_devices (bluez_t *bluez, DBusMessage *reply)
             if (!dbus_message_iter_next(&dict_3_iter))
                return 1;
             /* a{oa{sa{sv}}} */
-            if (DBUS_TYPE_VARIANT != 
+            if (DBUS_TYPE_VARIANT !=
                   dbus_message_iter_get_arg_type(&dict_3_iter))
                return 1;
 
@@ -606,7 +606,9 @@ static bool bluez_connect_device(void *data, unsigned i)
 
 static bool bluez_remove_device(void *data, unsigned i)
 {
-   bluez_t *bluez = (bluez_t*)data;
+   const char *msg = NULL;
+   bluez_t *bluez  = (bluez_t*)data;
+
    bluez_dbus_connect(bluez);
 
    /* Disconnect the device */
@@ -616,7 +618,9 @@ static bool bluez_remove_device(void *data, unsigned i)
    if (device_method(bluez, bluez->devices->data[i].path, "RemoveDevice"))
       return false;
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_BLUETOOTH_PAIRING_REMOVED),
+   msg = msg_hash_to_str(MSG_BLUETOOTH_PAIRING_REMOVED);
+
+   runloop_msg_queue_push(msg, strlen(msg),
          1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
          MESSAGE_QUEUE_CATEGORY_INFO);
 

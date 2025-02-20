@@ -353,51 +353,51 @@ int rmsgpack_write_uint(RFILE *fd, uint64_t value)
    return -1;
 }
 
-static int rmsgpack_read_uint(RFILE *fd, uint64_t *out, size_t size)
+static int rmsgpack_read_uint(RFILE *fd, uint64_t *s, size_t len)
 {
    union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
 
-   if (filestream_read(fd, &tmp, size) == -1)
+   if (filestream_read(fd, &tmp, len) == -1)
       return -1;
 
-   switch (size)
+   switch (len)
    {
       case 1:
-         *out = tmp.u8;
+         *s = tmp.u8;
          break;
       case 2:
-         *out = swap_if_little16(tmp.u16);
+         *s = swap_if_little16(tmp.u16);
          break;
       case 4:
-         *out = swap_if_little32(tmp.u32);
+         *s = swap_if_little32(tmp.u32);
          break;
       case 8:
-         *out = swap_if_little64(tmp.u64);
+         *s = swap_if_little64(tmp.u64);
          break;
    }
    return 0;
 }
 
-static int rmsgpack_read_int(RFILE *fd, int64_t *out, size_t size)
+static int rmsgpack_read_int(RFILE *fd, int64_t *s, size_t len)
 {
    union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
 
-   if (filestream_read(fd, &tmp, size) == -1)
+   if (filestream_read(fd, &tmp, len) == -1)
       return -1;
 
-   switch (size)
+   switch (len)
    {
       case 1:
-         *out = (int8_t)tmp.u8;
+         *s = (int8_t)tmp.u8;
          break;
       case 2:
-         *out = (int16_t)swap_if_little16(tmp.u16);
+         *s = (int16_t)swap_if_little16(tmp.u16);
          break;
       case 4:
-         *out = (int32_t)swap_if_little32(tmp.u32);
+         *s = (int32_t)swap_if_little32(tmp.u32);
          break;
       case 8:
-         *out = (int64_t)swap_if_little64(tmp.u64);
+         *s = (int64_t)swap_if_little64(tmp.u64);
          break;
    }
    return 0;

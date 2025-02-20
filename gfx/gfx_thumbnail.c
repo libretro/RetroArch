@@ -35,7 +35,7 @@
 
 #include "../tasks/tasks_internal.h"
 
-#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  83.333333f
+#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
 
 /* Utility structure, sent as userdata when pushing
@@ -228,6 +228,47 @@ void gfx_thumbnail_cancel_pending_requests(void)
    p_gfx_thumb->list_id++;
 }
 
+/* Fetches the current thumbnail file path of the
+ * specified thumbnail 'type'.
+ * Returns true if path is valid. */
+static bool gfx_thumbnail_get_path(
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id,
+      const char **path)
+{
+   if (path_data && path)
+   {
+      switch (thumbnail_id)
+      {
+         case GFX_THUMBNAIL_RIGHT:
+            if (!string_is_empty(path_data->right_path))
+            {
+               *path          = path_data->right_path;
+               return true;
+            }
+            break;
+         case GFX_THUMBNAIL_LEFT:
+            if (!string_is_empty(path_data->left_path))
+            {
+               *path          = path_data->left_path;
+               return true;
+            }
+         case GFX_THUMBNAIL_ICON:
+            if (!string_is_empty(path_data->icon_path))
+            {
+               *path          = path_data->icon_path;
+               return true;
+            }
+            break;
+         default:
+            break;
+      }
+   }
+
+   return false;
+}
+
+
 /* Requests loading of the specified thumbnail
  * - If operation fails, 'thumbnail->status' will be set to
  *   GFX_THUMBNAIL_STATUS_MISSING
@@ -241,8 +282,11 @@ void gfx_thumbnail_cancel_pending_requests(void)
  *         on-demand thumbnail download support
  *         (an annoyance...) */
 void gfx_thumbnail_request(
-      gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id,
-      playlist_t *playlist, size_t idx, gfx_thumbnail_t *thumbnail,
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id,
+      playlist_t *playlist,
+      size_t idx,
+      gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold,
       bool network_on_demand_thumbnails)
 {
@@ -290,17 +334,10 @@ void gfx_thumbnail_request(
             else if (network_on_demand_thumbnails)
             {
                enum playlist_thumbnail_name_flags curr_flag;
-               const char *system                         = NULL;
-               const char *img_name                       = NULL;
-               static char last_img_name[NAME_MAX_LENGTH] = {0};
-               settings_t *settings                       = config_get_ptr();
+               static char last_img_name[PATH_MAX_LENGTH] = {0};
+               bool playlist_use_filename                 = config_get_ptr()->bools.playlist_use_filename;
                if (!playlist)
                   goto end;
-
-               /* Validate entry */
-               if (!gfx_thumbnail_get_img_name(path_data, &img_name, PLAYLIST_THUMBNAIL_FLAG_STD_NAME))
-                  goto end;
-
                /* Only trigger a thumbnail download if image
                 * name has changed since the last call of
                 * gfx_thumbnail_request()
@@ -313,32 +350,33 @@ void gfx_thumbnail_request(
                 *   checks required for this involve significant
                 *   overheads. We can avoid this entirely with
                 *   a simple string comparison) */
-               if (string_is_equal(img_name, last_img_name))
-                  goto end;
+               if ((!string_is_empty(path_data->content_img)))
+                  if (string_is_equal(path_data->content_img, last_img_name))
+                     goto end;
 
-               strlcpy(last_img_name, img_name, sizeof(last_img_name));
+               strlcpy(last_img_name, path_data->content_img, sizeof(last_img_name));
 
                /* Get system name */
-               if (!gfx_thumbnail_get_system(path_data, &system))
+               if (string_is_empty(path_data->system))
                   goto end;
 
                /* Since task_push_pl_entry_download will shift the flag, do not attempt if it is already
                 * at second to last option. */
                curr_flag = playlist_get_curr_thumbnail_name_flag(playlist,idx);
-               if (curr_flag & PLAYLIST_THUMBNAIL_FLAG_NONE || curr_flag & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+               if (   curr_flag & PLAYLIST_THUMBNAIL_FLAG_NONE
+                   || curr_flag & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
                   goto end;
                /* Do not try to fetch full names here, if it is not explicitly wanted */
-               if (!settings->bools.playlist_use_filename &&
-                   !playlist_thumbnail_match_with_filename(playlist) &&
-                   curr_flag == PLAYLIST_THUMBNAIL_FLAG_INVALID)
+               if (   !playlist_use_filename
+                   && !playlist_thumbnail_match_with_filename(playlist)
+                   && curr_flag == PLAYLIST_THUMBNAIL_FLAG_INVALID)
                     playlist_update_thumbnail_name_flag(playlist, idx, PLAYLIST_THUMBNAIL_FLAG_FULL_NAME);
 
                /* Trigger thumbnail download *
                 * Note: download will grab all 3 possible thumbnails, no matter
                 * what left/right thumbnails are set at the moment */
-               task_push_pl_entry_thumbnail_download(
-                     system, playlist, (unsigned)idx,
-                     false, true);
+               task_push_pl_entry_thumbnail_download(path_data->system, playlist,
+                     (unsigned)idx, false, true);
             }
 #endif
          }
@@ -846,6 +884,16 @@ void gfx_thumbnail_get_draw_dimensions(
 
       if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+   }
+
+   /* Final overwidth check */
+   if (*draw_width > width)
+   {
+      *draw_width  = (float)width;
+      *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+
+      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
+         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
    }
 
    /* Account for scale factor

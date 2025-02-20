@@ -68,20 +68,19 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
 /* Return port used */
-static int configureAudio(unsigned rate) {
-   int port;
+static int configureAudio(unsigned rate)
+{
 #if defined(VITA)
-   port         = sceAudioOutOpenPort(
+   return sceAudioOutOpenPort(
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
          rate, SCE_AUDIO_OUT_MODE_STEREO);
 #elif defined(ORBIS)
-   port         = sceAudioOutOpen(0xff,
+   return sceAudioOutOpen(0xff,
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
          rate, SCE_AUDIO_OUT_MODE_STEREO);
 #else
-   port = sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   return sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
 #endif
-   return port;
 }
 
 static void audioMainLoop(void *data)
@@ -203,11 +202,11 @@ static void psp_audio_free(void *data)
 
 }
 
-static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
+static ssize_t psp_audio_write(void *data, const void *s, size_t len)
 {
    psp_audio_t* psp     = (psp_audio_t*)data;
    uint16_t write_pos   = psp->write_pos;
-   uint16_t sampleCount = size / sizeof(uint32_t);
+   uint16_t sampleCount = len / sizeof(uint32_t);
 
    if (!psp->running)
       return -1;
@@ -215,35 +214,34 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    if (psp->nonblock)
    {
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
-               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
+               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
          return 0;
    }
 
    slock_lock(psp->cond_lock);
    while (AUDIO_BUFFER_SIZE - ((uint16_t)
-      (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
+      (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
       scond_wait(psp->cond, psp->cond_lock);
    slock_unlock(psp->cond_lock);
 
    slock_lock(psp->fifo_lock);
    if ((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
    {
-      memcpy(psp->buffer + write_pos, buf,
+      memcpy(psp->buffer + write_pos, s,
             (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*) buf +
+      memcpy(psp->buffer, (uint32_t*)s +
             (AUDIO_BUFFER_SIZE - write_pos),
             (write_pos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
    }
    else
-      memcpy(psp->buffer + write_pos, buf, size);
+      memcpy(psp->buffer + write_pos, s, len);
 
    write_pos      += sampleCount;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
    psp->write_pos  = write_pos;
 
    slock_unlock(psp->fifo_lock);
-   return size;
-
+   return len;
 }
 
 static bool psp_audio_alive(void *data)

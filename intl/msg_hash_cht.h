@@ -1923,10 +1923,6 @@ MSG_HASH(
    "插入黑幀"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "在每幀之間插入黑幀, 以降低亮度為代價, 透過模擬映像管螢幕掃描方式減少動態模糊。\n請勿與「垂直同步切換間隔」設定大於<1> 「著色器補幀」 「幀數延遲」 「準確同步執行幀率」同時使用。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
    "設定值必須與螢幕預設更新率相同, 在每幀之間插入黑幀以增強動態清晰度。\n請勿與「垂直同步切換間隔」設定大於<1> 「著色器補幀」 「幀數延遲」 「準確同步執行幀率」同時使用。\n不適用於非60Hz倍數的更新率, 例如144Hz、165Hz等。\n允許系統可變更新率開啟, 但不是那個設定。\n 如果發現任何影像殘留, 請在120hz測試後關閉此選項, 至於更高的更新率可調整下方暗幀設定。"
    )
@@ -1997,10 +1993,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
    "著色器補幀"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "設定值必須與螢幕預設更新率相同, 在每幀之間插入著色器補幀, 提高每秒顯示影格數符合螢幕更新率。\n請勿與「垂直同步切換間隔」設定大於<1> 「插入黑幀」 「幀數延遲」 「準確同步執行幀率」同時使用。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
@@ -2490,10 +2482,6 @@ MSG_HASH(
    "整數縮放方式"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "設定可以使用高度或同時使用高度和寬度, 高度加半高或寬度加半寬適用於高解析度。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
    "整數縮放模式"
    )
@@ -2592,11 +2580,11 @@ MSG_HASH(
    "影像垂直位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    "設定影像水平位置(如果影像寬於螢幕), 設定<0.0>表示最左邊<1.0>表示最右邊。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    "設定影像垂直位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
    )
 #if defined(RARCH_MOBILE)
@@ -2617,11 +2605,11 @@ MSG_HASH(
    "影像垂直位置"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    "設定影像水平位置(如果影像寬於螢幕), 設定<0.0>表示最左邊<1.0>表示最右邊。"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y, 
+   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "設定影像垂直位置(如果影像高於螢幕), 設定<0.0>表示最頂端<1.0>表示最底部。"
    )
 #endif
@@ -2869,16 +2857,8 @@ MSG_HASH(
    "靜音模式下靜音所有音源"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "快轉時靜音"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    "開啟快轉模式時音量自動設定為靜音。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "快轉時變調"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
@@ -2986,10 +2966,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    "音訊延遲 (毫秒)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "設定音訊訊號延遲(毫秒), 音效驅動程式不支援時設定無效。"
    )
 
 #ifdef HAVE_MICROPHONE
@@ -3207,26 +3183,6 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
    "調整音訊串流的音量。"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "狀態 : 未使用"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "狀態 : 已停止"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "狀態 : 播放中"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "狀態 : 播放中 (循環播放)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "狀態 : 播放中 (順序播放)"
-   )
 
 /* Settings > Audio > Menu Sounds */
 
@@ -3292,11 +3248,11 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "依裝置建立預設控制器"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    "開啟時在快捷選單「控制器 (核心預設)」選項中, 儲存為預設控制器時, 依裝置名稱建立資料夾儲存和載入。"
-   )   
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    "控制器隨插即用"
@@ -3691,10 +3647,6 @@ MSG_HASH(
    "快捷選單"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "執行項目時選單的開關。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    "結束應用程式 (控制器組合鍵)"
    )
@@ -3769,10 +3721,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
    "暫停"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "暫停模式和繼續遊戲的切換開關。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
@@ -4447,10 +4395,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
    "忽略其他支援"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "開啟時執行核心忽略儲存狀態功能, 可用於開啟倒帶、超前執行和搶占幀數等相關功能。"
-   )
 #ifndef HAVE_DYNAMIC
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
@@ -4692,10 +4636,6 @@ MSG_HASH(
    "自動儲存即時存檔"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "「關閉」和「結束復古電玩」時, 自動儲存即時存檔, 儲存的編號為自動(.state.auto)。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    "自動載入即時存檔"
    )
@@ -4874,10 +4814,6 @@ MSG_HASH(
    "在檔案瀏覽器中只顯示支援的檔案。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "使用內建的媒體播放器"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
    "只顯示目前核心支援格式"
    )
@@ -4888,6 +4824,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
    "記住本次執行「開始資料夾」最後載入的檔案位置。 注意: 重新啟動後會還原為預設位置。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   "使用內建的媒體播放器"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   "使用內建的圖像瀏覽器"
    )
 
 /* Settings > Frame Throttle */
@@ -5758,10 +5702,6 @@ MSG_HASH(
    "設定字體大小"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "設定通知訊息使用的字體大小(點值)。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    "通知位置 (水平)"
    )
@@ -5905,10 +5845,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    "當開啟選單時暫停核心"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "當開啟快捷選單操作時暫停執行中的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -6266,10 +6202,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
    "顯示「列表」"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "顯示一般列表。 (Ozone和XMB主題需要重新啟動)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
@@ -6748,14 +6680,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    "顯示「使用者」"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "列表圖示"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "設定列表圖示顯示的類型。"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -7720,10 +7644,6 @@ MSG_HASH(
    "開啟時「匯入遊戲」忽略支援核心的資訊, 允許未安裝核心時掃描檔案並建立列表。"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "掃描校驗避免重複"
-   )
-MSG_HASH(
    MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
    "ISO映像檔有時會使用重複產品序號, 尤其是PSP和PSN的作品, 僅依靠產品序號掃描檔案, 可能會導致將項目加入到錯誤的系統中。\n開啟時增加了循環冗餘校驗(CRC), 會嚴重降低掃描速度, 但可能會更準確。"
    )
@@ -8242,10 +8162,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
    "Steam個人狀態格式"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "設定分享執行中相關的訊息。"
    )
 
 MSG_HASH(
@@ -8840,10 +8756,6 @@ MSG_HASH(
    "繼續"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "繼續執行。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
    "重開"
    )
@@ -8854,10 +8766,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
    "關閉"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "關閉目前執行的項目。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -8992,16 +8900,8 @@ MSG_HASH(
    "核心選項"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "變更核心相關的設定。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
    "控制器 (核心預設)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "變更遊戲控制器相關的設定。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
@@ -9631,10 +9531,6 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   "著色器設定變更時, 自動應用變化, 儲存配置檔到儲存空間。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
    "著色器設定變更時, 自動應用變化, 儲存配置檔到儲存空間。"
    )
 MSG_HASH(
@@ -10875,10 +10771,6 @@ MSG_HASH(
    "透明度"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "開啟時選單可顯示執行的內容。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
    "陰影效果"
    )
@@ -11559,6 +11451,14 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR,
    "三原色"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   "暗灰色"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   "亮灰色"
+   )
 
 /* Ozone: Settings > User Interface > Appearance */
 
@@ -11586,6 +11486,31 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
    "截斷列表名稱開啟時, 連接號之後的文字依字母順序重新排序。"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   "次要的預覽縮圖"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   "設定次要的預覽縮圖顯示類型, 開啟時覆蓋列表資訊欄並且支援按鍵切換。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   "套用滾動文字到列表資訊欄"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   "開啟時列表的資訊欄每個項目只占用一行, 超出欄位的文字使用滾動效果顯示, 關閉時則自動換行顯示。"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "預覽縮圖欄位大小"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   "設定預覽縮圖的欄位大小。"
+   )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
    "自訂選單色彩主題"
@@ -11627,10 +11552,6 @@ MSG_HASH(
    "德古拉紫"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
-   "硒元素灰"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
    "暗青色"
    )
@@ -11651,29 +11572,10 @@ MSG_HASH(
    "紫雨紫"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "次要的預覽縮圖"
+   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM,
+   "硒元素灰"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "設定次要的預覽縮圖顯示類型, 開啟時覆蓋列表資訊欄並且支援按鍵切換。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "套用滾動文字到列表資訊欄"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "開啟時列表的資訊欄每個項目只占用一行, 超出欄位的文字使用滾動效果顯示, 關閉時則自動換行顯示。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "預覽縮圖欄位大小"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "設定預覽縮圖的欄位大小。"
-   )
+
 
 /* MaterialUI: Settings > User Interface > Appearance */
 
@@ -12651,10 +12553,6 @@ MSG_HASH(
    "鍵盤"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "使用內建的圖像瀏覽器"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
    "最大交換鏈結圖像"
    )
@@ -12788,14 +12686,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FROM_PLAYLIST,
    "從列表中選擇"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME,
-   "繼續"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME,
-   "繼續執行。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_VIEW_MATCHES,
@@ -13394,10 +13284,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUTODETECT,
    "自動偵測"
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "自動載入即時存檔從"
    )
 MSG_HASH(
    MSG_CAPABILITIES,
@@ -14484,6 +14370,10 @@ MSG_HASH(
    "虛擬光碟機托盤無法進入。"
    )
 MSG_HASH(
+   MSG_AUTOLOADING_SAVESTATE_FROM,
+   "自動載入即時存檔從"
+   )
+MSG_HASH(
    MSG_AUTOLOADING_SAVESTATE_FAILED,
    "無法自動載入即時存檔, 位置: %s。"
    )
@@ -15546,10 +15436,6 @@ MSG_HASH(
    "顯示文字"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "在下螢幕上顯示按鍵說明, 不包括儲存即時存檔的日期。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    "字體顏色 (紅)"
    )
@@ -15604,3 +15490,10 @@ MSG_HASH(
    MSG_IOS_TOUCH_MOUSE_DISABLED,
    "觸控滑鼠已關閉"
    )
+#ifdef HAVE_GAME_AI
+
+
+
+
+
+#endif

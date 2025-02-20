@@ -82,9 +82,7 @@ static int action_start_remap_file_info(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st            = menu_state_get_ptr();
-   settings_t *settings                  = config_get_ptr();
-   const char *directory_input_remapping = settings ?
-         settings->paths.directory_input_remapping : NULL;
+   const char *directory_input_remapping = config_get_ptr()->paths.directory_input_remapping;
    rarch_system_info_t *sys_info         = &runloop_state_get_ptr()->system;
 
    input_remapping_deinit(false);
@@ -487,7 +485,6 @@ static int action_start_state_slot(
       unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
-   size_t selection           = menu_st->selection_ptr;
    settings_t *settings       = config_get_ptr();
 
    settings->ints.state_slot  = 0;
@@ -496,7 +493,7 @@ static int action_start_state_slot(
    {
       if (menu_st->driver_ctx->update_savestate_thumbnail_path)
          menu_st->driver_ctx->update_savestate_thumbnail_path(
-               menu_st->userdata, (unsigned)selection);
+               menu_st->userdata, (unsigned)menu_st->selection_ptr);
       if (menu_st->driver_ctx->update_savestate_thumbnail_image)
          menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
    }
@@ -602,6 +599,7 @@ static int action_start_video_resolution(
 
    if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
    {
+      size_t _len;
       char msg[128];
       msg[0] = '\0';
 
@@ -611,19 +609,20 @@ static int action_start_video_resolution(
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
+         _len = strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
       else
 #endif
       {
          if (!string_is_empty(desc))
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC),
+            _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC),
                width, height, desc);
          else
-            snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC),
+            _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC),
                width, height);
       }
 
-      runloop_msg_queue_push(msg, 1, 100, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
 #endif
 
@@ -712,15 +711,13 @@ static int action_start_core_lock(
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_UNLOCK_FAILED), sizeof(msg));
 
       if (!string_is_empty(core_name))
-         strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+         _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
       /* Generate log + notification */
       RARCH_ERR("%s\n", msg);
 
-      runloop_msg_queue_push(
-         msg,
-         1, 100, true,
-         NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
       ret = -1;
    }
@@ -772,15 +769,13 @@ static int action_start_core_set_standalone_exempt(
                sizeof(msg));
 
          if (!string_is_empty(core_name))
-            strlcpy(msg + _len, core_name, sizeof(msg) - _len);
+            _len += strlcpy(msg + _len, core_name, sizeof(msg) - _len);
 
          /* Generate log + notification */
          RARCH_ERR("%s\n", msg);
 
-         runloop_msg_queue_push(
-               msg,
-               1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
          return -1;
       }

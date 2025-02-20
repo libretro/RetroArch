@@ -17,20 +17,18 @@
 
 #include "cheevos.h"
 
-#include "../configuration.h"
-#include "../file_path_special.h"
-#include "../paths.h"
-#include "../retroarch.h"
-#include "../version.h"
-
 #include <features/features_cpu.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "../frontend/frontend_driver.h"
-#include "../network/net_http_special.h"
 #include "../tasks/tasks_internal.h"
+
+#include "../file_path_special.h"
+#include "../paths.h"
+#include "../runloop.h"
+#include "../version.h"
 
 #ifdef HAVE_PRESENCE
 #include "../network/presence.h"
@@ -156,7 +154,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
    else
       ++start;
 
-   do
+   for (;;)
    {
       next = strchr(start, '&');
 
@@ -176,7 +174,7 @@ static void rcheevos_filter_url_param(char* url, char* param)
          return;
 
       start = next + 1;
-   } while (1);
+   }
 }
 #endif
 #endif
@@ -290,20 +288,20 @@ static void rcheevos_client_http_task_save_callback(retro_task_t* task,
 void rcheevos_client_http_load_response(const rc_api_request_t* request,
    rc_client_server_callback_t callback, void* callback_data)
 {
-   size_t size = 0;
    char* contents;
-   FILE* file = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
+   size_t _len = 0;
+   FILE* file  = fopen(CHEEVOS_JSON_OVERRIDE, "rb");
 
    fseek(file, 0, SEEK_END);
-   size = ftell(file);
+   _len = ftell(file);
    fseek(file, 0, SEEK_SET);
 
-   contents = (char*)malloc(size + 1);
-   fread((void*)contents, 1, size, file);
+   contents = (char*)malloc(_len + 1);
+   fread((void*)contents, 1, _len, file);
    fclose(file);
 
-   contents[size] = 0;
-   CHEEVOS_LOG(RCHEEVOS_TAG "Loaded game info. Read %u bytes to %s\n", size, CHEEVOS_JSON_OVERRIDE);
+   contents[_len] = 0;
+   CHEEVOS_LOG(RCHEEVOS_TAG "Loaded game info. Read %u bytes to %s\n", _len, CHEEVOS_JSON_OVERRIDE);
 
    callback(contents, 200, callback_data);
 }
@@ -599,25 +597,13 @@ void rcheevos_client_download_game_badge(const rc_client_game_t* game)
 
 void rcheevos_client_download_achievement_badges(rc_client_t* client)
 {
-   rc_client_download_queue_t* queue;
    uint32_t i;
+   rc_client_download_queue_t *queue = (rc_client_download_queue_t*)
+      calloc(1, sizeof(*queue));
 
-#if !defined(HAVE_GFX_WIDGETS) /* we always want badges if widgets are enabled */
-   settings_t* settings = config_get_ptr();
-   /* User has explicitly disabled badges */
-   if (!settings->bools.cheevos_badges_enable)
-      return;
-
-   /* badges are only needed for xmb and ozone menus */
-   if (!string_is_equal(settings->arrays.menu_driver, "xmb") &&
-      !string_is_equal(settings->arrays.menu_driver, "ozone"))
-      return;
-#endif /* !defined(HAVE_GFX_WIDGETS) */
-
-   queue = (rc_client_download_queue_t*)calloc(1, sizeof(*queue));
    queue->client = client;
-   queue->game = rc_client_get_game_info(client);
-   queue->list = rc_client_create_achievement_list(client,
+   queue->game   = rc_client_get_game_info(client);
+   queue->list   = rc_client_create_achievement_list(client,
       RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
       RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS);
    queue->outstanding_requests = RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS;

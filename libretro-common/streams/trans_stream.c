@@ -28,8 +28,8 @@
  *                                for the new stream data to be saved
  * @in                          : input data
  * @in_size                     : input size
- * @out                         : output data
- * @out_size                    : output size
+ * @s                           : output data
+ * @len                         : output size
  * @error                       : (optional) output for error code
  *
  * Perform a full transcoding from a source to a destination.
@@ -37,7 +37,7 @@
 bool trans_stream_trans_full(
     struct trans_stream_backend *backend, void **data,
     const uint8_t *in, uint32_t in_size,
-    uint8_t *out, uint32_t out_size,
+    uint8_t *s, uint32_t len,
     enum trans_stream_error *error)
 {
    void *rdata;
@@ -57,7 +57,7 @@ bool trans_stream_trans_full(
    }
 
    backend->set_in(rdata, in, in_size);
-   backend->set_out(rdata, out, out_size);
+   backend->set_out(rdata, s, len);
    ret = backend->trans(rdata, true, &rd, &wn, error);
 
    if (data)

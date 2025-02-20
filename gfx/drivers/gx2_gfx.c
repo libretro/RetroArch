@@ -923,29 +923,27 @@ static void gx2_set_projection(wiiu_video_t *wiiu)
 
 static void gx2_update_viewport(wiiu_video_t *wiiu)
 {
-   unsigned viewport_width         = wiiu->color_buffer.surface.width;
-   unsigned viewport_height        = wiiu->color_buffer.surface.height;
+   unsigned vp_width               = wiiu->color_buffer.surface.width;
+   unsigned vp_height              = wiiu->color_buffer.surface.height;
    settings_t *settings            = config_get_ptr();
    bool video_scale_integer        = settings->bools.video_scale_integer;
 
    if (video_scale_integer)
    {
       video_viewport_get_scaled_integer(&wiiu->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(), wiiu->keep_aspect, true);
-      viewport_width  = wiiu->vp.width;
-      viewport_height = wiiu->vp.height;
+      vp_width  = wiiu->vp.width;
+      vp_height = wiiu->vp.height;
    }
    else if (wiiu->keep_aspect)
-   {
-      video_viewport_get_scaled_aspect(&wiiu->vp, viewport_width, viewport_height, true);
-   }
+      video_viewport_get_scaled_aspect(&wiiu->vp, vp_width, vp_height, true);
    else
    {
       wiiu->vp.x      = 0;
       wiiu->vp.y      = 0;
-      wiiu->vp.width  = viewport_width;
-      wiiu->vp.height = viewport_height;
+      wiiu->vp.width  = vp_width;
+      wiiu->vp.height = vp_height;
    }
 
    gx2_set_projection(wiiu);
@@ -1960,23 +1958,18 @@ static bool gx2_frame(void *data, const void *frame,
    {
       unsigned i;
 #ifdef HAVE_REWIND
-      int32_t frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+      int32_t frame_direction   = state_manager_frame_is_reversed() ? -1 : 1;
 #else
-      int32_t frame_direction = 1;
+      int32_t frame_direction   = 1;
 #endif
-
-      uint32_t frame_time_delta = video_driver_get_frame_time_delta_usec();
-
-      float original_fps = video_driver_get_original_fps();
-
-      uint32_t rotation       = retroarch_get_rotation();
-
-      float core_aspect = video_driver_get_core_aspect();
-
+      uint32_t frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+      float original_fps        = video_driver_get_original_fps();
+      uint32_t rotation         = retroarch_get_rotation();
+      float core_aspect         = video_driver_get_core_aspect();
       /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-      float core_aspect_rot = core_aspect;
+      float core_aspect_rot     = core_aspect;
       if (rotation == 1 || rotation == 3)
-         core_aspect_rot = 1/core_aspect;
+         core_aspect_rot        = 1 / core_aspect;
 
       for (i = 0; i < wiiu->shader_preset->passes; i++)
       {
@@ -1988,7 +1981,8 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
-                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, original_fps);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,
+                  frame_time_delta, original_fps);
 
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
@@ -2001,7 +1995,8 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
-                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,frame_time_delta, original_fps);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,
+                  frame_time_delta, original_fps);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }

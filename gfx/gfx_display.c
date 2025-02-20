@@ -289,7 +289,9 @@ float gfx_display_get_dpi_scale(
             menu_scale_factor        = 1.0f;
          else
 #endif
+#ifdef HAVE_GFX_WIDGETS
             menu_scale_factor        = settings->floats.menu_scale_factor;
+#endif
       }
    }
 #endif
@@ -1132,7 +1134,6 @@ bool gfx_display_reset_icon_texture(
       uintptr_t *item, enum texture_filter_type filter_type,
       unsigned *width, unsigned *height)
 {
-   char texpath[PATH_MAX_LENGTH];
    struct texture_image ti;
 
    ti.width                      = 0;
@@ -1142,15 +1143,11 @@ bool gfx_display_reset_icon_texture(
 
    if (string_is_empty(texture_path))
       return false;
-
-   strlcpy(texpath, texture_path, sizeof(texpath));
-
-   if (!image_texture_load(&ti, texpath))
+   if (!image_texture_load(&ti, texture_path))
       return false;
 
    if (width)
       *width = ti.width;
-
    if (height)
       *height = ti.height;
 

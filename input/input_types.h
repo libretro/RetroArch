@@ -75,8 +75,6 @@ struct retro_keybind
    uint32_t joyaxis;
    /* Default joy axis binding value for resetting bind to default. */
    uint32_t def_joyaxis;
-   /* Used by input_{push,pop}_analog_dpad(). */
-   uint32_t orig_joyaxis;
 
    enum msg_hash_enums enum_idx;
 

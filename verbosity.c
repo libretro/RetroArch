@@ -331,15 +331,15 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 }
 
-void RARCH_LOG_BUFFER(uint8_t *data, size_t size)
+void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
    unsigned i, offset;
-   int padding     = size % 16;
+   int padding     = len % 16;
    uint8_t buf[16] = {0};
 
-   RARCH_LOG("== %d-byte buffer ==================\n", (int)size);
+   RARCH_LOG("== %d-byte buffer ==================\n", (int)len);
 
-   for (i = 0, offset = 0; i < size; i++)
+   for (i = 0, offset = 0; i < len; i++)
    {
       buf[offset] = data[i];
       offset++;
@@ -438,12 +438,11 @@ void RARCH_ERR(const char *fmt, ...)
 }
 #endif
 
-void rarch_log_file_set_override(const char *path)
+size_t rarch_log_file_set_override(const char *path)
 {
    verbosity_state_t *g_verbosity = &main_verbosity_st;
-
    g_verbosity->override_active   = true;
-   strlcpy(g_verbosity->override_path, path,
+   return strlcpy(g_verbosity->override_path, path,
          sizeof(g_verbosity->override_path));
 }
 
@@ -460,7 +459,6 @@ void rarch_log_file_init(
    static char timestamped_log_file_name[64] = {0};
    bool logging_to_file                      = g_verbosity->initialized;
 
-
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
     * log files, since user may decide to switch at any moment...) */
@@ -470,7 +468,9 @@ void rarch_log_file_init(
       time_t cur_time = time(NULL);
 
       rtime_localtime(&cur_time, &tm_);
-      strftime(timestamped_log_file_name, sizeof(timestamped_log_file_name), "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
+      strftime(timestamped_log_file_name,
+            sizeof(timestamped_log_file_name),
+            "retroarch__%Y_%m_%d__%H_%M_%S.log", &tm_);
    }
 
    /* If nothing has changed, do nothing */
@@ -501,17 +501,15 @@ void rarch_log_file_init(
    {
       /* Get log directory */
       const char *override_path        = g_verbosity->override_path;
-      const char *slash                = strrchr(override_path, '/');
-      const char *backslash            = strrchr(override_path, '\\');
-      const char *last_slash           = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+      const char *last_slash           = find_last_slash(override_path);
 
       if (last_slash)
       {
          char tmp_buf[PATH_MAX_LENGTH] = {0};
-         size_t path_length            = last_slash + 1 - override_path;
+         size_t _len                   = last_slash + 1 - override_path;
 
-         if ((path_length > 1) && (path_length < PATH_MAX_LENGTH))
-            strlcpy(tmp_buf, override_path, path_length * sizeof(char));
+         if ((_len > 1) && (_len < PATH_MAX_LENGTH))
+            strlcpy(tmp_buf, override_path, _len * sizeof(char));
          strlcpy(log_directory, tmp_buf, sizeof(log_directory));
       }
 
@@ -538,18 +536,14 @@ void rarch_log_file_init(
    if (!string_is_empty(log_file_path))
    {
       /* Create log directory, if required */
-      if (!string_is_empty(log_directory))
+      if (     !string_is_empty(log_directory)
+            && !path_is_directory(log_directory)
+            && !path_mkdir(log_directory))
       {
-         if (!path_is_directory(log_directory))
-         {
-            if (!path_mkdir(log_directory))
-            {
-               /* Re-enable console logging and output error message */
-               retro_main_log_file_init(NULL, false);
-               RARCH_ERR("Failed to create system event log directory: %s\n", log_directory);
-               return;
-            }
-         }
+         /* Re-enable console logging and output error message */
+         retro_main_log_file_init(NULL, false);
+         RARCH_ERR("Failed to create system event log directory: %s\n", log_directory);
+         return;
       }
 
       /* When RetroArch is launched, log file is overwritten.

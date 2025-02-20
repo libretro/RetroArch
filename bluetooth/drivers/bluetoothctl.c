@@ -40,6 +40,7 @@ static void bluetoothctl_free(void *data)
 static void bluetoothctl_scan(void *data)
 {
    char line[512];
+   const char *msg;
    union string_list_elem_attr attr;
    FILE *dev_file                   = NULL;
    bluetoothctl_t *btctl            = (bluetoothctl_t*) data;
@@ -53,7 +54,9 @@ static void bluetoothctl_scan(void *data)
 
    pclose(popen("bluetoothctl --timeout 10 scan on", "r"));
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_BLUETOOTH_SCAN_COMPLETE),
+   msg = msg_hash_to_str(MSG_BLUETOOTH_SCAN_COMPLETE);
+
+   runloop_msg_queue_push(msg, strlen(msg),
          1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
          MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -61,9 +64,9 @@ static void bluetoothctl_scan(void *data)
 
    while (fgets(line, 512, dev_file))
    {
-      size_t len = strlen(line);
-      if (len > 0 && line[len-1] == '\n')
-         line[--len] = '\0';
+      size_t _len = strlen(line);
+      if (_len > 0 && line[_len - 1] == '\n')
+         line[--_len] = '\0';
 
       string_list_append(btctl->lines, line, attr);
    }
@@ -199,6 +202,7 @@ static bool bluetoothctl_connect_device(void *data, unsigned idx)
 static bool bluetoothctl_remove_device(void *data, unsigned idx)
 {
    unsigned i;
+   const char *msg                     = NULL;
    bluetoothctl_t *btctl               = (bluetoothctl_t*) data;
    char device[18]                     = {0};
    const char *line                    = btctl->lines->elems[idx].data;
@@ -208,8 +212,7 @@ static bool bluetoothctl_remove_device(void *data, unsigned idx)
     * $ bluetoothctl devices
     *     'Device (mac address) (device name)'
     */
-   list                                = string_split(line, " ");
-   if (!list)
+   if (!(list = string_split(line, " ")))
       return false;
 
    if (list->size == 0)
@@ -222,12 +225,20 @@ static bool bluetoothctl_remove_device(void *data, unsigned idx)
    string_list_free(list);
 
    snprintf(btctl->command, sizeof(btctl->command), "\
-         echo -e \"disconnect %s\\nremove %s\\n\" | bluetoothctl",
-         device, device);
+         bluetoothctl -- disconnect %s",
+         device);
 
    pclose(popen(btctl->command, "r"));
 
-   runloop_msg_queue_push(msg_hash_to_str(MSG_BLUETOOTH_PAIRING_REMOVED),
+   snprintf(btctl->command, sizeof(btctl->command), "\
+         bluetoothctl -- remove %s",
+         device);
+
+   pclose(popen(btctl->command, "r"));
+
+   msg = msg_hash_to_str(MSG_BLUETOOTH_PAIRING_REMOVED);
+
+   runloop_msg_queue_push(msg, strlen(msg),
          1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT,
          MESSAGE_QUEUE_CATEGORY_INFO);
 

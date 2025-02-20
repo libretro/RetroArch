@@ -28,23 +28,17 @@
 #include "glslang_util.h"
 #include "../../verbosity.h"
 
-static void get_include_file(
-      const char *line, char *include_file, size_t len)
+static char *slang_get_include_file(const char *line)
 {
    char *end   = NULL;
    char *start = (char*)strchr(line, '\"');
-
    if (!start)
-      return;
-
+      return NULL;
    start++;
-   end = (char*)strchr(start, '\"');
-
-   if (!end)
-      return;
-
+   if (!(end = (char*)strchr(start, '\"')))
+      return NULL;
    *end = '\0';
-   strlcpy(include_file, start, len);
+   return start;
 }
 
 bool slang_texture_semantic_is_array(enum slang_texture_semantic sem)
@@ -116,7 +110,7 @@ bool glslang_read_shader_file(const char *path,
    if (string_is_empty(path) || !output)
       return false;
 
-   basename      = path_basename_nocompression(path);
+   basename = path_basename_nocompression(path);
 
    if (string_is_empty(basename))
       return false;
@@ -199,15 +193,8 @@ bool glslang_read_shader_file(const char *path,
       bool include_optional = !strncmp("#pragma include_optional ", line, STRLEN_CONST("#pragma include_optional "));
       if ( !strncmp("#include ", line, STRLEN_CONST("#include ")) || include_optional )
       {
-
-         char include_file[PATH_MAX_LENGTH];
          char include_path[PATH_MAX_LENGTH];
-
-         include_file[0] = '\0';
-         include_path[0] = '\0';
-
-         /* Build include file path */
-         get_include_file(line, include_file, sizeof(include_file));
+         char *include_file = slang_get_include_file(line);
 
          if (string_is_empty(include_file))
          {
@@ -215,11 +202,13 @@ bool glslang_read_shader_file(const char *path,
             goto error;
          }
 
+         include_path[0] = '\0';
          fill_pathname_resolve_relative(
                include_path, path, include_file, sizeof(include_path));
 
          /* Parse include file */
-         if (!glslang_read_shader_file(include_path, output, false, include_optional)) {
+         if (!glslang_read_shader_file(include_path, output, false, include_optional))
+         {
             if (include_optional)
                RARCH_LOG("[slang]: Optional include not found \"%s\".\n", include_path);
             else
@@ -233,8 +222,8 @@ bool glslang_read_shader_file(const char *path,
          if (!string_list_append(output, tmp, attr))
             goto error;
       }
-      else if (!strncmp("#endif", line, STRLEN_CONST("#endif")) ||
-               !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
+      else if (   !strncmp("#endif",  line, STRLEN_CONST("#endif"))
+               || !strncmp("#pragma", line, STRLEN_CONST("#pragma")))
       {
          /* #line seems to be ignored if preprocessor tests fail,
           * so we should reapply #line after each #endif.

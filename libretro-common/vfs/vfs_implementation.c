@@ -443,7 +443,17 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
       {
          if (!(fp = (FILE*)fopen_utf8(path, mode_str)))
+         {
+#ifdef IOS
+            if (errno == EEXIST)
+            {
+               retro_vfs_file_remove_impl(path);
+               fp = (FILE*)fopen_utf8(path, mode_str);
+            }
+            if (!fp)
+#endif
             goto error;
+         }
 
          stream->fp  = fp;
       }
@@ -607,18 +617,18 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t length)
+int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t len)
 {
 #ifdef _WIN32
-   if (stream && _chsize(_fileno(stream->fp), length) == 0)
+   if (stream && _chsize(_fileno(stream->fp), len) == 0)
    {
-	   stream->size = length;
+	   stream->size = len;
 	   return 0;
    }
 #elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && (!defined(SWITCH) || defined(HAVE_LIBNX))
-   if (stream && ftruncate(fileno(stream->fp), (off_t)length) == 0)
+   if (stream && ftruncate(fileno(stream->fp), (off_t)len) == 0)
    {
-      stream->size = length;
+      stream->size = len;
       return 0;
    }
 #endif
@@ -853,9 +863,9 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       SceIoStat stat_buf;
       int dir_ret;
       char *tmp                 = strdup(path);
-      size_t len                = strlen(tmp);
-      if (tmp[len-1] == '/')
-         tmp[len-1]             = '\0';
+      size_t _len               = strlen(tmp);
+      if (tmp[_len-1] == '/')
+          tmp[_len-1]           = '\0';
 
       dir_ret                   = sceIoGetstat(tmp, &stat_buf);
       free(tmp);
@@ -912,16 +922,16 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       /* On GEKKO platforms, paths cannot have
        * trailing slashes - we must therefore
        * remove them */
-      size_t len;
+      size_t _len;
       char *path_buf = NULL;
       struct stat stat_buf;
 
       if (!(path_buf = strdup(path)))
          return 0;
 
-      if ((len = strlen(path_buf)) > 0)
-         if (path_buf[len - 1] == '/')
-            path_buf[len - 1] = '\0';
+      if ((_len = strlen(path_buf)) > 0)
+         if (path_buf[_len - 1] == '/')
+             path_buf[_len - 1] = '\0';
 
       if (stat(path_buf, &stat_buf) < 0)
       {
@@ -930,7 +940,7 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
       }
 
       free(path_buf);
-      
+
       if (size)
          *size = (int32_t)stat_buf.st_size;
 
@@ -997,11 +1007,11 @@ int retro_vfs_mkdir_impl(const char *dir)
 
       if (dir_buf)
       {
-         size_t len = strlen(dir_buf);
+         size_t _len = strlen(dir_buf);
 
-         if (len > 0)
-            if (dir_buf[len - 1] == '/')
-               dir_buf[len - 1] = '\0';
+         if (_len > 0)
+            if (dir_buf[_len - 1] == '/')
+                dir_buf[_len - 1] = '\0';
 
          ret = mkdir(dir_buf, 0750);
 
@@ -1064,7 +1074,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 {
 #if defined(_WIN32)
    char path_buf[1024];
-   size_t copied      = 0;
+   size_t _len;
 #if defined(LEGACY_WIN32)
    char *path_local   = NULL;
 #else
@@ -1085,25 +1095,21 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    rdir->orig_path       = strdup(name);
 
 #if defined(_WIN32)
-   copied                = strlcpy(path_buf, name, sizeof(path_buf));
-
+   _len = strlcpy(path_buf, name, sizeof(path_buf));
    /* Non-NT platforms don't like extra slashes in the path */
-   if (path_buf[copied - 1] != '\\')
-      path_buf [copied++]  = '\\';
+   if (path_buf[_len - 1] != '\\')
+      path_buf [_len++]    = '\\';
 
-   path_buf[copied  ]      = '*';
-   path_buf[copied+1]      = '\0';
-
+   path_buf[_len    ]      = '*';
+   path_buf[_len + 1]      = '\0';
 #if defined(LEGACY_WIN32)
    path_local              = utf8_to_local_string_alloc(path_buf);
    rdir->directory         = FindFirstFile(path_local, &rdir->entry);
-
    if (path_local)
       free(path_local);
 #else
    path_wide               = utf8_to_utf16_string_alloc(path_buf);
    rdir->directory         = FindFirstFileW(path_wide, &rdir->entry);
-
    if (path_wide)
       free(path_wide);
 #endif

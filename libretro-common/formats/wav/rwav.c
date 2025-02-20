@@ -46,11 +46,11 @@ struct rwav_iterator
    int step;
 };
 
-void rwav_init(rwav_iterator_t* iter, rwav_t* out, const void* buf, size_t size)
+void rwav_init(rwav_iterator_t* iter, rwav_t* out, const void *s, size_t len)
 {
    iter->out    = out;
-   iter->data   = (const uint8_t*)buf;
-   iter->size   = size;
+   iter->data   = (const uint8_t*)s;
+   iter->size   = len;
    iter->step   = ITER_BEGIN;
 
    out->samples = NULL;
@@ -159,7 +159,7 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
    return RWAV_ITERATE_ERROR;
 }
 
-enum rwav_state rwav_load(rwav_t* out, const void* buf, size_t size)
+enum rwav_state rwav_load(rwav_t* out, const void *s, size_t len)
 {
    enum rwav_state res;
    rwav_iterator_t iter;
@@ -171,7 +171,7 @@ enum rwav_state rwav_load(rwav_t* out, const void* buf, size_t size)
    iter.j               = 0;
    iter.step            = 0;
 
-   rwav_init(&iter, out, buf, size);
+   rwav_init(&iter, out, s, len);
 
    do
    {

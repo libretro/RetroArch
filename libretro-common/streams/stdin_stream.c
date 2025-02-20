@@ -39,13 +39,9 @@
 #include <streams/stdin_stream.h>
 
 #if (defined(_WIN32) && defined(_XBOX)) || defined(__WINRT__) || !defined(__PSL1GHT__) && defined(__PS3__)
-size_t read_stdin(char *buf, size_t size)
-{
-   /* Not implemented. */
-   return 0;
-}
+size_t read_stdin(char *s, size_t len) { return 0; } /* not implemented */
 #elif defined(_WIN32)
-size_t read_stdin(char *buf, size_t size)
+size_t read_stdin(char *s, size_t len)
 {
    DWORD i;
    DWORD has_read = 0;
@@ -90,7 +86,7 @@ size_t read_stdin(char *buf, size_t size)
          {
             has_key = true;
             echo    = true;
-            avail   = size;
+            avail   = len;
             break;
          }
       }
@@ -105,15 +101,15 @@ size_t read_stdin(char *buf, size_t size)
    if (!avail)
       return 0;
 
-   if (avail > size)
-      avail = size;
+   if (avail > len)
+      avail = len;
 
-   if (!ReadFile(hnd, buf, avail, &has_read, NULL))
+   if (!ReadFile(hnd, s, avail, &has_read, NULL))
       return 0;
 
    for (i = 0; i < has_read; i++)
-      if (buf[i] == '\r')
-         buf[i] = '\n';
+      if (s[i] == '\r')
+         s[i] = '\n';
 
    /* Console won't echo for us while in non-line mode,
     * so do it manually ... */
@@ -123,29 +119,24 @@ size_t read_stdin(char *buf, size_t size)
       if (hnd_out != INVALID_HANDLE_VALUE)
       {
          DWORD has_written;
-         WriteConsole(hnd_out, buf, has_read, &has_written, NULL);
+         WriteConsole(hnd_out, s, has_read, &has_written, NULL);
       }
    }
-
    return has_read;
 }
 #else
-size_t read_stdin(char *buf, size_t size)
+size_t read_stdin(char *s, size_t len)
 {
    size_t has_read = 0;
-
-   while (size)
+   while (len)
    {
-      ssize_t ret = read(STDIN_FILENO, buf, size);
-
+      ssize_t ret = read(STDIN_FILENO, s, len);
       if (ret <= 0)
          break;
-
-      buf      += ret;
+      s        += ret;
       has_read += ret;
-      size     -= ret;
+      len      -= ret;
    }
-
    return has_read;
 }
 #endif

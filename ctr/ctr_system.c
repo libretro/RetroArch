@@ -187,12 +187,12 @@ Result APT_ReceiveDeliverArg_(void* param, size_t param_size,
    staticbufs[2]          = saved_threadstorage[2];
 	staticbufs[3]          = saved_threadstorage[3];
 
-   if(R_FAILED(ret))
+   if (R_FAILED(ret))
       return ret;
 
-   if(source_pid)
+   if (source_pid)
       *source_pid         = ((u64*)cmdbuf)[1];
-   if(received)
+   if (received)
       *received           = ((bool*)cmdbuf)[16];
 
 	return cmdbuf[1];
@@ -212,7 +212,7 @@ void __system_initArgv(void)
    u8 hmac[0x20];
    bool received;
 
-   if(!__service_ptr
+   if (!__service_ptr
       && R_SUCCEEDED(APT_ReceiveDeliverArg_(&param, sizeof(param), hmac, sizeof(hmac), NULL, &received))
       && received
       && !memcmp(hmac, __argv_hmac, sizeof(__argv_hmac)))

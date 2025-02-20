@@ -76,6 +76,7 @@
 struct audio_mixer_sound
 {
    enum audio_mixer_type type;
+   void* user_data;
 
    union
    {
@@ -204,12 +205,12 @@ static unsigned s_rate = 0;
 static void audio_mixer_release(audio_mixer_voice_t* voice);
 
 #ifdef HAVE_RWAV
-static bool wav_to_float(const rwav_t* wav, float** pcm, size_t samples_out)
+static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
 {
    size_t i;
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes */
    float *f           = (float*)memalign_alloc(16,
-         ((samples_out + 15) & ~15) * sizeof(float));
+         ((len + 15) & ~15) * sizeof(float));
 
    if (!f)
       return false;

@@ -102,7 +102,7 @@ typedef struct settings
       size_t rewind_buffer_size;
    } sizes;
 
-   video_viewport_t video_viewport_custom; /* int alignment */
+   video_viewport_t video_vp_custom; /* int alignment */
 
    struct
    {
@@ -332,6 +332,7 @@ typedef struct settings
       unsigned input_overlay_show_inputs_port;
       unsigned input_overlay_dpad_diagonal_sensitivity;
       unsigned input_overlay_abxy_diagonal_sensitivity;
+      unsigned input_overlay_analog_recenter_zone;
       unsigned input_overlay_lightgun_trigger_delay;
       unsigned input_overlay_lightgun_two_touch_input;
       unsigned input_overlay_lightgun_three_touch_input;
@@ -384,11 +385,11 @@ typedef struct settings
    {
       float placeholder;
       float video_aspect_ratio;
-      float video_viewport_bias_x;
-      float video_viewport_bias_y;
+      float video_vp_bias_x;
+      float video_vp_bias_y;
 #if defined(RARCH_MOBILE)
-      float video_viewport_bias_portrait_x;
-      float video_viewport_bias_portrait_y;
+      float video_vp_bias_portrait_x;
+      float video_vp_bias_portrait_y;
 #endif
       float video_refresh_rate;
       float video_autoswitch_pal_threshold;
@@ -661,6 +662,7 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+      bool audio_rewind_mute;
 #ifdef IOS
       bool audio_respect_silent_mode;
 #endif
@@ -822,6 +824,7 @@ typedef struct settings
       bool menu_content_show_history;
       bool menu_content_show_add;
       bool menu_content_show_playlists;
+      bool menu_content_show_playlist_tabs;
       bool menu_content_show_explore;
       bool menu_use_preferred_system_color_theme;
       bool menu_preferred_system_color_theme_set;
@@ -831,6 +834,7 @@ typedef struct settings
       bool menu_disable_left_analog;
       bool menu_disable_right_analog;
       bool menu_ticker_smooth;
+      bool menu_ignore_missing_assets;
       bool settings_show_drivers;
       bool settings_show_video;
       bool settings_show_audio;
@@ -1094,6 +1098,14 @@ typedef struct settings
 #if defined(HAVE_COCOATOUCH)
       bool gcdwebserver_alert;
 #endif
+
+#ifdef HAVE_GAME_AI
+      bool quick_menu_show_game_ai;
+      bool game_ai_override_p1;
+      bool game_ai_override_p2;
+      bool game_ai_show_debug;
+#endif
+
    } bools;
 
    uint8_t flags;
@@ -1260,8 +1272,7 @@ bool config_load_remap(const char *directory_input_remapping,
  **/
 
 void config_get_autoconf_profile_filename(
-      const char *device_name, unsigned user,
-      char *buf, size_t len_buf);
+      const char *device_name, unsigned user, char *s, size_t len);
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name

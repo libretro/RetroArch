@@ -222,7 +222,7 @@ bool content_file_override_set(
 
    for (i = 0; overrides[i].extensions; i++)
    {
-      char *tok, *save;
+      char *tok, *save        = NULL;
       char *overrides_ext_cpy = strdup(overrides[i].extensions);
 
       /* Get list of extensions affected by overrides */
@@ -407,7 +407,7 @@ static void content_file_list_free(
    free(file_list);
 }
 
-static content_file_list_t *content_file_list_init(size_t size)
+static content_file_list_t *content_file_list_init(size_t len)
 {
    content_file_list_t *file_list = NULL;
 
@@ -424,17 +424,17 @@ static content_file_list_t *content_file_list_init(size_t size)
       {
          /* Create entries list */
          if ((file_list->entries             = (content_file_info_t *)
-               calloc(size, sizeof(content_file_info_t))))
+               calloc(len, sizeof(content_file_info_t))))
          {
-            file_list->size                  = size;
+            file_list->size                  = len;
             /* Create retro_game_info object */
             if ((file_list->game_info        = (struct retro_game_info *)
-                     calloc(size, sizeof(struct retro_game_info))))
+                     calloc(len, sizeof(struct retro_game_info))))
             {
                /* Create retro_game_info_ext object */
                if ((file_list->game_info_ext =
                         (struct retro_game_info_ext *)
-                        calloc(size, sizeof(struct retro_game_info_ext))))
+                        calloc(len, sizeof(struct retro_game_info_ext))))
                   return file_list;
             }
          }
@@ -555,13 +555,16 @@ static bool content_file_list_set_info(
       if ((archive_delim = path_get_archive_delim(path)))
       {
          char archive_path[PATH_MAX_LENGTH];
-         size_t len      = 0;
-         /* Extract path of parent archive */
-         if ((len = (size_t)(1 + archive_delim - path))
-                 >= PATH_MAX_LENGTH)
-            len = PATH_MAX_LENGTH;
+         size_t _len      = 0;
 
-         strlcpy(archive_path, path, len * sizeof(char));
+         file_info->file_in_archive = true;
+
+         /* Extract path of parent archive */
+         if ((_len = (size_t)(1 + archive_delim - path))
+                 >= PATH_MAX_LENGTH)
+            _len = PATH_MAX_LENGTH;
+
+         strlcpy(archive_path, path, _len * sizeof(char));
          if (!string_is_empty(archive_path))
             file_info->archive_path = strdup(archive_path);
 
@@ -582,9 +585,6 @@ static bool content_file_list_set_info(
           * this is the basename of the archive file without
           * extension */
          fill_pathname_base(name, archive_path, sizeof(name));
-         path_remove_extension(name);
-
-         file_info->file_in_archive = true;
       }
       else
       {
@@ -596,15 +596,13 @@ static bool content_file_list_set_info(
           * is the basename of the content file, without
           * extension */
          fill_pathname_base(name, path, sizeof(name));
-         path_remove_extension(name);
       }
+      path_remove_extension(name);
 
       if (!string_is_empty(dir))
       {
          /* Remove any trailing slash */
-         const char *slash        = strrchr(dir, '/');
-         const char *backslash    = strrchr(dir, '\\');
-         char *last_slash         = (!slash || (backslash > slash)) ? (char*)backslash : (char*)slash;
+         char *last_slash         = find_last_slash(dir);
          if (last_slash && (last_slash[1] == '\0'))
             *last_slash           = '\0';
 
@@ -789,7 +787,7 @@ static bool content_file_extract_from_archive(
                NULL : content_ctx->directory_cache,
          tmp_path, sizeof(tmp_path)))
    {
-      char msg[128];
+      char msg[PATH_MAX_LENGTH];
       snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
             *content_path);
@@ -993,7 +991,7 @@ static bool content_file_load(
                   content_compressed, i, first_content_type,
                   &content_data, &content_size))
             {
-               char msg[128];
+               char msg[PATH_MAX_LENGTH];
                snprintf(msg, sizeof(msg), "%s \"%s\"\n",
                      msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
                      content_path);
@@ -1073,7 +1071,7 @@ static bool content_file_load(
                    * (This disclaimer is out dated but I don't want to remove it)*/
                   if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
                   {
-                     char msg[128];
+                     char msg[PATH_MAX_LENGTH];
                      /* TODO/FIXME - localize */
                      snprintf(msg, sizeof(msg), "%s \"%s\". (during copy read or write)\n",
                         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
@@ -1665,7 +1663,8 @@ static void task_push_to_history_list(
             label = runloop_st->name.label;
 
          if (
-              settings && settings->bools.history_list_enable
+                  settings
+               && settings->bools.history_list_enable
                && playlist_hist)
          {
             char subsystem_name[PATH_MAX_LENGTH];
@@ -1904,12 +1903,10 @@ static bool firmware_update_status(
             (content_ctx->flags & CONTENT_INFO_FLAG_BIOS_IS_MISSING)
          && (content_ctx->flags & CONTENT_INFO_FLAG_CHECK_FW_BEFORE_LOADING))
    {
-      runloop_msg_queue_push(
-            msg_hash_to_str(MSG_FIRMWARE),
-            100, 500, true, NULL,
+      const char *_msg = msg_hash_to_str(MSG_FIRMWARE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 100, 500, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      RARCH_LOG("[Content]: Load content blocked. Reason: %s\n",
-            msg_hash_to_str(MSG_FIRMWARE));
+      RARCH_LOG("[Content]: Load content blocked. Reason: %s\n", _msg);
 
       return true;
    }
@@ -2018,7 +2015,6 @@ bool task_push_load_content_from_playlist_from_menu(
       void *user_data)
 {
    content_information_ctx_t content_ctx;
-
    content_state_t                 *p_content = content_state_get_ptr();
    bool ret                                   = true;
    settings_t *settings                       = config_get_ptr();
@@ -2132,12 +2128,6 @@ bool task_push_load_content_from_playlist_from_menu(
    if (!(ret = command_event_cmd_exec(p_content,
          fullpath, &content_ctx, false)))
       goto end;
-
-#ifdef HAVE_COCOATOUCH
-   /* This seems to be needed for iOS for some reason
-    * to show the quick menu after the menu is shown */
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
 
 #ifndef HAVE_DYNAMIC
    /* No dynamic core loading support: if we reach
@@ -2527,7 +2517,6 @@ static bool task_load_content_internal(
       bool loading_from_companion_ui)
 {
    content_information_ctx_t content_ctx;
-
    content_state_t *p_content              = content_state_get_ptr();
    bool ret                                = false;
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
@@ -2867,28 +2856,22 @@ bool content_set_subsystem_by_name(const char* subsystem_name)
    return false;
 }
 
-void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len)
+size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len)
 {
-   unsigned i                                   = 0;
+   unsigned i;
    runloop_state_t *runloop_st                  = runloop_state_get_ptr();
    rarch_system_info_t                *sys_info = &runloop_st->system;
    /* Core not loaded completely, use the data we peeked on load core */
    const struct retro_subsystem_info *subsystem = runloop_st->subsystem_data;
-
    /* Core fully loaded, use the subsystem data */
    if (sys_info->subsystem.data)
       subsystem = sys_info->subsystem.data;
-
    for (i = 0; i < runloop_st->subsystem_current_count; i++, subsystem++)
    {
       if (string_is_equal(subsystem_name, subsystem->ident))
-      {
-         strlcpy(subsystem_friendly_name, subsystem->desc, len);
-         break;
-      }
+         return strlcpy(s, subsystem->desc, len);
    }
-
-   return;
+   return 0;
 }
 
 /* Add a rom to the subsystem ROM buffer */
@@ -3037,7 +3020,6 @@ bool content_init(void)
    content_information_ctx_t content_ctx;
    enum msg_hash_enums error_enum     = MSG_UNKNOWN;
    content_state_t *p_content         = content_state_get_ptr();
-
    bool ret                           = true;
    char *error_string                 = NULL;
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
@@ -3151,8 +3133,12 @@ bool content_init(void)
          case MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS:
          case MSG_FAILED_TO_LOAD_CONTENT:
          case MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT:
-            RARCH_ERR("[Content]: %s\n", msg_hash_to_str(error_enum));
-            runloop_msg_queue_push(msg_hash_to_str(error_enum), 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            {
+               const char *_msg = msg_hash_to_str(error_enum);
+               RARCH_ERR("[Content]: %s\n", _msg);
+               runloop_msg_queue_push(_msg, strlen(_msg), 2, ret ? 1 : 180, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
             break;
          case MSG_UNKNOWN:
          default:
@@ -3170,7 +3156,8 @@ bool content_init(void)
       /* Do not flush the message queue here
        * > This allows any core-generated error messages
        *   to propagate through to the frontend */
-      runloop_msg_queue_push(error_string, 2, ret ? 1 : 180, false, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(error_string, strlen(error_string), 2, ret ? 1 : 180, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       free(error_string);
    }
 

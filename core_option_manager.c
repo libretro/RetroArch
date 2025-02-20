@@ -754,8 +754,8 @@ static bool core_option_manager_parse_variable(
          const char *value   = option->vals->elems[i].data;
          uint32_t value_hash = *((uint32_t*)option->vals->elems[i].userdata);
 
-         if ((value_hash == entry_value_hash) &&
-             string_is_equal(value, entry->value))
+         if (   (value_hash == entry_value_hash)
+             && string_is_equal(value, entry->value))
          {
             option->index = i;
             break;
@@ -798,7 +798,7 @@ core_option_manager_t *core_option_manager_new_vars(
       const struct retro_variable *vars)
 {
    const struct retro_variable *var = NULL;
-   size_t size                      = 0;
+   size_t _len                      = 0;
    config_file_t *config_src        = NULL;
    core_option_manager_t *opt       = NULL;
 
@@ -837,29 +837,29 @@ core_option_manager_t *core_option_manager_new_vars(
 
    /* Get number of variables */
    for (var = vars; var->key && var->value; var++)
-      size++;
+      _len++;
 
-   if (size == 0)
+   if (_len == 0)
       goto error;
 
    /* Create options array */
-   if (!(opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts))))
+   if (!(opt->opts = (struct core_option*)calloc(_len, sizeof(*opt->opts))))
       goto error;
 
-   opt->size = size;
-   size      = 0;
+   opt->size = _len;
+   _len      = 0;
 
    /* Parse each variable */
-   for (var = vars; var->key && var->value; size++, var++)
+   for (var = vars; var->key && var->value; _len++, var++)
    {
-      if (core_option_manager_parse_variable(opt, size, var, config_src))
+      if (core_option_manager_parse_variable(opt, _len, var, config_src))
       {
-         size_t _len = 0;
+         size_t __len = 0;
          /* If variable is read correctly, add it to
           * the map */
          char address[256];
-         address[  _len]  = '#';
-         address[++_len]  = '\0';
+         address[  __len]  = '#';
+         address[++__len]  = '\0';
 
          /* Address string is normally:
           *    <category_key><delim><tag><option_key>
@@ -869,10 +869,10 @@ core_option_manager_t *core_option_manager_new_vars(
           * so we could just set the address to
           * <option_key> - but for consistency with
           * 'modern' options, we apply the tag regardless */
-         strlcpy(address + _len, var->key, sizeof(address) - _len);
+         strlcpy(address + __len, var->key, sizeof(address) - __len);
 
          if (!nested_list_add_item(opt->option_map,
-               address, NULL, (const void*)&opt->opts[size]))
+               address, NULL, (const void*)&opt->opts[_len]))
             goto error;
       }
       else
@@ -928,9 +928,9 @@ static bool core_option_manager_parse_option(
     *   match an entry in the categories array
     * > Category key cannot contain a map delimiter
     *   character */
-   if (opt->cats &&
-       !string_is_empty(category_key) &&
-       !strstr(category_key, ":"))
+   if (    opt->cats
+       && !string_is_empty(category_key)
+       && !strstr(category_key, ":"))
    {
       for (i = 0; i < opt->cats_size; i++)
       {
@@ -960,8 +960,8 @@ static bool core_option_manager_parse_option(
    {
       /* If option has a category, option key
        * cannot contain a map delimiter character */
-      if (!string_is_empty(option->category_key) &&
-          strstr(key, ":"))
+      if (  !string_is_empty(option->category_key)
+          && strstr(key, ":"))
          return false;
 
       option->key      = strdup(key);
@@ -1085,12 +1085,12 @@ core_option_manager_t *core_option_manager_new(
    struct retro_core_option_v2_category *option_cats        = NULL;
    struct retro_core_option_v2_definition *option_defs      = NULL;
    size_t cats_size                                         = 0;
-   size_t size                                              = 0;
+   size_t _len                                              = 0;
    config_file_t *config_src                                = NULL;
    core_option_manager_t *opt                               = NULL;
 
-   if (!options_v2 ||
-       !options_v2->definitions)
+   if (   !options_v2
+       || !options_v2->definitions)
       return NULL;
 
    option_cats = options_v2->categories;
@@ -1139,15 +1139,15 @@ core_option_manager_t *core_option_manager_new(
    for (option_def = option_defs;
         option_def->key && option_def->desc && option_def->values[0].value;
         option_def++)
-      size++;
+      _len++;
 
-   if (size == 0)
+   if (_len == 0)
       goto error;
 
    /* Create categories array */
    if (cats_size > 0)
    {
-      if (!(opt->cats = (struct core_category*)calloc(size,
+      if (!(opt->cats = (struct core_category*)calloc(_len,
                   sizeof(*opt->cats))))
          goto error;
 
@@ -1171,23 +1171,23 @@ core_option_manager_t *core_option_manager_new(
    }
 
    /* Create options array */
-   if (!(opt->opts = (struct core_option*)calloc(size, sizeof(*opt->opts))))
+   if (!(opt->opts = (struct core_option*)calloc(_len, sizeof(*opt->opts))))
       goto error;
 
-   opt->size = size;
-   size      = 0;
+   opt->size = _len;
+   _len      = 0;
 
    /* Parse each option
     * > Note: 'option_def->info == NULL' is valid */
    for (option_def = option_defs;
         option_def->key && option_def->desc && option_def->values[0].value;
-        size++, option_def++)
+        _len++, option_def++)
    {
-      if (core_option_manager_parse_option(opt, size, option_def, config_src))
+      if (core_option_manager_parse_option(opt, _len, option_def, config_src))
       {
          /* If option is read correctly, add it to
           * the map */
-         const char *category_key = opt->opts[size].category_key;
+         const char *category_key = opt->opts[_len].category_key;
          char address[256];
 
          /* Address string is nominally:
@@ -1197,23 +1197,23 @@ core_option_manager_t *core_option_manager_new(
           * collisions */
          if (string_is_empty(category_key))
          {
-            size_t _len     = 0;
-            address[  _len] = '#';
-            address[++_len] = '\0';
-            strlcpy(address + _len, option_def->key, sizeof(address) - _len);
+            size_t __len     = 0;
+            address[  __len] = '#';
+            address[++__len] = '\0';
+            strlcpy(address + __len, option_def->key, sizeof(address) - __len);
          }
          else
          {
-            size_t _len      = strlcpy(address, category_key, sizeof(address));
-            address[  _len]  = ':';
-            address[++_len]  = '#';
-            address[++_len]  = '\0';
-            strlcpy(address + _len, option_def->key, sizeof(address) - _len);
+            size_t __len      = strlcpy(address, category_key, sizeof(address));
+            address[  __len]  = ':';
+            address[++__len]  = '#';
+            address[++__len]  = '\0';
+            strlcpy(address + __len, option_def->key, sizeof(address) - __len);
          }
 
          if (!nested_list_add_item(opt->option_map,
                address, ":",
-               (const void*)&opt->opts[size]))
+               (const void*)&opt->opts[_len]))
             goto error;
       }
       else

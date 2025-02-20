@@ -982,13 +982,14 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
             msg_hash_to_str(MSG_CORE_RESTORATION_INVALID_CONTENT),
             sizeof(msg));
       if (backup_filename)
-         strlcpy(msg       + _len,
+         _len += strlcpy(msg       + _len,
                backup_filename,
                sizeof(msg) - _len);
 
+      /* TODO/FIXME - localize */
       RARCH_ERR("[core restore] Invalid core file selected: %s\n", backup_path);
-      runloop_msg_queue_push(msg, 1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
    }
 
@@ -1015,13 +1016,14 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
             ? msg_hash_to_str(MSG_CORE_RESTORATION_DISABLED)
             : msg_hash_to_str(MSG_CORE_INSTALLATION_DISABLED),
             sizeof(msg));
-      strlcpy(msg       + _len,
+      _len += strlcpy(msg       + _len,
             core_name,
             sizeof(msg) - _len);
 
+      /* TODO/FIXME - localize */
       RARCH_ERR("[core restore] Restoration disabled - core is locked: %s\n", core_path);
-      runloop_msg_queue_push(msg, 1, 100, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       goto error;
    }
 

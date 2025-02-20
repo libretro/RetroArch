@@ -520,17 +520,18 @@ static void udev_joypad_poll(void)
 
    for (p = 0; p < MAX_USERS; p++)
    {
-      int i, len;
+      int i;
+      ssize_t _len;
       struct input_event events[32];
       struct udev_joypad *pad = &udev_pads[p];
 
       if (pad->fd < 0)
          continue;
 
-      while ((len = read(pad->fd, events, sizeof(events))) > 0)
+      while ((_len = read(pad->fd, events, sizeof(events))) > 0)
       {
-         len /= sizeof(*events);
-         for (i = 0; i < len; i++)
+         _len /= sizeof(*events);
+         for (i = 0; i < _len; i++)
          {
             uint16_t type = events[i].type;
             uint16_t code = events[i].code;

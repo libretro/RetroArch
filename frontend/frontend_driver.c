@@ -178,94 +178,36 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void)
 size_t frontend_driver_get_core_extension(char *s, size_t len)
 {
 #ifdef HAVE_DYNAMIC
-
 #ifdef _WIN32
-   s[0] = 'd';
-   s[1] = 'l';
-   s[2] = 'l';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "dll", len);
 #elif defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
-   s[0] = 'f';
-   s[1] = 'r';
-   s[2] = 'a';
-   s[3] = 'm';
-   s[4] = 'e';
-   s[5] = 'w';
-   s[6] = 'o';
-   s[7] = 'r';
-   s[8] = 'k';
-   s[9] = '\0';
-   return 9;
+   return strlcpy(s, "framework", len);
 #elif defined(__APPLE__) || defined(__MACH__)
-   s[0] = 'd';
-   s[1] = 'y';
-   s[2] = 'l';
-   s[3] = 'i';
-   s[4] = 'b';
-   s[5] = '\0';
-   return 5;
+   return strlcpy(s, "dylib" ,len);
 #else
-   s[0] = 's';
-   s[1] = 'o';
-   s[2] = '\0';
-   return 2;
+   return strlcpy(s, "so", len);
 #endif
-
 #else
-
 #if defined(PSP)
-   s[0] = 'p';
-   s[1] = 'b';
-   s[2] = 'p';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "pbp", len);
 #elif defined(ORBIS) || defined(VITA) || defined(__PS3__)
    return strlcpy(s, "self|bin", len);
 #elif defined(PS2)
-   s[0] = 'e';
-   s[1] = 'l';
-   s[2] = 'f';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "elf", len);
 #elif defined(_XBOX1)
-   s[0] = 'x';
-   s[1] = 'b';
-   s[2] = 'e';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "xbe", len);
 #elif defined(_XBOX360)
-   s[0] = 'x';
-   s[1] = 'e';
-   s[2] = 'x';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "xex", len);
 #elif defined(GEKKO)
-   s[0] = 'd';
-   s[1] = 'o';
-   s[2] = 'l';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "dol", len);
 #elif defined(HW_WUP)
    return strlcpy(s, "rpx|elf", len);
 #elif defined(__linux__)
-   s[0] = 'e';
-   s[1] = 'l';
-   s[2] = 'f';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "elf", len);
 #elif defined(HAVE_LIBNX)
-   s[0] = 'n';
-   s[1] = 'r';
-   s[2] = 'o';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "nro", len);
 #elif defined(DJGPP)
-   s[0] = 'e';
-   s[1] = 'x';
-   s[2] = 'e';
-   s[3] = '\0';
-   return 3;
+   return strlcpy(s, "exe", len);
 #elif defined(_3DS)
    if (envIsHomebrew())
       return strlcpy(s, "3dsx", len);
@@ -446,8 +388,7 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
-const void *frontend_driver_get_cpu_architecture_str(
-      char *s, size_t len)
+const void *frontend_driver_get_cpu_architecture_str(char *s, size_t len)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;

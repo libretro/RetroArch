@@ -330,7 +330,7 @@ bool core_updater_list_get_core(
 static bool core_updater_list_set_date(
       core_updater_list_entry_t *entry, const char *date_str)
 {
-   char *tok, *save;
+   char *tok, *save   = NULL;
    char *elem0        = NULL;
    char *elem1        = NULL;
    char *elem2        = NULL;
@@ -784,7 +784,7 @@ bool core_updater_list_parse_network_data(
       const char *network_buildbot_url,
       const char *data, size_t len)
 {
-   char *tok, *save;
+   char *tok, *save   = NULL;
    unsigned list_size = 0;
    char *data_buf     = NULL;
 
@@ -817,12 +817,12 @@ bool core_updater_list_parse_network_data(
    for (tok = strtok_r(data_buf, "\n", &save); tok;
         tok = strtok_r(NULL, "\n", &save))
    {
-      char *tok2, *save2;
-      char *elem0      = NULL;
-      char *elem1      = NULL;
-      char *elem2      = NULL;
-      char *line_cpy   = NULL;
-      const char *line = tok;
+      char *tok2, *save2 = NULL;
+      char *elem0        = NULL;
+      char *elem1        = NULL;
+      char *elem2        = NULL;
+      char *line_cpy     = NULL;
+      const char *line   = tok;
 
       if (string_is_empty(line))
          continue;

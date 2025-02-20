@@ -100,8 +100,6 @@
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
-#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
 #define REPLAY_TOKEN_INVALID          '\0'
 #define REPLAY_TOKEN_REGULAR_FRAME    'f'
 #define REPLAY_TOKEN_CHECKPOINT_FRAME 'c'
@@ -921,6 +919,10 @@ char *input_config_get_device_name_ptr(unsigned port);
  * @return the size of the device name on the specified port
  */
 size_t input_config_get_device_name_size(unsigned port);
+
+unsigned input_driver_lightgun_id_convert(unsigned id);
+
+bool input_driver_pointer_is_offscreen(int16_t x, int16_t y);
 
 bool input_driver_button_combo(
       unsigned mode,

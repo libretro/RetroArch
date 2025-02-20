@@ -43,26 +43,13 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct d3d9_video d3d9_video_t;
-
 typedef struct d3d9_video
 {
-   bool keep_aspect;
-   bool should_resize;
-   bool quitting;
-   bool needs_restore;
-   bool overlays_enabled;
-   /* TODO - refactor this away properly. */
-   bool resolution_hd_enable;
-
-   /* Only used for Xbox */
-   bool widescreen_mode;
-
-   unsigned cur_mon_id;
-   unsigned dev_rotation;
-
    overlay_t *menu;
    void *renderchain_data;
+
+   char *shader_path;
+   overlay_t *overlays;
 
    RECT font_rect;
    RECT font_rect_shifted;
@@ -77,11 +64,9 @@ typedef struct d3d9_video
    WNDCLASSEX windowClass;
 #endif
    LPDIRECT3DDEVICE9 dev;
-   D3DVIEWPORT9 final_viewport;
+   D3DVIEWPORT9 out_vp;
    float translate_x;
    float translate_y;
-
-   char *shader_path;
 
    struct
    {
@@ -92,7 +77,20 @@ typedef struct d3d9_video
    }menu_display;
 
    size_t overlays_size;
-   overlay_t *overlays;
+
+   unsigned cur_mon_id;
+   unsigned dev_rotation;
+
+   bool keep_aspect;
+   bool should_resize;
+   bool quitting;
+   bool needs_restore;
+   bool overlays_enabled;
+   /* TODO - refactor this away properly. */
+   bool resolution_hd_enable;
+
+   /* Only used for Xbox */
+   bool widescreen_mode;
 } d3d9_video_t;
 
 void *d3d9_vertex_buffer_new(void *dev,
@@ -258,7 +256,7 @@ void d3d9_set_osd_msg(void *data,
       const char *msg,
       const struct font_params *params, void *font);
 
-void d3d9_unload_texture(void *data, 
+void d3d9_unload_texture(void *data,
       bool threaded, uintptr_t id);
 
 void d3d9_set_video_mode(void *data,

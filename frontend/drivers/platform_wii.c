@@ -80,10 +80,10 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
    }
    /* a relative path */
    else if (
-         (strstr(dolpath, "sd:/")    != dolpath) &&
-         (strstr(dolpath, "usb:/")   != dolpath) &&
-         (strstr(dolpath, "carda:/") != dolpath) &&
-         (strstr(dolpath, "cardb:/") != dolpath)
+            (strstr(dolpath, "sd:/")    != dolpath)
+         && (strstr(dolpath, "usb:/")   != dolpath)
+         && (strstr(dolpath, "carda:/") != dolpath)
+         && (strstr(dolpath, "cardb:/") != dolpath)
          )
    {
       fill_pathname_parent_dir(tmp,
@@ -126,7 +126,7 @@ static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 }
 
 static void dol_copy_raw_argv(const char *dolpath,
-      const void *args, size_t size)
+      const void *args, size_t len)
 {
    struct __argv *argv    = (struct __argv*)ARGS_ADDR;
    char          *cmdline = (char*)++argv;
@@ -154,8 +154,8 @@ static void dol_copy_raw_argv(const char *dolpath,
    argv->length  = (int)strlcat(cmdline, dolpath, PATH_MAX_LENGTH);
    argv->length += 1;
 
-   memcpy(cmdline + argv->length, args, size);
-   argv->length += size;
+   memcpy(cmdline + argv->length, args, len);
+   argv->length += len;
 
    DCFlushRange(argv, sizeof(*argv) + argv->length);
 }
@@ -165,17 +165,16 @@ static void dol_copy_raw_argv(const char *dolpath,
  * heap memory and are restricted to the stack only. */
 void system_exec_wii(const char *_path, bool should_load_game)
 {
-   char path[PATH_MAX_LENGTH];
-   char args[PATH_MAX_LENGTH];
-   size_t args_size;
-   size_t size;
    FILE *fp;
    void *dol;
+   char path[PATH_MAX_LENGTH];
+   char args[PATH_MAX_LENGTH];
+   size_t _len, __len;
 #ifndef IS_SALAMANDER
    bool verbosity = verbosity_is_enabled();
 #endif
 
-   args_size = 0;
+   __len = 0;
 
    /* copy heap info into stack so it survives
     * us moving the .dol into MEM2. */
@@ -190,7 +189,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
       if (net_st->fork_args.size)
       {
          memcpy(args, net_st->fork_args.args, net_st->fork_args.size);
-         args_size = net_st->fork_args.size;
+         __len = net_st->fork_args.size;
       }
       else
 #endif
@@ -208,11 +207,11 @@ void system_exec_wii(const char *_path, bool should_load_game)
    }
 
    fseek(fp, 0, SEEK_END);
-   size = ftell(fp);
+   _len = ftell(fp);
    fseek(fp, 0, SEEK_SET);
 
    /* try to allocate a buffer for it. if we can't, fail. */
-   dol = malloc(size);
+   dol = malloc(_len);
    if (!dol)
    {
       RARCH_ERR("Could not execute DOL file %s.\n", path);
@@ -220,7 +219,7 @@ void system_exec_wii(const char *_path, bool should_load_game)
       goto exit;
    }
 
-   fread(dol, 1, size, fp);
+   fread(dol, 1, _len, fp);
    fclose(fp);
 
    fatUnmount("carda:");
@@ -231,17 +230,17 @@ void system_exec_wii(const char *_path, bool should_load_game)
    __io_usbstorage.shutdown();
 
    /* don't use memcpy, there might be an overlap. */
-   memmove(EXECUTE_ADDR, dol, size);
-   DCFlushRange(EXECUTE_ADDR, size);
+   memmove(EXECUTE_ADDR, dol, _len);
+   DCFlushRange(EXECUTE_ADDR, _len);
 
-   if (args_size)
-      dol_copy_raw_argv(path, args, args_size);
+   if (__len)
+      dol_copy_raw_argv(path, args, __len);
    else
       dol_copy_argv_path(path, should_load_game ? args : NULL);
 
-   size = booter_end - booter_start;
-   memcpy(BOOTER_ADDR, booter_start, size);
-   DCFlushRange(BOOTER_ADDR, size);
+   _len = booter_end - booter_start;
+   memcpy(BOOTER_ADDR, booter_start, _len);
+   DCFlushRange(BOOTER_ADDR, _len);
 
    SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
    __lwp_thread_stopmultitasking((void (*)(void))BOOTER_ADDR);

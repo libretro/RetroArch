@@ -185,9 +185,8 @@ enum gl2_renderchain_flags
 {
    GL2_CHAIN_FLAG_EGL_IMAGES           = (1 << 0),
    GL2_CHAIN_FLAG_HAS_FP_FBO           = (1 << 1),
-   GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3   = (1 << 2),
-   GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 3),
-   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 4)
+   GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 2),
+   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 3)
 };
 
 typedef struct video_shader_ctx_scale
@@ -320,9 +319,9 @@ static const GLfloat white_color[16] = {
  * FORWARD DECLARATIONS
  */
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
-      bool force_full, bool allow_rotate);
+      unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate,
+      bool video_scale_integer);
 
 #ifdef IOS
 /* There is no default frame buffer on iOS. */
@@ -945,9 +944,10 @@ static void gl2_raster_font_setup_viewport(
       gl2_t *gl,
       gl2_raster_t *font,
       unsigned width, unsigned height,
-      bool full_screen)
+      bool full_screen,
+      bool video_scale_integer)
 {
-   gl2_set_viewport(gl, width, height, full_screen, true);
+   gl2_set_viewport(gl, width, height, full_screen, true, video_scale_integer);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -975,6 +975,7 @@ static void gl2_raster_font_render_msg(
    gl2_t *gl                         = (gl2_t*)userdata;
    unsigned width                    = gl->video_width;
    unsigned height                   = gl->video_height;
+   bool video_scale_integer          = config_get_ptr()->bools.video_scale_integer;
 
    if (!font || string_is_empty(msg) || !gl)
       return;
@@ -1028,7 +1029,8 @@ static void gl2_raster_font_render_msg(
    if (font->block)
       font->block->fullscreen  = full_screen;
    else
-      gl2_raster_font_setup_viewport(gl, font, width, height, full_screen);
+      gl2_raster_font_setup_viewport(gl, font, width, height, full_screen,
+            config_get_ptr()->bools.video_scale_integer);
 
    if (    !string_is_empty(msg)
          && font->font_data
@@ -1057,7 +1059,7 @@ static void gl2_raster_font_render_msg(
       /* Restore viewport */
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       glDisable(GL_BLEND);
-      gl2_set_viewport(gl, width, height, false, true);
+      gl2_set_viewport(gl, width, height, false, true, video_scale_integer);
    }
 }
 
@@ -1076,18 +1078,20 @@ static void gl2_raster_font_flush_block(unsigned width, unsigned height,
    gl2_raster_t          *font       = (gl2_raster_t*)data;
    video_font_raster_block_t *block  = font ? font->block : NULL;
    gl2_t *gl                         = font ? font->gl : NULL;
+   bool video_scale_integer          = config_get_ptr()->bools.video_scale_integer;
 
    if (!font || !block || !block->carr.coords.vertices || !gl)
       return;
 
-   gl2_raster_font_setup_viewport(gl, font, width, height, block->fullscreen);
+   gl2_raster_font_setup_viewport(gl, font, width, height, block->fullscreen,
+         video_scale_integer);
    gl2_raster_font_draw_vertices(gl, font, (video_coords_t*)&block->carr.coords);
 
    /* Restore viewport */
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
-   gl2_set_viewport(gl, width, height, block->fullscreen, true);
+   gl2_set_viewport(gl, width, height, block->fullscreen, true, video_scale_integer);
 }
 
 static void gl2_raster_font_bind_block(void *data, void *userdata)
@@ -1268,39 +1272,40 @@ static void gl2_set_projection(gl2_t *gl,
 }
 
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned viewport_width,
-      unsigned viewport_height,
-      bool force_full, bool allow_rotate)
+      unsigned vp_width,
+      unsigned vp_height,
+      bool force_full, bool allow_rotate,
+      bool video_scale_integer)
 {
-   settings_t *settings     = config_get_ptr();
-   float device_aspect = (float) viewport_width / (float)viewport_height;
+   float device_aspect      = (float)vp_width / (float)vp_height;
 
    if (gl->ctx_driver->translate_aspect)
       device_aspect         = gl->ctx_driver->translate_aspect(
-            gl->ctx_data, viewport_width, viewport_height);
+            gl->ctx_data, vp_width, vp_height);
 
-   if (settings->bools.video_scale_integer && !force_full)
+   if (video_scale_integer && !force_full)
    {
       video_viewport_get_scaled_integer(&gl->vp,
-            viewport_width, viewport_height,
+            vp_width, vp_height,
             video_driver_get_aspect_ratio(),
             (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false,
             false);
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      vp_width     = gl->vp.width;
+      vp_height    = gl->vp.height;
    }
    else if ((gl->flags & GL2_FLAG_KEEP_ASPECT) && !force_full)
    {
       gl->vp.full_height = gl->video_height;
-      video_viewport_get_scaled_aspect2(&gl->vp, viewport_width, viewport_height, false, device_aspect, video_driver_get_aspect_ratio());
-      viewport_width  = gl->vp.width;
-      viewport_height = gl->vp.height;
+      video_viewport_get_scaled_aspect2(&gl->vp, vp_width, vp_height,
+            false, device_aspect, video_driver_get_aspect_ratio());
+      vp_width      = gl->vp.width;
+      vp_height     = gl->vp.height;
    }
    else
    {
       gl->vp.x      = gl->vp.y = 0;
-      gl->vp.width  = viewport_width;
-      gl->vp.height = viewport_height;
+      gl->vp.width  = vp_width;
+      gl->vp.height = vp_height;
    }
 
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
@@ -1309,12 +1314,12 @@ static void gl2_set_viewport(gl2_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->vp_out_width  = viewport_width;
-      gl->vp_out_height = viewport_height;
+      gl->out_vp_width  = vp_width;
+      gl->out_vp_height = vp_height;
    }
 
 #if 0
-   RARCH_LOG("Setting viewport @ %ux%u\n", viewport_width, viewport_height);
+   RARCH_LOG("Setting viewport @ %ux%u\n", vp_width, vp_height);
 #endif
 }
 
@@ -1323,7 +1328,8 @@ static void gl2_renderchain_render(
       gl2_renderchain_data_t *chain,
       uint64_t frame_count,
       const struct video_tex_info *tex_info,
-      const struct video_tex_info *feedback_info)
+      const struct video_tex_info *feedback_info,
+      bool video_scale_integer)
 {
    int i;
    video_shader_ctx_params_t params;
@@ -1380,7 +1386,8 @@ static void gl2_renderchain_render(
 
       /* Render to FBO with certain size. */
       gl2_set_viewport(gl,
-            rect->img_width, rect->img_height, true, false);
+            rect->img_width, rect->img_height, true, false,
+            video_scale_integer);
 
       params.data          = gl;
       params.width         = prev_rect->img_width;
@@ -1445,8 +1452,7 @@ static void gl2_renderchain_render(
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl2_set_viewport(gl,
-         width, height, false, true);
+   gl2_set_viewport(gl, width, height, false, true, video_scale_integer);
 
    params.data          = gl;
    params.width         = prev_rect->img_width;
@@ -1603,22 +1609,13 @@ static GLenum gl2_min_filter_to_mag(GLenum type)
 
 static void gl2_create_fbo_texture(gl2_t *gl,
       gl2_renderchain_data_t *chain,
-      unsigned i, GLuint texture)
+      unsigned i, GLuint texture,
+      bool video_smooth, bool force_srgb_disable)
 {
    GLenum mag_filter, wrap_enum;
    enum gfx_wrap_type wrap_type;
    bool fp_fbo                   = false;
    bool smooth                   = false;
-   settings_t *settings          = config_get_ptr();
-   bool video_smooth             = settings->bools.video_smooth;
-#if HAVE_ODROIDGO2
-   bool video_ctx_scaling         = settings->bools.video_ctx_scaling;
-   if (video_ctx_scaling)
-       video_smooth = false;
-#endif
-#ifndef HAVE_OPENGLES
-   bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
-#endif
    GLuint base_filt              = video_smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt          = video_smooth ?
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
@@ -1650,19 +1647,21 @@ static void gl2_create_fbo_texture(gl2_t *gl,
          RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
 
-#if !defined(HAVE_OPENGLES2)
    if (     fp_fbo
          && (chain->flags & GL2_CHAIN_FLAG_HAS_FP_FBO))
    {
       RARCH_LOG("[GL]: FBO pass #%d is floating-point.\n", i);
-      gl2_load_texture_image(GL_TEXTURE_2D, 0, GL_RGBA32F,
+      gl2_load_texture_image(GL_TEXTURE_2D, 0,
+#ifdef HAVE_OPENGLES2
+         GL_RGBA,
+#else
+         GL_RGBA32F,
+#endif
          gl->fbo_rect[i].width, gl->fbo_rect[i].height,
          0, GL_RGBA, GL_FLOAT, NULL);
    }
    else
-#endif
    {
-#ifndef HAVE_OPENGLES
       bool srgb_fbo = (chain->fbo_scale[i].flags & FBO_SCALE_FLAG_SRGB_FBO) ? true : false;
 
       if (!fp_fbo && srgb_fbo)
@@ -1678,27 +1677,23 @@ static void gl2_create_fbo_texture(gl2_t *gl,
             && (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO))
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
+         gl2_load_texture_image(GL_TEXTURE_2D, 0,
 #ifdef HAVE_OPENGLES2
-         /* EXT defines are same as core GLES3 defines,
-          * but GLES3 variant requires different arguments. */
-         glTexImage2D(GL_TEXTURE_2D,
-               0, GL_SRGB_ALPHA_EXT,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-               (chain->flags & GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3)
-               ? GL_RGBA
-               : GL_SRGB_ALPHA_EXT,
-               GL_UNSIGNED_BYTE, NULL);
+            GL_SRGB_ALPHA_EXT,
 #else
-         gl2_load_texture_image(GL_TEXTURE_2D,
-            0, GL_SRGB8_ALPHA8,
-            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            GL_SRGB8_ALPHA8,
 #endif
+            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+#ifdef HAVE_OPENGLES2
+            GL_SRGB_ALPHA_EXT,
+#else
+            GL_RGBA,
+#endif
+            GL_UNSIGNED_BYTE, NULL);
       }
       else
-#endif
       {
-#if defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGLES)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
                gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
@@ -1724,20 +1719,29 @@ static void gl2_create_fbo_textures(gl2_t *gl,
       gl2_renderchain_data_t *chain)
 {
    int i;
+   settings_t *settings          = config_get_ptr();
+#if HAVE_ODROIDGO2
+   bool video_smooth             = settings->bools.video_ctx_scaling ? false : settings->bools.video_smooth;
+#else
+   bool video_smooth             = settings->bools.video_smooth;
+#endif
+   bool force_srgb_disable       = settings->bools.video_force_srgb_disable;
 
    glGenTextures(chain->fbo_pass, chain->fbo_texture);
 
    for (i = 0; i < chain->fbo_pass; i++)
       gl2_create_fbo_texture(gl,
             (gl2_renderchain_data_t*)gl->renderchain_data,
-            i, chain->fbo_texture[i]);
+            i, chain->fbo_texture[i],
+            video_smooth, force_srgb_disable);
 
    if (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
    {
       glGenTextures(1, &gl->fbo_feedback_texture);
       gl2_create_fbo_texture(gl,
             (gl2_renderchain_data_t*)gl->renderchain_data,
-            gl->fbo_feedback_pass, gl->fbo_feedback_texture);
+            gl->fbo_feedback_pass, gl->fbo_feedback_texture,
+            video_smooth, force_srgb_disable);
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -1783,13 +1787,11 @@ static void gl2_renderchain_recompute_pass_sizes(
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-            {
-               fbo_rect->img_width      = fbo_rect->max_img_width =
+               fbo_rect->img_width = fbo_rect->max_img_width =
                fbo_scale->scale_x * vp_height;
-            } else {
-               fbo_rect->img_width      = fbo_rect->max_img_width =
+            else
+               fbo_rect->img_width = fbo_rect->max_img_width =
                fbo_scale->scale_x * vp_width;
-            }
             break;
       }
 
@@ -1807,13 +1809,11 @@ static void gl2_renderchain_recompute_pass_sizes(
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-            {
-               fbo_rect->img_height      = fbo_rect->max_img_height =
+               fbo_rect->img_height = fbo_rect->max_img_height =
                fbo_scale->scale_y * vp_width;
-            } else {
-            fbo_rect->img_height     = fbo_rect->max_img_height =
-               fbo_scale->scale_y * vp_height;
-            }
+            else
+               fbo_rect->img_height = fbo_rect->max_img_height =
+                  fbo_scale->scale_y * vp_height;
             break;
       }
 
@@ -1851,9 +1851,8 @@ static void gl2_renderchain_recompute_pass_sizes(
    }
 }
 
-static void gl2_renderchain_start_render(
-      gl2_t *gl,
-      gl2_renderchain_data_t *chain)
+static void gl2_renderchain_start_render(gl2_t *gl,
+      gl2_renderchain_data_t *chain, bool video_scale_integer)
 {
    /* Used when rendering to an FBO.
     * Texture coords have to be aligned
@@ -1869,7 +1868,8 @@ static void gl2_renderchain_start_render(
 
    gl2_set_viewport(gl,
          gl->fbo_rect[0].img_width,
-         gl->fbo_rect[0].img_height, true, false);
+         gl->fbo_rect[0].img_height, true, false,
+         video_scale_integer);
 
    /* Need to preserve the "flipped" state when in FBO
     * as well to have consistent texture coordinates.
@@ -2483,11 +2483,6 @@ static void gl2_renderchain_resolve_extensions(gl2_t *gl,
       chain->flags |=  GL2_CHAIN_FLAG_HAS_FP_FBO;
    else
       chain->flags &= ~GL2_CHAIN_FLAG_HAS_FP_FBO;
-   /* GLES3 has unpack_subimage and sRGB in core. */
-   if (gl_check_capability(GL_CAPS_SRGB_FBO_ES3))
-      chain->flags |=  GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3;
-   else
-      chain->flags &= ~GL2_CHAIN_FLAG_HAS_SRGB_FBO_GLES3;
 
    if (!force_srgb_disable)
    {
@@ -2769,12 +2764,14 @@ static void gl2_render_overlay(gl2_t *gl)
 }
 #endif
 
-static void gl2_set_viewport_wrapper(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+static void gl2_set_viewport_wrapper(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate)
 {
    gl2_t              *gl = (gl2_t*)data;
    gl2_set_viewport(gl,
-         viewport_width, viewport_height, force_full, allow_rotate);
+      vp_width, vp_height, force_full, allow_rotate,
+      config_get_ptr()->bools.video_scale_integer
+      );
 }
 
 /* Shaders */
@@ -2796,6 +2793,9 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    int i;
+   gfx_ctx_flags_t flags;
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
 
    if (type != RARCH_SHADER_CG && type != RARCH_SHADER_GLSL)
    {
@@ -2811,7 +2811,7 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
       {
          case RARCH_SHADER_CG:
 #ifdef HAVE_CG
-            if (video_shader_is_supported(type))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
                return type;
 #endif
             type = RARCH_SHADER_GLSL;
@@ -2819,7 +2819,7 @@ static enum rarch_shader_type gl2_get_fallback_shader_type(enum rarch_shader_typ
 
          case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
-            if (video_shader_is_supported(type))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                return type;
 #endif
             type = RARCH_SHADER_CG;
@@ -3096,7 +3096,7 @@ static void gl2_init_textures(gl2_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 }
 
-static INLINE void gl2_set_shader_viewports(gl2_t *gl)
+static INLINE void gl2_set_shader_viewports(gl2_t *gl, bool video_scale_integer)
 {
    int i;
    unsigned width                = gl->video_width;
@@ -3105,7 +3105,8 @@ static INLINE void gl2_set_shader_viewports(gl2_t *gl)
    for (i = 0; i < 2; i++)
    {
       gl->shader->use(gl, gl->shader_data, i, true);
-      gl2_set_viewport(gl, width, height, false, true);
+      gl2_set_viewport(gl, width, height, false, true,
+            video_scale_integer);
    }
 }
 
@@ -3159,7 +3160,7 @@ static void gl2_set_texture_enable(void *data, bool state, bool full_screen)
       gl->flags                &= ~GL2_FLAG_MENU_TEXTURE_FULLSCREEN;
 }
 
-static void gl2_render_osd_background(gl2_t *gl, const char *msg)
+static void gl2_render_osd_background(gl2_t *gl, bool video_scale_integer, const char *msg)
 {
    video_coords_t coords;
    struct uniform_info uniform_param;
@@ -3186,9 +3187,9 @@ static void gl2_render_osd_background(gl2_t *gl, const char *msg)
    width                  += x2;
    height                 += y2;
 
-   colors[0]               = settings->uints.video_msg_bgcolor_red / 255.0f;
+   colors[0]               = settings->uints.video_msg_bgcolor_red   / 255.0f;
    colors[1]               = settings->uints.video_msg_bgcolor_green / 255.0f;
-   colors[2]               = settings->uints.video_msg_bgcolor_blue / 255.0f;
+   colors[2]               = settings->uints.video_msg_bgcolor_blue  / 255.0f;
    colors[3]               = settings->floats.video_msg_bgcolor_opacity;
 
    /* triangle 1 */
@@ -3219,7 +3220,8 @@ static void gl2_render_osd_background(gl2_t *gl, const char *msg)
 
    gl2_set_viewport(gl,
          gl->video_width,
-         gl->video_height, true, false);
+         gl->video_height, true, false,
+         video_scale_integer);
 
    gl->shader->use(gl, gl->shader_data,
          VIDEO_SHADER_STOCK_BLEND, true);
@@ -3267,7 +3269,7 @@ static void gl2_render_osd_background(gl2_t *gl, const char *msg)
 
    gl2_set_viewport(gl,
          gl->video_width,
-         gl->video_height, false, true);
+         gl->video_height, false, true, video_scale_integer);
 }
 
 static void gl2_show_mouse(void *data, bool state)
@@ -3396,6 +3398,7 @@ static bool gl2_frame(void *data, const void *frame,
    bool widgets_active                 = video_info->widgets_active;
 #endif
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
+   bool video_scale_integer            = config_get_ptr()->bools.video_scale_integer;
 
    if (!gl)
       return false;
@@ -3412,7 +3415,7 @@ static bool gl2_frame(void *data, const void *frame,
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
-   gl2_set_viewport(gl, width, height, false, true);
+   gl2_set_viewport(gl, width, height, false, true, video_scale_integer);
 #endif
 
    /* Render to texture in first pass. */
@@ -3421,9 +3424,9 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_renderchain_recompute_pass_sizes(
             gl, chain,
             frame_width, frame_height,
-            gl->vp_out_width, gl->vp_out_height);
+            gl->out_vp_width, gl->out_vp_height);
 
-      gl2_renderchain_start_render(gl, chain);
+      gl2_renderchain_start_render(gl, chain, video_scale_integer);
    }
 
    if (gl->flags & GL2_FLAG_SHOULD_RESIZE)
@@ -3484,10 +3487,10 @@ static bool gl2_frame(void *data, const void *frame,
 
          /* Go back to what we're supposed to do,
           * render to FBO #0. */
-         gl2_renderchain_start_render(gl, chain);
+         gl2_renderchain_start_render(gl, chain, video_scale_integer);
       }
       else
-         gl2_set_viewport(gl, width, height, false, true);
+         gl2_set_viewport(gl, width, height, false, true, video_scale_integer);
    }
 
    if (frame)
@@ -3521,7 +3524,7 @@ static bool gl2_frame(void *data, const void *frame,
       if (!(gl->flags & GL2_FLAG_FBO_INITED))
       {
          gl2_renderchain_bind_backbuffer();
-         gl2_set_viewport(gl, width, height, false, true);
+         gl2_set_viewport(gl, width, height, false, true, video_scale_integer);
       }
 
       gl2_renderchain_restore_default_state(gl);
@@ -3585,7 +3588,8 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->flags & GL2_FLAG_FBO_INITED)
       gl2_renderchain_render(gl,
             chain,
-            frame_count, &gl->tex_info, &feedback_info);
+            frame_count, &gl->tex_info, &feedback_info,
+            video_scale_integer);
 
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
@@ -3625,7 +3629,7 @@ static bool gl2_frame(void *data, const void *frame,
    if (!string_is_empty(msg))
    {
       if (msg_bgcolor_enable)
-         gl2_render_osd_background(gl, msg);
+         gl2_render_osd_background(gl, video_scale_integer, msg);
       font_driver_render_msg(gl, msg, NULL, NULL);
    }
 
@@ -3894,7 +3898,6 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "[GL]: 32-bit path will require conversion.\n");
    }
-   /* TODO/FIXME - No extensions for float FBO currently. */
 #endif
 
 #ifdef GL_DEBUG
@@ -4206,6 +4209,7 @@ static void *gl2_init(const video_info_t *video,
    unsigned shader_info_num;
    settings_t *settings                 = config_get_ptr();
    bool video_gpu_record                = settings->bools.video_gpu_record;
+   bool video_scale_integer             = settings->bools.video_scale_integer;
    int interval                         = 0;
    unsigned mip_level                   = 0;
    unsigned mode_width                  = 0;
@@ -4324,17 +4328,17 @@ static void *gl2_init(const video_info_t *video,
    }
 
    {
-      size_t len    = 0;
+      size_t _len = 0;
 
       if (!string_is_empty(vendor))
       {
-        len                    = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
-        gl->device_str[  len]  = ' ';
-        gl->device_str[++len]  = '\0';
+        _len                   = strlcpy(gl->device_str, vendor, sizeof(gl->device_str));
+        gl->device_str[  _len]  = ' ';
+        gl->device_str[++_len]  = '\0';
       }
 
       if (!string_is_empty(renderer))
-        strlcpy(gl->device_str + len, renderer, sizeof(gl->device_str) - len);
+        strlcpy(gl->device_str + _len, renderer, sizeof(gl->device_str) - _len);
 
       if (!string_is_empty(version))
         video_driver_set_gpu_api_version_string(version);
@@ -4514,7 +4518,7 @@ static void *gl2_init(const video_info_t *video,
 #endif
    /* Apparently need to set viewport for passes
     * when we aren't using FBOs. */
-      gl2_set_shader_viewports(gl);
+      gl2_set_shader_viewports(gl, video_scale_integer);
 
    mip_level            = 1;
    if (gl->shader->mipmap_input(gl->shader_data, mip_level))
@@ -4670,20 +4674,13 @@ static bool gl2_suppress_screensaver(void *data, bool enable)
    return false;
 }
 
-static void gl2_update_tex_filter_frame(gl2_t *gl)
+static void gl2_update_tex_filter_frame(gl2_t *gl, bool video_smooth)
 {
    unsigned i, mip_level;
    GLenum wrap_mode;
    GLuint new_filt;
    enum gfx_wrap_type wrap_type;
    bool smooth                       = false;
-   settings_t *settings              = config_get_ptr();
-   bool video_smooth                 = settings->bools.video_smooth;
-#ifdef HAVE_ODROIDGO2
-   bool video_ctx_scaling            = settings->bools.video_ctx_scaling;
-   if (video_ctx_scaling)
-       video_smooth = false;
-#endif
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -4732,7 +4729,14 @@ static bool gl2_set_shader(void *data,
    unsigned textures;
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type fallback;
-   gl2_t *gl = (gl2_t*)data;
+   gl2_t *gl                = (gl2_t*)data;
+   settings_t *settings     = config_get_ptr();
+   bool video_scale_integer = settings->bools.video_scale_integer;
+#ifdef HAVE_ODROIDGO2
+   bool video_smooth        = settings->bools.video_ctx_scaling ? false : settings->bools.video_smooth;
+#else
+   bool video_smooth        = settings->bools.video_smooth;
+#endif
 
    if (!gl)
       return false;
@@ -4790,7 +4794,7 @@ static bool gl2_set_shader(void *data,
    gl->shader       = init_data.shader;
    gl->shader_data  = init_data.shader_data;
 
-   gl2_update_tex_filter_frame(gl);
+   gl2_update_tex_filter_frame(gl, video_smooth);
 
    {
       unsigned texture_info_id = gl->shader->get_prev_textures(gl->shader_data);
@@ -4825,7 +4829,7 @@ static bool gl2_set_shader(void *data,
          gl->tex_w, gl->tex_h);
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
-   gl2_set_shader_viewports(gl);
+   gl2_set_shader_viewports(gl, video_scale_integer);
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
@@ -5072,13 +5076,12 @@ static void gl2_apply_state_changes(void *data)
 }
 
 static void gl2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *width, unsigned *height, char *s, size_t len)
 {
    gl2_t *gl         = (gl2_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->get_video_output_size)
       gl->ctx_driver->get_video_output_size(
-            gl->ctx_data,
-            width, height, desc, desc_len);
+            gl->ctx_data, width, height, s, len);
 }
 
 static void gl2_get_video_output_prev(void *data)

@@ -178,6 +178,10 @@ MSG_HASH(
    "pulse"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_AUDIO_DRIVER_PIPEWIRE,
+   "pipewire"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_AUDIO_DRIVER_EXT,
    "ext"
    )
@@ -1547,6 +1551,10 @@ MSG_HASH(
    "core_disk_options"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DISK_INDEX,
+   "core_disk_index"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
    "downloaded_file_detect_core_list"
    )
@@ -2135,6 +2143,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    "input_overlay_abxy_diagonal_sensitivity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   "input_overlay_analog_recenter_zone"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,
@@ -3395,10 +3407,6 @@ MSG_HASH(
    "restart_retroarch"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_RESUME,
-   "resume"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_RESUME_CONTENT,
    "resume_content"
    )
@@ -3493,6 +3501,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST,
    "playlist_create"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU,
+   "playlist_add_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU,
+   "deferred_add_to_playlist_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_ADD_ENTRY_TO_PLAYLIST_QUICKMENU,
+   "add_entry_to_playlist_quickmenu"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_QUICKMENU,
+   "playlist_create_quickmenu"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,
@@ -6616,3 +6640,25 @@ MSG_HASH(
    MENU_ENUM_LABEL_GAMEMODE_ENABLE,
    "game_mode_enable"
    )
+#ifdef HAVE_GAME_AI
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS,
+   "core_game_ai_options"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_QUICK_MENU_SHOW_GAME_AI,
+   "quick_menu_show_game_ai"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P1,
+   "game_ai_override_p1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_AI_OVERRIDE_P2,
+   "game_ai_override_p2"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_GAME_AI_SHOW_DEBUG,
+   "game_ai_show_debug"
+   )
+#endif

@@ -196,6 +196,8 @@ retroarch.js
 retroarch.js.mem
 *.bc
 *.wasm
+*.wasm.map
+obj-emscripten/
 
 # only ignore .js files in the repo root
 /*.js
@@ -231,6 +233,14 @@ gfx/common/wayland/relative-pointer-unstable-v1.c
 gfx/common/wayland/relative-pointer-unstable-v1.h
 gfx/common/wayland/viewporter.c
 gfx/common/wayland/viewporter.h
+gfx/common/wayland/cursor-shape-v1.h
+gfx/common/wayland/cursor-shape-v1.c
+gfx/common/wayland/tablet-unstable-v2.h
+gfx/common/wayland/tablet-unstable-v2.c
+gfx/common/wayland/content-type-v1.h
+gfx/common/wayland/content-type-v1.c
+gfx/common/wayland/single-pixel-buffer-v1.h
+gfx/common/wayland/single-pixel-buffer-v1.c
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip

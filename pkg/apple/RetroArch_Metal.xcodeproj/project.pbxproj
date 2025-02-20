@@ -38,6 +38,9 @@
 		05A8E23C20A63CF50084ABDA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05A8E23B20A63CF50084ABDA /* QuartzCore.framework */; };
 		05D7753520A567A400646447 /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753320A5678300646447 /* griffin_cpp.cpp */; };
 		05D7753720A567A700646447 /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05D7753420A5678400646447 /* griffin_glslang.cpp */; };
+		07097FFB2D60F4C80021608F /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07097FFA2D60F4C80021608F /* CoreMIDI.framework */; };
+		07097FFC2D60F4D00021608F /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07097FFA2D60F4C80021608F /* CoreMIDI.framework */; };
+		07097FFD2D60F4D60021608F /* CoreMIDI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07097FFA2D60F4C80021608F /* CoreMIDI.framework */; };
 		070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
 		0720993E29B1258C001642BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
@@ -66,6 +69,9 @@
 		072976DD296284F600D6E00C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 072976DC296284F600D6E00C /* OpenGL.framework */; };
 		0746953A2997393000CCB7BD /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		075650252C488918004C5E7E /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 075650242C488918004C5E7E /* CloudKit.framework */; };
+		076512622D64E99200E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
+		076512632D64E99A00E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
+		076512642D64E9A000E1F6BE /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 076512612D64E99200E1F6BE /* CoreLocation.framework */; };
 		076E640C2BF30A7A00681536 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
 		076E640D2BF30A9200681536 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 074695362995C03900CCB7BD /* GameController.framework */; };
 		076E640E2BF30AA200681536 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A883F2A4E7A1B003161C0 /* OpenAL.framework */; };
@@ -443,6 +449,7 @@
 		05F2873F20F2BEEA00632D47 /* task_content.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_content.c; sourceTree = "<group>"; };
 		05F2874020F2BEEA00632D47 /* task_http.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_http.c; sourceTree = "<group>"; };
 		05F2874120F2BEEA00632D47 /* task_patch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = task_patch.c; sourceTree = "<group>"; };
+		07097FFA2D60F4C80021608F /* CoreMIDI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMIDI.framework; path = System/Library/Frameworks/CoreMIDI.framework; sourceTree = SDKROOT; };
 		070A883F2A4E7A1B003161C0 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		071051BE2BEFEFBA009C29D8 /* Info_AppStore.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info_AppStore.plist; path = OSX/Info_AppStore.plist; sourceTree = "<group>"; };
 		0720996029B1258C001642BB /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -450,6 +457,7 @@
 		074695362995C03900CCB7BD /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		075650242C488918004C5E7E /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		075650262C48B417004C5E7E /* RetroArchCI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RetroArchCI.entitlements; sourceTree = "<group>"; };
+		076512612D64E99200E1F6BE /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
 		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
@@ -521,9 +529,11 @@
 				0720995129B1258C001642BB /* IOSurface.framework in Frameworks */,
 				0720995229B1258C001642BB /* CoreHaptics.framework in Frameworks */,
 				0720995329B1258C001642BB /* Metal.framework in Frameworks */,
+				07097FFD2D60F4D60021608F /* CoreMIDI.framework in Frameworks */,
 				0720995429B1258C001642BB /* MetalKit.framework in Frameworks */,
 				0720995529B1258C001642BB /* libz.dylib in Frameworks */,
 				070A88412A4E7A24003161C0 /* OpenAL.framework in Frameworks */,
+				076512642D64E9A000E1F6BE /* CoreLocation.framework in Frameworks */,
 				0720995629B1258C001642BB /* CoreAudio.framework in Frameworks */,
 				0720995729B1258C001642BB /* AudioUnit.framework in Frameworks */,
 				0720995829B1258C001642BB /* AppKit.framework in Frameworks */,
@@ -544,8 +554,10 @@
 				07F2BBDA2BE83A4700FD1295 /* CoreHaptics.framework in Frameworks */,
 				07F2BBDB2BE83A4700FD1295 /* Metal.framework in Frameworks */,
 				07F2BBDC2BE83A4700FD1295 /* MetalKit.framework in Frameworks */,
+				07097FFC2D60F4D00021608F /* CoreMIDI.framework in Frameworks */,
 				07F2BBDD2BE83A4700FD1295 /* libz.dylib in Frameworks */,
 				07F2BBDE2BE83A4700FD1295 /* OpenAL.framework in Frameworks */,
+				076512632D64E99A00E1F6BE /* CoreLocation.framework in Frameworks */,
 				07F2BBDF2BE83A4700FD1295 /* CoreAudio.framework in Frameworks */,
 				07F2BBE02BE83A4700FD1295 /* AudioUnit.framework in Frameworks */,
 				07D851CD2CAF06E2005097EA /* CloudKit.framework in Frameworks */,
@@ -570,9 +582,11 @@
 				075650252C488918004C5E7E /* CloudKit.framework in Frameworks */,
 				5061C8A41AE47E510080AE14 /* libz.dylib in Frameworks */,
 				070A88402A4E7A1B003161C0 /* OpenAL.framework in Frameworks */,
+				076512622D64E99200E1F6BE /* CoreLocation.framework in Frameworks */,
 				84DD5EA91A89E4BE007336C1 /* CoreAudio.framework in Frameworks */,
 				84DD5EB31A89E6C0007336C1 /* AudioUnit.framework in Frameworks */,
 				84DD5EA31A89E2AA007336C1 /* AppKit.framework in Frameworks */,
+				07097FFB2D60F4C80021608F /* CoreMIDI.framework in Frameworks */,
 				84DD5EB51A89E737007336C1 /* IOKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1245,6 +1259,8 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				076512612D64E99200E1F6BE /* CoreLocation.framework */,
+				07097FFA2D60F4C80021608F /* CoreMIDI.framework */,
 				075650242C488918004C5E7E /* CloudKit.framework */,
 				070A883F2A4E7A1B003161C0 /* OpenAL.framework */,
 				0795A8C6299A095300D5035D /* CoreHaptics.framework */,
@@ -1805,6 +1821,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = YES;
 			};
 			name = Debug;
@@ -1815,6 +1832,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = YES;
 			};
 			name = Release;
@@ -1887,7 +1905,7 @@
 					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
-				MARKETING_VERSION = 1.19.1;
+				MARKETING_VERSION = 1.20.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1968,7 +1986,7 @@
 					"@executable_path/../Frameworks/MoltenVK.framework",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
-				MARKETING_VERSION = 1.19.1;
+				MARKETING_VERSION = 1.20.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				MTL_IGNORE_WARNINGS = YES;

@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include <libretro.h>
+#include <string/stdstring.h>
 
 #include "../configuration.h"
 #include "../driver.h"
@@ -51,6 +52,9 @@ static camera_driver_t camera_null = {
 const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
+#endif
+#ifdef HAVE_PIPEWIRE_STABLE
+   &camera_pipewire,
 #endif
 #ifdef EMSCRIPTEN
    &camera_rwebcam,
@@ -100,7 +104,9 @@ bool driver_camera_start(void)
          return camera_st->driver->start(camera_st->data);
 
       runloop_msg_queue_push(
-            "Camera is explicitly disabled.\n", 1, 180, false,
+            "Camera is explicitly disabled.\n",
+            STRLEN_CONST("Camera is explicitly disabled.\n"),
+            1, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return true;

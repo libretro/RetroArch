@@ -209,11 +209,11 @@ void x11_set_window_attr(Display *dpy, Window win)
 static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 {
     int dummy, min, maj;
-    if (!XScreenSaverQueryExtension(dpy, &dummy, &dummy) ||
-        !XScreenSaverQueryVersion(dpy, &maj, &min) ||
-            maj < 1 || (maj == 1 && min < 1)) {
+    if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
+            || !XScreenSaverQueryVersion(dpy, &maj, &min)
+            || (maj < 1)
+            || (maj == 1 && min < 1))
             return false;
-        }
     XScreenSaverSuspend(dpy, enable);
     XResetScreenSaver(dpy);
     return true;
@@ -276,10 +276,13 @@ bool x11_suspend_screensaver(void *data, bool enable)
        return true;
 #endif
     if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
-       if (xdg_screensaver_available) {
+    {
+       if (xdg_screensaver_available)
+       {
           xdg_screensaver_inhibit(wnd);
           return xdg_screensaver_available;
        }
+    }
     return true;
 }
 
@@ -810,13 +813,13 @@ bool x11_connect(void)
 
 void x11_update_title(void *data)
 {
-   size_t len;
+   size_t _len;
    char title[128];
-   title[0] = '\0';
-   len      = video_driver_get_window_title(title, sizeof(title));
+   title[0]  = '\0';
+   _len      = video_driver_get_window_title(title, sizeof(title));
    if (title[0])
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*)title, len);
+            8, PropModeReplace, (const unsigned char*)title, _len);
 }
 
 bool x11_input_ctx_new(bool true_full)

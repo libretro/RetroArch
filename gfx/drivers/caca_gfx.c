@@ -231,7 +231,7 @@ static bool caca_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   size_t len                = 0;
+   size_t _len               = 0;
    void *buffer              = NULL;
    const void *frame_to_copy = frame;
    unsigned width            = 0;
@@ -297,11 +297,11 @@ static bool caca_frame(void *data, const void *frame,
             height,
             caca->dither, frame_to_copy);
 
-      buffer = caca_export_canvas_to_memory(caca->cv, "caca", &len);
+      buffer = caca_export_canvas_to_memory(caca->cv, "caca", &_len);
 
       if (buffer)
       {
-         if (len)
+         if (_len > 0)
             caca_refresh_display(caca->display);
 
          free(buffer);
@@ -402,8 +402,8 @@ static const video_poke_interface_t caca_poke_interface = {
 
 static void caca_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &caca_poke_interface; }
-static void caca_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate) { }
+static void caca_set_viewport(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate) { }
 
 video_driver_t video_caca = {
    caca_init,
