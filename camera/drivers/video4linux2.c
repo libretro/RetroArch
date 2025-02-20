@@ -415,7 +415,5 @@ camera_driver_t camera_v4l2 = {
    v4l_start,
    v4l_stop,
    v4l_poll,
-   NULL,
-   NULL,
    "video4linux2",
 };

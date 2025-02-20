@@ -49,9 +49,6 @@ typedef struct camera_driver
          retro_camera_frame_raw_framebuffer_t frame_raw_cb,
          retro_camera_frame_opengl_texture_t frame_gl_cb);
 
-   struct string_list *(*device_list_new)(void);
-   void (*device_list_free)(struct string_list *devices);
-
    const char *ident;
 } camera_driver_t;
 

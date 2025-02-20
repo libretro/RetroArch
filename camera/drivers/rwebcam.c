@@ -65,7 +65,5 @@ camera_driver_t camera_rwebcam = {
    rwebcam_start,
    rwebcam_stop,
    rwebcam_poll,
-   NULL,
-   NULL,
    "rwebcam",
 };

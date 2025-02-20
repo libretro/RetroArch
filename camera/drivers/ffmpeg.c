@@ -663,38 +663,11 @@ static bool ffmpeg_camera_poll(
    return true;
 }
 
-static struct string_list *ffmpeg_camera_device_list_new(void)
-{
-   const AVInputFormat *input = NULL;
-   struct string_list *list = string_list_new();
-
-   if (!list)
-      return NULL;
-
-   for (input = av_input_video_device_next(NULL); input != NULL; input = av_input_video_device_next(input))
-   {
-      // if (input->priv_class && input->priv_class->category == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT)
-      RARCH_LOG("[FFMPEG]: Found input device: %s (%s, %x)\n", input->name, input->long_name, input->flags);
-   }
-
-   return list;
-}
-
-static void ffmpeg_camera_device_list_free(struct string_list *devices)
-{
-   struct string_list *sl = (struct string_list*)devices;
-
-   if (sl)
-      string_list_free(sl);
-}
-
 camera_driver_t camera_ffmpeg = {
    ffmpeg_camera_init,
    ffmpeg_camera_free,
    ffmpeg_camera_start,
    ffmpeg_camera_stop,
    ffmpeg_camera_poll,
-   ffmpeg_camera_device_list_new,
-   ffmpeg_camera_device_list_free,
    "ffmpeg",
 };

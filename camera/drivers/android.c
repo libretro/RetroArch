@@ -202,7 +202,5 @@ camera_driver_t camera_android = {
    android_camera_start,
    android_camera_stop,
    android_camera_poll,
-   NULL,
-   NULL,
    "android",
 };
