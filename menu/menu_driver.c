@@ -382,7 +382,7 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    newpath[0]                  = '\0';
 
-   if (!list)
+   if (!list || !list->size)
       return;
 
    path_enabled               = (entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED) ? true : false;
@@ -5670,7 +5670,7 @@ static int menu_input_post_iterate(
    menu_list_t *menu_list                          = menu_st->entries.list;
    file_list_t *selection_buf                      = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    size_t selection                                = menu_st->selection_ptr;
-   menu_file_list_cbs_t *cbs                       = selection_buf
+   menu_file_list_cbs_t *cbs                       = selection_buf && selection_buf->size
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
 
@@ -7384,7 +7384,7 @@ int generic_menu_entry_action(
    file_list_t *menu_stack        = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
    size_t entries_size            = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
    size_t selection_buf_size      = selection_buf ? selection_buf->size : 0;
-   menu_file_list_cbs_t *cbs      = selection_buf ?
+   menu_file_list_cbs_t *cbs      = selection_buf && selection_buf->size ?
       (menu_file_list_cbs_t*)selection_buf->list[i].actiondata : NULL;
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable      = settings->bools.accessibility_enable;
@@ -7664,7 +7664,7 @@ int generic_menu_entry_action(
          break;
    }
 
-   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st))
+   if (MENU_ENTRIES_NEEDS_REFRESH(menu_st) && selection_buf_size)
    {
       menu_driver_displaylist_push(
             menu_st,

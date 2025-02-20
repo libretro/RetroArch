@@ -3300,7 +3300,7 @@ static float materialui_get_scroll(materialui_handle_t *mui,
    float view_centre          = 0.0f;
    float selection_centre     = 0.0f;
 
-   if (!mui || !list)
+   if (!mui || !list || !list->size)
       return 0;
 
    /* Get current window size */
@@ -6208,7 +6208,7 @@ static void materialui_render_selection_highlight(
       struct menu_state *menu_st = menu_state_get_ptr();
       menu_list_t *menu_list     = menu_st->entries.list;
       file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-      if (!list)
+      if (!list || !list->size)
          return;
 
       if (!(node = (materialui_node_t*)list->list[selection].userdata))
@@ -7750,6 +7750,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    video_driver_state_t *video_st = video_state_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *list              = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    menu_input_t *menu_input       = &menu_st->input_state;
    size_t selection               = menu_st->selection_ptr;
    unsigned header_height         = p_disp->header_height;
@@ -7880,9 +7881,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (mui->flags & MUI_FLAG_SCROLLBAR_ACTIVE)
       materialui_update_scrollbar(mui, video_width, video_height,
             header_height, list_x_offset);
-   materialui_render_menu_list(mui, p_disp,
-         userdata, selection,
-         video_width, video_height, list_x_offset);
+
+   if (list && list->size)
+      materialui_render_menu_list(mui, p_disp,
+            userdata, selection,
+            video_width, video_height, list_x_offset);
 
    /* Flush first layer of text
     * > Menu list only uses list and hint fonts */
