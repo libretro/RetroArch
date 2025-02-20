@@ -30,52 +30,17 @@
 #include <rthreads/rthreads.h>
 #include <string/stdstring.h>
 
-/* ffmpeg supports a specific range of video devices;
- * some video backends are better than others,
- * so we'll prioritize those as defaults.
- */
-static const char *const FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[] = {
-   /* Recommended camera backends */
 #ifdef ANDROID
-   "android_camera",
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "android_camera"
+#elif defined(__linux__)
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "v4l2"
+#elif defined(__APPLE__)
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "avfoundation"
+#elif defined(__WIN32__)
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "dshow"
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
+#define FFMPEG_CAMERA_DEFAULT_BACKEND "bktr"
 #endif
-#ifdef __linux__
-   "v4l2",
-#endif
-#ifdef __APPLE__
-   "avfoundation",
-#endif
-#ifdef __WIN32__
-   "dshow",
-   "vfwcap",
-#endif
-
-   /* Uncommon backends */
-#ifdef __linux__
-   "fbdev",
-   "kmsgrab",
-   "x11grab",
-#endif
-#ifdef __WIN32__
-   "gdigrab",
-#endif
-
-   "iec61883", /* FireWire */
-   "decklink",
-   "libdc1394",
-   "lavfi", /* Libavfilter */
-
-   /* Deprecated backends */
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
-   "bktr",
-#endif
-   NULL
-
-   /* Unlisted backends lack video support
-    * or were introduced after this driver was written
-    * (it's okay, we can still use them if they're available).
-    */
-};
 
 typedef struct ffmpeg_camera
 {
@@ -107,23 +72,6 @@ typedef struct ffmpeg_camera
 } ffmpeg_camera_t;
 
 static void ffmpeg_camera_free(void *data);
-
-// TODO: Pick a backend based on the settings, too
-static const AVInputFormat *ffmpeg_camera_get_default_backend(void)
-{
-   const AVInputFormat *format = NULL;
-   for (unsigned i = 0; FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[i]; i++)
-   {
-      format = av_find_input_format(FFMPEG_CAMERA_DEVICE_TYPE_PRIORITIES[i]);
-      if (format)
-         break;
-   }
-
-   if (!format)
-      format = av_input_video_device_next(NULL);
-
-   return format;
-}
 
 static int ffmpeg_camera_get_initial_options(
    const AVInputFormat *backend,
@@ -265,14 +213,14 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
    avdevice_register_all();
    RARCH_LOG("[FFMPEG]: Initialized libavdevice.\n");
 
-   ffmpeg->input_format = ffmpeg_camera_get_default_backend();
+   ffmpeg->input_format = av_find_input_format(FFMPEG_CAMERA_DEFAULT_BACKEND);
    if (!ffmpeg->input_format)
    {
       RARCH_ERR("[FFMPEG]: No suitable video input backend found.\n");
       goto error;
    }
 
-   RARCH_LOG("[FFMPEG]: Using default camera backend: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
+   RARCH_LOG("[FFMPEG]: Using camera backend: %s (%s, flags=0x%x)\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
    result = ffmpeg_camera_get_initial_options(ffmpeg->input_format, &ffmpeg->options, caps, width, height);
    if (result < 0)
