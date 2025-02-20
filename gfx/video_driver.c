@@ -2512,11 +2512,15 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
             if (overscale_h_diff <= underscale_h_diff)
                max_scale_h = overscale_h;
 
+            /* Limit width overscale */
+            if (max_scale_w * content_width >= width + ((int)content_width / 2))
+               max_scale_w = underscale_w;
+
             /* Allow overscale when it is close enough */
             if (scale_h_diff > 0 && scale_h_diff < 64)
                max_scale_h = overscale_h;
             /* Overscale will be too much even if it is closer */
-            else if ((scale_h_diff < -155 && scale_h_diff > (int)-content_height / 2)
+            else if ((scale_h_diff < -140 && scale_h_diff >= (int)-content_height / 2)
                   || (scale_h_diff < -30 && scale_h_diff > -50)
                   || (scale_h_diff > 20))
                max_scale_h = underscale_h;
@@ -2617,7 +2621,7 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
                   || axis == VIDEO_SCALE_INTEGER_AXIS_XHALF)
             {
                if (     max_scale_h == (height / content_height)
-                     && content_height / 300
+                     && content_height / ((rotation % 2) ? 288 : 300)
                      && content_height * max_scale_h < height * 0.90f
                   )
                {
