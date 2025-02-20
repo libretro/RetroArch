@@ -11709,7 +11709,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
-   "Сіре світло"
+   "Світло-сірий"
    )
 
 /* Ozone: Settings > User Interface > Appearance */
