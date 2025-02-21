@@ -350,32 +350,46 @@ void PlatformEmscriptenMountFilesystems(void *info) {
        */
       int max_line_len = 1024;
       printf("[FetchFS] read fetch manifest from %s\n",fetch_manifest);
-      FILE *file = fopen(fetch_manifest, O_RDONLY);
+      FILE *file = fopen(fetch_manifest, "r");
+      if(!file) {
+        printf("[FetchFS] missing manifest file\n");
+        abort();
+      }
       char *line = calloc(sizeof(char), max_line_len);
-      size_t len = 0;
+      size_t len = max_line_len;
       while (getline(&line, &len, file) != -1) {
          char *path = strstr(line, " ");
          backend_t fetch;
          int fd;
-         if (!path) {
-            printf("Manifest file has invalid line %s\n",line);
-            return;
+         if(len <= 2 || !path) {
+            printf("[FetchFS] Manifest file has invalid line %s\n",line);
+            continue;
          }
          *path = '\0';
          path += 1;
-         printf("Fetch %s from %s\n", path, line);
+         path[strcspn(path, "\r\n")] = '\0';
+         printf("[FetchFS] Fetch %s from %s\n", path, line);
          {
             char *parent = strdup(path);
             path_parent_dir(parent, strlen(parent));
             if(!path_mkdir(parent)) {
-               printf("mkdir error %d\n",errno);
+               printf("[FetchFS] mkdir error %d\n",errno);
                abort();
             }
             free(parent);
          }
-         fetch = wasmfs_create_fetch_backend(line, 8*1024*1024);
+         fetch = wasmfs_create_fetch_backend(line, 16*1024*1024);
+         if(!fetch) {
+           printf("[FetchFS] couldn't create fetch backend\n");
+           abort();
+         }
          fd = wasmfs_create_file(path, 0777, fetch);
+         if(!fd) {
+           printf("[FetchFS] couldn't create fetch file\n");
+           abort();
+         }
          close(fd);
+         len = max_line_len;
       }
       fclose(file);
       free(line);
