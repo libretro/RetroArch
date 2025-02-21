@@ -433,7 +433,9 @@ void emscripten_bootup_mainloop(void *argptr) {
 int main(int argc, char *argv[])
 {
    args_t *args = calloc(sizeof(args_t), 1);
-
+   args->argc = argc;
+   args->argv = argv;
+   
    PlatformEmscriptenWatchCanvasSize();
    PlatformEmscriptenPowerStateInit();
 
