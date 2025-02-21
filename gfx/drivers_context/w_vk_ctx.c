@@ -271,10 +271,24 @@ static void *gfx_ctx_w_vk_get_context_data(void *data) { return &win32_vk.contex
 
 static uint32_t gfx_ctx_w_vk_get_flags(void *data)
 {
-   uint32_t flags = 0;
+   uint32_t flags             = 0;
+   uint8_t present_mode_count = 16;
+   uint8_t i                  = 0;
+
+   /* Check for FIFO_RELAXED_KHR capability */
+   for (i = 0; i < present_mode_count; i++)
+   {
+      if (win32_vk.context.present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+      {
+         BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+         break;
+      }
+   }
+
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
+
    return flags;
 }
 
