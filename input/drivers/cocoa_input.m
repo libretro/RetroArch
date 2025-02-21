@@ -401,31 +401,11 @@ static void cocoa_input_poll(void *data)
    if (!apple)
       return;
 
-#ifdef IOS
-#ifdef HAVE_IOS_TOUCHMOUSE
-   if (apple->window_pos_x > 0 || apple->mouse_grabbed)
-   {
-      apple->mouse_rel_x = apple->window_pos_x - apple->mouse_x_last;
-      apple->mouse_x_last = apple->window_pos_x;
-   }
-#endif
-#else
    apple->mouse_rel_x = apple->window_pos_x - apple->mouse_x_last;
    apple->mouse_x_last = apple->window_pos_x;
-#endif
 
-#ifdef IOS
-#ifdef HAVE_IOS_TOUCHMOUSE
-   if (apple->window_pos_y > 0 || apple->mouse_grabbed)
-   {
-      apple->mouse_rel_y = apple->window_pos_y - apple->mouse_y_last;
-      apple->mouse_y_last = apple->window_pos_y;
-   }
-#endif
-#else
    apple->mouse_rel_y = apple->window_pos_y - apple->mouse_y_last;
    apple->mouse_y_last = apple->window_pos_y;
-#endif
 
    for (i = 0; i < apple->touch_count || i == 0; i++)
    {
