@@ -4871,6 +4871,9 @@ static void cb_decompressed(retro_task_t *task,
          case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
             generic_action_ok_command(CMD_EVENT_REINIT);
             break;
+         case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
+            break;
          default:
             break;
       }
