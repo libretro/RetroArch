@@ -41,7 +41,7 @@ async function setupZipFS(zipBuf) {
 
 onmessage = async (msg) => {
   if(msg.data.command == "load_bundle") {
-    let old_timestamp = msg.data;
+    let old_timestamp = msg.data.time;
     try {
       const root = await navigator.storage.getDirectory();
       const _bundle = await root.getDirectoryHandle("bundle");
