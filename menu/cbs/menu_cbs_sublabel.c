@@ -3519,6 +3519,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_to_favorites);
             break;
          case MENU_ENUM_LABEL_ADD_TO_PLAYLIST:
+         case MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_add_to_playlist);
             break;
          case MENU_ENUM_LABEL_SET_CORE_ASSOCIATION:
