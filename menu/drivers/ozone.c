@@ -6998,19 +6998,20 @@ static void ozone_draw_messagebox(
    unsigned y_position      = 0;
    unsigned width           = video_width;
    unsigned height          = video_height;
-   font_data_impl_t font    = ozone->fonts.time;
+   font_data_impl_t font_data
+                            = ozone->fonts.entries_label;
    gfx_display_ctx_driver_t
          *dispctx           = p_disp->dispctx;
 
    wrapped_message[0]       = '\0';
 
    /* Sanity check */
-   if (string_is_empty(message) || !font.font)
+   if (string_is_empty(message) || !font_data.font)
       return;
 
    scale_factor             = ozone->last_scale_factor;
-   usable_width             = (int)width - (48 * 8 * scale_factor);
-   line_height              = font.line_height * 1.10f;
+   usable_width             = (int)width - (100 * 8 * scale_factor);
+   line_height              = font_data.line_height * 1.10f;
 
    if (usable_width < 1)
       return;
@@ -7021,8 +7022,8 @@ static void ozone_draw_messagebox(
          sizeof(wrapped_message),
          message,
          strlen(message),
-         usable_width / (int)font.glyph_width,
-         font.wideglyph_width,
+         usable_width / (int)font_data.glyph_width,
+         font_data.wideglyph_width,
          0);
 
    string_list_initialize(&list);
@@ -7047,7 +7048,7 @@ static void ozone_draw_messagebox(
 
       if (!string_is_empty(msg))
       {
-         int width = font_driver_get_message_width(font.font, msg, strlen(msg), 1.0f);
+         int width = font_driver_get_message_width(font_data.font, msg, strlen(msg), 1.0f);
 
          if (width > longest_width)
             longest_width = width;
@@ -7104,10 +7105,10 @@ static void ozone_draw_messagebox(
 
       if (msg)
          gfx_display_draw_text(
-               font.font,
+               font_data.font,
                msg,
                x - (longest_width / 2),
-               y + (i * line_height) + font.line_ascender,
+               y + (i * line_height) + font_data.line_ascender,
                width,
                height,
                COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
