@@ -2711,7 +2711,8 @@ static bool netplay_cmd_request_savestate(netplay_t *netplay)
 {
    if (     (netplay->connections_size == 0)
        || (!(netplay->connections[0].flags & NETPLAY_CONN_FLAG_ACTIVE))
-       ||   (netplay->connections[0].mode  < NETPLAY_CONNECTION_CONNECTED))
+       ||   (netplay->connections[0].mode  < NETPLAY_CONNECTION_CONNECTED)
+       ||   (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE))
       return false;
    if (netplay->savestate_request_outstanding)
       return true;
@@ -7448,6 +7449,7 @@ static void netplay_send_savestate(netplay_t *netplay,
    uint32_t rd, wn;
    size_t i;
    bool has_legacy_connection = false;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    /* Compress it */
    z->compression_backend->set_in(z->compression_stream,
@@ -7723,6 +7725,8 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
 
 static bool netplay_process_savestate(netplay_t* netplay, retro_ctx_serialize_info_t* serial_info)
 {
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
+
    /* if no NETPLAY marker, it's just raw core data */
    if (memcmp(serial_info->data_const, "NETPLAY", 7) != 0)
    {
@@ -7744,6 +7748,7 @@ static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info
 {
    uint8_t* buffer = (uint8_t*)serial_info->data;
    uint8_t* output = buffer;
+   NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
    memcpy(output, "NETPLAY", 7);
    output[7] = NETPLAYSTATE_VERSION;
@@ -9359,7 +9364,10 @@ void netplay_force_send_savestate(void)
    net_driver_state_t* net_st = &networking_driver_st;
    netplay_t* netplay = net_st->data;
 
-   if (netplay && netplay->is_server)
+   /* Don't sync state when the core packet interface is active where clients
+      run fully independent without the full state being synchronized. */
+   if (netplay && netplay->is_server
+         && netplay->modus != NETPLAY_MODUS_CORE_PACKET_INTERFACE)
       netplay->force_send_savestate = true;
 }
 
