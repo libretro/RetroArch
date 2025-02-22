@@ -91,6 +91,33 @@ bool PlatformEmscriptenPowerStateGetCharging(void);
 uint64_t PlatformEmscriptenGetTotalMem(void);
 uint64_t PlatformEmscriptenGetFreeMem(void);
 
+void PlatformEmscriptenCommandReply(const char *msg, size_t len) {
+  MAIN_THREAD_EM_ASM({
+      var message = UTF8ToString($0,$1);
+      RPE.command_reply_queue.push(message);
+    }, msg, len);
+}
+static bool command_flag = false;
+size_t PlatformEmscriptenCommandRead(char **into, size_t max_len) {
+  if(!command_flag) { return 0; }
+  return MAIN_THREAD_EM_ASM_INT({
+      var next_command = RPE.command_queue.shift();
+      var length = lengthBytesUTF8(next_command);
+      if(length > $2) {
+        console.error("[CMD] Command too long, skipping",next_command);
+        return 0;
+      }
+      stringToUTF8(next_command, $1, $2);
+      if(RPE.command_queue.length == 0) {
+        setValue($0, 0, 'i8');
+      }
+      return length;
+    }, &command_flag, into, max_len);
+}
+void PlatformEmscriptenCommandRaiseFlag() {
+  command_flag = true;
+}
+
 /* begin exported functions */
 
 /* saves and states */

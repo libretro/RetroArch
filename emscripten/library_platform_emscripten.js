@@ -12,7 +12,9 @@ var LibraryPlatformEmscripten = {
          RPE.powerState.dischargeTime = Number.isFinite(e.target.dischargingTime) ? e.target.dischargingTime : 0x7FFFFFFF;
          RPE.powerState.level = e.target.level;
          RPE.powerState.charging = e.target.charging;
-      }
+      },
+      command_queue:[],
+      command_reply_queue:[],
    },
 
    PlatformEmscriptenPowerStateInit: function() {
@@ -49,6 +51,15 @@ var LibraryPlatformEmscripten = {
    PlatformEmscriptenGetFreeMem: function() {
       if (!performance.memory) return 0;
       return (performance.memory.jsHeapSizeLimit || 0) - (performance.memory.usedJSHeapSize || 0);
+   },
+
+   $EmscriptenSendCommand__deps:["PlatformEmscriptenCommandRaiseFlag"],
+   $EmscriptenSendCommand: function(str) {
+      RPE.command_queue.push(str);
+      _PlatformEmscriptenCommandRaiseFlag();
+   },
+   $EmscriptenReceiveCommandReply: function() {
+      return RPE.command_reply_queue.shift();
    }
 };
 
