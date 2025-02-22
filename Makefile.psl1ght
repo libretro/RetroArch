@@ -6,7 +6,7 @@
 ifeq ($(strip $(PSL1GHT)),)
 $(error "Please set PSL1GHT in your environment. export PSL1GHT=<path>")
 endif
- 
+
 include $(PSL1GHT)/ppu_rules
 
 include version.all
@@ -30,10 +30,17 @@ CORE_PATH    = pkg/psl1ght/pkg/USRDIR/cores/CORE.SELF
 INCLUDE += -I. -Ideps -Ideps/stb -Ilibretro-common/include/compat/zlib -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines -I$(PORTLIBS)/include -I$(PORTLIBS)/include/freetype2
 LIBDIRS += -L. -L$(PORTLIBS)/lib
 
+ifeq ($(HAVE_STATIC_DUMMY),1)
+   DEFINES += -DHAVE_STATIC_DUMMY
+   LIBS :=
+else
+   LIBS := -lretro_psl1ght
+endif
+
 MACHDEP := -D__PSL1GHT__ -D__PS3__ -mcpu=cell
-CFLAGS += -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS += -Wall $(DEFINES) $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS := -lretro_psl1ght -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lfreetype -lcamera -lgem -lspurs
+LIBS += -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lfreetype -lcamera -lgem -lspurs
 
 # system platform
 system_platform = unix
@@ -125,7 +132,7 @@ $(ELF_TARGET): $(OBJ)
 	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(LIBS)
 
 create-core: $(SELF_TARGET)
-	cp $(SELF_TARGET) $(CORE_PATH) 
+	cp $(SELF_TARGET) $(CORE_PATH)
 
 pkg: create-core
 	$(PKG) --contentid $(CONTENTID) pkg/psl1ght/pkg/ $(PACKAGE_BASENAME).pkg
