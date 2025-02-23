@@ -92,6 +92,8 @@ typedef struct menu_input_ctx_bind
 
 /* TODO/FIXME - public global variable */
 extern u32 __nx_applet_type;
+
+void libnx_apply_overclock(void);
 #endif
 
 /* Accelerated navigation buttons */
