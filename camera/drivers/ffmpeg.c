@@ -174,7 +174,9 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
 done:
    if (options)
    {
-      while ((e = av_dict_iterate(options, e))) {
+      const AVDictionaryEntry prev;
+      while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
+         /* av_dict_iterate isn't always available, so we use av_dict_get's legacy behavior instead */
          RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
       }
    }
@@ -278,6 +280,7 @@ static bool ffmpeg_camera_start(void *data)
    AVStream *stream = NULL;
    AVDictionary *options = NULL;
    const AVDictionaryEntry *e = NULL;
+   const AVDictionaryEntry prev;
 
    if (ffmpeg->format_context)
    { // TODO: Check the actual format context, not just the pointer
@@ -303,7 +306,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   while ((e = av_dict_iterate(options, e))) {
+   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
       RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
    }
 
@@ -351,7 +354,7 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   while ((e = av_dict_iterate(options, e))) {
+   while ((e = av_dict_get(options, "", &prev, AV_DICT_IGNORE_SUFFIX))) {
       RARCH_WARN("[FFMPEG]: Unrecognized option on video input device: %s=%s\n", e->key, e->value);
    }
 
