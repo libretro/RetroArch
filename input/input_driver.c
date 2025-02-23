@@ -1791,6 +1791,9 @@ static int16_t input_state_device(
                   input_st->overlay_ptr, port, device, idx, id);
 #endif
 
+         if (res && input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
+            break;
+
          if (id < RARCH_FIRST_META_KEY)
          {
             bool bind_valid = input_st->libretro_input_binds[port]
@@ -1804,7 +1807,7 @@ static int16_t input_state_device(
                      res |= (1 << id);
                }
                else
-                  res += ret;
+                  res = ret;
             }
          }
 
