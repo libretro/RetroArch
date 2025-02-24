@@ -14,64 +14,15 @@ var Module = {
    noImageDecoding: true,
    noAudioDecoding: true,
 
-   encoder: new TextEncoder(),
-   message_queue: [],
-   message_out: [],
-   message_accum: "",
-
-   retroArchSend: function(msg) {
-      let bytes = this.encoder.encode(msg + "\n");
-      this.message_queue.push([bytes, 0]);
-   },
-   retroArchRecv: function() {
-      let out = this.message_out.shift();
-      if (out == null && this.message_accum != "") {
-         out = this.message_accum;
-         this.message_accum = "";
-      }
-      return out;
-   },
+  retroArchSend: function(msg) {
+    this.EmscriptenSendCommand(msg);
+  },
+  retroArchRecv: function() {
+    return this.EmscriptenReceiveCommandReply();
+  },
    preRun: [
       function(module) {
          Module.ENV['OPFS'] = "/home/web_user/retroarch";
-      },
-      function(module) {
-         function stdin() {
-            // Return ASCII code of character, or null if no input
-            while (module.message_queue.length > 0) {
-               var msg = module.message_queue[0][0];
-               var index = module.message_queue[0][1];
-               if (index >= msg.length) {
-                  module.message_queue.shift();
-               } else {
-                  module.message_queue[0][1] = index + 1;
-                  // assumption: msg is a uint8array
-                  return msg[index];
-               }
-            }
-            return null;
-         }
-
-         function stdout(c) {
-            if (c == null) {
-               // flush
-               if (module.message_accum != "") {
-                  module.message_out.push(module.message_accum);
-                  module.message_accum = "";
-               }
-            } else {
-               let s = String.fromCharCode(c);
-               if (s == "\n") {
-                  if (module.message_accum != "") {
-                     module.message_out.push(module.message_accum);
-                     module.message_accum = "";
-                  }
-               } else {
-                  module.message_accum = module.message_accum + s;
-               }
-            }
-         }
-         module.FS.init(stdin, stdout);
       }
    ],
    postRun: [],

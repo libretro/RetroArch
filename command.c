@@ -337,7 +337,7 @@ command_t* command_stdin_new(void)
    command_t *cmd;
    command_stdin_t *stdincmd;
 
-#ifndef _WIN32
+#if !(defined(_WIN32) || defined(EMSCRIPTEN))
 #ifdef HAVE_NETWORKING
    if (!socket_nonblock(STDIN_FILENO))
       return NULL;
@@ -362,6 +362,61 @@ command_t* command_stdin_new(void)
    return cmd;
 }
 #endif
+
+#if defined(EMSCRIPTEN)
+void PlatformEmscriptenCommandReply(const char *, size_t);
+int PlatformEmscriptenCommandRead(char **, size_t);
+typedef struct
+{
+   char command_buf[CMD_BUF_SIZE];
+} command_emscripten_t;
+
+static void emscripten_command_reply(command_t *_cmd,
+   const char *s, size_t len)
+{
+   PlatformEmscriptenCommandReply(s, len);
+}
+
+static void emscripten_command_free(command_t *handle)
+{
+   free(handle->userptr);
+   free(handle);
+}
+
+static void command_emscripten_poll(command_t *handle)
+{
+   command_emscripten_t *emscriptencmd = (command_emscripten_t*)handle->userptr;
+   ptrdiff_t msg_len = PlatformEmscriptenCommandRead((char **)(&emscriptencmd->command_buf), CMD_BUF_SIZE);
+   if (msg_len == 0)
+      return;
+   command_parse_msg(handle, emscriptencmd->command_buf);
+}
+
+command_t* command_emscripten_new(void)
+{
+   command_t *cmd;
+   command_emscripten_t *emscriptencmd;
+
+   cmd           = (command_t*)calloc(1, sizeof(command_t));
+   emscriptencmd = (command_emscripten_t*)calloc(1, sizeof(command_emscripten_t));
+
+   if (!cmd)
+      return NULL;
+   if (!emscriptencmd)
+   {
+      free(cmd);
+      return NULL;
+   }
+   cmd->userptr = emscriptencmd;
+   cmd->poll    = command_emscripten_poll;
+   cmd->replier = emscripten_command_reply;
+   cmd->destroy = emscripten_command_free;
+
+   return cmd;
+}
+#endif
+
+
 
 bool command_get_config_param(command_t *cmd, const char* arg)
 {

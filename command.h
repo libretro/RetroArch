@@ -329,11 +329,20 @@ struct rarch_state;
 bool command_event(enum event_command action, void *data);
 
 /* Constructors for the supported drivers */
+#ifdef HAVE_NETWORK_CMD
 command_t* command_network_new(uint16_t port);
-command_t* command_stdin_new(void);
-command_t* command_uds_new(void);
-
 bool command_network_send(const char *cmd_);
+#endif
+#ifdef HAVE_STDIN_CMD
+command_t* command_stdin_new(void);
+#endif
+#ifdef LAKKA
+command_t* command_uds_new(void);
+#endif
+#ifdef EMSCRIPTEN
+command_t* command_emscripten_new(void);
+#endif
+
 
 void command_event_set_mixer_volume(
       settings_t *settings,

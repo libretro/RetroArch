@@ -5104,10 +5104,14 @@ void input_driver_init_command(input_driver_state_t *input_st,
    }
 #endif
 
-#ifdef HAVE_LAKKA
+#if defined(HAVE_LAKKA)
    if (!(input_st->command[2] = command_uds_new()))
       RARCH_ERR("Failed to initialize the UDS command interface.\n");
+#elif defined(EMSCRIPTEN)
+   if (!(input_st->command[2] = command_emscripten_new()))
+      RARCH_ERR("Failed to initialize the emscripten command interface.\n");
 #endif
+
 }
 
 void input_driver_deinit_command(input_driver_state_t *input_st)

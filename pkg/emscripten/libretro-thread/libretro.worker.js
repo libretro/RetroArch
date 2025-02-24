@@ -60,7 +60,7 @@ onmessage = async (msg) => {
     }
     postMessage({command:"loaded_bundle", time:resp.headers.get("last-modified")});
   } else if(msg.data.command == "upload_file") {
-    await writeFile("/home/web_user/retroarch/userdata/content/"+msg.data.name, new Uint8Array(msg.data.data));
+    await writeFile("userdata/content/"+msg.data.name, new Uint8Array(msg.data.data));
     postMessage({command:"uploaded_file",name:msg.data.name});
   }
 }

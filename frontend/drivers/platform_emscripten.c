@@ -91,6 +91,33 @@ bool PlatformEmscriptenPowerStateGetCharging(void);
 uint64_t PlatformEmscriptenGetTotalMem(void);
 uint64_t PlatformEmscriptenGetFreeMem(void);
 
+void PlatformEmscriptenCommandReply(const char *msg, size_t len) {
+  MAIN_THREAD_EM_ASM({
+      var message = UTF8ToString($0,$1);
+      RPE.command_reply_queue.push(message);
+    }, msg, len);
+}
+static bool command_flag = false;
+size_t PlatformEmscriptenCommandRead(char **into, size_t max_len) {
+  if(!command_flag) { return 0; }
+  return MAIN_THREAD_EM_ASM_INT({
+      var next_command = RPE.command_queue.shift();
+      var length = lengthBytesUTF8(next_command);
+      if(length > $2) {
+        console.error("[CMD] Command too long, skipping",next_command);
+        return 0;
+      }
+      stringToUTF8(next_command, $1, $2);
+      if(RPE.command_queue.length == 0) {
+        setValue($0, 0, 'i8');
+      }
+      return length;
+    }, &command_flag, into, max_len);
+}
+void PlatformEmscriptenCommandRaiseFlag() {
+  command_flag = true;
+}
+
 /* begin exported functions */
 
 /* saves and states */
@@ -350,32 +377,46 @@ void PlatformEmscriptenMountFilesystems(void *info) {
        */
       int max_line_len = 1024;
       printf("[FetchFS] read fetch manifest from %s\n",fetch_manifest);
-      FILE *file = fopen(fetch_manifest, O_RDONLY);
+      FILE *file = fopen(fetch_manifest, "r");
+      if(!file) {
+        printf("[FetchFS] missing manifest file\n");
+        abort();
+      }
       char *line = calloc(sizeof(char), max_line_len);
-      size_t len = 0;
+      size_t len = max_line_len;
       while (getline(&line, &len, file) != -1) {
          char *path = strstr(line, " ");
          backend_t fetch;
          int fd;
-         if (!path) {
-            printf("Manifest file has invalid line %s\n",line);
-            return;
+         if(len <= 2 || !path) {
+            printf("[FetchFS] Manifest file has invalid line %s\n",line);
+            continue;
          }
          *path = '\0';
          path += 1;
-         printf("Fetch %s from %s\n", path, line);
+         path[strcspn(path, "\r\n")] = '\0';
+         printf("[FetchFS] Fetch %s from %s\n", path, line);
          {
             char *parent = strdup(path);
             path_parent_dir(parent, strlen(parent));
             if(!path_mkdir(parent)) {
-               printf("mkdir error %d\n",errno);
+               printf("[FetchFS] mkdir error %d\n",errno);
                abort();
             }
             free(parent);
          }
-         fetch = wasmfs_create_fetch_backend(line, 8*1024*1024);
+         fetch = wasmfs_create_fetch_backend(line, 16*1024*1024);
+         if(!fetch) {
+           printf("[FetchFS] couldn't create fetch backend\n");
+           abort();
+         }
          fd = wasmfs_create_file(path, 0777, fetch);
+         if(!fd) {
+           printf("[FetchFS] couldn't create fetch file\n");
+           abort();
+         }
          close(fd);
+         len = max_line_len;
       }
       fclose(file);
       free(line);
@@ -433,7 +474,9 @@ void emscripten_bootup_mainloop(void *argptr) {
 int main(int argc, char *argv[])
 {
    args_t *args = calloc(sizeof(args_t), 1);
-
+   args->argc = argc;
+   args->argv = argv;
+   
    PlatformEmscriptenWatchCanvasSize();
    PlatformEmscriptenPowerStateInit();
 
