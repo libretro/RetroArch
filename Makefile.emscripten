@@ -104,7 +104,7 @@ _cmd_toggle_menu,_cmd_reload_config,_cmd_toggle_grab_mouse,_cmd_toggle_game_focu
 _cmd_set_volume,_cmd_set_shader,_cmd_cheat_set_code,_cmd_cheat_get_code,_cmd_cheat_toggle_index,_cmd_cheat_get_code_state,_cmd_cheat_realloc,\
 _cmd_cheat_get_size,_cmd_cheat_apply_cheats,EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
-EXPORTS := callMain,FS,PATH,ERRNO_CODES,ENV,stringToNewUTF8,UTF8ToString,Browser,GL
+EXPORTS := callMain,FS,PATH,ERRNO_CODES,ENV,stringToNewUTF8,UTF8ToString,Browser,GL,EmscriptenSendCommand,EmscriptenReceiveCommandReply
 
 LIBS    := -s USE_ZLIB=1 -lbrowser.js
 
