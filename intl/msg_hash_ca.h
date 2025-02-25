@@ -7745,6 +7745,10 @@ MSG_HASH(
    "Tipus de miniatura que es mostrarà a l’esquerra."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   "Miniatura de la icona"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    "Fons dinàmic"
    )
