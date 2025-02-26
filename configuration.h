@@ -733,6 +733,7 @@ typedef struct settings
       bool menu_enable_widgets;
       bool menu_show_load_content_animation;
       bool notification_show_autoconfig;
+      bool notification_show_autoconfig_fails;
       bool notification_show_cheats_applied;
       bool notification_show_patch_applied;
       bool notification_show_remap_load;
