@@ -138,7 +138,9 @@ static bool bsv_movie_init_playback(
    }
 
    handle->min_file_pos = sizeof(header) + state_size;
-   bsv_movie_read_next_events(handle);
+   if(vsn > 0)
+      bsv_movie_read_next_events(handle);
+
 
    return true;
 }
