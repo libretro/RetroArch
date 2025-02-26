@@ -46,7 +46,8 @@
 enum autoconfig_handle_flags
 {
    AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
-   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1)
+   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1),
+   AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2)
 };
 
 typedef struct
@@ -758,7 +759,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       }
       /* Device is autoconfigured, but a (most likely
        * incorrect) fallback definition was used... */
-      else
+      else if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF))
          snprintf(task_title, sizeof(task_title),
                   msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR),
                   device_display_name,
@@ -766,7 +767,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
                   autoconfig_handle->device_info.pid);
    }
    /* Autoconfig failed */
-   else
+   else if (!(autoconfig_handle->flags & AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF))
          snprintf(task_title, sizeof(task_title),
                   msg_hash_to_str(MSG_DEVICE_NOT_CONFIGURED_NR),
                   device_display_name,
@@ -824,6 +825,8 @@ bool input_autoconfigure_connect(
          settings->paths.directory_autoconfig : NULL;
    bool notification_show_autoconfig      = settings ?
          settings->bools.notification_show_autoconfig : true;
+   bool notification_show_autoconfig_fails = settings ?
+         settings->bools.notification_show_autoconfig_fails : true;
    task_finder_data_t find_data;
 
    if (port >= MAX_INPUT_DEVICES)
@@ -855,6 +858,8 @@ bool input_autoconfigure_connect(
       autoconfig_handle->flags |= AUTOCONF_FLAG_AUTOCONFIG_ENABLED;
    if (!notification_show_autoconfig)
       autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS;
+   if (!notification_show_autoconfig_fails)
+      autoconfig_handle->flags |= AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF;
    autoconfig_handle->dir_autoconfig               = NULL;
    autoconfig_handle->dir_driver_autoconfig        = NULL;
    autoconfig_handle->autoconfig_file              = NULL;

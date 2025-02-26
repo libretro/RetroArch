@@ -664,6 +664,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_restart_retroarch,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_widgets,                  MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_load_content_animation, MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_autoconfig,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_autoconfig_fails, MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS)
 #ifdef HAVE_CHEATS
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_notification_show_cheats_applied,  MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED)
 #endif
@@ -4376,6 +4377,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_autoconfig);
+            break;
+         case MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_notification_show_autoconfig_fails);
             break;
          case MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED:
 #ifdef HAVE_CHEATS

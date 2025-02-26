@@ -1090,6 +1090,10 @@
 #define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG true
 #endif
 
+/* Display a notification when controller
+ * autoconfiguration fails. */
+#define DEFAULT_NOTIFICATION_SHOW_AUTOCONFIG_FAILS true
+
 /* Display a notification when cheats are being
  * applied */
 #define DEFAULT_NOTIFICATION_SHOW_CHEATS_APPLIED true

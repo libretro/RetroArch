@@ -6225,6 +6225,10 @@ MSG_HASH(
    "notification_show_autoconfig"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "notification_show_autoconfig_fails"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "notification_show_cheats_applied"
    )
