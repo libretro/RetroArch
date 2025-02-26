@@ -271,7 +271,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE, RETROK_UNKNOWN,
+      MENU_ENUM_LABEL_VALUE_INPUT_TURBO, RETROK_UNKNOWN,
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },
@@ -526,6 +526,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE, RETROK_UNKNOWN,
       RARCH_STREAMING_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE, RETROK_UNKNOWN,
+      RARCH_TURBO_FIRE_TOGGLE, NO_BTN, NO_BTN, 0,
       true
    },
    {
@@ -906,7 +913,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE, RETROK_UNKNOWN,
+      MENU_ENUM_LABEL_VALUE_INPUT_TURBO, RETROK_UNKNOWN,
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },
@@ -1161,6 +1168,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE, RETROK_UNKNOWN,
       RARCH_STREAMING_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE, RETROK_UNKNOWN,
+      RARCH_TURBO_FIRE_TOGGLE, NO_BTN, NO_BTN, 0,
       true
    },
    {
@@ -1541,7 +1555,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE, RETROK_UNKNOWN,
+      MENU_ENUM_LABEL_VALUE_INPUT_TURBO, RETROK_UNKNOWN,
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },
@@ -1806,6 +1820,13 @@ static const struct retro_keybind retro_keybinds_1[] = {
       AXIS_NONE, AXIS_NONE,
       MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE, RETROK_UNKNOWN,
       RARCH_STREAMING_TOGGLE, NO_BTN, NO_BTN, 0,
+      true
+   },
+   {
+      NULL, NULL,
+      AXIS_NONE, AXIS_NONE,
+      MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE, RETROK_UNKNOWN,
+      RARCH_TURBO_FIRE_TOGGLE, NO_BTN, NO_BTN, 0,
       true
    },
    {
@@ -2190,7 +2211,7 @@ static const struct retro_keybind retro_keybinds_rest[] = {
    {
       NULL, NULL,
       AXIS_NONE, AXIS_NONE,
-      MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE, RETROK_UNKNOWN,
+      MENU_ENUM_LABEL_VALUE_INPUT_TURBO, RETROK_UNKNOWN,
       RARCH_TURBO_ENABLE, NO_BTN, NO_BTN, 0,
       true
    },

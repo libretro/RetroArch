@@ -3553,21 +3553,34 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Hold"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Turbo Fire"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "Disabled stops all turbo fire operations."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo Period"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "The period (in frames) when turbo-enabled buttons are pressed."
+   "The period in frames when turbo-enabled buttons are pressed."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
    "Turbo Duty Cycle"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
    "The number of frames from the Turbo Period the buttons are held down for. If this number is equal to or greater than the Turbo Period, the buttons will never release."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "Half Period"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3595,34 +3608,42 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Classic mode, two-button operation. Hold a button and tap the Turbo button to activate the press-release sequence.\nTurbo button can be assigned in Settings/Input/Port 1 Controls."
+   "Classic mode, two-button operation. Hold a button and tap the Turbo button to activate the press-release sequence.\nTurbo bind can be assigned in Settings/Input/Port X Controls."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Classic toggle mode, two-button operation. Hold a button and tap the Turbo button to enable turbo for that button. To disable turbo: hold the button and press the Turbo button again.\nTurbo button can be assigned in Settings/Input/Port 1 Controls."
+   "Classic toggle mode, two-button operation. Hold a button and tap the Turbo button to enable turbo for that button. To disable turbo: hold the button and press the Turbo button again.\nTurbo bind can be assigned in Settings/Input/Port X Controls."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Toggle mode. Press the Turbo button once to activate the press-release sequence for the selected default button, press it once again to switch it off.\nTurbo button can be assigned in Settings/Input/Port 1 Controls."
+   "Toggle mode. Press the Turbo button once to activate the press-release sequence for the selected default button, press it once again to switch it off.\nTurbo bind can be assigned in Settings/Input/Port X Controls."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Hold mode. The press-release sequence for the selected default button is active as long as Turbo button is held down.\nTurbo button can be assigned in Settings/Input/Port 1 Controls.\nTo emulate the autofire function of the home computer era, set Turbo and default buttons to be the same as the joystick fire button."
+   "Hold mode. The press-release sequence for the selected default button is active as long as Turbo button is held down.\nTurbo bind can be assigned in Settings/Input/Port X Controls.\nTo emulate the autofire function of the home computer era, set Bind and Button to the same joystick fire button."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Turbo Default Button"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "Turbo Bind"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Default active button for Turbo Mode 'Single Button'."
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "Turbo activating RetroPad bind. Empty uses the port-specific bind."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Allow Turbo D-Pad Directions"
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "Turbo Button"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "Target turbo button in 'Single Button' mode."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   "Turbo Allow D-Pad Directions"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    "If enabled, digital directional inputs (also known as d-pad or 'hatswitch') can be turbo."
    )
 MSG_HASH(
@@ -3631,7 +3652,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Change turbo fire settings.\nNote: the turbo function requires mapping a turbo button to your input device in the corresponding 'Port X Controls' menu."
+   "Change turbo fire settings."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4117,6 +4138,14 @@ MSG_HASH(
    "Decrements the currently selected replay slot index."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Turbo Fire (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Switches turbo fire on/off."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Grab Mouse (Toggle)"
    )
@@ -4504,7 +4533,7 @@ MSG_HASH(
    "Gun D-Pad Right"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    "Turbo"
    )
 

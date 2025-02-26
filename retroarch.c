@@ -5148,6 +5148,10 @@ bool command_event(enum event_command cmd, void *data)
             }
          }
          break;
+      case CMD_EVENT_TURBO_FIRE_TOGGLE:
+         configuration_set_bool(settings,
+               settings->bools.input_turbo_enable, !settings->bools.input_turbo_enable);
+         break;
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
          {
             bool ret              = false;

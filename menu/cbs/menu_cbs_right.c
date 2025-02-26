@@ -171,7 +171,6 @@ static int action_right_input_desc_kbd(unsigned type, const char *label,
    return 0;
 }
 
-/* TODO/FIXME: incomplete, lacks error checking */
 static int action_right_input_desc(unsigned type, const char *label,
    bool wraparound)
 {
@@ -190,38 +189,26 @@ static int action_right_input_desc(unsigned type, const char *label,
             break;
       }
 
-      if (bind_idx < RARCH_CUSTOM_BIND_LIST_END - 1)
-      {
-         if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
-            settings->uints.input_remap_ids[user_idx][btn_idx]++;
-         else
-         {
-            if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
-            {
-               bind_idx++;
-               bind_idx = input_config_bind_order[bind_idx];
-            }
-            else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
-               bind_idx = RARCH_UNMAPPED;
-            else
-               bind_idx = input_config_bind_order[0];
-            settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
-         }
-      }
-      else if (bind_idx == RARCH_CUSTOM_BIND_LIST_END - 1)
-         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+      if (bind_idx > RARCH_ANALOG_BIND_LIST_END)
+         settings->uints.input_remap_ids[user_idx][btn_idx]++;
       else
-         settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
-
-      remap_idx = settings->uints.input_remap_ids[user_idx][btn_idx];
-
-      /* skip the not used buttons (unless they are at the end by calling the right desc function recursively
-         also skip all the axes until analog remapping is implemented */
-      if (remap_idx != RARCH_UNMAPPED)
       {
-         if ((string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]) && remap_idx < RARCH_CUSTOM_BIND_LIST_END))
-            action_right_input_desc(type, label, wraparound);
+         if (bind_idx < RARCH_ANALOG_BIND_LIST_END - 1)
+         {
+            bind_idx++;
+            bind_idx = input_config_bind_order[bind_idx];
+         }
+         else if (bind_idx == RARCH_ANALOG_BIND_LIST_END - 1)
+            bind_idx = RARCH_UNMAPPED;
+         else
+            bind_idx = input_config_bind_order[0];
+
+         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
       }
+
+      /* Empty is always last, so right jumps to first */
+      if (string_is_empty(sys_info->input_desc_btn[mapped_port][remap_idx]))
+         settings->uints.input_remap_ids[user_idx][btn_idx] = input_config_bind_order[0];
    }
 
    return 0;
