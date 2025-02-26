@@ -3522,6 +3522,65 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
       case MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
+      case MENU_ENUM_LABEL_INPUT_TURBO_BIND:
+      case MENU_ENUM_LABEL_INPUT_TURBO_BUTTON:
+      {
+         settings_t *settings               = config_get_ptr();
+         int turbo_bind = settings->ints.input_turbo_bind;
+
+         if (enum_idx == MENU_ENUM_LABEL_INPUT_TURBO_BUTTON)
+            turbo_bind = settings->uints.input_turbo_button;
+
+         switch (turbo_bind)
+         {
+            case RETRO_DEVICE_ID_JOYPAD_UP:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_U];
+            case RETRO_DEVICE_ID_JOYPAD_DOWN:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_D];
+            case RETRO_DEVICE_ID_JOYPAD_LEFT:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_L];
+            case RETRO_DEVICE_ID_JOYPAD_RIGHT:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_DPAD_R];
+            case RETRO_DEVICE_ID_JOYPAD_B:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D];
+            case RETRO_DEVICE_ID_JOYPAD_A:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R];
+            case RETRO_DEVICE_ID_JOYPAD_Y:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_L];
+            case RETRO_DEVICE_ID_JOYPAD_X:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_BTN_U];
+            case RETRO_DEVICE_ID_JOYPAD_SELECT:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_SELECT];
+            case RETRO_DEVICE_ID_JOYPAD_START:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_START];
+            case RETRO_DEVICE_ID_JOYPAD_L:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_LB];
+            case RETRO_DEVICE_ID_JOYPAD_R:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_RB];
+            case RETRO_DEVICE_ID_JOYPAD_L2:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_LT];
+            case RETRO_DEVICE_ID_JOYPAD_R2:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_RT];
+            case RETRO_DEVICE_ID_JOYPAD_L3:
+            case RETRO_DEVICE_ID_JOYPAD_R3:
+               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_P];
+            case 19: /* Left Analog Up */
+            case 23: /* Right Analog Up */
+               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_U];
+            case 18: /* Left Analog Down */
+            case 22: /* Right Analog Down */
+               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_D];
+            case 17: /* Left Analog Left */
+            case 21: /* Right Analog Left */
+               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_L];
+            case 16: /* Left Analog Right */
+            case 20: /* Right Analog Right */
+               return xmb->textures.list[XMB_TEXTURE_INPUT_STCK_R];
+            default:
+               break;
+         }
+         break;
+      }
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
       case MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY:

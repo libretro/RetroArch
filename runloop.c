@@ -5583,6 +5583,9 @@ static enum runloop_state_enum runloop_check_state(
    /* Check fullscreen hotkey */
    HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
 
+   /* Check turbo toggle hotkey */
+   HOTKEY_CHECK(RARCH_TURBO_FIRE_TOGGLE, CMD_EVENT_TURBO_FIRE_TOGGLE, true, NULL);
+
    /* Check mouse grab hotkey */
    HOTKEY_CHECK(RARCH_GRAB_MOUSE_TOGGLE, CMD_EVENT_GRAB_MOUSE_TOGGLE, true, NULL);
 

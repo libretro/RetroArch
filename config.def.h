@@ -1563,11 +1563,13 @@
 #define DEFAULT_ANALOG_SENSITIVITY 1.0f
 
 /* Describes speed of which turbo-enabled buttons toggle. */
+#define DEFAULT_TURBO_ENABLE true
 #define DEFAULT_TURBO_PERIOD 6
-#define DEFAULT_TURBO_DUTY_CYCLE 3
+#define DEFAULT_TURBO_DUTY_CYCLE 0
 #define DEFAULT_TURBO_MODE 0
-#define DEFAULT_TURBO_DEFAULT_BTN RETRO_DEVICE_ID_JOYPAD_B
-#define DEFAULT_ALLOW_TURBO_DPAD false
+#define DEFAULT_TURBO_BIND -1
+#define DEFAULT_TURBO_BUTTON RETRO_DEVICE_ID_JOYPAD_B
+#define DEFAULT_TURBO_ALLOW_DPAD false
 
 /* Enable automatic mouse grab by default
  * only on Android */
