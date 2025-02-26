@@ -299,9 +299,8 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
    }
    else
    {
-      double dpr = emscripten_get_device_pixel_ratio();
-      rwebinput->mouse.x = (int)(mouse_event->targetX * dpr);
-      rwebinput->mouse.y = (int)(mouse_event->targetY * dpr);
+      rwebinput->mouse.x = (int)(mouse_event->canvasX);
+      rwebinput->mouse.y = (int)(mouse_event->canvasY);
    }
 
    if (event_type ==  EMSCRIPTEN_EVENT_MOUSEDOWN)
@@ -341,9 +340,8 @@ static EM_BOOL rwebinput_touch_cb(int event_type,
             if (!(touch_event->touches[touch].isChanged) && rwebinput->pointer[touch].id == touch_event->touches[touch].identifier)
                continue;
 
-            double dpr = emscripten_get_device_pixel_ratio();
-            rwebinput->pointer[touch].x  = (int)(touch_event->touches[touch].targetX * dpr);
-            rwebinput->pointer[touch].y  = (int)(touch_event->touches[touch].targetY * dpr);
+            rwebinput->pointer[touch].x  = (int)(touch_event->touches[touch].canvasX);
+            rwebinput->pointer[touch].y  = (int)(touch_event->touches[touch].canvasY);
             rwebinput->pointer[touch].id = touch_event->touches[touch].identifier;
          }
          break;
