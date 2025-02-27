@@ -33,6 +33,8 @@ rc_api_fetch_achievement_info_request_t;
 typedef struct rc_api_achievement_awarded_entry_t {
   /* The user associated to the entry */
   const char* username;
+  /* A URL to the user's avatar image */
+  const char* avatar_url;
   /* When the achievement was awarded */
   time_t awarded;
 }
@@ -62,6 +64,7 @@ typedef struct rc_api_fetch_achievement_info_response_t {
 rc_api_fetch_achievement_info_response_t;
 
 RC_EXPORT int RC_CCONV rc_api_init_fetch_achievement_info_request(rc_api_request_t* request, const rc_api_fetch_achievement_info_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_achievement_info_request_hosted(rc_api_request_t* request, const rc_api_fetch_achievement_info_request_t* api_params, const rc_api_host_t* host);
 /* [deprecated] use rc_api_process_fetch_achievement_info_server_response instead */
 RC_EXPORT int RC_CCONV rc_api_process_fetch_achievement_info_response(rc_api_fetch_achievement_info_response_t* response, const char* server_response);
 RC_EXPORT int RC_CCONV rc_api_process_fetch_achievement_info_server_response(rc_api_fetch_achievement_info_response_t* response, const rc_api_server_response_t* server_response);
@@ -88,6 +91,8 @@ rc_api_fetch_leaderboard_info_request_t;
 typedef struct rc_api_lboard_info_entry_t {
   /* The user associated to the entry */
   const char* username;
+  /* A URL to the user's avatar image */
+  const char* avatar_url;
   /* The rank of the entry */
   uint32_t rank;
   /* The index of the entry */
@@ -138,6 +143,7 @@ typedef struct rc_api_fetch_leaderboard_info_response_t {
 rc_api_fetch_leaderboard_info_response_t;
 
 RC_EXPORT int RC_CCONV rc_api_init_fetch_leaderboard_info_request(rc_api_request_t* request, const rc_api_fetch_leaderboard_info_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_leaderboard_info_request_hosted(rc_api_request_t* request, const rc_api_fetch_leaderboard_info_request_t* api_params, const rc_api_host_t* host);
 /* [deprecated] use rc_api_process_fetch_leaderboard_info_server_response instead */
 RC_EXPORT int RC_CCONV rc_api_process_fetch_leaderboard_info_response(rc_api_fetch_leaderboard_info_response_t* response, const char* server_response);
 RC_EXPORT int RC_CCONV rc_api_process_fetch_leaderboard_info_server_response(rc_api_fetch_leaderboard_info_response_t* response, const rc_api_server_response_t* server_response);
@@ -178,6 +184,7 @@ typedef struct rc_api_fetch_games_list_response_t {
 rc_api_fetch_games_list_response_t;
 
 RC_EXPORT int RC_CCONV rc_api_init_fetch_games_list_request(rc_api_request_t* request, const rc_api_fetch_games_list_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_games_list_request_hosted(rc_api_request_t* request, const rc_api_fetch_games_list_request_t* api_params, const rc_api_host_t* host);
 /* [deprecated] use rc_api_process_fetch_games_list_server_response instead */
 RC_EXPORT int RC_CCONV rc_api_process_fetch_games_list_response(rc_api_fetch_games_list_response_t* response, const char* server_response);
 RC_EXPORT int RC_CCONV rc_api_process_fetch_games_list_server_response(rc_api_fetch_games_list_response_t* response, const rc_api_server_response_t* server_response);
@@ -222,6 +229,7 @@ typedef struct rc_api_fetch_game_titles_response_t {
 rc_api_fetch_game_titles_response_t;
 
 RC_EXPORT int RC_CCONV rc_api_init_fetch_game_titles_request(rc_api_request_t* request, const rc_api_fetch_game_titles_request_t* api_params);
+RC_EXPORT int RC_CCONV rc_api_init_fetch_game_titles_request_hosted(rc_api_request_t* request, const rc_api_fetch_game_titles_request_t* api_params, const rc_api_host_t* host);
 RC_EXPORT int RC_CCONV rc_api_process_fetch_game_titles_server_response(rc_api_fetch_game_titles_response_t* response, const rc_api_server_response_t* server_response);
 RC_EXPORT void RC_CCONV rc_api_destroy_fetch_game_titles_response(rc_api_fetch_game_titles_response_t* response);
 

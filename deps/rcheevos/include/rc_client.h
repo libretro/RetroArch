@@ -121,7 +121,7 @@ RC_EXPORT void* RC_CCONV rc_client_get_userdata(const rc_client_t* client);
 /**
  * Sets the name of the server to use.
  */
-RC_EXPORT void RC_CCONV rc_client_set_host(const rc_client_t* client, const char* hostname);
+RC_EXPORT void RC_CCONV rc_client_set_host(rc_client_t* client, const char* hostname);
 
 typedef uint64_t rc_clock_t;
 typedef rc_clock_t (RC_CCONV *rc_get_time_millisecs_func_t)(const rc_client_t* client);
@@ -188,6 +188,8 @@ typedef struct rc_client_user_t {
   uint32_t score;
   uint32_t score_softcore;
   uint32_t num_unread_messages;
+  /* minimum version: 12.0 */
+  const char* avatar_url;
 } rc_client_user_t;
 
 /**
@@ -267,6 +269,8 @@ typedef struct rc_client_game_t {
   const char* title;
   const char* hash;
   const char* badge_name;
+  /* minimum version: 12.0 */
+  const char* badge_url;
 } rc_client_game_t;
 
 /**
@@ -306,6 +310,9 @@ typedef struct rc_client_subset_t {
 
   uint32_t num_achievements;
   uint32_t num_leaderboards;
+
+  /* minimum version: 12.0 */
+  const char* badge_url;
 } rc_client_subset_t;
 
 RC_EXPORT const rc_client_subset_t* RC_CCONV rc_client_get_subset_info(rc_client_t* client, uint32_t subset_id);
@@ -373,6 +380,9 @@ typedef struct rc_client_achievement_t {
   float rarity;
   float rarity_hardcore;
   uint8_t type;
+  /* minimum version: 12.0 */
+  const char* badge_url;
+  const char* badge_locked_url;
 } rc_client_achievement_t;
 
 /**
@@ -387,7 +397,7 @@ RC_EXPORT const rc_client_achievement_t* RC_CCONV rc_client_get_achievement_info
 RC_EXPORT int RC_CCONV rc_client_achievement_get_image_url(const rc_client_achievement_t* achievement, int state, char buffer[], size_t buffer_size);
 
 typedef struct rc_client_achievement_bucket_t {
-  rc_client_achievement_t** achievements;
+  const rc_client_achievement_t** achievements;
   uint32_t num_achievements;
 
   const char* label;
@@ -396,7 +406,7 @@ typedef struct rc_client_achievement_bucket_t {
 } rc_client_achievement_bucket_t;
 
 typedef struct rc_client_achievement_list_t {
-  rc_client_achievement_bucket_t* buckets;
+  const rc_client_achievement_bucket_t* buckets;
   uint32_t num_buckets;
 } rc_client_achievement_list_t;
 
@@ -463,7 +473,7 @@ typedef struct rc_client_leaderboard_tracker_t {
 } rc_client_leaderboard_tracker_t;
 
 typedef struct rc_client_leaderboard_bucket_t {
-  rc_client_leaderboard_t** leaderboards;
+  const rc_client_leaderboard_t** leaderboards;
   uint32_t num_leaderboards;
 
   const char* label;
@@ -472,7 +482,7 @@ typedef struct rc_client_leaderboard_bucket_t {
 } rc_client_leaderboard_bucket_t;
 
 typedef struct rc_client_leaderboard_list_t {
-  rc_client_leaderboard_bucket_t* buckets;
+  const rc_client_leaderboard_bucket_t* buckets;
   uint32_t num_buckets;
 } rc_client_leaderboard_list_t;
 
@@ -619,7 +629,8 @@ enum {
   RC_CLIENT_EVENT_GAME_COMPLETED = 15, /* all achievements for the game have been earned */
   RC_CLIENT_EVENT_SERVER_ERROR = 16, /* an API response returned a [server_error] and will not be retried */
   RC_CLIENT_EVENT_DISCONNECTED = 17, /* an unlock request could not be completed and is pending */
-  RC_CLIENT_EVENT_RECONNECTED = 18 /* all pending unlocks have been completed */
+  RC_CLIENT_EVENT_RECONNECTED = 18, /* all pending unlocks have been completed */
+  RC_CLIENT_EVENT_SUBSET_COMPLETED = 19 /* all achievements for the subset have been earned */
 };
 
 typedef struct rc_client_server_error_t {
@@ -637,6 +648,7 @@ typedef struct rc_client_event_t {
   rc_client_leaderboard_tracker_t* leaderboard_tracker;
   rc_client_leaderboard_scoreboard_t* leaderboard_scoreboard;
   rc_client_server_error_t* server_error;
+  rc_client_subset_t* subset;
 
 } rc_client_event_t;
 

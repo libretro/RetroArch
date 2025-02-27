@@ -24,6 +24,8 @@ void rc_url_builder_init(rc_api_url_builder_t* builder, rc_buffer_t* buffer, siz
 void rc_url_builder_append(rc_api_url_builder_t* builder, const char* data, size_t len);
 const char* rc_url_builder_finalize(rc_api_url_builder_t* builder);
 
+extern rc_api_host_t g_host;
+
 #define RC_JSON_NEW_FIELD(n) {NULL,NULL,n,sizeof(n)-1,0}
 
 typedef struct rc_json_field_t {
@@ -74,8 +76,11 @@ void rc_url_builder_append_num_param(rc_api_url_builder_t* builder, const char* 
 void rc_url_builder_append_unum_param(rc_api_url_builder_t* builder, const char* param, uint32_t value);
 void rc_url_builder_append_str_param(rc_api_url_builder_t* builder, const char* param, const char* value);
 
-void rc_api_url_build_dorequest_url(rc_api_request_t* request);
+const char* rc_api_default_host(void);
+void rc_api_url_build_dorequest_url(rc_api_request_t* request, const rc_api_host_t* host);
 int rc_api_url_build_dorequest(rc_api_url_builder_t* builder, const char* api, const char* username, const char* api_token);
+
+const char* rc_api_build_avatar_url(rc_buffer_t* buffer, uint32_t image_type, const char* username);
 
 RC_END_C_DECLS
 

@@ -472,8 +472,8 @@ void rcheevos_client_download_badge_from_url(const char* url, const char* badge_
 
 static void rcheevos_client_fetch_next_badge(rc_client_download_queue_t* queue)
 {
-   rc_client_achievement_bucket_t* bucket;
-   rc_client_achievement_t* achievement;
+   const rc_client_achievement_bucket_t* bucket;
+   const rc_client_achievement_t* achievement;
    const char* next_badge;
    char badge_name[32];
    char url[256];

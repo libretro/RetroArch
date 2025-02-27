@@ -70,7 +70,7 @@ enum rcheevos_summary_notif
 
 typedef struct rcheevos_menuitem_t
 {
-   rc_client_achievement_t* achievement;
+   const rc_client_achievement_t* achievement;
    uintptr_t menu_badge_texture;
    uint32_t subset_id;
    uint8_t menu_badge_grayscale;
