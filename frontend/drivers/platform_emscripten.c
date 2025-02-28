@@ -463,6 +463,7 @@ static uint64_t frontend_emscripten_get_free_mem(void)
 void emscripten_bootup_mainloop(void *argptr) {
    if(filesystem_ready) {
       args_t *args = (args_t*)argptr;
+      emscripten_cancel_main_loop();
       emscripten_set_main_loop(emscripten_mainloop, 0, 0);
       emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
       rarch_main(args->argc, args->argv, NULL);
