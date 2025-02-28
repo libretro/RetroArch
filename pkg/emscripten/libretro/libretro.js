@@ -198,14 +198,14 @@ function setupFileSystem(backend) {
    var mfs = new BrowserFS.FileSystem.MountableFileSystem();
 
    // create an XmlHttpRequest filesystem for the bundled data
-   var xfs1 = new BrowserFS.FileSystem.ZipFS(zipTOC);
+   var zipfs = new BrowserFS.FileSystem.ZipFS(zipTOC);
    // create an XmlHttpRequest filesystem for core assets
-   var xfs2 = new BrowserFS.FileSystem.XmlHttpRequest(".index-xhr", "assets/cores/");
+   var xfs = new BrowserFS.FileSystem.XmlHttpRequest(".index-xhr", "assets/cores/");
 
    console.log("WEBPLAYER: initializing filesystem: " + backend);
-   mfs.mount('/home/web_user/retroarch/bundle', xfs1);
+   mfs.mount('/home/web_user/retroarch/', zipfs);
    mfs.mount('/home/web_user/retroarch/userdata', afs);
-   mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs2);
+   mfs.mount('/home/web_user/retroarch/userdata/content/downloads', xfs);
    BrowserFS.initialize(mfs);
    var BFS = new BrowserFS.EmscriptenFS(Module.FS, Module.PATH, Module.ERRNO_CODES);
    Module.FS.mount(BFS, {
