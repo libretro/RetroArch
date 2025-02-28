@@ -144,6 +144,7 @@ typedef struct settings
 #ifdef HAVE_OVERLAY
       int input_overlay_lightgun_port;
 #endif
+      int input_turbo_bind;
    } ints;
 
    struct
@@ -194,7 +195,7 @@ typedef struct settings
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
       unsigned input_turbo_mode;
-      unsigned input_turbo_default_button;
+      unsigned input_turbo_button;
 
       unsigned input_bind_timeout;
       unsigned input_bind_hold;
@@ -710,7 +711,8 @@ typedef struct settings
       bool input_small_keyboard_enable;
       bool input_keyboard_gamepad_enable;
       bool input_auto_mouse_grab;
-      bool input_allow_turbo_dpad;
+      bool input_turbo_enable;
+      bool input_turbo_allow_dpad;
       bool input_hotkey_device_merge;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;

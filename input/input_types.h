@@ -112,6 +112,19 @@ typedef struct input_mapper
    input_bits_t buttons[MAX_USERS];
 } input_mapper_t;
 
+typedef struct
+{
+   unsigned analog_dpad_mode[MAX_USERS];
+   unsigned libretro_device[MAX_USERS];
+   unsigned turbo_mode;
+   unsigned turbo_button;
+   unsigned turbo_period;
+   unsigned turbo_duty_cycle;
+   int turbo_bind;
+   bool turbo_enable;
+   bool turbo_allow_dpad;
+} input_remap_cache_t;
+
 typedef struct input_game_focus_state
 {
    bool enabled;

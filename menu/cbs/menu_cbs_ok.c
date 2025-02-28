@@ -287,6 +287,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MANUAL_CONTENT_SCAN_CORE_NAME;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION:
@@ -892,6 +894,15 @@ int generic_action_ok_displaylist_push(
          info_label         = msg_hash_to_str(
                MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX);
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_DISK_INDEX;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND);
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_RETROPAD_BIND;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE:
@@ -7477,6 +7488,31 @@ static int action_ok_push_dropdown_item_microphone_device(const char *path,
 }
 #endif
 
+static int action_ok_push_dropdown_item_input_retropad_bind(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   rarch_setting_t *setting;
+   enum msg_hash_enums enum_idx;
+   retro_ctx_controller_info_t pad;
+   unsigned port                = 0;
+   unsigned device              = 0;
+
+   const char *menu_path        = NULL;
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
+   enum_idx = (enum msg_hash_enums)atoi(menu_path);
+   setting  = menu_setting_find_enum(enum_idx);
+
+   if (!setting)
+      return -1;
+
+   if ((int)entry_idx < 0)
+      *setting->value.target.integer = -1;
+   else
+      *setting->value.target.integer = input_config_bind_order[entry_idx];
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_item_input_device_type(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -9484,6 +9520,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_disk_index);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_INPUT_RETROPAD_BIND:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_retropad_bind);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_input_device_type);
