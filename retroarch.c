@@ -6126,7 +6126,9 @@ static void retroarch_print_features(void)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_THREAD,          "Threads",         "Threading support");
 #endif
 #ifdef HAVE_GDI
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_GDI,            "GDI",               "Video driver");
+#endif
 #endif
 #ifdef HAVE_D3D8
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_D3D8,            "Direct3D 8",       "Video driver");
