@@ -461,6 +461,11 @@ static uint64_t frontend_emscripten_get_free_mem(void)
 }
 
 void emscripten_bootup_mainloop(void *argptr) {
+   if(retro_started) {
+      /* A stale extra call to bootup_mainloop for some reason */
+      RARCH_ERR("[Emscripten] unexpected second call to bootup_mainloop after rarch_main called\n");
+      return;
+   }
    if(filesystem_ready) {
       args_t *args = (args_t*)argptr;
       emscripten_cancel_main_loop();
