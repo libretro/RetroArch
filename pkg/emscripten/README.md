@@ -159,7 +159,7 @@ cp fceumm_libretro.{js,wasm} pkg/emscripten/libretro-thread
 
 ## Dependencies
 
-The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  While it supports the regular desktop asset and content downloaders, we also provide a small bundle of UI assets for first launch.  You can obtain these files from the nightly Emscripten build on the buildbot, or make them yourself by `zip -r bundle-minimal.zip bundle-minimal` (essentially, just the `assets/ozone`, `assets/pkg`, and `assets/sounds` folders from the regular asset package).
+The emscripten build in the retroarch tree does not contain the necessary web assets for a complete RetroArch installation.  While it supports the regular desktop asset and content downloaders, we also provide a small bundle of UI assets for first launch.  You can obtain these files from the nightly Emscripten build on the buildbot, or make them yourself by `zip -r9 bundle-minimal.zip bundle` (essentially, just the `assets/ozone`, `assets/pkg`, and `assets/sounds` folders from the regular asset package).
 
 ## Usage
 
