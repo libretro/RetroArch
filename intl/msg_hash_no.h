@@ -2153,6 +2153,7 @@ MSG_HASH(
    MSG_INPUT_BIND_TIMEOUT,
    "Tidsavbrudd"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turbo periode"

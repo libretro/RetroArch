@@ -3277,21 +3277,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Segurar"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Modo turbo"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Período do turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "O período (em quadros) onde os botões com o turbo ativados são pressionados."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Ciclo de operação turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "A quantidade de quadros enquanto os botões estiverem pressionados no tempo do turbo. Caso este número seja igual ou maior que o tempo do turbo, os botões nunca serão liberados."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3318,44 +3311,8 @@ MSG_HASH(
    "Botão Único (Segurar)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Modo clássico, operação com dois botões. Segure um botão aperte o botão Turbo para ativar a sequência de pressionar-soltar.\nO botão Turbo pode ser atribuído em Configurações/Entrada/Controles da Porta 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Modo alternar clássico, operação com dois botões. Segure um botão e aperte o botão Turbo para ativar o turbo para esse botão. Para desativar o Turbo: segure o botão e aperte o botão Turbo novamente.\nO Turbo pode ser atribuído em Configurações/Entrada/Controles da Porta 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Modo Alternar. Pressione o botão Turbo uma vez para ativar a sequência de pressionar-soltar, pressione mais uma vez para desligar.\nO Turbo pode ser atribuído em Configurações/Entrada/Controles da Porta 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Modo segurar. A sequência de pressionar-soltar para o botão padrão fica ativa enquanto o botão Turbo for pressionado.\nO Turbo pode ser atribuído em Configurações/Entrada/Controles da Porta 1.\nPara emular a função autofire da era do computador doméstico, defina o Turbo e os botões padrão para serem iguais ao botão de disparo do joystick."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Botão padrão de turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "O botão individual para o modo turbo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Permitir direções turbo dos botões direcionais"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "Se ativada, as entradas dos direcionais digitais (botões direcionais) podem ser turbo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Modo turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Alterar configurações do turbo.\nNota: a função turbo requer um mapeamento de um botão turbo para seu dispositivo de entrada no menu correspondente 'Controles da porta x'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,

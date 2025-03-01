@@ -3341,21 +3341,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "长按"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "连发"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "连发周期"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "触发连发键所需的按压时间 (帧)。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "连发周期"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "连击速率。如果此数值大于或等于连击时长，则按键将永远不会松开。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3382,44 +3375,8 @@ MSG_HASH(
    "单个按钮 (长按)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "经典模式，2个按键的操作。\n先按住需要使用连发的按键, 再按一下[连发键] 开启连发, 当连发中的按键放开時失效。\n[连发键] 可在[设置/输入/端口 1 控制] 中设定。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "经典切换键模式，2个按键的操作，保持按住一个按键并且按下“连发键”来开启该按键连发，关闭连发：保持按住该按键并且再次按下“连发键”。\n“连发键”可以在设置/输入/端口 1 控制内设定。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "翻转模式。按一下Turbo按钮来激活选中默认按钮的按下和弹起事件，再次按它来关闭它。\nTurbo按钮可以在 Settings/Input/port 1 Control中分配。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "按住模式。只要Turbo按钮被按住，选中的默认按钮的按下和弹起事件将处于活动状态。\nTurbo按钮可以在 Settings/Input/port 1 Control中分配。\n要模拟主计算机时代的自动开火功能，请设置Turbo和默认按钮与游戏杆开火按钮相同。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "连发默认按钮"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "默认的「单一按钮」连发模式激活按钮。"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "允许 D-Pad 方向键连发"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "如果启用，数字方向输入(也称为dpad或“hatswitch”) 也可以连发。"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "连发"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "更改连发设定.\n注意：连发功能需要在您的输入设备相对应的“端口 X 控制”菜单内映射一个“连发键”。"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4262,10 +4219,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "光枪十字键右"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "连发"
    )
 
 /* Settings > Latency */

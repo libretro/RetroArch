@@ -3217,21 +3217,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Przytrzymaj"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Turbo Ogień"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Okres turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Okres (w klatkach) po naciśnięciu przycisków włączonych turbo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Turbo Cykl Duty"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Liczba klatek z okresu Turbo, w którym przyciski są przytrzymywane. Jeśli liczba ta jest równa lub większa od okresu Turbo, przyciski nigdy nie zostaną uruchomione."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3258,32 +3251,8 @@ MSG_HASH(
    "Pojedynczy przycisk (Przytrzymanie)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Tryb klasyczny, operacja dwóch przycisków. Przytrzymaj przycisk i naciśnij przycisk Turbo, aby aktywować sekwencję odblokowania.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Przełącz tryb. Naciśnij przycisk Turbo, aby aktywować sekwencję uwalniania dla wybranego przycisku domyślnego, naciśnij go ponownie aby go wyłączyć.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Tryb przytrzymania. Sekwencja zwolnienia dla wybranego domyślnego przycisku jest aktywna, dopóki przycisk Turbo jest przytrzymywany w dół.\nPrzycisk Turbo może być przypisany w Ustawieniach/Input/Port 1 Controls.\nAby emulować funkcję autoognia w epoce komputera domowego, ustaw Turbo i domyślne przyciski aby były takie same jak przycisk ognia joysticka."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Domyślny przycisk turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Domyślny aktywny przycisk dla trybu turbo \"Pojedynczy przycisk\"."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbo Ogień"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Zmień ustawienia turbo ognia.\nUwaga: funkcja turbo wymaga zmapowania przycisku turbo do urządzenia wejściowego w odpowiednim menu \"Elementy sterujące portu X\"."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,

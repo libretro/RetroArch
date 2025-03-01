@@ -3521,21 +3521,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "꾹 누르기"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "터보 입력"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "터보 반복 간격"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "터보 설정된 버튼이 눌렸을 때 사용될 입력 간격(프레임)입니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "터보 입력 시간"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "터보 설정된 버튼이 눌렸을 때 사용될 누르고 있을 기간(프레임)입니다. 이 값이 터보 간격 값과 같거나 더 클 경우, 버튼은 눌린 상태로 유지될 것입니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3562,44 +3555,8 @@ MSG_HASH(
    "단일 버튼 (홀드)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "클래식 모드, 2버튼 작동. 버튼을 누른 상태에서 터보 버튼을 클릭해 활성화합니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "클래식 토글 모드, 2버튼 작동. 원하는 버튼을 누른 상태에서 터보 버튼을 눌러 활성화합니다. 터보를 끄려면: 원하는 버튼을 누른 상태에서 터보 버튼을 한 번 더 누릅니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "토글 모드. 터보 버튼을 한 번 누르면 선택한 기본 버튼의 터보가 활성화되고 다시 한 번 누르면 꺼집니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "홀드 모드. 터보 버튼을 누르고 있는 동안 선택한 기본 버튼의 터보가 활성화됩니다.\n터보 버튼은 설정/입력/포트 1 컨트롤에서 할당할 수 있습니다.\n가정용 컴퓨터 시대의 자동 발사 기능을 모방하려면 터보 버튼과 기본 버튼을 조이스틱 발사 버튼과 동일하게 설정하십시오."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "터보 기본 버튼"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "'단일 버튼' 터보 모드의 기본 터보 활성화 버튼을 설정합니다."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "터보 십자패드 방향 허용"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "활성화되면 디지털 방향 입력 (십자패드 또는 'hatswitch'라고도 함) 이 터보가 될 수 있습니다."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "터보 입력"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "터보 발사 설정 변경입니다.\n참고: 터보 기능을 사용하려면 해당 '포트 X 컨트롤' 메뉴에서 터보 버튼을 입력 장치에 매핑해야 합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4470,10 +4427,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "무기 D-패드 오른쪽"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "터보 사용"
    )
 
 /* Settings > Latency */

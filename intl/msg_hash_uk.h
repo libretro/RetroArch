@@ -3509,21 +3509,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Утримуйте"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Турбо Кнопки"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Турбо-період"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Тривалість (у кадрах) дії turbo-кнопок."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Робочий цикл турбо"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Кількість кадрів із турбо-періоду, протягом якого кнопки утримуються. Якщо це число дорівнює або перевищує період турбо, кнопки ніколи не відпустяться."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3550,44 +3543,8 @@ MSG_HASH(
    "Одна кнопка (Утримання)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Класичний режим, керування двома кнопками. Утримуйте кнопку та торкніться кнопки Турбо, щоб активувати послідовність пресреліз.\n Кнопку Турбо можна призначити в меню «Налаштування»/«Вхід»/«Керування портом 1»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Класичний режим перемикання, робота двома кнопками. Утримуйте кнопку та торкніться кнопки Turbo, щоб увімкнути турбо для цієї кнопки. Щоб вимкнути турбо: утримуйте кнопку та знову натисніть кнопку «Турбо».\nКнопку «Турбо» можна призначити в меню «Налаштування/Вхід/Керування[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Режим перемикання. Натисніть кнопку «Турбо» один раз, щоб активувати послідовність прес-релізів для вибраної кнопки за замовчуванням, натисніть її ще раз, щоб вимкнути її.\nКнопку «Турбо» можна призначити в меню «Налаштування/Вхід/Керування портом 1»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Режим утримання. Послідовність прес-релізів для вибраної кнопки за замовчуванням активна, доки кнопка Turbo утримується.\n Кнопку Turbo можна призначити в меню «Параметри/Вхід/Керування портом 1».\n Щоб імітувати функцію автозапуску епохи домашнього комп’ютера, установіть Turbo [...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Стандартна кнопка Турбо"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Активна кнопка для турбо режиму за замовчанням."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Дозволити маршрути Turbo D-Pad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "Якщо ввімкнено, цифрові спрямовані входи (також відомі як d-pad або «hatswitch») можуть бути турбо."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Турбо Кнопки"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Змініть налаштування турбопожежі.\n Примітка: функція турбо вимагає зіставлення кнопки турбо з пристроєм введення у відповідному меню «Керування портом X»."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4446,10 +4403,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Гармата D-панель праворуч"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Турбо"
    )
 
 /* Settings > Latency */
@@ -5806,6 +5759,10 @@ MSG_HASH(
    "Вхідний (автоматичний) Сповіщення про підключення"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Повідомлення про помилку введення (автоконфігурації)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Повідомлення чіт-кодів"
    )
@@ -5824,6 +5781,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Відображати екранне повідомлення під час підключення/відключення вхідних пристроїв."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Відображати повідомлення на екрані, якщо не вдалося налаштувати пристрої введення."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,

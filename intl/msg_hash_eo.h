@@ -545,6 +545,7 @@ MSG_HASH(
 #endif
 #ifdef ANDROID
 #endif
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
    "Enable hotkeys"
@@ -575,10 +576,6 @@ MSG_HASH(
 
 /* Settings > Input > Port # Controls */
 
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Turbo enable"
-   )
 
 /* Settings > Latency */
 

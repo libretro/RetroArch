@@ -3421,21 +3421,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Tieni"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Modalità Turbo"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Periodo Turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Il periodo (in fotogrammi) quando i pulsanti abilitati per turbo sono premuti."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Ciclo Operativo Turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Il numero di fotogrammi del Periodo Turbo per cui i pulsanti sono mantenuti. Se questo numero è uguale o maggiore del Turbo Period, i pulsanti non verranno mai rilasciati."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3462,44 +3455,8 @@ MSG_HASH(
    "Pulsante Singolo (Premuto)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Modalità classica, operazione a due pulsanti. Tenere premuto un pulsante e toccare il pulsante Turbo per attivare la sequenza di rilascio presso.\nIl pulsante Turbo può essere assegnato in Impostazioni/Input/Porta 1 Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Modalità di commutazione classica, operazione a due pulsanti. Tieni premuto un pulsante e tocca il pulsante Turbo per abilitare il turbo per quel pulsante. Per disabilitare il turbo: tieni premuto il pulsante e premi nuovamente il pulsante Turbo. Il pulsante\nTurbo può essere assegnato in Impostazioni/Ingresso/Porta 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Modalità attivazione/disattivazione. Premere il pulsante Turbo una volta per attivare la sequenza di rilascio della pressione per il pulsante predefinito selezionato, premere nuovamente per spegnerla.\nIl pulsante Turbo può essere assegnato in Impostazioni/Input/Porta 1 Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Modalità premuta. La sequenza di rilascio premuto per il pulsante predefinito selezionato è attiva finché il pulsante Turbo è premuto giù.\nIl pulsante Turbo può essere assegnato in Impostazioni/Input/Porta 1 Controls.\nPer emulare la funzione di autofire dell'era del computer di casa, impostare i pulsanti Turbo e di default per essere lo stesso del pulsante di fuoco del joystick."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Pulsante Predefinito Turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Pulsante attivo predefinito per la Modalità Turbo 'pulsante singolo'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Consenti direzioni con Turbo D-Pad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "Se abilitato, gli ingressi direzionali digitali (noti anche come D-pad o \"hatswitch\") possono essere turbo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Modalità Turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Modifica le impostazioni di turbo.\nNota: la funzione turbo richiede la mappatura di un pulsante turbo sul dispositivo di input nel corrispondente menu 'Port X Controls'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -5734,6 +5691,10 @@ MSG_HASH(
    "Notifiche di Connessione Input (Autoconfig)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Notifiche Di Input (Autoconfig) Fallite"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "Notifiche Trucchi"
    )
@@ -5752,6 +5713,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "Visualizza un messaggio sullo schermo quando si collegano/disconnettono i dispositivi di input."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "Visualizza un messaggio sullo schermo quando i dispositivi di input non possono essere configurati."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,

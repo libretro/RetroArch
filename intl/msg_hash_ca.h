@@ -3185,21 +3185,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Mantingueu premut"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Disparador de turbo"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Període de turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "El període (en fotogrames) quan es polsen els botons turbo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Cicle de turbo requerit"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "El nombre de fotogrames que es premen els botons del període de turbo. Si aquest número és igual o major que el període de turbo, els botons mai s'amollaran."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3216,14 +3209,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
    "Clàssic (Alternar)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Botó per defecte del turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Botó actiu per defecte per al mode 'Botó únic'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
@@ -3983,6 +3968,10 @@ MSG_HASH(
    "Mostra l’opció «Gestiona els nuclis» al menú principal."
 )
 
+MSG_HASH(
+   MSG_CORE_STEAM_INSTALLING,
+   "Instal·lant el nucli:"
+)
 
 
 #endif
@@ -5864,6 +5853,10 @@ MSG_HASH(
 
 /* Settings > User > Accounts > Twitch */
 
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+   "Clau d'emissió de Twitch"
+   )
 
 /* Settings > User > Accounts > Facebook Gaming */
 
@@ -7322,6 +7315,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
    "Assigna valor"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
+   "Augmenta el valor"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
@@ -9758,6 +9755,10 @@ MSG_HASH(
    "Interfície"
    )
 MSG_HASH(
+   MSG_INTERNAL_STORAGE,
+   "Emmagatzematge intern"
+   )
+MSG_HASH(
    MSG_IN_BYTES,
    "en bytes"
    )
@@ -9876,6 +9877,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_VALUE_REBOOTING,
    "Reiniciant..."
+   )
+MSG_HASH(
+   MSG_VALUE_SHUTTING_DOWN,
+   "Apagant..."
    )
 MSG_HASH(
    MSG_DEVICE_CONFIGURED_IN_PORT,
@@ -10068,6 +10073,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_BACKUP_SCANNING_CORE,
    "Cercant al nucli: "
+   )
+MSG_HASH(
+   MSG_RESTORING_CORE,
+   "Reinicant els nuclis: "
    )
 MSG_HASH(
    MSG_CORE_INSTALLATION_FAILED,
@@ -10298,6 +10307,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_ROOM_PASSWORDED,
    "Amb contrasenya"
+   )
+MSG_HASH(
+   MSG_INTERNET_RELAY,
+   "Internet (servidor intermediari)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,

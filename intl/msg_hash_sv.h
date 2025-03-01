@@ -3177,6 +3177,7 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Håll in"
    )
+
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Turboperiod"
@@ -3200,22 +3201,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
    "Singel knapp (Intryckt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Klassiskt läge, manövrering med två knappar. Håll in en knapp och tryck på Turbo-knappen för att aktivera tryck-släpp-sekvensen.\nTurbo-knappen kan tilldelas i Inställningar/Input/Port 1 Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Klassiskt växlingsläge, tvåknappsmanövrering. Håll in en knapp och tryck på Turbo-knappen för att aktivera turbo för den knappen. För att inaktivera turbo: håll in knappen och tryck på Turbo-knappen igen.\nTurbo-knappen kan tilldelas i Inställningar/Input/Port 1 Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Växla läge. Tryck en gång på Turbo-knappen för att aktivera trycksekvensen för den valda standardknappen, tryck en gång till för att stänga av den.\nTurbo-knappen kan tilldelas i Inställningar/Input/Port 1 Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Hållläge. Tryck-släpp-sekvensen för den valda standardknappen är aktiv så länge som Turbo-knappen hålls nedtryckt.\nTurbo-knappen kan tilldelas i Inställningar/Input/Port 1 Controls.\nFör att efterlikna autofire-funktionen från hemdatortiden, ställ in Turbo- och standardknapparna så att de är desamma som joystickens avfyrningsknapp."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,

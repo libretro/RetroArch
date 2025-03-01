@@ -3509,21 +3509,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Удерживайте"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Турбо-кнопки"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Период турбо"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Длительность нажатия турбо-кнопок (в кадрах)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Цикл действия турбо"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Количество кадров в периоде турборежима, в течение которых кнопки будут нажаты. Если данное значение больше или равно периоду турбо, кнопки будут нажаты постоянно."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3550,44 +3543,8 @@ MSG_HASH(
    "Одна кнопка (удержание)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Классический режим, две кнопки для срабатывания. Удерживая кнопку действия однократно нажмите кнопку Турбо, чтобы запустить цикл нажать-отпустить. Кнопку Турбо можно назначить в Настройки/Ввод/Привязки порта 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Классический режим, две кнопки для срабатывания. Удерживая кнопку действия однократно нажмите кнопку Турбо. Повторно нажмите кнопку Турбо, удерживая кнопку действия для откл. турбо. Кнопку Турбо можно назначить в Настройки/Ввод/Привязки порта 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Режим переключения. Однократно нажмите кнопку Турбо, чтобы запустить цикл нажать-отпустить для выбранной по умолчанию кнопки. Для откл. нажмите кнопку Турбо повторно. Кнопку Турбо можно назначить в Настройки/Ввод/Привязки порта 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Режим с удержанием. Пока зажата кнопка Турбо, для кнопки по умолчанию действует цикл нажать-отпустить. Кнопку Турбо можно назначить в Настройки/Ввод/Привязки порта 1. Для эмуляции автом. огня привяжите Турбо и кнопку по умолчанию к одной кнопке стрельбы геймпада."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Турбо-кнопка по умолчанию"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Кнопка действия, используемая с режимами турбо 'Одна кнопка'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Разрешать турбо для диагоналей D-Pad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "При включении разрешает турбо для нажатий цифровых диагоналей."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Турбо-кнопки"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Настройки турбо-кнопок.\nПримечание: для работы функции требуется привязать турбо-кнопку к устройству ввода в соответствующем меню 'Привязки порта X'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4458,10 +4415,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Пистолет D-Pad вправо"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Турбо"
    )
 
 /* Settings > Latency */

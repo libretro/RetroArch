@@ -3421,21 +3421,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Manter"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Turbo fogo"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Período Turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "O período (en fotogramas) no que se preme os botóns activados para turbo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Ciclo de traballo turbo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "O número de fotogramas do período Turbo durante os que se manteñen pulsados os botóns. Se este número é igual ou superior ao período turbo, os botóns nunca se soltarán."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3462,44 +3455,8 @@ MSG_HASH(
    "Botón único (manteña premida)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Modo clásico, operación con dous botóns. Mantén premido un botón e toca o botón Turbo para activar a secuencia do comunicado de prensa.\nO botón Turbo pódese asignar en Configuración/Entrada/Controis do porto 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Modo de alternancia clásico, operación con dous botóns. Mantén premido un botón e toca o botón Turbo para activar o turbo para ese botón. Para desactivar o turbo: manteña premido o botón e preme de novo o botón Turbo.\nO botón Turbo pódese asignar en Configuración/Entrada/Controis do porto 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Alternar modo. Preme o botón Turbo unha vez para activar a secuencia de lanzamento de prensa para o botón predeterminado seleccionado, preme de novo para desactivalo.\nO botón Turbo pódese asignar en Configuración/Entrada/Controis do porto 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Modo de espera. A secuencia de lanzamento de prensa para o botón predeterminado seleccionado está activa mentres se manteña premido o botón Turbo.\nO botón Turbo pódese asignar en Configuración/Entrada/Controis do porto 1.\nPara emular a función de disparo automático da era do ordenador doméstico, configura Turbo e os botóns predeterminados deben ser os mesmos que o botón de disparo do joystick."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Botón Turbo predeterminado"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Botón activo predeterminado para o modo Turbo \"Botón único\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Permitir indicacións do Turbo D-Pad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "Se está activada, as entradas direccionais dixitais (tamén coñecidas como d-pad ou 'hatswitch') poden ser turbo."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Turbo fogo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Cambia a configuración do turbo fogo.\nNota: a función turbo require asignar un botón turbo ao teu dispositivo de entrada no menú \"Controis do porto X\" correspondente."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,

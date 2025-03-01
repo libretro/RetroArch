@@ -3497,21 +3497,14 @@ MSG_HASH(
    MSG_INPUT_BIND_HOLD,
    "Утрымлівайце"
    )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   "Турба-кнопкі"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Перыяд турба"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Працягласць націску турба-кнопак (у кадрах)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DUTY_CYCLE,
-   "Цыкл працы турба"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DUTY_CYCLE,
-   "Колькасць кадраў у перыядзе турбарэжыму, у якія кнопкі будуць націснутыя. Калі дадзенае значэнне больш ці роўна перыяду турбарэжыму, кнопкі будуць націснутыя ўвесь час."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3538,44 +3531,8 @@ MSG_HASH(
    "Адна кнопка (Утрымліванне)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Класічны рэжым, дзве кнопкі для спрацоўвання. Утрымлівайце кнопку дзеяння і аднаразова націсніце кнопку Турба, каб актываваць цыкл націснуць-адпусціць.\nКнопку Турба можна прызначыць у Налады/Увод/Прывязкі порта 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Класічны рэжым пераключэння з дзвюма кнопкамі. Для ўключэння турбарэжыму аднаразова націсніце кнопку Турба пад час утрымання кнопкі дзеяння. Для адключэння турба: зноў націсніце кнопку Турба і ўтрымлівайце кнопку дзеяння.\nКнопку Турба можна прызначыць у Налады/Увод/Пры[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Рэжым пераключэння. Аднаразова націсніце кнопку Турба, каб актываваць цыкл націснуць-адпусціць для абранай кнопкі. Націсніце паўторна для адключэння.\nКнопку Турба можна прызначыць у Налады/Увод/Прывязкі порта 1."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Рэжым з утрымліваннем. Цыкл націснуць-адпусціць для зададзенай кнопкі дзейнічае пакуль заціснутая кнопка Турба.\nКнопку Турба можна прызначыць у Налады/Увод/Прывязкі порта.\nДля эмуляцыі аўтаматычнага агню ў стылі эпохі хатніх кампутараў, прызначце кнопкі Турба і дзеянне[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DEFAULT_BUTTON,
-   "Прадвызначаная кнопка турба"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DEFAULT_BUTTON,
-   "Кнопка дзеяння, якая выкарыстоўваецца ў турбарэжымах 'Адна кнопка'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALLOW_TURBO_DPAD,
-   "Дазваляць турбакірункі D-Pad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALLOW_TURBO_DPAD,
-   "Калі ўключана, уводы лічбавых кірункаў (таксама вядомыя як d-pad ці 'hatswitch') могуць быць турба."
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Турба-кнопкі"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Налады турба-кнопак.\nНататка: для працы функцыі патрабуецца прывязаць турба-кнопку да прылады ўводу ў адпаведным меню 'Прывязкі порта X'."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4446,10 +4403,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Пісталет D-Pad направа"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Турба"
    )
 
 /* Settings > Latency */
