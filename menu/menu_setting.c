@@ -6183,7 +6183,7 @@ static int setting_string_action_left_midi_input(
    {
       int i = string_list_find_elem(list, setting->value.target.string) - 2;
 
-      if (wraparound && i == -1)
+      if (i == -1)
          i = (int)list->size - 1;
       if (i >= 0)
       {
@@ -6206,7 +6206,7 @@ static int setting_string_action_right_midi_input(
    {
       int i = string_list_find_elem(list, setting->value.target.string);
 
-      if (wraparound && i == (int)list->size)
+      if (i == (int)list->size)
          i = 0;
       if (i >= 0 && i < (int)list->size)
       {
@@ -6229,7 +6229,7 @@ static int setting_string_action_left_midi_output(
    {
       int i = string_list_find_elem(list, setting->value.target.string) - 2;
 
-      if (wraparound && i == -1)
+      if (i == -1)
          i = (int)list->size - 1;
       if (i >= 0)
       {
@@ -6252,7 +6252,7 @@ static int setting_string_action_right_midi_output(
    {
       int i = string_list_find_elem(list, setting->value.target.string);
 
-      if (wraparound && i == (int)list->size)
+      if (i == (int)list->size)
          i = 0;
       if (i >= 0 && i < (int)list->size)
       {
