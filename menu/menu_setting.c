@@ -2936,6 +2936,33 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
    return 0;
 }
 
+static int setting_string_action_ok_midi_device(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char enum_idx[16];
+   if (!setting)
+      return -1;
+
+   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
+
+   generic_action_ok_displaylist_push(
+         enum_idx, /* we will pass the enumeration index of the string as a path */
+         NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_MIDI_DEVICE);
+   return 0;
+}
+
+static int setting_string_action_start_midi_device(rarch_setting_t *setting)
+{
+   if (!setting)
+      return -1;
+
+   setting_reset_setting(setting);
+
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   return 0;
+}
+
 #ifdef HAVE_MICROPHONE
 static int setting_string_action_start_microphone_device(rarch_setting_t *setting)
 {
@@ -6166,6 +6193,7 @@ static int setting_string_action_left_midi_input(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
@@ -6188,6 +6216,7 @@ static int setting_string_action_right_midi_input(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
@@ -6210,6 +6239,7 @@ static int setting_string_action_left_midi_output(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
@@ -6232,6 +6262,7 @@ static int setting_string_action_right_midi_output(
       }
    }
 
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return -1;
 }
 
@@ -24128,6 +24159,7 @@ static bool setting_append_list(
          START_SUB_GROUP(list, list_info, "State",
                &group_info, &subgroup_info, parent_group);
 
+#if !defined(RARCH_CONSOLE)
          CONFIG_STRING(
                list, list_info,
                settings->arrays.midi_input,
@@ -24140,10 +24172,10 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+         (*list)[list_info->index - 1].action_start = setting_string_action_start_midi_device;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_input;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_input;
+         (*list)[list_info->index - 1].action_ok    = setting_string_action_ok_midi_device;
 
          CONFIG_STRING(
                list, list_info,
@@ -24157,10 +24189,10 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
+         (*list)[list_info->index - 1].action_start = setting_string_action_start_midi_device;
          (*list)[list_info->index - 1].action_left  = setting_string_action_left_midi_output;
          (*list)[list_info->index - 1].action_right = setting_string_action_right_midi_output;
+         (*list)[list_info->index - 1].action_ok    = setting_string_action_ok_midi_device;
 
          CONFIG_UINT(
                list, list_info,
@@ -24175,6 +24207,7 @@ static bool setting_append_list(
                general_read_handler);
          (*list)[list_info->index - 1].action_ok     = &setting_action_ok_uint;
          menu_settings_list_current_add_range(list, list_info, 0.0f, 100.0f, 1.0f, true, true);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
