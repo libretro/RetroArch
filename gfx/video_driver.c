@@ -3797,11 +3797,17 @@ void video_driver_frame(const void *data, unsigned width,
       video_st->frame_time_samples[write_index] = frame_time;
       fps_time                                  = new_time;
 
-      /* Consider frame dropped when frame time exceeds 1.75x target */
+      /* Try to count dropped frames */
       if (     video_st->frame_count > 4
-            && !menu_is_alive
-            && frame_time > 1000000.0f / video_st->av_info.timing.fps * 1.75f)
-         video_st->frame_drop_count++;
+            && !menu_is_alive)
+      {
+         float frame_time_av_info = 1000000.0f / video_st->av_info.timing.fps;
+
+         if (     (frame_time > frame_time_av_info * 1.75f)
+               || (runloop_st->core_run_time > frame_time_av_info * 1.5f)
+            )
+            video_st->frame_drop_count++;
+      }
 
       if (video_info.fps_show)
       {
