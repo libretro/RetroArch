@@ -8884,8 +8884,7 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:
          {
             struct menu_state *menu_st = menu_state_get_ptr();
-            menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
-                                       |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+            menu_st->flags            |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
             task_push_cloud_sync_update_driver();
          }
          break;
