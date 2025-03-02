@@ -216,24 +216,15 @@ $(function() {
    loadCore(core);
 });
 
-async function downloadScript(src) {
-  let resp = await fetch(src);
-  let blob = await resp.blob();
-  return blob;
-}
-
 function loadCore(core) {
    // Make the core the selected core in the UI.
    var coreTitle = $('#core-selector a[data-core="' + core + '"]').addClass('active').text();
    $('#dropdownMenu1').text(coreTitle);
-   downloadScript("./"+core+"_libretro.js").then(scriptBlob => {
-      Module.mainScriptUrlOrBlob = scriptBlob;
-      import(URL.createObjectURL(scriptBlob)).then(script => {
-         script.default(Module).then(mod => {
-            Module = mod;
-         }).catch(err => { console.error("Couldn't instantiate module",err); throw err; });
-      }).catch(err => { console.error("Couldn't load script",err); throw err; });
-   });
+   import("./"+core+"_libretro.js").then(script => {
+     script.default(Module).then(mod => {
+       Module = mod;
+     }).catch(err => { console.error("Couldn't instantiate module",err); throw err; });
+   }).catch(err => { console.error("Couldn't import module"); throw err; });
 }
 
 const setupWorker = new Worker("libretro.worker.js");
