@@ -3515,8 +3515,28 @@ MSG_HASH(
    "Турбо Кнопки"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "Вимкнено зупиняє всі операції турбопожежі."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "Турбо-період"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "Період у кадрах під час натискання кнопок із увімкненим режимом турбо."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
+   "Робочий цикл Turbo"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "Кількість кадрів із турбо-періоду, протягом якого кнопки утримуються. Якщо це число дорівнює або перевищує Turbo Period, кнопки ніколи не відпустяться."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "Половина періоду"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3543,8 +3563,48 @@ MSG_HASH(
    "Одна кнопка (Утримання)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "Класичний режим, управління двома кнопками. Утримуйте кнопку та торкніться кнопки «Турбо», щоб активувати послідовність прес-релізів.\nТурбо-прив’язку можна призначити в «Параметрах»/«Введення»/«Керування портом X»."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "Класичний режим перемикання, робота двома кнопками. Утримуйте кнопку та торкніться кнопки Turbo, щоб увімкнути турбо для цієї кнопки. Щоб вимкнути турбо: утримуйте кнопку та знову натисніть кнопку «Турбо».\nТурбозв’язування може b."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "Режим перемикання. Натисніть кнопку Turbo один раз, щоб активувати послідовність прес-релізів для вибраної кнопки за замовчуванням, натисніть її ще раз, щоб вимкнути її.\nTurbo bind можна призначити в Settings/Input/Por."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "Режим утримання. Послідовність прес-релізів для вибраної кнопки за замовчуванням активна, доки кнопку Turbo утримують.\nТурбозв’язування можна призначити в меню «Параметри/Вхід/Керування портом X».\nЩоб імітувати функцію автозапуску ери домашнього комп’ютера, установіть «[...]"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "Зв'язати Турбо"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "Turbo активація прив'язки RetroPad. Empty використовує прив’язку до порту."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "Турбо кнопка"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "Цільова турбо-кнопка в режимі «Одна кнопка»."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "Якщо ввімкнено, цифрові спрямовані входи (також відомі як d-pad або «hatswitch») можуть бути турбо."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "Турбо Кнопки"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "Змініть налаштування турбо вогню."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4026,6 +4086,14 @@ MSG_HASH(
    "Зменшує поточний вибраний індекс слота для повтору."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Turbo Fire (перемикач)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "Вмикає/вимикає турбо вогонь."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "Захоплювати мишу (перемикач)"
    )
@@ -4403,6 +4471,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "Гармата D-панель праворуч"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "Турбо"
    )
 
 /* Settings > Latency */
