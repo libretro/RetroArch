@@ -2705,11 +2705,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Custom viewport bias used to offset the viewport horizontally (if wider than content height).  0.0 means far left and 1.0 means far right."
+   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 is center, 1.0 is far right."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "Custom viewport bias used to offset the viewport vertically (if taller than content height).  0.0 means top and 1.0 means bottom."
+   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is center, 1.0 is bottom."
    )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
@@ -2730,11 +2730,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Custom viewport bias used to offset the viewport horizontally (if wider than content height).  0.0 means far left and 1.0 means far right. (Portrait Orientation)"
+   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 is center, 1.0 is far right. (Portrait Orientation)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Custom viewport bias used to offset the viewport vertically (if taller than content height).  0.0 means top and 1.0 means bottom. (Portrait Orientation)"
+   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is center, 1.0 is bottom. (Portrait Orientation)"
    )
 #endif
 MSG_HASH(
