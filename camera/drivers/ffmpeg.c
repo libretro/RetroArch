@@ -61,7 +61,8 @@ typedef struct ffmpeg_camera
    struct SwsContext *scale_context;
 
    /* "name" for the camera device.
-    * (Not just the reported name, there may be a bit of extra syntax.) */
+    * Not just the reported name, there may be a bit of extra syntax.
+    * See https://ffmpeg.org/ffmpeg-devices.html#Input-Devices for details. */
    char url[512];
 
    uint8_t *target_buffers[2];
