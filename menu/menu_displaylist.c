@@ -80,6 +80,7 @@
 #endif
 
 #include "../audio/audio_driver.h"
+#include "../midi_driver.h"
 #include "../record/record_driver.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
@@ -5390,6 +5391,65 @@ static int menu_displaylist_parse_audio_device_list(file_list_t *info_list,
          /* Add checkmark if input is currently
           * mapped to this entry */
          if (audio_device_index == i)
+         {
+            menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
+            if (cbs)
+               cbs->checked            = true;
+            menu_st->selection_ptr     = menu_index;
+         }
+
+         count++;
+         menu_index++;
+      }
+   }
+
+   return count;
+}
+
+static int menu_displaylist_parse_midi_device_list(file_list_t *info_list,
+      const char *info_path)
+{
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   enum msg_hash_enums enum_idx = (enum msg_hash_enums)atoi(info_path);
+   rarch_setting_t     *setting = menu_setting_find_enum(enum_idx);
+   size_t menu_index            = 0;
+   unsigned count               = 0;
+   int i                        = -1;
+   int midi_device_index        = -1;
+   struct string_list *ptr      = NULL;
+
+   if (!setting)
+      return 0;
+
+   if (enum_idx == MENU_ENUM_LABEL_MIDI_INPUT)
+      ptr = midi_driver_get_avail_inputs();
+   else
+      ptr = midi_driver_get_avail_outputs();
+
+   if (!ptr)
+      return 0;
+
+   /* Get index in the string list */
+   midi_device_index = string_list_find_elem(ptr, setting->value.target.string) - 1;
+
+   for (i = 0; i < (int)ptr->size; i++)
+   {
+      bool add = false;
+
+      /* Add menu entry */
+      if (menu_entries_append(info_list,
+            ptr->elems[i].data,
+            ptr->elems[i].data,
+            MENU_ENUM_LABEL_AUDIO_DEVICE_LIST,
+            MENU_SETTING_DROPDOWN_ITEM_AUDIO_DEVICE, /* Share common audio for reinit */
+            0, i, NULL))
+         add = true;
+
+      if (add)
+      {
+         /* Add checkmark if input is currently
+          * mapped to this entry */
+         if (midi_device_index == i)
          {
             menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)info_list->list[menu_index].actiondata;
             if (cbs)
@@ -14407,6 +14467,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE:
             menu_entries_clear(info->list);
             count              = menu_displaylist_parse_audio_device_list(info->list, info->path);
+
+            if (count == 0)
+               if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
+                        FILE_TYPE_NONE, 0, 0, NULL))
+                  count++;
+            info->flags       |= MD_FLAG_NEED_REFRESH
+                               | MD_FLAG_NEED_PUSH;
+            break;
+         case DISPLAYLIST_DROPDOWN_LIST_MIDI_DEVICE:
+            menu_entries_clear(info->list);
+            count              = menu_displaylist_parse_midi_device_list(info->list, info->path);
 
             if (count == 0)
                if (menu_entries_append(info->list,
