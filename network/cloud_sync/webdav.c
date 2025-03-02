@@ -38,6 +38,7 @@ typedef struct
 {
    char url[PATH_MAX_LENGTH];
    char *last_slash;
+   char post_slash;
    webdav_mkdir_cb_t cb;
    webdav_cb_state_t *cb_st;
 } webdav_mkdir_state_t;
@@ -661,11 +662,12 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data, void *user_data
       return;
    }
 
-   *webdav_mkdir_st->last_slash++ = '/';
-   webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->last_slash, '/');
+   webdav_mkdir_st->last_slash[1] = webdav_mkdir_st->post_slash;
+   webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->last_slash + 1, '/');
    if (webdav_mkdir_st->last_slash)
    {
-      *webdav_mkdir_st->last_slash = '\0';
+      webdav_mkdir_st->post_slash = webdav_mkdir_st->last_slash[1];
+      webdav_mkdir_st->last_slash[1] = '\0';
       RARCH_DBG("[webdav] MKCOL %s\n", webdav_mkdir_st->url);
       auth_header = webdav_get_auth_header("MKCOL", webdav_mkdir_st->url);
       task_push_webdav_mkdir(webdav_mkdir_st->url, true, auth_header, webdav_mkdir_cb, webdav_mkdir_st);
@@ -689,6 +691,7 @@ static void webdav_ensure_dir(const char *dir, webdav_mkdir_cb_t cb, webdav_cb_s
    fill_pathname_join_special(url, webdav_st->url, dir, sizeof(url));
    net_http_urlencode_full(webdav_mkdir_st->url, url, sizeof(webdav_mkdir_st->url));
    webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->url + strlen(webdav_st->url) - 1, '/');
+   webdav_mkdir_st->post_slash = webdav_mkdir_st->last_slash[1];
    webdav_mkdir_st->cb = cb;
    webdav_mkdir_st->cb_st = webdav_cb_st;
 
