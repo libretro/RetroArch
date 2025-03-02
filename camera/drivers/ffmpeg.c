@@ -282,6 +282,7 @@ static bool ffmpeg_camera_start(void *data)
    AVDictionary *options = NULL;
    const AVDictionaryEntry *e = NULL;
    const AVDictionaryEntry prev;
+   int target_buffer_length = 0;
 
    if (ffmpeg->format_context)
    { // TODO: Check the actual format context, not just the pointer
@@ -378,7 +379,7 @@ static bool ffmpeg_camera_start(void *data)
    ffmpeg->target_width = ffmpeg->requested_width ? ffmpeg->requested_width : (unsigned)ffmpeg->decoder_context->width;
    ffmpeg->target_height = ffmpeg->requested_height ? ffmpeg->requested_height : (unsigned)ffmpeg->decoder_context->height;
 
-   int target_buffer_length = av_image_alloc(
+   target_buffer_length = av_image_alloc(
       ffmpeg->target_planes,
       ffmpeg->target_linesizes,
       ffmpeg->target_width,
