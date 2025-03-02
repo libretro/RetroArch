@@ -58,6 +58,9 @@ const camera_driver_t *camera_drivers[] = {
 #ifdef ANDROID
    &camera_android,
 #endif
+#ifdef HAVE_FFMPEG
+   &camera_ffmpeg,
+#endif
    &camera_null,
    NULL,
 };

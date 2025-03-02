@@ -815,6 +815,10 @@ CAMERA
 #include "../camera/drivers/pipewire.c"
 #endif
 
+#ifdef HAVE_FFMPEG
+#include "../camera/drivers/ffmpeg.c"
+#endif
+
 #ifdef HAVE_VIDEOPROCESSOR
 #include "../cores/libretro-video-processor/video_processor_v4l2.c"
 #endif
