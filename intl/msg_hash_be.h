@@ -2651,14 +2651,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "Зрух вобласці прагляду па Y"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Ўстаноўка зрушэння вобласці прагляду па гарызанталі (калі шырыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "Ўстаноўка зрушэння вобласці прагляду па вертыкалі (калі вышыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму."
-   )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -2675,14 +2667,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "Зрух вобласці прагляду па Y (партрэтны рэжым)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Ўстаноўка зрушэння вобласці прагляду па гарызанталі (калі шырыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму. Для (партрэтнага рэжыму)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Ўстаноўка зрушэння вобласці прагляду па вертыкалі (калі вышыня перавышае вышыню кантэнту). 0.0 адпавядае леваму краю, 1.0 - праваму. Для (партрэтнага рэжыму)"
    )
 #endif
 MSG_HASH(

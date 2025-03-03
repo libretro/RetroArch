@@ -2671,14 +2671,6 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    "뷰포트 기준점 바이어스 Y"
    )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다."
-   )
 #if defined(RARCH_MOBILE)
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -2695,14 +2687,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
    "뷰포트 기준점 바이어스 Y (세로 화면)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "뷰포트 너비가 콘텐츠 너비보다 넓을 경우 뷰포트 가로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 왼쪽 끝, 1.0은 오른쪽 끝입니다. (세로 화면)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "뷰포트 높이가 콘텐츠 높이보다 길 경우 뷰포트 세로 위치를 조정할 때 사용할 사용자 뷰포트 바이어스입니다. 0.0은 맨 위, 1.0은 맨 아래입니다. (세로 화면)"
    )
 #endif
 MSG_HASH(
@@ -3527,8 +3511,28 @@ MSG_HASH(
    "터보 입력"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   "비활성화할 경우 모든 터보 입력이 중단됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    "터보 반복 간격"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   "터보 설정된 버튼을 누르고 있으면, 이 프레임 간격마다 버튼 입력이 반복됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_DUTY_CYCLE,
+   "터보 홀드 시간"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   "터보 설정된 버튼을 누르고 있을 때 버튼이 눌려 있을 프레임 간격입니다. 이 값이 터보 반복 간격 값과 같거나 더 클 경우, 버튼은 계속 눌린 상태로 유지됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   "반복 간격의 절반"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
@@ -3555,8 +3559,52 @@ MSG_HASH(
    "단일 버튼 (홀드)"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   "두 개의 버튼을 사용하는 클래식 모드입니다. 원하는 버튼을 누른 상태에서 터보 활성화 버튼을 눌러 터보 입력을 활성화합니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   "두 개의 버튼을 사용하는 클래식 토글 모드입니다. 원하는 버튼을 누른 상태에서 터보 활성화 버튼을 누르면 해당 버튼의 터보 입력이 활성화됩니다. 터보 입력을 끄려면: 원하는 버튼을 누른 상태에서 터보 활성화 버튼을 한 번 더 누릅니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   "토글 모드입니다. 터보 활성화 버튼을 한 번 누르면 지정된 버튼의 터보 입력이 활성화되고, 한 번 더 누르면 비활성화됩니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   "홀드 모드입니다. 터보 활성화 버튼이 눌려 있는 동안 지정된 버튼의 터보 입력이 활성화됩니다.\n터보 활성화 버튼은 설정/입력/X번 포트 입력 설정에서 할당할 수 있습니다.\n가정용 컴퓨터 시대의 자동 연사 기능을 모방하려면, 터보 활성화 버튼과 지정 버튼을 동일한 조이스틱 발사 버튼으로 할당하십시오."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   "터보 활성화 버튼"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   "터보를 활성화하는 RetroPad 입력입니다. 비워둘 경우 개별 포트에서 할당된 버튼이 사용됩니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   "터보 지정 버튼"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   "'단일 버튼' 모드에서 터보를 활성화할 지정 버튼입니다."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
+   "방향 패드 터보 입력 허용"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   "활성화할 경우, 디지털 방향 입력(십자패드 또는 '햇스위치'라고도 함)에도 터보 입력을 사용할 수 있게 됩니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
    "터보 입력"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   "터보 입력 설정을 변경합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
@@ -4042,6 +4090,14 @@ MSG_HASH(
    "선택된 리플레이 슬롯의 인덱스를 감소시킵니다."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   "터보 입력 (켜기/끄기)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   "터보 입력을 켜거나 끕니다."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    "마우스 잡기 (켜기/끄기)"
    )
@@ -4427,6 +4483,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
    "무기 D-패드 오른쪽"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   "터보"
    )
 
 /* Settings > Latency */
@@ -5815,6 +5875,10 @@ MSG_HASH(
    "입력 (자동구성) 연결 알림"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "입력 (자동구성) 실패 알림"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    "치트 코드 알림"
    )
@@ -5833,6 +5897,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    "입력 장치를 연결/연결 해제할 때 화면에 메시지를 표시합니다."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   "입력 장치가 제대로 설정되지 못했을 때 화면에 메시지를 표시합니다."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
