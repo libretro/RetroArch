@@ -60,6 +60,8 @@
 	<array>
 		<string>_ra_netplay._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Some cores are able to provide camera input to games.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
